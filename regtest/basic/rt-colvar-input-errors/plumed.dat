@@ -1,0 +1,3 @@
+# the real checks are in the bad_*.dat files, that are run in plumed_regtest_after
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=colvar FMT=%8.4f

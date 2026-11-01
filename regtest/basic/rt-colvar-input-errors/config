@@ -1,0 +1,24 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+# each bad_NAME.dat must be rejected with an error message containing the text below
+# (before the fixes some of them crashed, hung, or were silently accepted)
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+pathmsd_stride0 NEIGH_STRIDE should be specified
+pathmsd_lambda0 LAMBDA should be positive
+contactmap_noatoms no contacts have been specified
+pcarmsd_size eigenvector 1 contains 6 atoms
+drmsd_nopairs no pairs of atoms are within the cutoffs
+ermsd_pairs PAIRS should contain residue indices
+ghbfix_dmax D_MAX should be larger than D_0
+ghbfix_types your types table only covers
+EOT
+}

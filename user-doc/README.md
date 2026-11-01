@@ -6,8 +6,7 @@ appears in links throughout the code.
 
 What is left here comes from the old Doxygen manual and is not rendered anywhere:
 
-- `tutorials/` and `figs/`: old tutorials (Doxygen `.txt` pages) with their inputs
-  and figures. Current tutorials live at https://www.plumed-tutorials.org
-- `Performances.md`: hints on improving performance, not yet migrated to the new manual.
+- `tutorials/` :  Material yet to be moved somewherelse. 
+Current tutorials live at https://www.plumed-tutorials.org
 
 New documentation should not be added here.

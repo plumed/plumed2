@@ -55,6 +55,7 @@ class PDB {
   std::map<std::string,std::vector<double> > arg_data;
   Vector BoxXYZ,BoxABG;
   Tensor Box;
+  std::string spaceGroup;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
@@ -149,6 +150,8 @@ public:
   const Vector & getBoxAng()const;
 /// Returns box axis vectors
   const Tensor & getBoxVec()const;
+/// Returns the space group of the CRYST1 record (empty if there is none)
+  const std::string & getSpaceGroup()const;
 /// Return true if the residue name is one of the allowed reisude names e.g. one of the 20 amino acids for proteins
   bool allowedResidue( const std::string& type, const std::string& residuename ) const;
 };

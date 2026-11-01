@@ -1,0 +1,3 @@
+MOLINFO STRUCTURE=ref.pdb WHOLE
+# protein and ligand in separate groups: no warning
+WHOLEMOLECULES ENTITY0=1-304 ENTITY1=305-313

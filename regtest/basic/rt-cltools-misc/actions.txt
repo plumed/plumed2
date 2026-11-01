@@ -1,0 +1,2 @@
+DISTANCE:Calculate the distance between a pair of atoms
+TORSION:Calculate a torsional angle

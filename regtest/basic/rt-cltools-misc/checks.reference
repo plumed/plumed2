@@ -1,0 +1,19 @@
+info --version: ok
+info --long-version: ok
+info --git-version: ok
+info --root: ok
+info --include-dir: ok
+info --configuration: ok
+info --soext: ok
+info --user-doc: ok
+info --developer-doc: ok
+gentemplate --action: ok
+gentemplate --include-optional: ok
+gentemplate --list: ok
+manual --action: ok
+manual --vim: ok
+manual --spelling: ok
+manual of a cltool: ok
+completion: ok
+gen_json: ok
+gen_json: valid json

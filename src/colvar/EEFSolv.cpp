@@ -410,14 +410,17 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms,
       }
 
       // Temperature correction
-      if (tcorr && parameterlist[i][1] > 0.0) {
+      // (parameterlist is still zero here, the test must use the table value that was just read)
+      if (tcorr && parameter_temp[i][1] != 0.0) {
         const double t0 = 298.15;
         const double delta_g_ref_t0 = parameter_temp[i][1];
         const double delta_h_ref_t0 = parameter_temp[i][3];
-        const double delta_cp = parameter_temp[i][4];
+        // the table stores dCp in cal/(mol K) (times KCAL_TO_KJ), while dG and dH are in kcal/mol: rescale to the same energy unit
+        const double delta_cp = 0.001 * parameter_temp[i][4];
         const double delta_s_ref_t0 = (delta_h_ref_t0 - delta_g_ref_t0) / t0;
         const double t = getkBT() / getKBoltzmann();
-        parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) - delta_cp * t * std::log(t / t0) + delta_cp * (t - t0);
+        // Lazaridis & Karplus, Biophys. J. 76, 1999: dG(T) = dG(T0) - dS(T0)(T-T0) - dCp[T ln(T/T0) - T + T0]
+        parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) + delta_cp * (t * std::log(t / t0) - (t - t0));
         parameter_temp[i][2] *= parameter_temp[i][1] / delta_g_ref_t0;
       }
       parameterlist[i][0] = parameter_temp[i][0];

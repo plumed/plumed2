@@ -182,7 +182,8 @@ void CoordinationBase::calculateImpl() {
 
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<Vector> omp_deriv(getPositions().size());
+    // the per-thread buffers are only needed when several threads accumulate (otherwise deriv and virial are used directly)
+    std::vector<Vector> omp_deriv(nt>1 ? getPositions().size() : 0);
     Tensor omp_virial;
 
     if constexpr (useBatch) {

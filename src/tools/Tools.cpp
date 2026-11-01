@@ -494,7 +494,8 @@ bool Tools::getline(FILE* fp,std::string & line) {
     if(*(line.end()-1)=='\r') {
       line.erase(line.end()-1);
     }
-  return ret;
+  // a last line without a newline is still a line
+  return ret || line.length()>0;
 }
 
 void Tools::trim(std::string & s) {

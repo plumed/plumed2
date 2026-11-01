@@ -228,7 +228,7 @@ int GenJson::main(FILE* in, FILE*out,Communicator& pc) {
         }
       }
       if( hasvalue && components.size()==0 ) {
-        printf("WARNING: no components have been registered for action %s \n", action.c_str() );
+        std::cerr<<"WARNING: no components have been registered for action "<<action<<"\n";
       }
       std::cout<<"       }"<<std::endl;
 

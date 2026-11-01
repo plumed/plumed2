@@ -1,0 +1,5 @@
+type=simplemd
+# NVE run (no thermostat, atoms start at rest) with sigma different from one.
+# The total energy (5th column of energies.dat) is conserved only if the forces
+# are consistent with the potential for any sigma.
+# The box contains at least 3 linked cells per side, so the cell search of the neighbor list is used.

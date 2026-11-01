@@ -1,8 +1,0 @@
-# set up three variables for Phi and Psi dihedral angles 
-# and total energy
-phi: TORSION ATOMS=5,7,9,15
-psi: TORSION ATOMS=7,9,15,17
-ene: ENERGY
-
-# monitor the three variables
-PRINT STRIDE=10 ARG=phi,psi,ene FILE=COLVAR

@@ -30,6 +30,7 @@
 #include <cmath>
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 namespace PLMD {
 namespace cltools {
@@ -98,17 +99,17 @@ public:
   static void registerKeywords( Keywords& keys ) {
     CLTool::registerKeywords( keys );
     keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
-    keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
+    keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units. With NVE there is no thermostat and the atoms start at rest");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
     keys.add("compulsory","epsilon","1.0","LJ parameter");
     keys.add("compulsory","sigma","1.0","LJ parameter");
     keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");
-    keys.add("compulsory","forcecutoff","2.5","");
-    keys.add("compulsory","listcutoff","3.0","");
+    keys.add("compulsory","forcecutoff","2.5","the cutoff for the Lennard-Jones interactions in LJ units (the potential is shifted to zero at the cutoff)");
+    keys.add("compulsory","listcutoff","3.0","the cutoff for the neighbor list in LJ units, should be larger than forcecutoff");
     keys.add("compulsory","outputfile","An output xyz file containing the final configuration of the system");
-    keys.add("compulsory","nconfig","10","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
-    keys.add("compulsory","nstat","1","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
+    keys.add("compulsory","nconfig","10 trajectory.xyz","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
+    keys.add("compulsory","nstat","1 energies.dat","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
     keys.add("compulsory","idum","0","The random number seed");
     keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
     keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
@@ -148,18 +149,24 @@ private:
     char buffer1[256];
     std::string tempstr;
     parse("temperature",tempstr);
-    if( tempstr!="NVE" ) {
-      Tools::convert(tempstr,temperature);
-    }
-    parse("tstep",tstep);
     std::string frictionstr;
     parse("friction",frictionstr);
-    if( tempstr!="NVE" ) {
+    if( tempstr=="NVE" ) {
+      // no thermostat, atoms start at rest
+      temperature=0.0;
+      friction=0.0;
+    } else {
+      if(!Tools::convertNoexcept(tempstr,temperature) || temperature<0.0) {
+        error("temperature should be NVE or a non negative number");
+      }
       if(frictionstr=="off") {
         error("Specify friction for thermostat");
       }
-      Tools::convert(frictionstr,friction);
+      if(!Tools::convertNoexcept(frictionstr,friction) || friction<0.0) {
+        error("friction should be a non negative number");
+      }
     }
+    parse("tstep",tstep);
     parse("forcecutoff",forcecutoff);
     parse("listcutoff",listcutoff);
     parse("nstep",nstep);
@@ -172,24 +179,30 @@ private:
     if(inputfile.length()==0) {
       error("Specify input file");
     }
+    if(sigma<=0.0) {
+      error("sigma should be positive");
+    }
+    if(listcutoff<forcecutoff) {
+      error("listcutoff should not be smaller than forcecutoff");
+    }
     parse("outputfile",outputfile);
     if(outputfile.length()==0) {
       error("Specify output file");
     }
     std::string nconfstr;
     parse("nconfig",nconfstr);
-    std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
-    trajfile=buffer1;
-    if(trajfile.length()==0) {
-      error("Specify traj file");
+    buffer1[0]='\0';
+    if(std::sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1)!=2 || nconfig<=0) {
+      error("nconfig should be followed by a positive stride and by the name of the trajectory file");
     }
+    trajfile=buffer1;
     std::string nstatstr;
     parse("nstat",nstatstr);
-    std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
-    statfile=buffer1;
-    if(statfile.length()==0) {
-      error("Specify stat file");
+    buffer1[0]='\0';
+    if(std::sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1)!=2 || nstat<=0) {
+      error("nstat should be followed by a positive stride and by the name of the statistics file");
     }
+    statfile=buffer1;
     parse("ndim",ndim);
     if(ndim<1 || ndim>3) {
       error("ndim should be 1,2 or 3");
@@ -213,7 +226,7 @@ private:
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
 
     int ret=std::fscanf(fp,"%1000d",&natoms);
-    if(ret==0) {
+    if(ret!=1 || natoms<=0) {
       plumed_error() <<"Error reading number of atoms from file "<<inputfile;
     }
   }
@@ -235,13 +248,13 @@ private:
       plumed_error() <<"Error reading buffer from file "<<inputfile;
     }
     int ret=std::fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
-    if(ret==0) {
+    if(ret!=3) {
       plumed_error() <<"Error reading cell line from file "<<inputfile;
     }
     for(int i=0; i<natoms; i++) {
       ret=std::fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
 // note: atomname is read but not used
-      if(ret==0) {
+      if(ret!=4) {
         plumed_error() <<"Error reading atom line from file "<<inputfile;
       }
     }
@@ -271,6 +284,7 @@ private:
     for(int iatom=0; iatom<natoms; iatom++) {
       if(modulo2(positions[iatom]-positions0[iatom])>delta2) {
         recompute=true;
+        break;
       }
     }
   }
@@ -280,6 +294,77 @@ private:
                     std::vector<std::vector<int> >& list) {
     double listcutoff2=listcutoff*listcutoff; // squared list cutoff
     list.assign(natoms,std::vector<int>());
+// linked cells: they are used when there are at least 3 cells in every direction
+// (so that the 27 neighboring cells are distinct). Cells are slightly larger
+// than listcutoff so that rounding cannot miss a pair. The list of each atom is then
+// sorted, so that the list (and thus the forces) are identical to the O(N^2) search
+    int ncells[3];
+    bool usecells=true;
+    for(int k=0; k<3; k++) {
+      const double nc=std::floor(cell[k]/(listcutoff*(1.0+1e-6)));
+      ncells[k]=(nc<64?int(nc):64); // at most 64^3 cells, larger cells are still correct
+      if(ncells[k]<3) {
+        usecells=false;
+      }
+    }
+    if(usecells) {
+      const int ntot=ncells[0]*ncells[1]*ncells[2];
+      std::vector<int> atomcell(natoms);
+      std::vector<int> cellstart(ntot+1,0);
+      std::vector<int> cellatoms(natoms);
+      for(int iatom=0; iatom<natoms; iatom++) {
+        int c[3];
+        for(int k=0; k<3; k++) {
+          double sc=positions[iatom][k]/cell[k];
+          sc-=std::floor(sc);
+          c[k]=int(sc*ncells[k]);
+          if(c[k]>=ncells[k]) {
+            c[k]=ncells[k]-1;
+          }
+          if(c[k]<0) {
+            c[k]=0;
+          }
+        }
+        atomcell[iatom]=(c[0]*ncells[1]+c[1])*ncells[2]+c[2];
+        cellstart[atomcell[iatom]+1]++;
+      }
+      for(int ic=0; ic<ntot; ic++) {
+        cellstart[ic+1]+=cellstart[ic];
+      }
+      {
+        std::vector<int> fill(cellstart.begin(),cellstart.end()-1);
+        for(int iatom=0; iatom<natoms; iatom++) {
+          cellatoms[fill[atomcell[iatom]]++]=iatom;
+        }
+      }
+      #   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
+      for(int iatom=0; iatom<natoms-1; iatom++) {
+        const int ic=atomcell[iatom];
+        const int c0=ic/(ncells[1]*ncells[2]);
+        const int c1=(ic/ncells[2])%ncells[1];
+        const int c2=ic%ncells[2];
+        for(int d0=-1; d0<=1; d0++)
+          for(int d1=-1; d1<=1; d1++)
+            for(int d2=-1; d2<=1; d2++) {
+              const int jc=(((c0+d0+ncells[0])%ncells[0])*ncells[1]+(c1+d1+ncells[1])%ncells[1])*ncells[2]+(c2+d2+ncells[2])%ncells[2];
+              for(int jj=cellstart[jc]; jj<cellstart[jc+1]; jj++) {
+                const int jatom=cellatoms[jj];
+                if(jatom<=iatom) {
+                  continue;
+                }
+                auto distance=positions[iatom]-positions[jatom];
+                Vector distance_pbc; // minimum-image distance of the two atoms
+                pbc(cell,distance,distance_pbc);
+                if(modulo2(distance_pbc)>listcutoff2) {
+                  continue;
+                }
+                list[iatom].push_back(jatom);
+              }
+            }
+        std::sort(list[iatom].begin(),list[iatom].end());
+      }
+      return;
+    }
     #   pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static,1)
     for(int iatom=0; iatom<natoms-1; iatom++) {
       for(int jatom=iatom+1; jatom<natoms; jatom++) {
@@ -298,17 +383,19 @@ private:
   void compute_forces(const int natoms,double epsilon, double sigma,const std::vector<Vector>& positions,const double cell[3],
                       double forcecutoff,const std::vector<std::vector<int> >& list,std::vector<Vector>& forces,double & engconf) {
     double forcecutoff2=forcecutoff*forcecutoff; // squared force cutoff
-    engconf=0.0;
-    double engconf_tmp=0.0; // separate variable for reduction (gcc 4.8 does not make reductions on references)
-    for(int i=0; i<natoms; i++)
-      for(int k=0; k<3; k++) {
-        forces[i][k]=0.0;
-      }
     double engcorrection=4.0*epsilon*(1.0/std::pow(forcecutoff2/(sigma*sigma),6.0)-1.0/std::pow(forcecutoff2/(sigma*sigma),3)); // energy necessary shift the potential avoiding discontinuities
-    #   pragma omp parallel num_threads(OpenMP::getNumThreads())
+// one buffer (forces and energy) per thread: they are summed in thread order after the loop,
+// so that the result does not depend on the order in which the threads finish
+    const unsigned nt=OpenMP::getNumThreads();
+    std::vector<std::vector<Vector>> omp_forces_all(nt);
+    std::vector<double> omp_engconf_all(nt,0.0);
+    #   pragma omp parallel num_threads(nt)
     {
-      std::vector<Vector> omp_forces(forces.size());
-      #pragma omp for reduction(+:engconf_tmp) schedule(static,1) nowait
+      const unsigned tid=OpenMP::getThreadNum();
+      std::vector<Vector>& omp_forces(omp_forces_all[tid]);
+      omp_forces.assign(forces.size(),Vector(0.0,0.0,0.0));
+      double omp_engconf=0.0;
+      #pragma omp for schedule(static,1)
       for(int iatom=0; iatom<natoms-1; iatom++) {
         for(unsigned jlist=0; jlist<list[iatom].size(); jlist++) {
           const int jatom=list[iatom][jlist];
@@ -325,20 +412,28 @@ private:
           auto distance_pbcm8=distance_pbcm6*distance_pbcm2;
           auto distance_pbcm12=distance_pbcm6*distance_pbcm6;
           auto distance_pbcm14=distance_pbcm12*distance_pbcm2;
-          engconf_tmp+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
-          auto f=24.0*distance_pbc*(2.0*distance_pbcm14-distance_pbcm8)*epsilon/sigma;
+          omp_engconf+=4.0*epsilon*(distance_pbcm12 - distance_pbcm6) - engcorrection;
+// F = 24 epsilon (2 sigma^12/r^14 - sigma^6/r^8) r = 24 epsilon (2 m14 - m8) r / sigma^2, with m=sigma^2/r^2
+          auto f=24.0*distance_pbc*(2.0*distance_pbcm14-distance_pbcm8)*epsilon/(sigma*sigma);
           omp_forces[iatom]+=f;
           omp_forces[jatom]-=f;
         }
       }
-      #     pragma omp critical
-      for(unsigned i=0; i<omp_forces.size(); i++) {
-        forces[i]+=omp_forces[i];
+      omp_engconf_all[tid]=omp_engconf;
+    }
+    engconf=0.0;
+    for(int i=0; i<natoms; i++) {
+      forces[i].zero();
+    }
+    for(unsigned t=0; t<nt; t++) {
+      if(omp_forces_all[t].empty()) {
+        continue;  // this thread did not run
+      }
+      engconf+=omp_engconf_all[t];
+      for(int i=0; i<natoms; i++) {
+        forces[i]+=omp_forces_all[t][i];
       }
     }
-
-    engconf=engconf_tmp;
-
   }
 
   void compute_engkin(const int natoms,const std::vector<double>& masses,const std::vector<Vector>& velocities,double & engkin) {
@@ -377,7 +472,7 @@ private:
     } else {
       fp=std::fopen(trajfile.c_str(),"a");
     }
-    plumed_assert(fp);
+    plumed_assert(fp)<<"cannot open file "<<trajfile;
 // call fclose when fp goes out of scope
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
@@ -399,7 +494,7 @@ private:
     Vector pos;
     FILE*fp;
     fp=std::fopen(outputfile.c_str(),"w");
-    plumed_assert(fp);
+    plumed_assert(fp)<<"cannot open file "<<outputfile;
 // call fclose when fp goes out of scope
     std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
     std::fprintf(fp,"%d\n",natoms);
@@ -423,6 +518,7 @@ private:
     if(write_statistics_first) {
 // first time this routine is called, open the file
       write_statistics_fp=std::fopen(statfile.c_str(),"w");
+      plumed_assert(write_statistics_fp)<<"cannot open file "<<statfile;
       write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_first=false;
     }
@@ -430,6 +526,7 @@ private:
 // every 100 steps, reopen the file to flush the buffer
       write_statistics_fp_deleter.reset(nullptr); // close file
       write_statistics_fp=std::fopen(statfile.c_str(),"a");
+      plumed_assert(write_statistics_fp)<<"cannot open file "<<statfile;
       write_statistics_fp_deleter.reset(write_statistics_fp);
       write_statistics_last_time_reopened=istep;
     }
@@ -554,7 +651,7 @@ private:
 // setting kbT is only implemented with api>1
 // even if not necessary in principle in SimpleMD (which is part of plumed)
 // we leave the check here as a reference
-      if(pversion>1) {
+      if(pversion>1 && temperature>0.0) {
         plumed->cmd("setKbT",temperature);
       }
       plumed->cmd("init");
@@ -669,7 +766,9 @@ private:
     }
 
 // call final plumed jobs
-    plumed->cmd("runFinalJobs");
+    if(plumed) {
+      plumed->cmd("runFinalJobs");
+    }
 
 // write final positions
     write_final_positions(outputfile,natoms,positions,cell,wrapatoms);

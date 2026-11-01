@@ -92,8 +92,8 @@ public:
   virtual std::optional<std::string> init(std::string_view fmt,
                                           std::string_view fname,
                                           int command_line_natoms=-1)=0;
-  virtual std::optional<std::string> init(FILE* fileHandle) {
-    return std::nullopt;
+  virtual std::optional<std::string> init(FILE* /*fileHandle*/) {
+    return "this trajectory format cannot be read from standard input";
   };
 
   virtual std::optional<std::string> readHeader(

@@ -132,7 +132,11 @@ void Ghost::calculate() {
 
 // first versor
   Vector n01 = delta(getPosition(0), getPosition(1));
-  n[0]=n01/n01.modulo();
+  const double n01_norm = n01.modulo();
+  if(!(n01_norm>0.0)) {
+    error("the first two atoms of GHOST coincide (or have invalid positions): the local reference frame is not defined");
+  }
+  n[0]=n01/n01_norm;
 
 // auxiliary vector
   Vector n02 = delta(getPosition(0), getPosition(2));
@@ -140,6 +144,9 @@ void Ghost::calculate() {
 // second versor
   Vector n03 = crossProduct(n[0],n02);
   double n03_norm = n03.modulo();
+  if(!(n03_norm>0.0)) {
+    error("the three atoms of GHOST are collinear (or have invalid positions): the local reference frame is not defined");
+  }
   n[1]=n03/n03_norm;
 
 // third versor
@@ -157,8 +164,8 @@ void Ghost::calculate() {
   setCharge(0.0);
 
 // some useful tensors for derivatives
-  Tensor dn0d0  = (-Tensor::identity()+Tensor(n[0],n[0]))/n01.modulo();
-  Tensor dn0d1  = (+Tensor::identity()-Tensor(n[0],n[0]))/n01.modulo();
+  Tensor dn0d0  = (-Tensor::identity()+Tensor(n[0],n[0]))/n01_norm;
+  Tensor dn0d1  = (+Tensor::identity()-Tensor(n[0],n[0]))/n01_norm;
   Tensor dn02d0 = -Tensor::identity();
   Tensor dn02d2 =  Tensor::identity();
 
