@@ -432,7 +432,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
       continue ;
     }
 
-    std::size_t base = + nderper*i;
+    std::size_t base = static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i);
     if( !actiondata.no_thread_gather ) {
       output.derivatives.subview_n<3>(base) = dv1;
       output.derivatives.subview_n<3>(base+3) = -dconn;
