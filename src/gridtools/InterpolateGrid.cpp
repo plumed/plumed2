@@ -98,7 +98,7 @@ public:
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
   void calculate() override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
   // Calculate the value of the function at a grid point
   static void performTask( std::size_t task_index,
                            const EvaluateGridFunction& actiondata,
@@ -235,7 +235,7 @@ void InterpolateGrid::calculate() {
   taskmanager.runAllTasks();
 }
 
-void InterpolateGrid::getInputData( std::vector<double>& inputdata ) const {
+void InterpolateGrid::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t ndim = output_grid.getDimension();
   std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
   std::vector<double> pos( ndim );

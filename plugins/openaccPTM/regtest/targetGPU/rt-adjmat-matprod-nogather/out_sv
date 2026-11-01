@@ -1,0 +1,76 @@
+PLUMED: PLUMED is starting
+PLUMED: Version: 2.11.0-dev (git: 43e036b65-dirty) compiled on Sep 15 2026 at 16:24:29
+PLUMED: Please cite these papers when using PLUMED [1][2]
+PLUMED: For further information see the PLUMED web page at http://www.plumed.org
+PLUMED: Root: /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2/
+PLUMED: LibraryPath: /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2/src/lib/libplumedKernel.dylib
+PLUMED: For installed feature, see /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2//src/config/config.txt
+PLUMED: Molecular dynamics engine: driver
+PLUMED: Precision of reals: 8
+PLUMED: Running over 1 node
+PLUMED: Number of threads: 1
+PLUMED: Cache line size: 512
+PLUMED: Number of atoms: 14
+PLUMED: File suffix: 
+PLUMED: FILE: plumed.dat
+PLUMED: Action UNITS
+PLUMED:   with label @0
+PLUMED:   length: A = 0.1 nm
+PLUMED:   energy: kj/mol
+PLUMED:   time: ps
+PLUMED:   charge: e
+PLUMED:   mass: amu
+PLUMED:   using physical units
+PLUMED:   inside PLUMED, Boltzmann constant is 0.00831446
+PLUMED: Action CONTACT_MATRIX
+PLUMED:   with label w
+PLUMED: Action CONTACT_MATRIX_PROPER
+PLUMED:   with label w
+PLUMED:   atoms in GROUPA 1 2 
+PLUMED:   atoms in GROUPB 3 4 5 6 7 8 9 10 11 12 13 14 
+PLUMED:   Bibliography [3]
+PLUMED:   switching function cutoff is 1.  Using lepton switching function with parameters d0=0 func=1/(1+exp((x-4.3)/0.3)) 
+PLUMED: Action TRANSPOSE
+PLUMED:   with label wt
+PLUMED:   with arguments : 
+PLUMED:    matrix with label w 
+PLUMED: Action MATRIX_PRODUCT
+PLUMED:   with label m
+PLUMED: Action MATRIX_PRODUCT_CPU
+PLUMED:   with label m
+PLUMED:   with arguments : 
+PLUMED:    matrix with label w 
+PLUMED:    matrix with label wt 
+PLUMED: Action SUM
+PLUMED:   with label s
+PLUMED:   with arguments : 
+PLUMED:    matrix with label m 
+PLUMED: Action PRINT
+PLUMED:   with label @7
+PLUMED:   with stride 1
+PLUMED:   with arguments : 
+PLUMED:    scalar with label s 
+PLUMED:   on file colvar
+PLUMED:   with format  %8.4f
+PLUMED: END FILE: plumed.dat
+PLUMED: Timestep: 1.000000
+PLUMED: KbT has not been set by the MD engine
+PLUMED: It should be set by hand where needed
+PLUMED: Relevant bibliography:
+PLUMED:   [1] The PLUMED consortium, Nat. Methods 16, 670 (2019)
+PLUMED:   [2] Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)
+PLUMED:   [3] Tribello, Giberti, Sosso, Salvalaglio and Parrinello, J. Chem. Theory Comput. 13, 1317 (2017)
+PLUMED: Please read and cite where appropriate!
+PLUMED: Finished setup
+VAL 0 0 : 0.974962 
+VAL 0 1 : 0.000000 
+VAL 1 0 : 0.000000 
+VAL 1 1 : 0.924261 
+PLUMED:                                               Cycles        Total      Average      Minimum      Maximum
+PLUMED:                                                    1     0.001796     0.001796     0.001796     0.001796
+PLUMED: 1 Prepare dependencies                             1     0.000001     0.000001     0.000001     0.000001
+PLUMED: 2 Sharing data                                     1     0.000007     0.000007     0.000007     0.000007
+PLUMED: 3 Waiting for data                                 1     0.000001     0.000001     0.000001     0.000001
+PLUMED: 4 Calculating (forward loop)                       1     0.000026     0.000026     0.000026     0.000026
+PLUMED: 5 Applying (backward loop)                         1     0.000001     0.000001     0.000001     0.000001
+PLUMED: 6 Update                                           1     0.000020     0.000020     0.000020     0.000020

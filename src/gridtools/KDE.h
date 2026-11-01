@@ -323,8 +323,8 @@ public:
   void turnOnDerivatives() override ;
   void prepare() override ;
   void calculate() override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const KDEHelper<K, P, G>& actiondata,
                            ParallelActionsInput& input,
@@ -444,7 +444,7 @@ void KDE<K,P,G,myPTM>::calculate() {
 }
 
 template <class K, class P, class G, typename myPTM>
-void KDE<K,P,G,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void KDE<K,P,G,myPTM>::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t ndim = gridobject.getDimension();
   std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
   std::vector<double> pos( ndim );
@@ -461,7 +461,7 @@ void KDE<K,P,G,myPTM>::getInputData( std::vector<double>& inputdata ) const {
 }
 
 template <class K, class P, class G, typename myPTM>
-void KDE<K,P,G,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void KDE<K,P,G,myPTM>::getArgumentInputData( std::vector<float>& inputdata ) const {
   std::size_t ndim = gridobject.getDimension();
   std::size_t nstored = getConstPntrToComponent(0)->getNumberOfStoredValues();
   std::vector<double> pos( ndim );

@@ -1,0 +1,136 @@
+PLUMED: PLUMED is starting
+PLUMED: Version: 2.11.0-dev (git: c90e04149-dirty) compiled on Sep 11 2026 at 15:25:10
+PLUMED: Please cite these papers when using PLUMED [1][2]
+PLUMED: For further information see the PLUMED web page at http://www.plumed.org
+PLUMED: Root: /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2/
+PLUMED: LibraryPath: /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2/src/lib/libplumedKernel.dylib
+PLUMED: For installed feature, see /Users/garethtribello/Projects/CVception/Benchmark-htt/master/plumed2//src/config/config.txt
+PLUMED: Molecular dynamics engine: driver
+PLUMED: Precision of reals: 8
+PLUMED: Running over 1 node
+PLUMED: Number of threads: 2
+PLUMED: Cache line size: 512
+PLUMED: Number of atoms: 20
+PLUMED: File suffix: 
+PLUMED: FILE: plumed.dat
+PLUMED: Action DISTANCES
+PLUMED:   with label mols1
+PLUMED: Action GROUP
+PLUMED:   with label mols1_grp
+PLUMED:   list of atoms:
+PLUMED:  1 5
+PLUMED: Action DISTANCE
+PLUMED:   with label mols1
+PLUMED:   between atoms 1 2
+PLUMED:   between atoms 5 6
+PLUMED:   using periodic boundary conditions
+PLUMED:   added component to this action: mols1.x 
+PLUMED:   added component to this action: mols1.y 
+PLUMED:   added component to this action: mols1.z 
+PLUMED:   WARNING: components will not have the proper periodicity - see manual
+PLUMED: Action DISTANCES
+PLUMED:   with label mols2
+PLUMED: Action GROUP
+PLUMED:   with label mols2_grp
+PLUMED:   list of atoms:
+PLUMED:  9 13 17
+PLUMED: Action DISTANCE
+PLUMED:   with label mols2
+PLUMED:   between atoms 9 10
+PLUMED:   between atoms 13 14
+PLUMED:   between atoms 17 18
+PLUMED:   using periodic boundary conditions
+PLUMED:   added component to this action: mols2.x 
+PLUMED:   added component to this action: mols2.y 
+PLUMED:   added component to this action: mols2.z 
+PLUMED:   WARNING: components will not have the proper periodicity - see manual
+PLUMED: Action VSTACK
+PLUMED:   with label vecs1
+PLUMED:   with arguments : 
+PLUMED:    vector with label mols1.x 
+PLUMED:    vector with label mols1.y 
+PLUMED:    vector with label mols1.z 
+PLUMED: Action VSTACK
+PLUMED:   with label vecs2
+PLUMED:   with arguments : 
+PLUMED:    vector with label mols2.x 
+PLUMED:    vector with label mols2.y 
+PLUMED:    vector with label mols2.z 
+PLUMED: Action TRANSPOSE
+PLUMED:   with label vecs2T
+PLUMED:   with arguments : 
+PLUMED:    matrix with label vecs2 
+PLUMED: Action TORSIONS_MATRIX
+PLUMED:   with label dd
+PLUMED:   with arguments : 
+PLUMED:    matrix with label vecs1 
+PLUMED:    matrix with label vecs2T 
+PLUMED:   using positions of these atoms for vectors in first matrix 
+PLUMED:   1  5
+PLUMED:   using positions of these atoms for vectors in second matrix 
+PLUMED:   9  13  17
+PLUMED: Action ONES
+PLUMED:   with label ones
+PLUMED: Action CONSTANT
+PLUMED:   with label ones
+PLUMED:   read in 3 values :
+PLUMED: Action MATRIX_VECTOR_PRODUCT
+PLUMED:   with label cc
+PLUMED:   with arguments : 
+PLUMED:    matrix with label dd 
+PLUMED:    vector with label ones 
+PLUMED: Action SUM
+PLUMED:   with label ff
+PLUMED:   with arguments : 
+PLUMED:    vector with label cc 
+PLUMED: Action BIASVALUE
+PLUMED:   with label @17
+PLUMED:   with arguments : 
+PLUMED:    scalar with label ff 
+PLUMED:   added component to this action: @17.bias 
+PLUMED:   added component to this action: @17.ff_bias 
+PLUMED: Action PRINT
+PLUMED:   with label @18
+PLUMED:   with stride 1
+PLUMED:   with arguments : 
+PLUMED:    scalar with label ff 
+PLUMED:   on file colvar
+PLUMED:   with format  %8.4f
+PLUMED: END FILE: plumed.dat
+PLUMED: Timestep: 1.000000
+PLUMED: KbT has not been set by the MD engine
+PLUMED: It should be set by hand where needed
+PLUMED: Relevant bibliography:
+PLUMED:   [1] The PLUMED consortium, Nat. Methods 16, 670 (2019)
+PLUMED:   [2] Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)
+PLUMED: Please read and cite where appropriate!
+PLUMED: Finished setup
+FORWARD TORSION 
+INDICES 0 0 : 0 1 2 15 16 17 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 0 1 : 0 1 2 15 16 17 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 0 2 : 0 1 2 15 16 17 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+INDICES 1 0 : 3 4 5 18 19 20 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 1 1 : 3 4 5 18 19 20 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 1 2 : 3 4 5 18 19 20 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+FORWARD TORSION 
+INDICES 0 0 : 0 1 2 15 16 17 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 0 1 : 0 1 2 15 16 17 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 0 2 : 0 1 2 15 16 17 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+INDICES 1 0 : 3 4 5 18 19 20 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 1 1 : 3 4 5 18 19 20 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 1 2 : 3 4 5 18 19 20 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+FORWARD TORSION 
+INDICES 0 0 : 0 1 2 15 16 17 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 0 1 : 0 1 2 15 16 17 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 0 2 : 0 1 2 15 16 17 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+INDICES 1 0 : 3 4 5 18 19 20 6 9 12 21 22 23 30 31 32 33 34 35 36 37 38
+INDICES 1 1 : 3 4 5 18 19 20 7 10 13 24 25 26 30 31 32 33 34 35 36 37 38
+INDICES 1 2 : 3 4 5 18 19 20 8 11 14 27 28 29 30 31 32 33 34 35 36 37 38
+PLUMED:                                               Cycles        Total      Average      Minimum      Maximum
+PLUMED:                                                    1     0.001531     0.001531     0.001531     0.001531
+PLUMED: 1 Prepare dependencies                             3     0.000003     0.000001     0.000001     0.000001
+PLUMED: 2 Sharing data                                     3     0.000009     0.000003     0.000001     0.000006
+PLUMED: 3 Waiting for data                                 3     0.000003     0.000001     0.000000     0.000002
+PLUMED: 4 Calculating (forward loop)                       3     0.000323     0.000108     0.000093     0.000132
+PLUMED: 5 Applying (backward loop)                         3     0.000038     0.000013     0.000009     0.000016
+PLUMED: 6 Update                                           3     0.000031     0.000010     0.000002     0.000026
