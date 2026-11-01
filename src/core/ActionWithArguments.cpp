@@ -243,7 +243,23 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
   }
   for(unsigned i=0; i<arg.size(); ++i) {
     if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) {
-      readact->error("documentation for input type is not provided in " + readact->getName() );
+      std::string type;
+      if( arg[i]->getRank()>0 && arg[i]->hasDerivatives() ) {
+        type = "function on a grid";
+      } else if( arg[i]->getRank()==0 ) {
+        type = "scalar";
+      } else if( arg[i]->getRank()==1 ) {
+        type = "vector";
+      } else if( arg[i]->getRank()==2 ) {
+        type = "matrix";
+      } else {
+        type = "value of rank " + std::to_string(arg[i]->getRank());
+      }
+      std::string accepted;
+      for(const auto & kw : readact->keywords.getArgumentKeys() ) {
+        accepted += " " + kw + " (" + readact->keywords.getArgumentType(kw) + ")";
+      }
+      readact->error("argument " + arg[i]->getName() + " is a " + type + ", which is not accepted by " + readact->getName() + ". Accepted types:" + accepted );
     }
   }
   if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) {

@@ -168,6 +168,26 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   kbt=getkBT();
   checkRead();
 
+  bool hasFriction=false;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // the mass of the fictitious particle is KAPPA*TAU^2/(4 pi^2)
+    if(!(kappa[i]>0.0)) {
+      error("KAPPA should be positive");
+    }
+    if(!(tau[i]>0.0)) {
+      error("TAU should be positive");
+    }
+    if(friction[i]<0.0) {
+      error("FRICTION should not be negative");
+    }
+    if(friction[i]>0.0) {
+      hasFriction=true;
+    }
+  }
+  if(hasFriction && !(kbt>0.0)) {
+    log.printf("  WARNING: FRICTION without a temperature (TEMP, or passed by the MD code): the fictitious particles are cooled to zero temperature\n");
+  }
+
   log.printf("  with harmonic force constant");
   for(unsigned i=0; i<kappa.size(); i++) {
     log.printf(" %f",kappa[i]);
@@ -179,12 +199,6 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
     log.printf(" %f",tau[i]);
   }
   log.printf("\n");
-
-  bool hasFriction=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i)
-    if(friction[i]>0.0) {
-      hasFriction=true;
-    }
 
   if(hasFriction) {
     log.printf("  with friction");

@@ -286,7 +286,7 @@ public:
   void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string& defaultValue, const std::string & docstring );
   /// Create the documentation for a keyword that reads arguments
   void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string& defaultValue, const std::string & docstring );
-/// Check the documentation of the argument types
+/// Check that a value of this rank (with or without derivatives) is accepted by at least one of the keywords that read arguments
   bool checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const ;
 /// Get the valid types that can be used as argument for this keyword
   std::string getArgumentType( const std::string& name ) const ;

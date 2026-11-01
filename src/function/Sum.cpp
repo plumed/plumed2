@@ -104,7 +104,7 @@ void Sum::registerKeywords(Keywords& keys) {
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.addInputKeyword("compulsory","ARG","vector/matrix/grid","the vector/matrix/grid whose elements should be added together");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector/matrix/grid","the vector/matrix/grid whose elements should be added together (the sum of a scalar is the scalar itself)");
   keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.setValueDescription("scalar","the " + keys.getDisplayName() + " of the elements in the input value");
   keys.add("hidden","MASKED_INPUT_ALLOWED","turns on that you are allowed to use masked inputs ");

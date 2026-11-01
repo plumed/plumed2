@@ -80,12 +80,10 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
   if( rank==0 ) {
     std::vector<std::string> slope(args.size());
     parseVector("SLOPE",slope);
-    std::string slopestr="";
-    if( slope[0]!="0.0" ) {
-      slopestr="SLOPE=" + slope[0];
-      for(unsigned i=1; i<slope.size(); ++i) {
-        slopestr += "," + slope[i];
-      }
+    // all the slopes are passed: checking only the first one dropped e.g. SLOPE=0.0,1.0
+    std::string slopestr="SLOPE=" + slope[0];
+    for(unsigned i=1; i<slope.size(); ++i) {
+      slopestr += "," + slope[i];
     }
     std::string allargs=args[0];
     for(unsigned i=1; i<args.size(); ++i) {
@@ -105,7 +103,6 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
   parseVector("KAPPA",kappa);
 
   std::string biasargs, forceargs;
-  bool non_constant_force=false;
   for(unsigned i=0; i<args.size(); ++i) {
     std::string argn;
     std::size_t dot=args[i].find_first_of(".");
@@ -114,43 +111,50 @@ RestraintShortcut::RestraintShortcut(const ActionOptions&ao):
     } else {
       argn = args[i];
     }
-    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
-    double kap;
-    Tools::convert(  kappa[i], kap );
-    if( fabs(kap)>0 ) {
-      non_constant_force = true;
-      readInputLine( getShortcutLabel() + "_harm_" + argn + ": CUSTOM PERIODIC=NO FUNC=0.5*" + kappa[i] + "*x^2 ARG=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn );
-      readInputLine( getShortcutLabel() + "_f2_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*2*x+" + slope[i] + "*" + slope[i] + " ARG=" + getShortcutLabel() + "_harm_" + argn );
-      if( i==0 ) {
-        biasargs = "ARG=" + getShortcutLabel() + "_kap_" + argn;
-      } else {
-        biasargs += "," + getShortcutLabel() + "_kap_" + argn;
-      }
-      if( i==0 ) {
-        forceargs = "ARG=" + getShortcutLabel() + "_f2_" + argn;
-      } else {
-        forceargs += "," + getShortcutLabel() + "_f2_" + argn;
-      }
-    }
-    double slo;
+    double kap, slo;
+    Tools::convert( kappa[i], kap );
     Tools::convert( slope[i], slo );
-    if( fabs(slo)>0 ) {
-      readInputLine( getShortcutLabel() + "_linear_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + slope[i] + "*x ARG=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
-      if( biasargs.length()==0 ) {
-        biasargs = "ARG=" + getShortcutLabel() + "_slope_" + argn;
-      } else {
-        biasargs += "," + getShortcutLabel() + "_slope_" + argn;
-      }
+    if( kap==0 && slo==0 ) {
+      continue;
     }
+    // distance from AT: COMBINE applies the periodic boundary conditions; for a non periodic argument
+    // the difference is computed directly in the CUSTOM functions, which saves one action
+    std::vector<Value*> argvals;
+    ActionWithArguments::interpretArgumentList( std::vector<std::string>(1,args[i]), plumed.getActionSet(), this, argvals );
+    bool periodic=false;
+    for(const auto & v : argvals) {
+      periodic = periodic || v->isPeriodic();
+    }
+    std::string cvarg, cv;
+    if( periodic ) {
+      readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
+      cvarg = getShortcutLabel() + "_cv_" + argn;
+      cv = "x";
+    } else {
+      cvarg = args[i];
+      cv = "(x-(" + at[i] + "))";
+    }
+    if( kap!=0 ) {
+      readInputLine( getShortcutLabel() + "_harm_" + argn + ": CUSTOM PERIODIC=NO FUNC=0.5*" + kappa[i] + "*" + cv + "^2 ARG=" + cvarg );
+      readInputLine( getShortcutLabel() + "_kap_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_harm_" + argn );
+      biasargs += (biasargs.length()==0 ? "ARG=" : ",") + getShortcutLabel() + "_kap_" + argn;
+    }
+    if( slo!=0 ) {
+      readInputLine( getShortcutLabel() + "_linear_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + slope[i] + "*" + cv + " ARG=" + cvarg );
+      readInputLine( getShortcutLabel() + "_slope_" + argn + ": SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_linear_" + argn );
+      biasargs += (biasargs.length()==0 ? "ARG=" : ",") + getShortcutLabel() + "_slope_" + argn;
+    }
+    // squared force (k*x+m)^2, with x the distance from AT
+    readInputLine( getShortcutLabel() + "_f2_" + argn + ": CUSTOM PERIODIC=NO FUNC=((" + kappa[i] + ")*" + cv + "+(" + slope[i] + "))^2 ARG=" + cvarg );
+    forceargs += (forceargs.length()==0 ? "ARG=" : ",") + getShortcutLabel() + "_f2_" + argn;
+  }
+  if( biasargs.length()==0 ) {
+    error("all the values of KAPPA and SLOPE are zero");
   }
   // This is the bias
   readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasargs );
   readInputLine( getShortcutLabel() + ": BIASVALUE ARG=" + getShortcutLabel() + "_bias STRIDE=" + stride );
-  if( non_constant_force ) {
-    readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
-  }
+  readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceargs );
 }
 
 }

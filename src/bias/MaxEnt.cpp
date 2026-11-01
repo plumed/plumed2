@@ -53,7 +53,7 @@ $$
 Lagrangian multipliers $\lambda_{i}$ are updated, every PACE steps, according to the following update rule:
 
 $$
-\lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{exp,i}+\xi_{i}\lambda_{i}-f_{i}(\boldsymbol{x})\right)
+\lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{i}(\boldsymbol{x})+\xi_{i}(\lambda_{i})-f_{exp,i}\right)
 $$
 
 The variable $k$ in the above expression sets the initial value of the learning rate and its units are $[observable]^{-2}ps^{-1}$. This variable can be set with the keyword KAPPA.
@@ -128,7 +128,6 @@ class MaxEnt : public Bias {
   std::vector<double> tau;
   std::vector<double> avglambda;
   std::vector<double> avglambda_restart;
-  std::vector<double> expected_eps;
   std::vector<double> apply_weights;
   double sigma;
   double tstart;
@@ -147,6 +146,9 @@ class MaxEnt : public Bias {
   int learn_replica;
   Value* valueForce2;
   Value* valueWork;
+  std::vector<Value*> valueError;
+  std::vector<Value*> valueArgWork;
+  std::vector<Value*> valueCoupling;
   OFile lagmultOfile_;
   IFile ifile;
   std::string lagmultfname;
@@ -217,7 +219,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   tau(getNumberOfArguments(),getTimeStep()),
   avglambda(getNumberOfArguments(),0.0),
   avglambda_restart(getNumberOfArguments(),0.0),
-  expected_eps(getNumberOfArguments(),0.0),
   sigma(0.0),
   pace_(100),
   stride_(100),
@@ -247,12 +248,21 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(apply_weights.size()==0) {
     apply_weights.resize(nrep,1.0);
   }
+  if(apply_weights.size()!=static_cast<std::size_t>(nrep)) {
+    error("APPLY_WEIGHTS should have one value per replica");
+  }
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   parseVector("TAU",tau);
   parse("TYPE",type);
+  if(type!="EQUAL" && type!="INEQUAL<" && type!="INEQUAL>") {
+    error("TYPE should be EQUAL, INEQUAL< or INEQUAL>, found " + type);
+  }
   error_type="GAUSSIAN";
   parse("ERROR_TYPE",error_type);
+  if(error_type!="GAUSSIAN" && error_type!="LAPLACE") {
+    error("ERROR_TYPE should be GAUSSIAN or LAPLACE, found " + error_type);
+  }
   parse("ALPHA",alpha);
   parse("SIGMA",sigma);
   parse("TSTART",tstart);
@@ -261,7 +271,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   }
   parse("TEND",tend);
   if(tend<0 && tend != -1.0) {
-    error("TSTART should be a positive number");
+    error("TEND should be a positive number");
   }
   if(tend<tstart) {
     error("TEND should be >= TSTART");
@@ -329,13 +339,16 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
     comp=getPntrToArgument(i)->getName()+"_coupling";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueCoupling.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_work";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueArgWork.push_back(getPntrToComponent(comp));
     work.push_back(0.); // initialize the work value
     comp=getPntrToArgument(i)->getName()+"_error";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueError.push_back(getPntrToComponent(comp));
   }
   std::string fname;
   fname=lagmultfname;
@@ -434,7 +447,7 @@ double MaxEnt::convert_lambda(const std::string &typeName,const double lold) {
 }
 void MaxEnt::check_lambda_boundaries(const std::string &err_type,double &l) {
   if(err_type=="LAPLACE" && sigma !=0 ) {
-    double l2=convert_lambda(err_type,l);
+    double l2=convert_lambda(type,l);
     if(l2 <-(std::sqrt(alpha+1)/sigma-0.01)) {
       l=-(std::sqrt(alpha+1)/sigma-0.01);
       log.printf("Lambda exceeded the allowed range\n");
@@ -459,6 +472,11 @@ void MaxEnt::update_lambda() {
     BetaReweightBias=0.0;
   }
 
+  // the multipliers obtained at this update are part of the average if time is in [TSTART,TEND]:
+  // count them before the average is computed (at time==TEND the sum had one more term than the counter)
+  if(time>=tstart && time <=tend) {
+    avg_counter++;
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double k=kappa[i];
     double cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
@@ -485,9 +503,6 @@ void MaxEnt::update_lambda() {
     totalWork_+=work[i];
     totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);
-  };
-  if(time>=tstart && time <=tend) {
-    avg_counter++;
   }
 }
 
@@ -495,11 +510,12 @@ void MaxEnt::calculate() {
   double totf2=0.0;
   double ene=0.0;
   double KbT=simtemp;
+  valueWork->set(totalWork);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_error")->set(expected_eps[i]);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]);
-    valueWork->set(totalWork);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_coupling")->set(lambda[i]);
+    // xi(lambda) of the current multiplier (it was never computed and always printed as zero)
+    valueError[i]->set(compute_error(error_type,lambda[i]));
+    valueArgWork[i]->set(work[i]);
+    valueCoupling[i]->set(lambda[i]);
     const double f=-KbT*convert_lambda(type,lambda[i])*apply_weights[myrep];
     totf2+=f*f;
     ene+=KbT*convert_lambda(type,lambda[i])*getArgument(i)*apply_weights[myrep];
