@@ -27,6 +27,7 @@
 
 #ifdef __PLUMED_HAS_OPENACC
 #include <openacc.h>
+#include "Exception.h"
 #endif //__PLUMED_HAS_OPENACC
 
 namespace PLMD {
@@ -170,13 +171,19 @@ public:
   constexpr T *devicePtr() const {
     return reinterpret_cast<T *>(ptr_);
   }
-  /// Resizes the data stored on the device if the new size is smaller that the curent one, the memory will not be realocated
+  /// Resizes the data stored on the device. If the new size is not larger than
+  /// the allocated one the memory is not reallocated. Otherwise the old content
+  /// is lost and the allocation grows by at least 50%, so that a size that
+  /// increases a little at every step does not cause a reallocation at every
+  /// step (acc_free usually synchronizes the whole device)
   void resize(size_t sz) {
     size_=sz;
     if (size_ > stored_) {
-      stored_=size_;
+      const size_t grown=stored_+stored_/2;
+      stored_=(size_>grown)?size_:grown;
       acc_free(ptr_);
-      ptr_=acc_malloc(size_ * sizeof(T));
+      ptr_=acc_malloc(stored_ * sizeof(T));
+      plumed_massert(ptr_, "acc_malloc failed: not enough memory on the device?");
     }
   }
   /// return the current number of elements stored on the device

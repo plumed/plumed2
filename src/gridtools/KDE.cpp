@@ -253,7 +253,7 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
   std::string kerneltype;
   parse("KERNEL",kerneltype);
   if( kerneltype=="DISCRETE" ) {
-    readInputLine( getShortcutLabel() + ": KDE_DISCRETE " + (usegpuFLAG ? "ACC ":" ") + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_DISCRETE" + (usegpuFLAG ? "ACC ":" ") + convertInputLineToString() );
     return;
   }
   std::vector<std::string> args;
