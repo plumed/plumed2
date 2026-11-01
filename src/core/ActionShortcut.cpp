@@ -24,6 +24,8 @@
 #include "ActionWithValue.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include <cctype>
+#include <unordered_map>
 
 namespace PLMD {
 
@@ -220,17 +222,38 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
         }
       }
     }
+    // Index the KEY=value words once.  Looking up each numbered keyword with Tools::parse
+    // (a linear search followed by an erase in the middle of the vector) made this function
+    // quadratic in the number of numbered keywords, which dominated the set up of shortcuts
+    // such as DISTANCES with GROUPA/GROUPB (hundreds of thousands of ATOMSn keywords).
+    // As in Tools::parse, the first occurrence wins, the comparison is case insensitive and
+    // a keyword with an empty value is treated as not present.
+    auto upper = []( std::string s ) {
+      for(auto& c : s) {
+        c = static_cast<char>( std::toupper( static_cast<unsigned char>(c) ) );
+      }
+      return s;
+    };
+    std::unordered_map<std::string,std::string> wordvalues;
+    wordvalues.reserve( words.size() );
+    for(const auto& w : words ) {
+      std::size_t eq=w.find_first_of("=");
+      if( eq!=std::string::npos ) {
+        wordvalues.emplace( upper( w.substr(0,eq) ), w.substr(eq+1) );
+      }
+    }
     std::vector<unsigned> ninstances( numberedkeys.size(), 0 );
     for(unsigned j=0; j<numberedkeys.size(); ++j) {
+      const std::string ukey = upper( numberedkeys[j] );
       for(unsigned i=1;; ++i) {
-        std::string num, val;
+        std::string num;
         Tools::convert(i, num);
-        bool found = Tools::parse(words, numberedkeys[j] + num, val );
-        if( !found) {
+        auto it = wordvalues.find( ukey + num );
+        if( it==wordvalues.end() || it->second.empty() ) {
           break ;
         }
         if( i<6 ) {
-          reducedline += numberedkeys[j] + num + "=" + val + " ";
+          reducedline += numberedkeys[j] + num + "=" + it->second + " ";
         } else {
           ninstances[j]++;
         }
