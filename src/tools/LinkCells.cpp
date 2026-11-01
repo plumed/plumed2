@@ -391,8 +391,11 @@ void LinkCells::createNeighborList( unsigned nat,
     }
   }
   // Each central atom writes its own slots of nlist, so the loop is parallel
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt=(pos.size()>=minAtomsPerThread/16)?
                     std::min<unsigned>(OpenMP::getNumThreads(),pos.size()/(minAtomsPerThread/16)) : 1;
+#endif
   #pragma omp parallel num_threads(nt)
   {
     std::vector<unsigned> indices( 1+natoms_per_list );
