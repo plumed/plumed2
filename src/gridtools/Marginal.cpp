@@ -62,7 +62,7 @@ namespace gridtools {
 class MarginalInput {
 public:
 /// This is the direction we are calculating the marginal along
-  int dir;
+  int dir=0;
 /// This is the function whose marginal we are calculating
   Value* function=NULL;
 /// This is the action that calculates the function we need

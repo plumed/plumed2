@@ -541,7 +541,7 @@ namespace pamm {
 
 class HBPammMatrix {
 public:
-  double regulariser;
+  double regulariser=0.0;
   Tensor incoord_to_hbcoord;
   std::vector<double> weight;
   std::vector<Vector> centers;

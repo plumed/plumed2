@@ -126,7 +126,7 @@ You can read more about how to calculate more Behler-type symmetry functions [he
 
 class ThreeBodyGFunctionsInput {
 public:
-  bool multi_action_input;
+  bool multi_action_input=false;
   std::vector<std::string> funcstr;
   std::vector<LeptonCall> functions;
   // the assignment is customized (see below): copy construction is the default one
