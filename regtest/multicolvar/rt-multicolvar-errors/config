@@ -1,0 +1,31 @@
+type=driver
+# wrong inputs to the multicolvar shortcuts must give an error with a message that says what is wrong
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz trajectory.xyz > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/with label [^ ]* //' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "MIN without BETA" "d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 MIN={FOO=3}"
+  expect_error "MAX with a wrong BETA" "d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 MAX={beta=3 GAMMA=2}"
+  expect_error "HISTOGRAM without kernel" "d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 HISTOGRAM={NBINS=3 LOWER=0.5 UPPER=2.0}"
+  expect_error "HISTOGRAM without bins" "d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 HISTOGRAM={GAUSSIAN NBINS=0 LOWER=0.5 UPPER=2.0}"
+  expect_error "HISTOGRAM with UPPER below LOWER" "d: DISTANCES ATOMS1=1,2 ATOMS2=5,4 HISTOGRAM={GAUSSIAN NBINS=3 LOWER=2.5 UPPER=2.0}"
+  expect_error "ANGLES with GROUPB only" "a: ANGLES GROUPB=1-5 SUM"
+  expect_error "ANGLES with GROUPA only" "a: ANGLES GROUPA=1 SUM"
+  expect_error "ANGLES with two atoms" "a: ANGLES GROUP=1,2 SUM"
+  expect_error "ANGLES with GROUPC only" "a: ANGLES GROUPC=1-5 SUM"
+  expect_error "ALPHABETA without REFERENCE" "a: ALPHABETA ATOMS1=1,3,6,10 ATOMS2=2,4,7,9"
+  expect_error "INPLANEDISTANCES without VECTOREND" "a: INPLANEDISTANCES VECTORSTART=1 GROUP=3-10 SUM"
+  expect_error "COORD_ANGLES without neighbours" "a: COORD_ANGLES CATOMS=1 GROUP=1 SWITCH={RATIONAL R_0=1.0} SUM"
+  rm -f bad.dat bad.out
+}

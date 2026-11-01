@@ -150,6 +150,9 @@ AlphaBeta::AlphaBeta(const ActionOptions& ao):
       nref++;
     }
   }
+  if( refstr.length()==0 ) {
+    error("no reference values found: use REFERENCE to give the same value for all the torsions or REFERENCE1, REFERENCE2, ... to give one for each");
+  }
   std::string coeffstr;
   parse("COEFFICIENT",coeffstr);
   unsigned ncoeff=0;

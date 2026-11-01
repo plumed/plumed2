@@ -1,0 +1,24 @@
+MIN without BETA: exit code 1
+ERROR in input to action DISTANCES : did not find BETA in the specification of MIN.  Use MIN={BETA=...} 
+MAX with a wrong BETA: exit code 1
+ERROR in input to action DISTANCES : found GAMMA=2 in the specification of MAX but the only option is BETA 
+HISTOGRAM without kernel: exit code 1
+ERROR in input to action DISTANCES : did not find the kernel type (e.g. GAUSSIAN) in specification for HISTOGRAM 
+HISTOGRAM without bins: exit code 1
+ERROR in input to action DISTANCES : NBINS in specification for HISTOGRAM must be larger than zero 
+HISTOGRAM with UPPER below LOWER: exit code 1
+ERROR in input to action DISTANCES : UPPER must be larger than LOWER in specification for HISTOGRAM 
+ANGLES with GROUPB only: exit code 1
+ERROR in input to action ANGLES : found no atoms: use GROUP, GROUPA and GROUPB, or GROUPA, GROUPB and GROUPC 
+ANGLES with GROUPA only: exit code 1
+ERROR in input to action ANGLES : GROUPA must be used together with GROUPB 
+ANGLES with two atoms: exit code 1
+ERROR in input to action ANGLES : GROUP must contain at least three atoms 
+ANGLES with GROUPC only: exit code 1
+ERROR in input to action ANGLES : GROUPC must be used together with GROUPA and GROUPB 
+ALPHABETA without REFERENCE: exit code 1
+ERROR in input to action ALPHABETA : no reference values found: use REFERENCE to give the same value for all the torsions or REFERENCE1, REFERENCE2, ... to give one for each 
+INPLANEDISTANCES without VECTOREND: exit code 1
+ERROR in input to action INPLANEDISTANCES : no atoms found in VECTOREND 
+COORD_ANGLES without neighbours: exit code 1
+ERROR in input to action COORD_ANGLES : there are no atoms in GROUP that are different from the central atom 1 
