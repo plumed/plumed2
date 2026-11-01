@@ -27,7 +27,8 @@ namespace PLMD {
 
 void ActionWithMatrix::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
-  keys.addFlag("AVOID_THREAD_GATHER",false,"avoid race conditions in shared memory by doing calculations rather than using more memory");
+  keys.addFlag("AVOID_THREAD_GATHER",false,"avoid race conditions in shared memory by doing more calculations rather than using more memory");
+  keys.addFlag("DO_THREAD_GATHER",false,"do fewer calculations and use more memory");
 }
 
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
@@ -49,11 +50,22 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
     if( ignore ) {
       warning("AVOID_THREAD_GATHER flag is always activated when the calculation is run on the GPU as the calculation is much faster with this option activated");
     }
-    no_thread_gather=true;
+    bool dothreads;
+    parseFlag("DO_THREAD_GATHER",dothreads);
+    if( !dothreads ) {
+      no_thread_gather=true;
+    } else {
+      no_thread_gather=false;
+    }
   } else {
     parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
     if( OpenMP::getNumThreads()==1 ) {
       no_thread_gather = false;
+    }
+    bool ignore;
+    parseFlag("DO_THREAD_GATHER",ignore);
+    if( ignore ) {
+      warning("NO_THREAD_GATHER flag is always activated when the calculation is run on the CPU as the calculation is faster with this option activated");
     }
   }
   if( no_thread_gather && comm.Get_size()>1 ) {
