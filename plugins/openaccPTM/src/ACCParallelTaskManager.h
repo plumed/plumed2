@@ -338,7 +338,6 @@ void AccParallelTaskManager<T>::runAllTasks() {
     myinput.dataSize = input_buffer.size();
     myinput.inputdata = input_buffer.data();
     // Transfer all the bookeeping information about the arguments
-    argumentsMap.setupArguments( action );
     myinput.setupArguments( argumentsMap );
     runAllTasksACC<T>(
       actiondata,
