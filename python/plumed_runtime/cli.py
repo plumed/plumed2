@@ -1,7 +1,6 @@
 """Launch the PLUMED executable from this installation."""
 
 import os
-from pathlib import Path
 import sys
 
 from . import package_root, resource_root
