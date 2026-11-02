@@ -2,8 +2,7 @@ FROM fedora:44
 
 # note: at variance with centos7, here we have to explicitly install gcc
 RUN yum -y update \
- && yum -y group install "Development Tools" \
- && yum -y install gcc-c++ \
+ && yum -y install gcc gcc-c++ gcc-gfortran make autoconf automake libtool bison flex pkgconf-pkg-config \
  && yum -y install environment-modules gawk vim wget \
                    lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
                    python3 python3-devel python3-pip \
