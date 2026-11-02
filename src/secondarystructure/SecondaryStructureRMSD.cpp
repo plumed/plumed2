@@ -151,6 +151,10 @@ public:
 
   static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
   void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
+  SecondaryStructureRMSDInput() = default;
+  SecondaryStructureRMSDInput( const SecondaryStructureRMSDInput& m ) {
+    *this = m;
+  }
   SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
     if( this==&m ) {
       return *this;
