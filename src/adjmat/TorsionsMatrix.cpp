@@ -352,18 +352,37 @@ void TorsionsMatrix::getArgumentInputData( std::vector<float>& inputdata ) const
   }
 }
 
+// Perform one parallel task for TORSIONS_MATRIX.
+// The task index identifies a compact row in `outmat` that stores:
+// - the number of active matrix elements for this task (at offset fstart)
+// - then the column indices of those elements.
+// For each active element, this routine reads orientation vectors from ARG0/ARG1,
+// reads the corresponding atomic positions, computes the torsion, and writes
+// values/forces into the task-local output buffers.
+//
+// Data layout notes:
+// - `arg0` and `arg1` describe where the two argument matrices are stored in `input`.
+// - `nargdata` marks the end of argument data and the start of packed atomic coordinates.
+// - `gatherForceOnColumns` controls whether force contributions are accumulated by
+//   iterating primarily over columns (true) or rows (false).
 void TorsionsMatrix::performTask( std::size_t task_index,
                                   const TorsionsMatrixInput& actiondata,
                                   ParallelActionsInput& input,
                                   ParallelActionsOutput& output ) {
+  // Locate the list of matrix elements assigned to this task.
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t nelements = actiondata.outmat[fstart];
+
+  // Build bookkeeping descriptors for the two input argument matrices.
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
+
+  // Offset of packed atomic position data in the task input buffer.
   std::size_t nargdata = arg1.start + arg1.shape[0]*arg1.ncols;
 
   Vector v1, v2;
   std::vector<Vector> atom2( nelements );
+  // Two execution modes: gather force contributions on columns or on rows.
   if( actiondata.gatherForceOnColumns ) {
     std::size_t at2base = nargdata + 3*arg0.shape[0] + 3*task_index;
     Vector atom1( input.inputdata[at2base],
