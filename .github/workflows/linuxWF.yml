@@ -260,8 +260,8 @@ jobs:
       # cores. This tests the logic of the plugin (forces, virial, task manager), not device transfers,
       # asynchronous queues or GPU scheduling, which need a real GPU.
       env:
+        # not ACC_DEVICE_TYPE: PLUMED is built with libgomp, which also reads it and does not know "multicore"
         ACC_NUM_CORES: 2
-        ACC_DEVICE_TYPE: multicore
       run: |
           source sourceme.sh
           cd plugins/openaccPTM/
