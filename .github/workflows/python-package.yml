@@ -96,7 +96,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel}"
         run: |
           python -m pip install --upgrade cibuildwheel twine
-          python -m cibuildwheel "$PROJECT_DIR/python" --output-dir wheelhouse
+          python -m cibuildwheel "$PROJECT_DIR" --output-dir wheelhouse
           python -m twine check wheelhouse/*.whl
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             python -m pip install auditwheel
