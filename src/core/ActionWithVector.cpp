@@ -25,6 +25,8 @@
 #include "ActionSet.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
+#include <cstring>
+#include <algorithm>
 
 namespace PLMD {
 
@@ -255,6 +257,11 @@ void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMa
   argumentsMap.ncols.resize( argumentsMap.nargs );
   argumentsMap.bookstarts.resize( argumentsMap.nargs );
   argumentsMap.booksizes.resize( argumentsMap.nargs );
+  // Matrices whose bookkeeping was copied from the same value (e.g. the
+  // components of a function of a matrix) share one copy of it: packing and
+  // transferring (and, in the GPU task manager, comparing) 26 copies of
+  // the bookkeeping of a contact matrix was a visible part of a step
+  std::vector<int> sharedWith( argumentsMap.nargs, -1 );
   std::size_t nbook = 0;
   for(unsigned i=0; i<argumentsMap.nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
@@ -262,31 +269,42 @@ void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMa
       argumentsMap.shapedata[ts] = myarg->getShape()[j];
       ++ts;
     }
-    argumentsMap.bookstarts[i] = nbook;
     if( argumentsMap.ranks[i]==1 ) {
       argumentsMap.ncols[i] = 1;
       argumentsMap.booksizes[i] = 2*myarg->getShape()[0];
     } else if( argumentsMap.ranks[i]==2 ) {
       argumentsMap.ncols[i] = myarg->getNumberOfColumns();
       argumentsMap.booksizes[i] = myarg->matrix_bookeeping.size();
+      for(unsigned k=0; k<i; ++k) {
+        if( argumentsMap.ranks[k]==2 && argumentsMap.booksizes[k]==argumentsMap.booksizes[i]
+            && getPntrToArgument(k)->getBookeepingRoot()==myarg->getBookeepingRoot() ) {
+          sharedWith[i] = k;
+          break;
+        }
+      }
     }
-    nbook += argumentsMap.booksizes[i];
+    if( sharedWith[i]>=0 ) {
+      argumentsMap.bookstarts[i] = argumentsMap.bookstarts[sharedWith[i]];
+    } else {
+      argumentsMap.bookstarts[i] = nbook;
+      nbook += argumentsMap.booksizes[i];
+    }
   }
   argumentsMap.bookeeping.resize( nbook );
-  ts = 0;
   for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    if( sharedWith[i]>=0 ) {
+      continue;
+    }
     Value* myarg = getPntrToArgument(i);
+    std::size_t* dst = argumentsMap.bookeeping.data() + argumentsMap.bookstarts[i];
     if( argumentsMap.ranks[i]==1 ) {
       for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
-        argumentsMap.bookeeping[ts] = 1;
-        argumentsMap.bookeeping[ts+1] = 0;
-        ts += 2;
+        dst[2*j] = 1;
+        dst[2*j+1] = 0;
       }
     } else if( argumentsMap.ranks[i]==2 ) {
-      for(unsigned j=0; j<myarg->matrix_bookeeping.size(); ++j) {
-        argumentsMap.bookeeping[ts] = myarg->matrix_bookeeping[j];
-        ++ts;
-      }
+      // the bookkeeping of the value is stored as unsigned, this one as size_t
+      std::copy( myarg->matrix_bookeeping.begin(), myarg->matrix_bookeeping.end(), dst );
     }
   }
 }

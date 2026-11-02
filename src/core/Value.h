@@ -67,6 +67,9 @@ private:
   std::vector<double> data;
 /// The force acting on this quantity
   std::vector<double> inputForce;
+/// The value whose matrix bookkeeping this one was copied from (nullptr: its own).
+/// Lets the task manager pack the bookkeeping of arguments that share it once.
+  const Value* bookeeping_root=nullptr;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce=false;
 /// The way this value is used in the code
@@ -239,6 +242,8 @@ public:
   bool ignoreStoredValue(const std::string& n) const ;
 /// Set a matrix element to be non zero
   void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+/// The value that holds the original of the matrix bookkeeping of this value (see bookeeping_root)
+  const Value* getBookeepingRoot() const ;
 ///
   unsigned getRowLength( const std::size_t& irow ) const ;
 ///
@@ -498,8 +503,14 @@ bool Value::isDerivativeZeroWhenValueIsZero() const {
 }
 
 inline
+const Value* Value::getBookeepingRoot() const {
+  return bookeeping_root ? bookeeping_root : this;
+}
+
+inline
 void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
   plumed_dbg_assert( i<matrix_bookeeping.size() );
+  bookeeping_root=nullptr;
   matrix_bookeeping[i]=n;
 }
 

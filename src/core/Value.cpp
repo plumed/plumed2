@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Value.h"
+#include <cstring>
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "tools/Exception.h"
@@ -359,6 +360,7 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
     ncols=1;
   }
   unsigned size=shape[0]*ncols;
+  bookeeping_root=nullptr;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
     data.resize( size, 0 );
     inputForce.resize( size, 0 );
@@ -378,9 +380,10 @@ void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   ncols = myarg->getNumberOfColumns();
   matrix_bookeeping.resize( myarg->matrix_bookeeping.size() );
-  for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
-    matrix_bookeeping[i] = myarg->matrix_bookeeping[i];
+  if( !matrix_bookeeping.empty() ) {
+    std::memcpy( matrix_bookeeping.data(), myarg->matrix_bookeeping.data(), matrix_bookeeping.size()*sizeof(matrix_bookeeping[0]) );
   }
+  bookeeping_root = myarg->getBookeepingRoot();
   data.resize( shape[0]*ncols );
   inputForce.resize( shape[0]*ncols );
 }
