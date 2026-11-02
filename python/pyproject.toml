@@ -10,7 +10,7 @@ backend-path = ["."]
 
 [tool.cibuildwheel]
 build = ["cp311-*", "cp312-*", "cp313-*", "cp314-*", "cp315-*"]
-skip = ["pp*", "*-win32", "*-manylinux_i686", "*-musllinux*"]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
 test-command = "python {project}/test/test_bundled_wheel.py {project}/plumed_source"
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"

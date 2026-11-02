@@ -97,14 +97,6 @@ jobs:
       - name: Build and test wheels
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
-          CIBW_BUILD: "cp311-* cp312-* cp313-* cp314-* cp315-*"
-          CIBW_SKIP: "pp* *-win32 *-manylinux_i686 *-musllinux*"
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
-            tmpdir="$(mktemp -d)" &&
-            python -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' {wheel} "$tmpdir" &&
-            test -f "$tmpdir/plumed_runtime/lib/libplumedKernel.so" &&
-            AUDITWHEEL_LD_LIBRARY_PATH="$tmpdir/plumed_runtime/lib"
-            auditwheel repair -w {dest_dir} {wheel}
         run: |
           python -m pip install --upgrade cibuildwheel twine
           python -m cibuildwheel "$PROJECT_DIR" --output-dir wheelhouse

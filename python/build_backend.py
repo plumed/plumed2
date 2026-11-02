@@ -148,6 +148,20 @@ def _copy_runtime(source: Path, modules: list[str]) -> None:
 
     if sys.platform == "darwin":
         _fix_macos_load_paths(runtime_lib, runtime_bin)
+    else:
+        _check_linux_run_paths(runtime_lib, runtime_bin)
+
+
+def _check_linux_run_paths(runtime_lib: Path, runtime_bin: Path) -> None:
+    # libplumed and the executable need libplumedKernel: without a relative run
+    # path neither the loader nor auditwheel can find it inside the wheel.
+    for binary in (runtime_lib / "libplumed.so", runtime_bin / "plumed"):
+        dynamic = subprocess.check_output(["readelf", "-d", str(binary)], text=True)
+        if "$ORIGIN/../lib" not in dynamic:
+            raise RuntimeError(
+                f"{binary.name} was linked without the $ORIGIN/../lib run path:\n"
+                + dynamic
+            )
 
 
 def _fix_macos_load_paths(runtime_lib: Path, runtime_bin: Path) -> None:
@@ -282,7 +296,9 @@ def _build_runtime() -> None:
             source / "src/core/InputBuilderMetadata.inc", metadata.read_bytes()
         )
         (source / "src/core/PlumedMain.o").unlink(missing_ok=True)
-        _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source)
+        # The kernel, libplumed and the executable are linked again here:
+        # keep LD_RUN_PATH, otherwise they lose their run path.
+        _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source, env=link_env)
         _copy_runtime(source, modules)
 
 
