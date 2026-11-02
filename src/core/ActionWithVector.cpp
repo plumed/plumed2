@@ -25,6 +25,8 @@
 #include "ActionSet.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
+#include <cstring>
+#include <algorithm>
 
 namespace PLMD {
 
@@ -161,7 +163,7 @@ int ActionWithVector::checkTaskIsActive( const unsigned& itask ) const {
   return -1;
 }
 
-std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& ActionWithVector::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }
@@ -179,8 +181,15 @@ std::vector<unsigned>& ActionWithVector::getListOfActiveTasks( ActionWithVector*
   return active_tasks;
 }
 
-void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
+void ActionWithVector::getAtomicInputData( std::vector<double>& inputdata ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
+}
+
+void ActionWithVector::getAtomicInputData( std::vector<float>& inputdata ) const {
+  plumed_dbg_assert( getNumberOfAtoms()==0 );
+}
+
+void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   unsigned nmasks=getNumberOfMasks();
   // getNumberOfMasks(); returns nmask, that it is an int
@@ -201,12 +210,11 @@ void ActionWithVector::getInputData( std::vector<double>& inputdata ) const {
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    total_args+= myarg->assignValues(View{&inputdata[total_args],inputdata.size()-total_args});
+    total_args+= myarg->assignValues(View<double> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
 
-void ActionWithVector::getInputData( std::vector<float>& inputdata ) const {
-  plumed_dbg_assert( getNumberOfAtoms()==0 );
+void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) const {
   unsigned nargs = getNumberOfArguments();
   int nmasks=getNumberOfMasks();
   if( nargs>=static_cast<unsigned>(nmasks) && nmasks>0 ) {
@@ -225,55 +233,187 @@ void ActionWithVector::getInputData( std::vector<float>& inputdata ) const {
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
-      inputdata[total_args] = myarg->get(j,false);
-      total_args++;
+    total_args+= myarg->assignValues(View<float> {inputdata.data()+total_args,inputdata.size()-total_args});
+  }
+}
+
+void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMap ) const {
+  argumentsMap.nargs = getNumberOfArguments();
+  argumentsMap.ranks.resize( argumentsMap.nargs );
+  argumentsMap.shapestarts.resize( argumentsMap.nargs );
+  argumentsMap.argstarts.resize( argumentsMap.nargs );
+  std::size_t s = 0;
+  std::size_t ts = 0;
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    argumentsMap.shapestarts[i] = ts;
+    argumentsMap.ranks[i] = myarg->getRank();
+    ts += argumentsMap.ranks[i];
+    argumentsMap.argstarts[i] = s;
+    s += myarg->getNumberOfStoredValues();
+  }
+  argumentsMap.shapedata.resize( ts );
+  ts = 0;
+  argumentsMap.ncols.resize( argumentsMap.nargs );
+  argumentsMap.bookstarts.resize( argumentsMap.nargs );
+  argumentsMap.booksizes.resize( argumentsMap.nargs );
+  // Matrices whose bookkeeping was copied from the same value (e.g. the
+  // components of a function of a matrix) share one copy of it: packing and
+  // transferring (and, in the GPU task manager, comparing) 26 copies of
+  // the bookkeeping of a contact matrix was a visible part of a step
+  std::vector<int> sharedWith( argumentsMap.nargs, -1 );
+  std::size_t nbook = 0;
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    Value* myarg = getPntrToArgument(i);
+    for(unsigned j=0; j<argumentsMap.ranks[i]; ++j) {
+      argumentsMap.shapedata[ts] = myarg->getShape()[j];
+      ++ts;
+    }
+    if( argumentsMap.ranks[i]==1 ) {
+      argumentsMap.ncols[i] = 1;
+      argumentsMap.booksizes[i] = 2*myarg->getShape()[0];
+    } else if( argumentsMap.ranks[i]==2 ) {
+      argumentsMap.ncols[i] = myarg->getNumberOfColumns();
+      argumentsMap.booksizes[i] = myarg->matrix_bookeeping.size();
+      for(unsigned k=0; k<i; ++k) {
+        if( argumentsMap.ranks[k]==2 && argumentsMap.booksizes[k]==argumentsMap.booksizes[i]
+            && getPntrToArgument(k)->getBookeepingRoot()==myarg->getBookeepingRoot() ) {
+          sharedWith[i] = k;
+          break;
+        }
+      }
+    }
+    if( sharedWith[i]>=0 ) {
+      argumentsMap.bookstarts[i] = argumentsMap.bookstarts[sharedWith[i]];
+    } else {
+      argumentsMap.bookstarts[i] = nbook;
+      nbook += argumentsMap.booksizes[i];
+    }
+  }
+  argumentsMap.bookeeping.resize( nbook );
+  for(unsigned i=0; i<argumentsMap.nargs; ++i) {
+    if( sharedWith[i]>=0 ) {
+      continue;
+    }
+    Value* myarg = getPntrToArgument(i);
+    std::size_t* dst = argumentsMap.bookeeping.data() + argumentsMap.bookstarts[i];
+    if( argumentsMap.ranks[i]==1 ) {
+      for(std::size_t j=0; j<myarg->getShape()[0]; ++j) {
+        dst[2*j] = 1;
+        dst[2*j+1] = 0;
+      }
+    } else if( argumentsMap.ranks[i]==2 ) {
+      // the bookkeeping of the value is stored as unsigned, this one as size_t
+      std::copy( myarg->matrix_bookeeping.begin(), myarg->matrix_bookeeping.end(), dst );
+    }
+  }
+}
+
+void ActionWithVector::getInputData( std::vector<double>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
+  getAtomicInputData( inputdata );
+  if( getNumberOfArguments()==0 ) {
+    return;
+  }
+  // The masks are not part of the input data.  If the only arguments are masks
+  // the buffer holds the atomic data only and must not be touched: the default
+  // getArgumentInputData resizes it to the size of the (non-mask) arguments,
+  // which would discard the atomic data (and leave a null pointer on the GPU)
+  if( nmask<=0 || getNumberOfArguments()>static_cast<unsigned>(nmask) ) {
+    getArgumentInputData( inputdata );
+  }
+  copyArgumentBookeeping( argumentsMap );
+}
+
+void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBookkeeping& argumentsMap ) const {
+  getAtomicInputData( inputdata );
+  if( getNumberOfArguments()==0 ) {
+    return;
+  }
+  // The masks are not part of the input data.  If the only arguments are masks
+  // the buffer holds the atomic data only and must not be touched: the default
+  // getArgumentInputData resizes it to the size of the (non-mask) arguments,
+  // which would discard the atomic data (and leave a null pointer on the GPU)
+  if( nmask<=0 || getNumberOfArguments()>static_cast<unsigned>(nmask) ) {
+    getArgumentInputData( inputdata );
+  }
+  copyArgumentBookeeping( argumentsMap );
+}
+
+// The stash holds the values of a task contiguously ([task][component]),
+// the Values hold each component contiguously. The copies below write the
+// storage of the Values directly (ActionWithVector is a friend of Value):
+// Value::set per element, with its checks and periodicity test, was the
+// most expensive part of a step for actions with many components (the 26
+// components of the spherical harmonics on a million matrix elements).
+// The components are independent, so the loop over them is parallel.
+template <typename T>
+void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
+  const std::size_t ntask = partialTaskList.size();
+  const std::size_t ncomponents = getNumberOfComponents();
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for(std::size_t i=0; i<ncomponents; ++i) {
+    Value* myval = copyOutput(i);
+    if( myval->hasDeriv || myval->getRank()==0 ) {
+      for(std::size_t j=0; j<ntask; ++j) {
+        myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
+      }
+      continue;
+    }
+    myval->value_set=true;
+    double* d = myval->data.data();
+    plumed_dbg_massert( ntask==0 || myval->data.size()>partialTaskList[ntask-1], "failing in " + myval->getName() );
+    if( myval->isPeriodic() ) {
+      for(std::size_t j=0; j<ntask; ++j) {
+        const std::size_t t = partialTaskList[j];
+        d[t] = stash[t*ncomponents+i];
+        myval->applyPeriodicity(t);
+      }
+    } else {
+      for(std::size_t j=0; j<ntask; ++j) {
+        const std::size_t t = partialTaskList[j];
+        d[t] = stash[t*ncomponents+i];
+      }
+    }
+  }
+}
+
+template <typename T>
+void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
+  const std::size_t ntask = partialTaskList.size();
+  const std::size_t ncomponents = getNumberOfComponents();
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for(std::size_t i=0; i<ncomponents; ++i) {
+    const double* f = getConstPntrToComponent(i)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+    for(std::size_t j=0; j<ntask; ++j) {
+      const std::size_t t = partialTaskList[j];
+      stash[t*ncomponents+i] = f[t];
     }
   }
 }
 
 void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    Value* myval = copyOutput(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
-    }
-  }
+  stashToValuesImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    Value* myval = copyOutput(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
-    }
-  }
+  stashToValuesImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
-    }
-  }
+  forcesToStashImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
-    }
-  }
+  forcesToStashImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {

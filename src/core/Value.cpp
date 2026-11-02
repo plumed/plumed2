@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Value.h"
+#include <cstring>
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "tools/Exception.h"
@@ -302,6 +303,21 @@ size_t Value::assignValues(View<double> target) {
   return nvals;
 }
 
+size_t Value::assignValues(View<float> target) {
+  const auto nvals=getNumberOfStoredValues ();
+  if( hasDeriv ) {
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j*(1+ngrid_der)];
+    }
+  } else {
+    plumed_massert( data.size()>=nvals, "cannot get value from " + name );
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j];
+    }
+  }
+  return nvals;
+}
+
 void Value::addForceOutOfRange( const std::size_t& iforce ) const {
   plumed_merror( "can't add force to " + name );
 }
@@ -338,7 +354,13 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   if( shape[1]>0 && ncols>shape[1] ) {
     ncols=shape[1];
   }
+  // ncols==0 is the flag of the lower-triangular storage (see get): a sparse
+  // matrix whose rows are all empty keeps one column of storage
+  if( shape[1]>0 && ncols==0 ) {
+    ncols=1;
+  }
   unsigned size=shape[0]*ncols;
+  bookeeping_root=nullptr;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
     data.resize( size, 0 );
     inputForce.resize( size, 0 );
@@ -358,9 +380,10 @@ void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   ncols = myarg->getNumberOfColumns();
   matrix_bookeeping.resize( myarg->matrix_bookeeping.size() );
-  for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
-    matrix_bookeeping[i] = myarg->matrix_bookeeping[i];
+  if( !matrix_bookeeping.empty() ) {
+    std::memcpy( matrix_bookeeping.data(), myarg->matrix_bookeeping.data(), matrix_bookeeping.size()*sizeof(matrix_bookeeping[0]) );
   }
+  bookeeping_root = myarg->getBookeepingRoot();
   data.resize( shape[0]*ncols );
   inputForce.resize( shape[0]*ncols );
 }
@@ -525,6 +548,26 @@ bool Value::allElementsEqual() const {
     }
   }
   return true;
+}
+
+std::size_t Value::getLengthOfLongestColumn() const {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  std::vector<unsigned> column_lengths( shape[1], 0 );
+  for(unsigned i=0; i<shape[0]; ++i) {
+    unsigned nr = getRowLength(i);
+    for(unsigned j=0; j<nr; ++j) {
+      unsigned ind = getRowIndex( i, j );
+      column_lengths[ind]++;
+    }
+  }
+  // Find the longest column
+  std::size_t maxcol = column_lengths[0];
+  for(unsigned i=1; i<column_lengths.size(); ++i) {
+    if( column_lengths[i]>maxcol ) {
+      maxcol = column_lengths[i];
+    }
+  }
+  return maxcol;
 }
 
 }

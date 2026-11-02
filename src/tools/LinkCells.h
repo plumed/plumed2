@@ -183,6 +183,12 @@ public:
 /// @param pbc
 /// @param natoms_per_list *output* number of atom per list (mapped on tind) `nlist[tind[i]]=natoms[i]`
 /// @param nlist *output* list of the central atoms plus their neighbors
+/// @param applyCutoff if true only the candidates whose (minimum image) distance from the
+///        central atom is not larger than the link cell cutoff are kept. The cells are at
+///        least as wide as the cutoff, so without this the lists hold all the atoms of the
+///        27 cells around the central atom, up to ~2-3 cutoffs away: with a short cutoff
+///        in a dense system most of them are beyond it. Use it only when the quantity
+///        computed from the list is exactly zero beyond the cutoff.
   void createNeighborList( unsigned nat,
                            View<const Vector> pos,
                            View<const unsigned> ind,
@@ -191,7 +197,8 @@ public:
                            View<const unsigned> neigh_ind,
                            const Pbc& pbc,
                            unsigned& natoms_per_list,
-                           std::vector<std::size_t>& nlist ) ;
+                           std::vector<std::size_t>& nlist,
+                           const bool applyCutoff=false ) ;
 };
 
 inline

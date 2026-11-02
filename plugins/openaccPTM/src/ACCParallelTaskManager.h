@@ -168,7 +168,7 @@ public:
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
-  void applyForces( std::vector<double>& forcesForApply );
+  void applyForces( std::vector<double>& forcesForApply, bool reset_forces=true );
 };
 
 struct ACCPTM {
@@ -318,7 +318,7 @@ void runAllTasksACC(typename T::input_type actiondata,
 template <class T>
 void AccParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks( action ) );
+  std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
   unsigned nactive_tasks=partialTaskList.size();
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
@@ -329,20 +329,16 @@ void AccParallelTaskManager<T>::runAllTasks() {
   // computes all the tasks and overwrites the whole stash, which is then sent
   // to the other ranks
   if (comm.Get_rank()== 0) {
-    // the derivatives of the values are needed if a component stores them
+    // The derivatives are only ever needed during the force calculation
+    // Please stop adding a check on whether any of the methods need the derivatives
+    // they do not need the derivatives during the forward loop.
     myinput.noderiv = true;
-    for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
-      if( (action->getConstPntrToComponent(i))->hasDerivatives() ) {
-        myinput.noderiv=false;
-        break;
-      }
-    }
     // Get all the input data so we can broadcast it to the GPU
-    action->getInputData( input_buffer );
+    action->getInputData( input_buffer, argumentsMap );
     myinput.dataSize = input_buffer.size();
     myinput.inputdata = input_buffer.data();
     // Transfer all the bookeeping information about the arguments
-    argumentsMap.setupArguments( action );
+    // (argumentsMap was filled by getInputData)
     myinput.setupArguments( argumentsMap );
     runAllTasksACC<T>(
       actiondata,
@@ -375,7 +371,8 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size,
-                        AccDeviceWorkspace<precision>& ws
+                        AccDeviceWorkspace<precision>& ws,
+                        const bool reset_forces
                        ) {
   // from here on the pointers in myinput are device addresses.
   // The input data is the one of the last runAllTasks, so nothing is copied
@@ -390,11 +387,18 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 
   auto partialTaskList_data = ws.taskList.update(partialTaskList.data(), partialTaskList.size());
 
-  // the forces are cleared on the device and copied back as a whole
+  // the forces are accumulated on the device and copied back as a whole.
+  // They start from zero, or from the forces already in forcesForApply when
+  // the caller is accumulating over several calls (reset_forces=false, used
+  // when the forces on the columns of a matrix are gathered separately)
   ws.forces.resize(forcesForApply.size());
   auto forcesForApply_data = ws.forces.devicePtr();
   const auto forcesForApply_size = ws.forces.size();
-  accZeroAsync(forcesForApply_data, forcesForApply_size);
+  if( reset_forces ) {
+    accZeroAsync(forcesForApply_data, forcesForApply_size);
+  } else {
+    ws.forces.copyToDeviceAsync(forcesForApply.data(), accQueue);
+  }
   const std::size_t nind_per_scalar = ForceIndexHolder::indexesPerScalar(myinput);
 
   // Forces on entries that several tasks can touch (the "thread-unsafe" ones,
@@ -589,18 +593,20 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size,
-                        AccDeviceWorkspace<precision>& ws
+                        AccDeviceWorkspace<precision>& ws,
+                        const bool reset_forces
                        );
 #endif //__PLUMED_USE_OPENACC_FORCESMINE
 
 template <class T>
-void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply ) {
+void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, bool reset_forces ) {
   // Get the list of active tasks
-  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks( action );
+  std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   unsigned nactive_tasks=partialTaskList.size();
   // Only rank 0 uses the GPU: it computes all the forces, overwriting the
   // whole array, which is then sent to the other ranks
   if (comm.Get_rank() == 0) {
+    // the force buffer is cleared (or not, if reset_forces is false) on the device
     forceData<precision> forces(forcesForApply);
     myinput.noderiv = false;
     // Retrieve the forces from the values
@@ -614,7 +620,8 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
       nactive_tasks,
       nderivatives_per_task,
       workspace_size,
-      devws
+      devws,
+      reset_forces
     );
     forces.update();
   }

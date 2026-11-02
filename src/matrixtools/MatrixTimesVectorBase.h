@@ -300,10 +300,21 @@ void MatrixTimesVectorBase<CV, myPTM>::calculate() {
   } else {
     nvectors = getNumberOfArguments()-1;
   }
+  // Each product has a derivative for every element of the matrix row and for
+  // the vector element it multiplies: the number of columns of the sparse
+  // matrix bounds the length of a row. Sizing this with the length of the
+  // vector instead made the per-task derivative buffer of the GPU task manager
+  // quadratic in the number of atoms
+  std::size_t maxcols = 0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getNumberOfColumns()>maxcols ) {
+      maxcols = getPntrToArgument(i)->getNumberOfColumns();
+    }
+  }
   if constexpr ( helpers::isRowSum<CV>) { //getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
-    taskmanager.setupParallelTaskManager( nder, 0 );
+    taskmanager.setupParallelTaskManager( maxcols, 0 );
   } else {
-    taskmanager.setupParallelTaskManager( 2*nder, nvectors*nder );
+    taskmanager.setupParallelTaskManager( 2*maxcols, nvectors*nder );
   }
   taskmanager.runAllTasks();
 }

@@ -67,6 +67,9 @@ private:
   std::vector<double> data;
 /// The force acting on this quantity
   std::vector<double> inputForce;
+/// The value whose matrix bookkeeping this one was copied from (nullptr: its own).
+/// Lets the task manager pack the bookkeeping of arguments that share it once.
+  const Value* bookeeping_root=nullptr;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce=false;
 /// The way this value is used in the code
@@ -139,6 +142,8 @@ public:
   bool checkValueIsActiveForMMul(std::size_t task) const;
 /// A variant of get() for assigning data to an external view (assuems trueind=false), returns the number of arguments assigned
   std::size_t assignValues(View<double> target);
+/// Copy the stored values converted to single precision
+  std::size_t assignValues(View<float> target);
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -237,12 +242,16 @@ public:
   bool ignoreStoredValue(const std::string& n) const ;
 /// Set a matrix element to be non zero
   void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+/// The value that holds the original of the matrix bookkeeping of this value (see bookeeping_root)
+  const Value* getBookeepingRoot() const ;
 ///
   unsigned getRowLength( const std::size_t& irow ) const ;
 ///
   unsigned getRowIndex( std::size_t irow, std::size_t jind ) const ;
 ///
   void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
+///
+  std::size_t getLengthOfLongestColumn() const ;
 ///
   std::size_t getNumberOfColumns() const ;
 ///
@@ -494,8 +503,14 @@ bool Value::isDerivativeZeroWhenValueIsZero() const {
 }
 
 inline
+const Value* Value::getBookeepingRoot() const {
+  return bookeeping_root ? bookeeping_root : this;
+}
+
+inline
 void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
   plumed_dbg_assert( i<matrix_bookeeping.size() );
+  bookeeping_root=nullptr;
   matrix_bookeeping[i]=n;
 }
 

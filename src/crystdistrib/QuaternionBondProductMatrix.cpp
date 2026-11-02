@@ -85,7 +85,7 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
+  std::vector<unsigned>& getListOfActiveTasks() override ;
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
                            const ParallelActionsInput& input,
@@ -209,7 +209,7 @@ void QuaternionBondProductMatrix::getNumberOfTasks( unsigned& ntasks ) {
   ntasks=getPntrToComponent(0)->getNumberOfStoredValues();
 }
 
-std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }
