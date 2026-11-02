@@ -784,7 +784,8 @@ def _readkernelmetadata(kernel=None):
             return None
         buffer=array.array('i',[0])*length[0]
         p.cmd("getInputBuilderJSON",buffer)
-    syntax=json.loads(bytes(bytearray(buffer)).decode("utf-8"))
+# the kernel stores one byte per int: convert the values, not the raw memory of the array
+    syntax=json.loads(array.array('B',buffer).tobytes().decode("utf-8"))
     dictionary={}
     doc={}
     for action,entry in syntax.items():

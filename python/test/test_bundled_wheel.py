@@ -21,8 +21,15 @@ def check_kernel(kernel=None):
     p.cmd("readInputLine", "RESTRAINT ARG=d AT=0 KAPPA=1")
     positions = array.array("d", [0, 0, 0, 1, 2, 3])
     forces = array.array("d", [0, 0, 0, 0, 0, 0])
+    # a bias on atomic positions also acts on the cell (virial), so PLUMED
+    # needs the box and the virial array even when NOPBC is used
+    box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+    virial = array.array("d", [0] * 9)
+    p.cmd("setStep", 0)
+    p.cmd("setBox", box)
     p.cmd("setPositions", positions)
     p.cmd("setForces", forces)
+    p.cmd("setVirial", virial)
     p.cmd("calc")
     bias = array.array("d", [0])
     p.cmd("getBias", bias)

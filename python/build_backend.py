@@ -94,6 +94,15 @@ def _runtime_environment(source: Path) -> dict[str, str]:
     return env
 
 
+def _plumed_version(source: Path) -> str:
+    # VERSION.txt starts with comment lines
+    for line in (source / "VERSION.txt").read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            return line
+    return "unknown"
+
+
 def _copy_runtime(source: Path, modules: list[str]) -> None:
     suffix = "dylib" if sys.platform == "darwin" else "so"
     library_dir = source / "src" / "lib"
@@ -135,7 +144,7 @@ def _copy_runtime(source: Path, modules: list[str]) -> None:
     license_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source / "COPYING.LESSER", license_dir / "COPYING.LESSER")
     build_info = [
-        f"PLUMED version: {(source / 'VERSION.txt').read_text().strip()}",
+        f"PLUMED version: {_plumed_version(source)}",
         "Build system: configure/make",
         "Shared kernel: enabled",
         "MPI: disabled",
