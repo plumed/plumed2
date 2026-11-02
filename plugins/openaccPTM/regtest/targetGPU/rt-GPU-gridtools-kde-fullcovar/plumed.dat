@@ -26,7 +26,7 @@ tt: TORSIONS ...
 
 # Full covariance matrix (variances 0.04 and 0.09, covariance 0.01): this is KDE_FULLCOVAR.
 # The weights depend on the atoms, so there are forces on the centers and on the heights.
-hu: KDE HEIGHTS=d1lt2 ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.04,0.01,0.01,0.09 USEGPU
+hu: KDE HEIGHTS=d1lt2 ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.04,0.01,0.01,0.09 KERNEL={GAUSSIAN} USEGPU
 
 # The integral of the KDE mostly depends on the heights,
 # the integral of its square also depends on the positions of the kernels

@@ -99,8 +99,10 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ORIGIN","we will use the position of this atom as the origin");
   keys.add("compulsory","DIR","the direction in which to calculate the density profile");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed can be found in the documentation for KDE.");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN DMAX=" + strcut,"the switching function which is used to transform the distance from the kernel center");
+  keys.linkActionInDocs("KERNEL","LESS_THAN");
   keys.add("optional","NBINS","the number of bins to use in each direction (alternative to GRID_NBIN)");
   keys.add("optional","GRID_MIN","the lower bounds for the grid (default boxlengths)");
   keys.add("optional","GRID_MAX","the upper bounds for the grid (default boxlengths)");

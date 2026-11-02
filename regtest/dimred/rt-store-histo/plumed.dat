@@ -11,6 +11,7 @@ hCu: KDE ...
   GRID_MAX=1.0
   GRID_BIN=100
   BANDWIDTH=0.1
+  KERNEL={GAUSSIAN}
 ... 
 
 wsum: SUM ARG=www PERIODIC=NO
