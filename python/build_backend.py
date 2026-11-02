@@ -242,8 +242,13 @@ def _build_runtime() -> None:
             configure.append("--disable-absolute-install-name")
         _run(configure, cwd=source)
         jobs = str(max(1, min(4, os.cpu_count() or 1)))
-        _run(["make", "-C", "src/config"], cwd=source)
-        _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source)
+        # The runtime executable is installed under bin/ and its bundled libraries
+        # under lib/. A relative run path lets auditwheel resolve the kernel inside
+        # the wheel, and remains valid after installation at any prefix.
+        link_env = os.environ.copy()
+        link_env["LD_RUN_PATH"] = "$ORIGIN/../lib"
+        _run(["make", "-C", "src/config"], cwd=source, env=link_env)
+        _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source, env=link_env)
 
         action_list = source / "json" / "action_list"
         with action_list.open("w", encoding="utf-8") as output:
