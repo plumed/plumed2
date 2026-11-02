@@ -36,7 +36,7 @@ RUN . /etc/bashrc \
  && export PYTHON_BIN=python3 \
  && pip3 install --user -r ./python/requirements_build.txt \
  && pip3 install --user -r ./python/requirements_run.txt \
- && ./configure --enable-modules=all --enable-boost_serialization \
+ && CXXFLAGS="-Wno-error=uninitialized" ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make -j 2 check
 
