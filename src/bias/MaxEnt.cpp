@@ -209,6 +209,17 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
   keys.addDOI("10.1021/acs.jctc.6b00944");
 }
+/// Build and configure the MAXENT bias action.
+///
+/// This constructor performs all one-time setup required before the MD loop:
+/// - allocate and initialize per-argument vectors (targets, couplings, averages);
+/// - set default control parameters (PACE/STRIDE, averaging counters, flags);
+/// - read user keywords and validate sizes/ranges against the number of arguments;
+/// - configure restart/read-write of Lagrangian multipliers and output components.
+///
+/// The constructor intentionally centralizes initialization so that subsequent
+/// `calculate()`, `update()`, and `update_lambda()` calls can assume consistent
+/// dimensions, defaults, and I/O state.
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
   at(getNumberOfArguments()),
