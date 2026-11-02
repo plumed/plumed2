@@ -1,1 +1,3 @@
 build
+twine
+Cython==3.2.4
