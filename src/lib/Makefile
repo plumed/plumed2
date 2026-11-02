@@ -443,6 +443,7 @@ install/python.config: FORCE
 	@rm -f $@~
 
 install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
+                      ../../python/build_backend.py ../../python/pyproject.toml \
                       ../../python/onlyBuild.sh ../../python/README.rst ../../python/MANIFEST.in \
                       ../wrapper/Plumed.h ../../VERSION.txt ../../Makefile.conf install/python.config
 	$(MAKE) -C ../../python plumed.c

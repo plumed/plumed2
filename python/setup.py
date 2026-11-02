@@ -127,6 +127,10 @@ runtime_package_data = [
     for path in Path("plumed_runtime").rglob("*")
     if path.is_file()
 ]
+bundle_default = "0" if os.environ.get("plumed_default_kernel") else "1"
+bundle_kernel = os.environ.get("PLUMED_BUILD_KERNEL", bundle_default).lower() not in {
+    "0", "no", "false"
+}
 
 # try to import cython
 if not USE_CYTHON:
@@ -165,11 +169,9 @@ setup(
     packages=find_packages(include=["plumed_runtime", "plumed_runtime.*"]),
     include_package_data=True,
     package_data={"plumed_runtime": runtime_package_data},
-    entry_points=(
-        {"console_scripts": ["plumed=plumed_runtime.cli:main"]}
-        if os.environ.get("PLUMED_BUILD_KERNEL", "1").lower() not in {"0", "no", "false"}
-        else {}
-    ),
+    entry_points={"console_scripts": ["plumed=plumed_runtime.cli:main"]}
+    if bundle_kernel
+    else {},
     license_files=["LICENSE"],
     setup_requires=["Cython==3.2.4"] if USE_CYTHON else None,
     zip_safe=False,

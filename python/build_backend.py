@@ -55,6 +55,13 @@ def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) ->
     subprocess.run(command, cwd=cwd, env=env, check=True)
 
 
+def _bundle_kernel_enabled() -> bool:
+    setting = os.environ.get("PLUMED_BUILD_KERNEL")
+    if setting is None and os.environ.get("plumed_default_kernel"):
+        return False
+    return (setting or "1").lower() not in {"0", "no", "false"}
+
+
 def _embed_metadata(header: Path, metadata: bytes) -> None:
     # Keep each literal below the 65,536-byte minimum supported by C++ compilers.
     chunk_size = 32_000
@@ -263,12 +270,24 @@ def build_sdist(sdist_directory, config_settings=None):
 
 
 def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
-    os.environ["plumed_force_cython"] = "yes"
+    kernel_setting = os.environ.get("PLUMED_BUILD_KERNEL")
+    force_cython_setting = os.environ.get("plumed_force_cython")
+    # PLUMED's in-tree install passes plumed_default_kernel when building the
+    # traditional wrapper-only interface from a staged python/ directory.
+    bundle_kernel = _bundle_kernel_enabled()
+    if kernel_setting is None and not bundle_kernel:
+        os.environ["PLUMED_BUILD_KERNEL"] = "0"
+    if bundle_kernel and force_cython_setting is None:
+        os.environ["plumed_force_cython"] = "yes"
     try:
-        if os.environ.get("PLUMED_BUILD_KERNEL", "1").lower() not in {"0", "no", "false"}:
+        if bundle_kernel:
             _build_runtime()
         return _setuptools_backend.build_wheel(wheel_directory, config_settings, metadata_directory)
     finally:
+        if kernel_setting is None:
+            os.environ.pop("PLUMED_BUILD_KERNEL", None)
+        if force_cython_setting is None:
+            os.environ.pop("plumed_force_cython", None)
         for name in ("lib", "bin", "share", "licenses"):
             path = RUNTIME_PACKAGE / name
             if path.is_dir():
