@@ -410,7 +410,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
   for(unsigned i=0; i<nelements; ++i) {
     if( atom2[i].modulo2()<epsilon ) {
       if( !input.noderiv ) {
-        output.derivatives.subview( nderper, nderper*i ).zero();
+        output.derivatives.subview( nderper, static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i) ).zero();
       }
       continue ;
     }
