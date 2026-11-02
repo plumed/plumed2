@@ -25,11 +25,9 @@ OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
 # which runs the kernels on the host cores and needs no GPU (used by the CI to run the regtests).
 ACCTARGET ?= gpu
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$(ACCTARGET)
-ifeq ($(ACCTARGET),gpu)
-  ADDCLDFLAGS=-acc=gpu -static-nvidia
-else
-  ADDCLDFLAGS=-acc=$(ACCTARGET)
-endif
+# -static-nvidia is needed for every target: it keeps the OpenACC runtime private to the plugin. Otherwise
+# a PLUMED built with GCC and OpenMP resolves the acc_* calls of the plugin to libgomp ("libgomp: TODO").
+ADDCLDFLAGS=-acc=$(ACCTARGET) -static-nvidia
 
 # The soname must be passed to the linker as a single token: nvc++ splits
 # "-Xlinker -soname,name" at the comma and then treats "name" as an input
@@ -46,9 +44,7 @@ else
 # allocations, which fails with "Freeing of the device buffer failed ...
 # cudaErrorInvalidValue". With nodelete dlclose does not unload the plugin, and
 # the runtime is finalized at process exit, as for a statically linked code.
-  ifeq ($(ACCTARGET),gpu)
-    ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
-  endif
+  ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
 endif
 
 PLUGIN=plumedOpenACC.$(SOEXT)
