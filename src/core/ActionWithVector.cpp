@@ -210,7 +210,7 @@ void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) co
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    total_args+= myarg->assignValues(View<double>{inputdata.data()+total_args,inputdata.size()-total_args});
+    total_args+= myarg->assignValues(View<double> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
 
@@ -233,7 +233,7 @@ void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) con
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    total_args+= myarg->assignValues(View<float>{inputdata.data()+total_args,inputdata.size()-total_args});
+    total_args+= myarg->assignValues(View<float> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
 
@@ -350,7 +350,10 @@ template <typename T>
 void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
   const unsigned ntask = partialTaskList.size();
   const unsigned ncomponents = getNumberOfComponents();
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
@@ -382,7 +385,10 @@ template <typename T>
 void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
   const unsigned ntask = partialTaskList.size();
   const unsigned ncomponents = getNumberOfComponents();
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<ncomponents; ++i) {
     const double* f = getConstPntrToComponent(i)->inputForce.data();

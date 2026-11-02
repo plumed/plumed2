@@ -228,7 +228,10 @@ void ActionWithMatrix::matrixStashToValuesImpl( const std::vector<unsigned>& par
     }
   }
   const Value* first = getPntrToComponent(0);
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<nrows; ++i) {
     const unsigned row = partialTaskList[i];
@@ -285,7 +288,10 @@ void ActionWithMatrix::matrixForcesToStashImpl( const std::vector<unsigned>& par
     return;
   }
   const unsigned nrows = partialTaskList.size();
+#ifdef _OPENMP
+  // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
+#endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<nrows; ++i) {
     const unsigned row = partialTaskList[i];
