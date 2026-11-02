@@ -140,7 +140,6 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   }
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.reset_style("VERBOSE","hidden");
-  //if( keys.getDisplayName()!="SECONDARY_STRUCTURE_DRMSD" && keys.getDisplayName()!="SECONDARY_STRUCTURE_RMSD" ) {
   if constexpr ( !needsBondLength && !needsType ) {
     keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
              "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
