@@ -57,10 +57,10 @@ endif
 
 
 pypi: clean PLUMED_VERSION plumed.c
-	@echo "Building and checking Python source and wheel distributions"
-	$(python_bin) -m build --sdist --wheel .
-	$(python_bin) -m twine check dist/*
-	@echo "Artifacts are in dist/. Publish them with the configured PyPI Trusted Publishing workflow."
+	@echo "Building and checking the Python source distribution"
+	$(python_bin) -m build --sdist .
+	$(python_bin) -m twine check dist/*.tar.gz
+	@echo "The source distribution is in dist/. Release it through the configured PyPI Trusted Publishing workflow."
 
 pip: PLUMED_VERSION
 

@@ -35,6 +35,6 @@ This will allow you to mix different plumed versions in the same python script.
 Maintainer release notes
 ------------------------
 
-The ``python-package.yml`` workflow builds and validates the wheel and source distribution on pull requests and publishes both when a ``v*`` release tag is pushed. Before the first automated release, configure PyPI Trusted Publishing for the ``plumed`` project with GitHub owner ``plumed``, repository ``plumed2``, workflow ``python-package.yml``, and the GitHub environment ``pypi``. No PyPI API token is required by the workflow.
+The ``python-package.yml`` workflow builds and validates the source distribution on pull requests and publishes it when a ``v*`` release tag is pushed. Before the first automated release, configure PyPI Trusted Publishing for the ``plumed`` project with GitHub owner ``plumed``, repository ``plumed2``, workflow ``python-package.yml``, and the GitHub environment ``pypi``. For a TestPyPI rehearsal, register the same workflow and repository with the ``testpypi`` environment on TestPyPI, then run the workflow manually with ``publish_to_testpypi`` enabled. No upload token is stored in GitHub Actions.
 
 CHANGES: See the PLUMED documentation.
