@@ -91,6 +91,7 @@ if plumed_disable_rtld_deepbind is not None:
 # This fix is taken from https://github.com/pandas-dev/pandas/pull/24274/files
 if is_platform_mac:
     if "MACOSX_DEPLOYMENT_TARGET" not in os.environ:
+
         def version_tuple(value):
             return tuple(int(part) for part in re.findall(r"\d+", value))
 
