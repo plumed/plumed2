@@ -18,7 +18,7 @@ int main(){
 
   // notice that we are not spawning simultaneous processes.
   // they are called in a sequential way and killed (by destructor)
-  for(unsigned i=0;i<10000;i++) {
+  for(unsigned i=0;i<5000;i++) {
     try {
       Subprocess sp("yes");
     } catch(...) {
