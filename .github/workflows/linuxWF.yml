@@ -96,7 +96,7 @@ jobs:
 
     - name: Configure libmetatomic & libtorch
       # the libraries on PyPI are not compiled with GLIBCXX_DEBUG.
-      # -nvhpc- only checks that the openacc plugin compiles. The plugin is built with PLUMED's flags,
+      # -nvhpc- only builds PLUMED and the openacc plugin (multicore). The plugin is built with PLUMED's flags,
       # and with the C++20 these libraries need, nvc++ 24.3 stops with an internal compiler error.
       # Before C++20 was added here, configure could not enable them in this job anyway.
       if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
@@ -164,6 +164,13 @@ jobs:
       if: contains( matrix.variant, '-debug-' )
       run: |
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-debug --enable-debug-glibcxx" >> $GITHUB_ENV
+    - name: Setup nvhpc flags
+      if: contains( matrix.variant, '-nvhpc-' )
+      # The openacc plugin is compiled with -acc=multicore and uses NVIDIA's OpenMP runtime. Loaded together with
+      # the libgomp of a PLUMED built with GCC and OpenMP the two runtimes conflict (segmentation faults),
+      # so PLUMED is built without OpenMP in this job.
+      run: |
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-openmp" >> $GITHUB_ENV
     - name: Install INTEL compiler
       # install INTEL at last since it modifies CC and CXX
       if: contains( matrix.variant, '-intel-' )
