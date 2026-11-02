@@ -211,7 +211,7 @@ __We strongly recommend setting a D_MAX parameter for your kernels__.
 If you do not set a D_MAX value for your KERNEL then a cutoff of $d_{max}=\sqrt{2*6.25}\approx 3.5355$ is used. If you are calculating a 1D histogram and D_MAX is unset PLUMED
 then you evaluate a kernel at centered at $a$ on the gridpoint at $b$ if $\frac{|a-b|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$, where $s$ is the spacing between
 grid points and $\sigma$ is the bandwidth. The ceiling on the right hand side of this inequality obviously makes this s necessary but not sufficient condition for ensuring that
-$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}<d_{max}$.  In higher dimensions this becomes even more severe.  In 2D to   
+$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}<d_{max}$.  In higher dimensions this becomes even more severe.  In 2D to
 determine if we need to evaluate a kernel centered at $(a,b)$ for the grid point $(c,d)$ we first determine if $\frac{|a-c|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$ and
 if $\frac{|b-d|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$. With these tests there are many more points that satisfy these two criteria but that do not satisfy
 $\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}<d_{max}$. The key thing to recognise is that when D_MAX is set PLUMED sets the value of the kernel equal to zero if
