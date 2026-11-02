@@ -34,10 +34,6 @@ jobs:
         cache-dependency-path: .ci/requirements-codecheck.txt
     - name: Install requirements
       run: |
-        python --version
-        command -v cython
-        cython --version
-        python -m cython --version
         .ci/install.cppcheck 2.13.4
         # it is important that this is the same version used to generate the actual ./configure
         .ci/install.autoconf 2.69
