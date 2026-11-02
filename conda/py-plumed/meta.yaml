@@ -19,6 +19,9 @@ requirements:
   host:
     - python
     - pip
+    # conda-build disables pip build isolation, so the build backend must be in host
+    # (pip for python>=3.15 no longer pulls setuptools in)
+    - setuptools
   run:
     - plumed
     - python
