@@ -1,0 +1,100 @@
+name: Python package
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - v2.9
+  workflow_dispatch:
+    inputs:
+      publish_to_testpypi:
+        description: Publish the validated source distribution to TestPyPI
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and validate source distribution
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install build tools
+        run: python -m pip install --upgrade pip -r python/requirements_build.txt
+
+      - name: Check release tag version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          package_version="$(grep -v '^#' VERSION.txt | tr -d '[:space:]')"
+          tag_version="${GITHUB_REF_NAME#v}"
+          test "$package_version" = "$tag_version" || {
+            echo "Tag $tag_version does not match VERSION.txt ($package_version)" >&2
+            exit 1
+          }
+
+      - name: Build source distribution
+        run: make -C python pypi
+
+      - name: Build a wheel from the source distribution
+        run: python -m build --wheel python/pypi/dist/*.tar.gz --outdir python/pypi/wheel-check
+
+      - name: Validate distributions
+        run: python -m twine check python/pypi/dist/*.tar.gz python/pypi/wheel-check/*.whl
+
+      - name: Install and import the interface
+        run: |
+          python -m pip install --no-deps python/pypi/wheel-check/*.whl
+          python -c "import plumed; print(plumed.__file__)"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: python-package-sdist
+          path: python/pypi/dist/*.tar.gz
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
+    needs: build
+    runs-on: ubuntu-22.04
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/plumed
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: python-package-sdist
+          path: dist
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: Publish to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-22.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/plumed
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: python-package-sdist
+          path: dist
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@release/v1
