@@ -208,7 +208,7 @@ void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) co
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    total_args+= myarg->assignValues(View{&inputdata[total_args],inputdata.size()-total_args});
+    total_args+= myarg->assignValues(View<double>{inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
 
@@ -231,10 +231,7 @@ void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) con
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
-    for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
-      inputdata[total_args] = myarg->get(j,false);
-      total_args++;
-    }
+    total_args+= myarg->assignValues(View<float>{inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
 
@@ -324,48 +321,75 @@ void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBoo
   copyArgumentBookeeping( argumentsMap );
 }
 
-void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
+// The stash holds the values of a task contiguously ([task][component]),
+// the Values hold each component contiguously. The copies below write the
+// storage of the Values directly (ActionWithVector is a friend of Value):
+// Value::set per element, with its checks and periodicity test, was the
+// most expensive part of a step for actions with many components (the 26
+// components of the spherical harmonics on a million matrix elements).
+// The components are independent, so the loop over them is parallel.
+template <typename T>
+void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
+  const unsigned ntask = partialTaskList.size();
+  const unsigned ncomponents = getNumberOfComponents();
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
+    if( myval->hasDeriv || myval->getRank()==0 ) {
+      for(unsigned j=0; j<ntask; ++j) {
+        myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
+      }
+      continue;
+    }
+    myval->value_set=true;
+    double* d = myval->data.data();
+    plumed_dbg_massert( ntask==0 || myval->data.size()>partialTaskList[ntask-1], "failing in " + myval->getName() );
+    if( myval->isPeriodic() ) {
+      for(unsigned j=0; j<ntask; ++j) {
+        const unsigned t = partialTaskList[j];
+        d[t] = stash[t*ncomponents+i];
+        myval->applyPeriodicity(t);
+      }
+    } else {
+      for(unsigned j=0; j<ntask; ++j) {
+        const unsigned t = partialTaskList[j];
+        d[t] = stash[t*ncomponents+i];
+      }
     }
   }
+}
+
+template <typename T>
+void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
+  const unsigned ntask = partialTaskList.size();
+  const unsigned ncomponents = getNumberOfComponents();
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  #pragma omp parallel for num_threads(nt) schedule(static)
+  for(unsigned i=0; i<ncomponents; ++i) {
+    const double* f = getConstPntrToComponent(i)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+    for(unsigned j=0; j<ntask; ++j) {
+      const unsigned t = partialTaskList[j];
+      stash[t*ncomponents+i] = f[t];
+    }
+  }
+}
+
+void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) {
+  stashToValuesImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    Value* myval = copyOutput(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
-    }
-  }
+  stashToValuesImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<double>& stash ) const {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
-    }
-  }
+  forcesToStashImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::transferForcesToStash( const std::vector<unsigned>& partialTaskList, std::vector<float>& stash ) const {
-  unsigned ntask = partialTaskList.size();
-  unsigned ncomponents = getNumberOfComponents();
-  for(unsigned i=0; i<ncomponents; ++i) {
-    auto myval = getConstPntrToComponent(i);
-    for(unsigned j=0; j<ntask; ++j) {
-      stash[partialTaskList[j]*ncomponents+i] = myval->getForce( partialTaskList[j] );
-    }
-  }
+  forcesToStashImpl( partialTaskList, stash );
 }
 
 void ActionWithVector::getNumberOfTasks( unsigned& ntasks ) {

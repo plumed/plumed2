@@ -302,6 +302,21 @@ size_t Value::assignValues(View<double> target) {
   return nvals;
 }
 
+size_t Value::assignValues(View<float> target) {
+  const auto nvals=getNumberOfStoredValues ();
+  if( hasDeriv ) {
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j*(1+ngrid_der)];
+    }
+  } else {
+    plumed_massert( data.size()>=nvals, "cannot get value from " + name );
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j];
+    }
+  }
+  return nvals;
+}
+
 void Value::addForceOutOfRange( const std::size_t& iforce ) const {
   plumed_merror( "can't add force to " + name );
 }

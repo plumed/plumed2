@@ -60,6 +60,12 @@ protected:
   bool checkForForces();
 /// Copy all the data to the bookeeping array
   void copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMap ) const ;
+/// Implementation of transferStashToValues for both precisions
+  template <typename T>
+  void stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash );
+/// Implementation of transferForcesToStash for both precisions
+  template <typename T>
+  void forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithVector(const ActionOptions&);

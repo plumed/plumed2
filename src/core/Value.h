@@ -139,6 +139,8 @@ public:
   bool checkValueIsActiveForMMul(std::size_t task) const;
 /// A variant of get() for assigning data to an external view (assuems trueind=false), returns the number of arguments assigned
   std::size_t assignValues(View<double> target);
+/// Copy the stored values converted to single precision
+  std::size_t assignValues(View<float> target);
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic

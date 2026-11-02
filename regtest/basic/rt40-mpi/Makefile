@@ -1,1 +1,2 @@
-include ../../scripts/test.make
+include ../scripts/module.make
+

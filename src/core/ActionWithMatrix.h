@@ -83,6 +83,12 @@ protected:
   bool gatherForceOnColumns;
 /// Copy the matrix bookeeping for task list stuff from the first component
   void copyMatrixBookeepingFromFirstComponent( RequiredMatrixElements& outmat );
+/// Implementation of transferStashToValues for both precisions
+  template <typename T>
+  void matrixStashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash );
+/// Implementation of transferForcesToStash for both precisions
+  template <typename T>
+  void matrixForcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const ;
 /// Update all the arrays for doing bookeeping
   void updateBookeepingArrays( RequiredMatrixElements& mat );
 /// Get an array that tells us which indices are in each column
