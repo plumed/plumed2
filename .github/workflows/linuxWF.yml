@@ -277,6 +277,26 @@ jobs:
           make ACCTARGET=multicore -C regtest
           make -C regtest checkfail
 
+    - name: Diagnose the openacc module (only on failure)
+      # temporary: shows which OpenMP runtimes are loaded and whether rt-volume-around depends on the number of threads
+      if: failure() && contains( matrix.variant, '-nvhpc-' )
+      run: |
+          source sourceme.sh
+          cd plugins/openaccPTM/
+          echo "== OpenMP/OpenACC libraries linked by plumed, libplumedKernel and the plugin"
+          for f in $(which plumed) $(ls ../../src/lib/libplumedKernel.* 2>/dev/null) plumedOpenACC.so ; do
+            echo "-- $f"; ldd $f | grep -i -E 'omp|acc|blas|lapack' || true
+          done
+          plumed config show | grep -i -E 'openmp|blas|lapack' || true
+          echo "== rt-volume-around with 1 and with 2 cores"
+          cd regtest/targetGPU/rt-volume-around
+          for n in 1 2; do
+            make clean >/dev/null; ACC_NUM_CORES=$n make > /dev/null 2>&1 || true
+            echo "-- ACC_NUM_CORES=$n"; head -3 tmp/colvar; grep -c . tmp/err
+          done
+          make clean >/dev/null
+          NV_ACC_NOTIFY=3 NVCOMPILER_OMP_DISABLE_WARNINGS=true make 2>&1 | tail -5; sort tmp/err | uniq -c | sort -rn | head -20
+
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
