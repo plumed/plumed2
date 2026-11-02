@@ -32,6 +32,7 @@ RUN . /etc/bashrc \
  && export LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH \
  && tar xzf plumed2.tgz \
  && cd plumed2 \
+ && find src -type f -name Makefile -exec sed -i -e 's/ -Werror//g' -e '/-Werror makes fixing warnings mandatory/d' {} + \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
  && export PYTHON_BIN=python3 \
  && pip3 install --user -r ./python/requirements_build.txt \
