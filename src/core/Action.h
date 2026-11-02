@@ -439,6 +439,8 @@ void Action::parse(const std::string&key,T&t) {
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
         plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
+      } else if( def.find(" ")!=std::string::npos ) {
+        def = "{" + def + "}";
       }
       defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
