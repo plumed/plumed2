@@ -5,19 +5,20 @@ Install using the following command::
 
      python -m pip install plumed
 
-WARNING: You will need to also build and install the plumed library (see http://www.plumed.org) and make sure the file `libplumedKernel.so` (or `libplumedKernel.dylib`) is available on your system.
+The Linux and macOS wheels include a basic PLUMED kernel and the ``plumed``
+command. Linux wheels target the manylinux2014 baseline (glibc 2.17), and macOS
+wheels target macOS 10.15 or newer. The bundled kernel is used by default. You
+can select another kernel for a process with ``PLUMED_KERNEL`` or for one
+object with ``Plumed(kernel=...)``.
 
-The PyPI package contains the Python interface only. It does not include or install the PLUMED runtime kernel. Install a compatible PLUMED kernel separately and set ``PLUMED_KERNEL`` to its library path as shown below.
-
-You should then make sure the library is found setting the environment variable `PLUMED_KERNEL`::
+To override the bundled kernel for all new PLUMED objects, set `PLUMED_KERNEL`::
 
      export PLUMED_KERNEL=/path/to/libplumedKernel.so
      python
      >>> import plumed
      >>> p=plumed.Plumed()
 
-If you manage multiple plumed versions on your system using tcl environment modules, this should be taken care automatically
-by the plumed module.
+If you manage multiple PLUMED versions on your system with environment modules, setting ``PLUMED_KERNEL`` selects that external version instead of the bundled one.
 
 Alternatively, a pure python solution is::
 
@@ -30,7 +31,9 @@ Finally, notice that you can set the path to the plumed library directly when de
     >>> import plumed
     >>> p=plumed.Plumed(kernel="/path/to/libplumedKernel.so")
 
-This will allow you to mix different plumed versions in the same python script.
+This allows you to mix different PLUMED versions in the same Python script.
+
+Source builds bundle a kernel by default. Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
 
 Maintainer release notes
 ------------------------

@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build and validate distributions
+  sdist:
+    name: Build source distribution
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -48,30 +48,70 @@ jobs:
         working-directory: python
         run: python -m build --sdist
 
-      - name: Build a wheel from the source distribution
-        working-directory: python
-        run: python -m build --wheel dist/*.tar.gz --outdir dist/from-sdist
+      - uses: actions/upload-artifact@v6
+        with:
+          name: python-package-sdist
+          path: python/dist/*.tar.gz
 
-      - name: Validate distribution metadata
-        working-directory: python
-        run: python -m twine check dist/*.tar.gz dist/from-sdist/*.whl
+  wheels:
+    name: Wheels (${{ matrix.os }}, ${{ matrix.arch }})
+    needs: sdist
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-15
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
 
-      - name: Install and import the interface wheel
-        working-directory: python
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: python-package-sdist
+          path: dist
+
+      - name: Extract source distribution
         run: |
-          python -m pip install --no-deps dist/from-sdist/*.whl
-          python -c "import plumed; print(plumed.__file__)"
+          mkdir source
+          tar -xzf dist/*.tar.gz -C source
+          archive_root="$(tar -tzf dist/*.tar.gz | sed -n '1s,/.*,,p')"
+          echo "PROJECT_DIR=$PWD/source/$archive_root" >> "$GITHUB_ENV"
+
+      - name: Build and test wheels
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "pp* *-win32 *-manylinux_i686 *-musllinux*"
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel}"
+        run: |
+          python -m pip install --upgrade cibuildwheel twine
+          python -m cibuildwheel "$PROJECT_DIR/python" --output-dir wheelhouse
+          python -m twine check wheelhouse/*.whl
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install auditwheel
+            for wheel in wheelhouse/*.whl; do auditwheel show "$wheel"; done
+          fi
 
       - uses: actions/upload-artifact@v6
         with:
-          name: python-package-dist
-          path: |
-            python/dist/*.tar.gz
+          name: python-package-wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: wheelhouse/*.whl
 
   publish:
     name: Publish to PyPI
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [sdist, wheels]
     runs-on: ubuntu-24.04
     environment:
       name: pypi
@@ -81,8 +121,24 @@ jobs:
     steps:
       - uses: actions/download-artifact@v7
         with:
-          name: python-package-dist
+          pattern: python-package-sdist
           path: dist
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: python-package-wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate release artifacts
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
 
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -90,7 +146,7 @@ jobs:
   publish-testpypi:
     name: Publish to TestPyPI
     if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
-    needs: build
+    needs: [sdist, wheels]
     runs-on: ubuntu-24.04
     environment:
       name: testpypi
@@ -100,8 +156,19 @@ jobs:
     steps:
       - uses: actions/download-artifact@v7
         with:
-          name: python-package-dist
+          pattern: python-package-sdist
           path: dist
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: python-package-wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
 
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1

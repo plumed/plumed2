@@ -99,7 +99,9 @@ void GenJson::printKeywordDocs( const std::string& k, const std::string& action,
   if( mydescrip.find("\\")!=std::string::npos ) {
     error("found invalid backslash character documentation for keyword " + k + " in action " + action );
   }
-  std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<keys.numbered(k);
+  const bool is_numbered=keys.numbered(k);
+  std::cout<<"       \""<<k<<"\" : { \"type\": \""<<keys.getStyle(k)<<"\", \"description\": \""<<mydescrip<<"\", \"multiple\": "<<is_numbered
+           <<", \"numbered\": { \"enabled\": "<<(is_numbered ? "true" : "false")<<", \"suffix\": \"decimal\" }";
   std::string actlink=keys.getLinkedActions(k);
   if( actlink.length()>0 ) {
     std::cout<<", \"actionlink\": \""<<actlink<<"\"";

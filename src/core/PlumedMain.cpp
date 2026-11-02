@@ -71,6 +71,14 @@
 #include <variant>
 #include <filesystem>
 
+#if __has_include("InputBuilderMetadata.inc")
+#include "InputBuilderMetadata.inc"
+#else
+static constexpr std::size_t inputBuilderMetadataJSONSize = 0;
+static constexpr std::size_t inputBuilderMetadataJSONChunkSize = 1;
+static constexpr char inputBuilderMetadataJSONChunks[1][1] = {{0}};
+#endif
+
 namespace PLMD {
 
 namespace {
@@ -778,6 +786,27 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         val.set(int(10));
         break;
+      case cmd_getInputBuilderJSONLength:
+        CHECK_NOTNULL(val,word);
+        val.set(static_cast<int>(inputBuilderMetadataJSONSize));
+        break;
+      case cmd_getInputBuilderJSON: {
+        CHECK_NOTNULL(val,word);
+        const std::size_t size=inputBuilderMetadataJSONSize;
+        if(size==0) {
+          plumed_merror("this PLUMED kernel was built without embedded InputBuilder metadata");
+        }
+        if(val.getNelem()<size) {
+          plumed_merror("buffer passed to getInputBuilderJSON is too small");
+        }
+        int* buffer=val.get<int*>(static_cast<int>(size));
+        for(std::size_t i=0; i<size; ++i) {
+          const std::size_t chunk=i/inputBuilderMetadataJSONChunkSize;
+          const std::size_t offset=i%inputBuilderMetadataJSONChunkSize;
+          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSONChunks[chunk][offset]);
+        }
+      }
+      break;
       // commands which can be used only before initialization:
       case cmd_init:
         CHECK_NOTINIT(initialized,word);

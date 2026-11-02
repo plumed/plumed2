@@ -32,6 +32,7 @@ import array
 import re
 import gzip
 import math
+import os
 import sys
 import warnings
 import types
@@ -66,6 +67,17 @@ class PlumedError(RuntimeError):
 class LeptonError(RuntimeError):
   pass
 
+def _bundled_kernel_path():
+    """Return the installed private kernel path, if this is a bundled wheel."""
+    suffix = ".dylib" if sys.platform == "darwin" else ".so"
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "plumed_runtime",
+        "lib",
+        "libplumedKernel" + suffix,
+    )
+    return path if os.path.isfile(path) else None
+
 cdef class Plumed:
      cdef cplumed.plumed c_plumed
      #cdef int initialized #not used
@@ -81,18 +93,29 @@ cdef class Plumed:
      def __init__(self,kernel=None):
          cdef bytes py_kernel
          cdef char* ckernel
-         if kernel is None:
+         if kernel is None and os.environ.get("PLUMED_KERNEL"):
             cplumed.plumed_finalize(self.c_plumed)
             self.c_plumed=cplumed.plumed_create()
             if not cplumed.plumed_valid(self.c_plumed):
-                 raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
+                 raise RuntimeError("Error loading PLUMED_KERNEL at path " + os.environ["PLUMED_KERNEL"])
          else:
-            py_kernel= kernel.encode() + b'\x00'  # Explicitly add null terminator
-            ckernel = py_kernel
-            cplumed.plumed_finalize(self.c_plumed)
-            self.c_plumed=cplumed.plumed_create_dlopen(ckernel)
-            if not cplumed.plumed_valid(self.c_plumed):
-                 raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
+            if kernel is None:
+                kernel=_bundled_kernel_path()
+            if kernel is None:
+                cplumed.plumed_finalize(self.c_plumed)
+                self.c_plumed=cplumed.plumed_create()
+                if not cplumed.plumed_valid(self.c_plumed):
+                    raise RuntimeError("PLUMED not available, check your PLUMED_KERNEL environment variable")
+            else:
+                kernel=os.fspath(kernel)
+                if not isinstance(kernel,str):
+                    raise TypeError("kernel must be a path string or path-like object")
+                py_kernel= kernel.encode() + b'\x00'  # Explicitly add null terminator
+                ckernel = py_kernel
+                cplumed.plumed_finalize(self.c_plumed)
+                self.c_plumed=cplumed.plumed_create_dlopen(ckernel)
+                if not cplumed.plumed_valid(self.c_plumed):
+                    raise RuntimeError("Error loading PLUMED kernel at path " + kernel)
          api=array.array('i',[0])
          self.cmd( "getApiVersion", api)
          if(api[0]>=10):
@@ -745,6 +768,47 @@ def _guessplumedroot(kernel=None):
     import subprocess
     return subprocess.check_output(["plumed","--no-mpi","info","--root"]).decode("utf-8").rstrip()
 
+def _readkernelmetadata(kernel=None):
+    """Read InputBuilder metadata directly from a kernel that supports the API.
+
+       Return None for older kernels so callers can use their installed Vim files.
+    """
+    import json
+    with Plumed(kernel) as p:
+        length=array.array('i',[0])
+        try:
+            p.cmd("getInputBuilderJSONLength",length)
+        except Exception:
+            return None
+        if length[0]<=0:
+            return None
+        buffer=array.array('i',[0])*length[0]
+        p.cmd("getInputBuilderJSON",buffer)
+    syntax=json.loads(bytes(bytearray(buffer)).decode("utf-8"))
+    dictionary={}
+    doc={}
+    for action,entry in syntax.items():
+        if not isinstance(entry,dict) or not isinstance(entry.get("syntax"),dict):
+            continue
+        dictionary[action]={}
+        doc[action]=entry.get("help",entry.get("description",""))
+        for name,keyword in entry["syntax"].items():
+            if not isinstance(keyword,dict) or "type" not in keyword:
+                continue
+            if keyword["type"]=="hidden":
+                continue
+            numbered=keyword.get("numbered",keyword.get("multiple",False))
+            if isinstance(numbered,dict):
+                numbered=numbered.get("enabled",False)
+            if numbered:
+                menu="(numbered)"
+            elif keyword["type"]=="flag":
+                menu="(flag)"
+            else:
+                menu="(option)"
+            dictionary[action][name]=menu
+    return dictionary,doc
+
 def _readvimdict(plumedroot=None,kernel=None):
     """Read VIM dictionary given the path to PLUMED root and return (dictionary,doc).
 
@@ -1158,7 +1222,11 @@ class InputBuilder:
         self._post_format=post_format
         if load_dict:
             # stored for debugging:
-            self._vimdict,self._doc=_readvimdict(kernel=kernel)
+            metadata=_readkernelmetadata(kernel=kernel)
+            if metadata is None:
+                self._vimdict,self._doc=_readvimdict(kernel=kernel)
+            else:
+                self._vimdict,self._doc=metadata
             # stored for debugging:
             self._functions=_create_functions(self._vimdict,doc=self._doc,append_underscores=append_underscores)
             for action in self._functions:

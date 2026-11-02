@@ -1,5 +1,8 @@
 include PLUMED_VERSION
 include include/Plumed.h
 include plumed.c
+include LICENSE
 #this should be refined
 include test/*
+recursive-include plumed_runtime *
+recursive-include plumed_source *

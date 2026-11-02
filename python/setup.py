@@ -24,9 +24,11 @@
 #
 from setuptools import setup
 from setuptools import Extension
+from setuptools import find_packages
 import subprocess
 import os
 import os.path
+from pathlib import Path
 import sys
 import platform
 import sysconfig
@@ -120,6 +122,12 @@ if not USE_CYTHON:
         print("plumed.c not found, cython is needed")
         USE_CYTHON = True
 
+runtime_package_data = [
+    str(path.relative_to("plumed_runtime"))
+    for path in Path("plumed_runtime").rglob("*")
+    if path.is_file()
+]
+
 # try to import cython
 if not USE_CYTHON:
     print("using available plumed.c file")
@@ -154,6 +162,15 @@ setup(
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
+    packages=find_packages(include=["plumed_runtime", "plumed_runtime.*"]),
+    include_package_data=True,
+    package_data={"plumed_runtime": runtime_package_data},
+    entry_points=(
+        {"console_scripts": ["plumed=plumed_runtime.cli:main"]}
+        if os.environ.get("PLUMED_BUILD_KERNEL", "1").lower() not in {"0", "no", "false"}
+        else {}
+    ),
+    license_files=["LICENSE"],
     setup_requires=["Cython==3.2.4"] if USE_CYTHON else None,
     zip_safe=False,
     # this will be deprecated shortly
