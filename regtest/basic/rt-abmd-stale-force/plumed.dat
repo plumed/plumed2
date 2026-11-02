@@ -1,0 +1,3 @@
+d: DISTANCE ATOMS=1,2 NOPBC
+abmd: ABMD ARG=d TO=0 KAPPA=1 NOISE=0 SEED=123
+PRINT ARG=d,abmd.bias,abmd.force2,abmd.d_min FILE=colvar STRIDE=1

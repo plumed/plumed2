@@ -2477,13 +2477,13 @@ private:
     }
   add_buffer_to(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT:
     T(other) {
-      init(other.message);
+      __PLUMED_WRAPPER_STD memcpy(message,other.message,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
     }
     add_buffer_to & operator=(const add_buffer_to & other) __PLUMED_WRAPPER_CXX_NOEXCEPT {
       if(this==&other) {
         return *this;
       }
-      init(other.message);
+      __PLUMED_WRAPPER_STD memcpy(message,other.message,__PLUMED_WRAPPER_CXX_EXCEPTION_BUFFER);
       return *this;
     }
     const char* what() const __PLUMED_WRAPPER_CXX_NOEXCEPT __PLUMED_WRAPPER_CXX_OVERRIDE {
