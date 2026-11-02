@@ -254,13 +254,21 @@ jobs:
         echo "NVCC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
         echo "NVFC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
 
-    - name: check if the openacc module can be compiled
+    - name: Build and test the openacc module (on the host cores)
       if: contains( matrix.variant, '-nvhpc-' )
+      # The runners have no GPU, so the plugin is compiled with -acc=multicore: the kernels run on the CPU
+      # cores. This tests the logic of the plugin (forces, virial, task manager), not device transfers,
+      # asynchronous queues or GPU scheduling, which need a real GPU.
+      env:
+        ACC_NUM_CORES: 2
+        ACC_DEVICE_TYPE: multicore
       run: |
           source sourceme.sh
           cd plugins/openaccPTM/
           ./configure
-          NVCXX=$NVCXX make
+          NVCXX=$NVCXX make ACCTARGET=multicore -j 4
+          make ACCTARGET=multicore -C regtest
+          make -C regtest checkfail
 
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}

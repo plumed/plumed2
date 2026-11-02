@@ -21,8 +21,15 @@ TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingF
 #this makes make search for files in src
 VPATH = src
 OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
-ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
-ADDCLDFLAGS=-acc -static-nvidia
+# ACCTARGET selects what the OpenACC code is compiled for: "gpu" (default) or "multicore",
+# which runs the kernels on the host cores and needs no GPU (used by the CI to run the regtests).
+ACCTARGET ?= gpu
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$(ACCTARGET)
+ifeq ($(ACCTARGET),gpu)
+  ADDCLDFLAGS=-acc=gpu -static-nvidia
+else
+  ADDCLDFLAGS=-acc=$(ACCTARGET)
+endif
 
 # The soname must be passed to the linker as a single token: nvc++ splits
 # "-Xlinker -soname,name" at the comma and then treats "name" as an input
@@ -39,7 +46,9 @@ else
 # allocations, which fails with "Freeing of the device buffer failed ...
 # cudaErrorInvalidValue". With nodelete dlclose does not unload the plugin, and
 # the runtime is finalized at process exit, as for a statically linked code.
-  ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
+  ifeq ($(ACCTARGET),gpu)
+    ADDCLDFLAGS+=-Xlinker -z -Xlinker nodelete
+  endif
 endif
 
 PLUGIN=plumedOpenACC.$(SOEXT)
