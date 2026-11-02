@@ -158,5 +158,5 @@ setup(
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',
-    python_requires=">=3.11",
+    python_requires=">=3.10",
 )
