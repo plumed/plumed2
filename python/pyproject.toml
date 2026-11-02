@@ -1,10 +1,15 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "Cython==3.2.4"]
+requires = [
+    "setuptools>=68",
+    "wheel",
+    "Cython==3.2.4; python_version < '3.15'",
+    "Cython==3.3.1; python_version >= '3.15'",
+]
 build-backend = "build_backend"
 backend-path = ["."]
 
 [tool.cibuildwheel]
-build = ["cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+build = ["cp311-*", "cp312-*", "cp313-*", "cp314-*", "cp315-*"]
 skip = ["pp*", "*-win32", "*-manylinux_i686", "*-musllinux*"]
 test-command = "python {project}/test/test_bundled_wheel.py {project}/plumed_source"
 manylinux-x86_64-image = "manylinux2014"

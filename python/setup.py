@@ -161,7 +161,11 @@ setup(
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Physics",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
     ],
     license="LGPL-3.0-or-later",
     author="Gareth A. Tribello",
@@ -175,9 +179,9 @@ setup(
     if bundle_kernel
     else {},
     license_files=["LICENSE"],
-    setup_requires=["Cython==3.2.4"] if USE_CYTHON else None,
+    setup_requires=["Cython"] if USE_CYTHON else None,
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',
-    python_requires=">=3.10",
+    python_requires=">=3.11",
 )

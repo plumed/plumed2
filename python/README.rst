@@ -5,8 +5,8 @@ Install using the following command::
 
      python -m pip install plumed
 
-The Linux and macOS wheels include a basic PLUMED kernel and the ``plumed``
-command. Linux wheels target the manylinux2014 baseline (glibc 2.17), and macOS
+The package supports CPython 3.11 through 3.15. The Linux and macOS wheels
+include a basic PLUMED kernel and the ``plumed`` command. Linux wheels target the manylinux2014 baseline (glibc 2.17), and macOS
 wheels target macOS 10.15 or newer. The bundled kernel is used by default. You
 can select another kernel for a process with ``PLUMED_KERNEL`` or for one
 object with ``Plumed(kernel=...)``.
