@@ -21,8 +21,13 @@ TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingF
 #this makes make search for files in src
 VPATH = src
 OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
-ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc -acc="gpu"
-ADDCLDFLAGS=-acc -static-nvidia
+# ACCTARGET selects what the OpenACC code is compiled for: "gpu" (default), "multicore" or "host".
+# "host" runs the kernels serially on the CPU and needs no GPU nor OpenMP runtime (used by the CI to run the regtests).
+ACCTARGET ?= gpu
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$(ACCTARGET)
+# -static-nvidia is needed for every target: it keeps the OpenACC runtime private to the plugin. Otherwise
+# a PLUMED built with GCC and OpenMP resolves the acc_* calls of the plugin to libgomp ("libgomp: TODO").
+ADDCLDFLAGS=-acc=$(ACCTARGET) -static-nvidia
 
 # The soname must be passed to the linker as a single token: nvc++ splits
 # "-Xlinker -soname,name" at the comma and then treats "name" as an input
