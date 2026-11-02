@@ -1,4 +1,4 @@
-FROM rockylinux/rockylinux:8
+FROM rockylinux/rockylinux:8.10
 
 RUN yum -y update \
  && yum -y install dnf-plugins-core \
@@ -15,17 +15,18 @@ USER plumed
 WORKDIR /home/plumed
 
 #Install python with --embedded enabled
-RUN PYVERSION="3.9.16" \
+RUN PYVERSION="3.11.18" \
  && curl -LO https://www.python.org/ftp/python/${PYVERSION}/Python-${PYVERSION}.tgz \
  && tar xzf Python-${PYVERSION}.tgz \
  && cd Python-${PYVERSION} \
- && ./configure --enable-shared --prefix=$HOME/.local \
+ && ./configure --enable-shared --with-ensurepip=install --prefix=$HOME/.local \
  && make -j 4 \
- && make install \
+ && make altinstall \
+ && echo "export PATH=$HOME/.local/bin:$PATH" >> "$HOME/.bashrc" \
  && echo "export LD_LIBRARY_PATH=$HOME/.local/lib/${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}" >> "$HOME/.bashrc"
 
 RUN . ./.bashrc \
- && pip3 install --user -U pip
+ && $HOME/.local/bin/python3.11 -m pip install --upgrade pip
 
 # import plumed code.
 # assumes a file plumed2.tgz is present in the Dockerfile directory
@@ -47,9 +48,9 @@ RUN . ./.bashrc \
  && tar xzf plumed2.tgz \
  && cd plumed2 \
  && export PYTHONPATH=$PWD/python:$PYTHONPATH \
- && export PYTHON_BIN=python3 \
- && pip3 install --user -r ./python/requirements_build.txt \
- && pip3 install --user -r ./python/requirements_run.txt \
+ && export PYTHON_BIN=$HOME/.local/bin/python3.11 \
+ && $HOME/.local/bin/python3.11 -m pip install --user -r ./python/requirements_build.txt \
+ && $HOME/.local/bin/python3.11 -m pip install --user -r ./python/requirements_run.txt \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make -j 2 check

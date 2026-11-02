@@ -19,11 +19,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # fedora39 (gcc 13)
-        # rockylinux8
+        # Current Fedora plus supported Rocky Linux 8/9 lines.
         variant:
-        - fedora39
+        - fedora44
         - rocky8
+        - rocky9
     steps:
     - uses: actions/checkout@v6
     - name: Build and run tests
