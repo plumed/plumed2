@@ -40,11 +40,12 @@ endif
 .PHONY: pypi
 
 pypi:
+	rm -rf pypi
 	mkdir -p pypi
 	mkdir -p pypi/include
 	cp -r test pypi/
 	cp ../src/wrapper/Plumed.h pypi/include/
-	cp README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py pypi/
+	cp README.rst MANIFEST.in cplumed.pxd plumed.pyx setup.py pyproject.toml pypi/
 	cp ../VERSION.txt pypi/PLUMED_VERSION
-	cd pypi ; $(python_bin) setup.py sdist
-	echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
+	cd pypi ; $(python_bin) -m build --sdist .
+	$(python_bin) -m twine check pypi/dist/*.tar.gz
