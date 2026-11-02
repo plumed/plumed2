@@ -298,7 +298,7 @@ void ActionWithVector::copyArgumentBookeeping( ArgumentsBookkeeping& argumentsMa
     Value* myarg = getPntrToArgument(i);
     std::size_t* dst = argumentsMap.bookeeping.data() + argumentsMap.bookstarts[i];
     if( argumentsMap.ranks[i]==1 ) {
-      for(unsigned j=0; j<myarg->getShape()[0]; ++j) {
+      for(std::size_t j=0; j<myarg->getShape()[0]; ++j) {
         dst[2*j] = 1;
         dst[2*j+1] = 0;
       }
@@ -348,17 +348,17 @@ void ActionWithVector::getInputData( std::vector<float>& inputdata, ArgumentsBoo
 // The components are independent, so the loop over them is parallel.
 template <typename T>
 void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
-  const unsigned ntask = partialTaskList.size();
-  const unsigned ncomponents = getNumberOfComponents();
+  const std::size_t ntask = partialTaskList.size();
+  const std::size_t ncomponents = getNumberOfComponents();
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
 #endif
   #pragma omp parallel for num_threads(nt) schedule(static)
-  for(unsigned i=0; i<ncomponents; ++i) {
+  for(std::size_t i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
     if( myval->hasDeriv || myval->getRank()==0 ) {
-      for(unsigned j=0; j<ntask; ++j) {
+      for(std::size_t j=0; j<ntask; ++j) {
         myval->set( partialTaskList[j], stash[partialTaskList[j]*ncomponents+i] );
       }
       continue;
@@ -367,14 +367,14 @@ void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTa
     double* d = myval->data.data();
     plumed_dbg_massert( ntask==0 || myval->data.size()>partialTaskList[ntask-1], "failing in " + myval->getName() );
     if( myval->isPeriodic() ) {
-      for(unsigned j=0; j<ntask; ++j) {
-        const unsigned t = partialTaskList[j];
+      for(std::size_t j=0; j<ntask; ++j) {
+        const std::size_t t = partialTaskList[j];
         d[t] = stash[t*ncomponents+i];
         myval->applyPeriodicity(t);
       }
     } else {
-      for(unsigned j=0; j<ntask; ++j) {
-        const unsigned t = partialTaskList[j];
+      for(std::size_t j=0; j<ntask; ++j) {
+        const std::size_t t = partialTaskList[j];
         d[t] = stash[t*ncomponents+i];
       }
     }
@@ -383,18 +383,18 @@ void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTa
 
 template <typename T>
 void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
-  const unsigned ntask = partialTaskList.size();
-  const unsigned ncomponents = getNumberOfComponents();
+  const std::size_t ntask = partialTaskList.size();
+  const std::size_t ncomponents = getNumberOfComponents();
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt = OpenMP::getGoodNumThreads( stash );
 #endif
   #pragma omp parallel for num_threads(nt) schedule(static)
-  for(unsigned i=0; i<ncomponents; ++i) {
+  for(std::size_t i=0; i<ncomponents; ++i) {
     const double* f = getConstPntrToComponent(i)->inputForce.data();
     plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
-    for(unsigned j=0; j<ntask; ++j) {
-      const unsigned t = partialTaskList[j];
+    for(std::size_t j=0; j<ntask; ++j) {
+      const std::size_t t = partialTaskList[j];
       stash[t*ncomponents+i] = f[t];
     }
   }

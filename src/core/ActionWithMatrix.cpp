@@ -213,12 +213,12 @@ unsigned ActionWithMatrix::getSizeOfValueInStash( const Value* myval ) {
 // are independent so the loop over them is parallel.
 template <typename T>
 void ActionWithMatrix::matrixStashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
-  const unsigned ncomp = getNumberOfComponents();
-  const unsigned ncols = getPntrToComponent(0)->getNumberOfColumns();
+  const std::size_t ncomp = getNumberOfComponents();
+  const std::size_t ncols = getPntrToComponent(0)->getNumberOfColumns();
   const unsigned nrows = partialTaskList.size();
   std::vector<double*> data( ncomp );
   std::vector<Value*> periodic;
-  for(unsigned k=0; k<ncomp; ++k) {
+  for(std::size_t k=0; k<ncomp; ++k) {
     Value* myval = getPntrToComponent(k);
     plumed_dbg_assert( !myval->hasDeriv );
     myval->value_set=true;
@@ -234,23 +234,23 @@ void ActionWithMatrix::matrixStashToValuesImpl( const std::vector<unsigned>& par
 #endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<nrows; ++i) {
-    const unsigned row = partialTaskList[i];
+    const std::size_t row = partialTaskList[i];
     const unsigned ncr = first->getRowLength(row);
 #ifndef NDEBUG
-    for(unsigned k=1; k<ncomp; ++k) {
+    for(std::size_t k=1; k<ncomp; ++k) {
       plumed_assert( ncr == getPntrToComponent(k)->getRowLength(row) );
     }
 #endif
-    const T* src = stash.data() + static_cast<std::size_t>(ncomp)*ncols*row;
-    const std::size_t dst = static_cast<std::size_t>(row)*ncols;
-    for(unsigned j=0; j<ncr; ++j) {
-      for(unsigned k=0; k<ncomp; ++k) {
+    const T* src = stash.data() + ncomp*ncols*row;
+    const std::size_t dst = row*ncols;
+    for(std::size_t j=0; j<ncr; ++j) {
+      for(std::size_t k=0; k<ncomp; ++k) {
         data[k][dst+j] = src[j*ncomp+k];
       }
     }
     // e.g. the matrix of torsions is periodic
     for(Value* myval : periodic) {
-      for(unsigned j=0; j<ncr; ++j) {
+      for(std::size_t j=0; j<ncr; ++j) {
         myval->applyPeriodicity( dst+j );
       }
     }
@@ -259,11 +259,11 @@ void ActionWithMatrix::matrixStashToValuesImpl( const std::vector<unsigned>& par
 
 template <typename T>
 void ActionWithMatrix::matrixForcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
-  const unsigned ncomp = getNumberOfComponents();
-  const unsigned ncols = getConstPntrToComponent(0)->getNumberOfColumns();
+  const std::size_t ncomp = getNumberOfComponents();
+  const std::size_t ncols = getConstPntrToComponent(0)->getNumberOfColumns();
   const Value* first = getConstPntrToComponent(0);
   std::vector<const double*> force( ncomp );
-  for(unsigned k=0; k<ncomp; ++k) {
+  for(std::size_t k=0; k<ncomp; ++k) {
     force[k] = getConstPntrToComponent(k)->inputForce.data();
   }
   if( gatherForceOnColumns ) {
@@ -273,12 +273,12 @@ void ActionWithMatrix::matrixForcesToStashImpl( const std::vector<unsigned>& par
     const unsigned nrows = rowTasks.size();
     std::vector<unsigned> column_totals( first->getShape()[1], 0 );
     for(unsigned i=0; i<nrows; ++i) {
-      const unsigned row = rowTasks[i];
+      const std::size_t row = rowTasks[i];
       const unsigned ncr = first->getRowLength(row);
-      for(unsigned j=0; j<ncr; ++j) {
-        const unsigned colno = first->getRowIndex(row,j);
-        T* dst = stash.data() + static_cast<std::size_t>(ncomp)*maxcolsize*colno + column_totals[colno]*ncomp;
-        for(unsigned k=0; k<ncomp; ++k) {
+      for(std::size_t j=0; j<ncr; ++j) {
+        const std::size_t colno = first->getRowIndex(row,j);
+        T* dst = stash.data() + ncomp*maxcolsize*colno + column_totals[colno]*ncomp;
+        for(std::size_t k=0; k<ncomp; ++k) {
           plumed_dbg_assert( colno==getConstPntrToComponent(k)->getRowIndex(row,j) );
           dst[k] = force[k][row*ncols+j];
         }
@@ -294,17 +294,17 @@ void ActionWithMatrix::matrixForcesToStashImpl( const std::vector<unsigned>& par
 #endif
   #pragma omp parallel for num_threads(nt) schedule(static)
   for(unsigned i=0; i<nrows; ++i) {
-    const unsigned row = partialTaskList[i];
+    const std::size_t row = partialTaskList[i];
     const unsigned ncr = first->getRowLength(row);
 #ifndef NDEBUG
-    for(unsigned k=1; k<ncomp; ++k) {
+    for(std::size_t k=1; k<ncomp; ++k) {
       plumed_assert( ncr == getConstPntrToComponent(k)->getRowLength(row) );
     }
 #endif
-    T* dst = stash.data() + static_cast<std::size_t>(ncomp)*ncols*row;
-    const std::size_t src = static_cast<std::size_t>(row)*ncols;
-    for(unsigned j=0; j<ncr; ++j) {
-      for(unsigned k=0; k<ncomp; ++k) {
+    T* dst = stash.data() + ncomp*ncols*row;
+    const std::size_t src = row*ncols;
+    for(std::size_t j=0; j<ncr; ++j) {
+      for(std::size_t k=0; k<ncomp; ++k) {
         dst[j*ncomp+k] = force[k][src+j];
       }
     }
