@@ -715,7 +715,19 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
     const ParallelActionsInput& /*input*/,
     ForceIndexHolder force_indices ) {
 
+  // Map a (task, column) pair onto the contiguous force-index ranges used by
+  // the parallel force accumulation code.
+  //
+  // The mapping depends on how partial thread results are gathered:
+  // 1) standard gather (!no_thread_gather): use the 3-list decomposition;
+  // 2) no-thread-gather + gather-on-columns: use per-column contiguous blocks;
+  // 3) no-thread-gather + default layout: use the regular component-major layout.
+  //
+  // `ntotal_force` is the global scalar-force extent for the current layout and
+  // is used to offset into the correct component/column segment.
   if( !actiondata.no_thread_gather ) {
+    // Standard threaded gather path: each logical task is expanded into three
+    // sub-tasks (three-list bookkeeping), hence the 3*task_index conversion.
     const auto three_task_index= 3 * task_index;
     force_indices.indices[0][0] = three_task_index;
     force_indices.indices[0][1] = three_task_index + 1;
@@ -778,6 +790,9 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
       force_indices.tot_indices[3] = 5;
     }
   } else if( actiondata.gatherForceOnColumns ) {
+    // Alternative no-thread-gather layout: forces are grouped by matrix columns.
+    // This branch computes indices into column-contiguous storage to reduce
+    // gather/scatter overhead when operating on sparse column subsets.
     const auto three_task_index = 3 * (task_index+actiondata.fbsize);
     force_indices.indices[0][0] = three_task_index;
     force_indices.indices[0][1] = three_task_index + 1;
