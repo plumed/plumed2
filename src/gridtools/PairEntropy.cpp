@@ -38,7 +38,6 @@ An example input that calculates and prints the PAIRENTROPY CV is shown below:
 pp: PAIRENTROPY ...
    GROUP=1-108 MAXR=2.0 GRID_BIN=20
    BANDWIDTH=0.13 KERNEL=gaussian
-   CUTOFF=6.25
 ...
 PRINT ARG=pp FILE=colvar
 ```
@@ -54,7 +53,7 @@ pp: PAIRENTROPY ...
    GROUPA=1-108 GROUPB=109-300
    GRID_BIN=20 MAXR=2.0
    BANDWIDTH=0.13 KERNEL=gaussian
-   CUTOFF=6.25 DENSITY=1.0
+   DENSITY=1.0
 ...
 PRINT ARG=pp FILE=colvar
 ```
@@ -81,7 +80,7 @@ The following example illustrates how this shortcut can be used to calculate and
 pp: PAIRENTROPIES ...
    GROUP=1-64 MAXR=2
    GRID_BIN=20 BANDWIDTH=0.13
-   KERNEL=gaussian CUTOFF=6.25
+   KERNEL=gaussian
    DENSITY=1.0
 ...
 DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz
@@ -98,7 +97,7 @@ Notice also that you do not need to use the DENSITY keyword to set the density a
 pp: PAIRENTROPIES ...
    GROUP=1-64 MAXR=2
    GRID_BIN=20 BANDWIDTH=0.13
-   KERNEL=gaussian CUTOFF=6.25
+   KERNEL=gaussian
 ...
 DUMPATOMS ATOMS=1-64 ARG=pp FILE=p_entropies.xyz
 ```
@@ -153,7 +152,7 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
     atom_str="GROUPA=" + groupa_str + " GROUPB=" + groupb_str;
   }
   // Read in all other keywords and create the RDF object
-  std::string maxr, nbins, dens, bw="", cutoff, kernel;
+  std::string maxr, nbins, dens, bw="", kernel;
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
@@ -161,7 +160,6 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
   if( bw.length()==0 ) {
     parse("SIGMA",bw);
   }
-  parse("CUTOFF",cutoff);
   parse("KERNEL",kernel);
   std::string dens_str;
   if( dens.length()>0 ) {
@@ -171,7 +169,7 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
   if( getName()=="PAIRENTROPIES" ) {
     noaverage = " NO_AVERAGE";
   }
-  readInputLine( getShortcutLabel() + "_rdf: RDF " + atom_str + " KERNEL=" + kernel + " CUTOFF=" + cutoff + " GRID_BIN=" + nbins + " MAXR=" + maxr + dens_str + " BANDWIDTH=" + bw + " " + ref_str + noaverage);
+  readInputLine( getShortcutLabel() + "_rdf: RDF " + atom_str + " KERNEL={" + kernel + "} GRID_BIN=" + nbins + " MAXR=" + maxr + dens_str + " BANDWIDTH=" + bw + " " + ref_str + noaverage);
   // Get the shape of the matrix
   std::vector<std::string> shape_str(2);
   RDF::getDistanceMatrixShape( getShortcutLabel() + "_rdf_mat", this, shape_str );

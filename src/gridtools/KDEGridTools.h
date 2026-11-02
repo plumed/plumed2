@@ -30,7 +30,6 @@ namespace gridtools {
 template <class K, class P>
 class KDEGridTools {
 public:
-  double dp2cutoff;
   std::vector<double> gspacing;
   std::vector<std::size_t> nbin;
   std::vector<std::string> gmin, gmax;
@@ -55,7 +54,6 @@ void KDEGridTools<K,P>::registerKeywords( Keywords& keys ) {
            "are used as weights for the Gaussians.");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
-  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
 }
@@ -212,7 +210,6 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
 
   action->parseVector("GRID_BIN",g.nbin);
   action->parseVector("GRID_SPACING",g.gspacing);
-  action->parse("CUTOFF",g.dp2cutoff);
 
   if( g.nbin.size()!=shape.size() && g.gspacing.size()!=shape.size() ) {
     action->error("GRID_BIN or GRID_SPACING must be set");
@@ -274,7 +271,7 @@ void KDEGridTools<K, P>::getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, c
   std::size_t ng = gridobject.getDimension();
   plumed_assert( nneigh.size()==ng );
   std::vector<double> support( ng );
-  P::getSupport( p, shape, g.dp2cutoff, support );
+  P::getSupport( p, shape, support );
   for(unsigned i=0; i<ng; ++i) {
     nneigh[i] = static_cast<unsigned>( ceil( support[i]/gridobject.getGridSpacing()[i] ));
   }

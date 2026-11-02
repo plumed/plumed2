@@ -71,17 +71,6 @@ DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 If $x$ is one of the input arguments to the KDE action and $x<g_{min}$ or $x>g_{max}$, where $g_{min}$ and $g_{max}$ are the minimum
 and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by PLUMED will crash.
 
-Notice also that when you use Gaussian kernels to accumulate a denisty as in the input above you need to define a cutoff beyond, which the
-Gaussian (which is a function with infinite support) is assumed not to contribute to the accumulated density.  When setting this cutoff you
-set the value of $x$ in the following expression $\sigma \sqrt{2*x}$, where $\sigma$ is the bandwidth.  By default $x$ is set equal to 6.25 but
-you can change this value by using the CUTOFF keyword as shown below:
-
-```plumed
-d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2 CUTOFF=6.25
-DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
-```
-
 ## Constructing the density
 
 If you are performing a simulation in the NVT ensemble and wish to look at the density as a function of position in the cell you can use an input like the one shown below:
@@ -180,6 +169,86 @@ kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi VOLUMES=d1.w GRID_BIN=200 BANDWIDTH=0.1
 
 Now, however, the integral of the Gaussians over all space are equal to the elements of d1.w.
 
+## Setting the kernel
+
+When you run molecular dynamics and calculate $d$ collective variables using PLUMED you generate a time series of $d$ dimensional vectors $\mathbf{x}_t$. The Kernel Density Estimation
+method that is implemented in this action allows you to calculate an estimate of the probabilty density for the $d$ collective variables, which is a function with $d$ arguments.
+This estimate is calculated using:
+
+$$
+f(\mathbf{x}) = \sum_{t=1}^n h_t K\left[ \sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)} \right]
+$$
+
+This expression assumes that you are calculating the density from $n$ trajectory frames. $\mathbf{H}$ is bandwidths matrix and $h_t$ is the height that you want to use for the $t$th of your observations.
+$K$ is then a non-negative function called the kernel.  This function acts upon the [Mahalanobis distance](https://en.wikipedia.org/wiki/Mahalanobis_distance) between $\mathbf{x}$ and $\mathbf{x}_t$.
+
+To provide users with flexibility, the functional form for the kernel is specified using a syntax similar to the one described in the documentation for the [LESS_THAN](LESS_THAN.md)
+action. The only difference from the instructions for swtiching functions in [LESS_THAN](LESS_THAN.md) is that PLUMED automatically
+sets the $r_0$ parameter of your switching function to one for you. __You should thus not include R_0 when you set the parameters of your kernel function.__
+
+By default PLUMED uses a Gaussian kernel function as illustrated in the input below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL={GAUSSIAN D_MAX=3.5355}
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+Notice that a stretching and scaling is performed on the gaussian kernel that is employed here so the function is guaranteed to be equal to zero if
+$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}>3.5355$.  One consequence of this is that the integral of the $d$ dimensional
+Gaussian will be slightly less than $(2\pi)^{d/2}\det(H)^{1/2}$. This can be a problem if you are assuming that the integral of your Gaussians is equal to this value when
+normalising them.  You can partially avoid this problem by using the NOSTRETCH option as shown below:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL={GAUSSIAN NOSTRETCH D_MAX=3.5355}
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+This, however, introduces a discontinuity in the kernel at $d_{max}$.
+
+__We strongly recommend setting a D_MAX parameter for your kernels__.
+If you do not set a D_MAX value for your KERNEL then a cutoff of $d_{max}=\sqrt{2*6.25}\approx 3.5355$ is used. If you are calculating a 1D histogram and D_MAX is unset PLUMED
+then you evaluate a kernel at centered at $a$ on the gridpoint at $b$ if $\frac{|a-b|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$, where $s$ is the spacing between
+grid points and $\sigma$ is the bandwidth. The ceiling on the right hand side of this inequality obviously makes this s necessary but not sufficient condition for ensuring that
+$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}<d_{max}$.  In higher dimensions this becomes even more severe.  In 2D to
+determine if we need to evaluate a kernel centered at $(a,b)$ for the grid point $(c,d)$ we first determine if $\frac{|a-c|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$ and
+if $\frac{|b-d|}{s}<=\left\lceil \frac{d_{max}\sigma}{s}\right\rceil$. With these tests there are many more points that satisfy these two criteria but that do not satisfy
+$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}<d_{max}$. The key thing to recognise is that when D_MAX is set PLUMED sets the value of the kernel equal to zero if
+$\sqrt{(\mathbf{x}-\mathbf{x}_t)^T \mathbf{H}^{-1} (\mathbf{x}-\mathbf{x}_t)}>d_{max}$ even when the NOSTRETCH option is employed. If D_MAX is not set this check is not performed and
+kernels can thus contribute density to grid points that are more than $\sqrt(2*6.25)$ from the center of the kernel.
+
+Kernel density estimation is a method for estimating a histogram but it is probably not the first method that you learned for estimating histograms. Instead you probably learned to assume that the
+the density is constant between grid points. In 1D we thus express the density between grid point $x_k$ and $x_{k+1}$ using:
+
+$$
+F(x_{k+1}) - F(x_k) = \int_{x_k}^{x_{k+1}} f(x) \textrm{d}x = \int_{x_k}^{x_{k+1}} \sum_{t=1}^n h_t K\left[ \frac{|x - x_t|}{\sigma} \right] \textrm{d}x
+$$
+
+In the typical method for calculating histograms $\sigma=x_{k+1}-x_k$ and $K$ is then:
+
+$$
+K(x) = \begin{cases}
+1 & \textrm{if} x<1 \\
+0 & \textrm{otherwise}
+\end{cases}
+$$
+
+This is the method used for estimating the histogram when you use KERNEL=DISCRETE. Other (continuous) choices for $K$ are possible and are described in the documentation for [BETWEEN](BETWEEN.md).
+For example, in the following input $K$ is is a Gaussian:
+
+```
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL=gaussian-bin
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+Multidimensional analogues of this approach can also be used. For example, in a 2D analogue the density in the square with corners at $(x_k,y_j)$, $(x_{k+1},y_j)$, $(x_k,y_{j+1})$ and $(x_{k+1},y_{j+1})$ is computed using:
+
+$$
+[ F(x_{k+1}) - F(x_k) ][ F(y_{j+1} - F(y_j) ] = \int_{x_k}^{x_{k+1}} f(x) \textrm{d}x = \sum_{t=1}^n h_t \int_{x_k}^{x_{k+1}} K\left[ \frac{|x - x_t|}{\sigma} \right] \textrm{d}x \int_{y_j}^{y_{j+1}} K\left[ \frac{|y - y_t|}{\sigma} \right] \textrm{d}y
+$$
+
 */
 //+ENDPLUMEDOC
 
@@ -277,25 +346,25 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
       error("invalid input for bandwidth parameter");
     } else if( bwargs[0]->getRank()<=1 ) {
       if( kerneltype.find("bin")==std::string::npos ) {
-        readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+        readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
       } else {
         std::size_t dd = kerneltype.find("-bin");
         readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
       }
     } else if( bwargs[0]->getRank()==2 ) {
-      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
     } else {
       error("found strange rank for bandwidth parameter");
     }
   } else if( bw.size()==argvals.size() ) {
     if( kerneltype.find("bin")==std::string::npos ) {
-      readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": KDE_KERNELS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
     } else {
       std::size_t dd = kerneltype.find("-bin");
       readInputLine( getShortcutLabel() + ": KDE_BEADS" + (usegpuFLAG ? "ACC ":" ") + argstr + " " + bwstr + " KERNEL=" + kerneltype.substr(0,dd) + " " + convertInputLineToString() );
     }
   } else if( bw.size()==argvals.size()*argvals.size() ) {
-    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ")+ argstr + " " + bwstr + " KERNEL=" + kerneltype + " " + convertInputLineToString() );
+    readInputLine( getShortcutLabel() + ": KDE_FULLCOVAR" + (usegpuFLAG ? "ACC ":" ")+ argstr + " " + bwstr + " KERNEL={" + kerneltype + "} " + convertInputLineToString() );
   } else {
     error("invalid input for bandwidth");
   }
