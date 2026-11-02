@@ -129,7 +129,9 @@ runtime_package_data = [
 ]
 bundle_default = "0" if os.environ.get("plumed_default_kernel") else "1"
 bundle_kernel = os.environ.get("PLUMED_BUILD_KERNEL", bundle_default).lower() not in {
-    "0", "no", "false"
+    "0",
+    "no",
+    "false",
 }
 
 # try to import cython

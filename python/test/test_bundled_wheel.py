@@ -71,7 +71,9 @@ def main():
     assert Path(command.stdout.strip()).resolve() == resource_root().resolve()
 
     source_tree = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
-    hidden_source = source_tree.with_name(source_tree.name + ".hidden") if source_tree else None
+    hidden_source = (
+        source_tree.with_name(source_tree.name + ".hidden") if source_tree else None
+    )
     vim_tree = resource_root() / "vim"
     hidden_vim = vim_tree.with_name("vim.hidden")
     executable = package_root() / "bin" / "plumed"

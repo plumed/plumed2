@@ -75,7 +75,7 @@ def _embed_metadata(header: Path, metadata: bytes) -> None:
     ]
     for chunk in chunks:
         text = chunk.decode("utf-8")
-        while f"){delimiter}\"" in text:
+        while f'){delimiter}"' in text:
             delimiter += "X"
         lines.append(f'R"{delimiter}({text}){delimiter}",\n')
     if not chunks:
@@ -154,22 +154,56 @@ def _fix_macos_load_paths(runtime_lib: Path, runtime_bin: Path) -> None:
     kernel = runtime_lib / "libplumedKernel.dylib"
     wrapper = runtime_lib / "libplumed.dylib"
     executable = runtime_bin / "plumed"
-    _run(["install_name_tool", "-id", "@rpath/libplumedKernel.dylib", str(kernel)], cwd=runtime_lib)
-    _run(["install_name_tool", "-id", "@rpath/libplumed.dylib", str(wrapper)], cwd=runtime_lib)
+    _run(
+        ["install_name_tool", "-id", "@rpath/libplumedKernel.dylib", str(kernel)],
+        cwd=runtime_lib,
+    )
+    _run(
+        ["install_name_tool", "-id", "@rpath/libplumed.dylib", str(wrapper)],
+        cwd=runtime_lib,
+    )
     for binary in (wrapper, executable):
         dependencies = subprocess.check_output(["otool", "-L", str(binary)], text=True)
         for line in dependencies.splitlines()[1:]:
             dependency = line.strip().split(" ", 1)[0]
             if dependency.endswith("/libplumedKernel.dylib"):
-                _run(["install_name_tool", "-change", dependency, "@rpath/libplumedKernel.dylib", str(binary)], cwd=runtime_lib)
+                _run(
+                    [
+                        "install_name_tool",
+                        "-change",
+                        dependency,
+                        "@rpath/libplumedKernel.dylib",
+                        str(binary),
+                    ],
+                    cwd=runtime_lib,
+                )
             elif dependency.endswith("/libplumed.dylib"):
-                _run(["install_name_tool", "-change", dependency, "@rpath/libplumed.dylib", str(binary)], cwd=runtime_lib)
-        _run(["install_name_tool", "-add_rpath", "@loader_path/../lib" if binary == executable else "@loader_path", str(binary)], cwd=runtime_lib)
+                _run(
+                    [
+                        "install_name_tool",
+                        "-change",
+                        dependency,
+                        "@rpath/libplumed.dylib",
+                        str(binary),
+                    ],
+                    cwd=runtime_lib,
+                )
+        _run(
+            [
+                "install_name_tool",
+                "-add_rpath",
+                "@loader_path/../lib" if binary == executable else "@loader_path",
+                str(binary),
+            ],
+            cwd=runtime_lib,
+        )
 
 
 def _build_runtime() -> None:
     if sys.platform not in {"linux", "darwin"}:
-        raise RuntimeError("Bundled PLUMED kernels are currently supported on Linux and macOS only")
+        raise RuntimeError(
+            "Bundled PLUMED kernels are currently supported on Linux and macOS only"
+        )
     source_root = _source_root()
     modules = _default_modules(source_root)
     if not modules:
@@ -179,7 +213,9 @@ def _build_runtime() -> None:
         source = Path(temporary) / "plumed"
         _copy_build_inputs(source_root, source)
         prefix = "/plumed_runtime"
-        module_option = "--enable-modules=none:" + ":".join("+" + name for name in modules)
+        module_option = "--enable-modules=none:" + ":".join(
+            "+" + name for name in modules
+        )
         configure = [
             "./configure",
             f"--prefix={prefix}",
@@ -198,7 +234,8 @@ def _build_runtime() -> None:
             "--disable-external-molfile-plugins",
             "--disable-zlib",
             "--disable-rpath",
-            "CXXFLAGS=" + (os.environ.get("CXXFLAGS", "") + " -O2 -D__PLUMED_PIP_BUNDLE").strip(),
+            "CXXFLAGS="
+            + (os.environ.get("CXXFLAGS", "") + " -O2 -D__PLUMED_PIP_BUNDLE").strip(),
             "CFLAGS=" + (os.environ.get("CFLAGS", "") + " -O2").strip(),
         ]
         if sys.platform == "darwin":
@@ -210,11 +247,22 @@ def _build_runtime() -> None:
 
         action_list = source / "json" / "action_list"
         with action_list.open("w", encoding="utf-8") as output:
-            subprocess.run(["bash", "get_action_list.sh"], cwd=source / "json", stdout=output, check=True)
+            subprocess.run(
+                ["bash", "get_action_list.sh"],
+                cwd=source / "json",
+                stdout=output,
+                check=True,
+            )
         metadata = source / "json" / "syntax.json"
         with metadata.open("wb") as output:
             subprocess.run(
-                [str(source / "src/lib/plumed"), "--no-mpi", "gen_json", "--actions", str(action_list)],
+                [
+                    str(source / "src/lib/plumed"),
+                    "--no-mpi",
+                    "gen_json",
+                    "--actions",
+                    str(action_list),
+                ],
                 cwd=source / "json",
                 env=_runtime_environment(source),
                 stdout=output,
@@ -222,11 +270,12 @@ def _build_runtime() -> None:
             )
         parsed = json.loads(metadata.read_text(encoding="utf-8"))
         if not any(
-            isinstance(value, dict) and "syntax" in value
-            for value in parsed.values()
+            isinstance(value, dict) and "syntax" in value for value in parsed.values()
         ):
             raise RuntimeError("The built PLUMED kernel exported no action metadata")
-        _embed_metadata(source / "src/core/InputBuilderMetadata.inc", metadata.read_bytes())
+        _embed_metadata(
+            source / "src/core/InputBuilderMetadata.inc", metadata.read_bytes()
+        )
         (source / "src/core/PlumedMain.o").unlink(missing_ok=True)
         _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source)
         _copy_runtime(source, modules)
@@ -282,7 +331,9 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
     try:
         if bundle_kernel:
             _build_runtime()
-        return _setuptools_backend.build_wheel(wheel_directory, config_settings, metadata_directory)
+        return _setuptools_backend.build_wheel(
+            wheel_directory, config_settings, metadata_directory
+        )
     finally:
         if kernel_setting is None:
             os.environ.pop("PLUMED_BUILD_KERNEL", None)
@@ -305,4 +356,6 @@ def get_requires_for_build_wheel(config_settings=None):
 
 
 def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
-    return _setuptools_backend.prepare_metadata_for_build_wheel(metadata_directory, config_settings)
+    return _setuptools_backend.prepare_metadata_for_build_wheel(
+        metadata_directory, config_settings
+    )

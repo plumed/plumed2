@@ -21,7 +21,9 @@ def main() -> None:
     env.setdefault("PLUMED_ROOT", str(resource_root()))
     env.setdefault("PLUMED_PROGRAM_NAME", "plumed")
     library_dir = str(root / "lib")
-    loader_variable = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
+    loader_variable = (
+        "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
+    )
     current = env.get(loader_variable)
     env[loader_variable] = library_dir + (os.pathsep + current if current else "")
     os.execve(str(executable), [str(executable), *sys.argv[1:]], env)
