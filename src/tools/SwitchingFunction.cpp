@@ -477,7 +477,6 @@ struct tanhSwitch: public baseSwitch<tanhSwitch> {
   }
   static inline ValueDerivative function(const double rdist) {
     const double tmp1 = std::tanh(rdist);
-    //was dfunc=-(1-tmp1*tmp1);
     double dfunc = tmp1 * tmp1 - 1.0;
     return {1.0 - tmp1,dfunc };
   }
