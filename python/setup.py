@@ -29,8 +29,8 @@ import os
 import os.path
 import sys
 import platform
-from distutils.sysconfig import get_config_var
-from distutils.version import LooseVersion
+import sysconfig
+import re
 
 if sys.version_info < (3,):
     raise ImportError("PLUMED 2.6 only supports Python 3")
@@ -91,9 +91,14 @@ if plumed_disable_rtld_deepbind is not None:
 # This fix is taken from https://github.com/pandas-dev/pandas/pull/24274/files
 if is_platform_mac:
     if "MACOSX_DEPLOYMENT_TARGET" not in os.environ:
-        current_system = LooseVersion(platform.mac_ver()[0])
-        python_target = LooseVersion(get_config_var("MACOSX_DEPLOYMENT_TARGET"))
-        if python_target < "10.9" and current_system >= "10.9":
+        def version_tuple(value):
+            return tuple(int(part) for part in re.findall(r"\d+", value))
+
+        current_system = version_tuple(platform.mac_ver()[0])
+        python_target = version_tuple(
+            sysconfig.get_config_var("MACOSX_DEPLOYMENT_TARGET") or "0"
+        )
+        if python_target < (10, 9) and current_system >= (10, 9):
             os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.9"
 
 
@@ -152,5 +157,5 @@ setup(
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',
-    python_requires=">=3",
+    python_requires=">=3.11",
 )
