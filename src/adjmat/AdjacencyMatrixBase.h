@@ -491,6 +491,12 @@ void AdjacencyMatrixBase<CV, myPTM>::calculate() {
   // neighbour list thus always has one more atom in it than there are atoms in the
   // neighbourhood of the central atom
   maxcol = maxcol-1;
+  // A matrix with no elements at all (no atom within the cutoff of any other)
+  // still needs one column of storage: zero columns is the flag of the
+  // lower-triangular storage in Value and leaves the data array empty
+  if( maxcol<1 ) {
+    maxcol = 1;
+  }
 
   // Reshape the matrix store if the number of columns has changed
   if( maxcol!=myval->getNumberOfColumns() ) {

@@ -177,6 +177,8 @@ void TransposeMatrix::calculate() {
     // Find the longest column
     std::size_t maxcol = myarg->getLengthOfLongestColumn();
     myval->reshapeMatrixStore( maxcol );
+    // the store keeps at least one column (see Value::reshapeMatrixStore)
+    maxcol = myval->getNumberOfColumns();
     matrix_bookeeping.resize( myval->getShape()[0]*(1+maxcol) );
     force_mapper.resize( myval->getShape()[0]*maxcol );
     for(unsigned i=0; i<myval->getShape()[0]; ++i) {

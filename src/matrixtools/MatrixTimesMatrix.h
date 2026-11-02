@@ -239,6 +239,8 @@ void MatrixTimesMatrix<CV, myPTM>::calculate() {
     }
     Value* myval = getPntrToComponent(0);
     myval->reshapeMatrixStore( maxrow );
+    // the store keeps at least one column (see Value::reshapeMatrixStore)
+    maxrow = myval->getNumberOfColumns();
     for(unsigned i=0; i<arg1->getShape()[0]; ++i) {
       unsigned rstart = i*(maxrow+1);
       if( arg1->getRowLength(i)==0 ) {

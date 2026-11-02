@@ -338,6 +338,11 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   if( shape[1]>0 && ncols>shape[1] ) {
     ncols=shape[1];
   }
+  // ncols==0 is the flag of the lower-triangular storage (see get): a sparse
+  // matrix whose rows are all empty keeps one column of storage
+  if( shape[1]>0 && ncols==0 ) {
+    ncols=1;
+  }
   unsigned size=shape[0]*ncols;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
     data.resize( size, 0 );
