@@ -168,7 +168,7 @@ jobs:
       if: contains( matrix.variant, '-nvhpc-' )
       # The openacc plugin is compiled with -acc=multicore and uses NVIDIA's OpenMP runtime. Loaded together with
       # the libgomp of a PLUMED built with GCC and OpenMP the two runtimes conflict (segmentation faults),
-      # so PLUMED is built without OpenMP in this job.
+      # so PLUMED is built without OpenMP in this job (it is not needed with -acc=host, kept to be safe).
       run: |
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-openmp" >> $GITHUB_ENV
     - name: Install INTEL compiler
@@ -261,24 +261,22 @@ jobs:
         echo "NVCC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
         echo "NVFC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
 
-    - name: Build and test the openacc module (on the host cores)
+    - name: Build and test the openacc module (serial, on the host)
       if: contains( matrix.variant, '-nvhpc-' )
-      # The runners have no GPU, so the plugin is compiled with -acc=multicore: the kernels run on the CPU
-      # cores. This tests the logic of the plugin (forces, virial, task manager), not device transfers,
+      # The runners have no GPU, so the plugin is compiled with -acc=host: the kernels run serially on the CPU,
+      # without any OpenMP runtime (-acc=multicore needs NVIDIA's OpenMP runtime, which conflicts with libgomp).
+      # This tests the logic of the plugin (forces, virial, task manager), not device transfers,
       # asynchronous queues or GPU scheduling, which need a real GPU.
-      env:
-        # not ACC_DEVICE_TYPE: PLUMED is built with libgomp, which also reads it and does not know "multicore"
-        ACC_NUM_CORES: 2
       run: |
           source sourceme.sh
           cd plugins/openaccPTM/
           ./configure
-          NVCXX=$NVCXX make ACCTARGET=multicore -j 4
-          make ACCTARGET=multicore -C regtest
+          NVCXX=$NVCXX make ACCTARGET=host -j 4
+          make ACCTARGET=host -C regtest
           make -C regtest checkfail
 
     - name: Diagnose the openacc module (only on failure)
-      # temporary: shows which OpenMP runtimes are loaded and whether rt-volume-around depends on the number of threads
+      # temporary: shows which OpenMP runtimes are loaded and the output of rt-volume-around
       if: failure() && contains( matrix.variant, '-nvhpc-' )
       run: |
           source sourceme.sh
@@ -288,14 +286,10 @@ jobs:
             echo "-- $f"; ldd $f | grep -i -E 'omp|acc|blas|lapack' || true
           done
           plumed config show | grep -i -E 'openmp|blas|lapack' || true
-          echo "== rt-volume-around with 1 and with 2 cores"
+          echo "== rt-volume-around"
           cd regtest/targetGPU/rt-volume-around
-          for n in 1 2; do
-            make clean >/dev/null; ACC_NUM_CORES=$n make > /dev/null 2>&1 || true
-            echo "-- ACC_NUM_CORES=$n"; head -3 tmp/colvar; grep -c . tmp/err
-          done
           make clean >/dev/null
-          NV_ACC_NOTIFY=3 NVCOMPILER_OMP_DISABLE_WARNINGS=true make 2>&1 | tail -5; sort tmp/err | uniq -c | sort -rn | head -20
+          NV_ACC_NOTIFY=3 NVCOMPILER_OMP_DISABLE_WARNINGS=true make 2>&1 | tail -5; sort tmp/err | uniq -c | sort -rn | head -20; head -3 tmp/colvar
 
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
