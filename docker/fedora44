@@ -9,6 +9,8 @@ RUN yum -y update \
  && dnf -y clean all
 
 
+RUN dnf -y install python3-setuptools && dnf -y clean all
+
 RUN useradd -ms /bin/bash plumed
 USER plumed
 WORKDIR /home/plumed
