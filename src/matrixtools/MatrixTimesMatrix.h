@@ -368,14 +368,24 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
     const input_type& actiondata,
     ParallelActionsInput& input,
     ParallelActionsOutput& output ) {
+  // Compute one output row-block for a matrix-times-matrix task.
+  // Layout notes:
+  // - arg0/arg1 bookkeeping stores row occupancy and compact index lists.
+  // - task_index selects one logical row from the first matrix and one row in the output map.
+  // - output row metadata is encoded as [row_length, col_0, col_1, ...].
+  // The implementation has two paths:
+  //   (1) sparse second matrix: iterate only explicitly stored nonzeros;
+  //   (2) dense second matrix: iterate contiguous column values.
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
-  // This is the number of matrix elements that we compute on this loop
+  // Number of nonzero/active multiplications for this selected row of arg0.
   std::size_t arg0_start = task_index*arg0.ncols;
   std::size_t arg0_bookstart = task_index*(1+arg0.ncols);
   std::size_t nmult = arg0.bookeeping[arg0_bookstart];
+  // Output bookkeeping entry for this task row.
   std::size_t outrowstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t output_rowlen = actiondata.outmat[outrowstart];
+  // Scratch view used to accumulate the vectorized multiply contributions.
   InputVectors vectors( nmult, output.buffer.data() );
   if( actiondata.secondMatrixIsSparse ) {
     if( actiondata.no_thread_gather ) {
