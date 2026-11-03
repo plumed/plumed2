@@ -15,6 +15,11 @@ skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
 test-command = "python {package}/test/test_bundled_wheel.py {package}/plumed_source"
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
+# The PLUMED kernel does not depend on the Python version: build it once per
+# platform and reuse it for all the wheels (see build_backend.py).
+# Set PLUMED_BUILD_VERBOSE=1 to see the full output of the build.
+environment = { PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache" }
 
 [tool.cibuildwheel.macos]
-environment = { MACOSX_DEPLOYMENT_TARGET = "10.15" }
+# the macos environment replaces the global one, so the cache is set again here
+environment = { MACOSX_DEPLOYMENT_TARGET = "10.15", PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache" }

@@ -106,10 +106,13 @@ jobs:
             for wheel in wheelhouse/*.whl; do auditwheel show "$wheel"; done
           fi
 
+      # also when a later wheel fails, so that the ones already built can be inspected
       - uses: actions/upload-artifact@v6
+        if: success() || failure()
         with:
           name: python-package-wheels-${{ matrix.os }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
+          if-no-files-found: ignore
 
   publish:
     name: Publish to PyPI

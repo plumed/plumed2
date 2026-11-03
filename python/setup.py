@@ -24,11 +24,10 @@
 #
 from setuptools import setup
 from setuptools import Extension
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 import subprocess
 import os
 import os.path
-from pathlib import Path
 import sys
 import platform
 import sysconfig
@@ -122,11 +121,6 @@ if not USE_CYTHON:
         print("plumed.c not found, cython is needed")
         USE_CYTHON = True
 
-runtime_package_data = [
-    str(path.relative_to("plumed_runtime"))
-    for path in Path("plumed_runtime").rglob("*")
-    if path.is_file()
-]
 bundle_default = "0" if os.environ.get("plumed_default_kernel") else "1"
 bundle_kernel = os.environ.get("PLUMED_BUILD_KERNEL", bundle_default).lower() not in {
     "0",
@@ -172,9 +166,11 @@ setup(
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
-    packages=find_packages(include=["plumed_runtime", "plumed_runtime.*"]),
+    # the directories of the runtime (bin, lib, share/...) are declared as
+    # namespace packages, otherwise setuptools warns for each of them;
+    # their files are selected by MANIFEST.in (include_package_data)
+    packages=find_namespace_packages(include=["plumed_runtime", "plumed_runtime.*"]),
     include_package_data=True,
-    package_data={"plumed_runtime": runtime_package_data},
     entry_points={"console_scripts": ["plumed=plumed_runtime.cli:main"]}
     if bundle_kernel
     else {},
