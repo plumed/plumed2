@@ -310,6 +310,13 @@ jobs:
          make -C regtest checkfail
     - name: Run python tests
       run: |
+         if [[ "${{ matrix.variant }}" == *-nvhpc-* ]] ; then
+           # PLUMED was built with the system mpic++ (g++), but the NVHPC step then puts NVHPC's mpic++ (nvc++)
+           # first in the PATH: plumed mklib (used by test_load.py) would compile with it, and nvc++ rejects
+           # the g++ flags recorded in compile_options.sh
+           PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/opt/nvidia/hpc_sdk/' | paste -sd: -)
+           export PATH
+         fi
          cd python
          pip install --user pytest
          pytest -v
