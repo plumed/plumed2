@@ -334,7 +334,9 @@ def _relocate_compile_options(path: Path) -> None:
         link_flags = "-Wl,--no-as-needed " + link_flags
     lines = []
     for line in path.read_text().splitlines():
-        if line.startswith(("link_installed=", "link_uninstalled=")):
+        # link_installed/link_uninstalled and, since 2.11,
+        # link_libs_installed/link_libs_uninstalled (link_shared has no kernel)
+        if line.startswith("link_") and "libplumedKernel." in line:
             line, count = re.subn(
                 r"\S*/(libplumedKernel\.(?:so|dylib))",
                 lambda match: f"{link_flags} {kernel_dir}/{match.group(1)}",
