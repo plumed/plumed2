@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -284,6 +285,7 @@ def _copy_runtime(source: Path, modules: list[str]) -> None:
         if origin.is_file():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(origin, target)
+    _relocate_compile_options(runtime_root / "src" / "config" / "compile_options.sh")
 
     license_dir = RUNTIME_PACKAGE / "licenses"
     license_dir.mkdir(parents=True, exist_ok=True)
@@ -309,6 +311,86 @@ def _copy_runtime(source: Path, modules: list[str]) -> None:
         _fix_macos_load_paths(runtime_lib, runtime_bin)
     else:
         _check_linux_run_paths(runtime_lib, runtime_bin)
+    # needs the relocatable executable, so after fixing its load paths
+    _generate_vim(source, runtime_root, runtime_bin / "plumed")
+
+
+def _relocate_compile_options(path: Path) -> None:
+    """Make compile_options.sh (used by plumed mklib and LOAD) work in the wheel.
+
+    - The kernel is linked from the installed wheel instead of the build tree
+      (mklib evaluates the commands with PLUMED_ROOT set to share/plumed).
+    - The plugin records an rpath to the kernel, and on Linux the kernel is
+      linked with --no-as-needed: toolchains defaulting to --as-needed (e.g.
+      Ubuntu) drop it otherwise, since it precedes the objects in the command.
+      From Python the kernel is loaded with RTLD_LOCAL, so a plugin that does
+      not list it as a dependency cannot resolve PLUMED symbols.
+    - manylinux compilers use the old libstdc++ string ABI, which plugins
+      compiled with a newer compiler must use as well.
+    """
+    kernel_dir = '"$PLUMED_ROOT"/../../lib'
+    link_flags = f"-Wl,-rpath,{kernel_dir}"
+    if sys.platform.startswith("linux"):
+        link_flags = "-Wl,--no-as-needed " + link_flags
+    lines = []
+    for line in path.read_text().splitlines():
+        if line.startswith(("link_installed=", "link_uninstalled=")):
+            line, count = re.subn(
+                r"\S*/(libplumedKernel\.(?:so|dylib))",
+                lambda match: f"{link_flags} {kernel_dir}/{match.group(1)}",
+                line,
+            )
+            if count != 1:
+                raise RuntimeError(f"cannot relocate the kernel in {line}")
+        elif line.startswith("compile='") and _uses_old_cxx_abi(line):
+            line = line.rstrip()[:-1].rstrip() + " -D_GLIBCXX_USE_CXX11_ABI=0'"
+        lines.append(line)
+    path.write_text("\n".join(lines) + "\n")
+
+
+def _uses_old_cxx_abi(compile_line: str) -> bool:
+    if not sys.platform.startswith("linux"):
+        return False
+    compiler = shlex.split(compile_line[len("compile='") :].split(" -c ")[0])
+    probe = subprocess.run(
+        [*compiler, "-x", "c++", "-E", "-"],
+        input="#include <string>\n_GLIBCXX_USE_CXX11_ABI\n",
+        capture_output=True,
+        text=True,
+    )
+    lines = [line.strip() for line in probe.stdout.splitlines() if line.strip()]
+    return probe.returncode == 0 and bool(lines) and lines[-1] == "0"
+
+
+def _generate_vim(source: Path, runtime_root: Path, executable: Path) -> None:
+    """Generate the Vim syntax and help files, as make does in vim/.
+
+    InputBuilder does not need them with this kernel (it reads the metadata
+    from the kernel), but they are used by editors and by InputBuilder with
+    older kernels. vimsyntax.sh runs ../src/lib/plumed: point it to the staged
+    executable, which finds its libraries without DYLD/LD_LIBRARY_PATH (these
+    are dropped by macOS for system shells).
+    """
+    with tempfile.TemporaryDirectory(prefix="plumed-vim-") as temporary:
+        tree = Path(temporary)
+        (tree / "vim").mkdir()
+        shutil.copy2(source / "vim" / "vimsyntax.sh", tree / "vim")
+        (tree / "sourceme.sh").write_text("")
+        wrapper = tree / "src" / "lib" / "plumed"
+        wrapper.parent.mkdir(parents=True)
+        wrapper.write_text(f'#!/bin/sh\nexec "{executable}" "$@"\n')
+        wrapper.chmod(0o755)
+        env = os.environ.copy()
+        for name in ("PLUMED_ROOT", "PLUMED_KERNEL"):
+            env.pop(name, None)
+        _run(["bash", "vimsyntax.sh"], cwd=tree / "vim", env=env)
+        syntax = tree / "vim" / "syntax" / "plumed.vim"
+        if not syntax.is_file() or not any((tree / "vim" / "help").glob("*.txt")):
+            raise RuntimeError("vimsyntax.sh did not produce the Vim files")
+        for name in ("syntax", "help"):
+            target = runtime_root / "vim" / name
+            shutil.rmtree(target, ignore_errors=True)
+            shutil.copytree(tree / "vim" / name, target)
 
 
 def _check_linux_run_paths(runtime_lib: Path, runtime_bin: Path) -> None:
