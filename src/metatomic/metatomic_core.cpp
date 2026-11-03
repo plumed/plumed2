@@ -355,8 +355,6 @@ private:
     std::optional<metatensor::Labels> selected_atoms_;
     bool float64_ = true;
     bool check_consistency_ = false;
-    // multiply gradients w.r.t. positions by this to go from model to engine units
-    double positions_gradient_factor_ = 1.0;
 
     std::optional<metatensor::TensorMap> output_;
     // row of the PLUMED value where each sample of `output_` is stored
@@ -451,7 +449,6 @@ CoreBackend::CoreBackend(
         auto length_unit = action.getUnits().getLengthString();
         auto model_length_unit = capabilities.length_unit();
         auto to_engine = mta::unit_conversion_factor(model_length_unit, length_unit);
-        positions_gradient_factor_ = mta::unit_conversion_factor(length_unit, model_length_unit);
 
         log.printf("  the following neighbor lists have been requested:\n");
         for (auto& options: model_.requested_pair_lists(outputs_)) {
@@ -688,7 +685,9 @@ void CoreBackend::apply() {
         auto sample = static_cast<size_t>(positions_samples(g, 0));
         auto atom = static_cast<size_t>(positions_samples(g, 2));
         for (size_t x=0; x<3; x++) {
-            derivatives[3 * atom + x] += positions_gradient_factor_ * contract(positions_values, 3 * g + x, sample);
+            // execute_model already gives gradients w.r.t. positions in the system's
+            // (PLUMED's) length unit
+            derivatives[3 * atom + x] += contract(positions_values, 3 * g + x, sample);
         }
     }
 

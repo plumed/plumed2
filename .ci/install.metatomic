@@ -12,7 +12,7 @@ set -x
 #
 # The clone is blobless rather than shallow: the packages compute their version from the git tags.
 # Wrapper PR #6 only; no dependency on the docs or PLUMED changes.
-METATOMIC_COMMIT=8b0c104c989ebda67140deb3a33a731617770eff
+METATOMIC_COMMIT=c63b4398028db0fc9bfaa4499cad04c0022593eb
 METATOMIC_URL=https://github.com/EricBoittier/metatomic.git
 PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
 
