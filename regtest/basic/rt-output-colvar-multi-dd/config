@@ -1,5 +1,6 @@
 mpiprocs=4
 type=driver
+plumed_modules="landmarks"
 # two replicas with two ranks each, under a fake domain decomposition;
 # replica 1 reads structure.1.pdb, so the replicas see different structures
 arg="--plumed plumed.dat --mf_pdb structure.pdb --multi 2 --debug-dd yes"

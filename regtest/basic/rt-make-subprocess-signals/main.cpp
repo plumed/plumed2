@@ -58,14 +58,15 @@ int main() {
 
   // 1. A bash script that spawns a grandchild and has an EXIT trap,
   //    similar to what scripts/selector.sh does.
-  //    The subprocess is stopped before being destroyed.
-  //    Signals must reach the grandchild, the destructor should not hang
-  //    on the stopped process group, and the trap should be executed.
+  //    The grandchild prints its own pid after exec'ing sh (which keeps the pid).
+  //    Printing $! from bash would be racy: bash with an EXIT trap catches SIGTERM,
+  //    and a forked child that has not exec'd yet would swallow the signal
+  //    and then run "sleep 1000" anyway.
   {
     std::remove("trap_executed");
     std::string line;
     {
-      Subprocess sp("bash -c 'trap \"echo yes > trap_executed\" EXIT; sleep 1000 & echo $!; wait'");
+      Subprocess sp("bash -c 'trap \"echo yes > trap_executed\" EXIT; sh -c \"echo \\$\\$; exec sleep 1000\" & wait'");
       sp.getline(line);
       sp.stop();
     }
