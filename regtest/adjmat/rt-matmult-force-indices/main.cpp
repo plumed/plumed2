@@ -1,4 +1,4 @@
-#include "matrixtools/MatrixTimesMatrix.h"
+#include "plumed/matrixtools/MatrixTimesMatrix.h"
 #include <cstdio>
 
 namespace PLMD {
