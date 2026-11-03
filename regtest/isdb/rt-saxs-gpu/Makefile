@@ -1,1 +1,0 @@
-include ../../scripts/test.make

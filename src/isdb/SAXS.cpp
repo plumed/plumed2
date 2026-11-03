@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
  This class was originally written by Alexander Jussupow
- Arrayfire implementation by Alexander Jussupow and CC
+ Arrayfire implementation (now removed) by Alexander Jussupow and CC
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
  Refactoring for hySAXS Martini form factors for Nucleic Acids by Cristina Paissoni
  Refactoring for hySAS OneBead form factors with solvent correction by Federico Ballabio and Riccardo Capelli
@@ -47,18 +47,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
-
-#ifdef __PLUMED_HAS_ARRAYFIRE
-#include <arrayfire.h>
-#include <af/util.h>
-#ifdef __PLUMED_HAS_ARRAYFIRE_CUDA
-#include <cuda_runtime.h>
-#include <cublas_v2.h>
-#include <af/cuda.h>
-#elif __PLUMED_HAS_ARRAYFIRE_OCL
-#include <af/opencl.h>
-#endif
-#endif
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -124,8 +112,6 @@ using the SOLVDENS keyword.
 The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
 the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
-By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on
-a GPU if the ARRAYFIRE libraries are installed and correctly linked.
 [METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
 ##Examples
@@ -222,8 +208,6 @@ using the SOLVDENS keyword.
 The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
 the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
-By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
-GPU if the ARRAYFIRE libraries are installed and correctly linked.
 [METAINFERENCE](METAINFERENCE.md) can be activated using DOSCORE and the other relevant keywords.
 
 ##Examples
@@ -348,14 +332,12 @@ private:
   bool absolute;
   bool pbc;
   bool serial;
-  bool gpu;
   bool onebead;
   bool resolution;
   bool chi2;
   bool chi2ensemble;
   int chi2ensemble_replicas;
   bool isFirstStep;
-  int  deviceid;
   unsigned nres;
   std::vector<unsigned> atoi;
   std::vector<unsigned> atoms_per_bead;
@@ -368,7 +350,6 @@ private:
   std::vector<std::vector<double> > FF_value_solv;
   std::vector<std::vector<double> > FF_value_mixed;
   std::vector<std::vector<double> > FF_value;
-  std::vector<std::vector<float> >  FFf_value;
   // SANS:
   std::vector<std::vector<double> > FF_value_vacuum_H;
   std::vector<std::vector<double> > FF_value_solv_H;
@@ -499,7 +480,6 @@ private:
       8.04490411014108831608E-1
     };
 
-  void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv);
   void sincos_q(const double r, double *s, double *c) const;
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
@@ -563,7 +543,6 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
-  keys.addFlag("GPU",false,"Calculate SAXS using ARRAYFIRE on an accelerator device");
   keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
   keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"Calculate SAXS for a Martini model");
@@ -602,13 +581,11 @@ SAXS::SAXS(const ActionOptions&ao):
   absolute(false),
   pbc(true),
   serial(false),
-  gpu(false),
   onebead(false),
   chi2(false),
   chi2ensemble(false),
   chi2ensemble_replicas(1),
-  isFirstStep(true),
-  deviceid(-1) {
+  isFirstStep(true) {
   if( getName().find("SAXS")!=std::string::npos) {
     saxs=true;
   } else if( getName().find("SANS")!=std::string::npos) {
@@ -618,6 +595,9 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   unsigned size = atoms.size();
+  if(size == 0) {
+    error("SAXS/SANS requires at least one atom");
+  }
 
   parseFlag("SERIAL",serial);
 
@@ -630,34 +610,7 @@ SAXS::SAXS(const ActionOptions&ao):
     log.printf("  without periodic boundary conditions\n");
   }
 
-  parseFlag("GPU",gpu);
-#ifndef  __PLUMED_HAS_ARRAYFIRE
-  if(gpu) {
-    error("To use the GPU mode PLUMED must be compiled with ARRAYFIRE");
-  }
-#endif
 
-  parse("DEVICEID",deviceid);
-#ifdef  __PLUMED_HAS_ARRAYFIRE
-  if(gpu&&comm.Get_rank()==0) {
-    // if not set try to check the one set by the API
-    if(deviceid==-1) {
-      deviceid=plumed.getGpuDeviceId();
-    }
-    // if still not set use 0
-    if(deviceid==-1) {
-      deviceid=0;
-    }
-#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
-    af::setDevice(afcu::getNativeId(deviceid));
-#elif   __PLUMED_HAS_ARRAYFIRE_OCL
-    af::setDevice(afcl::getNativeId(deviceid));
-#else
-    af::setDevice(deviceid);
-#endif
-    af::info();
-  }
-#endif
 
   bool atomistic=false;
   parseFlag("ATOMISTIC",atomistic);
@@ -1000,6 +953,11 @@ SAXS::SAXS(const ActionOptions&ao):
         parameter_mix[s].assign(1, 0.0);
         parameter_solv[s].assign(1, 0.0);
       }
+      for(unsigned i=0; i<nres; ++i) {
+        if(atoi[i] >= NONEBEAD || parameter_vac[atoi[i]].empty() || parameter_mix[atoi[i]].empty() || parameter_solv[atoi[i]].empty()) {
+          error("ONEBEAD form-factor parameters are not available for bead type " + std::to_string(atoi[i]) + " in this build");
+        }
+      }
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -1041,6 +999,12 @@ SAXS::SAXS(const ActionOptions&ao):
         parameter_solv_H[s].assign(1, 0.0);
         parameter_vac_D[s].assign(1, 0.0);
         parameter_mix_D[s].assign(1, 0.0);
+      }
+      for(unsigned i=0; i<nres; ++i) {
+        if(atoi[i] >= NONEBEAD || parameter_vac_H[atoi[i]].empty() || parameter_mix_H[atoi[i]].empty() || parameter_solv_H[atoi[i]].empty() ||
+            parameter_vac_D[atoi[i]].empty() || parameter_mix_D[atoi[i]].empty()) {
+          error("ONEBEAD form-factor parameters are not available for bead type " + std::to_string(atoi[i]) + " in this build");
+        }
       }
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
@@ -1192,9 +1156,6 @@ SAXS::SAXS(const ActionOptions&ao):
     }
   }
 
-  if(gpu && resolution) {
-    error("Resolution function is not supported in GPUs");
-  }
   if(chi2 && resolution) {
     error("CHI2 with SIGMARES is not enabled in the first validation stage; resolution-smeared CHI2 will be tested separately");
   }
@@ -1208,95 +1169,52 @@ SAXS::SAXS(const ActionOptions&ao):
     log.printf("  Resolution function with N: %d\n", Nj);
   }
 
-  if(!gpu) {
-    FF_rank.resize(numq);
-    unsigned n_atom_types;
-    if(onebead) {
-      FF_value.resize(nres,std::vector<double>(numq));
-      n_atom_types=NONEBEAD;
-      if(saxs) {
-        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
-      } else {
-        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
-      }
+  FF_rank.resize(numq);
+  unsigned n_atom_types;
+  if(onebead) {
+    FF_value.resize(nres,std::vector<double>(numq));
+    n_atom_types=NONEBEAD;
+    if(saxs) {
+      FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
     } else {
-      FF_value.resize(size,std::vector<double>(numq));
-    }
-    for(unsigned k=0; k<numq; ++k) {
-      if(!onebead) {
-        for(unsigned i=0; i<size; ++i) {
-          FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
-        }
-        for(unsigned i=0; i<size; ++i) {
-          FF_rank[k] += FF_value[i][k]*FF_value[i][k];
-        }
-      } else {
-        if(saxs) {
-          for(unsigned i=0; i<n_atom_types; ++i) {
-            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
-          }
-        } else { // SANS
-          for(unsigned i=0; i<n_atom_types; ++i) {
-            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
-            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
-            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
-            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
-            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
-          }
-        }
-      }
+      FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
+      FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
     }
   } else {
-    unsigned n_atom_types;
-    if(onebead) {
-      FFf_value.resize(numq,std::vector<float>(nres));
-      n_atom_types=NONEBEAD;
-      if(saxs) {
-        FF_value_vacuum.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed.resize(n_atom_types,std::vector<double>(numq));
-      } else { // SANS
-        FF_value_vacuum_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_solv_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_H.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_vacuum_D.resize(n_atom_types,std::vector<double>(numq));
-        FF_value_mixed_D.resize(n_atom_types,std::vector<double>(numq));
+    FF_value.resize(size,std::vector<double>(numq));
+  }
+  for(unsigned k=0; k<numq; ++k) {
+    if(!onebead) {
+      for(unsigned i=0; i<size; ++i) {
+        FF_value[i][k] = static_cast<double>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
+      }
+      for(unsigned i=0; i<size; ++i) {
+        FF_rank[k] += FF_value[i][k]*FF_value[i][k];
       }
     } else {
-      FFf_value.resize(numq,std::vector<float>(size));
-    }
-    for(unsigned k=0; k<numq; ++k) {
-      if(!onebead) {
-        for(unsigned i=0; i<size; ++i) {
-          FFf_value[k][i] = static_cast<float>(FF_tmp[k][atoi[i]])/(std::sqrt(Iq0));
+      if(saxs) {
+        for(unsigned i=0; i<n_atom_types; ++i) {
+          FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
+          FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
+          FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
         }
-      } else {
-        if(saxs) {
-          for(unsigned i=0; i<n_atom_types; ++i) {
-            FF_value_vacuum[i][k] = static_cast<double>(FF_tmp_vac[k][i]);
-            FF_value_mixed[i][k] = static_cast<double>(FF_tmp_mix[k][i]);
-            FF_value_solv[i][k] = static_cast<double>(FF_tmp_solv[k][i]);
-          }
-        } else { // SANS
-          for(unsigned i=0; i<n_atom_types; ++i) {
-            FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
-            FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
-            FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
-            FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
-            FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
-          }
+      } else { // SANS
+        for(unsigned i=0; i<n_atom_types; ++i) {
+          FF_value_vacuum_H[i][k] = static_cast<double>(FF_tmp_vac_H[k][i]);
+          FF_value_mixed_H[i][k] = static_cast<double>(FF_tmp_mix_H[k][i]);
+          FF_value_solv_H[i][k] = static_cast<double>(FF_tmp_solv_H[k][i]);
+          FF_value_vacuum_D[i][k] = static_cast<double>(FF_tmp_vac_D[k][i]);
+          FF_value_mixed_D[i][k] = static_cast<double>(FF_tmp_mix_D[k][i]);
         }
       }
     }
   }
+
 
   if(!getDoScore()) {
     for(unsigned i=0; i<numq; ++i) {
@@ -1611,121 +1529,6 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
   }
 }
 
-void SAXS::calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
-#ifdef __PLUMED_HAS_ARRAYFIRE
-  unsigned size;
-  if(onebead) {
-    size = nres;
-  } else {
-    size = getNumberOfAtoms();
-  }
-  const unsigned numq = q_list.size();
-
-  std::vector<float> sum;
-  sum.resize(numq);
-
-  std::vector<float> dd;
-  dd.resize(size*3*numq);
-
-  // on gpu only the master rank run the calculation
-  if(comm.Get_rank()==0) {
-    std::vector<float> posx(size), posy(size), posz(size);
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for (unsigned i=0; i<size; ++i) {
-      posx[i] = static_cast<float>(pos[i][0]);
-      posy[i] = static_cast<float>(pos[i][1]);
-      posz[i] = static_cast<float>(pos[i][2]);
-    }
-
-#ifdef  __PLUMED_HAS_ARRAYFIRE_CUDA
-    af::setDevice(afcu::getNativeId(deviceid));
-#elif   __PLUMED_HAS_ARRAYFIRE_OCL
-    af::setDevice(afcl::getNativeId(deviceid));
-#else
-    af::setDevice(deviceid);
-#endif
-    // coordinates of all the particles as rows (1,size)
-    const af::array xall = af::array(1, size, posx.data());
-    const af::array yall = af::array(1, size, posy.data());
-    const af::array zall = af::array(1, size, posz.data());
-    // form factors of all the particles as rows (1,size), one per q
-    std::vector<af::array> ffall(numq);
-    for (unsigned k=0; k<numq; ++k) {
-      ffall[k] = af::array(1, size, &FFf_value[k].front());
-    }
-    // accumulators: intensities and derivatives (1,size) for each q
-    af::array sum_device = af::constant(0, numq, f32);
-    std::vector<af::array> dx_device(numq), dy_device(numq), dz_device(numq);
-    for (unsigned k=0; k<numq; ++k) {
-      dx_device[k] = af::constant(0, 1, size, f32);
-      dy_device[k] = af::constant(0, 1, size, f32);
-      dz_device[k] = af::constant(0, 1, size, f32);
-    }
-
-    // the (i,j) matrices are built for blocks of rows i, so that the memory
-    // does not grow as size^2 (about 4M pairs per block)
-    const unsigned block = std::max(1U, std::min(size, (1U<<22)/std::max(size,1U)));
-    for (unsigned i0=0; i0<size; i0+=block) {
-      const unsigned nb = std::min(block, size-i0);
-      const af::seq rows(i0, i0+nb-1);
-      // x_i - x_j, (nb,size)
-      const af::array dxm = af::tile(af::transpose(xall(0,rows)), 1, size) - af::tile(xall, nb, 1);
-      const af::array dym = af::tile(af::transpose(yall(0,rows)), 1, size) - af::tile(yall, nb, 1);
-      const af::array dzm = af::tile(af::transpose(zall(0,rows)), 1, size) - af::tile(zall, nb, 1);
-      const af::array square = dxm*dxm + dym*dym + dzm*dzm;
-      const af::array dist = af::sqrt(square);
-      // 1/r^2, set to 0 for i==j (the derivative vanishes there)
-      const af::array iszero = (square == 0);
-      const af::array inv_square = (1.0f - iszero.as(f32)) / (square + iszero.as(f32));
-      for (unsigned k=0; k<numq; ++k) {
-        // FF_i*FF_j, (nb,size)
-        const af::array ffmat = af::tile(af::transpose(ffall[k](0,rows)), 1, size) * af::tile(ffall[k], nb, 1);
-        const float qvalue = static_cast<float>(q_list[k]);
-        const af::array dist_q = qvalue*dist;
-        // sin(qr)/qr, 1 for i==j
-        const af::array dist_sin = af::select(iszero, 1.0f, af::sin(dist_q)/(dist_q + iszero.as(f32)));
-        sum_device(k) += af::sum<float>(dist_sin*ffmat);
-        // derivatives with respect to j: sum over the rows i
-        const af::array tmp = ffmat*(dist_sin - af::cos(dist_q))*inv_square;
-        dx_device[k] += af::sum(tmp*dxm, 0);
-        dy_device[k] += af::sum(tmp*dym, 0);
-        dz_device[k] += af::sum(tmp*dzm, 0);
-      }
-    }
-
-    // read out results
-    sum_device.host(&sum.front());
-    std::vector<float> tx(size), ty(size), tz(size);
-    for (unsigned k=0; k<numq; ++k) {
-      dx_device[k].host(tx.data());
-      dy_device[k].host(ty.data());
-      dz_device[k].host(tz.data());
-      for (unsigned i=0; i<size; ++i) {
-        dd[k*size*3+i*3+0] = tx[i];
-        dd[k*size*3+i*3+1] = ty[i];
-        dd[k*size*3+i*3+2] = tz[i];
-      }
-    }
-  }
-
-  comm.Bcast(dd, 0);
-  comm.Bcast(sum, 0);
-
-  for(unsigned k=0; k<numq; ++k) {
-    std::string num;
-    Tools::convert(k,num);
-    Value* val=getPntrToComponent("q-"+num);
-    val->set(sum[k]);
-    if(getDoScore()) {
-      setCalcData(k, sum[k]);
-    }
-    for(unsigned i=0; i<size; ++i) {
-      const unsigned di = k*size*3+i*3;
-      deriv[k*size+i] = Vector(2.*dd[di+0],2.*dd[di+1],2.*dd[di+2]);
-    }
-  }
-#endif
-}
 
 void SAXS::sincos_q(const double r, double *s, double *c) const {
   // sin(q_k r) and cos(q_k r) for all the q values. When the q values are close to a
@@ -1770,6 +1573,9 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
     size = getNumberOfAtoms();
   }
   const unsigned numq = q_list.size();
+  if(size == 0) {
+    error("SAXS/SANS requires at least one atom or bead");
+  }
 
   unsigned stride = comm.Get_size();
   unsigned rank   = comm.Get_rank();
@@ -1945,29 +1751,21 @@ void SAXS::calculate() {
         // Form Factors
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned i=0; i<nres; ++i) {
-            if(!gpu) {
-              if(solv_res[i] == 0) { // buried
-                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
-              } else { // surface
-                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
-              }
-            } else {
-              if(solv_res[i] == 0) { // buried
-                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0);
-              } else { // surface
-                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0);
-              }
+            if(solv_res[i] == 0) { // buried
+              FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho*rho*FF_value_solv[atoi[i]][k] - rho*FF_value_mixed[atoi[i]][k]))/Iq0;
+            } else { // surface
+              FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum[atoi[i]][k] + rho_corr*rho_corr*FF_value_solv[atoi[i]][k] - rho_corr*FF_value_mixed[atoi[i]][k]))/Iq0;
             }
+
           }
         }
-        if(!gpu) {
-          for(unsigned k=0; k<numq; ++k) {
-            FF_rank[k]=0.;
-            for(unsigned i=0; i<nres; ++i) {
-              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
-            }
+        for(unsigned k=0; k<numq; ++k) {
+          FF_rank[k]=0.;
+          for(unsigned i=0; i<nres; ++i) {
+            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
           }
         }
+
       }
     } else { // SANS
       std::vector<bool> deut_res(nres, 0);
@@ -2019,37 +1817,25 @@ void SAXS::calculate() {
         // Form Factors
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned i=0; i<nres; ++i) {
-            if(!gpu) {
-              if(solv_res[i] == 0) { // hydrogen
-                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
-              } else {
-                if(deut_res[i] == 0) {
-                  FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
-                } else {
-                  FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
-                }
-              }
+            if(solv_res[i] == 0) { // hydrogen
+              FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0;
             } else {
-              if(solv_res[i] == 0) { // hydrogen
-                FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans*rho_sans*FF_value_solv_H[atoi[i]][k] - rho_sans*FF_value_mixed_H[atoi[i]][k]))/Iq0);
+              if(deut_res[i] == 0) {
+                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0;
               } else {
-                if(deut_res[i] == 0) {
-                  FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_H[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_H[atoi[i]][k]))/Iq0);
-                } else {
-                  FFf_value[k][i] = static_cast<float>(bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0);
-                }
+                FF_value[i][k] = bead_sign[i]*std::sqrt(std::fabs(FF_value_vacuum_D[atoi[i]][k] + rho_sans_corr*rho_sans_corr*FF_value_solv_H[atoi[i]][k] - rho_sans_corr*FF_value_mixed_D[atoi[i]][k]))/Iq0;
               }
             }
+
           }
         }
-        if(!gpu) {
-          for(unsigned k=0; k<numq; ++k) {
-            FF_rank[k]=0.;
-            for(unsigned i=0; i<nres; ++i) {
-              FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
-            }
+        for(unsigned k=0; k<numq; ++k) {
+          FF_rank[k]=0.;
+          for(unsigned i=0; i<nres; ++i) {
+            FF_rank[k]+=FF_value[i][k]*FF_value[i][k];
           }
         }
+
       }
     }
     // not ONEBEAD
@@ -2062,11 +1848,7 @@ void SAXS::calculate() {
 
   // with DOSCORE the derivatives of the intensities are first contracted with the
   // derivatives of the score, and only then summed over the ranks
-  if(gpu) {
-    calculate_gpu(beads_pos, bd_deriv);
-  } else {
-    calculate_cpu(beads_pos, bd_deriv, !getDoScore());
-  }
+  calculate_cpu(beads_pos, bd_deriv, !getDoScore());
 
   std::vector<double> chi2_dq;
   if(chi2 && !getDoScore()) {
@@ -2225,7 +2007,7 @@ void SAXS::calculate() {
       }
     }
     // calculate_cpu does not sum the derivatives over the ranks with DOSCORE
-    if(!gpu && !serial && comm.Get_size()>1) {
+    if(!serial && comm.Get_size()>1) {
       comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
     }
     Value* val=getPntrToComponent("score");
