@@ -74,10 +74,9 @@ for path in files:
         )
         text = warning_macros + text
         text = "#ifndef ASMJIT_STATIC\n#define ASMJIT_STATIC\n#endif\n" + text
-    if path.suffix == ".cpp":
-        text = (
-            "#ifdef __PLUMED_HAS_ASMJIT\n" + text + "\n#endif // __PLUMED_HAS_ASMJIT\n"
-        )
+    # Guard headers too: codecheck analyzes each header independently with
+    # __PLUMED_HAS_ASMJIT undefined, so unguarded headers remain expensive.
+    text = "#ifdef __PLUMED_HAS_ASMJIT\n" + text + "\n#endif // __PLUMED_HAS_ASMJIT\n"
     name = "moved_string.h" if path.name == "string.h" else path.name
     outputs[name] = (
         "\n".join(line.rstrip() for line in text.splitlines()).rstrip() + "\n"

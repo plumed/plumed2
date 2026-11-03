@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -1226,3 +1227,5 @@ class Emitter : public BaseEmitter, public EmitterExplicitT<Emitter> {
 ASMJIT_END_SUB_NAMESPACE
 
 #endif // ASMJIT_ARM_A64EMITTER_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

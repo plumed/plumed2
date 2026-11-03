@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -87,3 +88,5 @@ ASMJIT_END_NAMESPACE
 
 #endif
 #endif
+
+#endif // __PLUMED_HAS_ASMJIT

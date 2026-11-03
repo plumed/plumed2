@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -391,3 +392,5 @@ ASMJIT_API void ASMJIT_NORETURN assertionFailed(const char* file, int line, cons
 ASMJIT_END_NAMESPACE
 
 #endif // ASMJIT_CORE_GLOBALS_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

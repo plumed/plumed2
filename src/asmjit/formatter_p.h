@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -32,3 +33,5 @@ static ASMJIT_FORCE_INLINE size_t paddingFromOptions(const FormatOptions& format
 ASMJIT_END_NAMESPACE
 
 #endif // ASMJIT_CORE_FORMATTER_H_P_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

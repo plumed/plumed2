@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -561,3 +562,5 @@ static_assert(sizeof(OpSignature) == 8, "InstDB::OpSignature must be 8 bytes lon
 ASMJIT_END_SUB_NAMESPACE
 
 #endif // ASMJIT_X86_X86INSTDB_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

@@ -16,7 +16,9 @@ The importer requires Python 3. It checks the upstream version and duplicate
 filenames before replacing sources, flattens directories and quoted includes,
 renames `string.h` to `moved_string.h` to avoid shadowing the C library header,
 and isolates all AsmJit namespaces and qualified references under `PLMD`.
-Sources compile only when `__PLUMED_HAS_ASMJIT` is enabled. Static embedding is
+Sources and headers are guarded by `__PLUMED_HAS_ASMJIT`, so cppcheck also
+skips imported headers when it analyzes them independently with the feature
+disabled. Static embedding is
 selected, upstream licenses are retained, and Clang warning suppressions are
 scoped using upstream's balanced diagnostic push/pop macros.
 

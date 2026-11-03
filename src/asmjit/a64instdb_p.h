@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -873,3 +874,6 @@ extern const InstNameIndex instNameIndex[26];
 ASMJIT_END_SUB_NAMESPACE
 
 #endif // ASMJIT_A64_ARMINSTDB_H_P_INCLUDED
+
+
+#endif // __PLUMED_HAS_ASMJIT

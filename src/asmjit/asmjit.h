@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // SPDX-License-Identifier: Zlib
@@ -31,3 +32,5 @@
 #endif
 
 #endif // ASMJIT_ASMJIT_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

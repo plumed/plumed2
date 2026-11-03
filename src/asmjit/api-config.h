@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 #ifndef ASMJIT_STATIC
 #define ASMJIT_STATIC
 #endif
@@ -634,3 +635,5 @@ namespace PLMD { namespace asmjit {
 #undef ASMJIT_CXX_MAKE_VER
 
 #endif // ASMJIT_CORE_API_CONFIG_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

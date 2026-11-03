@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -177,3 +178,5 @@ bool writeOffset(void* dst, int64_t offset64, const OffsetFormat& format) noexce
 ASMJIT_END_NAMESPACE
 
 #endif // ASMJIT_CORE_CODEBUFFERWRITER_P_H_INCLUDED
+
+#endif // __PLUMED_HAS_ASMJIT

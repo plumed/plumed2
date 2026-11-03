@@ -1,3 +1,4 @@
+#ifdef __PLUMED_HAS_ASMJIT
 // This file is part of AsmJit project <https://asmjit.com>
 //
 // See asmjit.h or LICENSE.md for license and copyright information
@@ -7,3 +8,5 @@
   #pragma pop_macro("min")
   #pragma pop_macro("max")
 #endif
+
+#endif // __PLUMED_HAS_ASMJIT
