@@ -6,6 +6,14 @@ state_line() {
   local tag="$1"
   local file="$2"
   awk -v tag="$tag" -v file="$file" '
+    function snapshot_value(value, n, parts, result, i, number_pattern) {
+      number_pattern="^[-+]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([eE][-+]?[0-9]+)?$"
+      n=split(value,parts,",")
+      for(i=1;i<=n;i++) if(parts[i] !~ number_pattern) return value
+      result=sprintf("%.12g",parts[1])
+      for(i=2;i<=n;i++) result=result "," sprintf("%.12g",parts[i])
+      return result
+    }
     NR==1 {
       for(i=3;i<=NF;i++) {
         if($i ~ /^sigmaMean_/ || $i ~ /^sigmaMean2History_/ || $i ~ /^sigma_max_/ || $i=="optimized_step_" || $i ~ /^sigma_max_est_/ || $i ~ /^dsigma_/) {
@@ -18,7 +26,11 @@ state_line() {
     }
     NR==2 {
       printf "%s %s",tag,file
-      for(i=1;i<=n;i++) printf " %s=%s",name[i],$idx[i]
+      for(i=1;i<=n;i++) {
+        value=$idx[i]
+        if(name[i]!="optimized_step_") value=snapshot_value(value)
+        printf " %s=%s",name[i],value
+      }
       printf "\n"
     }
   ' "$file"
