@@ -4,7 +4,7 @@ d1c_raw = np.loadtxt("deriv_d1c.reference")[:, 2]
 c1 = np.loadtxt("deriv_c1.reference")[:, 2]
 
 dbase, cbase = 0, 0
-for i in range(5):
+for _ in range(5):
     # Atom 1
     for j in range(3):
         totder = (
