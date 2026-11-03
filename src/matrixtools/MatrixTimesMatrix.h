@@ -594,7 +594,11 @@ void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
           }
         }
       }
-      force_indices.threadsafe_derivatives_end[0] = nm;
+      // Right-operand derivatives start at nmult, not at the number of
+      // matched entries. The gap contains zero left-operand derivatives;
+      // treating it as thread-unsafe would subtract arg1.start from an
+      // unused index and access outside the thread-local force buffer.
+      force_indices.threadsafe_derivatives_end[0] = nm==0 ? 0 : nmult;
       if( nm==0 ) {
         force_indices.tot_indices[0] = 0;
       } else {
