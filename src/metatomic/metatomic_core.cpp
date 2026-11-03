@@ -223,7 +223,7 @@ public:
             "    \"metatensor::SimpleDataArray\", metatensor.ExternalCpuArray\n"
             ")\n"
             "\n"
-            "model = LegacyModel.load(\n"
+            "model = LegacyModel(\n"
             "    ") + nlohmann::json(path).dump() + ",\n"
             "    extensions_directory=" + (
                 extensions_directory.empty() ? "None" : nlohmann::json(extensions_directory).dump()
