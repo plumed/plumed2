@@ -109,7 +109,7 @@ p.cmd(
 g = create_plumed_var(
     p,
     "g",
-    "KDE ARG=tpsi,tphi GRID_BIN=50,50 GRID_MIN=-pi,-pi GRID_MAX=pi,pi BANDWIDTH=0.5,0.5",
+    "KDE ARG=tpsi,tphi GRID_BIN=50,50 GRID_MIN=-pi,-pi GRID_MAX=pi,pi BANDWIDTH=0.5,0.5 KERNEL={GAUSSIAN}",
 )
 
 rg = np.loadtxt("grid.inpt")[:, 2]
