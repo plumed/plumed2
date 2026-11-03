@@ -95,7 +95,7 @@ p.cmd("init")
 p.cmd("readInputLine","MOLINFO STRUCTURE=template.pdb")
 p.cmd("readInputLine","tpsi: TORSION ATOMS1=@psi-2 ATOMS2=@psi-3 ATOMS3=@psi-4 ATOMS4=@psi-5 ATOMS5=@psi-6 ATOMS6=@psi-7 ATOMS7=@psi-8 ATOMS8=@psi-9 ATOMS9=@psi-10 ATOMS10=@psi-11 ATOMS11=@psi-12 ATOMS12=@psi-13 ATOMS13=@psi-14 ATOMS14=@psi-15 ATOMS15=@psi-16 ATOMS16=@psi-17")
 p.cmd("readInputLine","tphi: TORSION ATOMS1=@phi-2 ATOMS2=@phi-3 ATOMS3=@phi-4 ATOMS4=@phi-5 ATOMS5=@phi-6 ATOMS6=@phi-7 ATOMS7=@phi-8 ATOMS8=@phi-9 ATOMS9=@phi-10 ATOMS10=@phi-11 ATOMS11=@phi-12 ATOMS12=@phi-13 ATOMS13=@phi-14 ATOMS14=@phi-15 ATOMS15=@phi-16 ATOMS16=@phi-17")
-g = create_plumed_var( p, "g", "KDE ARG=tpsi,tphi GRID_BIN=50,50 GRID_MIN=-pi,-pi GRID_MAX=pi,pi BANDWIDTH=0.5,0.5") 
+g = create_plumed_var( p, "g", "KDE ARG=tpsi,tphi GRID_BIN=50,50 GRID_MIN=-pi,-pi GRID_MAX=pi,pi BANDWIDTH=0.5,0.5 KERNEL={GAUSSIAN}") 
 
 rg = np.loadtxt("grid.inpt")[:,2]
 
