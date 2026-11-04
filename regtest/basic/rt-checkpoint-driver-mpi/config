@@ -15,8 +15,8 @@ function plumed_regtest_before() {
   # replicas with checkpoints at different steps
   mkdir wrong-step
   cd wrong-step
-  cp ../restart/plumed.0.dat ../restart/plumed.1.dat ../restart/COLVAR.0 ../restart/COLVAR.1 ../restart/plumed.cpt.0 .
-  cp ../restart/plumed_prev.cpt.1 plumed.cpt.1
+  cp ../restart/plumed.0.dat ../restart/plumed.1.dat ../restart/COLVAR.0 ../restart/COLVAR.1 ../restart/plumed.0.cpt .
+  cp ../restart/plumed_prev.1.cpt plumed.1.cpt
   $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out1 2> err1
   cd ..
 }
