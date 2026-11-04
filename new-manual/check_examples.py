@@ -36,17 +36,25 @@ new = {p: n for p, n in broken.items() if n > allowed.get(p, 0)}
 fixed = {p: n for p, n in allowed.items() if broken.get(p, 0) < n}
 
 for page, n in sorted(new.items()):
-    print(f"ERROR: page {page} has {n} failing examples, {allowed.get(page, 0)} allowed")
-    for err in sorted(glob.glob(f"docs/*{page.removesuffix('.md')}.md_working_*.plumed.stderr")):
+    print(
+        f"ERROR: page {page} has {n} failing examples, {allowed.get(page, 0)} allowed"
+    )
+    for err in sorted(
+        glob.glob(f"docs/*{page.removesuffix('.md')}.md_working_*.plumed.stderr")
+    ):
         msg = first_error(err)
         if msg:
             print(f"  {err}: {msg}")
 for page, n in sorted(fixed.items()):
-    print(f"NOTE: page {page} has {broken.get(page, 0)} failing examples, {n} allowed:"
-          " please update broken-examples.allowed")
+    print(
+        f"NOTE: page {page} has {broken.get(page, 0)} failing examples, {n} allowed:"
+        " please update broken-examples.allowed"
+    )
 
 print(f"{sum(broken.values())} failing examples in {len(broken)} pages")
 if new:
-    print("Fix the examples above (or, for an example that cannot run here, use the #SETTINGS"
-          " options of PlumedToHTML), and do not add them to broken-examples.allowed")
+    print(
+        "Fix the examples above (or, for an example that cannot run here, use the #SETTINGS"
+        " options of PlumedToHTML), and do not add them to broken-examples.allowed"
+    )
     sys.exit(1)

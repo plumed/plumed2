@@ -38,8 +38,13 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 def extract_examples():
     """Return a list of (name, settings, lines) for every ```plumed block."""
     # src/include and src/lib only hold links to the files of the modules
-    files = [f for f in sorted(glob.glob(ROOT + "/src/*/*.cpp") + glob.glob(ROOT + "/src/*/*.h"))
-             if not f.startswith((ROOT + "/src/include/", ROOT + "/src/lib/"))]
+    files = [
+        f
+        for f in sorted(
+            glob.glob(ROOT + "/src/*/*.cpp") + glob.glob(ROOT + "/src/*/*.h")
+        )
+        if not f.startswith((ROOT + "/src/include/", ROOT + "/src/lib/"))
+    ]
     files += sorted(glob.glob(ROOT + "/new-manual/**/*.md", recursive=True))
     files += sorted(glob.glob(ROOT + "/plugins/*/README.md"))
     examples = []
@@ -105,24 +110,40 @@ def variants(lines):
                 continue
 
             def changed(newtoken, what):
-                new = code[: m.start()] + newtoken + code[m.end():]
-                return (action, f"line {i + 1}: {what}", lines[:i] + [new] + lines[i + 1:])
+                new = code[: m.start()] + newtoken + code[m.end() :]
+                return (
+                    action,
+                    f"line {i + 1}: {what}",
+                    lines[:i] + [new] + lines[i + 1 :],
+                )
 
             yield changed("", f"{key} removed")
             if NUMBER.match(val):
                 yield changed(f"{key}=0", f"{key}=0")
                 yield changed(f"{key}=-1", f"{key}=-1")
             elif "," in val and not val.startswith("{"):
-                yield changed(f"{key}={val.split(',')[0]}", f"{key}={val.split(',')[0]}")
+                yield changed(
+                    f"{key}={val.split(',')[0]}", f"{key}={val.split(',')[0]}"
+                )
 
 
 SIGNATURES = [
-    ("CRASH", re.compile(r"AddressSanitizer|UndefinedBehaviorSanitizer|runtime error:|Segmentation fault|"
-                         r"Floating point exception")),
+    (
+        "CRASH",
+        re.compile(
+            r"AddressSanitizer|UndefinedBehaviorSanitizer|runtime error:|Segmentation fault|"
+            r"Floating point exception"
+        ),
+    ),
     ("ASSERT", re.compile(r"\+\+\+ assertion failed")),
-    ("EXCEPTION", re.compile(r"map::at|_M_range_check|std::out_of_range|std::invalid_argument|\bstoi\b|\bstod\b|"
-                             r"std::bad_alloc|std::length_error|vector::reserve|basic_string::|"
-                             r"terminate called|filesystem error")),
+    (
+        "EXCEPTION",
+        re.compile(
+            r"map::at|_M_range_check|std::out_of_range|std::invalid_argument|\bstoi\b|\bstod\b|"
+            r"std::bad_alloc|std::length_error|vector::reserve|basic_string::|"
+            r"terminate called|filesystem error"
+        ),
+    ),
 ]
 
 
@@ -138,6 +159,7 @@ def classify(rc, output):
 def make_trajectory(directory, natoms):
     """One frame with natoms atoms on a jittered cubic lattice (no overlapping atoms)."""
     import random
+
     rnd = random.Random(1)
     side = int(round(natoms ** (1.0 / 3) + 0.5))
     box = side * 0.3
@@ -146,7 +168,10 @@ def make_trajectory(directory, natoms):
             f.write(f"{natoms}\n{box} {box} {box}\n")
             for n in range(natoms):
                 x, y, z = n % side, (n // side) % side, n // side // side
-                f.write("X %.4f %.4f %.4f\n" % tuple(0.3 * c + 0.05 * rnd.random() for c in (x, y, z)))
+                f.write(
+                    "X %.4f %.4f %.4f\n"
+                    % tuple(0.3 * c + 0.05 * rnd.random() for c in (x, y, z))
+                )
 
 
 def run_one(lines, settings, args):
@@ -162,18 +187,34 @@ def run_one(lines, settings, args):
                     shutil.copy(os.path.join(args.data, f), dest)
         with open(os.path.join(d, "plumed.dat"), "w") as f:
             f.write("\n".join(lines) + "\n")
-        cmd = [args.plumed, "--no-mpi", "driver", "--plumed", "plumed.dat", "--kt", "2.49"]
+        cmd = [
+            args.plumed,
+            "--no-mpi",
+            "driver",
+            "--plumed",
+            "plumed.dat",
+            "--kt",
+            "2.49",
+        ]
         if args.run:
             shutil.copy(args.trajectory, os.path.join(d, "traj.xyz"))
             cmd += ["--ixyz", "traj.xyz"]
         else:
             cmd += ["--parse-only", "--natoms", str(args.natoms)]
-        if "MOLFILE" in settings and os.path.exists(os.path.join(args.data, settings["MOLFILE"])):
+        if "MOLFILE" in settings and os.path.exists(
+            os.path.join(args.data, settings["MOLFILE"])
+        ):
             cmd += ["--pdb", os.path.join(args.data, settings["MOLFILE"])]
         env = dict(os.environ, PLUMED_STACK_TRACE="no", PLUMED_MAXBACKUP="0")
         try:
-            p = subprocess.run(cmd, cwd=d, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               timeout=args.timeout)
+            p = subprocess.run(
+                cmd,
+                cwd=d,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=args.timeout,
+            )
             output = p.stdout.decode(errors="replace")
             return classify(p.returncode, output), output
         except subprocess.TimeoutExpired as e:
@@ -183,13 +224,26 @@ def run_one(lines, settings, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--run", action="store_true", help="calculate on a short trajectory, not only parse")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="calculate on a short trajectory, not only parse",
+    )
     parser.add_argument("--jobs", type=int, default=os.cpu_count())
-    parser.add_argument("--only", default="", help="regular expression on the example names")
-    parser.add_argument("--no-variants", action="store_true", help="run the examples as they are, only")
-    parser.add_argument("--all-variants", action="store_true",
-                        help="try a change in every example where it appears, not only in the first one")
+    parser.add_argument(
+        "--only", default="", help="regular expression on the example names"
+    )
+    parser.add_argument(
+        "--no-variants", action="store_true", help="run the examples as they are, only"
+    )
+    parser.add_argument(
+        "--all-variants",
+        action="store_true",
+        help="try a change in every example where it appears, not only in the first one",
+    )
     parser.add_argument("--natoms", type=int, default=100000)
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--plumed", default="plumed")
@@ -221,9 +275,15 @@ def main():
     # the files the examples read are taken from a copy of regtest/ and new-manual/extras, which the
     # examples can modify without touching the source tree
     args.data = tempfile.mkdtemp(prefix="auditdata")
-    shutil.copytree(os.path.join(ROOT, "regtest"), os.path.join(args.data, "regtest"), symlinks=True,
-                    ignore=shutil.ignore_patterns("tmp"))
-    shutil.copytree(os.path.join(ROOT, "new-manual", "extras"), os.path.join(args.data, "extras"))
+    shutil.copytree(
+        os.path.join(ROOT, "regtest"),
+        os.path.join(args.data, "regtest"),
+        symlinks=True,
+        ignore=shutil.ignore_patterns("tmp"),
+    )
+    shutil.copytree(
+        os.path.join(ROOT, "new-manual", "extras"), os.path.join(args.data, "extras")
+    )
 
     found = []
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
@@ -241,7 +301,12 @@ def main():
     found.sort(key=lambda x: (x[0], x[1], x[2]))
     for n, (kind, name, what, lines, output) in enumerate(found):
         with open(os.path.join(args.out, f"{n:04d}-{kind}.txt"), "w") as f:
-            f.write(f"# {kind} {name} ({what})\n" + "\n".join(lines) + "\n# ---- output\n" + output)
+            f.write(
+                f"# {kind} {name} ({what})\n"
+                + "\n".join(lines)
+                + "\n# ---- output\n"
+                + output
+            )
         message = ""
         for line in output.splitlines():
             if any(p.search(line) for _, p in SIGNATURES):
