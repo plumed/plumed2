@@ -1,0 +1,21 @@
+plumed_modules=mapping
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 50 --timestep 0.005 --ixyz diala_traj_nm.xyz"
+extra_files="../../trajectories/diala_traj_nm.xyz  ../../trajectories/path_msd/all.pdb "
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz diala_traj_nm.xyz > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/with label [^ ]* //' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "PATH without LAMBDA computing spath and zpath" "p: PATH REFERENCE=all.pdb TYPE=OPTIMAL"
+  expect_error "PATH without LAMBDA computing zpath" "p: PATH REFERENCE=all.pdb TYPE=OPTIMAL GPATH NOSPATH"
+  rm -f bad.dat bad.out
+}

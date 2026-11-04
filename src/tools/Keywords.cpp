@@ -375,6 +375,11 @@ void Keywords::reserveFlag(const std::string & key, const bool defaultValue, con
 
 ///this "copies" a reserved key into the keylist so it can be used
 void Keywords::use(std::string_view  k ) {
+  // Keywords that were reserved in older versions (e.g. ARG of Bias and Function) are now added directly
+  // by the base classes: code written for those versions (e.g. LOADed actions) calls use() on them.
+  if( exists(k) ) {
+    return;
+  }
   plumed_massert( reserved(k), "the " + std::string(k) + " keyword is not reserved");
   keys.emplace_back(k);
 }
