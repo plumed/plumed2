@@ -46,6 +46,9 @@ void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bo
       pbc[i]=ipbc[i];
     }
   } else if( gtype==fibonacci ) {
+    if( np==0 ) {
+      plumed_merror("the number of points on the sphere should be at least 1");
+    }
     bounds_set=true;
     root5 = sqrt(5);
     npoints = np;
@@ -140,6 +143,12 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
     if( bounds_set ) {
       Tools::convert( str_min[i], min[i] );
       Tools::convert( str_max[i], max[i] );
+      if( max[i]<=min[i] ) {
+        plumed_merror("GRID_MAX should be larger than GRID_MIN");
+      }
+    }
+    if( spacing.size()==dimension && (spacing[i]<0 || (spacing[i]==0 && binsin.size()!=dimension)) ) {
+      plumed_merror("GRID_SPACING should be positive");
     }
     if( spacing.size()==dimension && binsin.size()==dimension ) {
       if( spacing[i]==0 ) {
@@ -161,6 +170,9 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
       dx[i]=spacing[i];
     } else if( bounds_set ) {
       plumed_error();
+    }
+    if( bounds_set && nbin[i]==0 ) {
+      plumed_merror("GRID_BIN should be at least 1");
     }
     if( !pbc[i] ) {
       max[i] +=dx[i];

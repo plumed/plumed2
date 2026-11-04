@@ -135,6 +135,9 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
     parseVector("GRID_BIN",gbin);
     std::vector<double> spacing(gmin.size());
     parseVector("GRID_SPACING",spacing);
+    if( gbin.size()!=gmin.size() && spacing.size()!=gmin.size() ) {
+      error("GRID_BIN or GRID_SPACING must be set");
+    }
     std::vector<std::string> pbc(gmin.size());
     parseVector("PERIODIC",pbc);
     std::vector<bool> ipbc( pbc.size() );
