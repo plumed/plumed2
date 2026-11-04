@@ -184,6 +184,9 @@ Accumulate::Accumulate( const ActionOptions& ao ):
     error("input to the accumulate action should be a scalar or a grid");
   }
 
+  if( getStride()==0 ) {
+    error("STRIDE should be a positive number of steps");
+  }
   parse("CLEAR",clearstride);
   if( clearstride>0 ) {
     if( clearstride%getStride()!=0 ) {

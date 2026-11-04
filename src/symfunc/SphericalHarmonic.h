@@ -119,6 +119,9 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
                               ActionWithArguments* action,
                               function::FunctionOptions& options ) {
   action->parse("L",func.tmom);
+  if( action->getNumberOfArguments()<3 ) {
+    action->error("the x, y and z components of the vectors (and optionally a weight) should be given with ARG");
+  }
   action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n",
                      func.tmom,
                      action->getPntrToArgument(0)->getName().c_str(),

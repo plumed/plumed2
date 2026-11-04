@@ -88,7 +88,7 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
   if( getNumberOfMasks()>0 ) {
     nargs = nargs - getNumberOfMasks();
   }
-  if( nargs%2!=0 ) {
+  if( nargs==0 || nargs%2!=0 ) {
     error("should be an even number of arguments to this action, they should all be vectors");
   }
   std::size_t nvals = nargs / 2;

@@ -101,6 +101,9 @@ void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
 
 void CylindricalHarmonic::read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options ) {
   action->parse("DEGREE",func.tmom);
+  if( action->getNumberOfArguments()<2 ) {
+    action->error("the x and y components of the vectors (and optionally a weight) should be given with ARG");
+  }
   action->log.printf("  calculating %dth order cylindrical harmonic with %s and %s as input \n", func.tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str() );
   if( action->getNumberOfArguments()==3 ) {
     action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(2)->getName().c_str() );

@@ -188,6 +188,9 @@ LocalCrystallinity::LocalCrystallinity( const ActionOptions& ao):
     }
     finput += getShortcutLabel() + "_" + istr;
   }
+  if( finput.empty() ) {
+    error("no GVECTOR was specified: the numbered GVECTOR keywords start from GVECTOR1");
+  }
   // This computes the final CV
   readInputLine( getShortcutLabel() + ": COMBINE NORMALIZE PERIODIC=NO ARG=" + finput );
   // Now calculate the total length of the vector

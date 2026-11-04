@@ -95,7 +95,9 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
   if( theargs[0]->getRank()==1 ) {
     for(unsigned i=0; i<elements.size(); ++i) {
       unsigned sel;
-      Tools::convert( elements[i], sel );
+      if( !Tools::convertNoexcept( elements[i], sel ) || sel<1 || sel>mask.size() ) {
+        error("component " + elements[i] + " is not between 1 and the number of elements of " + theargs[0]->getName() );
+      }
       mask[sel-1]=0;
     }
   } else if( theargs[0]->getRank()==2 ) {
@@ -106,8 +108,10 @@ SelectComponents::SelectComponents(const ActionOptions& ao):
       }
       std::string istr=elements[i].substr(0,dot), jstr=elements[i].substr(dot+1);
       unsigned ival, jval;
-      Tools::convert( istr, ival );
-      Tools::convert( jstr, jval );
+      if( !Tools::convertNoexcept( istr, ival ) || !Tools::convertNoexcept( jstr, jval ) || ival<1 || jval<1
+          || ival>theargs[0]->getShape()[0] || jval>theargs[0]->getShape()[1] ) {
+        error("element " + elements[i] + " is not in the matrix " + theargs[0]->getName() );
+      }
       mask[(ival-1)*theargs[0]->getShape()[1] + jval - 1] = 0;
     }
     readInputLine( getShortcutLabel() + "_flat: FLATTEN ARG=" + theargs[0]->getName() );

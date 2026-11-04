@@ -329,12 +329,18 @@ KDEShortcut::KDEShortcut(const ActionOptions&ao):
   parseVector("ARG", args );
   std::vector<Value*> argvals;
   ActionWithArguments::interpretArgumentList( args, plumed.getActionSet(), this, argvals );
+  if( argvals.empty() ) {
+    error("no arguments were specified with ARG");
+  }
   std::string argstr = " ARG=" + argvals[0]->getName();
   for(unsigned i=1; i<argvals.size(); ++i) {
     argstr += "," + argvals[i]->getName();
   }
   std::vector<std::string> bw;
   parseVector("BANDWIDTH",bw);
+  if( bw.empty() ) {
+    error("BANDWIDTH is required unless KERNEL=DISCRETE");
+  }
   std::string bwstr = " BANDWIDTH=" + bw[0];
   for(unsigned i=1; i<bw.size(); ++i) {
     bwstr += "," + bw[i];

@@ -197,6 +197,9 @@ WrapAround::WrapAround(const ActionOptions&ao):
     error("no reference atoms given with AROUND");
   }
   parse("GROUPBY",groupby);
+  if(groupby<1) {
+    error("GROUPBY should be at least 1");
+  }
   parseFlag("PAIR", pair_);
 
   log.printf("  atoms in reference :");
