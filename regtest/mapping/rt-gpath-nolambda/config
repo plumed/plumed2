@@ -1,5 +1,7 @@
 plumed_modules=mapping
 type=driver
+# stack traces (PLUMED_STACK_TRACE=yes in the CI) would end up in the error messages that are compared
+export PLUMED_STACK_TRACE=no
 arg="--plumed plumed.dat --trajectory-stride 50 --timestep 0.005 --ixyz diala_traj_nm.xyz"
 extra_files="../../trajectories/diala_traj_nm.xyz  ../../trajectories/path_msd/all.pdb "
 

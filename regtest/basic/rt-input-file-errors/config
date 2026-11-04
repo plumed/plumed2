@@ -1,4 +1,6 @@
 type=driver
+# stack traces (PLUMED_STACK_TRACE=yes in the CI) would end up in the error messages that are compared
+export PLUMED_STACK_TRACE=no
 arg="--plumed plumed.dat --ixyz traj.xyz"
 
 function expect_error(){
