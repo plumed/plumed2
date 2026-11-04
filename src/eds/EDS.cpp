@@ -1006,7 +1006,7 @@ void EDS::update() {
   // The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
   if (b_write_restart_) {
     if (getStep() == 0 ||
-        ((update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
+        ((update_period_ < 0 && !b_freeze_ && update_calls_ <= std::abs(update_period_) + 2) ||
          (update_period_ > 0 && update_calls_ % update_period_ == 0))) {
       writeOutRestart();
     }
@@ -1017,9 +1017,9 @@ void EDS::update() {
   // assume forces already applied and saved
   // are we ramping to a constant value and not done equilibrating?
   if (update_period_ < 0) {
-    if (update_calls_ <= fabs(update_period_) && !b_freeze_) {
+    if (update_calls_ <= std::abs(update_period_) && !b_freeze_) {
       for (unsigned int i = 0; i < ncvs_; ++i) {
-        current_coupling_[i] += (target_coupling_[i] - set_coupling_[i]) / fabs(update_period_);
+        current_coupling_[i] += (target_coupling_[i] - set_coupling_[i]) / std::abs(update_period_);
       }
     }
     // make sure we don't reset update calls

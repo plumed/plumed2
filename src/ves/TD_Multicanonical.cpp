@@ -436,27 +436,27 @@ void TD_Multicanonical::updateGrid() {
               if (minBin[0] < 0) {
                 minBin[0]=0;
               }
-              if (minBin[0] > (nbin[0]-1)) {
-                minBin[0]=nbin[0]-1;
+              if (minBin[0] > (static_cast<int>(nbin[0])-1)) {
+                minBin[0]=static_cast<int>(nbin[0])-1;
               }
               maxBin[0]=i +  deltaBin[0];
-              if (maxBin[0] > (nbin[0]-1)) {
-                maxBin[0]=nbin[0]-1;
+              if (maxBin[0] > (static_cast<int>(nbin[0])-1)) {
+                maxBin[0]=static_cast<int>(nbin[0])-1;
               }
               // For volume
               minBin[1]=j - deltaBin[1];
               if (minBin[1] < 0) {
                 minBin[1]=0;
               }
-              if (minBin[1] > (nbin[1]-1)) {
-                minBin[1]=nbin[1]-1;
+              if (minBin[1] > (static_cast<int>(nbin[1])-1)) {
+                minBin[1]=static_cast<int>(nbin[1])-1;
               }
               maxBin[1]=j +  deltaBin[1];
-              if (maxBin[1] > (nbin[1]-1)) {
-                maxBin[1]=nbin[1]-1;
+              if (maxBin[1] > (static_cast<int>(nbin[1])-1)) {
+                maxBin[1]=static_cast<int>(nbin[1])-1;
               }
-              for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-                for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
+              for(int l=minBin[0]; l<=maxBin[0]; l++) {
+                for(int m=minBin[1]; m<=maxBin[1]; m++) {
                   std::vector<unsigned> indices_prime(2);
                   indices_prime[0]=l;
                   indices_prime[1]=m;

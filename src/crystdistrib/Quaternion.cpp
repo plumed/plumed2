@@ -370,7 +370,7 @@ void Quaternion::calculateCV( const colvar::ColvarInput<double>& cvin, ColvarOut
     for(unsigned i=0; i<3; ++i) {
       cvout.derivs[3][i] = (S)*(tdy[i].getRow(0) - tdx[i].getRow(1)) + (y[0]-x[1])*dS[i];
     }
-  } else if ((x[0] > y[1])&(x[0] > z[2])) {
+  } else if ((x[0] > y[1])&&(x[0] > z[2])) {
     double S = sqrt(1.0 + x[0] - y[1] - z[2]) * 2; // S=4*qx
     for(unsigned i=0; i<3; ++i) {
       dS[i] = (2/S)*(tdx[i].getRow(0) - tdy[i].getRow(1) - tdz[i].getRow(2));
