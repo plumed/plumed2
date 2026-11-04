@@ -134,10 +134,13 @@ Xsprint::Xsprint(const ActionOptions& ao):
 
   unsigned nshells = 1;
   parse("NSHELLS", nshells);
+  if( nshells<1 ) {
+    error("NSHELLS should be at least 1");
+  }
   std::string matinp;
   parse("MATRIX", matinp);
   if( !matinp.empty() && nshells > 1 ) {
-    plumed_merror("MATRIX keyword can only be used with NSHELLS=1");
+    error("MATRIX keyword can only be used with NSHELLS=1");
   }
   double r0 = 0.0;
   parse("R0", r0);

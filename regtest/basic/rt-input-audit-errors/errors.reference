@@ -1,0 +1,13 @@
+histogram_bandwidth: rejected
+local_crystalinity_gvector: rejected
+cluster_diameter_arg: rejected
+covariance_arg: rejected
+spherical_harmonic_arg: rejected
+cylindrical_harmonic_arg: rejected
+select_components_zero: rejected
+select_components_large: rejected
+select_components_matrix: rejected
+xsprint_nshells: rejected
+maze_optimizer_label: rejected
+wraparound_groupby: rejected
+accumulate_stride: rejected

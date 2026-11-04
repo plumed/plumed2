@@ -766,7 +766,11 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path):
   if(std::strlen(path)==0) {
     return;
   }
-  std::filesystem::current_path(path);
+  try {
+    std::filesystem::current_path(path);
+  } catch(std::filesystem::filesystem_error & e) {
+    plumed_error() << "cannot change directory to " << path << ": " << e.code().message();
+  }
 }
 
 Tools::DirectoryChanger::~DirectoryChanger() {

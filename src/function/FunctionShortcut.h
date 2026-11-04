@@ -81,6 +81,9 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
   ActionShortcut(ao) {
   std::vector<std::string> args;
   parseVector("ARG",args);
+  if( args.empty() ) {
+    error("no arguments were specified with ARG");
+  }
   std::string allargs=args[0];
   for(unsigned i=1; i<args.size(); ++i) {
     allargs += "," + args[i];
