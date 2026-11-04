@@ -1,0 +1,33 @@
+file: restart/plumed.cpt
+format version: 1
+step = 50
+replica = 0
+nreplicas = 1
+files/n = 2
+files/path0 = "COLVAR"
+files/size0 = 5682
+files/crc0 = "3356476355"
+files/fields0 = "time	0	
+d1	0	
+d2	0	
+mr.bias	0	
+mr.force2	0	
+mr.d1_cntr	0	
+mr.d1_work	0	
+mr.d1_kappa	0	
+mr.d2_cntr	0	
+mr.d2_work	0	
+mr.d2_kappa	0	
+mr.work	0	
+"
+files/path1 = "COLVAR2"
+files/size1 = 354
+files/crc1 = "3761330770"
+files/fields1 = "time	0	
+d1	0	
+"
+actions/mr/work[2] = 73.617906015614352 11.381576657546656
+actions/mr/oldaa[2] = 1.8166666666666667 0.59166666666666667
+actions/mr/oldk[2] = 181.66666666666669 100
+actions/mr/olddpotdk[2] = 0.078387438487124608 0.22431649400374418
+actions/mr/oldf[2] = 71.930566700948475 -66.980070767914867
