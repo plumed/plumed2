@@ -1,0 +1,21 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz traj.xyz > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  # the first lines of the message, without the source location and the trace
+  sed -n '/^ERROR : in input for command line tool driver/,$p' bad.out | grep -v "^ERROR : in input\|^(.*)\|^+++\|^PLUMED: \|^$" | head -3 >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "PDB file with a misaligned line" "r: RMSD REFERENCE=bad.pdb TYPE=OPTIMAL"
+  expect_error "grid file written by an action with another label" "d1: DISTANCE ATOMS=1,2
+m2: METAD ARG=d1 PACE=10 HEIGHT=1 SIGMA=0.1 GRID_MIN=0 GRID_MAX=1 GRID_RFILE=grid.dat"
+  rm -f bad.dat bad.out
+}

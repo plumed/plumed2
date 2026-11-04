@@ -1,0 +1,5 @@
+PDB file with a misaligned line: exit code 1
+cannot read the occupancy (columns 55-60) from the following line of a PDB file: in a PDB file each field must be in its own columns
+ATOM      3  CA  ALA A   3     483  97.100   3.000  1.00  1.00
+grid file written by an action with another label: exit code 1
+there is no column labelled m2.bias in the grid file grid.dat (its columns are: d1 m1.bias der_d1 min_d1 max_d1 nbins_d1 periodic_d1). The column is named after the label of the action that wrote the grid: check that the action has the same label

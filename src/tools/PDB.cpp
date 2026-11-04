@@ -428,11 +428,18 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         }
       }
 
-      Tools::convert(occ,o);
-      Tools::convert(bet,b);
-      Tools::convert(x,p[0]);
-      Tools::convert(y,p[1]);
-      Tools::convert(z,p[2]);
+      // a field that cannot be read is an error that shows the line (it was an assertion that showed only the text)
+      auto readField=[&line](const std::string& field, double& val, const std::string& what) {
+        if( !Tools::convertNoexcept(field,val) ) {
+          plumed_merror("cannot read the " + what + " from the following line of a PDB file: in a PDB file each field must be in its own columns\n"
+                        + line.substr(0,line.find_last_not_of(' ')+1));
+        }
+      };
+      readField(occ,o,"occupancy (columns 55-60)");
+      readField(bet,b,"beta (columns 61-66)");
+      readField(x,p[0],"x coordinate (columns 31-38)");
+      readField(y,p[1],"y coordinate (columns 39-46)");
+      readField(z,p[2],"z coordinate (columns 47-54)");
       // scale into nm
       p*=scale;
       numbers.push_back(a);

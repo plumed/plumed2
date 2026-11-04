@@ -741,7 +741,14 @@ std::unique_ptr<GridBase> GridBase::create(const std::string& funcl, const std::
     }
   }
 // And read the stuff from the header
-  plumed_massert( ifile.FieldExist( funcl ), "no column labelled " + funcl + " in grid input");
+  if( !ifile.FieldExist( funcl ) ) {
+    std::string fields;
+    for(const auto & f : fieldnames) {
+      fields += " " + f;
+    }
+    plumed_merror("there is no column labelled " + funcl + " in the grid file " + ifile.getPath() + " (its columns are:" + fields + "). "
+                  "The column is named after the label of the action that wrote the grid: check that the action has the same label");
+  }
   for(unsigned i=0; i<args.size(); ++i) {
     ifile.scanField( "min_" + labels[i], gmin[i]);
     ifile.scanField( "max_" + labels[i], gmax[i]);
