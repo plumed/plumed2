@@ -159,6 +159,7 @@ PLUMED_REGISTER_ACTION(dmap,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LINKCELL_CUTOFF","-1","use a link cells algorithm with this cutoff to optimise the calculation - distances (but not derivatives) for atoms that are further apart than this cutoff and that in the same link cells will still be computed");
+  keys.addDeprecatedKeyword("CUTOFF","LINKCELL_CUTOFF");
 }
 
 void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {

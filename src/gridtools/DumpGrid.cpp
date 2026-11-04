@@ -290,11 +290,6 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   ActionWithArguments(ao),
   ActionPilot(ao),
   fmt("%f") {
-  if( getNumberOfArguments()==0 ) {
-    std::vector<Value*> grids;
-    parseArgumentList("GRID",grids);
-    requestArguments(grids);
-  }
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument");
   }

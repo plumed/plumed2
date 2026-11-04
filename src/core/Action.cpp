@@ -110,6 +110,14 @@ Action::Action(const ActionOptions&ao):
   if( !keywords.exists("NO_ACTION_LOG") ) {
     log.printf("  with label %s\n",actionLabel.c_str());
   }
+  // Keywords from older versions of PLUMED are read as the keyword that replaces them,
+  // so that they also satisfy compulsory keywords that are read by the base classes (e.g. GRID for ARG)
+  for(const auto & key : keywords.getKeys()) {
+    const std::string replacement=keywords.getDeprecatedReplacement(key);
+    if( replacement.length()>0 && linemap.renameKey(key,replacement) ) {
+      warning("keyword " + key + " is deprecated and is read as " + replacement + ": use " + replacement + " instead");
+    }
+  }
   if ( keywords.exists("UPDATE_FROM") ) {
     parse("UPDATE_FROM",update_from);
   }

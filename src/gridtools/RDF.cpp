@@ -167,9 +167,6 @@ RDF::RDF(const ActionOptions&ao):
   // Create contact matrix
   std::string atom_str, group_str, groupa_str, groupb_str;
   parse("GROUP",group_str);
-  if( group_str.size()==0 ) {
-    parse("ATOMS",group_str);
-  }
   if( group_str.length()>0 ) {
     atom_str="GROUP=" + group_str;
   } else {

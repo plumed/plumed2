@@ -157,9 +157,6 @@ PairEntropy::PairEntropy(const ActionOptions&ao):
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
   parse("BANDWIDTH",bw);
-  if( bw.length()==0 ) {
-    parse("SIGMA",bw);
-  }
   parse("KERNEL",kernel);
   std::string dens_str;
   if( dens.length()>0 ) {

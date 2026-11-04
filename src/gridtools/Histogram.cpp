@@ -280,9 +280,6 @@ Histogram::Histogram( const ActionOptions& ao ):
   std::vector<std::string> arglist;
   parseVector("ARG",arglist);
   if( arglist.size()==0 ) {
-    parseVector("DATA",arglist);
-  }
-  if( arglist.size()==0 ) {
     error("arguments have not been specified use ARG");
   }
   std::vector<Value*> theargs;

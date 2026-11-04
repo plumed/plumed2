@@ -413,6 +413,8 @@ void Keywords::addDeprecatedKeyword( std::string_view key,
   if( exists(replacement) ) {
     std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
     add("deprecated", key, docs);
+    // Action reads the value given with key as if it was given with replacement
+    keywords.at(std::string(key)).replacement=replacement;
   } else {
     add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
   }
@@ -541,6 +543,14 @@ unsigned Keywords::size() const {
 std::string Keywords::getKeyword( const unsigned i ) const {
   plumed_assert( i<size() );
   return keys[i];
+}
+
+std::string Keywords::getDeprecatedReplacement( std::string_view k ) const {
+  auto kw=keywords.find(k);
+  if( kw==keywords.end() || !kw->second.type.isDeprecated() ) {
+    return "";
+  }
+  return kw->second.replacement;
 }
 
 bool Keywords::exists( std::string_view k ) const {
