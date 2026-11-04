@@ -1,0 +1,28 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# each bad_NAME.dat must be rejected with an error message containing the text below
+# (before the fix they stopped with a failed assertion or an uncaught std::filesystem exception)
+function plumed_regtest_before(){
+  printf "2\n10 10 10\nX 0 0 0\nX 1 0 0\n" > traj.xyz
+  echo "d: DISTANCE ATOMS=1,2" > plumed.dat
+  echo "PRINT ARG=d FILE=colvar" >> plumed.dat
+  echo "INCLUDE FILE=missing.dat" > bad_include.dat
+  printf "d: DISTANCE ATOMS=1,2\nEXTERNAL ARG=d FILE=missing.dat\n" > bad_external.dat
+  echo "p: PLUMED FILE=plumed.dat CHDIR=missing_directory" > bad_chdir.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+include file missing.dat cannot be found
+external file missing.dat cannot be found
+chdir cannot change directory to missing_directory
+EOT
+}
