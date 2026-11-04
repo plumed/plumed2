@@ -64,7 +64,7 @@ PLUMED_REGISTER_ACTION(Ones,"ONES")
 void Ones::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.add("compulsory","SIZE","the number of ones that you would like to create");
-  keys.setValueDescription("scalar/vector","a vector of ones with the required number of elements");
+  keys.setValueDescription("scalar/vector/matrix","a vector (or a matrix, if SIZE has two values) of ones with the required number of elements");
   keys.needsAction("CONSTANT");
 }
 

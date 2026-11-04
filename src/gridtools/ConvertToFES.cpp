@@ -100,10 +100,7 @@ ConvertToFES::ConvertToFES(const ActionOptions&ao):
   }
 
   std::vector<std::string> argv;
-  parseVector("GRID",argv);
-  if( argv.size()==0 ) {
-    parseVector("ARG",argv);
-  }
+  parseVector("ARG",argv);
   if( argv.size()!=1 ) {
     error("should only have one argument");
   }

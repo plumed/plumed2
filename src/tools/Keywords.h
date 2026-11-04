@@ -112,6 +112,8 @@ private:
     std::string linkaction;
     ///This stores any pages of doucmentation that we should link to
     std::string linkpage;
+    /// For a deprecated keyword: the keyword that replaces it (empty if there is none)
+    std::string replacement;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
@@ -225,6 +227,8 @@ public:
   bool reserved( std::string_view k ) const ;
 /// Get the type for the keyword with string k
   std::string getStyle(const std::string & k ) const ;
+/// The keyword that replaces the deprecated keyword k (empty if k is not deprecated or has no replacement)
+  std::string getDeprecatedReplacement( std::string_view k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation

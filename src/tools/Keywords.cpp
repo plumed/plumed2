@@ -375,6 +375,11 @@ void Keywords::reserveFlag(const std::string & key, const bool defaultValue, con
 
 ///this "copies" a reserved key into the keylist so it can be used
 void Keywords::use(std::string_view  k ) {
+  // Keywords that were reserved in older versions (e.g. ARG of Bias and Function) are now added directly
+  // by the base classes: code written for those versions (e.g. LOADed actions) calls use() on them.
+  if( exists(k) ) {
+    return;
+  }
   plumed_massert( reserved(k), "the " + std::string(k) + " keyword is not reserved");
   keys.emplace_back(k);
 }
@@ -413,6 +418,8 @@ void Keywords::addDeprecatedKeyword( std::string_view key,
   if( exists(replacement) ) {
     std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
     add("deprecated", key, docs);
+    // Action reads the value given with key as if it was given with replacement
+    keywords.at(std::string(key)).replacement=replacement;
   } else {
     add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
   }
@@ -541,6 +548,14 @@ unsigned Keywords::size() const {
 std::string Keywords::getKeyword( const unsigned i ) const {
   plumed_assert( i<size() );
   return keys[i];
+}
+
+std::string Keywords::getDeprecatedReplacement( std::string_view k ) const {
+  auto kw=keywords.find(k);
+  if( kw==keywords.end() || !kw->second.type.isDeprecated() ) {
+    return "";
+  }
+  return kw->second.replacement;
 }
 
 bool Keywords::exists( std::string_view k ) const {
@@ -1021,31 +1036,42 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
     return true;
   }
 
-  std::string sname;
-  std::size_t num=name.find_first_of("-");
-  std::size_t num2=name.find_last_of("_");
-  if( num2!=std::string::npos ) {
-    sname=name.substr(num2);
-  } else if( num!=std::string::npos ) {
-    sname=name.substr(0,num);
-  } else {
-    sname=name;
+  auto comp=components.find(name);
+  if( comp==components.end() ) {
+    std::string sname;
+    std::size_t num=name.find_first_of("-");
+    std::size_t num2=name.find_last_of("_");
+    if( num2!=std::string::npos ) {
+      sname=name.substr(num2);
+    } else if( num!=std::string::npos ) {
+      sname=name.substr(0,num);
+    } else {
+      sname=name;
+    }
+    comp=components.find(sname);
   }
+  // an output that is not documented does not have the correct type
+  // (components.at() threw std::out_of_range here, and users only saw "map::at")
+  if( comp==components.end() ) {
+    return false;
+  }
+  const componentType type=comp->second.type;
 
-  // using valid(components.at(sname).type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
+  // using valid(type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
   // == means "is exactly", the valid(&) construct instead measn "can be different, but must contain the asked flag"
-  if( thisactname=="CENTER" && (components.at(sname).type == componentType::atom || components.at(sname).type == componentType::atoms)) {
+  if( thisactname=="CENTER" && (type == componentType::atom || type == componentType::atoms)) {
     return true;
   }
 
+  // The types are bits of a mask: they must be tested with &, a test with | was always true.
   if( rank==0 ) {
-    return (valid(components.at(sname).type | componentType::scalar));
+    return valid(type & componentType::scalar);
   } else if( hasderiv ) {
-    return (valid(components.at(sname).type | componentType::grid));
+    return valid(type & componentType::grid);
   } else if( rank==1 ) {
-    return (valid(components.at(sname).type | componentType::vector));
+    return valid(type & componentType::vector);
   } else if( rank==2 ) {
-    return (valid(components.at(sname).type | componentType::matrix ));
+    return valid(type & componentType::matrix);
   }
   return false;
 }

@@ -272,7 +272,7 @@ void Path::registerKeywords( Keywords& keys ) {
   if( keys.getDisplayName()=="GPROPERTYMAP" ) {
     keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   }
-  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed. It is required unless the spath and zpath are not calculated (NOSPATH and NOZPATH)");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   if( keys.getDisplayName()=="PATH" ) {
@@ -309,8 +309,6 @@ Path::Path( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao) {
   // Now create all other parts of the calculation
-  std::string lambda;
-  parse("LAMBDA",lambda);
   std::string reference;
   parse("REFERENCE",reference);
   bool nospath=false, nozpath=false, gpath=false;
@@ -319,11 +317,23 @@ Path::Path( const ActionOptions& ao ):
     parseFlag("GPATH",gpath);
   }
   parseFlag("NOZPATH",nozpath);
+  // LAMBDA is only used by spath and zpath: it is not needed with e.g. GPATH NOSPATH NOZPATH
+  std::string lambda;
+  parse("LAMBDA",lambda);
+  if( lambda.length()==0 && !(nospath && nozpath) ) {
+    error("LAMBDA is required to calculate the spath and zpath (use NOSPATH and NOZPATH if you do not need them)");
+  }
   if( gpath ) {
     readInputLine( getShortcutLabel() + "_gpath: GPATH REFERENCE=" + reference );
     readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + "_gpath.s PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + "_gpath.z PERIODIC=NO");
   }
+  // the reference frames are read with these keywords (even if only the geometric path is calculated,
+  // so that they are not reported as unknown keywords)
+  std::string type, reference_data;
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  parse("TYPE",type);
   if( nospath && nozpath ) {
     return;
   }
@@ -335,10 +345,6 @@ Path::Path( const ActionOptions& ao ):
     parseVector("PROPERTY",pnames);
     properties.resize( pnames.size() );
   }
-  std::string type, reference_data;
-  std::vector<std::string> argnames;
-  parseVector("ARG",argnames);
-  parse("TYPE",type);
   if( type.find("DRMSD")!=std::string::npos ) {
     readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );
   } else {

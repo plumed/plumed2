@@ -111,6 +111,36 @@ Another example is if multiple Plumed objects are created in the C/C++ or Python
 If a LOAD command is used in one of these objects, the loaded action will not affect
 the other objects.
 
+
+## Code written for older versions of PLUMED
+
+The C++ interface that is used by the files you LOAD changes between versions of PLUMED.
+If a file that you wrote for an older version does not compile, the following changes are usually enough:
+
+- `#include "core/Atoms.h"` and `plumed.getAtoms()`: the Atoms class was removed in PLUMED 2.10.
+  The include is removed automatically by `plumed mklib` (with a warning). Use the methods of the action instead:
+  `getKBoltzmann()` instead of `plumed.getAtoms().getKBoltzmann()`, `getkBT()` instead of `plumed.getAtoms().getKbT()`
+  (`getkBT()` also reads the TEMP keyword), `getUnits()`, `usingNaturalUnits()` and `getTimeStep()`.
+- `error: invalid use of incomplete type 'class PLMD::Communicator'`: since PLUMED 2.10 the headers of the actions
+  do not include the definition of the communicators any more. If your code uses `comm` or `multi_sim_comm`, add
+
+  ```c++
+  #include "tools/Communicator.h"
+  ```
+
+- `componentsAreNotOptional(keys)` was removed. It only changed the text of the manual, so you can delete the line.
+- `keys.addOutputComponent(name,flag,description)` is deprecated: give the type of the component as third argument,
+  e.g. `keys.addOutputComponent("x","COMPONENTS","scalar","the x component")`.
+- `keys.use("ARG")` after the `registerKeywords` of the base class is not needed any more (ARG is added by the base class),
+  but it is still accepted.
+- A flag cannot be on by default: `keys.addFlag("COMPONENTS",true,...)` stops with "the second argument to addFlag must be false".
+  Use `false` and, if needed, a flag with the opposite meaning.
+- Include paths such as `#include "colvar/ActionRegister.h"` are replaced by `#include "core/ActionRegister.h"`
+  automatically by `plumed mklib` (with a warning).
+- The classes of the old multicolvar module (`multicolvar/MultiColvarBase.h`) were removed in PLUMED 2.10.
+  A collective variable that is computed for many groups of atoms is now written for one group of atoms and then
+  used with the `MultiColvarTemplate` class: see how `src/colvar/Distance.cpp` defines DISTANCE_SCALAR and DISTANCE_VECTOR.
+
 !!! note ""
 
     The example inputs on this page appear as not working because you cannot use the dynamic loading on GitHub Actions. On a machine where this functionality is available these inputs should work.

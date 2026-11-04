@@ -1,0 +1,5 @@
+LOAD FILE=HarmonicOld.cpp
+d: DISTANCE ATOMS=1,2
+h: HARMONIC_OLD ARG=d KAPPA=2.0
+r: RESTRAINT ARG=d AT=0 KAPPA=2.0
+PRINT ARG=h.bias,r.bias FILE=colvar FMT=%8.4f
