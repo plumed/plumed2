@@ -23,11 +23,13 @@
 #include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/Value.h"
 #include "Communicator.h"
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
+#include <sstream>
 
 #include <string>
 #include <cstdlib>
@@ -257,6 +259,32 @@ OFile& OFile::printField( Value* val, const double& v ) {
   return *this;
 }
 
+std::string OFile::getLastFields() const {
+  std::string str;
+  for(const auto & f : previous_fields) {
+    // name, constant flag, value (used only for constant fields), one field per line
+    str+=f.name+"\t"+(f.constant?"1":"0")+"\t"+(f.constant?f.value:"")+"\n";
+  }
+  return str;
+}
+
+void OFile::setLastFields(const std::string& str) {
+  previous_fields.clear();
+  std::istringstream is(str);
+  std::string line;
+  while(std::getline(is,line)) {
+    const size_t t1=line.find('\t');
+    const size_t t2=line.find('\t',t1+1);
+    plumed_massert(t1!=std::string::npos && t2!=std::string::npos,"file "+getPath()+": cannot parse the field header stored in the checkpoint");
+    Field f;
+    f.name=line.substr(0,t1);
+    f.constant=(line.substr(t1+1,t2-t1-1)=="1");
+    f.value=line.substr(t2+1);
+    previous_fields.push_back(f);
+  }
+  fieldChanged=false;
+}
+
 OFile& OFile::printField() {
   bool reprint=false;
   if(fieldChanged || fields.size()!=previous_fields.size()) {
@@ -383,6 +411,7 @@ OFile& OFile::open(const std::string&setpath) {
   syncOpen();
   if(plumed) {
     plumed->insertFile(*this);
+    plumed->checkpointing.registerOutputFile(*this);
   }
   return *this;
 }

@@ -306,6 +306,10 @@ void CheckpointWriter::writeFile(const std::string& path,const std::string& prev
 
 // CheckpointReader
 
+unsigned CheckpointReader::checksum(const std::string& data) {
+  return crc32(data);
+}
+
 std::string CheckpointReader::readFile(const std::string& path) {
   std::ifstream in(path,std::ios::binary);
   if(!in) {
