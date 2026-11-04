@@ -1,0 +1,7 @@
+# DUMPGRID with the default STRIDE=0 writes the grid at the end of the run: this works for an accumulated grid
+# (RDF with CLEAR=0, HISTOGRAM). An instantaneous grid (RDF with the default CLEAR=1) gave a segmentation fault
+# at the end of the run: it is now an error that says to use STRIDE (see config).
+ravg: RDF GROUP=1-60 MAXR=1.2 GRID_BIN=20 BANDWIDTH=0.05 CLEAR=0
+DUMPGRID ARG=ravg FILE=rdf_avg.dat FMT=%8.4f
+rins: RDF GROUP=1-60 MAXR=1.2 GRID_BIN=20 BANDWIDTH=0.05
+DUMPGRID ARG=rins FILE=rdf_ins.dat FMT=%8.4f STRIDE=3

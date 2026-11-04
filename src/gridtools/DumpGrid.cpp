@@ -351,6 +351,14 @@ void DumpGrid::update() {
   ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
+  // A grid that was never calculated has no points, and the loops below read an empty grid (segmentation fault).
+  // This happens with STRIDE=0 (output at the end of the run) for an instantaneous grid that nothing else uses
+  // during the run, e.g. RDF with the default CLEAR=1: at the end only the actions that depend on averages are calculated.
+  if( mygrid.getNumberOfPoints()==0 ) {
+    error("the grid " + getPntrToArgument(0)->getName() + " was never calculated. "
+          "With STRIDE=0 (the default) the grid is written at the end of the run, so it must be accumulated over the trajectory "
+          "(e.g. HISTOGRAM, or RDF with CLEAR=0) or calculated at every step for another action. Use STRIDE to write an instantaneous grid");
+  }
 
   if( getName()=="DUMPCUBE" ) {
     double lunit=1.0;

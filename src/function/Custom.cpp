@@ -530,7 +530,7 @@ ones: ONES SIZE=5184
 dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 HEIGHTS=ones BANDWIDTH=1.0,1.0,1.0
 # Now calculate the average value of the order parameter at each point in the box
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
-DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f
+DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f STRIDE=1
 ```
 
 ## Making lepton library faster
