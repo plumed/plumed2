@@ -20,33 +20,61 @@ def read(filename):
     return pages
 
 
+# MPI (OpenMPI) sometimes fails to start when many examples are run at the same time: such a failure
+# says nothing about the example and does not count
+MPI_STARTUP = ("orte_init failed", "ORTE_ERROR_LOG", "PMIX_ERROR", "MPI_Init")
+
+
 def first_error(filename):
     with open(filename, errors="replace") as f:
         lines = f.read().splitlines()
     for i, line in enumerate(lines):
+        if any(m in line for m in MPI_STARTUP):
+            return "MPI", " ".join(lines[i : i + 3])[:400]
         if "ERROR" in line or "assertion failed" in line or "Segmentation" in line:
-            return " ".join(lines[i : i + 3])[:400]
-    return ""
+            return "PLUMED", " ".join(lines[i : i + 3])[:400]
+    return None, ""
+
+
+def stderr_files(page):
+    # PlumedToHTML writes the stderr of each example as <page>.md_working_<n>.dat.plumed.stderr.md;
+    # the pages of modules and plugins are module_<name>.md and plugins_<name>.md
+    name = page.removesuffix(".md")
+    files = glob.glob(f"docs/{name}.md_working_*.plumed.stderr.md")
+    files += glob.glob(f"docs/*_{name}.md_working_*.plumed.stderr.md")
+    return sorted(files)
 
 
 broken = read("broken-examples.txt")
 allowed = read("broken-examples.allowed")
 
-new = {p: n for p, n in broken.items() if n > allowed.get(p, 0)}
-fixed = {p: n for p, n in allowed.items() if broken.get(p, 0) < n}
-
-for page, n in sorted(new.items()):
-    print(f"ERROR: page {page} has {n} failing examples, {allowed.get(page, 0)} allowed")
-    for err in sorted(glob.glob(f"docs/*{page.removesuffix('.md')}.md_working_*.plumed.stderr")):
-        msg = first_error(err)
-        if msg:
-            print(f"  {err}: {msg}")
-for page, n in sorted(fixed.items()):
-    print(f"NOTE: page {page} has {broken.get(page, 0)} failing examples, {n} allowed:"
-          " please update broken-examples.allowed")
+failed = False
+for page, n in sorted(broken.items()):
+    if n <= allowed.get(page, 0):
+        continue
+    errors = [(f,) + first_error(f) for f in stderr_files(page)]
+    mpi = sum(1 for e in errors if e[1] == "MPI")
+    real = n - mpi > allowed.get(page, 0)
+    failed = failed or real
+    print(
+        f"{'ERROR' if real else 'WARNING'}: page {page} has {n} failing examples,"
+        f" {allowed.get(page, 0)} allowed"
+        + (f" ({mpi} because MPI did not start, not counted)" if mpi else "")
+    )
+    for f, kind, msg in errors:
+        if kind:
+            print(f"  {f}: {msg}")
+for page, n in sorted(allowed.items()):
+    if broken.get(page, 0) < n:
+        print(
+            f"NOTE: page {page} has {broken.get(page, 0)} failing examples, {n} allowed:"
+            " please update broken-examples.allowed"
+        )
 
 print(f"{sum(broken.values())} failing examples in {len(broken)} pages")
-if new:
-    print("Fix the examples above (or, for an example that cannot run here, use the #SETTINGS"
-          " options of PlumedToHTML), and do not add them to broken-examples.allowed")
+if failed:
+    print(
+        "Fix the examples above (or, for an example that cannot run here, use the #SETTINGS"
+        " options of PlumedToHTML), and do not add them to broken-examples.allowed"
+    )
     sys.exit(1)

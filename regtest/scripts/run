@@ -231,10 +231,12 @@ subroutine a()
   call b(10.0)
 end subroutine a
 EOF
+    # flags given in the environment (e.g. -fsanitize in the sanitizers CI job) are kept
     if ! make test-fortran-arg-mismatch 2>err | grep SUCCESS=YES 1> /dev/null ; then
-      export PLUMED_FORTRAN_FLAGS=-fallow-argument-mismatch
+      plumed_fortran_flags_env="$PLUMED_FORTRAN_FLAGS"
+      export PLUMED_FORTRAN_FLAGS="$PLUMED_FORTRAN_FLAGS -fallow-argument-mismatch"
       if ! make test-fortran-arg-mismatch 2>err| grep SUCCESS=YES 1> /dev/null ; then
-        PLUMED_FORTRAN_FLAGS=""
+        PLUMED_FORTRAN_FLAGS="$plumed_fortran_flags_env"
       fi
     fi
 
