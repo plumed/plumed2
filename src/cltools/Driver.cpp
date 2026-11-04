@@ -549,7 +549,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     // with --multi every replica has its own file, with the replica suffix
     std::string fname=restartFromCheckpoint;
     if(multi && !std::filesystem::exists(fname)) {
-      fname+="."+std::to_string(intercomm.Get_rank());
+      fname=FileBase::appendSuffix(fname,"."+std::to_string(intercomm.Get_rank()));
     }
     CheckpointReader reader(CheckpointReader::readFile(fname));
     restartStep=reader.get<long long int>("step");
