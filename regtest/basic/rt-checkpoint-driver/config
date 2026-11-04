@@ -26,6 +26,15 @@ function plumed_regtest_before() {
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2
   cd ..
 
+  # D) an action with a state not stored in the checkpoint (warning) and a
+  # file rewritten at every write (not truncated)
+  mkdir metad
+  cd metad
+  cp ../plumed-metad.dat plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+
   # C) errors: the engine presents a step different from the one of the checkpoint
   mkdir wrong-step
   cd wrong-step
@@ -49,6 +58,8 @@ function plumed_regtest_after() {
     # the files of the interrupted run have been trimmed and the state restored
     grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" $d/out2 | sed 's/by PLUMED.*//'
   done > restart_check
+  grep -h "WARNING: the following actions" metad/out1 | head -n 1 >> restart_check
+  grep -h "truncated\|not truncated\|Checkpoint state restored" metad/out2 >> restart_check
   # the error messages
   for i in 1 2 3 ; do
     grep -v "^(" wrong-step/err$i | grep -v ": *$" | head -n 1 | sed 's/^ERROR : in input for command line tool driver : //' >> restart_check

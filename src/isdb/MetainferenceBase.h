@@ -64,6 +64,10 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
+/// The MC state is not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+  bool hasCheckpointState() const override {
+    return doscore_;
+  }
   explicit MetainferenceBase(const ActionOptions&);
   ~MetainferenceBase();
   void Initialise(const unsigned input);

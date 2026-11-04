@@ -7,6 +7,7 @@ files/n = 2
 files/path0 = "COLVAR"
 files/size0 = 5682
 files/crc0 = "3356476355"
+files/snapshot0 = 0
 files/fields0 = "time	0	
 d1	0	
 d2	0	
@@ -23,6 +24,7 @@ mr.work	0
 files/path1 = "COLVAR2"
 files/size1 = 354
 files/crc1 = "3761330770"
+files/snapshot1 = 0
 files/fields1 = "time	0	
 d1	0	
 "

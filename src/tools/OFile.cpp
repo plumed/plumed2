@@ -536,6 +536,9 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
+  if(plumed) {
+    plumed->checkpointing.markSnapshotFile(path);
+  }
 
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;

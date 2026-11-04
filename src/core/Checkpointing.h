@@ -26,6 +26,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <set>
 
 namespace PLMD {
 
@@ -57,6 +58,9 @@ class Checkpointing {
   long long int stride=0;
 /// Paths of all the files opened for writing in this run
   std::vector<std::string> outputFiles;
+/// Files rewritten from scratch at every write (OFile::rewind): they are not
+/// trimmed at restart, since the next write replaces them anyway
+  std::set<std::string> snapshotFiles;
 /// Field headers recorded in the checkpoint being restored, by path
   std::map<std::string,std::string> lastFields;
 /// Checkpoint being restored, consumed at the first step
@@ -83,6 +87,8 @@ public:
 /// Record a file opened for writing (called by OFile::open) and, after a
 /// restart, restore the header of its last line so that it is not printed again.
   void registerOutputFile(OFile& file);
+/// Mark a file as rewritten from scratch at every write (called by OFile::rewind).
+  void markSnapshotFile(const std::string& fileName);
 /// To be called before any computation of the current step, possibly more
 /// than once per step. Restores the pending checkpoint at the first step
 /// after a restart, and writes a checkpoint when requested by the signal or
