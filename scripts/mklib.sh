@@ -101,6 +101,7 @@ remover() {
 }
 trap "remover" EXIT
 objs=""
+nobj=0
 
 tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
 
@@ -116,7 +117,11 @@ do
     exit 1
   fi
 
-  obj="${file%%.cpp}".o
+  # objects are written in $tmpdir under their file name only (with a counter,
+  # so that files with the same name in different directories do not collide):
+  # $file can contain a directory (e.g. ../code/X.cpp), which does not exist in $tmpdir
+  nobj=$((nobj+1))
+  obj="${nobj}_$(basename "${file%%.cpp}").o"
   
   if [ ! -f "$file" ]
   then
@@ -165,11 +170,14 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   link_command="$link_installed"
 fi
 
-eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmpdir/$lib"
+# as for the objects, $lib can contain a directory: link in $tmpdir under its file name only
+tmplib="$tmpdir/$(basename "$lib")"
+
+eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmplib"
 
 if test -n "$no_clobber" ; then
   # || true is necessary with recent coreutils
-  mv -n "$tmpdir/$lib" $lib || true
+  mv -n "$tmplib" "$lib" || true
 else
-  mv "$tmpdir/$lib" $lib
+  mv "$tmplib" "$lib"
 fi
