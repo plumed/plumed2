@@ -24,6 +24,7 @@ function plumed_regtest_before(){
   printf "${d}e: ECV_MULTITHERMAL ARG=d TEMP=300 TEMP_MIN=-300 TEMP_MAX=600 NO_GEOM_SPACING\n" > bad_multithermal_temp_min_linear.dat
   printf "${d}e: ECV_MULTITHERMAL ARG=d TEMP=300 TEMP_SET_ALL=0,300,600\n" > bad_multithermal_temp_set_all.dat
   printf "${d}e: ECV_MULTITHERMAL_MULTIBARIC ARG=d,v TEMP=300 PRESSURE=1 SET_ALL_TEMP_PRESSURE=0_1,300_1\n" > bad_multibaric_set_all_temp.dat
+  printf "${d}e: ECV_LINEAR ARG=d TEMP=300 LAMBDA_MIN=0 LAMBDA_MAX=1 LAMBDA_STEPS=3 GEOM_SPACING\n" > bad_linear_geom.dat
   printf "${d}${ecv}o: OPES_EXPANDED ARG=e.* PACE=10 PRINT_STRIDE=0\n" > bad_expanded_print_stride.dat
   printf "#! FIELDS time counter rct d DeltaF\n" > state_empty.data
   printf "RESTART\n${d}${ecv}o: OPES_EXPANDED ARG=e.* PACE=10 STATE_RFILE=state_empty.data\n" > bad_expanded_restart_empty.dat
@@ -51,6 +52,7 @@ multithermal_temp_min TEMP_MIN must be greater than zero
 multithermal_temp_min_linear TEMP_MIN must be greater than zero
 multithermal_temp_set_all temperatures must be greater than zero
 multibaric_set_all_temp cannot understand: 0_1
+linear_geom cannot use GEOM_SPACING when LAMBDA_MIN is not greater than zero
 expanded_print_stride PRINT_STRIDE must be greater than zero
 expanded_restart_empty no DeltaF values found
 EOT

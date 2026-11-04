@@ -9,5 +9,6 @@ multithermal_temp_min: rejected
 multithermal_temp_min_linear: rejected
 multithermal_temp_set_all: rejected
 multibaric_set_all_temp: rejected
+linear_geom: rejected
 expanded_print_stride: rejected
 expanded_restart_empty: rejected

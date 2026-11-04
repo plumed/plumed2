@@ -107,8 +107,8 @@ std::vector<double> ExpansionCVs::getSteps(double lambda_min,double lambda_max,c
       //this way lambda[k]/lambda[k+1] is constant
       lambda_min+=shift;
       lambda_max+=shift;
-      plumed_massert(lambda_min>0,"cannot use GEOM_SPACING when %s_MIN is not greater than zero");
-      plumed_massert(lambda_max>0,"cannot use GEOM_SPACING when %s_MAX is not greater than zero");
+      plumed_massert(lambda_min>0,"cannot use GEOM_SPACING when "+msg+"_MIN is not greater than zero");
+      plumed_massert(lambda_max>0,"cannot use GEOM_SPACING when "+msg+"_MAX is not greater than zero");
       const double log_lambda_min=std::log(lambda_min);
       const double log_lambda_max=std::log(lambda_max);
       for(unsigned k=0; k<lambda.size(); k++) {
