@@ -87,6 +87,10 @@ public:
   explicit ABMD(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
+/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+  bool hasCheckpointState() const override {
+    return true;
+  }
 };
 
 PLUMED_REGISTER_ACTION(ABMD,"ABMD")

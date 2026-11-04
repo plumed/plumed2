@@ -142,6 +142,10 @@ private:
   unsigned clearstride;
 public:
   static void registerKeywords( Keywords& keys );
+/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+  bool hasCheckpointState() const override {
+    return true;
+  }
   Collect( const ActionOptions& );
   unsigned getNumberOfDerivatives() override;
   bool calculateOnUpdate() override {

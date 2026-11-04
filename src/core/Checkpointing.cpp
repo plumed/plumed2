@@ -95,6 +95,10 @@ void Checkpointing::registerOutputFile(OFile& f) {
   outputFiles.push_back(fileName);
 }
 
+void Checkpointing::markSnapshotFile(const std::string& fileName) {
+  snapshotFiles.insert(fileName);
+}
+
 std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long size) {
   std::ifstream in(fname,std::ios::binary);
   if(!in) {
@@ -142,6 +146,7 @@ void Checkpointing::write() {
       w.write("path"+num,f);
       w.write("size"+num,size);
       w.write("crc"+num,size>0 ? crcOfTail(f,size) : std::string("0"));
+      w.write("snapshot"+num,snapshotFiles.count(f)>0);
       // header of the last line written, so that the restart does not print it again
       for(const auto & fb : plumed.getFiles()) {
         OFile* of=dynamic_cast<OFile*>(fb);
@@ -238,6 +243,11 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
       const std::string f=r.get<std::string>("path"+num);
       const unsigned long long size=r.get<unsigned long long>("size"+num);
       const std::string crc=r.get<std::string>("crc"+num);
+      if(r.get<bool>("snapshot"+num)) {
+        // rewritten from scratch at every write: the restarted run replaces it
+        log<<"  file "<<f<<" is rewritten at every write and is not truncated\n";
+        continue;
+      }
       std::error_code ec;
       if(!std::filesystem::exists(f,ec)) {
         if(size==0) {
