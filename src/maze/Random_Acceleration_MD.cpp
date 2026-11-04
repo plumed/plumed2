@@ -43,12 +43,14 @@ Every optimizer implemented in the maze module needs a loss function as
 an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
 ```plumed
+l: MAZE_LOSS PARAMS=1,1,1
+
 MAZE_RANDOM_ACCELERATION_MD ...
   LABEL=rw
 
-  OPTIMIZER_STRIDE=_
+  OPTIMIZER_STRIDE=200
   LOSS=l
-  RMIN=_
+  R_MIN=0.5
 
   LIGAND=2635-2646
   PROTEIN=1-2634
