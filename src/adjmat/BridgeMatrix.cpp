@@ -149,6 +149,7 @@ BridgeMatrix::BridgeMatrix(const ActionOptions&ao):
   }
 
   std::string grp_str;
+  parse("GROUP",grp_str);
   if( grp_str.length()>0 ) {
     if( swstr.length()>0 ) {
       readInputLine( getShortcutLabel() + "_cmat: CONTACT_MATRIX GROUPA=" + grp_str + " GROUPB=" + b_atoms + " SWITCH={" + swstr + "}" + pbcstr );
