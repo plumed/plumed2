@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "core/ActionRegister.h"
+#include "tools/Checkpoint.h"
 
 namespace PLMD {
 namespace bias {
@@ -123,6 +124,11 @@ public:
   explicit MovingRestraint(const ActionOptions&);
   void calculate() override;
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 };
 
 PLUMED_REGISTER_ACTION(MovingRestraint,"MOVINGRESTRAINT")
@@ -254,6 +260,24 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
 
 }
 
+// the work is accumulated from the previous step, which can only be
+// reproduced after a restart if the previous forces and centres are stored
+void MovingRestraint::writeCheckpoint(CheckpointWriter& w) {
+  w.write("work",work);
+  w.write("oldaa",oldaa);
+  w.write("oldk",oldk);
+  w.write("olddpotdk",olddpotdk);
+  w.write("oldf",oldf);
+}
+
+void MovingRestraint::readCheckpoint(CheckpointReader& r) {
+  r.read("work",work);
+  r.read("oldaa",oldaa);
+  r.read("oldk",oldk);
+  r.read("olddpotdk",olddpotdk);
+  r.read("oldf",oldf);
+  plumed_massert(work.size()==getNumberOfArguments(),"checkpoint: wrong number of arguments for "+getLabel());
+}
 
 void MovingRestraint::calculate() {
   double ene=0.0;
