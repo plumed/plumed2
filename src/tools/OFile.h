@@ -270,6 +270,12 @@ public:
   this method can be used to clean the field list.
   */
   OFile& clearFields();
+/// Header of the last line written with printField() (field names and the
+/// values of the constant fields), as a string. Stored in the checkpoint
+/// so that a restart does not print the header again.
+  std::string getLastFields() const;
+/// Set the header of the last line written, see getLastFields().
+  void setLastFields(const std::string& str);
 /// Formatted output with explicit format - a la printf
   int printf(const char*fmt,...);
 /// Formatted output with << operator

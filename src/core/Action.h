@@ -35,6 +35,8 @@ namespace PLMD {
 
 class PDB;
 class PlumedMain;
+class CheckpointWriter;
+class CheckpointReader;
 class Communicator;
 class ActionWithValue;
 class ActionWithArguments;
@@ -299,6 +301,20 @@ public:
 /// This method is called once at the very end of the calculation.
 /// The set of all Actions in run for the final time in forward order.
   virtual void runFinalJobs() {}
+
+/// Return true if the action keeps an internal state from one step to the next
+/// that must be restored for an exact restart (accumulators, hills, random
+/// generators, ...). Such actions store it in writeCheckpoint() and restore it in
+/// readCheckpoint(); an action that returns true and writes nothing gets a
+/// warning that the exact restart is not guaranteed. See CHECKPOINT.
+  virtual bool hasCheckpointState() const {
+    return false;
+  }
+/// Store the internal state in the checkpoint. Called on every rank with the
+/// state at the start of the step (after the update of the previous step).
+  virtual void writeCheckpoint(CheckpointWriter&) {}
+/// Restore the internal state from the checkpoint, before the first step after a restart.
+  virtual void readCheckpoint(CheckpointReader&) {}
 
 /// Tell to the Action to flush open files
   void fflush();

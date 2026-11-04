@@ -133,6 +133,8 @@ public:
   explicit CheckpointReader(const std::string& content);
 /// Read a file and parse it.
   static std::string readFile(const std::string& path);
+/// CRC32 of a string, the checksum used in the checkpoint file.
+  static unsigned checksum(const std::string& data);
   unsigned getFormatVersion() const {
     return formatVersion;
   }
