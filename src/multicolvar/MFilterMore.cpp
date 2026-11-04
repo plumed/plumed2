@@ -49,6 +49,7 @@ void MFilterMore::registerKeywords(Keywords& keys) {
   keys.add("compulsory","SWITCH","the switching function that transform");
   keys.addDeprecatedFlag("LOWMEM","");
   keys.addFlag("HIGHEST",false,"this flag allows you to recover the highest of these variables.");
+  keys.setValueDescription("vector","a vector that has the same dimension as the input vector with elements equal to one if the corresponding component of the vector is more than a tolerance and zero otherwise");
   keys.addOutputComponent("highest","HIGHEST","scalar","the largest of the colvars");
   keys.needsAction("CUSTOM");
   keys.needsAction("GROUP");

@@ -75,7 +75,7 @@ void SelectComponents::registerKeywords( Keywords& keys ) {
   keys.needsAction("FLATTEN");
   keys.needsAction("CONSTANT");
   keys.needsAction("SELECT_WITH_MASK");
-  keys.setValueDescription("vector","a vector containing the selected components");
+  keys.setValueDescription("scalar/vector","a vector containing the selected components (a scalar if only one component is selected)");
 }
 
 SelectComponents::SelectComponents(const ActionOptions& ao):

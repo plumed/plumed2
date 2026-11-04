@@ -156,7 +156,7 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
     keys.add("compulsory","MM","12","The m parameter of the switching function");
   }
   keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
-  keys.addOutputComponent("struct","default","scalar","the vectors containing the rmsd distances between the residues and each of the reference structures");
+  keys.addOutputComponent("struct","default","vector","the vectors containing the rmsd distances between the residues and each of the reference structures");
   keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
   keys.needsAction("SECONDARY_STRUCTURE_RMSD");
   keys.needsAction("SECONDARY_STRUCTURE_DRMSD");

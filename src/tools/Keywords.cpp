@@ -1031,31 +1031,42 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
     return true;
   }
 
-  std::string sname;
-  std::size_t num=name.find_first_of("-");
-  std::size_t num2=name.find_last_of("_");
-  if( num2!=std::string::npos ) {
-    sname=name.substr(num2);
-  } else if( num!=std::string::npos ) {
-    sname=name.substr(0,num);
-  } else {
-    sname=name;
+  auto comp=components.find(name);
+  if( comp==components.end() ) {
+    std::string sname;
+    std::size_t num=name.find_first_of("-");
+    std::size_t num2=name.find_last_of("_");
+    if( num2!=std::string::npos ) {
+      sname=name.substr(num2);
+    } else if( num!=std::string::npos ) {
+      sname=name.substr(0,num);
+    } else {
+      sname=name;
+    }
+    comp=components.find(sname);
   }
+  // an output that is not documented does not have the correct type
+  // (components.at() threw std::out_of_range here, and users only saw "map::at")
+  if( comp==components.end() ) {
+    return false;
+  }
+  const componentType type=comp->second.type;
 
-  // using valid(components.at(sname).type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
+  // using valid(type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
   // == means "is exactly", the valid(&) construct instead measn "can be different, but must contain the asked flag"
-  if( thisactname=="CENTER" && (components.at(sname).type == componentType::atom || components.at(sname).type == componentType::atoms)) {
+  if( thisactname=="CENTER" && (type == componentType::atom || type == componentType::atoms)) {
     return true;
   }
 
+  // The types are bits of a mask: they must be tested with &, a test with | was always true.
   if( rank==0 ) {
-    return (valid(components.at(sname).type | componentType::scalar));
+    return valid(type & componentType::scalar);
   } else if( hasderiv ) {
-    return (valid(components.at(sname).type | componentType::grid));
+    return valid(type & componentType::grid);
   } else if( rank==1 ) {
-    return (valid(components.at(sname).type | componentType::vector));
+    return valid(type & componentType::vector);
   } else if( rank==2 ) {
-    return (valid(components.at(sname).type | componentType::matrix ));
+    return valid(type & componentType::matrix);
   }
   return false;
 }

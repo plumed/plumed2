@@ -121,7 +121,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
           savedOutputs.push_back( av_label );
           plumed_massert( keywords.componentHasCorrectType(".#!value",
                           (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ),
-                          "documentation for type of value is incorrect");
+                          "documentation for type of value of " + getName() + " is missing or incorrect");
         } else {
           for(const auto& cname: keywords.getOutputComponents()) {
             if( av_label == getShortcutLabel() + "_" + cname ) {
@@ -129,7 +129,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
               plumed_massert( keywords.componentHasCorrectType(cname,
                               (av->copyOutput(0))->getRank(),
                               (av->copyOutput(0))->hasDerivatives() ),
-                              "documentation for type of component " + cname + " is incorrect");
+                              "documentation for type of component " + cname + " of " + getName() + " is missing or incorrect");
             } else if( keywords.getOutputComponentFlag(cname)!="default" ) {
               std::string thisflag = keywords.getOutputComponentFlag(cname);
               if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + cname)!=std::string::npos ) {
@@ -137,7 +137,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
                 plumed_massert( keywords.componentHasCorrectType(cname,
                                 (av->copyOutput(0))->getRank(),
                                 (av->copyOutput(0))->hasDerivatives() ),
-                                "documentation for type of component " + cname + " is incorrect");
+                                "documentation for type of component " + cname + " of " + getName() + " is missing or incorrect");
               }
             }
           }

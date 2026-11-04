@@ -123,7 +123,11 @@ void PairEntropy::registerKeywords( Keywords& keys ) {
   RDF::registerKeywords( keys );
   keys.needsAction("RDF");
   keys.addDeprecatedKeyword("SIGMA","BANDWIDTH");
-  keys.setValueDescription("scalar","the KL-entropy that is computed from the radial distribution function");
+  if( keys.getDisplayName()=="PAIRENTROPIES" ) {
+    keys.setValueDescription("grid","the KL-entropy that is computed from the radial distribution function of each atom (a function on a grid with one point per atom)");
+  } else {
+    keys.setValueDescription("scalar","the KL-entropy that is computed from the radial distribution function");
+  }
   keys.addDOI("10.1103/PhysRevLett.119.015701");
   keys.needsAction("INTERPOLATE_GRID");
   keys.needsAction("INTEGRATE_GRID");

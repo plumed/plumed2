@@ -146,7 +146,7 @@ void ActionWithValue::addValue( const std::vector<std::size_t>& shape ) {
   if( !keywords.outputComponentExists(".#!value") ) {
     warning("documentation for the value calculated by this action has not been included");
   } else {
-    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),false), "documentation for type of value is incorrect");
+    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),false), "documentation for type of value of " + getName() + " is missing or incorrect");
   }
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
@@ -156,7 +156,7 @@ void ActionWithValue::addValueWithDerivatives( const std::vector<std::size_t>& s
   if( !keywords.outputComponentExists(".#!value") ) {
     warning("documentation for the value calculated by this action has not been included");
   } else {
-    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),true), "documentation for type of value is incorrect");
+    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),true), "documentation for type of value of " + getName() + " is missing or incorrect");
   }
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
@@ -183,7 +183,7 @@ void ActionWithValue::addComponent( const std::string& valname, const std::vecto
     plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
-  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),false), "documentation for type of component " + valname + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),false), "documentation for type of component " + valname + " of " + getName() + " is missing or incorrect");
   std::string thename;
   thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -201,7 +201,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& valname, c
     plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
-  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),true), "documentation for type of component " + valname + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),true), "documentation for type of component " + valname + " of " + getName() + " is missing or incorrect");
   std::string thename;
   thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
