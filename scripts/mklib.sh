@@ -101,6 +101,7 @@ remover() {
 }
 trap "remover" EXIT
 objs=""
+nobj=0
 
 tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
 
@@ -116,7 +117,11 @@ do
     exit 1
   fi
 
-  obj="${file%%.cpp}".o
+  # objects are written in $tmpdir under their file name only (with a counter,
+  # so that files with the same name in different directories do not collide):
+  # $file can contain a directory (e.g. ../code/X.cpp), which does not exist in $tmpdir
+  nobj=$((nobj+1))
+  obj="${nobj}_$(basename "${file%%.cpp}").o"
   
   if [ ! -f "$file" ]
   then
@@ -165,16 +170,19 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   link_libs="$link_libs_installed"
 fi
 
+# as for the objects, $lib can contain a directory: link in $tmpdir under its file name only
+tmplib="$tmpdir/$(basename "$lib")"
+
 # The libraries (PLUMED_MKLIB_LDFLAGS, the kernel and its dependencies) follow the objects:
 # linkers using --as-needed (the default on some distributions, e.g. Ubuntu) drop the
 # libraries listed before the objects using them. The kernel would then not be recorded
 # as a dependency, and LOAD would fail with undefined symbols when the kernel was loaded
 # with RTLD_LOCAL (as done by the python interface).
-eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmpdir/$lib"
+eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmplib"
 
 if test -n "$no_clobber" ; then
   # || true is necessary with recent coreutils
-  mv -n "$tmpdir/$lib" $lib || true
+  mv -n "$tmplib" "$lib" || true
 else
-  mv "$tmpdir/$lib" $lib
+  mv "$tmplib" "$lib"
 fi
