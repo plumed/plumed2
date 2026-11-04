@@ -1,0 +1,42 @@
+# Pages of the manual whose examples are known to fail, with the number of failing examples.
+# Checked by check_examples.py after "make doc": a page not listed here, or with more failures,
+# stops CI. The list must only shrink: fix the examples and remove their lines.
+actions.md 1
+specifying_arguments.md 1
+ANN 1
+BIASVALUE 1
+BRIDGE 1
+BRIDGE_MATRIX 3
+CALIBER 1
+CONTACT_MATRIX 1
+CS2BACKBONE 2
+EDS 1
+EEFSOLV 1
+EMMI 1
+EVALUATE_FUNCTION_FROM_GRID 2
+FIT_TO_TEMPLATE 2
+FUNCPATHGENERAL 2
+FUNCPATHMSD 1
+FUNNEL 2
+FUNNEL_PS 2
+GHBFIX 1
+HBOND_MATRIX 1
+JCOUPLING 1
+LOCALENSEMBLE 1
+MAZE_OPTIMIZER_BIAS 1
+MAZE_RANDOM_ACCELERATION_MD 1
+MAZE_SIMULATED_ANNEALING 1
+MAZE_STEERED_MD 1
+METATOMIC 2
+PIV 2
+PLUMED 2
+RESET_CELL 1
+SANS 1
+SAXS 1
+SHADOW 2
+SPRINT 1
+VES_DELTA_F 1
+VES_LINEAR_EXPANSION 4
+VES_OUTPUT_FES 1
+XSPRINT 1
+openaccPTM 2

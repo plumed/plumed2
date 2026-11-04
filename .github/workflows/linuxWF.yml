@@ -323,6 +323,8 @@ jobs:
     - name: Build doc
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+        # the errors of the failing examples are shown in the manual: no stack trace there
+        PLUMED_STACK_TRACE: no
       if: contains( matrix.variant, '-doc-' )
       run: |
          export PLUMED_MAXBACKUP=0 
@@ -356,6 +358,12 @@ jobs:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
          .ci/push doc
+    # After the push, so that a failing example does not stop the publication of the manual
+    - name: Check the examples of the manual
+      if: contains( matrix.variant, '-doc-' )
+      working-directory: ./new-manual
+      run: |
+         python check_examples.py
     - name: Compile and test pycv
       if: contains( matrix.variant, '-pycv-' )
       working-directory: ./plugins/pycv/

@@ -1758,3 +1758,7 @@ if (
     createSummaryPage(
         broken_inputs, nodocs, undocumented_keywords, noexamples, unexempled_keywords
     )
+    # Pages with failing examples, one "page number_of_failures" per line, read by check_examples.py
+    with open("broken-examples.txt", "w") as f:
+        for link, nbroken in sorted(broken_inputs, key=lambda x: x[0]):
+            f.write(BeautifulSoup(link, "html.parser").get_text() + " " + nbroken + "\n")
