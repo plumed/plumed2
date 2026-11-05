@@ -268,7 +268,7 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
                                         const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
   if( sp_str.length()==0 && spa_str.length()==0 ) {
-    return;
+    action->error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
   }
 
   std::string matinp = lab  + "_mat: CONTACT_MATRIX";

@@ -250,6 +250,9 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     log.printf("  component labelled %s is computed using %s \n",lab.c_str(), myfunc.c_str() );
     input.addFunction( myfunc, this );
   }
+  if( input.funcstr.empty() ) {
+    error("no functions to compute: use FUNCTION1, FUNCTION2, ...");
+  }
   checkRead();
   input.multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();
   taskmanager.setupParallelTaskManager( 4*wval[0]->getShape()[1], 0 );
