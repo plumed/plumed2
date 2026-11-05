@@ -265,7 +265,9 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
       if( getNumberOfMasks()>0 && ncols==0 ) {
         continue;
       }
-      plumed_massert( ncols==getPntrToArgument(k)->getRowLength(i), "failing in " + getLabel() );
+      if( ncols!=getPntrToArgument(k)->getRowLength(i) ) {
+        error("the input matrices " + myarg->getName() + " and " + getPntrToArgument(k)->getName() + " have different sparsity patterns. Use the MASK keyword in the action that calculates " + getPntrToArgument(k)->getName() + " or in this action, so that the same elements are computed in all the matrices");
+      }
       for(unsigned j=0; j<ncols; ++j) {
         plumed_assert( myarg->getRowIndex(i,j)==getPntrToArgument(k)->getRowIndex(i,j) );
       }

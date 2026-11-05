@@ -41,7 +41,7 @@ cf: LESS_THAN ARG=c1 SWITCH={CUBIC D_0=13 D_MAX=13.5}
 # Now construct an adjacency matrix with elements that are equal to one if atoms are within 0.38 of each other
 # and if they both have a coordination number that is less than 13.5
 cmat2: CONTACT_MATRIX GROUP=1-1996 SWITCH={CUBIC D_0=0.34 D_MAX=0.38}
-dmat: OUTER_PRODUCT ARG=cf,cf
+dmat: OUTER_PRODUCT ARG=cf,cf MASK=cmat2
 mat: CUSTOM ARG=cmat2,dmat FUNC=x*y PERIODIC=NO
 # Find the connected componets of this matrix
 dfs: DFSCLUSTERING ARG=mat

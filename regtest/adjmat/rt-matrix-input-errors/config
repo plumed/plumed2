@@ -1,0 +1,40 @@
+type=driver
+plumed_modules="adjmat symfunc envsim matrixtools"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# inputs found by .ci/audit-inputs.py: each bad_NAME.dat hung, crashed or stopped at an assertion on master,
+# and must now be rejected with an error message containing the text below
+function plumed_regtest_before(){
+  {
+    echo 5 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 0 ; echo X 0 1 0 ; echo X 0 0 1 ; echo X 1 1 1
+  } > traj.xyz
+  echo "d: DISTANCE ATOMS=1,2" > plumed.dat
+  echo "PRINT ARG=d FILE=colvar" >> plumed.dat
+  printf "d: DISTANCE_MATRIX GROUP=1-5 LINKCELL_CUTOFF=0\ns: SUM ARG=d PERIODIC=NO\nPRINT ARG=s FILE=out\n" > bad_linkcell_cutoff.dat
+  printf "c: CONTACT_MATRIX GROUP=1-5 R_0=0\ns: SUM ARG=c PERIODIC=NO\nPRINT ARG=s FILE=out\n" > bad_contact_r0.dat
+  printf "c: COORDINATIONNUMBER SPECIES=1-5 SWITCH={RATIONAL R_0=1.0}\nla: LOCAL_AVERAGE SWITCH={RATIONAL R_0=1.0}\n" > bad_local_average_species.dat
+  printf "lc: LOCAL_CRYSTALINITY GVECTOR1=1,1,1 SWITCH={RATIONAL R_0=1.0}\n" > bad_local_crystalinity_species.dat
+  printf "es: ENVIRONMENTSIMILARITY SPECIES=1-5 SIGMA=0.05 CRYSTAL_STRUCTURE=CUSTOM MEAN\n" > bad_envsim_reference.dat
+  printf "cm: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0} COMPONENTS\ng: GSYMFUNC_THREEBODY WEIGHT=cm.w ARG=cm.x,cm.y,cm.z\n" > bad_threebody_function.dat
+  printf "cm: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}\nc: COORDINATIONNUMBER SPECIES=1-5 SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}\nom: OUTER_PRODUCT ARG=c,c\nm: CUSTOM ARG=cm,om FUNC=x*y PERIODIC=NO\ns: SUM ARG=m PERIODIC=NO\nPRINT ARG=s FILE=out\n" > bad_sparsity_pattern.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+linkcell_cutoff the cutoff for the link cells should be positive
+contact_r0 the cutoff for the link cells should be positive
+local_average_species missing atoms input use SPECIES or SPECIESA/SPECIESB
+local_crystalinity_species missing atoms input use SPECIES or SPECIESA/SPECIESB
+envsim_reference the reference environments should be given with REFERENCE
+threebody_function no functions to compute: use FUNCTION1
+sparsity_pattern have different sparsity patterns
+EOT
+}

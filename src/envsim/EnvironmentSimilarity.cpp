@@ -292,6 +292,9 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
         environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
         log.printf("  Reference environment %d : reading %zu reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
       }
+      if( environments.empty() ) {
+        error("with CRYSTAL_STRUCTURE=CUSTOM the reference environments should be given with REFERENCE or REFERENCE_1, REFERENCE_2, ...");
+      }
     }
   } else {
     std::vector<double> lattice_constants;

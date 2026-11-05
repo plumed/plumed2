@@ -369,6 +369,9 @@ void AdjacencyMatrixBase<CV, myPTM>::setLinkCellCutoff( const bool& symmetric,
   if( nl_cut>0 ) {
     linkcells.setCutoff( nl_cut );
   } else {
+    if( !(lcut>0) ) {
+      error("the cutoff for the link cells should be positive: check the parameters of the switching function, or LINKCELL_CUTOFF");
+    }
     linkcells.setCutoff( lcut );
   }
   if( linkcells.getCutoff()<std::numeric_limits<double>::max() ) {
