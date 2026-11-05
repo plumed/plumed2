@@ -32,6 +32,7 @@
 #include "core/ActionRegister.h"
 #include "core/DomainDecomposition.h"
 #include "core/ActionToPutData.h"
+#include <limits>
 #include "core/PbcAction.h"
 #include "core/PlumedMain.h"
 
@@ -307,6 +308,8 @@ void EffectiveEnergyDrift::update() {
   if(changed) {
     unsigned nrecv=0;
     if(nProc>1) {
+      plumed_assert(pNLocalAtoms<=static_cast<unsigned>(std::numeric_limits<int>::max()/6))
+          << "local atom count exceeds MPI count capacity";
       //prepare the data to be sent
       indexS.resize(pNLocalAtoms);
       dataS.resize(pNLocalAtoms*6);
@@ -320,7 +323,10 @@ void EffectiveEnergyDrift::update() {
         dataS[i*6+5] = pForces[i][2];
       }
       //setup the counters and displacements for the communication
-      plumed.comm.Allgather(&pNLocalAtoms,1,&indexCnt[0],1);
+      // Match the receive buffer's MPI_INT type; unsigned/int signatures are
+      // distinct even when both representations have the same byte width.
+      const int previousLocalAtoms=static_cast<int>(pNLocalAtoms);
+      plumed.comm.Allgather(&previousLocalAtoms,1,&indexCnt[0],1);
       indexDsp[0] = 0;
       for(int i=0; i<nProc; i++) {
         dataCnt[i] = indexCnt[i]*6;
