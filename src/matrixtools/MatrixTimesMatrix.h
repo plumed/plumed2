@@ -395,6 +395,9 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
         if( actiondata.gatherForceOnColumns ) {
           arg0_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg0.ncols);
           arg0_start = actiondata.outmat[outrowstart+1+i]*arg0.ncols;
+          // the row of the first matrix changes with i
+          nmult = arg0.bookeeping[arg0_bookstart];
+          vectors = InputVectors( nmult, output.buffer.data() );
         } else {
           arg1_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg1.ncols);
           arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
@@ -430,11 +433,11 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
         CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
         if( actiondata.gatherForceOnColumns ) {
           for(unsigned k=0; k<nm; ++k) {
-            output.derivatives[nmult*i + k] = elem.derivs[0][nmult+k];
+            output.derivatives[arg0.ncols*i + k] = elem.derivs[0][nmult+k];
           }
         } else {
           for(unsigned k=0; k<nm; ++k) {
-            output.derivatives[nmult*i + k] = elem.derivs[0][k];
+            output.derivatives[arg0.ncols*i + k] = elem.derivs[0][k];
           }
         }
       }
@@ -469,7 +472,7 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
             }
           }
         }
-        MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
+        MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*arg0.ncols*i );
         CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
         for(unsigned ii=vectors.nelem; ii<nmult; ++ii) {
           elem.derivs[0][ii] = 0;
@@ -483,6 +486,9 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
         if( actiondata.gatherForceOnColumns ) {
           arg0_bookstart = actiondata.outmat[outrowstart+1+i]*(1+arg0.ncols);
           arg0_start = actiondata.outmat[outrowstart+1+i]*arg0.ncols;
+          // the row of the first matrix changes with i
+          nmult = arg0.bookeeping[arg0_bookstart];
+          vectors = InputVectors( nmult, output.buffer.data() );
         } else {
           arg1_start = arg1.start + actiondata.outmat[outrowstart+1+i]*arg1.ncols;
         }
@@ -494,11 +500,11 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
         CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
         if( actiondata.gatherForceOnColumns ) {
           for(unsigned k=0; k<nmult; ++k) {
-            output.derivatives[nmult*i + k] = elem.derivs[0][nmult+k];
+            output.derivatives[arg0.ncols*i + k] = elem.derivs[0][nmult+k];
           }
         } else {
           for(unsigned k=0; k<nmult; ++k) {
-            output.derivatives[nmult*i + k] = elem.derivs[0][k];
+            output.derivatives[arg0.ncols*i + k] = elem.derivs[0][k];
           }
         }
       }
@@ -511,7 +517,7 @@ void MatrixTimesMatrix<CV, myPTM>::performTask( std::size_t task_index,
         for(unsigned j=0; j<nmult; ++j) {
           vectors.arg2[j] = input.inputdata[arg1_start + arg0.bookeeping[arg0_bookstart+1+j]];
         }
-        MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*nmult*i );
+        MatrixElementOutput elem( 1, 2*nmult, output.values.data() + i, output.derivatives.data() + 2*arg0.ncols*i );
         CV::calculate( input.noderiv, actiondata.funcinput, vectors, elem );
       }
     }
@@ -593,6 +599,11 @@ void MatrixTimesMatrix<CV, myPTM>::getForceIndices( std::size_t task_index,
             break;
           }
         }
+      }
+      // The gap between nm and nmult contains zero derivatives: point it to
+      // this row of the first matrix, so that no other row is touched.
+      for(unsigned j=nm; j<nmult; ++j) {
+        force_indices.indices[0][j] = arg0_start + j;
       }
       // Right-operand derivatives start at nmult, not at the number of
       // matched entries. The gap contains zero left-operand derivatives;
