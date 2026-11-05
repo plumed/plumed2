@@ -24,6 +24,9 @@
 #include "Tools.h"
 #include "lepton/Exception.h"
 #include <cstring>
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+#include "../mpiwrap/provider-registry.hpp"
+#endif
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
@@ -54,6 +57,24 @@ PlumedHandle::PlumedHandle(const char* kernel)
     plumed_finalize(plumed_v2c(loaded));
     plumed_error() << "You are trying to dynamically load a kernel, but the path " << kernel <<" could not be opened";
   }
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+  try {
+    const auto *provider=mpiwrap_provider::currentRegistry().descriptorSnapshot();
+    if(provider) {
+      int api=0;
+      cmd("getApiVersion",&api);
+      // Older guests retain the historical compatible-native-MPI assumption.
+      // API 11 introduces injection through cmd, without changing the table.
+      if(api>=11) {
+        cmd("injectMPIImplementation",provider);
+      }
+    }
+  } catch(...) {
+    plumed_finalize(plumed_v2c(loaded));
+    loaded=nullptr;
+    throw;
+  }
+#endif
 }
 #else
 {

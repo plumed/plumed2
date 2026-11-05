@@ -1,0 +1,15 @@
+type=make
+mpiprocs=4
+plumed_mpi_harness=yes
+
+function plumed_regtest_before() {
+  python3 "$regtest_test_dir/check-coverage.py"
+}
+
+function plumed_regtest_after() {
+  if [[ "$plumed_internal_launch" = yes ]]; then
+    python3 "$regtest_test_dir/check-isolated.py" --abort-only ./exe || echo "FAILURE: isolated MPI_Abort check"
+  else
+    python3 "$regtest_test_dir/check-isolated.py" --abort-only $mpi ./exe || echo "FAILURE: isolated MPI_Abort check"
+  fi
+}

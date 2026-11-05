@@ -320,6 +320,28 @@ jobs:
          cd python
          pip install --user pytest
          pytest -v
+    - name: Test serial build with injected Open MPI
+      if: ${{ (contains(matrix.variant, '-debug-') && !contains(matrix.variant, '-mpi-')) || contains(matrix.variant, '-intel-') }}
+      run: |
+        set -o pipefail
+        if [[ "${{ matrix.variant }}" == *-intel-* ]]; then
+          # Remove the compiler repository before apt refreshes package indexes.
+          sudo rm -f /etc/apt/sources.list.d/oneAPI.list
+        fi
+        sudo apt-get update -qq
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
+        /usr/bin/mpic++.openmpi -std=c++98 regtest/scripts/mpi-cli.cpp \
+          -L"$HOME/opt/lib" -Wl,-rpath,"$HOME/opt/lib" -lplumed \
+          -o "$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_CLI_PROGRAM_NAME="$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_MPIRUN=/usr/bin/mpiexec.openmpi
+        # An absolute mpiexec path can prepend /usr/bin in rank environments.
+        # Keep the Python selected by setup-python, with its installed packages.
+        export PLUMED_PYTHON_SELECT="$(python3 -c 'import sys; print(sys.executable)')"
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
+        make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
+        make -C regtest checkfail
     - name: Build doc
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
@@ -371,6 +393,77 @@ jobs:
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
+
+  # A serial PLUMED build can use real MPI supplied by its host at runtime. Keep
+  # this separate from the matrix so the full suite runs once through injection.
+  serial-mpi-injection:
+    runs-on: ubuntu-24.04
+    env:
+      PLUMED_REGTEST_JOBS: 2
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up the serial build environment
+      uses: ./.github/actions/linux-setup
+      with:
+        pytest-make: true
+        mpi: false
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.11"
+    - name: Install Python packages needed for tests
+      run: |
+        python -m pip install --upgrade pip
+        pip install --user -r ./python/requirements_build.txt
+        pip install --user -r ./python/requirements_run.txt
+        pip install --user -r ./.ci/pytorch/requirements.txt
+    - name: Build and install PLUMED without MPI
+      run: |
+        ./configure --enable-boost_serialization --disable-dependency-tracking \
+          --enable-modules=all --disable-mpi --prefix="$HOME/opt"
+        make -j 4
+        make install
+    - name: Install Open MPI and build the injecting host
+      id: injection_host
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
+        /usr/bin/mpic++.openmpi -std=c++98 regtest/scripts/mpi-cli.cpp \
+          -L"$HOME/opt/lib" -Wl,-rpath,"$HOME/opt/lib" -lplumed \
+          -o "$RUNNER_TEMP/plumed-openmpi-host"
+    - name: Run the full regression suite through the MPI host
+      run: |
+        set -o pipefail
+        export PLUMED_CLI_PROGRAM_NAME="$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_MPIRUN=/usr/bin/mpiexec.openmpi
+        # An absolute mpiexec path can prepend /usr/bin in rank environments.
+        # Keep the Python selected by setup-python, with its installed packages.
+        export PLUMED_PYTHON_SELECT="$(python3 -c 'import sys; print(sys.executable)')"
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
+        make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
+        make -C regtest checkfail
+    - name: Run focused MPI provider and thread-MPI checks
+      if: ${{ !cancelled() && steps.injection_host.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        plumed mkmpi --compiler /usr/bin/mpicc.openmpi \
+          --out "$RUNNER_TEMP/provider-openmpi.so"
+        bash regtest/mpiwrap/check-mpi-host-injection.sh \
+          /usr/bin/mpic++.openmpi /usr/bin/mpiexec.openmpi "$PLUMED_KERNEL" \
+          "$RUNNER_TEMP/provider-openmpi.so"
+        bash regtest/mpiwrap/check-mpi-provider-selection.sh \
+          plumed "$RUNNER_TEMP/provider-openmpi.so" /usr/bin/mpicc.openmpi
+        PLUMED_MPI_WRAPPER="$RUNNER_TEMP/provider-openmpi.so" \
+          bash regtest/mpiwrap/check-mpi-provider-chdir.sh \
+          "$RUNNER_TEMP/plumed-openmpi-host"
+        CXX=g++ bash src/mpiwrap/check-thread-mpi-cli.sh \
+          "$HOME/opt/bin/plumed"
+        cmake -S src/thread_mpi -B "$RUNNER_TEMP/thread-mpi-tests"
+        cmake --build "$RUNNER_TEMP/thread-mpi-tests" -j 4
+        ctest --test-dir "$RUNNER_TEMP/thread-mpi-tests" --output-on-failure
 
   # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
   # (see src/*/module.type). It checks that they do not depend on optional modules and that make and

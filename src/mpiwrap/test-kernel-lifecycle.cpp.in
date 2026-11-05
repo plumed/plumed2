@@ -1,0 +1,89 @@
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_WRAPPER_EXTERN 0
+#define __PLUMED_WRAPPER_LINK_RUNTIME 1
+#define __PLUMED_HAS_DLOPEN 1
+#include "../wrapper/Plumed.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <stdexcept>
+
+namespace PLMD {
+namespace {
+bool exists(const char *path) {
+  return std::ifstream(path).good();
+}
+void require(bool condition) {
+  if(!condition) {
+    throw std::runtime_error("kernel lifecycle check failed");
+  }
+}
+}
+}
+
+int main(int argc,char **argv) {
+  if(argc!=6) {
+    return 2;
+  }
+  using PLMD::require;
+  using PLMD::exists;
+  const char *unloaded=argv[4];
+  const int descriptor=1;
+  setenv("MPIW_TEST_KERNEL_MARKER",unloaded,1);
+  setenv("MPIW_TEST_CREATE_MARKER",argv[5],1);
+  unsetenv("PLUMED_LOAD_DLCLOSE");
+  std::remove(unloaded);
+  // Ordinary creation precedes injection. Both objects keep independent
+  // loader references, while installation affects the shared kernel.
+  {
+    PLMD::Plumed first=PLMD::Plumed::dlopen(argv[1]);
+    require(first.valid());
+    int api=0;
+    first.cmd("getApiVersion",&api);
+    require(api==11);
+    first.cmd("injectMPIImplementation",&descriptor);
+    first.cmd("requireProvider");
+    {
+      PLMD::Plumed second=PLMD::Plumed::dlopen(argv[1]);
+      second.cmd("requireProvider");
+      second.cmd("injectMPIImplementation",&descriptor);
+    }
+    require(!exists(unloaded));
+  }
+  require(exists(unloaded));
+  // A subsequent load is not promised to remember a previous installation.
+  std::remove(unloaded);
+  setenv("PLUMED_KERNEL",argv[1],1);
+  {
+    PLMD::Plumed object;
+    require(object.valid());
+    object.cmd("injectMPIImplementation",&descriptor);
+    object.cmd("requireProvider");
+  }
+  unsetenv("PLUMED_KERNEL");
+  require(exists(unloaded));
+  // An old kernel still creates successfully; its API level excludes injection.
+  {
+    PLMD::Plumed old=PLMD::Plumed::dlopen(argv[2]);
+    require(old.valid());
+    int api=0;
+    old.cmd("getApiVersion",&api);
+    require(api==10);
+  }
+  // Injection failure uses the ordinary command exception path. The object
+  // remains valid and is finalized normally, releasing its library reference.
+  std::remove(unloaded);
+  {
+    PLMD::Plumed rejected=PLMD::Plumed::dlopen(argv[3]);
+    require(rejected.valid());
+    bool threw=false;
+    try {
+      rejected.cmd("injectMPIImplementation",&descriptor);
+    } catch(const std::exception &) {
+      threw=true;
+    }
+    require(threw && rejected.valid() && !exists(unloaded));
+  }
+  require(exists(unloaded));
+}

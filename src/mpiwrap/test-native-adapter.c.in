@@ -1,0 +1,132 @@
+/* Native adapter dispatches typed MPI calls without a wrapper-level hop. */
+#include <mpi.h>
+#include "provider-abi.h"
+#include "provider-callbacks.h"
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#include "mpiwrap_implementation.cpp.inc"
+
+static int saw_status_ignore;
+static int saw_group_ranges;
+
+int MPI_Comm_rank(MPI_Comm comm, int *rank) {
+  (void)comm;
+  *rank = 37;
+  return MPI_SUCCESS;
+}
+
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm) {
+  *newcomm = comm;
+  return MPI_SUCCESS;
+}
+
+int MPI_Waitsome(int incount, MPI_Request array_of_requests[], int *outcount,
+                 int array_of_indices[], MPI_Status array_of_statuses[]) {
+  assert(incount == 2);
+  assert(array_of_requests[0] == MPI_REQUEST_NULL);
+  *outcount = 1;
+  array_of_indices[0] = 1;
+  if (array_of_statuses == MPI_STATUSES_IGNORE) {
+    saw_status_ignore = 1;
+  } else {
+    memset(&array_of_statuses[0], 0, sizeof(array_of_statuses[0]));
+  }
+  return MPI_SUCCESS;
+}
+
+int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3],
+                         MPI_Group *newgroup) {
+  assert(n == 2);
+  assert(ranges[0][0] == 0 && ranges[0][1] == 6 && ranges[0][2] == 2);
+  assert(ranges[1][0] == 3 && ranges[1][1] == 9 && ranges[1][2] == -1);
+  *newgroup = group;
+  saw_group_ranges = 1;
+  return MPI_SUCCESS;
+}
+
+static plumed_mpiw_generic_fn find_function(const char *name) {
+  const plumed_mpiw_provider_descriptor *descriptor = plumed_mpiw_get_descriptor();
+  uint64_t i;
+  for (i = 0; i < descriptor->function_count; ++i) {
+    if (strcmp(descriptor->functions[i].name, name) == 0) {
+      return descriptor->functions[i].function;
+    }
+  }
+  return NULL;
+}
+
+int main(void) {
+  MPI_Comm communicator = MPI_COMM_WORLD;
+  MPI_Comm duplicate = MPI_COMM_NULL;
+  MPI_Comm *duplicate_pointer = &duplicate;
+  int rank = -1;
+  int *rank_pointer = &rank;
+  int return_value = -1;
+  plumed_mpiw_transport_MPI_Comm_rank_fn rank_dispatch;
+  plumed_mpiw_transport_MPI_Comm_dup_fn dup_dispatch;
+  plumed_mpiw_transport_MPI_Waitsome_fn waitsome_dispatch;
+  plumed_mpiw_transport_MPI_Group_range_incl_fn range_dispatch;
+  plumed_mpiw_generic_fn erased;
+  MPI_Request requests[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
+  int outcount = -1;
+  int indices[2] = {-7, -7};
+  int ranges[2][3] = {{0, 6, 2}, {3, 9, -1}};
+  int (*ranges_pointer)[3] = ranges;
+  int n = 2;
+  MPI_Group group = MPI_GROUP_NULL;
+  MPI_Group newgroup = MPI_GROUP_NULL;
+  MPI_Group *newgroup_pointer = &newgroup;
+  plumed_mpiw_constant_accessor_fn status_ignore_accessor = NULL;
+  void *status_ignore = (void *)1;
+  uint64_t i;
+
+  erased = find_function("MPI_Comm_rank");
+  assert(erased != NULL);
+  rank_dispatch = (plumed_mpiw_transport_MPI_Comm_rank_fn)erased;
+  rank_dispatch(&communicator, rank_pointer, &return_value);
+  assert(return_value == MPI_SUCCESS && rank == 37);
+
+  erased = find_function("MPI_Comm_dup");
+  assert(erased != NULL);
+  dup_dispatch = (plumed_mpiw_transport_MPI_Comm_dup_fn)erased;
+  return_value = -1;
+  dup_dispatch(&communicator, duplicate_pointer, &return_value);
+  assert(return_value == MPI_SUCCESS && duplicate == communicator);
+
+  erased = find_function("MPI_Waitsome");
+  assert(erased != NULL);
+  waitsome_dispatch = (plumed_mpiw_transport_MPI_Waitsome_fn)erased;
+  return_value = -1;
+  waitsome_dispatch(&n, requests, &outcount, indices, MPI_STATUSES_IGNORE,
+                    &return_value);
+  assert(return_value == MPI_SUCCESS && outcount == 1 && indices[0] == 1);
+  assert(saw_status_ignore);
+
+  erased = find_function("MPI_Group_range_incl");
+  assert(erased != NULL);
+  range_dispatch = (plumed_mpiw_transport_MPI_Group_range_incl_fn)erased;
+  return_value = -1;
+  range_dispatch(&group, &n, ranges_pointer, newgroup_pointer, &return_value);
+  assert(return_value == MPI_SUCCESS && saw_group_ranges);
+  assert(newgroup == group);
+
+  for (i = 0; i < plumed_mpiw_descriptor.metadata_count; ++i) {
+    const plumed_mpiw_metadata_entry *entry = &plumed_mpiw_descriptor.metadata[i];
+    if (strcmp(entry->name, "value:MPI_STATUS_IGNORE") == 0) {
+      assert(entry->value_size == sizeof(status_ignore_accessor));
+      assert(entry->native_value_size == sizeof(MPI_Status *));
+      memcpy(&status_ignore_accessor, entry->value, sizeof(status_ignore_accessor));
+      break;
+    }
+  }
+  assert(status_ignore_accessor != NULL);
+#if defined(PLUMED_MPIW_EXPECT_NONNULL_STATUS_IGNORE)
+  assert(MPI_STATUS_IGNORE != NULL);
+#endif
+  status_ignore_accessor(&status_ignore);
+  assert(status_ignore == MPI_STATUS_IGNORE);
+  assert(plumed_mpiw_descriptor.native_status_size == sizeof(MPI_Status));
+  assert(plumed_mpiw_descriptor.native_comm_size == sizeof(MPI_Comm));
+  return 0;
+}

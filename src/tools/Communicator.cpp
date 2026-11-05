@@ -29,38 +29,58 @@
 namespace PLMD {
 
 bool Communicator::plumedHasMPI() {
-#ifdef __PLUMED_HAS_MPI
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_HAS_THREAD_MPI)
   return true;
+#elif defined(__PLUMED_MPIWRAP)
+  return mpiwrap_provider_installed();
 #else
   return false;
 #endif
 }
 
 Communicator::Communicator()
-#ifdef __PLUMED_HAS_MPI
-  : communicator(MPI_COMM_SELF)
+#if defined(__PLUMED_HAS_MPI)
+  : communicator(MPI_COMM_SELF), communicatorResolved(true)
 #endif
-{
-}
+{}
 
-Communicator::Communicator(const Communicator&pc)
-#ifdef __PLUMED_HAS_MPI
-// communicator must be initialized before calling Set_comm, which frees it if needed
-  : communicator(MPI_COMM_SELF)
-#endif
-{
-  Set_comm(pc.communicator);
+Communicator::Communicator(const Communicator&pc): Communicator() {
+  if(pc.communicatorResolved) {
+    Set_comm(pc.communicator);
+  }
   standIn=pc.standIn;
 }
 
 Communicator::Status Communicator::StatusIgnore;
 
 Communicator& Communicator::operator=(const Communicator&pc) {
-  if (this != &pc) {
-    Set_comm(pc.communicator);
+  if(this != &pc) {
+    if(pc.communicatorResolved) {
+      Set_comm(pc.communicator);
+    } else if(communicatorResolved) {
+      // Release the old owned handle, but preserve the source's deferred state.
+      if(initialized() && communicator!=MPI_COMM_SELF &&
+          communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
+        MPI_Comm_free(&communicator);
+      }
+      communicator=MPI_Comm{};
+      communicatorResolved=false;
+    }
     standIn=pc.standIn;
   }
   return *this;
+}
+
+void Communicator::resolveCommunicator()const {
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+  // Construction must leave time for injection through the ordinary cmd API.
+  // Zero bytes are not a sentinel: zero may itself be a valid native handle.
+  mpiwrap_ensure_provider_selected();
+#endif
+  if(!communicatorResolved && initialized()) {
+    communicator=MPI_COMM_SELF;
+    communicatorResolved=true;
+  }
 }
 
 void Communicator::setStandIn(bool s) {
@@ -88,29 +108,27 @@ void Communicator::checkNotStandIn()const {
 
 int Communicator::Get_rank()const {
   checkNotStandIn();
+  resolveCommunicator();
   int r=0;
-#ifdef __PLUMED_HAS_MPI
   if(initialized()) {
     MPI_Comm_rank(communicator,&r);
   }
-#endif
   return r;
 }
 
 int Communicator::Get_size()const {
   checkNotStandIn();
+  resolveCommunicator();
   int s=1;
-#ifdef __PLUMED_HAS_MPI
   if(initialized()) {
     MPI_Comm_size(communicator,&s);
   }
-#endif
   return s;
 }
 
 void Communicator::Set_comm(MPI_Comm c) {
   standIn=false;
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   if(initialized()) {
     if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
       MPI_Comm_free(&communicator);
@@ -122,70 +140,52 @@ void Communicator::Set_comm(MPI_Comm c) {
       communicator=MPI_COMM_SELF;
     }
   }
-#else
-  (void) c;
-#endif
 }
 
 Communicator::~Communicator() {
-#ifdef __PLUMED_HAS_MPI
-  if(initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
+  if(communicatorResolved && initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD && communicator!=MPI_COMM_NULL) {
     MPI_Comm_free(&communicator);
   }
-#endif
 }
 
 void Communicator::Set_comm(const TypesafePtr & val) {
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
-    Set_comm(*(const MPI_Comm*)val.get<const void*>());
+    Set_comm(mpiwrap_Comm_from_native(val.get<const void*>()));
   }
-#else
-  (void) val;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
 }
 
 void Communicator::Set_fcomm(const TypesafePtr & val) {
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
     MPI_Comm comm=MPI_Comm_f2c(*(const MPI_Fint*)val.get<const void*>());
     Set_comm(comm);
   }
-#else
-  (void) val;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
 }
 
 void Communicator::Abort(int errorcode) {
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   if(initialized()) {
     MPI_Abort(communicator,errorcode);
   }
-#endif
   std::fprintf(stderr,"aborting with error code %d\n",errorcode);
   std::abort();
 }
 
-void Communicator::Bcast(Data data,int root) {
+void Communicator::Bcast(const Data& data,int root) {
   checkNotStandIn();
-#if defined(__PLUMED_HAS_MPI)
+  resolveCommunicator();
   if(initialized()) {
     MPI_Bcast(data.pointer,data.size,data.type,root,communicator);
   }
-#else
-  (void) data;
-  (void) root;
-#endif
 }
 
-void Communicator::Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+void Communicator::Scatter(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root) {
   checkNotStandIn();
+  resolveCommunicator();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
-#if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Scatter(s,sendcount,sendbuf.type,recvbuf.pointer,recvcount,recvbuf.type,root,communicator);
   } else {
@@ -196,20 +196,12 @@ void Communicator::Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recv
       std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
     }
   }
-#else
-  plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
-  plumed_assert(sendcount==recvcount);
-  if(s) {
-    std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
-  }
-  (void) root;
-#endif
 }
 
-void Communicator::Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root) {
+void Communicator::Gather(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root) {
   checkNotStandIn();
+  resolveCommunicator();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
-#if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     MPI_Gather(s,sendcount,sendbuf.type,recvbuf.pointer,recvcount,recvbuf.type,root,communicator);
   } else {
@@ -220,83 +212,57 @@ void Communicator::Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvc
       std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
     }
   }
-#else
-  plumed_assert(sendbuf.nbytes==recvbuf.nbytes);
-  plumed_assert(sendcount==recvcount);
-  if(s) {
-    std::memcpy(recvbuf.pointer,s,size_t(recvcount)*recvbuf.nbytes);
-  }
-  (void) root;
-#endif
 }
 
-void Communicator::Sum(Data data) {
+void Communicator::Sum(const Data& data) {
   checkNotStandIn();
-#if defined(__PLUMED_HAS_MPI)
+  resolveCommunicator();
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_SUM,communicator);
   }
-#else
-  (void) data;
-#endif
 }
 
-void Communicator::Prod(Data data) {
+void Communicator::Prod(const Data& data) {
   checkNotStandIn();
-#if defined(__PLUMED_HAS_MPI)
+  resolveCommunicator();
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_PROD,communicator);
   }
-#else
-  (void) data;
-#endif
 }
 
-void Communicator::Max(Data data) {
+void Communicator::Max(const Data& data) {
   checkNotStandIn();
-#if defined(__PLUMED_HAS_MPI)
+  resolveCommunicator();
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_MAX,communicator);
   }
-#else
-  (void) data;
-#endif
 }
 
-void Communicator::Min(Data data) {
+void Communicator::Min(const Data& data) {
   checkNotStandIn();
-#if defined(__PLUMED_HAS_MPI)
+  resolveCommunicator();
   if(initialized()) {
     MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_MIN,communicator);
   }
-#else
-  (void) data;
-#endif
 }
 
-Communicator::Request Communicator::Isend(ConstData data,int source,int tag) {
+Communicator::Request Communicator::Isend(const ConstData& data,int source,int tag) {
   checkNotStandIn();
+  resolveCommunicator();
   Request req;
-#ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)data.pointer);
   MPI_Isend(s,data.size,data.type,source,tag,communicator,&req.r);
-#else
-  (void) data;
-  (void) source;
-  (void) tag;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
   return req;
 }
 
-void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const int*displs) {
+void Communicator::Allgatherv(const ConstData& in,const Data& out,const int*recvcounts,const int*displs) {
   checkNotStandIn();
+  resolveCommunicator();
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
   int*rc=const_cast<int*>(recvcounts);
   int*di=const_cast<int*>(displs);
-#if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     if(s==NULL) {
       s=MPI_IN_PLACE;
@@ -312,23 +278,13 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
       std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
     }
   }
-#else
-  plumed_assert(in.nbytes==out.nbytes);
-  // Pointer receive buffers have no recorded extent; recvcounts supplies it.
-  plumed_assert(rc);
-  plumed_assert(rc[0]==in.size);
-  plumed_assert(di);
-  if(s) {
-    std::memcpy(static_cast<char*>(r)+displs[0]*in.nbytes,s,size_t(in.size)*in.nbytes);
-  }
-#endif
 }
 
-void Communicator::Allgather(ConstData in,Data out) {
+void Communicator::Allgather(const ConstData& in,const Data& out) {
   checkNotStandIn();
+  resolveCommunicator();
   void*s=const_cast<void*>((const void*)in.pointer);
   void*r=const_cast<void*>((const void*)out.pointer);
-#if defined(__PLUMED_HAS_MPI)
   if(initialized()) {
     if(s==NULL) {
       s=MPI_IN_PLACE;
@@ -341,157 +297,140 @@ void Communicator::Allgather(ConstData in,Data out) {
       std::memcpy(r,s,size_t(in.size)*in.nbytes);
     }
   }
-#else
-  plumed_assert(in.nbytes==out.nbytes);
-  plumed_assert(in.size==out.size);
-  if(s) {
-    std::memcpy(r,s,size_t(in.size)*in.nbytes);
-  }
-#endif
 }
 
-void Communicator::Recv(Data data,int source,int tag,Status&status) {
+void Communicator::Recv(const Data& data,int source,int tag,Status&status) {
   checkNotStandIn();
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(&status==&StatusIgnore) {
     MPI_Recv(data.pointer,data.size,data.type,source,tag,communicator,MPI_STATUS_IGNORE);
   } else {
     MPI_Recv(data.pointer,data.size,data.type,source,tag,communicator,&status.s);
   }
-#else
-  (void) data;
-  (void) source;
-  (void) tag;
-  (void) status;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
 }
 
 void Communicator::Barrier()const {
   checkNotStandIn();
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
   if(initialized()) {
     MPI_Barrier(communicator);
   }
-#endif
 }
 
 MPI_Comm & Communicator::Get_comm() {
+  resolveCommunicator();
+  // Preserve a safe sentinel for callers that only forward the communicator
+  // before MPI initialization. Keep it unresolved so actual MPI use cannot
+  // mistake it for a valid native handle; the provider rejects MPI_COMM_NULL.
+#if defined(__PLUMED_MPIWRAP)
+  if(!communicatorResolved && mpiwrap_provider_installed() && !initialized()) {
+    communicator=MPI_COMM_NULL;
+  }
+#endif
   return communicator;
 }
 
 bool Communicator::initialized() {
-#if defined(__PLUMED_HAS_MPI)
-  int flag=0;
-  MPI_Initialized(&flag);
-  if(flag) {
-    return true;
-  } else {
+  if(!mpiwrap_provider_installed()) {
     return false;
   }
-#endif
-  return false;
+  int flag=0;
+  MPI_Initialized(&flag);
+  return flag!=0;
 }
 
 void Communicator::Request::wait(Status&s) {
-#ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(&s==&StatusIgnore) {
     MPI_Wait(&r,MPI_STATUS_IGNORE);
   } else {
     MPI_Wait(&r,&s.s);
   }
-#else
-  (void) s;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
 }
 
-#ifdef __PLUMED_HAS_MPI
+namespace {
+void resolveDatatypeProvider() {
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+  mpiwrap_ensure_provider_selected();
+#endif
+}
+}
+
 template<> MPI_Datatype Communicator::getMPIType<float>() {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_FLOAT;
 }
 template<> MPI_Datatype Communicator::getMPIType<double>() {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_DOUBLE;
 }
 template<> MPI_Datatype Communicator::getMPIType<int>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_INT;
 }
 template<> MPI_Datatype Communicator::getMPIType<char>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_CHAR;
 }
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_UNSIGNED;
 }
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_UNSIGNED;
 }
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_UNSIGNED_LONG;
 }
 template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_UNSIGNED_LONG_LONG;
 }
 template<> MPI_Datatype Communicator::getMPIType<long double>()   {
+  resolveDatatypeProvider();
+  if(!mpiwrap_provider_installed())
+    return MPI_Datatype {};
   return MPI_LONG_DOUBLE;
 }
-#else
-template<> MPI_Datatype Communicator::getMPIType<float>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<double>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<int>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<char>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<unsigned>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<long unsigned>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() {
-  return MPI_Datatype();
-}
-template<> MPI_Datatype Communicator::getMPIType<long double>() {
-  return MPI_Datatype();
-}
-#endif
-
 void Communicator::Split(int color,int key,Communicator&pc)const {
   checkNotStandIn();
-#ifdef __PLUMED_HAS_MPI
+  resolveCommunicator();
+#if !defined(__PLUMED_HAS_MPI)
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+#endif
   // free the communicator previously held by pc (it was obtained with MPI_Comm_dup or MPI_Comm_split)
+  pc.resolveCommunicator();
   if(pc.communicator!=MPI_COMM_SELF && pc.communicator!=MPI_COMM_WORLD && pc.communicator!=MPI_COMM_NULL) {
     MPI_Comm_free(&pc.communicator);
   }
   pc.standIn=false;
   MPI_Comm_split(communicator,color,key,&pc.communicator);
-#else
-  (void) color;
-  (void) key;
-  (void) pc;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
+  pc.communicatorResolved=true;
 }
 
 int Communicator::Status::Get_count(MPI_Datatype type)const {
-  int i;
-#ifdef __PLUMED_HAS_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  int i=MPI_UNDEFINED;
   MPI_Get_count(const_cast<MPI_Status*>(&s),type,&i);
-#else
-  i=0;
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
   return i;
 }
 

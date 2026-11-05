@@ -19,11 +19,18 @@ set(PLUMED_GEN ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
-set(ALWAYS_MODULES asmjit blas core lapack lepton small_vector tools valtools)
+set(ALWAYS_MODULES asmjit blas core lapack lepton mpiwrap small_vector tools valtools)
 set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
     liquid_crystal matrixtools molfile multicolvar refdist secondarystructure
     setup vatom xdrfile)
 set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
+# The Windows CMake build uses the imported Win32 thread backend by default.
+# Keep the wrapper frontend enabled when this option is off so the fully
+# serial build still provides the communicator compatibility layer.
+option(PLUMED_ENABLE_THREAD_MPI "Compile the embedded thread-MPI backend" ON)
+if(PLUMED_ENABLE_THREAD_MPI)
+    list(APPEND MODULES thread_mpi)
+endif()
 # Optional default-off modules (upstream: enabled by touching <mod>.on)
 option(PLUMED_ENABLE_VES "Compile the VES module (variational enhanced sampling)" OFF)
 if(PLUMED_ENABLE_VES)
@@ -85,6 +92,7 @@ target_compile_features(plumedKernel PUBLIC cxx_std_17)
 
 target_compile_definitions(plumedKernel PRIVATE
     NDEBUG
+    __PLUMED_MPIWRAP=1
     # lepton/windowsIncludes.h defaults to dllimport on MSVC when no mode is
     # defined, which breaks static linking; select the static-lib mode:
     LEPTON_BUILDING_STATIC_LIBRARY
@@ -92,6 +100,23 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL, __PLUMED_HAS_MOLFILE_PLUGINS)
 )
+if(PLUMED_ENABLE_THREAD_MPI)
+    target_compile_definitions(plumedKernel PRIVATE
+        __PLUMED_HAS_THREAD_MPI=1
+        SIZEOF_LONG_LONG_INT
+    )
+    if(WIN32)
+        target_compile_definitions(plumedKernel PRIVATE THREAD_WINDOWS)
+    elseif(UNIX)
+        target_compile_definitions(plumedKernel PRIVATE
+            THREAD_PTHREADS HAVE_UNISTD_H HAVE_SYS_TIME_H HAVE_PTHREAD_H
+        )
+        find_package(Threads REQUIRED)
+        target_link_libraries(plumedKernel PUBLIC Threads::Threads)
+    else()
+        message(FATAL_ERROR "PLUMED_ENABLE_THREAD_MPI requires a supported thread backend")
+    endif()
+endif()
 # include dirs: src root (for "core/X.h" style), each module dir (for
 # "tools/Tools.h" resolved from sibling modules), and gen dir for the .inc files
 target_include_directories(plumedKernel PRIVATE
@@ -121,8 +146,14 @@ add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
 # Registration objects in a static lib are dropped unless referenced:
 # every RegisterMe global object is unreferenced by design, so pull in the
 # whole library (upstream links all kernel objects directly, not an archive).
-target_link_options(plumed PRIVATE
-    "/WHOLEARCHIVE:$<TARGET_FILE:plumedKernel>")
+if(MSVC)
+    target_link_options(plumed PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:plumedKernel>")
+elseif(APPLE)
+    target_link_options(plumed PRIVATE "LINKER:-force_load,$<TARGET_FILE:plumedKernel>")
+else()
+    target_link_options(plumed PRIVATE
+        "LINKER:--whole-archive,$<TARGET_FILE:plumedKernel>,--no-whole-archive")
+endif()
 target_link_libraries(plumed PRIVATE plumedKernel)
 target_include_directories(plumed PRIVATE
     ${PLUMED_SRC}/src ${PLUMED_GEN} ${PLUMED_SRC}/src/config)

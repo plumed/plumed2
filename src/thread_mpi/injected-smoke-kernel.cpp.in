@@ -1,0 +1,119 @@
+// No native tMPI headers or library in this translation unit or test DSO.
+#include "mpiwrap/mpiwrap.h"
+#include "mpiwrap/provider-registry.hpp"
+#include <cstdio>
+#include <exception>
+#include <string>
+
+namespace PLMD {
+extern "C" int mpiw_test_install(const void *opaque) {
+  std::string error;
+  const auto descriptor=static_cast<const plumed_mpiw_provider_descriptor *>(opaque);
+  if(!mpiwrap_provider::currentRegistry().install(descriptor,error)) {
+    std::fprintf(stderr,"injected smoke install: %s\n",error.c_str());
+    return 1;
+  }
+  return 0;
+}
+
+extern "C" int mpiw_test_preinit() {
+  try {
+    const MPI_Comm self=MPI_COMM_SELF;
+    if(self!=MPI_COMM_NULL) {
+      return 1;
+    }
+    int rank=-1;
+    MPI_Comm_rank(self,&rank);
+  } catch(const std::exception &error) {
+    return std::string(error.what()).find("MPI_COMM_NULL")!=std::string::npos ? 0 : 1;
+  }
+  return 1;
+}
+
+extern "C" int mpiw_test_check(const void *native_world,int rank,int size) {
+  try {
+    const MPI_Comm world=mpiwrap_Comm_from_native(native_world);
+    int actual=-1,self_size=0;
+    if(MPI_Comm_rank(world,&actual)!=MPI_SUCCESS || actual!=rank || size!=4 ||
+        MPI_Comm_size(MPI_COMM_SELF,&self_size)!=MPI_SUCCESS || self_size!=1 ||
+        mpiwrap_has_Test() || mpiwrap_has_Testany() ||
+        !mpiwrap_has_Wtick() || MPI_Wtick()<=0 ||
+        mpiwrap_has_Waitsome() || mpiwrap_has_Testsome()) {
+      return 1;
+    }
+    signed char singleton_in=static_cast<signed char>(rank+1),singleton_out=0;
+    if(MPI_Allreduce(&singleton_in,&singleton_out,1,MPI_SIGNED_CHAR,MPI_SUM,
+                     MPI_COMM_SELF)!=MPI_SUCCESS || singleton_out!=singleton_in) {
+      return 1;
+    }
+    unsigned long gathered[4] {};
+    const unsigned long own=static_cast<unsigned long>(rank+1);
+    if(MPI_Allgather(&own,1,MPI_UNSIGNED_LONG,gathered,1,MPI_UNSIGNED_LONG,world)!=MPI_SUCCESS ||
+        gathered[0]!=1 || gathered[3]!=4) {
+      return 1;
+    }
+    int in_place_values[4] {};
+    in_place_values[rank]=rank+11;
+    if(MPI_Allgather(MPI_IN_PLACE,0,MPI_INT,in_place_values,1,MPI_INT,world)!=MPI_SUCCESS ||
+        in_place_values[0]!=11 || in_place_values[3]!=14) {
+      return 1;
+    }
+    const int counts[4]= {0,1,2,1},displs[4]= {0,2,4,7};
+    int sent[2]= {rank*10,rank*10+1};
+    int segments[9]= {-9,-9,-9,-9,-9,-9,-9,-9,-9};
+    if(MPI_Allgatherv(sent,counts[rank],MPI_INT,segments,counts,displs,MPI_INT,world)!=MPI_SUCCESS ||
+        segments[0]!=-9 || segments[1]!=-9 || segments[2]!=10 || segments[3]!=-9 ||
+        segments[4]!=20 || segments[5]!=21 || segments[6]!=-9 || segments[7]!=30 || segments[8]!=-9) {
+      return 1;
+    }
+    // Incompatible native completion tests must remain unavailable even for
+    // empty request arrays; a short-circuit must not hide the missing API.
+    MPI_Request nulls[2] {MPI_REQUEST_NULL,MPI_REQUEST_NULL};
+    MPI_Status empty{};
+    int index=-2,flag=0,outcount=-2,indices[2] {};
+    const auto unavailable=[](const auto &call,const char *name) {
+      try {
+        call();
+      } catch(const std::exception &error) {
+        return std::string(error.what()).find(name)!=std::string::npos;
+      }
+      return false;
+    };
+    if(!unavailable([&] { MPI_Test(&nulls[0],&flag,&empty); },"MPI_Test") ||
+        !unavailable([&] { MPI_Testany(2,nulls,&index,&flag,&empty); },"MPI_Testany") ||
+        !unavailable([&] { MPI_Testsome(2,nulls,&outcount,indices,nullptr); },"MPI_Testsome") ||
+        !unavailable([&] { MPI_Waitsome(2,nulls,&outcount,indices,nullptr); },"MPI_Waitsome")) {
+      return 1;
+    }
+    const int previous=(rank+size-1)%size,next=(rank+1)%size;
+    signed char outgoing=static_cast<signed char>(rank+1),incoming=-1;
+    MPI_Request requests[2] {};
+    if(MPI_Irecv(&incoming,1,MPI_SIGNED_CHAR,previous,127,world,&requests[0])!=MPI_SUCCESS ||
+        MPI_Isend(&outgoing,1,MPI_SIGNED_CHAR,next,127,world,&requests[1])!=MPI_SUCCESS) {
+      return 1;
+    }
+    if(MPI_Waitall(2,requests,nullptr)!=MPI_SUCCESS) {
+      return 1;
+    }
+    if(incoming!=previous+1) {
+      return 1;
+    }
+    // Exercise the other newly retained datatype constants through messages,
+    // without requiring any optional reduction operation on boolean values.
+    bool truth=rank==size-1;
+    if(MPI_Bcast(&truth,1,MPI_C_BOOL,size-1,world)!=MPI_SUCCESS || !truth) {
+      return 1;
+    }
+    std::int64_t value=rank+100,received=0;
+    if(MPI_Sendrecv(&value,1,MPI_INT64_T,next,128,&received,1,MPI_INT64_T,
+                    previous,128,world,MPI_STATUS_IGNORE)!=MPI_SUCCESS ||
+        received!=previous+100) {
+      return 1;
+    }
+    return 0;
+  } catch(const std::exception &error) {
+    std::fprintf(stderr,"injected smoke rank %d: %s\n",rank,error.what());
+    return 1;
+  }
+}
+}

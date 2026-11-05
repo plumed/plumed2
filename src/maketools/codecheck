@@ -123,7 +123,8 @@ fi
       builddir_plugins=(--cppcheck-build-dir="${PLMD_CPPCHECK_BUILD_DIR}/plugins")
     fi
     # we discard configurations introduced in small_vector because they are many and
-    # get included in many files
+    # get included in many files. Opt-in host/native adapters are built by
+    # the focused provider checks, rather than enabled in ordinary kernel code.
     function docheck(){
       # With cppcheck 2.16.1 and later you can get a report already in sarif format and put it on the CI alongside the old style of output
       # setting up a function to not repeat the arguments
@@ -133,6 +134,7 @@ fi
         -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
         -U__PLUMED_HAS_ASMJIT \
         -U__PLUMED_HAS_KENREF \
+        -UPLUMED_MPIW_HOST_ADAPTER -UPLUMED_MPIW_NATIVE_ADAPTER \
         -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
         --config-exclude=small_vector/ \
         -i vesin.cpp \
@@ -143,7 +145,7 @@ fi
     # These imported modules already have their diagnostics discarded below.
     # Exclude their translation units before analysis, keeping the full file
     # list for plumedcheck. Included headers remain visible to cppcheck.
-    cppfiles=$(grep -E -v '/(molfile|lapack|blas|lepton|asmjit|xdrfile|small_vector)/' <<< "$files" || true)
+    cppfiles=$(grep -E -v '/(molfile|lapack|blas|lepton|asmjit|xdrfile|small_vector|thread_mpi)/' <<< "$files" || true)
     srcfiles=$(grep -E -v -s '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
@@ -178,7 +180,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector"
+echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector src/thread_mpi"
 echo "  since they are full of false positives"
 
 #the regexes like this avoid false positives for eventual composite names
@@ -190,7 +192,21 @@ echo "  since they are full of false positives"
 # - "[/path/to/blas"/ checks
 
 gawk '{
+  # Imported upstream C runtime: use its own checks, like the other vendored modules.
+  if(match($0,"[[](.*/|)thread_mpi/")) next;
   if(match($0,":plmd_")){
+    # The generated adapter has C-compatible ABI headers, one shared implementation
+    # and stable public guards, rather than a C++ class/source pair per header.
+    # Retain formatting and semantic diagnostics, including all cppcheck findings.
+    if(match($0,"[[](.*/|)mpiwrap/") &&
+       match($0,":plmd_(deprecated_header|missing_namespace_module|missing_guard|non_existing_cpp|non_included_h):")) next;
+    # These files contain C ABI types/macros, or a body included inside PLMD.
+    if(match($0,"[[](.*/|)mpiwrap/(provider-abi(-proposal)?[.]h|provider-callbacks[.]h|mpiwrap-capacity[.]h|thread-mpi-availability[.]h|mpiwrap_implementation[.]cpp([.]inc[.]in)?):") &&
+       match($0,":plmd_missing_namespace_plmd:")) next;
+    # This opt-in native adapter includes declarations and adapter code only;
+    # it neither defines nor links PLUMED wrapper entry points into the kernel.
+    if(match($0,"[[](.*/|)mpiwrap/mpiwrap_implementation[.]cpp:") &&
+       match($0,":plmd_include_dots:")) next;
 # with plumed we only exclude specific warnings from lapack and blas
     if(match($0,"[[](.*/|)lapack/")) next;
     if(match($0,"[[](.*/|)blas/")) next;

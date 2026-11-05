@@ -354,6 +354,15 @@ PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
 PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
+thread_mpi_request=auto
+AC_ARG_ENABLE([thread-mpi],
+  AS_HELP_STRING([--enable-thread-mpi], [enable the internal thread-MPI provider; conflicts with native MPI]),
+  [case "${enableval}" in
+     (yes) thread_mpi_request=yes ;;
+     (no)  thread_mpi_request=no ;;
+     (*) AC_MSG_ERROR([wrong argument to --enable-thread-mpi]) ;;
+   esac],
+  [])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
@@ -769,6 +778,28 @@ if test $mpi = true ; then
 else
   mpi_found=ko
 fi
+
+# Native MPI and the internal thread-MPI provider are mutually exclusive.
+# Unless explicitly disabled, thread-MPI fills in when native MPI is unavailable.
+if test "$mpi_found" = ok; then
+  if test "$thread_mpi_request" = yes; then
+    AC_MSG_ERROR([--enable-thread-mpi conflicts with an available native MPI implementation])
+  fi
+  thread_mpi_found=ko
+else
+  if test "$thread_mpi_request" = no; then
+    thread_mpi_found=ko
+  else
+    thread_mpi_found=ok
+  fi
+fi
+
+if test "$thread_mpi_found" = ok; then
+  AC_DEFINE([__PLUMED_HAS_THREAD_MPI])
+fi
+# The provider frontend also supplies runtime-selected serial fallbacks.
+# Compiling it does not select or initialize an MPI implementation.
+AC_DEFINE([__PLUMED_MPIWRAP])
 
 # search for openmp is automatically disabled by autoconf
 # when configuring with --disable-openmp

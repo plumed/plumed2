@@ -1,0 +1,88 @@
+// Use the bundled runtime as the host's GROMACS-style MPI implementation.
+#include "mpi_bindings.h"
+#include <atomic>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <dlfcn.h>
+
+// The import namespaces upstream symbols. Only this test TU makes their native
+// names visible to the unchanged generated host adapter in Plumed.h.
+namespace PLMD {
+using namespace thread_mpi;
+}
+#define GMX_THREAD_MPI 1
+#define PLUMED_MPIW_GROMACS_VERSION 20260400
+#define PLUMED_MPIW_HOST_ADAPTER 1
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_WRAPPER_LINK_RUNTIME 1
+#define __PLUMED_HAS_DLOPEN 1
+#include "wrapper/Plumed.h"
+
+namespace PLMD {
+namespace injected_smoke_host {
+
+using Install=int (*)(const void *);
+using Check=int (*)(const void *,int,int);
+Check check=nullptr;
+std::atomic<int> failures{0};
+
+void rank_body(const void *) {
+  int rank=-1,size=0;
+  if(thread_mpi::tMPI_Comm_rank(thread_mpi::TMPI_COMM_WORLD,&rank)!=0 ||
+      thread_mpi::tMPI_Comm_size(thread_mpi::TMPI_COMM_WORLD,&size)!=0 ||
+      check(&thread_mpi::TMPI_COMM_WORLD,rank,size)!=0) {
+    failures.fetch_add(1);
+    // A failing test rank must not leave its peers blocked in a collective.
+    thread_mpi::tMPI_Abort(thread_mpi::TMPI_COMM_WORLD,1);
+  }
+}
+
+int run(int argc,char **argv) {
+  if(argc!=2) {
+    return 2;
+  }
+  // Kernel is deliberately not linked to the host's tMPI or to an embedded
+  // provider. Native function pointers must cross this shared-library boundary.
+  void *kernel=dlopen(argv[1],RTLD_NOW|RTLD_LOCAL);
+  if(!kernel) {
+    std::fprintf(stderr,"injected smoke dlopen: %s\n",dlerror());
+    return 2;
+  }
+  const auto install=reinterpret_cast<Install>(dlsym(kernel,"mpiw_test_install"));
+  check=reinterpret_cast<Check>(dlsym(kernel,"mpiw_test_check"));
+  const auto preinit=reinterpret_cast<int (*)()>(dlsym(kernel,"mpiw_test_preinit"));
+  const auto descriptor=static_cast<const plumed_mpiw_provider_descriptor *>(
+                          plumed_mpi_implementation());
+  // Missing native entries must select the kernel algorithms, not private
+  // emulations accidentally copied into the frozen host header.
+  for(std::uint64_t i=0; i<descriptor->function_count; ++i) {
+    const char *name=descriptor->functions[i].name;
+    if(std::strcmp(name,"MPI_Test")==0 || std::strcmp(name,"MPI_Testany")==0 ||
+        std::strcmp(name,"MPI_Wait")==0 || std::strcmp(name,"MPI_Waitsome")==0 ||
+        std::strcmp(name,"MPI_Testsome")==0 || std::strcmp(name,"MPI_Testall")==0 ||
+        std::strcmp(name,"MPI_Allgather")==0 || std::strcmp(name,"MPI_Allgatherv")==0 ||
+        std::strcmp(name,"MPI_Errhandler_free")==0) {
+      std::fprintf(stderr,"injected smoke unexpectedly advertises %s\n",name);
+      return 2;
+    }
+  }
+  if(!install || !check || !preinit || install(descriptor)!=0 || preinit()!=0) {
+    return 2;
+  }
+  const int status=thread_mpi::tMPI_Init_fn(0,4,thread_mpi::TMPI_AFFINITY_NONE,
+                   rank_body,nullptr);
+  // The registry retains callbacks into this host. Keep the DSO loaded until
+  // all workers have joined and the runtime has been finalized.
+  const int result=status==0 && failures.load()==0 ? 0 : 1;
+  dlclose(kernel);
+  return result;
+}
+
+}
+}
+
+int main(int argc,char **argv) {
+  return PLMD::injected_smoke_host::run(argc,argv);
+}

@@ -1,0 +1,95 @@
+#include <cstdlib>
+#include <cstddef>
+#include <fstream>
+#include <cstring>
+#include <stdexcept>
+
+namespace {
+struct TestObject {
+  unsigned references;
+};
+
+struct UnloadMarker {
+  ~UnloadMarker() {
+    const char *path=std::getenv("MPIW_TEST_KERNEL_MARKER");
+    if(path) {
+      std::ofstream output(path);
+      output << "unloaded\n";
+    }
+  }
+} unload_marker;
+}
+
+struct NothrowHandler {
+  void *ptr;
+  void (*handler)(void *,int,const char *,const void *);
+};
+struct Functions {
+  void *(*create)();
+  void (*cmd)(void *,const char *,const void *);
+  void (*finalize)(void *);
+};
+struct SafePtr {
+  const void *ptr;
+  std::size_t nelem;
+  const std::size_t *shape;
+  std::size_t flags;
+  void *opt;
+};
+struct SymbolTable {
+  int version;
+  Functions functions;
+  void (*cmd_nothrow)(void *,const char *,const void *,NothrowHandler);
+  void (*cmd_safe)(void *,const char *,SafePtr);
+  void (*cmd_safe_nothrow)(void *,const char *,SafePtr,NothrowHandler);
+  unsigned (*create_reference)(void *);
+  unsigned (*delete_reference)(void *);
+  unsigned (*use_count)(void *);
+};
+extern "C" void *plumed_old_create() {
+  const char *path=std::getenv("MPIW_TEST_CREATE_MARKER");
+  if(path) {
+    std::ofstream output(path);
+    output << "created\n";
+  }
+  TestObject *object=static_cast<TestObject *>(std::malloc(sizeof(TestObject)));
+  object->references=1;
+  return object;
+}
+extern "C" void plumed_old_cmd(void *,const char *key,const void *value) {
+  if(std::strcmp(key,"getApiVersion")==0) {
+    *static_cast<int*>(const_cast<void*>(value))=10;
+  } else if(std::strcmp(key,"injectMPIImplementation")==0) {
+    throw std::runtime_error("unknown command");
+  }
+}
+extern "C" void plumed_old_finalize(void *object) {
+  std::free(object);
+}
+extern "C" unsigned plumed_old_create_reference(void *object) {
+  return ++static_cast<TestObject *>(object)->references;
+}
+extern "C" unsigned plumed_old_delete_reference(void *object) {
+  return --static_cast<TestObject *>(object)->references;
+}
+extern "C" unsigned plumed_old_use_count(void *object) {
+  return static_cast<TestObject *>(object)->references;
+}
+extern "C" void plumed_old_cmd_safe(void *object,const char *key,SafePtr value) {
+  plumed_old_cmd(object,key,value.ptr);
+}
+extern "C" void plumed_old_cmd_safe_nothrow(void *object,const char *key,SafePtr value,NothrowHandler nothrow) {
+  try {
+    plumed_old_cmd(object,key,value.ptr);
+  } catch(const std::exception &error) {
+    if(!nothrow.handler) {
+      throw;
+    }
+    nothrow.handler(nothrow.ptr,20200,error.what(),nullptr);
+  }
+}
+extern "C" SymbolTable plumed_symbol_table= {
+  4,{plumed_old_create,plumed_old_cmd,plumed_old_finalize},
+  nullptr,plumed_old_cmd_safe,plumed_old_cmd_safe_nothrow,plumed_old_create_reference,
+  plumed_old_delete_reference,plumed_old_use_count
+};

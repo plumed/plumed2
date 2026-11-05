@@ -736,6 +736,7 @@ enable_ar_cr
 enable_static_archive
 enable_asmjit
 enable_mpi
+enable_thread_mpi
 enable_external_lapack
 enable_external_blas
 enable_molfile_plugins
@@ -1438,6 +1439,8 @@ Optional Features:
                           default: yes
   --enable-asmjit         enable enable embedded asmjit, default: yes
   --enable-mpi            enable search for mpi, default: yes
+  --enable-thread-mpi     enable the internal thread-MPI provider; conflicts
+                          with native MPI
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-external-blas  enable search for external blas, default: yes
@@ -2903,6 +2906,16 @@ else
 
 fi
 
+
+thread_mpi_request=auto
+# Check whether --enable-thread-mpi was given.
+if test "${enable_thread_mpi+set}" = set; then :
+  enableval=$enable_thread_mpi; case "${enableval}" in
+     (yes) thread_mpi_request=yes ;;
+     (no)  thread_mpi_request=no ;;
+     (*) as_fn_error $? "wrong argument to --enable-thread-mpi" "$LINENO" 5 ;;
+   esac
+fi
 
 
 external_lapack=
@@ -7309,6 +7322,30 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MPI" >&2;}
 else
   mpi_found=ko
 fi
+
+# Native MPI and the internal thread-MPI provider are mutually exclusive.
+# Unless explicitly disabled, thread-MPI fills in when native MPI is unavailable.
+if test "$mpi_found" = ok; then
+  if test "$thread_mpi_request" = yes; then
+    as_fn_error $? "--enable-thread-mpi conflicts with an available native MPI implementation" "$LINENO" 5
+  fi
+  thread_mpi_found=ko
+else
+  if test "$thread_mpi_request" = no; then
+    thread_mpi_found=ko
+  else
+    thread_mpi_found=ok
+  fi
+fi
+
+if test "$thread_mpi_found" = ok; then
+  $as_echo "#define __PLUMED_HAS_THREAD_MPI 1" >>confdefs.h
+
+fi
+# The provider frontend also supplies runtime-selected serial fallbacks.
+# Compiling it does not select or initialize an MPI implementation.
+$as_echo "#define __PLUMED_MPIWRAP 1" >>confdefs.h
+
 
 # search for openmp is automatically disabled by autoconf
 # when configuring with --disable-openmp

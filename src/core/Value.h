@@ -312,6 +312,8 @@ bool Value::valueHasBeenSet() const {
 
 inline
 const std::string& Value::getName()const {
+  // name is a member; cppcheck 2.13 can mistake it for a local variable.
+  // cppcheck-suppress returnReference
   return name;
 }
 

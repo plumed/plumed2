@@ -1,0 +1,13 @@
+#include <mpi.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include "provider-abi.h"
+#define PLUMED_MPIW_NATIVE_ADAPTER 1
+#include "mpiwrap_implementation.cpp.inc"
+
+int main() {
+  return plumed_mpiw_get_descriptor() == 0;
+}

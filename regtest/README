@@ -7,6 +7,59 @@ just try the tests with
 To do many tests in parallel, as usual
 > make -j 4
 
+Tests that request `mpiprocs` prefer a directly compiled native-MPI kernel
+and its configured MPI launcher. Otherwise a kernel with embedded thread-MPI
+uses the internal launcher for PLUMED command-line tools, including driver and
+`type=plumed` tests such as benchmark, and make tests using the shared MPI
+harness described below. Other external MPI executables require a native-MPI
+build. Existing per-test MPI settings remain unchanged,
+so old PLUMED versions continue using their native launcher. An explicit
+`PLUMED_MPIRUN` overrides internal thread-MPI launching.
+
+For a second pass through an MPI-injecting host, set
+`PLUMED_CLI_PROGRAM_NAME=/absolute/path/to/mpi-host` and `PLUMED_MPIRUN`.
+The runner determines the installed kernel/library paths; `PLUMED_KERNEL` and
+`PLUMED_LIB` can override those paths. The CLI override applies only to CLTool
+cases; external-engine cases retain `PLUMED_PROGRAM_NAME` (or `plumed`) and
+their existing native-MPI capability requirements. The host initializes and
+finalizes real MPI for calculations, while honoring `--no-mpi` for queries.
+No provider environment variable or kernel rebuild is needed.
+
+The ordinary serial executable does not initialize a dynamically loaded real
+MPI runtime. Leave `PLUMED_MPI_WRAPPER` unset for normal internal-thread-MPI
+suite runs. Host injection is tested separately by
+`regtest/mpiwrap/check-mpi-host-injection.sh`: an MPI-compiled host initializes
+MPI, creates an ordinary object, injects with `injectMPIImplementation`, runs
+representative input, destroys its PLUMED object, and finalizes MPI.
+See `src/mpiwrap/README.md`
+for the complete direct-MPI and host-injection validation matrix.
+
+A test that cannot run with internal threads (for example, one that depends on
+an unsupported working-directory change) can set `plumed_thread_mpi=no` in its
+`config`. Such configs can set `plumed_chdir=yes` as well to report the specific
+unsupported-CHDIR skip reason. Launching a tool with multiple thread-MPI ranks
+does not itself add MPI parallelization to that tool; simplemd is currently
+not MPI-parallelized.
+
+SHARED MPI HARNESS FOR MAKE TESTS
+
+A make test can use the existing native/thread-MPI rank launcher through
+`regtest/scripts/mpi-test.h`. Set `plumed_mpi_harness=yes` in its config and
+include `../../scripts/mpi-test.h` in `extra_files`. The executable calls
+`PLMD::mpi_test::run(argc,argv,expected_ranks,body)`, where body has signature
+`int(MPI_Comm,int,char**)`. Construct all mutable objects inside body and use
+its communicator instead of MPI_COMM_WORLD. The helper handles startup and
+finalization and consumes the runner's `-n N` argument; other arguments reach
+body unchanged. The existing `mpiprocs` settings stay intact. Older native-MPI
+runners without `-n` and older PLUMED builds without mpiwrap remain supported.
+
+Keep conversions mechanical: preserve the calculations, file ownership, and
+references. The empty-rank, first-step-inactive, and nonfinite-trace MPI tests
+currently remain native-only because they change process-wide environment
+variables. `tools/rt-Neigbourlist-omp` also remains native-only: its MPI rank
+setting currently starts independent serial copies, rather than an MPI body.
+These cases need a separate design decision before using internal threads.
+
 HOW TO ADD A NEW TEST
 
 Add a new directory rtXXX, let's say rt105, and go there:

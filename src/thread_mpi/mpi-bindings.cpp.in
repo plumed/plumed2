@@ -1,0 +1,81 @@
+#include "mpi_bindings.h"
+
+#include <atomic>
+#include <cstdlib>
+#include <iostream>
+
+namespace PLMD {
+namespace thread_mpi_bindings_test {
+
+using namespace thread_mpi;
+
+std::atomic<int> failures{0};
+std::atomic<int> ranks_seen{0};
+
+void rank_work(const void *) {
+  int rank = -1;
+  int size = 0;
+  MPI_Status *ignored_status = MPI_STATUS_IGNORE;
+  void *in_place = MPI_IN_PLACE;
+  if (MPI_Comm_rank(MPI_COMM_WORLD, &rank) != MPI_SUCCESS ||
+      MPI_Comm_size(MPI_COMM_WORLD, &size) != MPI_SUCCESS ||
+      size < 1 || rank < 0 || rank >= size || MPI_ANY_SOURCE != -1 ||
+      MPI_ANY_TAG != -1 || ignored_status != nullptr || in_place != nullptr) {
+    failures.fetch_add(1);
+    return;
+  }
+
+  MPI_Datatype pair_type = nullptr;
+  if (MPI_Type_contiguous(2, MPI_INT, &pair_type) != MPI_SUCCESS ||
+      pair_type == nullptr || MPI_Type_commit(&pair_type) != MPI_SUCCESS) {
+    failures.fetch_add(1);
+    return;
+  }
+
+  const int next = (rank + 1) % size;
+  const int previous = (rank + size - 1) % size;
+  const int outgoing[2] = {rank, rank + size};
+  int incoming[2] = {-1, -1};
+  if (MPI_Sendrecv(outgoing, 1, pair_type, next, 31, incoming, 1,
+                   pair_type, previous, 31, MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE) != MPI_SUCCESS ||
+      incoming[0] != previous || incoming[1] != previous + size) {
+    failures.fetch_add(1);
+  }
+  if (MPI_Type_free(&pair_type) != MPI_SUCCESS || pair_type != nullptr) {
+    failures.fetch_add(1);
+  }
+  ranks_seen.fetch_add(1);
+}
+
+int run(int argc, char **argv) {
+  if (argc != 2) {
+    return 2;
+  }
+  const int ranks = std::atoi(argv[1]);
+  if (ranks != 1 && ranks != 2 && ranks != 4) {
+    return 2;
+  }
+  if (MPI_SUCCESS != 0 ||
+      tMPI_Init_fn(0, ranks, TMPI_AFFINITY_NONE, rank_work, nullptr) !=
+      MPI_SUCCESS) {
+    std::cerr << "MPI macro surface initialization failed\n";
+    return 1;
+  }
+  int finalized = 0;
+  if (MPI_Finalized(&finalized) != MPI_SUCCESS || !finalized ||
+      ranks_seen.load() != ranks || failures.load() != 0) {
+    std::cerr << "MPI macro surface checks failed: ranks=" << ranks_seen.load()
+              << " failures=" << failures.load()
+              << " finalized=" << finalized << '\n';
+    return 1;
+  }
+  return 0;
+}
+
+} // namespace thread_mpi_bindings_test
+} // namespace PLMD
+
+int main(int argc, char **argv) {
+  return PLMD::thread_mpi_bindings_test::run(argc, argv);
+}

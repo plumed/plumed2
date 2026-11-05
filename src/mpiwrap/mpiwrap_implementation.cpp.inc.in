@@ -1,0 +1,119 @@
+/* Minimal native-MPI provider adapter. All conversions happen in the kernel. */
+
+/* PLUMED_MPIW_GROMACS_VERSION_GUARD */
+
+#define PLUMED_MPIW_JOIN_INNER(a, b) a##b
+#define PLUMED_MPIW_JOIN(a, b) PLUMED_MPIW_JOIN_INNER(a, b)
+#define PLUMED_MPIW_STATIC_ASSERT(c, m) \
+  typedef char PLUMED_MPIW_JOIN(plumed_mpiw_static_assert_, __LINE__)[(c) ? 1 : -1]
+
+/* PLUMED_MPIW_GENERATED_FUNCTIONS */
+/* PLUMED_MPIW_FUNCTION_ENTRIES */
+
+#define PLUMED_MPIW_HANDLE_CONSTANT(name, type) \
+  static void plumed_mpiw_value_##name(void *out) { \
+    type value = name; \
+    memcpy(out, &value, sizeof(value)); \
+  }
+#define PLUMED_MPIW_INTEGER_CONSTANT(name) \
+  static void plumed_mpiw_value_##name(void *out) { \
+    int value = (int)(name); \
+    memcpy(out, &value, sizeof(value)); \
+  }
+#define PLUMED_MPIW_POINTER_CONSTANT(name) \
+  static void plumed_mpiw_value_##name(void *out) { \
+    void *value = (void *)(name); \
+    memcpy(out, &value, sizeof(value)); \
+  }
+/* PLUMED_MPIW_CONSTANT_IMPLEMENTATIONS */
+#undef PLUMED_MPIW_HANDLE_CONSTANT
+#undef PLUMED_MPIW_INTEGER_CONSTANT
+#undef PLUMED_MPIW_POINTER_CONSTANT
+
+/* PLUMED_MPIW_CONSTANT_ACCESSORS */
+#define PLUMED_MPIW_VALUE(name, type) \
+  { (uint32_t)sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, \
+    0u, "value:" #name, sizeof(plumed_mpiw_constant_accessor_fn), sizeof(type), \
+    (const void *)&plumed_mpiw_accessor_##name }
+static const plumed_mpiw_metadata_entry plumed_mpiw_metadata[] = {
+  /* PLUMED_MPIW_CONSTANT_METADATA */
+};
+
+typedef union {
+  long double long_double_value;
+  long long long_long_value;
+  void *pointer_value;
+} plumed_mpiw_scratch_alignment;
+typedef struct {
+  char c;
+  plumed_mpiw_scratch_alignment value;
+} plumed_mpiw_scratch_alignment_offset;
+#define PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(name, type) \
+  typedef struct { char c; type value; } \
+  PLUMED_MPIW_JOIN(plumed_mpiw_native_align_, name); \
+  PLUMED_MPIW_STATIC_ASSERT(offsetof(PLUMED_MPIW_JOIN(plumed_mpiw_native_align_, name), value) <= \
+                            offsetof(plumed_mpiw_scratch_alignment_offset, value), \
+                            "native MPI type over-aligns provider scratch")
+#if defined(GMX_THREAD_MPI) && GMX_THREAD_MPI
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(comm, tMPI_Comm);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(group, tMPI_Group);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(datatype, tMPI_Datatype);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(request, tMPI_Request);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(op, tMPI_Op);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(errhandler, tMPI_Errhandler);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(status, tMPI_Status);
+#else
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(comm, MPI_Comm);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(group, MPI_Group);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(datatype, MPI_Datatype);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(request, MPI_Request);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(op, MPI_Op);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(errhandler, MPI_Errhandler);
+PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(status, MPI_Status);
+#endif
+PLUMED_MPIW_STATIC_ASSERT(sizeof(int) == sizeof(int32_t) && (int)-1 < 0,
+                          "native MPI int must be signed 32-bit");
+static const plumed_mpiw_provider_descriptor plumed_mpiw_descriptor = {
+  (uint32_t)sizeof(plumed_mpiw_provider_descriptor),
+  PLUMED_MPIW_PROVIDER_ABI_MAJOR, 0u,
+  (uint32_t)(
+#if defined(GMX_THREAD_MPI) && GMX_THREAD_MPI
+    1u
+#else
+    0u
+#endif
+  ),
+  "PLUMED native MPI adapter",
+#if defined(GMX_THREAD_MPI) && GMX_THREAD_MPI
+  (uint32_t)sizeof(tMPI_Comm), (uint32_t)sizeof(tMPI_Group),
+  (uint32_t)sizeof(tMPI_Datatype), (uint32_t)sizeof(tMPI_Request),
+  (uint32_t)sizeof(tMPI_Op), (uint32_t)sizeof(tMPI_Errhandler),
+  (uint32_t)sizeof(tMPI_Status),
+  (uint32_t)offsetof(tMPI_Status, TMPI_SOURCE),
+  (uint32_t)offsetof(tMPI_Status, TMPI_TAG),
+  (uint32_t)offsetof(tMPI_Status, TMPI_ERROR),
+  0u, 0u,
+#else
+  (uint32_t)sizeof(MPI_Comm), (uint32_t)sizeof(MPI_Group),
+  (uint32_t)sizeof(MPI_Datatype), (uint32_t)sizeof(MPI_Request),
+  (uint32_t)sizeof(MPI_Op), (uint32_t)sizeof(MPI_Errhandler),
+  (uint32_t)sizeof(MPI_Status),
+  (uint32_t)offsetof(MPI_Status, MPI_SOURCE),
+  (uint32_t)offsetof(MPI_Status, MPI_TAG),
+  (uint32_t)offsetof(MPI_Status, MPI_ERROR),
+  (uint32_t)sizeof(MPI_Fint), 1u,
+#endif
+  (uint64_t)(sizeof(plumed_mpiw_functions) / sizeof(plumed_mpiw_functions[0])),
+  plumed_mpiw_functions,
+  (uint64_t)(sizeof(plumed_mpiw_metadata) / sizeof(plumed_mpiw_metadata[0])),
+  plumed_mpiw_metadata
+};
+#undef PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT
+#undef PLUMED_MPIW_VALUE
+#undef PLUMED_MPIW_STATIC_ASSERT
+#undef PLUMED_MPIW_JOIN
+#undef PLUMED_MPIW_JOIN_INNER
+
+static const plumed_mpiw_provider_descriptor *plumed_mpiw_get_descriptor(void) {
+  return &plumed_mpiw_descriptor;
+}

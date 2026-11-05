@@ -1,0 +1,82 @@
+#include "tools/Communicator.h"
+
+#include <cassert>
+
+namespace PLMD {
+
+template <typename Function>
+void assertThrows(Function function) {
+  bool threw = false;
+  try {
+    function();
+  } catch (const PLMD::ExceptionError &) {
+    threw = true;
+  }
+  assert(threw);
+}
+
+}  // namespace PLMD
+
+int main() {
+  using PLMD::Communicator;
+  using PLMD::assertThrows;
+
+  assert(!PLMD::mpiwrap_provider_installed());
+  assert(!Communicator::initialized());
+  assert(!Communicator::plumedHasMPI());
+
+  Communicator comm;
+  assert(!PLMD::mpiwrap_provider_installed());
+  {
+    Communicator copy(comm);
+    Communicator assigned;
+    assigned=copy;
+  }
+  assert(!PLMD::mpiwrap_provider_installed());
+  assert(comm.Get_rank() == 0);
+  assert(comm.Get_size() == 1);
+  // Fully disabled kernels may still forward their inert serial surrogate.
+  (void)comm.Get_comm();
+
+  int scalar = 7;
+  comm.Sum(scalar);
+  comm.Prod(scalar);
+  comm.Max(scalar);
+  comm.Min(scalar);
+  comm.Bcast(scalar, 0);
+  assert(scalar == 7);
+
+  const int send[2] = {11, 13};
+  int recv[2] = {0, 0};
+  comm.Scatter(send, 2, recv, 2, 0);
+  assert(recv[0] == 11 && recv[1] == 13);
+  recv[0] = recv[1] = 0;
+  comm.Gather(send, 2, recv, 2, 0);
+  assert(recv[0] == 11 && recv[1] == 13);
+  recv[0] = recv[1] = 0;
+  comm.Allgather(send, 2, recv, 2);
+  assert(recv[0] == 11 && recv[1] == 13);
+  recv[0] = recv[1] = 0;
+  const int counts[1] = {2};
+  const int displacements[1] = {0};
+  comm.Allgatherv(send, 2, recv, counts, displacements);
+  assert(recv[0] == 11 && recv[1] == 13);
+  comm.Barrier();
+
+  assertThrows([&]() {
+    Communicator split;
+    comm.Split(0, 0, split);
+  });
+  assertThrows([&]() {
+    Communicator::Status status;
+    (void) status.Get_count<int>();
+  });
+  assertThrows([&]() {
+    Communicator::Request request;
+    request.wait();
+  });
+
+  assert(!PLMD::mpiwrap_provider_installed());
+  assert(!Communicator::initialized());
+  assert(!Communicator::plumedHasMPI());
+}

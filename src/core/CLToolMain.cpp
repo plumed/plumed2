@@ -28,14 +28,80 @@
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
 #include "tools/Subprocess.h"
+#if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
+#include "../mpiwrap/thread-mpi-launcher.h"
+#endif
 #include <string>
+#include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <climits>
+#include <cerrno>
 #include <iostream>
 #include <algorithm>
 #include <memory>
 
 namespace PLMD {
+
+namespace {
+
+#if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
+struct ThreadMPICommand {
+  std::vector<std::string> arguments;
+  FILE *input;
+  FILE *output;
+};
+
+int runThreadMPICommand(int, const void *native_world, std::size_t native_size,
+                        void *opaque) {
+  if(!native_world || native_size==0) {
+    throw ExceptionError("internal launcher did not supply the native world communicator");
+  }
+  const ThreadMPICommand &context=*static_cast<ThreadMPICommand *>(opaque);
+  // The outer CLToolMain is only the dispatcher. Construct a fresh rank-local
+  // command object after tMPI initialization so it gets the real rank communicator.
+  CLToolMain command;
+  command.cmd("setMPIComm",TypesafePtr::unchecked(native_world));
+  int argc=static_cast<int>(context.arguments.size());
+  command.cmd("setArgc",&argc);
+  command.cmd("setIn",context.input);
+  command.cmd("setOut",context.output);
+  std::size_t bytes=0;
+  for(const auto &arg:context.arguments) {
+    bytes+=arg.size()+1;
+  }
+  std::vector<char> storage(bytes);
+  std::vector<char *> argv(argc);
+  char *cursor=storage.data();
+  for(int i=0; i<argc; ++i) {
+    argv[i]=cursor;
+    const std::string &arg=context.arguments[static_cast<std::size_t>(i)];
+    std::copy(arg.begin(),arg.end(),cursor);
+    cursor+=arg.size();
+    *cursor++='\0';
+  }
+  command.cmd("setArgv",argv.data());
+  int result=0;
+  command.cmd("run",&result);
+  return result;
+}
+#endif
+
+bool parseThreadMPIRanks(const char *text,int &ranks) {
+  if(!text || !text[0]) {
+    return false;
+  }
+  errno=0;
+  char *end=nullptr;
+  const long value=std::strtol(text,&end,10);
+  if(errno || end==text || *end!='\0' || value<1 || value>INT_MAX) {
+    return false;
+  }
+  ranks=static_cast<int>(value);
+  return true;
+}
+
+} // namespace
 
 CLToolMain::CLToolMain():
   argc(0),
@@ -144,6 +210,64 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   int i;
   bool printhelp=false;
 
+  int thread_mpi_ranks=0;
+  bool thread_mpi_requested=false;
+  bool invalid_thread_mpi_option=false;
+  bool explicit_mpi=false;
+  bool explicit_no_mpi=false;
+  std::vector<std::string> filtered_arguments;
+  if(argc>0) {
+    filtered_arguments.emplace_back(argv[0]);
+  }
+  for(i=1; i<argc; ++i) {
+    if(std::strcmp(argv[i],"--tmpi-threads")==0) {
+      int parsed=0;
+      if(thread_mpi_requested || i+1>=argc ||
+          !parseThreadMPIRanks(i+1<argc ? argv[i+1] : nullptr,parsed)) {
+        invalid_thread_mpi_option=true;
+      } else {
+        thread_mpi_requested=true;
+        thread_mpi_ranks=parsed;
+      }
+      if(i+1<argc) {
+        ++i;
+      }
+    } else if(std::strncmp(argv[i],"--tmpi-threads=",15)==0) {
+      int parsed=0;
+      if(thread_mpi_requested || !parseThreadMPIRanks(argv[i]+15,parsed)) {
+        invalid_thread_mpi_option=true;
+      } else {
+        thread_mpi_requested=true;
+        thread_mpi_ranks=parsed;
+      }
+    } else {
+      explicit_mpi=explicit_mpi || std::strcmp(argv[i],"--mpi")==0;
+      explicit_no_mpi=explicit_no_mpi || std::strcmp(argv[i],"--no-mpi")==0;
+      filtered_arguments.emplace_back(argv[i]);
+    }
+  }
+  if(invalid_thread_mpi_option) {
+    std::fprintf(stderr,"ERROR: --tmpi-threads requires one positive rank count and may be used once\n");
+    return 1;
+  }
+  if(thread_mpi_requested) {
+    if(explicit_mpi || explicit_no_mpi) {
+      std::fprintf(stderr,"ERROR: --tmpi-threads cannot be combined with --mpi or --no-mpi\n");
+      return 1;
+    }
+#if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
+    ThreadMPICommand context {filtered_arguments,in,out};
+    int result=0;
+    mpiwrap_provider::launchRanks(thread_mpi_ranks,
+                                  &runThreadMPICommand,&context,&result,
+                                  mpiwrap_provider::MPILifecyclePolicy::internal_thread_mpi);
+    return result;
+#else
+    std::fprintf(stderr,"ERROR: --tmpi-threads requires an embedded thread-MPI build (requested %d ranks)\n",thread_mpi_ranks);
+    return 1;
+#endif
+  }
+
   DLLoader dlloader;
 
   std::string root=config::getPlumedRoot();
@@ -158,15 +282,29 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     if(a.length()==0) {
       continue;
     }
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+    // Explicit CLI inquiries describe the runtime selected by injection or the
+    // environment (and otherwise the embedded default), without initializing it.
+    if(a=="--has-mpi" || a=="--has-real-mpi" ||
+        a=="--has-thread-mpi" || a=="--mpi-ranks-are-threads") {
+      mpiwrap_ensure_provider_selected();
+    }
+#endif
     if(a=="help" || a=="-h" || a=="--help") {
       printhelp=true;
       break;
     } else if(a=="--has-mpi") {
-      if(Communicator::initialized()) {
-        return 0;
-      } else {
-        return 1;
-      }
+      return Communicator::plumedHasMPI()?0:1;
+    } else if(a=="--has-real-mpi") {
+      return mpiwrap_provider_installed() && !mpiwrap_provider_ranks_are_threads()?0:1;
+    } else if(a=="--has-thread-mpi") {
+#if defined(__PLUMED_HAS_THREAD_MPI)
+      return 0;
+#else
+      return mpiwrap_provider_ranks_are_threads()?0:1;
+#endif
+    } else if(a=="--mpi-ranks-are-threads") {
+      return mpiwrap_provider_ranks_are_threads()?0:1;
     } else if(a=="--has-cregex") {
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen") {
@@ -242,7 +380,10 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "Options:\n"
       "  [help|-h|--help]          : to print this help\n"
       "  [--is-installed]          : fails if plumed is not installed\n"
-      "  [--has-mpi]               : fails if plumed is running without MPI\n"
+      "  [--has-mpi]               : fails if neither real nor internal thread MPI is available\n"
+      "  [--has-real-mpi]          : fails if no real MPI provider is available\n"
+      "  [--has-thread-mpi]        : fails if no thread MPI capability is available\n"
+      "  [--mpi-ranks-are-threads] : succeeds if the selected MPI provider uses threads\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"

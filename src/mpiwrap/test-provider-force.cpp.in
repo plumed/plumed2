@@ -1,0 +1,36 @@
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_WRAPPER_EXTERN 0
+#define __PLUMED_HAS_DLOPEN 1
+#include "../wrapper/Plumed.h"
+#include <cstdio>
+
+namespace PLMD {
+extern "C" plumed_symbol_table_type *plumed_symbol_table_reexport() {
+  return nullptr;
+}
+}
+
+namespace PLMD {
+int checkForcedProvider(int argc, char **argv) {
+  if(argc != 3) {
+    return 2;
+  }
+  try {
+    Kernel kernel=Kernel::open(argv[1],RTLD_NOW|RTLD_LOCAL);
+    // Repeat to exercise idempotent forced selection and reference ownership.
+    kernel.loadMPIWrapper(argv[2]);
+    kernel.loadMPIWrapper(argv[2]);
+    const plumed object=kernel.create();
+    const bool valid=plumed_valid(object);
+    plumed_finalize(object);
+    return valid ? 0 : 3;
+  } catch(const std::exception &error) {
+    std::fprintf(stderr,"%s\n",error.what());
+    return 1;
+  }
+}
+}
+
+int main(int argc, char **argv) {
+  return PLMD::checkForcedProvider(argc,argv);
+}

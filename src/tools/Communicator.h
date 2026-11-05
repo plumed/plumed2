@@ -21,9 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_tools_Communicator_h
 #define __PLUMED_tools_Communicator_h
-#ifdef __PLUMED_HAS_MPI
-#include <mpi.h>
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+#include "../mpiwrap/mpiwrap.h"
 #endif
+#include "../mpiwrap/mpi.h"
 #include <cstdlib>
 #include "Exception.h"
 #include "TypesafePtr.h"
@@ -35,7 +36,7 @@
 
 namespace PLMD {
 
-#ifndef  __PLUMED_HAS_MPI
+#if !defined(__PLUMED_HAS_MPI) && !defined(__PLUMED_MPIWRAP)
 /// Surrogate of MPI_Comm when MPI library is not available
 class MPI_Comm {};
 /// Surrogate of MPI_Datatype when MPI library is not available
@@ -51,7 +52,11 @@ class MPI_Request {};
 /// All the MPI related stuff is relegated here.
 class Communicator {
 /// Communicator
-  MPI_Comm communicator;
+  mutable MPI_Comm communicator{};
+/// Whether communicator contains an actual native handle, rather than deferred SELF.
+  mutable bool communicatorResolved=false;
+/// Resolve default SELF after provider selection and MPI initialization.
+  void resolveCommunicator()const;
 /// True if this process holds the communicator only as a stand-in.
 /// See setStandIn().
   bool standIn=false;
@@ -227,7 +232,7 @@ public:
 /// Tests if MPI library is initialized
   static bool initialized();
 /// Wrapper for MPI_Allreduce with MPI_SUM (data struct)
-  void Sum(Data);
+  void Sum(const Data&);
 /// Wrapper for MPI_Allreduce with MPI_SUM (pointer)
   template <class T> void Sum(T*buf,int count) {
     Sum(Data(buf,count));
@@ -237,7 +242,7 @@ public:
     Sum(Data(buf));
   }
 /// Wrapper for MPI_Allreduce with MPI_PROD (data struct)
-  void Prod(Data);
+  void Prod(const Data&);
 /// Wrapper for MPI_Allreduce with MPI_PROD (pointer)
   template <class T> void Prod(T*buf,int count) {
     Prod(Data(buf,count));
@@ -247,7 +252,7 @@ public:
     Prod(Data(buf));
   }
 /// Wrapper for MPI_Allreduce with MPI_MAX (data struct)
-  void Max(Data);
+  void Max(const Data&);
 /// Wrapper for MPI_Allreduce with MPI_MAX (pointer)
   template <class T> void Max(T*buf,int count) {
     Max(Data(buf,count));
@@ -257,7 +262,7 @@ public:
     Max(Data(buf));
   }
 /// Wrapper for MPI_Allreduce with MPI_MIN (data struct)
-  void Min(Data);
+  void Min(const Data&);
 /// Wrapper for MPI_Allreduce with MPI_MIN (pointer)
   template <class T> void Min(T*buf,int count) {
     Min(Data(buf,count));
@@ -268,7 +273,7 @@ public:
   }
 
 /// Wrapper for MPI_Bcast (data struct)
-  void Bcast(Data,int);
+  void Bcast(const Data&,int);
 /// Wrapper for MPI_Bcast (pointer)
   template <class T> void Bcast(T*buf,int count,int root) {
     Bcast(Data(buf,count),root);
@@ -279,7 +284,7 @@ public:
   }
 
 /// Wrapper for MPI_Scatter (data struct)
-  void Scatter(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root);
+  void Scatter(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root);
 /// Wrapper for MPI_Scatter (pointer)
   template <class T,class S> void Scatter(const T*sendbuf,int sendcount,S*recvbuf,int recvcount,int root) {
     Scatter(ConstData(sendbuf,sendcount*Get_size()),sendcount,Data(recvbuf,recvcount),recvcount,root);
@@ -290,7 +295,7 @@ public:
   }
 
 /// Wrapper for MPI_Gather (data struct)
-  void Gather(ConstData sendbuf,int sendcount,Data recvbuf,int recvcount,int root);
+  void Gather(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root);
 /// Wrapper for MPI_Gather (pointer)
   template <class T,class S> void Gather(const T*sendbuf,int sendcount,S*recvbuf,int recvcount,int root) {
     Gather(ConstData(sendbuf,sendcount),sendcount,Data(recvbuf,recvcount*Get_size()),recvcount,root);
@@ -301,7 +306,7 @@ public:
   }
 
 /// Wrapper for MPI_Isend (data struct)
-  Request Isend(ConstData,int,int);
+  Request Isend(const ConstData&,int,int);
 /// Wrapper for MPI_Isend (pointer)
   template <class T> Request Isend(const T*buf,int count,int source,int tag) {
     return Isend(ConstData(buf,count),source,tag);
@@ -312,7 +317,7 @@ public:
   }
 
 /// Wrapper for MPI_Allgatherv (data struct)
-  void Allgatherv(ConstData in,Data out,const int*,const int*);
+  void Allgatherv(const ConstData& in,const Data& out,const int*,const int*);
 /// Wrapper for MPI_Allgatherv (pointer)
   template <class T,class S> void Allgatherv(const T*sendbuf,int sendcount,S*recvbuf,const int*recvcounts,const int*displs) {
     Allgatherv(ConstData(sendbuf,sendcount),Data(recvbuf,0),recvcounts,displs);
@@ -323,7 +328,7 @@ public:
   }
 
 /// Wrapper for MPI_Allgather (data struct)
-  void Allgather(ConstData in,Data out);
+  void Allgather(const ConstData& in,const Data& out);
 /// Wrapper for MPI_Allgatherv (pointer)
   template <class T,class S> void Allgather(const T*sendbuf,int sendcount,S*recvbuf,int recvcount) {
     Allgather(ConstData(sendbuf,sendcount),Data(recvbuf,recvcount*Get_size()));
@@ -334,7 +339,7 @@ public:
   }
 
 /// Wrapper for MPI_Recv (data struct)
-  void Recv(Data,int,int,Status&s=StatusIgnore);
+  void Recv(const Data&,int,int,Status&s=StatusIgnore);
 /// Wrapper for MPI_Recv (pointer)
   template <class T> void Recv(T*buf,int count,int source,int tag,Status&s=StatusIgnore) {
     Recv(Data(buf,count),source,tag,s);

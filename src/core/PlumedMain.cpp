@@ -36,6 +36,10 @@
 #include "config/Config.h"
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+#include "../mpiwrap/provider-registry.hpp"
+#include "../mpiwrap/provider-selection.h"
+#endif
 #include "tools/DLLoader.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
@@ -777,7 +781,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(10));
+        val.set(int(11));
         break;
       // commands which can be used only before initialization:
       case cmd_init:
@@ -839,6 +843,23 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         plumedDat=val.getCString();
+        break;
+      case cmd_injectMPIImplementation:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+#if defined(__PLUMED_HAS_MPI)
+        plumed_merror("MPI provider injection is disabled in native-MPI kernels");
+#elif !defined(__PLUMED_MPIWRAP)
+        plumed_merror("MPI provider injection is unavailable in a fully serial kernel");
+#else
+        if(!mpiwrap_provider::forceEnvironmentProvider()) {
+          std::string error;
+          if(!mpiwrap_provider::currentRegistry().install(
+                static_cast<const plumed_mpiw_provider_descriptor*>(val.get<const void*>()),error)) {
+            plumed_merror(error);
+          }
+        }
+#endif
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);

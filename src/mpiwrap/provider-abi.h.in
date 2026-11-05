@@ -1,0 +1,74 @@
+#ifndef PLUMED_MPIWRAP_PROVIDER_ABI_PROPOSAL_H
+#define PLUMED_MPIWRAP_PROVIDER_ABI_PROPOSAL_H
+
+/* Provider ABI source template; generate.py emits the public header. */
+#include <stddef.h>
+#include <stdint.h>
+
+/* Provider library factory used by the environment-selected provider loader. */
+#ifndef PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL
+#define PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL "plumed_mpiw_provider_factory"
+#endif
+
+#define PLUMED_MPIW_PROVIDER_ABI_MAJOR UINT32_C(3)
+
+#define PLUMED_MPIW_METADATA_REQUIRED UINT32_C(1)
+#define PLUMED_MPIW_METADATA_MPI_USER_FUNCTION_ABI "callback:MPI_User_function"
+#define PLUMED_MPIW_METADATA_MPI_ERRHANDLER_FUNCTION_ABI "callback:MPI_Comm_errhandler_function"
+#define PLUMED_MPIW_CALLBACK_ABI_MPI5_C_V1 "mpi5-c-v1"
+#define PLUMED_MPIW_CALLBACK_ABI_UNAVAILABLE "unavailable"
+#define PLUMED_MPIW_VALUE_UTF8 UINT32_C(5)
+#define PLUMED_MPIW_VALUE_ACCESSOR UINT32_C(7)
+#define PLUMED_MPIW_VALUE_OPAQUE UINT32_C(8)
+
+/* Function table entries erase the exact per-function transport signature.
+   Callers must cast back to that generated signature before invoking it. */
+typedef void (*plumed_mpiw_generic_fn)(void);
+typedef void (*plumed_mpiw_constant_accessor_fn)(void *output);
+
+typedef struct {
+  uint32_t struct_size;      /* fixed entry layout within one ABI major */
+  const char *name;          /* NUL-terminated; borrowed until install returns */
+  uint32_t signature_id;
+  uint32_t signature_version;
+  uint32_t argument_count;
+  plumed_mpiw_generic_fn function;
+} plumed_mpiw_function_entry;
+
+typedef struct {
+  uint32_t struct_size;      /* fixed entry layout within one ABI major */
+  uint32_t value_type;
+  uint32_t flags;
+  const char *name;          /* NUL-terminated; borrowed until install returns */
+  uint64_t value_size;       /* exact payload byte count at value */
+  uint64_t native_value_size; /* accessor result width; zero for other values */
+  const void *value;         /* payload copied by installer before install returns */
+} plumed_mpiw_metadata_entry;
+
+typedef struct plumed_mpiw_provider_descriptor {
+  uint32_t struct_size;
+  uint32_t abi_major;
+  uint32_t abi_minor;
+  uint32_t ranks_are_threads;
+  const char *description;   /* optional, NUL-terminated and borrowed */
+  uint32_t native_comm_size;
+  uint32_t native_group_size;
+  uint32_t native_datatype_size;
+  uint32_t native_request_size;
+  uint32_t native_op_size;
+  uint32_t native_errhandler_size;
+  uint32_t native_status_size;
+  uint32_t native_status_source_offset;
+  uint32_t native_status_tag_offset;
+  uint32_t native_status_error_offset;
+  uint32_t native_fint_size;
+  uint32_t native_fint_signed;
+  uint64_t function_count;
+  const plumed_mpiw_function_entry *functions;
+  uint64_t metadata_count;
+  const plumed_mpiw_metadata_entry *metadata;
+} plumed_mpiw_provider_descriptor;
+
+typedef const plumed_mpiw_provider_descriptor *(*plumed_mpiw_factory_fn)(void);
+
+#endif
