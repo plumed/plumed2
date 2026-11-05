@@ -18,10 +18,12 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
+#include "tools/Checkpoint.h"
 
 #include <algorithm>
 
@@ -94,6 +96,8 @@ See below for an example of how to use this keyword.
 
 Restart can be done from a KERNELS file, but it might be not perfect (due to limited precision when printing kernels to file, or if adaptive SIGMA is used).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
+With [CHECKPOINT](CHECKPOINT.md) the restart is exact without STATE_RFILE: the full state is stored in the PLUMED checkpoint,
+the KERNELS file is truncated at the checkpointing step and STATE_RFILE is not read.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
 
@@ -198,6 +202,7 @@ class OPESmetad : public bias::Bias {
 
 private:
   bool isFirstStep_;
+  bool fromCheckpoint_; //restart from a CHECKPOINT: the state is restored by readCheckpoint, no file is read
   unsigned NumOMP_;
   unsigned NumParallel_;
   unsigned rank_;
@@ -304,6 +309,8 @@ public:
   bool hasCheckpointState() const override {
     return true;
   }
+  void writeCheckpoint(CheckpointWriter&) override;
+  void readCheckpoint(CheckpointReader&) override;
 };
 
 struct convergence {
@@ -433,6 +440,7 @@ template <class mode>
 OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
+  , fromCheckpoint_(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint())
   , counter_(1)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
@@ -708,7 +716,9 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 
 //restart if needed
   bool convertKernelsToState=false;
-  if(getRestart()) {
+  if(fromCheckpoint_) {
+    log.printf("  RESTART from the checkpoint: the state is restored from it%s\n",restartFileName.length()>0?", STATE_RFILE is not read":"");
+  } else if(getRestart()) {
     bool stateRestart=true;
     if(restartFileName.length()==0) {
       stateRestart=false;
@@ -1874,6 +1884,86 @@ void OPESmetad<mode>::listKernels(const unsigned begin,const unsigned end,std::v
       }
     }
   }
+}
+
+//the state at the start of a step (see CHECKPOINT)
+template <class mode>
+void OPESmetad<mode>::writeCheckpoint(CheckpointWriter& w) {
+  w.write("isFirstStep",isFirstStep_);
+  w.write("counter",counter_);
+  if(adaptive_sigma_) {
+    w.write("adaptive_counter",adaptive_counter_);
+    w.write("av_cv",av_cv_);
+    w.write("av_M2",av_M2_);
+  }
+  w.write("sigma0",sigma0_);
+  w.write("sigma_min",sigma_min_);
+  w.write("sum_weights",sum_weights_);
+  w.write("sum_weights2",sum_weights2_);
+  w.write("zed",Zed_);
+  w.write("KDEnorm",KDEnorm_);
+  w.write("work",work_);
+  std::vector<double> height,center,sigma;
+  for(const auto & k : kernels_) {
+    height.push_back(k.height);
+    center.insert(center.end(),k.center.begin(),k.center.end());
+    sigma.insert(sigma.end(),k.sigma.begin(),k.sigma.end());
+  }
+  w.write("kernels_height",height);
+  w.write("kernels_center",center);
+  w.write("kernels_sigma",sigma);
+  if(nlist_) {
+    w.write("nlist_index",nlist_index_);
+    w.write("nlist_center",nlist_center_);
+    w.write("nlist_sigma_min",nlist_sigma_min_);
+    w.write("nlist_steps",nlist_steps_);
+    w.write("nlist_update",nlist_update_);
+  }
+  writeComponentValues(w);
+}
+
+template <class mode>
+void OPESmetad<mode>::readCheckpoint(CheckpointReader& r) {
+  r.read("isFirstStep",isFirstStep_);
+  r.read("counter",counter_);
+  if(adaptive_sigma_) {
+    r.read("adaptive_counter",adaptive_counter_);
+    r.read("av_cv",av_cv_);
+    r.read("av_M2",av_M2_);
+  }
+  r.read("sigma0",sigma0_);
+  r.read("sigma_min",sigma_min_);
+  r.read("sum_weights",sum_weights_);
+  r.read("sum_weights2",sum_weights2_);
+  r.read("zed",Zed_);
+  r.read("KDEnorm",KDEnorm_);
+  r.read("work",work_);
+  plumed_massert(sigma0_.size()==ncv_,"checkpoint: wrong number of arguments for "+getLabel());
+  std::vector<double> height,center,sigma;
+  r.read("kernels_height",height);
+  r.read("kernels_center",center);
+  r.read("kernels_sigma",sigma);
+  plumed_massert(center.size()==ncv_*height.size() && sigma.size()==ncv_*height.size(),"checkpoint: wrong size of the kernels of "+getLabel());
+  kernels_.clear();
+  for(unsigned k=0; k<height.size(); k++) {
+    kernels_.emplace_back(height[k],std::vector<double>(center.begin()+k*ncv_,center.begin()+(k+1)*ncv_),
+                          std::vector<double>(sigma.begin()+k*ncv_,sigma.begin()+(k+1)*ncv_));
+  }
+  delta_kernels_.clear();
+  sum_outdated_=true;
+  if(nlist_) {
+    if(r.has("nlist_index")) {
+      r.read("nlist_index",nlist_index_);
+      r.read("nlist_center",nlist_center_);
+      r.read("nlist_sigma_min",nlist_sigma_min_);
+      r.read("nlist_steps",nlist_steps_);
+      r.read("nlist_update",nlist_update_);
+    } else {
+      nlist_update_=true;
+    }
+    nlist_all_outdated_=true;
+  }
+  readComponentValues(r);
 }
 
 template <class mode>
