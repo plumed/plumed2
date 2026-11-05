@@ -192,6 +192,11 @@ Notice that:
   The default of 512 is the size of cache lines on your machine. The PLUMED\_CACHELINE\_SIZE variable is used
   by PLUMED to decrease the number of threads to be used in each loop so as to avoid clashes in memory access. This variable is expected to affect performance only, not results.
 
-
-
-
+On Linux, PLUMED keeps its dynamically linked OpenMP runtime resident when a
+kernel is unloaded, since idle worker threads can otherwise access unloaded
+runtime code. Individual PLUMED kernels can still unload normally. Applications
+that explicitly manage OpenMP resource cleanup and need to unload the runtime
+can set `PLUMED_OPENMP_RETAIN_RUNTIME=no` before constructing any PLUMED instance.
+Once retention has been enabled, changing this variable cannot undo it within
+the same process. PLUMED does not automatically pause or shut down the host
+application's OpenMP runtime.
