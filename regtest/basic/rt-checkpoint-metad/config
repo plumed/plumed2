@@ -46,7 +46,14 @@ function plumed_regtest_after() {
     done
     grep -h "Restarting from checkpoint\|Checkpoint state restored\|WARNING" $d/out2 | sed 's/by PLUMED.*//'
   done > restart_check
-  for f in HW.0 COLVAR_W0 ; do
+  # the hills of the file walkers end with the wall clock time (seconds), which differs between the runs: it is not compared
+  for f in HW.0 ; do
+    for g in $f.reference $f ; do
+      awk '/^#/{print; next} {$NF=""; print}' walkers/$g > walkers/$g.noclock
+    done
+    if cmp -s walkers/$f.reference.noclock walkers/$f.noclock ; then echo "walkers/$f IDENTICAL" ; else echo "walkers/$f DIFFERENT" ; fi
+  done >> restart_check
+  for f in COLVAR_W0 ; do
     if cmp -s walkers/$f.reference walkers/$f ; then echo "walkers/$f IDENTICAL" ; else echo "walkers/$f DIFFERENT" ; fi
   done >> restart_check
   grep -h "Skipping\|Checkpoint state restored" walkers/out2 >> restart_check
