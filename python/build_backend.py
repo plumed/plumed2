@@ -115,6 +115,11 @@ def _copy_build_inputs(source: Path, destination: Path) -> None:
             symlinks=True,
             ignore=shutil.ignore_patterns(*BUILD_PRODUCTS),
         )
+    # the source distribution does not contain this link (see _copy_sdist_source)
+    include_link = destination / "src" / "include" / "plumed"
+    if not include_link.is_symlink() and not include_link.exists():
+        include_link.parent.mkdir(parents=True, exist_ok=True)
+        include_link.symlink_to("../")
 
 
 def _runtime_cache_key(source: Path, modules: list[str]) -> str:
@@ -495,6 +500,10 @@ def _compile_runtime(source_root: Path, modules: list[str]) -> None:
 
 def _copy_sdist_source(destination: Path) -> None:
     _copy_build_inputs(PYTHON_ROOT.parent, destination)
+    # src/include/plumed is a link to ../: setuptools would follow it recursively
+    # (a 120 MB sdist, with tens of thousands of copies of the sources).
+    # _copy_build_inputs creates it again when the kernel is built.
+    (destination / "src" / "include" / "plumed").unlink()
 
 
 def build_sdist(sdist_directory, config_settings=None):
