@@ -182,6 +182,7 @@ ReadGridInSetup::ReadGridInSetup(const ActionOptions&ao):
       log.printf(" %s",dernames[i].c_str());
     }
     log.printf("\n");
+    gbin=gridobject.getNbin(false);
     log.printf("  on %zu", gbin[0]);
     for(unsigned i=1; i<gbin.size(); ++i) {
       log.printf(" by %zu \n", gbin[i]);
