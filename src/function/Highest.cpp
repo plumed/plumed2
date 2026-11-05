@@ -264,6 +264,11 @@ void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions&
 }
 
 void Highest::calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
+  // the vector is empty if the data is still being collected
+  if( args.size()==0 ) {
+    funcout.values[0] = 0;
+    return;
+  }
   if( !noderiv ) {
     for(unsigned i=0; i<args.size(); ++i) {
       funcout.derivs[0][i] = 0;
