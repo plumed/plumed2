@@ -316,7 +316,7 @@ void DynamicReferenceRestraining::registerKeywords(Keywords &keys) {
     "optional", "EXTTEMP",
     "the temperature of extended variables (default to system temperature)");
   keys.add("optional", "DRR_RFILE",
-           "specifies the restart file (.drrstate file)");
+           "specifies the restart file (.drrstate file), it is not read when restarting from a CHECKPOINT, which stores the full state");
   keys.addFlag("NOBIAS", false, "DO NOT apply bias forces.");
   keys.addFlag("TEXTOUTPUT", false, "use text output for grad and count files "
                "instead of boost::serialization binary "
