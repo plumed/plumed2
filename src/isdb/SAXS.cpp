@@ -1731,7 +1731,6 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
   if(size == 0) {
     error("SAXS/SANS requires at least one atom or bead");
   }
-  const unsigned nt=OpenMP::getNumThreads();
 
   std::vector<double> sum(numq,0);
   if(has_rows_) {
@@ -1768,7 +1767,7 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
     // (with USEGPU and DOSCORE the derivatives stay on the GPU: the weights of
     // the contraction are smeared instead, see calculate)
     const unsigned nsmear = (usegpu_ && getDoScore()) ? 0 : size;
-    #pragma omp parallel for num_threads(nt) schedule(static)
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
     for (unsigned i=0; i<nsmear; i++) {
       std::vector<Vector> old_deriv_i(numq);
       for (unsigned l=0; l<numq; l++) {
