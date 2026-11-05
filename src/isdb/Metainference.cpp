@@ -166,10 +166,12 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
-/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+/// The Monte Carlo state, the averages and the values of the components are stored in the checkpoint
   bool hasCheckpointState() const override {
     return true;
   }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 };
 
 
@@ -244,6 +246,16 @@ void Metainference::calculate() {
   }
 
   setBias(ene);
+}
+
+void Metainference::writeCheckpoint(CheckpointWriter& w) {
+  core_.writeCheckpoint(w);
+  writeComponentValues(w);
+}
+
+void Metainference::readCheckpoint(CheckpointReader& r) {
+  core_.readCheckpoint(r);
+  readComponentValues(r);
 }
 
 void Metainference::update() {

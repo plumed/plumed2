@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include <limits>
 #include <iostream>
 #include <iterator>
 
@@ -147,6 +148,18 @@ void Random::fromString(const std::string & str) {
   for (int i = 0; i < NTAB; i++) {
     istr>>iv[i];
   }
+}
+
+std::string Random::stateToString()const {
+  std::ostringstream ostr;
+  ostr.precision(std::numeric_limits<double>::max_digits10);
+  WriteStateFull(ostr);
+  return ostr.str();
+}
+
+void Random::stateFromString(const std::string & str) {
+  std::istringstream istr(str);
+  ReadStateFull(istr);
 }
 
 // This allows to have the same stream of random numbers

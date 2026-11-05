@@ -19,6 +19,8 @@
 #include "core/ActionRegister.h"
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
+#include "tools/Checkpoint.h"
 #include "DRR.h"
 #include "tools/Random.h"
 #include "tools/Tools.h"
@@ -31,6 +33,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <limits>
 #include <random>
 #include <string>
@@ -244,9 +247,12 @@ public:
   void update() override;
   void save(const string &filename, long long int step);
   void load(const string &filename);
+  void writeCheckpoint(CheckpointWriter &w) override;
+  void readCheckpoint(CheckpointReader &r) override;
   void backupFile(const string &filename);
   static void registerKeywords(Keywords &keys);
-/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+/// The state of the fictitious particles, of the ABF and CZAR grids and of the thermostat is stored in the checkpoint
+/// (the umbrella integration estimator is not)
   bool hasCheckpointState() const override {
     return true;
   }
@@ -451,7 +457,15 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         "500(default)."
         << '\n';
   }
-  if (getRestart()) {
+  if (getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {
+    // the state is restored by readCheckpoint at the first step, DRR_RFILE is not read
+    isRestart = true;
+    firsttime = false;
+    log << "eABF/DRR: Restarting from the checkpoint, the file DRR_RFILE is not read." << '\n';
+    if (useUIestimator) {
+      log << "eABF/DRR: WARNING: the umbrella integration estimator is not stored in the checkpoint." << '\n';
+    }
+  } else if (getRestart()) {
     if (restart_prefix.length() != 0) {
       isRestart = true;
       firsttime = false;
@@ -868,6 +882,31 @@ void DynamicReferenceRestraining::save(const string &filename,
   oa << step << fict << vfict << vfict_laststep << ffict << ABFGrid
      << CZARestimator;
   out.close();
+}
+
+void DynamicReferenceRestraining::writeCheckpoint(CheckpointWriter &w) {
+  // the grids are stored with the boost serialization used by the .drrstate files
+  std::ostringstream out(std::ios::binary);
+  {
+    boost::archive::binary_oarchive oa(out);
+    oa << fict << vfict << vfict_laststep << ffict << ABFGrid << CZARestimator;
+  }
+  w.write("state", out.str());
+  w.write("firsttime", firsttime ? 1 : 0);
+  w.write("random", rand.stateToString());
+  writeComponentValues(w);
+}
+
+void DynamicReferenceRestraining::readCheckpoint(CheckpointReader &r) {
+  const std::string state = r.get<std::string>("state");
+  std::istringstream in(state, std::ios::binary);
+  {
+    boost::archive::binary_iarchive ia(in);
+    ia >> fict >> vfict >> vfict_laststep >> ffict >> ABFGrid >> CZARestimator;
+  }
+  firsttime = r.get<int>("firsttime") != 0;
+  rand.stateFromString(r.get<std::string>("random"));
+  readComponentValues(r);
 }
 
 void DynamicReferenceRestraining::load(const string &rfile_prefix) {
