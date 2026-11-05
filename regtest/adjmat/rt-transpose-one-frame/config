@@ -1,0 +1,11 @@
+type=driver
+plumed_modules="adjmat matrixtools"
+# TRANSPOSE of a matrix that has only one row when it is computed (one collected frame):
+# the shape of the transpose was not updated and DISSIMILARITIES read outside it (segmentation fault)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+function plumed_regtest_before(){
+  for i in 1 2 ; do
+    echo 4 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 $i ; echo X 0 1 0 ; echo X 0 0 $i
+  done > traj.xyz
+}

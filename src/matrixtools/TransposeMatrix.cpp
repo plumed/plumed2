@@ -150,7 +150,7 @@ void TransposeMatrix::prepare() {
     if( myval->getNumberOfColumns()!=myarg->getShape()[0] ) {
       myval->reshapeMatrixStore( myarg->getShape()[0]  );
     }
-  } else if( myarg->getShape()[0]==1 ) {
+  } else if( myval->getRank()==1 ) {
     if( myval->getShape()[0]!=myarg->getShape()[1] ) {
       std::vector<std::size_t> shape(1);
       shape[0] = myarg->getShape()[1];
