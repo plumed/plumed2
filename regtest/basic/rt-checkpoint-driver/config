@@ -44,7 +44,7 @@ function plumed_regtest_before() {
   # the checkpoint step is not in the trajectory
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt --initial-step 100 > out2 2> err2
   # a file was modified after the checkpoint (same size, different content)
-  sed -i 's/ 49.000000/ 49.100000/' COLVAR
+  sed 's/ 49.000000/ 49.100000/' COLVAR > COLVAR.tmp && mv COLVAR.tmp COLVAR
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out3 2> err3
   cd ..
 }
@@ -60,10 +60,10 @@ function plumed_regtest_after() {
   done > restart_check
   grep -h "WARNING: the following actions" metad/out1 | head -n 1 >> restart_check
   grep -h "truncated\|not truncated\|Checkpoint state restored" metad/out2 >> restart_check
-  # the error messages
+  # the error messages (the lines around them depend on PLUMED_STACK_TRACE)
   for i in 1 2 3 ; do
-    grep -v "^(" wrong-step/err$i | grep -v ": *$" | head -n 1 | sed 's/^ERROR : in input for command line tool driver : //' >> restart_check
+    grep -h "do not refer to the same step\|not in the trajectory\|differs from the one recorded" wrong-step/err$i | head -n 1 | sed 's/^ERROR : in input for command line tool driver : //' >> restart_check
   done
-  # content of the last checkpoint of A
-  $plumed checkpoint --dump restart/plumed.cpt | grep -v "written by" > cpt_dump
+  # content of the last checkpoint of A (the state of mr is left out: its last digits depend on the platform)
+  $plumed checkpoint --dump restart/plumed.cpt | grep -v "written by\|^actions/mr/" > cpt_dump
 }
