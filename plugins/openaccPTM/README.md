@@ -127,7 +127,7 @@ sum, which is the expensive part of the calculation (it scales with the square o
 factors, solvent accessible surface (ONEBEAD), deuteration (SANS), resolution function and metainference are computed by
 PLUMED as usual.
 
-```plumed
+````
 LOAD FILE=/path/to/plumedOpenACC.so
 
 MOLINFO STRUCTURE=template.pdb
@@ -138,7 +138,9 @@ SAXS ...
   USEGPU
   QVALUE1=0.03 QVALUE2=0.06 QVALUE3=0.09
 ... SAXS
-```
+````
+
+(This example is not highlighted only because the manual is built without the plugin.)
 
 - `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any) or the default OpenACC device.
 - Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
