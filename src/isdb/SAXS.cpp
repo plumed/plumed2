@@ -29,6 +29,7 @@
 */
 
 #include "MetainferenceBase.h"
+#include "SAXSDebyeBackend.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
@@ -47,6 +48,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <memory>
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
@@ -147,6 +149,27 @@ QVALUE10=0.30 EXPINT10=0.00880634
 ... SAXS
 
 PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
+```
+
+The Debye sum can be computed on a GPU with the USEGPU flag. The GPU implementations are provided by
+plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/openaccSAXS in the
+PLUMED sources). The GPU is selected with DEVICEID (by default the one assigned to PLUMED by the MD
+code, or the first one). With MPI each rank computes a share of the sum on its own GPU; with SERIAL
+only the first rank uses its GPU and the results are shared with the others.
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
+LOAD FILE=/path/to/plumedOpenACCSAXS.so
+MOLINFO STRUCTURE=regtest/basic/rt65/AA.pdb
+SAXS ...
+LABEL=SAXS
+ATOMS=1-107
+ATOMISTIC
+USEGPU
+QVALUE1=0.03
+QVALUE2=0.06
+QVALUE3=0.09
+... SAXS
 ```
 
 */
@@ -332,6 +355,19 @@ private:
   bool absolute;
   bool pbc;
   bool serial;
+  // rows of the Debye sum computed by this rank: first_row_, first_row_+row_stride_, ...
+  // (none if has_rows_ is false)
+  unsigned first_row_;
+  unsigned row_stride_;
+  bool has_rows_;
+  // whether the partial results of the ranks are summed
+  bool reduce_;
+  // the Debye sum is computed by backend_ (USEGPU)
+  bool usegpu_;
+  // accelerated Debye sum (USEGPU), provided by a plugin
+  std::unique_ptr<SAXSDebyeBackend> backend_;
+  // the form factors as a single array, ff_flat_[i*numq+k], for the backend
+  std::vector<double> ff_flat_;
   bool onebead;
   bool resolution;
   bool chi2;
@@ -481,6 +517,8 @@ private:
     };
 
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv);
+  // the partial Debye sum of the rows of this rank (without the self term), on the CPU
+  void debye_cpu(const std::vector<Vector> &pos, std::vector<double> &sum, std::vector<Vector> &deriv);
   void sincos_q(const double r, double *s, double *c) const;
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
@@ -541,8 +579,10 @@ PLUMED_REGISTER_ACTION(SAXS,"SANS")
 void SAXS::registerKeywords(Keywords& keys) {
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose. With USEGPU only the first rank uses its GPU");
+  keys.addFlag("USEGPU",false,"Calculate the Debye sum on the GPU, using a backend provided by a plugin that must be loaded with LOAD");
+  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used with USEGPU (-1: the one assigned by the MD code, or the first one)");
+  keys.add("optional","GPU_BACKEND","The GPU backend to be used with USEGPU, needed only if more than one is loaded");
   keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
   keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
   keys.addFlag("MARTINI",false,"Calculate SAXS for a Martini model");
@@ -581,6 +621,11 @@ SAXS::SAXS(const ActionOptions&ao):
   absolute(false),
   pbc(true),
   serial(false),
+  first_row_(0),
+  row_stride_(1),
+  has_rows_(true),
+  reduce_(false),
+  usegpu_(false),
   onebead(false),
   chi2(false),
   chi2ensemble(false),
@@ -600,6 +645,51 @@ SAXS::SAXS(const ActionOptions&ao):
   }
 
   parseFlag("SERIAL",serial);
+
+  parseFlag("USEGPU",usegpu_);
+  const bool usegpu=usegpu_;
+  int deviceid=-1;
+  parse("DEVICEID",deviceid);
+  std::string gpu_backend;
+  parse("GPU_BACKEND",gpu_backend);
+  // rows of the Debye sum of this rank: on the CPU, with SERIAL every rank computes
+  // everything; on the GPU, with SERIAL only the first rank does
+  if(!serial) {
+    first_row_ = comm.Get_rank();
+    row_stride_ = comm.Get_size();
+  } else if(usegpu && comm.Get_rank()>0) {
+    has_rows_ = false;
+  }
+  reduce_ = (!serial || usegpu) && comm.Get_size()>1;
+  if(usegpu) {
+    if(deviceid==-1) {
+      deviceid = plumed.getGpuDeviceId();
+    }
+    // a rank that fails to create the backend must not leave the others waiting
+    std::string failure;
+    if(has_rows_) {
+      try {
+        backend_ = saxsDebyeBackendRegister().create(gpu_backend,deviceid);
+      } catch(const std::exception & e) {
+        failure = e.what();
+        if(failure.empty()) {
+          failure = "unknown error";
+        }
+      }
+    }
+    int failed = failure.empty() ? 0 : 1;
+    comm.Sum(failed);
+    if(failed>0) {
+      error("cannot use the GPU" + (failure.empty() ? std::string(" (failure on another rank)") : ": " + failure));
+    }
+    log.printf("  using the GPU for the Debye sum");
+    if(deviceid>=0) {
+      log.printf(" (device %d)",deviceid);
+    }
+    log.printf("\n");
+  } else if(!gpu_backend.empty()) {
+    error("GPU_BACKEND can only be used together with USEGPU");
+  }
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -1565,25 +1655,11 @@ void SAXS::sincos_q(const double r, double *s, double *c) const {
   }
 }
 
-void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv) {
-  unsigned size;
-  if(onebead) {
-    size = nres;
-  } else {
-    size = getNumberOfAtoms();
-  }
+void SAXS::debye_cpu(const std::vector<Vector> &pos, std::vector<double> &sum, std::vector<Vector> &deriv) {
+  const unsigned size = pos.size();
   const unsigned numq = q_list.size();
-  if(size == 0) {
-    error("SAXS/SANS requires at least one atom or bead");
-  }
-
-  unsigned stride = comm.Get_size();
-  unsigned rank   = comm.Get_rank();
-  if(serial) {
-    stride = 1;
-    rank   = 0;
-  }
-  std::vector<double> sum(numq,0);
+  const unsigned rank = first_row_;
+  const unsigned stride = row_stride_;
   const unsigned nt=OpenMP::getNumThreads();
   // partial sums of the threads other than the first one, added in thread order
   std::vector< std::vector<Vector> > deriv_t(nt);
@@ -1641,8 +1717,36 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
       }
     }
   }
+}
 
-  if(!serial) {
+void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv) {
+  unsigned size;
+  if(onebead) {
+    size = nres;
+  } else {
+    size = getNumberOfAtoms();
+  }
+  const unsigned numq = q_list.size();
+  if(size == 0) {
+    error("SAXS/SANS requires at least one atom or bead");
+  }
+  const unsigned nt=OpenMP::getNumThreads();
+
+  std::vector<double> sum(numq,0);
+  if(has_rows_) {
+    if(usegpu_) {
+      ff_flat_.resize(static_cast<std::size_t>(size)*numq);
+      for(unsigned i=0; i<size; ++i) {
+        std::copy(FF_value[i].begin(), FF_value[i].end(), ff_flat_.begin()+static_cast<std::size_t>(i)*numq);
+      }
+      // with DOSCORE the derivatives stay on the GPU and are contracted later
+      backend_->compute(pos, ff_flat_, q_list, first_row_, row_stride_, sum, getDoScore() ? nullptr : &deriv);
+    } else {
+      debye_cpu(pos, sum, deriv);
+    }
+  }
+
+  if(reduce_) {
     comm.Sum(&sum[0], numq);
   }
 
@@ -1660,8 +1764,11 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
     }
     // the smearing is linear in the data, so it is applied to the partial
     // derivatives of this rank (of all the particles) before summing them
+    // (with USEGPU and DOSCORE the derivatives stay on the GPU: the weights of
+    // the contraction are smeared instead, see calculate)
+    const unsigned nsmear = (usegpu_ && getDoScore()) ? 0 : size;
     #pragma omp parallel for num_threads(nt) schedule(static)
-    for (unsigned i=0; i<size; i++) {
+    for (unsigned i=0; i<nsmear; i++) {
       std::vector<Vector> old_deriv_i(numq);
       for (unsigned l=0; l<numq; l++) {
         old_deriv_i[l] = deriv[l*size+i];
@@ -1681,7 +1788,7 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
   }
 
   // with DOSCORE only the contraction with the score derivatives is summed (in calculate)
-  if(!serial && reduce_deriv) {
+  if(reduce_ && reduce_deriv) {
     comm.Sum(&deriv[0][0], 3*deriv.size());
   }
 
@@ -2000,14 +2107,36 @@ void SAXS::calculate() {
   if(getDoScore()) {
     // derivative of the score with respect to the beads, from all the q values
     std::vector<Vector> score_deriv(beads_size, Vector(0,0,0));
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads())
-    for(unsigned i=0; i<beads_size; ++i) {
+    if(usegpu_) {
+      // the derivatives of the intensities are on the GPU: the contraction is done there.
+      // With SIGMARES the smeared intensities are I_k = sum_l smear_kl I_l, hence the weights
+      // of the unsmeared derivatives are w_l = sum_k smear_kl dS/dI_k
+      std::vector<double> w(numq);
       for(unsigned k=0; k<numq; ++k) {
-        score_deriv[i] += getMetaDer(k)*bd_deriv[k*beads_size+i];
+        w[k] = getMetaDer(k);
+      }
+      if(resolution) {
+        const std::vector<double> metader(w);
+        for(unsigned l=0; l<numq; ++l) {
+          w[l] = 0.;
+          for(unsigned k=0; k<numq; ++k) {
+            w[l] += smear_[k*numq+l]*metader[k];
+          }
+        }
+      }
+      if(has_rows_) {
+        backend_->contract(w, score_deriv);
+      }
+    } else {
+      #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+      for(unsigned i=0; i<beads_size; ++i) {
+        for(unsigned k=0; k<numq; ++k) {
+          score_deriv[i] += getMetaDer(k)*bd_deriv[k*beads_size+i];
+        }
       }
     }
     // calculate_cpu does not sum the derivatives over the ranks with DOSCORE
-    if(!serial && comm.Get_size()>1) {
+    if(reduce_) {
       comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
     }
     Value* val=getPntrToComponent("score");
