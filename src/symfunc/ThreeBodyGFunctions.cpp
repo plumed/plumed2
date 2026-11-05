@@ -129,16 +129,9 @@ public:
   bool multi_action_input=false;
   std::vector<std::string> funcstr;
   std::vector<LeptonCall> functions;
-  // the assignment is customized (see below): copy construction is the default one
   ThreeBodyGFunctionsInput() = default;
   ThreeBodyGFunctionsInput(const ThreeBodyGFunctionsInput&) = default;
-  ThreeBodyGFunctionsInput& operator=( const ThreeBodyGFunctionsInput& m ) {
-    multi_action_input = m.multi_action_input;
-    for(unsigned i=0; i<m.funcstr.size(); ++i) {
-      addFunction( m.funcstr[i], NULL );
-    }
-    return *this;
-  }
+  ThreeBodyGFunctionsInput& operator=(const ThreeBodyGFunctionsInput&) = default;
   void addFunction( std::string myfunc, ActionWithVector* action ) {
     funcstr.push_back( myfunc );
     functions.push_back( LeptonCall() );
