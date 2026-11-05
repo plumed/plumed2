@@ -10,7 +10,11 @@ from pathlib import Path
 
 
 PACKAGE = Path(__file__).resolve().parents[1]
-ROOT = PACKAGE / "plumed_source" if (PACKAGE / "plumed_source").is_dir() else PACKAGE.parent
+ROOT = (
+    PACKAGE / "plumed_source"
+    if (PACKAGE / "plumed_source").is_dir()
+    else PACKAGE.parent
+)
 
 
 def decode_cpp_string(literal):
@@ -27,7 +31,7 @@ def decode_cpp_string(literal):
 
         escape = literal[index]
         index += 1
-        if escape in {'\\', '"', "'", "?"}:
+        if escape in {"\\", '"', "'", "?"}:
             output.extend(escape.encode("ascii"))
         elif escape == "n":
             output.append(10)
@@ -52,8 +56,7 @@ def decode_cpp_string(literal):
         elif escape == "x":
             digits = ""
             while (
-                index < len(literal) - 1
-                and literal[index] in "0123456789abcdefABCDEF"
+                index < len(literal) - 1 and literal[index] in "0123456789abcdefABCDEF"
             ):
                 digits += literal[index]
                 index += 1
@@ -66,9 +69,7 @@ def decode_cpp_string(literal):
 
 
 def read_generated_rows(path):
-    row_pattern = re.compile(
-        r'\s*\{"((?:\\.|[^"\\])*)", "((?:\\.|[^"\\])*)"\},'
-    )
+    row_pattern = re.compile(r'\s*\{"((?:\\.|[^"\\])*)", "((?:\\.|[^"\\])*)"\},')
     rows = []
     for line in path.read_text(encoding="utf-8").splitlines():
         match = row_pattern.fullmatch(line)
@@ -95,7 +96,7 @@ def compile_and_check_map(compiler, generated_include, directory, expected_summa
         '#include "ActionDescriptions.h"\n'
         "int main() {\n"
         "  const auto & descriptions=PLMD::getActionDescriptions();\n"
-        f"  if(descriptions.at(\"DUPLICATE\")!={expected_cpp}) return 1;\n"
+        f'  if(descriptions.at("DUPLICATE")!={expected_cpp}) return 1;\n'
         '  if(descriptions.at("CONDITIONAL")!="  summary in a conditional source block") return 2;\n'
         '  if(descriptions.count("MISSING")!=0) return 3;\n'
         "  return 0;\n"
@@ -124,11 +125,7 @@ def compile_and_check_map(compiler, generated_include, directory, expected_summa
 class TestActionDescriptionGenerators(unittest.TestCase):
     def test_unix_and_cmake_generators_match(self):
         expected_summary = '  summary: "quoted", path \\\\root, tab:\t, Unicode café'
-        compiler = (
-            shutil.which("c++")
-            or shutil.which("g++")
-            or shutil.which("clang++")
-        )
+        compiler = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             source = base / "source"
@@ -136,33 +133,27 @@ class TestActionDescriptionGenerators(unittest.TestCase):
             (source / "src" / "beta").mkdir()
             (source / "src" / "zeta").mkdir()
             (source / "src" / "alpha" / "01-first.cpp").write_text(
-                '//+PLUMEDOC TEST DUPLICATE\n'
-                '/*\n'
+                "//+PLUMEDOC TEST DUPLICATE\n"
+                "/*\n"
                 '  summary: "quoted", path \\\\root, tab:\t, Unicode café\n'
-                '*/\n',
+                "*/\n",
                 encoding="utf-8",
             )
             (source / "src" / "beta" / "02-duplicate.cpp").write_text(
-                '//+PLUMEDOC ALIAS DUPLICATE\n'
-                '/*\n'
-                '  later summary must not win\n'
-                '*/\n',
+                "//+PLUMEDOC ALIAS DUPLICATE\n/*\n  later summary must not win\n*/\n",
                 encoding="utf-8",
             )
             (source / "src" / "zeta" / "03-conditional.cpp").write_text(
-                '#if defined(OPTIONAL_TEST_FEATURE)\n'
-                '//+PLUMEDOC TEST CONDITIONAL\n'
-                '/*\n'
-                '  summary in a conditional source block\n'
-                '*/\n'
-                '#endif\n',
+                "#if defined(OPTIONAL_TEST_FEATURE)\n"
+                "//+PLUMEDOC TEST CONDITIONAL\n"
+                "/*\n"
+                "  summary in a conditional source block\n"
+                "*/\n"
+                "#endif\n",
                 encoding="utf-8",
             )
             (source / "src" / "zeta" / "99-missing.cpp").write_text(
-                '//+PLUMEDOC TEST MISSING\n'
-                '/*\n'
-                '   \n'
-                '*/\n',
+                "//+PLUMEDOC TEST MISSING\n/*\n   \n*/\n",
                 encoding="utf-8",
             )
 
@@ -189,7 +180,9 @@ class TestActionDescriptionGenerators(unittest.TestCase):
                         f"-DSRC={source}",
                         f"-DOUT={cmake_output}",
                         "-P",
-                        str(ROOT / "src" / "maketools" / "makeActionDescriptions.cmake"),
+                        str(
+                            ROOT / "src" / "maketools" / "makeActionDescriptions.cmake"
+                        ),
                     ],
                     check=True,
                     capture_output=True,

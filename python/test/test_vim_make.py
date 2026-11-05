@@ -7,7 +7,11 @@ import tempfile
 import unittest
 
 PACKAGE = Path(__file__).resolve().parents[1]
-ROOT = PACKAGE / "plumed_source" if (PACKAGE / "plumed_source").is_dir() else PACKAGE.parent
+ROOT = (
+    PACKAGE / "plumed_source"
+    if (PACKAGE / "plumed_source").is_dir()
+    else PACKAGE.parent
+)
 
 
 @unittest.skipUnless(shutil.which("make"), "make is unavailable")
@@ -27,8 +31,10 @@ class TestVimMake(unittest.TestCase):
             binary.chmod(0o755)
 
             skipped = subprocess.run(
-                ["make", "program_can_run=no"], cwd=vim,
-                capture_output=True, text=True,
+                ["make", "program_can_run=no"],
+                cwd=vim,
+                capture_output=True,
+                text=True,
             )
             self.assertEqual(skipped.returncode, 0, skipped.stdout + skipped.stderr)
             self.assertIn("cannot run on this machine", skipped.stdout)
@@ -37,8 +43,10 @@ class TestVimMake(unittest.TestCase):
 
             # Prove the same fixture reaches the failing executable when enabled.
             enabled = subprocess.run(
-                ["make", "program_can_run=yes"], cwd=vim,
-                capture_output=True, text=True,
+                ["make", "program_can_run=yes"],
+                cwd=vim,
+                capture_output=True,
+                text=True,
             )
             self.assertNotEqual(enabled.returncode, 0)
             self.assertTrue((vim / "invoked").exists())

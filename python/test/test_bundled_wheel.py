@@ -187,9 +187,7 @@ def check_vim_generation(executable):
                     word, menu = name, "(numbered)"
                 else:
                     word, menu = name + "=", "(option)"
-                rows.append(
-                    '{"word":"%s","menu":"%s"}' % (word, menu)
-                )
+                rows.append('{"word":"%s","menu":"%s"}' % (word, menu))
             expected_dictionary = 'let b:plumedDictionary["%s"]=[%s]' % (
                 action,
                 ",".join(sorted(rows)),
@@ -254,15 +252,23 @@ def check_vim_generation(executable):
                 original_template.replace(marker, replacement), encoding="utf-8"
             )
             failed = subprocess.run(
-                [str(executable), "--no-mpi", "gen_vim", "--outdir", str(output),
-                 "--template-dir", str(empty_templates)],
+                [
+                    str(executable),
+                    "--no-mpi",
+                    "gen_vim",
+                    "--outdir",
+                    str(output),
+                    "--template-dir",
+                    str(empty_templates),
+                ],
                 capture_output=True,
                 cwd=temporary,
             )
             assert failed.returncode != 0
             assert {
                 path.relative_to(output): path.read_bytes()
-                for path in output.rglob("*") if path.is_file()
+                for path in output.rglob("*")
+                if path.is_file()
             } == previous_files
 
 
@@ -287,19 +293,14 @@ def check_json_matches_vim():
             name: kind for name, kind in vim_keywords.items() if name != "LABEL"
         }
         actual = {
-            name: kind
-            for name, kind in json_dict[action].items()
-            if name != "LABEL"
+            name: kind for name, kind in json_dict[action].items() if name != "LABEL"
         }
         assert actual == expected, (action, actual, expected)
 
     assert json_dict["ANGLE_SCALAR"]["ATOMS"] == "(option)"
     assert json_dict["ANGLE_VECTOR"]["ATOMS"] == "(numbered)"
     assert json_dict["DUMPPDB"]["FMT"] == vim_dict["DUMPPDB"]["FMT"]
-    assert (
-        json_dict["DUMPMASSCHARGE"]["STRIDE"]
-        == vim_dict["DUMPMASSCHARGE"]["STRIDE"]
-    )
+    assert json_dict["DUMPMASSCHARGE"]["STRIDE"] == vim_dict["DUMPMASSCHARGE"]["STRIDE"]
     assert json_dict["DUMPMASSCHARGE"]["STRIDE"] == "(option)"
 
 
@@ -517,7 +518,7 @@ def check_dynamic_cltool_module(executable):
             f"{compiler[0]} not found: set PLUMED_WHEEL_TEST_NO_COMPILER to skip"
         )
 
-    source = r'''#include "core/CLTool.h"
+    source = r"""#include "core/CLTool.h"
 #include "core/CLToolRegister.h"
 
 namespace PLMD {
@@ -539,7 +540,7 @@ public:
 
 PLUMED_REGISTER_CLTOOL(WheelOnlyCLTool,"wheel_only_tool")
 }
-'''
+"""
     with tempfile.TemporaryDirectory() as temporary:
         directory = Path(temporary)
         plugin_source = directory / "WheelOnlyCLTool.cpp"
