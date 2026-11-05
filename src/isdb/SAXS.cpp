@@ -264,6 +264,10 @@ QVALUE10=0.30 EXPINT10=0.00880634
 PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
 ```
 
+As for [SAXS](SAXS.md), the Debye sum can be computed on a GPU with the USEGPU flag (with DEVICEID and
+GPU_BACKEND), using a backend provided by a plugin loaded with [LOAD](LOAD.md) (see plugins/openaccSAXS in the
+PLUMED sources). Everything else, including the deuteration and the solvation correction, is computed as usual.
+
 */
 //+ENDPLUMEDOC
 
