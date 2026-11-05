@@ -240,7 +240,7 @@ The minimum invocation can be the following:
 
 **plumed.dat**
 ```
-LOAD GLOBAL FILE=path/to/PythonCVInterface.so
+LOAD FILE=path/to/PythonCVInterface.so
 cvPY: PYFUNCTION IMPORT=pycv
 PRINT FILE=colvar.out ARG=*
 ```

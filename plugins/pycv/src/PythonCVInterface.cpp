@@ -192,7 +192,7 @@ dictionary and can be used to store data during the calculations
 You can obtain the manual of the module (and of its components)
 by running plumed driver with this plumed file
 \plumedfile
-LOAD GLOBAL FILE=PythonCVInterface.so
+LOAD FILE=PythonCVInterface.so
 cvdist: PYCVINTERFACE IMPORT=pyhelp
 PRINT FILE=colvar.out ARG=*
 \endplumedfile
