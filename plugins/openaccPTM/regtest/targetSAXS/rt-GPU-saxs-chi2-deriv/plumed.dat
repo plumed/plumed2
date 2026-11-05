@@ -1,4 +1,4 @@
-LOAD FILE=../../../../plumedOpenACCSAXS.so
+LOAD FILE=../../../../plumedOpenACC.so
 SAXS ...
   USEGPU
   LABEL=saxs

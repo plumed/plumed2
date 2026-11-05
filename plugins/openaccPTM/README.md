@@ -102,6 +102,8 @@ The next section contains a list of the actions that can take the USEGPU command
 - matrixtools
    - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
    - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)
+- isdb
+   - [SAXS](SAXS.md) and [SANS](SANS.md), see below
 - symfunc
    - [Q1](Q1.md)
    - [Q3](Q3.md)
@@ -117,3 +119,39 @@ The next section contains a list of the actions that can take the USEGPU command
    - [LOCAL_Q3](LOCAL_Q3.md)
    - [LOCAL_Q4](LOCAL_Q4.md)
    - [LOCAL_Q6](LOCAL_Q6.md)
+
+## SAXS and SANS
+
+[SAXS](SAXS.md) and [SANS](SANS.md) do not use the task manager: the plugin provides the `OPENACC` backend for their Debye
+sum, which is the expensive part of the calculation (it scales with the square of the number of atoms or beads). Form
+factors, solvent accessible surface (ONEBEAD), deuteration (SANS), resolution function and metainference are computed by
+PLUMED as usual.
+
+```plumed
+LOAD FILE=/path/to/plumedOpenACC.so
+
+MOLINFO STRUCTURE=template.pdb
+SAXS ...
+  LABEL=saxs
+  ATOMS=1-3708
+  ATOMISTIC
+  USEGPU
+  QVALUE1=0.03 QVALUE2=0.06 QVALUE3=0.09
+... SAXS
+```
+
+- `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any) or the default OpenACC device.
+- Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
+  GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
+  are shared with the others.
+- With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the
+  derivatives of every intensity with respect to every particle are copied back, which costs more for many q values.
+- `GPU_BACKEND=OPENACC` is needed only if another backend for SAXS/SANS (from a different plugin) is loaded too.
+
+The form factors and the q values are uploaded only when they change; the positions are uploaded at every step.
+Each GPU thread computes a row (particle i, q value k) of the sum looping over all the other particles, so each pair is
+computed twice, but there are no atomic operations and the derivative of particle i is complete in its thread.
+The rows are summed on the GPU for each q value.
+
+The tests in `regtest/targetSAXS` are the SAXS/SANS tests of `regtest/isdb` run with `USEGPU`: they take their input files
+and their (CPU) references from `regtest/isdb`.

@@ -1,5 +1,0 @@
-Makefile.conf
-.deps/
-*.o
-*.so
-*.dylib

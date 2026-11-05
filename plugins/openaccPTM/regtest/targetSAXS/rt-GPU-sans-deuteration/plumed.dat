@@ -1,4 +1,4 @@
-LOAD FILE=../../../../plumedOpenACCSAXS.so
+LOAD FILE=../../../../plumedOpenACC.so
 MOLINFO STRUCTURE=protein.pdb
 
 # ONEBEAD SANS: the solvent exposed residues are deuterated at random

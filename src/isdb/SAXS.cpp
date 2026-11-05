@@ -152,13 +152,13 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
 ```
 
 The Debye sum can be computed on a GPU with the USEGPU flag. The GPU implementations are provided by
-plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/openaccSAXS in the
+plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/openaccPTM in the
 PLUMED sources). The GPU is selected with DEVICEID (by default the one assigned to PLUMED by the MD
 code, or the first one). With MPI each rank computes a share of the sum on its own GPU; with SERIAL
 only the first rank uses its GPU and the results are shared with the others.
 
 ````
-LOAD FILE=/path/to/plumedOpenACCSAXS.so
+LOAD FILE=/path/to/plumedOpenACC.so
 MOLINFO STRUCTURE=template.pdb
 SAXS ...
 LABEL=SAXS
@@ -265,7 +265,7 @@ PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
 ```
 
 As for [SAXS](SAXS.md), the Debye sum can be computed on a GPU with the USEGPU flag (with DEVICEID and
-GPU_BACKEND), using a backend provided by a plugin loaded with [LOAD](LOAD.md) (see plugins/openaccSAXS in the
+GPU_BACKEND), using a backend provided by a plugin loaded with [LOAD](LOAD.md) (see plugins/openaccPTM in the
 PLUMED sources). Everything else, including the deuteration and the solvation correction, is computed as usual.
 
 */

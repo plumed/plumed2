@@ -1,4 +1,4 @@
-LOAD FILE=../../../../plumedOpenACCSAXS.so
+LOAD FILE=../../../../plumedOpenACC.so
 MOLINFO STRUCTURE=template.pdb
 
 SAXS ...

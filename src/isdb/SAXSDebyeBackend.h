@@ -34,7 +34,7 @@ namespace isdb {
 
 /// Interface of an accelerated (e.g. GPU) implementation of the Debye sum of SAXS/SANS.
 ///
-/// The backends live in plugins (see plugins/openaccSAXS) and are selected
+/// The backends live in plugins (see plugins/openaccPTM) and are selected
 /// with the USEGPU keyword of SAXS/SANS. All the rest of the calculation
 /// (form factors, self term, resolution function, metainference) stays in SAXS.
 ///
