@@ -240,8 +240,8 @@ private:
 
 public:
   explicit DynamicReferenceRestraining(const ActionOptions &);
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   void save(const string &filename, long long int step);
   void load(const string &filename);
   void backupFile(const string &filename);
