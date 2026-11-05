@@ -1798,6 +1798,7 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
     if( av && av->calculateOnUpdate() ) {
+      p->prepare();
       p->calculate();
     } else if( ap && !av && ap->getStride()==0 ) {
       p->update();
