@@ -94,6 +94,10 @@ public:
 /// after a restart, and writes a checkpoint when requested by the signal or
 /// by the stride.
   void atStepStart(bool signal);
+/// True after restartFrom() has been called (a checkpoint restart is in progress or done).
+  bool isRestartingFromCheckpoint() const {
+    return restartStep>=0;
+  }
   const std::string& getPath() const {
     return path;
   }
