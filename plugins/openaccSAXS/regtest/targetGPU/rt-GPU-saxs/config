@@ -1,0 +1,5 @@
+mpiprocs=4
+type=driver
+arg="--plumed plumed.dat --timestep 0.005 --mf_pdb template.pdb"
+# input files and CPU references are those of regtest/isdb/rt-saxs
+extra_files="../../../../../regtest/isdb/rt-saxs/aacg_template.pdb ../../../../../regtest/isdb/rt-saxs/colvar.reference ../../../../../regtest/isdb/rt-saxs/forces.reference ../../../../../regtest/isdb/rt-saxs/plumed_beads.dat ../../../../../regtest/isdb/rt-saxs/template.pdb"

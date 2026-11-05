@@ -279,6 +279,17 @@ jobs:
           make ACCTARGET=host -C regtest
           make -C regtest checkfail
 
+    - name: Build and test the openaccSAXS plugin (serial, on the host)
+      if: contains( matrix.variant, '-nvhpc-' )
+      # as for openaccPTM: the kernels run on the CPU, results are compared with the CPU references of regtest/isdb
+      run: |
+          source sourceme.sh
+          cd plugins/openaccSAXS/
+          ./configure
+          NVCXX=$NVCXX make ACCTARGET=host -j 4
+          make ACCTARGET=host -C regtest
+          make -C regtest checkfail
+
     - name: Diagnose the openacc module (only on failure)
       # temporary: shows which OpenMP runtimes are loaded and the output of rt-volume-around
       if: failure() && contains( matrix.variant, '-nvhpc-' )

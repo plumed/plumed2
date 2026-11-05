@@ -62,8 +62,12 @@ std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::st
   }
   std::string selected=name;
   if(selected.empty()) {
-    plumed_massert(names.size()>0,"no GPU backend for SAXS/SANS is available: LOAD a plugin that provides one (e.g. plugins/openaccSAXS)");
-    plumed_massert(names.size()==1,"more than one GPU backend for SAXS/SANS is available, select one with GPU_BACKEND:"+list);
+    if(names.empty()) {
+      throw ExceptionRegisterError()<<"no GPU backend for SAXS/SANS is available: LOAD a plugin that provides one (e.g. plugins/openaccSAXS)";
+    }
+    if(names.size()>1) {
+      throw ExceptionRegisterError()<<"more than one GPU backend for SAXS/SANS is available, select one with GPU_BACKEND:"<<list;
+    }
     selected=names[0];
   }
   // the last registered key with this name (a plugin loaded twice registers it twice)
@@ -73,7 +77,9 @@ std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::st
       key=k;
     }
   }
-  plumed_massert(!key.empty(),"GPU backend for SAXS/SANS \""+selected+"\" is not available, the available ones are:"+(list.empty()?std::string(" none"):list));
+  if(key.empty()) {
+    throw ExceptionRegisterError()<<"GPU backend for SAXS/SANS \""<<selected<<"\" is not available, the available ones are:"<<(list.empty()?std::string(" none"):list);
+  }
   return get(key).create(deviceid);
 }
 

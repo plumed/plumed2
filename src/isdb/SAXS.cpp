@@ -157,10 +157,9 @@ PLUMED sources). The GPU is selected with DEVICEID (by default the one assigned 
 code, or the first one). With MPI each rank computes a share of the sum on its own GPU; with SERIAL
 only the first rank uses its GPU and the results are shared with the others.
 
-```plumed
-#SETTINGS MOLFILE=regtest/basic/rt65/AA.pdb
+````
 LOAD FILE=/path/to/plumedOpenACCSAXS.so
-MOLINFO STRUCTURE=regtest/basic/rt65/AA.pdb
+MOLINFO STRUCTURE=template.pdb
 SAXS ...
 LABEL=SAXS
 ATOMS=1-107
@@ -170,7 +169,9 @@ QVALUE1=0.03
 QVALUE2=0.06
 QVALUE3=0.09
 ... SAXS
-```
+````
+
+(The usual PLUMED syntax highlighting is not used above only because the plugin is not available when the manual is built.)
 
 */
 //+ENDPLUMEDOC
