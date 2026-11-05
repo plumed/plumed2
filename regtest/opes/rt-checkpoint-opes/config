@@ -1,4 +1,5 @@
 type=driver
+plumed_modules=opes
 # Reference run: the whole trajectory, with the checkpointing signal every 10 steps
 arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
 
