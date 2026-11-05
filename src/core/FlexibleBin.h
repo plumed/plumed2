@@ -27,6 +27,8 @@
 namespace PLMD {
 
 class ActionWithArguments;
+class CheckpointWriter;
+class CheckpointReader;
 
 class FlexibleBin {
 private:
@@ -60,6 +62,10 @@ public:
   void setStatistics(const std::vector<double>& average, const std::vector<double>& variance, unsigned nsamples);
   void update(bool nowAddAHill, unsigned iarg);
   std::vector<double> getMatrix() const;
+/// store the statistics (diffusion-based adaptive hills) in a checkpoint (see CHECKPOINT)
+  void writeCheckpoint(CheckpointWriter& w) const;
+/// restore the statistics stored by writeCheckpoint
+  void readCheckpoint(CheckpointReader& r);
   /// (diffusion only) number of CV values used so far to estimate the variance
   unsigned getNumberOfSamples() const {
     return nsamples;

@@ -89,6 +89,9 @@ that starts depositing again from zero while everything else continues
 exactly). The global `RESTART NO` directive after CHECKPOINT is an error,
 since it contradicts the restart from the checkpoint.
 
+The actions that store their state in the checkpoint include [METAD](METAD.md),
+[PBMETAD](PBMETAD.md) and [MOVINGRESTRAINT](MOVINGRESTRAINT.md): METAD and PBMETAD
+restore their bias from it, so that their hills files are truncated and not read.
 Actions that keep an internal state but do not store it in the checkpoint
 yet are listed in a warning in the log: for them the restart is the usual
 file-based one and an exact continuation is not guaranteed.
