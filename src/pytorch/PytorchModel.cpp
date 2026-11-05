@@ -102,7 +102,9 @@ void PytorchModel::registerKeywords(Keywords& keys) {
 
 // Auxiliary function to transform torch tensors in std vectors
 std::vector<float> PytorchModel::tensor_to_vector(const torch::Tensor& x) {
-  return std::vector<float>(x.data_ptr<float>(), x.data_ptr<float>() + x.numel());
+  // contiguous(): the output of a model can be a strided view (e.g. y[:,::2] or y.expand())
+  const torch::Tensor xc=x.contiguous();
+  return std::vector<float>(xc.data_ptr<float>(), xc.data_ptr<float>() + xc.numel());
 }
 
 PytorchModel::PytorchModel(const ActionOptions&ao):
@@ -138,7 +140,6 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
       plumed_merror("The FILE: '"+fname+"' does not exist.");
     }
   }
-  checkRead();
 
 // Optimize model
   _model.eval();
@@ -183,6 +184,8 @@ PytorchModel::PytorchModel(const ActionOptions&ao):
     addComponentWithDerivatives( name_comp );
     componentIsNotPeriodic( name_comp );
   }
+  // after the components are created: with constant arguments checkRead() calls calculate()
+  checkRead();
 
   //print log
   log.printf("  Number of input: %d \n",_n_in);
