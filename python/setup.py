@@ -24,13 +24,14 @@
 #
 from setuptools import setup
 from setuptools import Extension
+from setuptools import find_namespace_packages
 import subprocess
 import os
 import os.path
 import sys
 import platform
-from distutils.sysconfig import get_config_var
-from distutils.version import LooseVersion
+import sysconfig
+import re
 
 if sys.version_info < (3,):
     raise ImportError("PLUMED 2.6 only supports Python 3")
@@ -91,9 +92,15 @@ if plumed_disable_rtld_deepbind is not None:
 # This fix is taken from https://github.com/pandas-dev/pandas/pull/24274/files
 if is_platform_mac:
     if "MACOSX_DEPLOYMENT_TARGET" not in os.environ:
-        current_system = LooseVersion(platform.mac_ver()[0])
-        python_target = LooseVersion(get_config_var("MACOSX_DEPLOYMENT_TARGET"))
-        if python_target < "10.9" and current_system >= "10.9":
+
+        def version_tuple(value):
+            return tuple(int(part) for part in re.findall(r"\d+", value))
+
+        current_system = version_tuple(platform.mac_ver()[0])
+        python_target = version_tuple(
+            sysconfig.get_config_var("MACOSX_DEPLOYMENT_TARGET") or "0"
+        )
+        if python_target < (10, 9) and current_system >= (10, 9):
             os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.9"
 
 
@@ -113,6 +120,13 @@ if not USE_CYTHON:
     if not os.path.isfile("plumed.c"):
         print("plumed.c not found, cython is needed")
         USE_CYTHON = True
+
+bundle_default = "0" if os.environ.get("plumed_default_kernel") else "1"
+bundle_kernel = os.environ.get("PLUMED_BUILD_KERNEL", bundle_default).lower() not in {
+    "0",
+    "no",
+    "false",
+}
 
 # try to import cython
 if not USE_CYTHON:
@@ -141,16 +155,29 @@ setup(
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Physics",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
     ],
     license="LGPL-3.0-or-later",
     author="Gareth A. Tribello",
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
-    setup_requires=["Cython==3.2.4"] if USE_CYTHON else None,
+    # the directories of the runtime (bin, lib, share/...) are declared as
+    # namespace packages, otherwise setuptools warns for each of them;
+    # their files are selected by MANIFEST.in (include_package_data)
+    packages=find_namespace_packages(include=["plumed_runtime", "plumed_runtime.*"]),
+    include_package_data=True,
+    entry_points={"console_scripts": ["plumed=plumed_runtime.cli:main"]}
+    if bundle_kernel
+    else {},
+    license_files=["LICENSE"],
+    setup_requires=["Cython"] if USE_CYTHON else None,
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',
-    python_requires=">=3",
+    python_requires=">=3.11",
 )

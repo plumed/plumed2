@@ -32,7 +32,7 @@ $(CONFIG): FORCE
 	@cmp -s $@~ $@ || cp $@~ $@
 	@rm -f $@~
 
-$(STAMP): plumed.c plumed.pyx cplumed.pxd setup.py onlyBuild.sh README.rst MANIFEST.in \
+$(STAMP): plumed.c plumed.pyx cplumed.pxd setup.py build_backend.py pyproject.toml onlyBuild.sh README.rst MANIFEST.in \
           ../src/wrapper/Plumed.h ../Makefile.conf PLUMED_VERSION $(CONFIG)
 	@echo Building python interface for PLUMED 
 	rm -fr dist build *.so plumed.egg-info
@@ -57,9 +57,10 @@ endif
 
 
 pypi: clean PLUMED_VERSION plumed.c
-	@echo "Setup the source distribution with the settings for pypi"
+	@echo "Building and checking the Python source distribution"
 	$(python_bin) -m build --sdist .
-	@echo "now use: $(python_bin) -m twine upload dist/plumed-$(VERSION).tar.gz"
+	$(python_bin) -m twine check dist/*.tar.gz
+	@echo "The source distribution is in dist/. Release it through the configured PyPI Trusted Publishing workflow."
 
 pip: PLUMED_VERSION
 

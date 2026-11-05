@@ -59,6 +59,7 @@ private:
   const Keywords& keywords;
 /// The data read in from the command line stored in a map with the keywords
   std::map<std::string,std::string> inputData;
+  std::vector<void*> dlHandles;
 /// Read the arguments from the command line
   bool readCommandLineArgs( int argc, char**argv, FILE*out );
 /// Read the arguments from an input file specified on the command line
@@ -66,6 +67,24 @@ private:
 /// Set arguments from the default options provided to Keywords
   void setRemainingToDefault(FILE* out);
 public:
+  /// Set the loaded libraries visible to this command-line tool.
+  /// CLToolMain supplies handles from its local DLLoader for command-line
+  /// --load options. These differ from PlumedMain's input-file LOAD handles.
+  /// Metadata tools need them to include loaded registrations and overrides.
+  /// \param handles Non-owning handles in registry lookup order. The list is
+  /// copied, but ownership remains with the caller's DLLoader, which must keep
+  /// the libraries loaded while the tool uses them.
+  void setDLHandles(const std::vector<void*>& handles) {
+    dlHandles=handles;
+  }
+  /// Return the loaded libraries visible to this command-line tool.
+  /// These are the command-line --load handles supplied by CLToolMain, rather
+  /// than the input-file LOAD handles stored in PlumedMain.
+  /// \return The tool's non-owning handle list. The reference remains valid
+  /// until this tool is destroyed or setDLHandles() replaces the list.
+  const std::vector<void*>& getDLHandles() const {
+    return dlHandles;
+  }
 /// Set the input data:
   void setInputData(const std::map<std::string,std::string>&newInputData) {
     inputData=newInputData;

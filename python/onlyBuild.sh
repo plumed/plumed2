@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 #formatted with shfmt -ci -s -bn -i 2
 #checked with shellcheck
 unset CXX
