@@ -184,5 +184,18 @@ int main() {
     CheckpointReader::readFile("nonexistent.cpt");
   });
 
+  // empty arrays (e.g. no hills yet)
+  {
+    CheckpointWriter w;
+    w.write("d",std::vector<double>());
+    w.write("i",std::vector<int>());
+    CheckpointReader r(w.finalize());
+    std::vector<double> d(3,1.0);
+    std::vector<int> i(2,1);
+    r.read("d",d);
+    r.read("i",i);
+    check(d.empty() && i.empty() && r.getShape("d").size()==1 && r.getShape("d")[0]==0,"empty arrays");
+  }
+
   return 0;
 }

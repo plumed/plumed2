@@ -150,6 +150,12 @@ int OFile::printf(const char*fmt,...) {
 OFile& OFile::addConstantField(const std::string&name) {
   Field f;
   f.name=name;
+  // after a checkpoint restart, the value it had in the last header (so that the header is not printed again)
+  for(const auto & r : restored_const_fields) {
+    if(r.name==name) {
+      f.value=r.value;
+    }
+  }
   const_fields.push_back(f);
   return *this;
 }
@@ -261,15 +267,19 @@ OFile& OFile::printField( Value* val, const double& v ) {
 
 std::string OFile::getLastFields() const {
   std::string str;
+  // name, constant flag, value (used only for constant fields), one field per line
   for(const auto & f : previous_fields) {
-    // name, constant flag, value (used only for constant fields), one field per line
-    str+=f.name+"\t"+(f.constant?"1":"0")+"\t"+(f.constant?f.value:"")+"\n";
+    str+=f.name+"\t0\t\n";
+  }
+  for(const auto & f : const_fields) {
+    str+=f.name+"\t1\t"+f.value+"\n";
   }
   return str;
 }
 
 void OFile::setLastFields(const std::string& str) {
   previous_fields.clear();
+  restored_const_fields.clear();
   std::istringstream is(str);
   std::string line;
   while(std::getline(is,line)) {
@@ -278,9 +288,12 @@ void OFile::setLastFields(const std::string& str) {
     plumed_massert(t1!=std::string::npos && t2!=std::string::npos,"file "+getPath()+": cannot parse the field header stored in the checkpoint");
     Field f;
     f.name=line.substr(0,t1);
-    f.constant=(line.substr(t1+1,t2-t1-1)=="1");
     f.value=line.substr(t2+1);
-    previous_fields.push_back(f);
+    if(line.substr(t1+1,t2-t1-1)=="1") {
+      restored_const_fields.push_back(f);
+    } else {
+      previous_fields.push_back(f);
+    }
   }
   fieldChanged=false;
 }

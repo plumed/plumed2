@@ -23,6 +23,7 @@
 #include "MetaDHills.h"
 #include "core/Action.h"
 #include "core/Value.h"
+#include "tools/Checkpoint.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
@@ -546,6 +547,16 @@ void MetaDBiasGrid::write(OFile& file, bool append, const std::string& comment) 
   if(!append) {
     file.flush();
   }
+}
+
+void MetaDBiasGrid::writeCheckpoint(CheckpointWriter& w) const {
+  w.write("pristine",pristine_);
+  grid_->writeCheckpoint(w);
+}
+
+void MetaDBiasGrid::readCheckpoint(CheckpointReader& r) {
+  r.read("pristine",pristine_);
+  grid_->readCheckpoint(r);
 }
 
 }

@@ -89,6 +89,12 @@ void Checkpointing::registerOutputFile(OFile& f) {
   if(std::find(outputFiles.begin(),outputFiles.end(),fileName)!=outputFiles.end()) {
     return;
   }
+  // devices and pipes (e.g. /dev/null, written by the processes or replicas that do not write a shared file)
+  // have no size to record
+  std::error_code ec;
+  if(std::filesystem::exists(fileName,ec) && !std::filesystem::is_regular_file(fileName,ec)) {
+    return;
+  }
   if(enabled() && Tools::extension(fileName)=="gz") {
     plumed_merror("file "+fileName+": compressed output files cannot be trimmed at restart, remove the .gz extension or the CHECKPOINT action");
   }

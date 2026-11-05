@@ -37,3 +37,4 @@ OK   section count
 OK   file and previous file
 OK   no temporary file left
 OK   missing file -> checkpoint: cannot open nonexistent.cpt for reading
+OK   empty arrays
