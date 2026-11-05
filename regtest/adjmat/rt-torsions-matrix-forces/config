@@ -1,0 +1,7 @@
+type=driver
+plumed_modules="adjmat matrixtools"
+# TORSIONS_MATRIX forces: with the diagonal (the same molecules in POSITIONS1 and POSITIONS2) the
+# derivatives of other elements were set to zero, and with AVOID_THREAD_GATHER the loop over the
+# columns used the wrong atoms and vectors
+arg="--plumed plumed.dat --ixyz atoms.xyz --length-units nm --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces debug (checked when the test was written)
+PLUMED_NUM_THREADS=2

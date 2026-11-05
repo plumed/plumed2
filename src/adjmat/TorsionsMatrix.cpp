@@ -393,7 +393,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
                  input.inputdata[ag2base+arg1.ncols],
                  input.inputdata[ag2base+2*arg1.ncols] );
     for(unsigned i=0; i<nelements; ++i) {
-      std::size_t atbase = nargdata + 3*i;
+      std::size_t atbase = nargdata + 3*actiondata.outmat[fstart+1+i];
       atom2[i] = atom1 - Vector( input.inputdata[atbase],
                                  input.inputdata[atbase+1],
                                  input.inputdata[atbase+2] );
@@ -429,7 +429,7 @@ void TorsionsMatrix::performTask( std::size_t task_index,
   for(unsigned i=0; i<nelements; ++i) {
     if( atom2[i].modulo2()<epsilon ) {
       if( !input.noderiv ) {
-        output.derivatives.subview( nderper, static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i) ).zero();
+        output.derivatives.subview( static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i), nderper ).zero();
       }
       continue ;
     }
@@ -541,19 +541,14 @@ void TorsionsMatrix::getForceIndices( std::size_t task_index,
     }
     force_indices.tot_indices[0] = 21;
   } else if( actiondata.gatherForceOnColumns ) {
-    std::size_t fstart = colno*(1+actiondata.outmat.ncols);
-    force_indices.indices[0][0] = arg1.start
-                                  + actiondata.outmat[fstart+1+task_index];
-    force_indices.indices[0][1] = arg1.start
-                                  + actiondata.outmat[fstart+1+task_index]
-                                  + arg1.ncols;
-    force_indices.indices[0][2] = arg1.start
-                                  + actiondata.outmat[fstart+1+task_index]
-                                  + 2*arg1.ncols;
+    // here task_index is the column: all the elements of the task share its vector and atom
+    force_indices.indices[0][0] = arg1.start + task_index;
+    force_indices.indices[0][1] = arg1.start + task_index + arg1.ncols;
+    force_indices.indices[0][2] = arg1.start + task_index + 2*arg1.ncols;
     std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
     std::size_t atom2start = atomstart
                              + 3*arg0.shape[0]
-                             + 3*actiondata.outmat[fstart+1+task_index];
+                             + 3*task_index;
     force_indices.indices[0][3] = atom2start;
     force_indices.indices[0][4] = atom2start + 1;
     force_indices.indices[0][5] = atom2start + 2;
