@@ -111,6 +111,9 @@ void FunctionOfVector<CV, myPTM>::registerKeywords(Keywords& keys ) {
     keys.addInputKeyword("optional","MASK","vector","the label for a sparse vector that should be used to determine which elements of the vector should be computed");
     keys.setValueDescription("vector","the vector obtained by doing an element-wise application of " + keys.getOutputComponentDescription(".#!value") + " to the input vectors");
   }
+  if( keys.getDisplayName()=="EVALUATE_FUNCTION_FROM_GRID" ) {
+    keys.addInputKeyword("compulsory","ARG","scalar/vector/grid","");
+  }
   PTM::registerKeywords( keys );
 }
 

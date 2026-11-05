@@ -138,6 +138,10 @@ RDF::RDF(const ActionOptions&ao):
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
+  double dval;
+  if( dens.length()>0 && Tools::convertNoexcept( dens, dval ) && dval<=0 ) {
+    error("DENSITY should be positive");
+  }
   // Read input to histogram
   std::string cutoff, kernel, bandwidth, kernel_data;
   parse("KERNEL",kernel);

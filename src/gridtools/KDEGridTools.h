@@ -126,6 +126,9 @@ void KDEGridTools<K,P>::readBandwidth( std::size_t nargs, ActionWithArguments* a
     std::string str_i;
     for(unsigned i=0; i<nargs; ++i) {
       Tools::convert( i+1, str_i );
+      if( Tools::convertNoexcept( bw[i], bwval ) && bwval<0 ) {
+        action->error("BANDWIDTH should not be negative");
+      }
       if( Tools::convertNoexcept( bw[i], bwval ) && fabs(bwval)<epsilon ) {
         KDEHelper<K,P,KDEGridTools<K,P>>::readKernelParameters( bw[i], action, "_bwz" + str_i, true );
       } else {

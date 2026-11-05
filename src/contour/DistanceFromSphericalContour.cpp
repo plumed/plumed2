@@ -137,13 +137,6 @@ void DistanceFromSphericalContour::calculate() {
     }
     active_list[nactive]=j;
     nactive++;
-    Vector distance=pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(j) );
-    double dp = dotProduct( distance, dirv );
-    double cp = distance.modulo2() - dp*dp;
-    if( cp<rcut2 ) {
-      active_list[nactive]=j;
-      nactive++;
-    }
   }
   // Get maximum length to fit in box
   double hbox = 0.5*getBox()(0,0);

@@ -1,0 +1,11 @@
+spherical_kde_bins: rejected
+spherical_contour_npoints: rejected
+reference_grid_spacing: rejected
+reference_grid_nobins: rejected
+kde_spacing: rejected
+kde_bins: rejected
+pairentropy_density: rejected
+kde_max: rejected
+histogram_bandwidth: rejected
+contour_positions: rejected
+discrete_outside: rejected
