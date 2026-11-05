@@ -140,12 +140,16 @@ fi
         --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
 	"$@"
     }
-    srcfiles=$(grep -E -v -s '/plugins/'  <<< "$files" || true)
+    # These imported modules already have their diagnostics discarded below.
+    # Exclude their translation units before analysis, keeping the full file
+    # list for plumedcheck. Included headers remain visible to cppcheck.
+    cppfiles=$(grep -E -v '/(molfile|lapack|blas|lepton|asmjit|xdrfile|small_vector)/' <<< "$files" || true)
+    srcfiles=$(grep -E -v -s '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
       docheck "${builddir_src[@]}" $srcfiles
     fi
-    pluginfiles=$(grep -E  '/plugins/'  <<< "$files" || true)
+    pluginfiles=$(grep -E '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $pluginfiles ]];then
       # this will work only if plumed is configured
       # shellcheck disable=SC2086
