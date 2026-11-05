@@ -30,6 +30,8 @@
 #include <sstream>
 #ifndef _WIN32
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #endif
 
 /*
@@ -275,7 +277,19 @@ void CheckpointWriter::writeFile(const std::string& path,const std::string& prev
   const std::string content=finalize();
   const std::string tmp=path+".tmp";
   {
+#ifndef _WIN32
+    // explicit permissions (rw-r--r--, further restricted by the umask)
+    std::FILE* fp=nullptr;
+    const int fd=open(tmp.c_str(),O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    if(fd>=0) {
+      fp=fdopen(fd,"wb");
+      if(!fp) {
+        close(fd);
+      }
+    }
+#else
     std::FILE* fp=std::fopen(tmp.c_str(),"wb");
+#endif
     if(!fp) {
       plumed_merror("checkpoint: cannot open "+tmp+" for writing: "+std::strerror(errno));
     }
@@ -320,30 +334,66 @@ std::string CheckpointReader::readFile(const std::string& path) {
   return ss.str();
 }
 
-CheckpointReader::CheckpointReader(const std::string& content) {
+namespace {
+
+// Check the magic, the format version (before the checksum, so that a newer
+// file gets a clear message) and the CRC32 trailer of a checkpoint file.
+void checkHeaderAndChecksum(const std::string& content) {
   if(content.size()<16 || std::memcmp(content.data(),magic,8)!=0) {
     plumed_merror("checkpoint: not a PLUMED checkpoint file");
   }
-  {
-    // the version is checked before the checksum so that a newer file gets a clear message
-    Parser ph(content);
-    for(unsigned i=0; i<8; i++) {
-      ph.get8();
+  Parser ph(content);
+  for(unsigned i=0; i<8; i++) {
+    ph.get8();
+  }
+  const uint32_t v=ph.get32();
+  if(v>formatVersionCurrent) {
+    plumed_merror("checkpoint: file format version "+std::to_string(v)+" is newer than the one supported by this PLUMED version ("+std::to_string(formatVersionCurrent)+")");
+  }
+  // the checksum covers everything but the last 4 bytes
+  const std::string body=content.substr(0,content.size()-4);
+  const std::string stored=content.substr(content.size()-4);
+  Parser pt(stored);
+  if(pt.get32()!=crc32(body)) {
+    plumed_merror("checkpoint: checksum mismatch (corrupted or truncated file)");
+  }
+}
+
+// Parse the payload of a data entry (type byte and name already consumed):
+// a string, or a shaped array of int64 or float64 (ndims=0 for a scalar).
+CheckpointReader::Entry parseEntry(Parser& p,uint8_t type) {
+  CheckpointReader::Entry e;
+  if(type==tString) {
+    e.type=CheckpointReader::Type::String;
+    e.str=p.getString64();
+    return e;
+  }
+  e.type=(type==tInt) ? CheckpointReader::Type::Int : CheckpointReader::Type::Double;
+  const unsigned ndims=p.get8();
+  unsigned long long n=1;
+  for(unsigned i=0; i<ndims; i++) {
+    e.dims.push_back(p.get64());
+    n*=e.dims.back();
+  }
+  if(type==tInt) {
+    e.ints.reserve(n);
+    for(unsigned long long i=0; i<n; i++) {
+      e.ints.push_back(static_cast<long long>(p.get64()));
     }
-    const uint32_t v=ph.get32();
-    if(v>formatVersionCurrent) {
-      plumed_merror("checkpoint: file format version "+std::to_string(v)+" is newer than the one supported by this PLUMED version ("+std::to_string(formatVersionCurrent)+")");
+  } else {
+    e.doubles.reserve(n);
+    for(unsigned long long i=0; i<n; i++) {
+      e.doubles.push_back(p.getDouble());
     }
   }
-  // checksum covers everything but the last 4 bytes
-  {
-    const std::string body=content.substr(0,content.size()-4);
-    std::string stored=content.substr(content.size()-4);
-    Parser pt(stored);
-    if(pt.get32()!=crc32(body)) {
-      plumed_merror("checkpoint: checksum mismatch (corrupted or truncated file)");
-    }
-  }
+  return e;
+}
+
+}
+
+CheckpointReader::CheckpointReader(const std::string& content) {
+  checkHeaderAndChecksum(content);
+  // header: magic, format version, byte order mark, PLUMED version
   Parser p(content);
   for(unsigned i=0; i<8; i++) {
     p.get8();
@@ -353,6 +403,7 @@ CheckpointReader::CheckpointReader(const std::string& content) {
     plumed_merror("checkpoint: unexpected byte order mark");
   }
   plumedVersion=p.getString32();
+  // entries, keyed by their full path "section/subsection/name"
   std::vector<std::string> stack;
   auto path=[&stack]() {
     std::string s;
@@ -368,12 +419,10 @@ CheckpointReader::CheckpointReader(const std::string& content) {
     case tEnd:
       finished=true;
       break;
-    case tBegin: {
-      const std::string name=p.getString32();
-      stack.push_back(name);
+    case tBegin:
+      stack.push_back(p.getString32());
       sectionList.push_back(path());
-    }
-    break;
+      break;
     case tEndSection:
       if(stack.empty()) {
         plumed_merror("checkpoint: unbalanced sections");
@@ -383,36 +432,11 @@ CheckpointReader::CheckpointReader(const std::string& content) {
     case tInt:
     case tDouble:
     case tString: {
-      const std::string name=p.getString32();
-      Entry e;
-      if(type==tString) {
-        e.type=Type::String;
-        e.str=p.getString64();
-      } else {
-        e.type=(type==tInt) ? Type::Int : Type::Double;
-        const unsigned ndims=p.get8();
-        unsigned long long n=1;
-        for(unsigned i=0; i<ndims; i++) {
-          e.dims.push_back(p.get64());
-          n*=e.dims.back();
-        }
-        if(type==tInt) {
-          e.ints.reserve(n);
-          for(unsigned long long i=0; i<n; i++) {
-            e.ints.push_back(static_cast<long long>(p.get64()));
-          }
-        } else {
-          e.doubles.reserve(n);
-          for(unsigned long long i=0; i<n; i++) {
-            e.doubles.push_back(p.getDouble());
-          }
-        }
-      }
-      const std::string full=path()+name;
+      const std::string full=path()+p.getString32();
       if(entries.count(full)) {
         plumed_merror("checkpoint: duplicate entry '"+full+"'");
       }
-      entries[full]=std::move(e);
+      entries[full]=parseEntry(p,type);
       order.push_back(full);
     }
     break;
@@ -423,6 +447,7 @@ CheckpointReader::CheckpointReader(const std::string& content) {
   if(!stack.empty()) {
     plumed_merror("checkpoint: section '"+stack.back()+"' is not closed");
   }
+  // nothing after the end marker but the checksum
   if(p.position()+4!=content.size()) {
     plumed_merror("checkpoint: trailing data after the end marker");
   }
