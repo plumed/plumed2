@@ -46,6 +46,7 @@
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
+#include "InputBuilderMetadata.h"
 #include "small_vector/small_vector.h"
 #include <cmath>
 #include <cstdlib>
@@ -70,14 +71,7 @@
 #include <optional>
 #include <variant>
 #include <filesystem>
-
-#if __has_include("InputBuilderMetadata.inc")
-#include "InputBuilderMetadata.inc"
-#else
-static constexpr std::size_t inputBuilderMetadataJSONSize = 0;
-static constexpr std::size_t inputBuilderMetadataJSONChunkSize = 1;
-static constexpr char inputBuilderMetadataJSONChunks[1][1] = {{0}};
-#endif
+#include <limits>
 
 namespace PLMD {
 
@@ -784,26 +778,32 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(10));
+        val.set(int(11));
         break;
-      case cmd_getInputBuilderJSONLength:
+      case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
-        val.set(static_cast<int>(inputBuilderMetadataJSONSize));
-        break;
+        std::ostringstream output;
+        writeInputBuilderJSON(output,nullptr,dlloader.getHandles());
+        std::string metadata=output.str();
+        if(metadata.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+          plumed_merror("InputBuilder metadata exceeds the supported transfer size");
+        }
+        inputBuilderMetadataJSON=std::move(metadata);
+        val.set(static_cast<int>(inputBuilderMetadataJSON.size()));
+      }
+      break;
       case cmd_getInputBuilderJSON: {
         CHECK_NOTNULL(val,word);
-        const std::size_t size=inputBuilderMetadataJSONSize;
+        const std::size_t size=inputBuilderMetadataJSON.size();
         if(size==0) {
-          plumed_merror("this PLUMED kernel was built without embedded InputBuilder metadata");
+          plumed_merror("call getInputBuilderJSONLength before getInputBuilderJSON");
         }
         if(val.getNelem()<size) {
           plumed_merror("buffer passed to getInputBuilderJSON is too small");
         }
         int* buffer=val.get<int*>(static_cast<int>(size));
         for(std::size_t i=0; i<size; ++i) {
-          const std::size_t chunk=i/inputBuilderMetadataJSONChunkSize;
-          const std::size_t offset=i%inputBuilderMetadataJSONChunkSize;
-          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSONChunks[chunk][offset]);
+          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSON[i]);
         }
       }
       break;

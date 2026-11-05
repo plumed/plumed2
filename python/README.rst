@@ -6,8 +6,11 @@ Install using the following command::
      python -m pip install plumed
 
 The package supports CPython 3.11 through 3.15. The Linux and macOS wheels
-include a basic PLUMED kernel and the ``plumed`` command. Linux wheels target the manylinux2014 baseline (glibc 2.17), and macOS
-wheels target macOS 10.15 or newer. The bundled kernel is used by default. You
+include a basic PLUMED kernel and the ``plumed`` command. Linux wheels target
+the manylinux2014 baseline (glibc 2.17). The macOS deployment target is 10.15
+for Intel and at least 11.0 for Apple Silicon; the wheel tag records the actual
+minimum, which also depends on the Python version. The bundled kernel is used
+by default. You
 can select another kernel for a process with ``PLUMED_KERNEL`` or for one
 object with ``Plumed(kernel=...)``.
 
@@ -34,6 +37,27 @@ Finally, notice that you can set the path to the plumed library directly when de
 This allows you to mix different PLUMED versions in the same Python script.
 
 Source builds bundle a kernel by default. Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
+
+InputBuilder metadata
+---------------------
+
+With kernel API version 11 or newer, ``InputBuilder`` reads metadata directly
+from the selected kernel. It requires no executable, source checkout, or Vim
+files. The kernel generates JSON from its live action registry, including
+hidden keywords and the exact numbered-keyword classification. The same
+serializer serves ``plumed gen_json``; its optional ``--actions`` argument
+still accepts a legacy action-summary file.
+
+Older kernels continue to use their installation's Vim dictionary and help
+files. Keep those files installed when selecting an older kernel.
+
+With ``InputBuilder(toplumed=p)``, metadata is read from that existing PLUMED
+object, including actions it has already loaded. A successful ``ib.LOAD(...)``
+refreshes the builder's methods and help automatically. If an action is loaded
+directly with ``p.cmd(...)``, call ``ib.refresh()`` afterward. The supplied
+object remains owned by the caller. Refresh is unavailable with older kernels
+using static Vim files, or when ``load_dict=False``. For an attached older kernel,
+select its Vim installation through ``kernel=...`` or ``PLUMED_ROOT`` as before.
 
 Maintainer release notes
 ------------------------

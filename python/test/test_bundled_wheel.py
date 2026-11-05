@@ -1,6 +1,7 @@
 """Smoke checks run against the repaired wheel in cibuildwheel's test environment."""
 
 import array
+import json
 import os
 from pathlib import Path
 import re
@@ -102,12 +103,122 @@ def check_external_kernel(bundled):
         assert builder._vimdict["MOVINGRESTRAINT"]["KAPPA"] == "(numbered)"
 
 
+def kernel_json_copy(plumed_instance, length):
+    """Copy the last JSON snapshot using the kernel's text-transfer command."""
+    buffer = array.array("i", [0]) * length
+    plumed_instance.cmd("getInputBuilderJSON", buffer)
+    return array.array("B", buffer).tobytes().decode("utf-8")
+
+
+def kernel_json(plumed_instance):
+    """Query the current JSON length and copy its matching snapshot."""
+    length = array.array("i", [0])
+    plumed_instance.cmd("getInputBuilderJSONLength", length)
+    return kernel_json_copy(plumed_instance, length[0])
+
+
+def check_metadata_transfer_errors(bundled):
+    """The transfer requires a length query and rejects undersized buffers."""
+    with plumed.Plumed(kernel=str(bundled)) as instance:
+        try:
+            instance.cmd("getInputBuilderJSON", array.array("i", [0]) * 8)
+        except RuntimeError as error:
+            assert "getInputBuilderJSONLength" in str(error)
+        else:
+            raise AssertionError("metadata copy worked before a length query")
+
+        length = array.array("i", [0])
+        instance.cmd("getInputBuilderJSONLength", length)
+        try:
+            too_small = array.array("i", [0]) * (length[0] - 1)
+            instance.cmd("getInputBuilderJSON", too_small)
+        except RuntimeError as error:
+            assert "too small" in str(error)
+        else:
+            raise AssertionError("metadata copy accepted an undersized buffer")
+
+
+def check_json_matches_vim():
+    """JSON-derived InputBuilder classifications match Vim, except LABEL."""
+    from plumed_runtime import resource_root
+
+    json_dict, json_doc = plumed._readkernelmetadata()
+    vim_dict, vim_doc = plumed._readvimdict(plumedroot=str(resource_root()))
+    assert json_doc == vim_doc
+    # Identical generated source checks signatures/defaults, argument handling,
+    # formatted-input construction and docstrings for every action and alias mode.
+    for underscores in (False, True):
+        assert plumed._create_functions(
+            json_dict, doc=json_doc, append_underscores=underscores
+        ) == plumed._create_functions(
+            vim_dict, doc=vim_doc, append_underscores=underscores
+        )
+    assert set(json_dict) == set(vim_dict)
+    for action, vim_keywords in vim_dict.items():
+        expected = {
+            name: kind for name, kind in vim_keywords.items() if name != "LABEL"
+        }
+        actual = {
+            name: kind
+            for name, kind in json_dict[action].items()
+            if name != "LABEL"
+        }
+        assert actual == expected, (action, actual, expected)
+
+    assert json_dict["ANGLE_SCALAR"]["ATOMS"] == "(option)"
+    assert json_dict["ANGLE_VECTOR"]["ATOMS"] == "(numbered)"
+    assert json_dict["DUMPPDB"]["FMT"] == vim_dict["DUMPPDB"]["FMT"]
+    assert (
+        json_dict["DUMPMASSCHARGE"]["STRIDE"]
+        == vim_dict["DUMPMASSCHARGE"]["STRIDE"]
+    )
+    assert json_dict["DUMPMASSCHARGE"]["STRIDE"] == "(option)"
+
+
+def check_cli_json_matches_kernel(bundled, executable):
+    """The CLI and in-memory exports serialize the same registry identically."""
+    with plumed.Plumed(kernel=str(bundled)) as instance:
+        in_memory = kernel_json(instance)
+    completed = subprocess.run(
+        [str(executable), "--no-mpi", "gen_json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.stdout == in_memory
+
+    # The legacy --actions override remains available to external callers.
+    metadata = json.loads(in_memory)
+    assert {"vimlink", "replicalink", "groups", "modules", "cltools"} <= set(metadata)
+    for name in ("@mda:", "@mdt:", "@vmd:", "@vmdexec:"):
+        description = metadata["groups"][name]["description"]
+        assert 'href="https://' in description
+        assert '\\"' not in description
+    with tempfile.TemporaryDirectory() as temporary:
+        actions = Path(temporary) / "action_list"
+        actions.write_text(
+            "".join(
+                f"{name}:{entry.get('description', '')}\n"
+                for name, entry in metadata.items()
+                if isinstance(entry, dict) and "syntax" in entry
+            ),
+            encoding="utf-8",
+        )
+        completed = subprocess.run(
+            [str(executable), "--no-mpi", "gen_json", "--actions", str(actions)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    assert completed.stdout == in_memory
+
+
 def check_vim_fallback():
     """Emulate an older kernel without embedded metadata: InputBuilder must use
     the Vim files of the kernel installation, consistently with the metadata."""
     reference = plumed.InputBuilder()._vimdict
     original = plumed._readkernelmetadata
-    plumed._readkernelmetadata = lambda kernel=None: None
+    plumed._readkernelmetadata = lambda kernel=None, instance=None: None
     try:
         legacy = plumed.InputBuilder()._vimdict
     finally:
@@ -119,6 +230,109 @@ def check_vim_fallback():
         missing = set(keywords) - set(legacy[action])
         assert not missing, (action, missing)
     assert legacy["MOVINGRESTRAINT"]["KAPPA"] == "(numbered)"
+
+
+def initialize_builder_test_kernel(instance):
+    instance.cmd("setMDEngine", "python")
+    instance.cmd("setNatoms", 2)
+    instance.cmd("init")
+
+
+def check_builder_load(toplumed, *, append_underscores=False):
+    """A LOAD sent through an attached builder refreshes its action methods."""
+    builder = plumed.InputBuilder(
+        toplumed=toplumed, append_underscores=append_underscores
+    )
+    assert "WHEELTEST" not in builder._vimdict
+    load_name = "LOAD__" if append_underscores else "LOAD"
+    load_line = getattr(builder, load_name)(FILE="WheelTest.cpp")
+    assert load_line.startswith("LOAD FILE=WheelTest.cpp")
+    assert "WHEELTEST" in builder._vimdict
+    method_name = "WHEELTEST__" if append_underscores else "WHEELTEST"
+    method = getattr(builder, method_name)
+    assert method.__doc__ and "Create action WHEELTEST" in method.__doc__
+    assert "WHEELTEST" in method(ATOMS="1,2")
+    assert json.loads(kernel_json(toplumed)).get("WHEELTEST") is not None
+
+
+def check_inputbuilder_load():
+    """Builders use their attached instance's live, isolated action registry."""
+    with plumed.Plumed() as auto_loaded:
+        initialize_builder_test_kernel(auto_loaded)
+        check_builder_load(auto_loaded)
+        # The builder borrows this object; metadata queries still work afterward.
+        assert json.loads(kernel_json(auto_loaded)).get("WHEELTEST") is not None
+
+    with plumed.Plumed() as loaded_first:
+        initialize_builder_test_kernel(loaded_first)
+        loaded_first.cmd("readInputLine", "LOAD FILE=WheelTest.cpp")
+        builder = plumed.InputBuilder(toplumed=loaded_first)
+        assert "WHEELTEST" in builder._vimdict
+        assert "WHEELTEST" in builder.WHEELTEST(ATOMS="1,2")
+
+    with plumed.Plumed() as auto_loaded_underscored:
+        initialize_builder_test_kernel(auto_loaded_underscored)
+        check_builder_load(auto_loaded_underscored, append_underscores=True)
+
+    with plumed.Plumed() as failed_load:
+        initialize_builder_test_kernel(failed_load)
+        builder = plumed.InputBuilder(toplumed=failed_load)
+        before_dictionary = {
+            action: keywords.copy() for action, keywords in builder._vimdict.items()
+        }
+        before_doc = builder._doc.copy()
+        before_functions = builder._functions.copy()
+        failed_line = "LOAD FILE=definitely_missing_plugin_for_test.so"
+        try:
+            builder.LOAD(FILE="definitely_missing_plugin_for_test.so")
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("LOAD accepted a missing plugin")
+        assert builder.last_failure == failed_line
+        assert builder._vimdict == before_dictionary
+        assert builder._doc == before_doc
+        assert builder._functions == before_functions
+
+    with plumed.Plumed() as verbatim_loaded:
+        initialize_builder_test_kernel(verbatim_loaded)
+        builder = plumed.InputBuilder(toplumed=verbatim_loaded)
+        builder.verbatim("LOAD FILE=WheelTest.cpp")
+        assert "WHEELTEST" in builder._vimdict
+        assert "WHEELTEST" in builder.WHEELTEST(ATOMS="1,2")
+
+    with plumed.Plumed() as generic_loaded:
+        initialize_builder_test_kernel(generic_loaded)
+        builder = plumed.InputBuilder(toplumed=generic_loaded)
+        builder("LOAD", FILE="WheelTest.cpp")
+        assert "WHEELTEST" in builder._vimdict
+        assert "WHEELTEST" in builder.WHEELTEST(ATOMS="1,2")
+
+    with plumed.Plumed() as refreshed:
+        initialize_builder_test_kernel(refreshed)
+        builder = plumed.InputBuilder(toplumed=refreshed)
+        assert "WHEELTEST" not in builder._vimdict
+        refreshed.cmd("readInputLine", "LOAD FILE=WheelTest.cpp")
+        assert "WHEELTEST" not in builder._vimdict
+        assert builder.refresh() is True
+        method = builder.WHEELTEST
+        assert method.__doc__ and "Create action WHEELTEST" in method.__doc__
+        assert "WHEELTEST" in method(ATOMS="1,2")
+        assert json.loads(kernel_json(refreshed)).get("WHEELTEST") is not None
+
+        with plumed.Plumed() as independent:
+            initialize_builder_test_kernel(independent)
+            independent_builder = plumed.InputBuilder(toplumed=independent)
+            assert "WHEELTEST" not in independent_builder._vimdict
+
+    with plumed.Plumed() as no_dictionary:
+        initialize_builder_test_kernel(no_dictionary)
+        builder = plumed.InputBuilder(toplumed=no_dictionary, load_dict=False)
+        assert builder.refresh() is False
+        no_dictionary.cmd("readInputLine", "LOAD FILE=WheelTest.cpp")
+        assert builder.refresh() is False
+        assert "WHEELTEST" not in builder.__dict__.get("_vimdict", {})
+        assert builder.WHEELTEST("d", ATOMS="1,2") == "d: WHEELTEST ATOMS=1,2\n"
 
 
 def check_load():
@@ -141,9 +355,93 @@ def check_load():
         os.chdir(temporary)
         try:
             Path("WheelTest.cpp").write_text(code)
+            check_inputbuilder_load()
+            # Metadata is available before initialization and refreshes after
+            # LOAD registers another action on the same PLUMED instance.
+            with plumed.Plumed() as instance:
+                length = array.array("i", [0])
+                instance.cmd("getInputBuilderJSONLength", length)
+                before_load = kernel_json_copy(instance, length[0])
+                instance.cmd("setNatoms", 2)
+                instance.cmd("init")
+                instance.cmd("readInputLine", "LOAD FILE=WheelTest.cpp")
+                stale_snapshot = kernel_json_copy(instance, length[0])
+                assert stale_snapshot == before_load
+                metadata = json.loads(kernel_json(instance))
+                assert "WHEELTEST" in metadata
+                with plumed.Plumed() as fresh_instance:
+                    fresh_metadata = json.loads(kernel_json(fresh_instance))
+                    assert "WHEELTEST" not in fresh_metadata
             check_kernel(lines=("LOAD FILE=WheelTest.cpp", "d: WHEELTEST ATOMS=1,2"))
         finally:
             os.chdir(current)
+
+
+def check_dynamic_cltool_module(executable):
+    """A dynamically loaded CLTool alone still has a defined module entry."""
+    options = (resource_root() / "src" / "config" / "compile_options.sh").read_text()
+    compiler = shlex.split(re.search(r"^compile='(.*?) -c ", options, re.M).group(1))
+    if shutil.which(compiler[0]) is None:
+        if os.environ.get("PLUMED_WHEEL_TEST_NO_COMPILER"):
+            print(f"skipping the dynamic CLTool test: {compiler[0]} not found")
+            return
+        raise AssertionError(
+            f"{compiler[0]} not found: set PLUMED_WHEEL_TEST_NO_COMPILER to skip"
+        )
+
+    source = r'''#include "core/CLTool.h"
+#include "core/CLToolRegister.h"
+
+namespace PLMD {
+class WheelOnlyCLTool : public CLTool {
+public:
+  static void registerKeywords(Keywords& keys) {
+    CLTool::registerKeywords(keys);
+  }
+  explicit WheelOnlyCLTool(const CLToolOptions& options): CLTool(options) {
+    inputdata=inputType::commandline;
+  }
+  int main(FILE*,FILE*,Communicator&) override {
+    return 0;
+  }
+  std::string description() const override {
+    return "wheel test tool without a registered action";
+  }
+};
+
+PLUMED_REGISTER_CLTOOL(WheelOnlyCLTool,"wheel_only_tool")
+}
+'''
+    with tempfile.TemporaryDirectory() as temporary:
+        directory = Path(temporary)
+        plugin_source = directory / "WheelOnlyCLTool.cpp"
+        plugin = directory / "wheel_only_tool.so"
+        plugin_source.write_text(source, encoding="utf-8")
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "mklib",
+                "--out",
+                plugin.name,
+                plugin_source.name,
+            ],
+            check=True,
+            capture_output=True,
+            cwd=directory,
+        )
+        result = subprocess.run(
+            [str(executable), "--no-mpi", "--load", str(plugin), "gen_json"],
+            check=True,
+            capture_output=True,
+            text=True,
+            cwd=directory,
+        )
+    metadata = json.loads(result.stdout)
+    assert "wheel_only_tool" in metadata["cltools"]
+    assert metadata["cltools"]["wheel_only_tool"]["module"] == "external"
+    assert "external" in metadata["modules"]
+    assert "WHEEL_ONLY_TOOL" not in metadata
 
 
 def main():
@@ -186,8 +484,12 @@ def main():
     assert Path(command.stdout.strip()).resolve() == resource_root().resolve()
 
     check_external_kernel(bundled)
+    check_json_matches_vim()
+    check_cli_json_matches_kernel(bundled, package_root() / "bin" / "plumed")
+    check_metadata_transfer_errors(bundled)
     check_vim_fallback()
     check_load()
+    check_dynamic_cltool_module(package_root() / "bin" / "plumed")
 
     source_tree = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
     hidden_source = (
@@ -195,6 +497,8 @@ def main():
     )
     vim_tree = resource_root() / "vim"
     hidden_vim = vim_tree.with_name("vim.hidden")
+    json_tree = resource_root() / "json"
+    hidden_json = json_tree.with_name("json.hidden")
     executable = package_root() / "bin" / "plumed"
     hidden_executable = executable.with_name("plumed.hidden")
     if source_tree and source_tree.is_dir():
@@ -205,6 +509,8 @@ def main():
             source_tree.rename(hidden_source)
         if vim_tree.exists():
             vim_tree.rename(hidden_vim)
+        if json_tree.exists():
+            json_tree.rename(hidden_json)
         if executable.exists():
             executable.rename(hidden_executable)
         os.environ["PATH"] = empty_path
@@ -219,6 +525,8 @@ def main():
                 hidden_executable.rename(executable)
             if hidden_vim.exists():
                 hidden_vim.rename(vim_tree)
+            if hidden_json.exists():
+                hidden_json.rename(json_tree)
             if hidden_source and hidden_source.exists():
                 hidden_source.rename(source_tree)
 

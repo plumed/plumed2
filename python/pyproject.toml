@@ -12,7 +12,11 @@ backend-path = ["."]
 build = ["cp311-*", "cp312-*", "cp313-*", "cp314-*", "cp315-*"]
 skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
 # {package} is the extracted sdist; {project} is the directory where cibuildwheel runs
-test-command = "python {package}/test/test_bundled_wheel.py {package}/plumed_source"
+test-command = [
+    "python {package}/test/test_action_description_generators.py",
+    "python {package}/test/test_input_builder.py",
+    "python {package}/test/test_bundled_wheel.py {package}/plumed_source",
+]
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
 # The PLUMED kernel does not depend on the Python version: build it once per

@@ -768,20 +768,24 @@ def _guessplumedroot(kernel=None):
     import subprocess
     return subprocess.check_output(["plumed","--no-mpi","info","--root"]).decode("utf-8").rstrip()
 
-def _readkernelmetadata(kernel=None):
-    """Read InputBuilder metadata directly from a kernel that supports the API.
+def _readkernelmetadata(kernel=None,instance=None):
+    """Read live metadata from a selected kernel or an existing PLUMED instance.
 
-       Return None for older kernels so callers can use their installed Vim files.
+       An existing instance takes precedence and is borrowed without finalizing
+       or initializing it. Return None for older kernels so callers can use
+       their installed Vim files.
     """
     import json
-    with Plumed(kernel) as p:
+    from contextlib import nullcontext
+    with (nullcontext(instance) if instance is not None else Plumed(kernel)) as p:
+        api=array.array('i',[0])
+        p.cmd("getApiVersion",api)
+        if api[0]<11:
+            return None
         length=array.array('i',[0])
-        try:
-            p.cmd("getInputBuilderJSONLength",length)
-        except Exception:
-            return None
+        p.cmd("getInputBuilderJSONLength",length)
         if length[0]<=0:
-            return None
+            raise ValueError("PLUMED returned an invalid InputBuilder metadata length")
         buffer=array.array('i',[0])*length[0]
         p.cmd("getInputBuilderJSON",buffer)
 # the kernel stores one byte per int: convert the values, not the raw memory of the array
@@ -792,22 +796,33 @@ def _readkernelmetadata(kernel=None):
         if not isinstance(entry,dict) or not isinstance(entry.get("syntax"),dict):
             continue
         dictionary[action]={}
-        doc[action]=entry.get("help",entry.get("description",""))
+        doc[action]="Create action " + action + "\n" + entry.get("help",entry.get("description","")) + "\n"
+        doc[action]=doc[action].replace("\\f$","").replace("\\","")
         for name,keyword in entry["syntax"].items():
+            # LABEL is supplied by InputBuilder itself. All other hidden
+            # keywords remain usable, as they are in the legacy Vim dictionary.
+            if name in ("LABEL","output"):
+                continue
             if not isinstance(keyword,dict) or "type" not in keyword:
                 continue
-            if keyword["type"]=="hidden":
-                continue
-            numbered=keyword.get("numbered",keyword.get("multiple",False))
+            if "numbered" not in keyword:
+                raise ValueError("PLUMED metadata lacks precise numbering for " + action + "." + name)
+            numbered=keyword["numbered"]
             if isinstance(numbered,dict):
-                numbered=numbered.get("enabled",False)
-            if numbered:
-                menu="(numbered)"
-            elif keyword["type"]=="flag":
+                numbered=numbered.get("enabled")
+            if not isinstance(numbered,bool):
+                raise ValueError("PLUMED metadata has invalid numbering for " + action + "." + name)
+            if keyword["type"]=="flag":
                 menu="(flag)"
+            elif numbered:
+                menu="(numbered)"
             else:
                 menu="(option)"
             dictionary[action][name]=menu
+        # Match the Vim completion-word order, including the '=' of options,
+        # so generated signatures and keyword handling retain their legacy order.
+        dictionary[action]=dict(sorted(dictionary[action].items(),
+            key=lambda item: item[0] + ("=" if item[1]=="(option)" else "")))
     return dictionary,doc
 
 def _readvimdict(plumedroot=None,kernel=None):
@@ -922,12 +937,10 @@ def _create_functions(dictionary,*,doc=None,append_underscores=False):
         string+="      if(len(x)>0):\n"
         string+="          ret+=x\n"
         string+="  ret+=_format_verbatim(self,verbatim)\n"
-        string+="  return _format_return(self,ret)\n"
+        string+="  return _format_return(self,ret," + repr(action) + ")\n"
 # set docstring
         if doc is not None:
-           string+=fname + ".__doc__ = \"\"\"\n"
-           string+=doc[action]
-           string+="\"\"\"\n"
+           string+=fname + ".__doc__ = " + repr("\n" + doc[action]) + "\n"
         functions[fname]=string
     return functions
 
@@ -1116,7 +1129,7 @@ def _format_opt(builder,name,arg):
         string=_fix_braces(builder,_format_single(builder,arg),comma=False)
     return " " + name + "=" + string
 
-def _format_return(builder,ret):
+def _format_return(builder,ret,action=None):
     """Format the return statement"""
     if not builder._toplumed is None :
         try:
@@ -1127,6 +1140,11 @@ def _format_return(builder,ret):
     if not builder._tofile is None:
         builder._tofile.write(ret + "\n")
     builder.history.append(ret)
+    # LOAD changes the attached instance's registry only after the command succeeds.
+    if builder._toplumed is not None and builder._has_dict:
+        # Verbatim input also reaches this function without a known action name.
+        if action=="LOAD" or (action is None and re.match(r"^\s*(?:[^\s:]+:\s*)?LOAD(?:\s|$)",ret)):
+            builder.refresh()
     if builder._post_format is not None:
         return builder._post_format(ret)
     return ret + "\n"
@@ -1187,9 +1205,13 @@ class InputBuilder:
            tofile:
              PLUMED input is also forwarded to this file. Useful for preparing input files.
            toplumed:
-             PLUMED input is also forwarded to this PLUMED object. Useful for testing interactively the input.
+             PLUMED input is also forwarded to this PLUMED object. This is useful for
+             interactively testing an input. Its live metadata is used when supported,
+             including previously loaded actions. A successful LOAD through this builder
+             refreshes its methods. The supplied object is borrowed and remains usable.
            kernel:
-             Path to PLUMED kernel. By default, a new PLUMED object is created with default kernel (PLUMED_KERNEL).
+             Path to PLUMED kernel used when no toplumed object is supplied, or for legacy
+             Vim-file lookup. By default, the default kernel (PLUMED_KERNEL) is used.
            append_underscores:
              Append the two underscores to method names to avoid autocompletion problems in older ipython versions.
            comma_separator:
@@ -1222,29 +1244,46 @@ class InputBuilder:
         self._pre_format=pre_format
         self._post_format=post_format
         if load_dict:
-            # stored for debugging:
-            metadata=_readkernelmetadata(kernel=kernel)
+            metadata=_readkernelmetadata(kernel=kernel,instance=toplumed)
             if metadata is None:
-                self._vimdict,self._doc=_readvimdict(kernel=kernel)
-            else:
-                self._vimdict,self._doc=metadata
-            # stored for debugging:
-            self._functions=_create_functions(self._vimdict,doc=self._doc,append_underscores=append_underscores)
-            for action in self._functions:
-                ldict={}
-                try:
-                    # create free-standing functions
-                    exec(self._functions[action],_format_tools,ldict)
-                except:
-                    print("ERROR interpreting " + action)
-                    print(self._functions[action])
-                    raise
-                # create the object method
-                exec("self." + action + " = types.MethodType( ldict['" + action + "'],self)",None,{"self":self, "types":types, "ldict":ldict})
-            self._has_dict=True
+                metadata=_readvimdict(kernel=kernel)
+            self._set_dictionary(*metadata)
 
         if enable_at:
             self.at=_at(self)
+
+    def _set_dictionary(self,dictionary,doc):
+        """Replace generated methods, syntax and help with one metadata snapshot."""
+        functions=_create_functions(dictionary,doc=doc,append_underscores=self._append_underscores)
+        methods={}
+        for name,source in functions.items():
+            namespace={}
+            exec(source,_format_tools,namespace)
+            methods[name]=types.MethodType(namespace[name],self)
+        # Compile everything first so a malformed snapshot leaves existing methods intact.
+        for name in self.__dict__.get("_functions",{}):
+            if name not in functions:
+                self.__dict__.pop(name,None)
+        self.__dict__.update(methods)
+        self._vimdict,self._doc=dictionary,doc
+        self._functions=functions
+        self._has_dict=True
+
+    def refresh(self):
+        """Refresh syntax, help and methods from the attached PLUMED instance.
+
+           Use after loading an action directly through that instance. LOAD sent
+           through this builder refreshes automatically. Return True on refresh,
+           or False for an unattached builder, disabled dictionary loading, or
+           an older kernel using static Vim metadata. The instance is not finalized.
+        """
+        if self._toplumed is None or not self._has_dict:
+            return False
+        metadata=_readkernelmetadata(instance=self._toplumed)
+        if metadata is None:
+            return False
+        self._set_dictionary(*metadata)
+        return True
 
     def __call__(self,action,LABEL="",verbatim=None,**kwargs):
         ret=""
@@ -1258,7 +1297,7 @@ class InputBuilder:
             if(len(x)>0):
                 ret+=x
         ret+=_format_verbatim(self,verbatim)
-        return _format_return(self,ret)
+        return _format_return(self,ret,action)
 
     def __getattr__(self, name):
        if self._has_dict:
