@@ -253,9 +253,9 @@ private:
 
 public:
   explicit EDS(const ActionOptions &);
-  void calculate();
-  void update();
-  void turnOnDerivatives();
+  void calculate() override;
+  void update() override;
+  void turnOnDerivatives() override;
   static void registerKeywords(Keywords &keys);
 /// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
   bool hasCheckpointState() const override {
