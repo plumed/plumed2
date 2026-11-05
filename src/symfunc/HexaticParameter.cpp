@@ -150,7 +150,7 @@ six nearest neighbours to each atom.  If you would like to calculate this quanti
 ```plumed
 dmat: DISTANCE_MATRIX GROUP=1-400 LINKCELL_CUTOFF=3.0 COMPONENTS
 neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
-harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
+harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y MASK=neigh
 rprod: CUSTOM ARG=neigh,harm.rm FUNC=x*y PERIODIC=NO
 iprod: CUSTOM ARG=neigh,harm.im FUNC=x*y PERIODIC=NO
 hex2_ones: ONES SIZE=400
