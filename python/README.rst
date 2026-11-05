@@ -59,6 +59,16 @@ object remains owned by the caller. Refresh is unavailable with older kernels
 using static Vim files, or when ``load_dict=False``. For an attached older kernel,
 select its Vim installation through ``kernel=...`` or ``PLUMED_ROOT`` as before.
 
+Vim files
+---------
+
+``plumed gen_vim --outdir DIR`` generates both Vim syntax plugins and all
+per-action help files in one invocation. It reads two static templates from
+``<PLUMED_ROOT>/vim/templates``; use ``--template-dir DIR`` to select another
+location. The templates are installed resources, while the action help comes
+from the kernel's keyword registrations. An invalid template leaves existing
+syntax and help files in place; successful regeneration removes stale help.
+
 Maintainer release notes
 ------------------------
 

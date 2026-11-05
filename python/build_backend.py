@@ -279,7 +279,7 @@ def _copy_runtime(source: Path, modules: list[str]) -> None:
     else:
         _check_linux_run_paths(runtime_lib, runtime_bin)
     # needs the relocatable executable, so after fixing its load paths
-    _generate_vim(source, runtime_root, runtime_bin / "plumed")
+    _generate_vim(runtime_root, runtime_bin / "plumed")
 
 
 def _relocate_compile_options(path: Path) -> None:
@@ -331,35 +331,26 @@ def _uses_old_cxx_abi(compile_line: str) -> bool:
     return probe.returncode == 0 and bool(lines) and lines[-1] == "0"
 
 
-def _generate_vim(source: Path, runtime_root: Path, executable: Path) -> None:
-    """Generate the Vim syntax and help files, as make does in vim/.
+def _generate_vim(runtime_root: Path, executable: Path) -> None:
+    """Generate all editor syntax and help files with one PLUMED invocation.
 
-    InputBuilder does not need them with this kernel (it reads the metadata
-    from the kernel), but they are used by editors and by InputBuilder with
-    older kernels. vimsyntax.sh runs ../src/lib/plumed: point it to the staged
-    executable, which finds its libraries without DYLD/LD_LIBRARY_PATH (these
-    are dropped by macOS for system shells).
+    Use the staged executable and templates so generation also verifies the
+    relocated runtime. InputBuilder with a new kernel uses in-memory metadata;
+    these files remain available for editors and the legacy Vim fallback.
     """
-    with tempfile.TemporaryDirectory(prefix="plumed-vim-") as temporary:
-        tree = Path(temporary)
-        (tree / "vim").mkdir()
-        shutil.copy2(source / "vim" / "vimsyntax.sh", tree / "vim")
-        (tree / "sourceme.sh").write_text("")
-        wrapper = tree / "src" / "lib" / "plumed"
-        wrapper.parent.mkdir(parents=True)
-        wrapper.write_text(f'#!/bin/sh\nexec "{executable}" "$@"\n')
-        wrapper.chmod(0o755)
-        env = os.environ.copy()
-        for name in ("PLUMED_ROOT", "PLUMED_KERNEL"):
-            env.pop(name, None)
-        _run(["bash", "vimsyntax.sh"], cwd=tree / "vim", env=env)
-        syntax = tree / "vim" / "syntax" / "plumed.vim"
-        if not syntax.is_file() or not any((tree / "vim" / "help").glob("*.txt")):
-            raise RuntimeError("vimsyntax.sh did not produce the Vim files")
-        for name in ("syntax", "help"):
-            target = runtime_root / "vim" / name
-            shutil.rmtree(target, ignore_errors=True)
-            shutil.copytree(tree / "vim" / name, target)
+    env = os.environ.copy()
+    for name in ("PLUMED_ROOT", "PLUMED_KERNEL"):
+        env.pop(name, None)
+    output = runtime_root / "vim"
+    _run(
+        [str(executable), "--no-mpi", "gen_vim", "--outdir", str(output)],
+        cwd=runtime_root,
+        env=env,
+    )
+    if not (output / "syntax" / "plumed.vim").is_file() or not any(
+        (output / "help").glob("*.txt")
+    ):
+        raise RuntimeError("gen_vim did not produce the Vim files")
 
 
 def _check_linux_run_paths(runtime_lib: Path, runtime_bin: Path) -> None:

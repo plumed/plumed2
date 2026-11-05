@@ -138,6 +138,134 @@ def check_metadata_transfer_errors(bundled):
             raise AssertionError("metadata copy accepted an undersized buffer")
 
 
+def check_vim_generation(executable):
+    """Generated Vim help and dictionary retain the legacy manual format."""
+    actions = sorted(plumed.InputBuilder()._vimdict)
+    with tempfile.TemporaryDirectory() as temporary:
+        output = Path(temporary) / "vim-output"
+        subprocess.run(
+            [str(executable), "--no-mpi", "gen_vim", "--outdir", str(output)],
+            check=True,
+            capture_output=True,
+            cwd=temporary,
+        )
+
+        syntax = (output / "syntax" / "plumed.vim").read_text(encoding="utf-8")
+        generated_dictionary = {
+            match.group(1): line
+            for line in syntax.splitlines()
+            if (match := re.match(r'let b:plumedDictionary\["(.*)"\]=\[.*\]$', line))
+        }
+        assert set(generated_dictionary) == set(actions)
+
+        for action in actions:
+            manual = subprocess.run(
+                [
+                    str(executable),
+                    "--no-mpi",
+                    "manual",
+                    "--action",
+                    action,
+                    "--vim",
+                ],
+                check=True,
+                capture_output=True,
+            ).stdout
+            first_line, separator, help_text = manual.partition(b"\n")
+            assert separator, f"manual output for {action} has no first line"
+            tokens = first_line.decode("utf-8").split(",")
+            assert tokens[0] == action, (action, tokens[0])
+
+            rows = ['{"word":"LABEL=","menu":"(label)"}']
+            for token in tokens[1:]:
+                kind, name = token.split(":", 1)
+                if name == "LABEL":
+                    continue
+                if kind == "flag":
+                    word, menu = name, "(flag)"
+                elif kind == "numbered":
+                    word, menu = name, "(numbered)"
+                else:
+                    word, menu = name + "=", "(option)"
+                rows.append(
+                    '{"word":"%s","menu":"%s"}' % (word, menu)
+                )
+            expected_dictionary = 'let b:plumedDictionary["%s"]=[%s]' % (
+                action,
+                ",".join(sorted(rows)),
+            )
+            assert generated_dictionary[action] == expected_dictionary, action
+
+            expected_help = (
+                b"****************************************\n"
+                + f"Short helpfile for action {action}\n".encode("utf-8")
+                + b"****************************************\n"
+                + help_text
+            )
+            generated_help = (output / "help" / f"{action}.txt").read_bytes()
+            assert generated_help == expected_help, action
+
+        help_dir = output / "help"
+        obsolete = help_dir / "OBSOLETE_TEST_ACTION.txt"
+        obsolete.write_text("stale\n", encoding="utf-8")
+        subprocess.run(
+            [str(executable), "--no-mpi", "gen_vim", "--outdir", str(output)],
+            check=True,
+            capture_output=True,
+            cwd=temporary,
+        )
+        assert not obsolete.exists()
+
+        previous_files = {
+            path.relative_to(output): path.read_bytes()
+            for path in output.rglob("*")
+            if path.is_file()
+        }
+        empty_templates = Path(temporary) / "missing-templates"
+        empty_templates.mkdir()
+        failed = subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "gen_vim",
+                "--outdir",
+                str(output),
+                "--template-dir",
+                str(empty_templates),
+            ],
+            capture_output=True,
+            cwd=temporary,
+        )
+        assert failed.returncode != 0
+        current_files = {
+            path.relative_to(output): path.read_bytes()
+            for path in output.rglob("*")
+            if path.is_file()
+        }
+        assert current_files == previous_files
+
+        # Template validation happens before replacing either output directory.
+        templates = resource_root() / "vim" / "templates"
+        shutil.copy2(templates / "plumedf.vim", empty_templates / "plumedf.vim")
+        original_template = (templates / "plumed.vim.in").read_text(encoding="utf-8")
+        marker = "@PLUMED_DICTIONARY@"
+        for replacement in ("", marker + "\n" + marker, "prefix" + marker):
+            (empty_templates / "plumed.vim.in").write_text(
+                original_template.replace(marker, replacement), encoding="utf-8"
+            )
+            failed = subprocess.run(
+                [str(executable), "--no-mpi", "gen_vim", "--outdir", str(output),
+                 "--template-dir", str(empty_templates)],
+                capture_output=True,
+                cwd=temporary,
+            )
+            assert failed.returncode != 0
+            assert {
+                path.relative_to(output): path.read_bytes()
+                for path in output.rglob("*") if path.is_file()
+            } == previous_files
+
+
 def check_json_matches_vim():
     """JSON-derived InputBuilder classifications match Vim, except LABEL."""
     from plumed_runtime import resource_root
@@ -487,6 +615,7 @@ def main():
     check_json_matches_vim()
     check_cli_json_matches_kernel(bundled, package_root() / "bin" / "plumed")
     check_metadata_transfer_errors(bundled)
+    check_vim_generation(package_root() / "bin" / "plumed")
     check_vim_fallback()
     check_load()
     check_dynamic_cltool_module(package_root() / "bin" / "plumed")
