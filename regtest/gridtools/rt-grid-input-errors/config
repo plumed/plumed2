@@ -3,7 +3,7 @@ plumed_modules="gridtools contour"
 arg="--plumed plumed.dat --ixyz traj.xyz"
 export PLUMED_STACK_TRACE=no
 # inputs found by .ci/audit-inputs.py: each bad_NAME.dat crashed, read out of bounds, ran out of memory,
-# hung or silently gave a nan grid on master, and must now be rejected with an error message containing the text below
+# hung, read outside the grid or silently gave a nan grid on master, and must now be rejected with an error message containing the text below
 function plumed_regtest_before(){
   {
     echo 5 ; echo 10 10 10
@@ -22,6 +22,7 @@ function plumed_regtest_before(){
   printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=-1 GRID_BIN=10 BANDWIDTH=0.1\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_kde_max.dat
   printf "$d\nh: HISTOGRAM ARG=d GRID_MIN=0 GRID_MAX=1 GRID_BIN=10 BANDWIDTH=-1\n" > bad_histogram_bandwidth.dat
   printf "dc: DISTANCE_FROM_CONTOUR ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2\n" > bad_contour_positions.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=0.9 GRID_BIN=10 KERNEL=DISCRETE\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_discrete_outside.dat
   printf "pp: PAIRENTROPY GROUP=1-5 MAXR=2.0 GRID_BIN=20 BANDWIDTH=0.13 DENSITY=0\n" > bad_pairentropy_density.dat
 }
 function plumed_regtest_after(){
@@ -44,5 +45,6 @@ pairentropy_density DENSITY should be positive
 kde_max GRID_MAX should be larger than GRID_MIN
 histogram_bandwidth BANDWIDTH should not be negative
 contour_positions no atoms were specified with POSITIONS
+discrete_outside point is outside grid range
 EOT
 }

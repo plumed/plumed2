@@ -8,3 +8,4 @@ pairentropy_density: rejected
 kde_max: rejected
 histogram_bandwidth: rejected
 contour_positions: rejected
+discrete_outside: rejected

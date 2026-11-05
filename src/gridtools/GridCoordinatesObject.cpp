@@ -166,8 +166,9 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
       nbin[i]=binsin[i];
       dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
     } else if( spacing.size()==dimension && bounds_set ) {
-      nbin[i] = std::floor(( max[i] - min[i] ) / spacing[i]) + 1;
-      dx[i]=spacing[i];
+      // as in METAD: the grid ends at GRID_MAX, with a spacing not larger than GRID_SPACING
+      nbin[i] = std::ceil(( max[i] - min[i] ) / spacing[i]);
+      dx[i] = ( max[i] - min[i] ) / static_cast<double>( nbin[i] );
     } else if( bounds_set ) {
       plumed_error();
     }
@@ -229,7 +230,7 @@ void GridCoordinatesObject::getIndices( const View<const double> point, std::vec
     indices[i]=std::floor( (point[i] - min[i])/dx[i] );
     if( pbc[i] ) {
       indices[i]=indices[i]%nbin[i];
-    } else if( indices[i]>nbin[i] ) {
+    } else if( indices[i]>=nbin[i] ) {
       plumed_merror("point is outside grid range");
     }
   }
