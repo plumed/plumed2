@@ -16,10 +16,8 @@ if [ -z "$PYTHON" ]; then
 
     for python_bin in python python3 python3.12 python3.11 python3.10 python3.9 python3.8 python3.7; do
         if $python_bin -c "import plumed" 2>/dev/null; then
-            if [ $python_bin != python ]; then
-                PYTHON=$python_bin
-            fi
-            return 1
+            PYTHON=$python_bin
+            break
         fi
     done
 
