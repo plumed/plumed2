@@ -79,9 +79,7 @@ class TestInputBuilder(unittest.TestCase):
 
     def test_hidden_keyword_is_available_to_builder(self):
         self.assertIn("STRIDE", ib._vimdict["DUMPMASSCHARGE"])
-        self.assertEqual(
-            ib.DUMPMASSCHARGE(STRIDE=10), "DUMPMASSCHARGE STRIDE=10\n"
-        )
+        self.assertEqual(ib.DUMPMASSCHARGE(STRIDE=10), "DUMPMASSCHARGE STRIDE=10\n")
 
     def test_cv_special_access(self):
         self.check(
