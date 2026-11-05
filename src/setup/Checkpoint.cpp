@@ -90,8 +90,11 @@ exactly). The global `RESTART NO` directive after CHECKPOINT is an error,
 since it contradicts the restart from the checkpoint.
 
 The actions that store their state in the checkpoint include [METAD](METAD.md),
-[PBMETAD](PBMETAD.md) and [MOVINGRESTRAINT](MOVINGRESTRAINT.md): METAD and PBMETAD
-restore their bias from it, so that their hills files are truncated and not read.
+[PBMETAD](PBMETAD.md), [OPES_METAD](OPES_METAD.md), [OPES_METAD_EXPLORE](OPES_METAD_EXPLORE.md),
+[METAINFERENCE](METAINFERENCE.md) (and the ISDB collective variables with DOSCORE),
+[EDS](EDS.md), [DRR](DRR.md) and [MOVINGRESTRAINT](MOVINGRESTRAINT.md): they
+restore their bias from it, so that their hills, kernels or status files are not read
+(the growing ones are truncated).
 Actions that keep an internal state but do not store it in the checkpoint
 yet are listed in a warning in the log: for them the restart is the usual
 file-based one and an exact continuation is not guaranteed.

@@ -297,7 +297,7 @@ void EDS::registerKeywords(Keywords &keys) {
   keys.add("optional", "OUT_RESTART", "Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
            "Note that the header will be printed again if appending.");
-  keys.add("optional", "IN_RESTART", "Read this file to continue an EDS simulation. "
+  keys.add("optional", "IN_RESTART", "Read this file to continue an EDS simulation (it is not read when restarting from a CHECKPOINT, which stores the full state). "
            "If same as OUT_RESTART and you have not set the RESTART directive, the file will be backed-up and overwritten with new output. "
            "If you do have the RESTART flag set and it is the same name as OUT_RESTART, this file will be appended.");
 

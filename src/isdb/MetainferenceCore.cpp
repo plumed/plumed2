@@ -99,7 +99,7 @@ void MetainferenceCore::registerKeywords( Keywords& keys ) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","SEED","seed of the random number generators used by the Monte Carlo sampling (by default a different seed is taken from the clock at every run)");
-  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
+  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference. With a CHECKPOINT the state is restored from the checkpoint and this file is not read");
   keys.add("optional","FMT","specify format for STATUS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
