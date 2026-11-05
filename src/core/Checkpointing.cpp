@@ -291,6 +291,9 @@ void Checkpointing::restore() {
   if(plumed.getStep()!=restartStep) {
     plumed_merror("the checkpoint was written at step "+std::to_string(restartStep)+" but the MD engine restarted at step "+std::to_string(plumed.getStep())+": the PLUMED checkpoint and the restart file of the MD engine do not refer to the same step");
   }
+  if(!plumed.getRestart()) {
+    plumed_merror("restarting from a checkpoint, but restart has been switched off (RESTART NO after CHECKPOINT?)");
+  }
   pending->beginSection("actions");
   std::vector<std::string> labels;
   for(const auto & p : plumed.getActionSet()) {
@@ -298,8 +301,13 @@ void Checkpointing::restore() {
     if(!p->hasCheckpointState()) {
       continue;
     }
+    // per-action RESTART=NO: the action starts from scratch at the restart step
+    if(!p->getRestart()) {
+      log<<"  action "<<p->getLabel()<<": RESTART=NO, state not restored from the checkpoint, files backed up\n";
+      continue;
+    }
     if(!pending->hasSection(p->getLabel())) {
-      plumed_merror("action "+p->getLabel()+" has no section in the checkpoint: was the checkpoint written with a different input?");
+      plumed_merror("action "+p->getLabel()+" has no section in the checkpoint: was the checkpoint written with a different input? Use RESTART=NO on the action to start it from scratch");
     }
     pending->beginSection(p->getLabel());
     p->readCheckpoint(*pending);

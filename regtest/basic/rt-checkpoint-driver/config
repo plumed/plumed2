@@ -33,6 +33,13 @@ function plumed_regtest_before() {
   cp ../plumed-metad.dat plumed.dat
   $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  # the global RESTART NO contradicts the restart from the checkpoint (error; the files are already trimmed by CHECKPOINT)
+  sed 's/^CHECKPOINT.*/&\nRESTART NO/' plumed.dat > plumed-global-no.dat
+  $plumed driver --plumed plumed-global-no.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out4 2> err4
+  # E) per-action RESTART=NO at a checkpoint restart: METAD starts from scratch at
+  # the restart step (its files are trimmed, then backed up), the rest continues
+  sed 's/FILE=HILLS/FILE=HILLS RESTART=NO/' plumed.dat > plumed-no.dat
+  $plumed driver --plumed plumed-no.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out3 2> err3
   cd ..
 
   # C) errors: the engine presents a step different from the one of the checkpoint
@@ -60,6 +67,12 @@ function plumed_regtest_after() {
   done > restart_check
   grep -h "WARNING: the following actions" metad/out1 | head -n 1 >> restart_check
   grep -h "truncated\|not truncated\|Checkpoint state restored" metad/out2 >> restart_check
+  grep -h "truncated\|RESTART=NO\|Checkpoint state restored" metad/out3 >> restart_check
+  # HILLS was backed up (trimmed at the checkpoint) and the new one starts at the restart step
+  ls metad/bck.*.HILLS >> restart_check
+  tail -n 1 metad/bck.0.HILLS | awk '{print "last hill of the backup at time",$1}' >> restart_check
+  grep -v "^#" metad/HILLS | head -n 1 | awk '{print "first hill of the new file at time",$1}' >> restart_check
+  grep -h "cannot be used when restarting from a checkpoint" metad/err4 | head -n 1 | sed 's/^ERROR : in input for command line tool driver : //' >> restart_check
   # the error messages (the lines around them depend on PLUMED_STACK_TRACE)
   for i in 1 2 3 ; do
     grep -h "do not refer to the same step\|not in the trajectory\|differs from the one recorded" wrong-step/err$i | head -n 1 | sed 's/^ERROR : in input for command line tool driver : //' >> restart_check
