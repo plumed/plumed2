@@ -220,8 +220,14 @@ void MaxEnt::registerKeywords(Keywords& keys) {
 /// The constructor intentionally centralizes initialization so that subsequent
 /// `calculate()`, `update()`, and `update_lambda()` calls can assume consistent
 /// dimensions, defaults, and I/O state.
+// Constructor layout:
+//   1) member defaults (initializer list),
+//   2) keyword parsing and consistency checks,
+//   3) restart/readback handling for multipliers,
+//   4) output component and file configuration.
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
+  // Per-argument state vectors are sized once from ARG and reused during the run.
   at(getNumberOfArguments()),
   kappa(getNumberOfArguments(),0.0),
   lambda(getNumberOfArguments(),0.0),
@@ -230,6 +236,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   tau(getNumberOfArguments(),getTimeStep()),
   avglambda(getNumberOfArguments(),0.0),
   avglambda_restart(getNumberOfArguments(),0.0),
+  // Global control defaults; user keywords may override these values.
   sigma(0.0),
   pace_(100),
   stride_(100),
