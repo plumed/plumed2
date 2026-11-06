@@ -1,0 +1,22 @@
+# exact restart of LOGMFD (fictitious variables, thermostat, work, averages, log files): see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+
+# THERMOSTAT is replaced by NVE, NVT and VS in the config; the MFD update is every 3 steps (also at the replayed step 20)
+LOGMFD ...
+ LABEL=logmfd
+ ARG=d1,d2
+ KAPPA=1000.0,1000.0
+ DELTA_T=0.5
+ INTERVAL=3
+ TEMP=300.0
+ FLOG=2.0
+ MFICT=100.0,100.0
+ VFICT=0.01,0.02
+ THERMOSTAT=NVE
+ FICT_MIN=0.4,0.4
+ FICT_MAX=1.45,1.0
+... LOGMFD
+
+PRINT ARG=d1,d2,logmfd.* FILE=COLVAR FMT=%.17g STRIDE=1

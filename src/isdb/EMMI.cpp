@@ -24,6 +24,8 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
+#include "tools/Checkpoint.h"
 #include "tools/Matrix.h"
 #include "tools/Communicator.h"
 #include "core/GenericMolInfo.h"
@@ -109,6 +111,10 @@ emr: BIASVALUE ARG=gmm.scoreb STRIDE=2
 
 PRINT ARG=emr.* FILE=COLVAR STRIDE=500 FMT=%20.10f
 ```
+
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) sigma, the Monte Carlo state, the regression scale and the average weights are stored in the checkpoint and the status file is trimmed and not read. The neighbor list is rebuilt at the first step: the restart is exactly reproducible when the neighbor list is updated at that step (e.g. with `NL_STRIDE=1`). A file of the model overlaps (`WRITE_OV`) of a previous run is never appended to: it is renamed as a backup.
 
 */
 //+ENDPLUMEDOC
@@ -231,6 +237,12 @@ private:
   double doRegression();
 // read and write status
   void read_status();
+  // checkpoint
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   void print_status(long long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
@@ -638,7 +650,9 @@ EMMI::EMMI(const ActionOptions&ao):
   if(do_reweight_&&nrep_<2) {
     error("REWEIGHT can only be used in parallel with 2 or more replicas");
   }
-  if(!getRestart()) {
+  // with a checkpoint the weights are read from it
+  const bool from_checkpoint = getRestart() && plumed.checkpointing.isRestartingFromCheckpoint();
+  if(!getRestart() || from_checkpoint) {
     average_weights_.resize(nrep_, 1./static_cast<double>(nrep_));
   } else {
     average_weights_.resize(nrep_, 0.);
@@ -781,7 +795,8 @@ EMMI::EMMI(const ActionOptions&ao):
   }
 
   // read status file if restarting
-  if(getRestart() && noise_!=2) {
+  // (with a checkpoint sigma is read from it and the status file is trimmed)
+  if(getRestart() && noise_!=2 && !from_checkpoint) {
     read_status();
   }
 
@@ -880,6 +895,9 @@ void EMMI::write_model_overlap(long long int step) {
   std::string num;
   Tools::convert(step,num);
   std::string name = ovfilename_+"-"+num;
+  // a file of a previous run is never appended to (it would be duplicated when a
+  // step is replayed after a checkpoint restart)
+  ovfile.enforceBackup();
   ovfile.open(name);
   ovfile.setHeavyFlush();
   ovfile.fmtField("%10.7e ");
@@ -908,6 +926,55 @@ double EMMI::get_median(std::vector<double> &v) {
     } else {
       return v[size/2];
     }
+  }
+}
+
+// The state is the one at the beginning of the step: sigma and the Monte Carlo
+// counters and generator, the regression scale, the average weights and all the
+// components (some are set only at some steps). The neighbor list is rebuilt at the
+// first step and the status file is trimmed by the checkpoint.
+void EMMI::writeCheckpoint(CheckpointWriter& w) {
+  w.write("sigma",sigma_);
+  w.write("MCaccept",MCaccept_);
+  w.write("MCtrials",MCtrials_);
+  w.write("random",random_.stateToString());
+  w.write("scale",scale_);
+  w.write("average_weights",average_weights_);
+  w.write("first_time_w",(long long) first_time_w_);
+  std::vector<double> v;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    v.push_back(copyOutput(i)->get());
+  }
+  w.write("components",v);
+}
+
+void EMMI::readCheckpoint(CheckpointReader& r) {
+  std::vector<double> v;
+  r.read("sigma",v);
+  if(v.size()!=sigma_.size()) {
+    error("the checkpoint was written with a different number of sigma");
+  }
+  sigma_=v;
+  r.read("MCaccept",MCaccept_);
+  r.read("MCtrials",MCtrials_);
+  std::string state;
+  r.read("random",state);
+  random_.stateFromString(state);
+  r.read("scale",scale_);
+  r.read("average_weights",v);
+  if(v.size()!=average_weights_.size()) {
+    error("the checkpoint was written with a different number of replicas");
+  }
+  average_weights_=v;
+  long long ft;
+  r.read("first_time_w",ft);
+  first_time_w_=ft!=0;
+  r.read("components",v);
+  if(v.size()!=getNumberOfComponents()) {
+    error("the checkpoint was written with a different number of components");
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    copyOutput(i)->set(v[i]);
   }
 }
 

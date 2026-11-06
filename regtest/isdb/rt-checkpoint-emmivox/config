@@ -1,0 +1,36 @@
+type=driver
+plumed_needs=libtorch
+# Reference run: the whole trajectory (6 frames), with the checkpointing signal every 2 steps
+arg="--plumed plumed.dat --mf_pdb traj.pdb --checkpoint-stride 2"
+export PLUMED_NUM_THREADS=2
+
+function plumed_regtest_before() {
+  # the first 4 frames: the interrupted run
+  head -n 940 traj.pdb > part.pdb
+  # A) checkpoints requested by the "MD engine" at steps 0 and 2, restart from step 2
+  mkdir restart
+  cd restart
+  cp ../plumed.dat ../map.dat ../structure.pdb .
+  $plumed driver --plumed plumed.dat --mf_pdb ../part.pdb --checkpoint-stride 2 > out1 2> err1
+  $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --checkpoint-stride 2 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoints every 3 steps (STRIDE), restart from step 3
+  mkdir restart-stride
+  cd restart-stride
+  cp ../map.dat ../structure.pdb .
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=3/' ../plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --mf_pdb ../part.pdb > out1 2> err1
+  $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise (CPU libtorch is deterministic here), status and model files included
+  for d in restart restart-stride ; do
+    for f in COLVAR emvstatus emvbstatus model.dat-0 model.dat-4 ; do
+      if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
+    done
+    grep -h "Restarting from checkpoint\|Checkpoint state restored\|WARNING: the following" $d/out2 | sed 's/by PLUMED.*//'
+  done > restart_check
+}
+include ../../scripts/test.make

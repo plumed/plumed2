@@ -149,6 +149,10 @@ protected:
   bool parseMultipleValues(const std::string&, std::vector<T>&, unsigned int, const T&);
   //
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords(Keywords&);
   explicit VesBias(const ActionOptions&ao);
   ~VesBias();

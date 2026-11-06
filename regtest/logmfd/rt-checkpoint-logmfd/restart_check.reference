@@ -1,0 +1,36 @@
+restart-NVE/COLVAR IDENTICAL
+restart-NVE/logmfd.out IDENTICAL
+restart-NVE/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride-NVE/COLVAR IDENTICAL
+restart-stride-NVE/logmfd.out IDENTICAL
+restart-stride-NVE/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21
+restart-NVT/COLVAR IDENTICAL
+restart-NVT/logmfd.out IDENTICAL
+restart-NVT/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride-NVT/COLVAR IDENTICAL
+restart-stride-NVT/logmfd.out IDENTICAL
+restart-stride-NVT/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21
+restart-VS/COLVAR IDENTICAL
+restart-VS/logmfd.out IDENTICAL
+restart-VS/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride-VS/COLVAR IDENTICAL
+restart-stride-VS/logmfd.out IDENTICAL
+restart-stride-VS/replica.out IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

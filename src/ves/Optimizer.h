@@ -153,6 +153,10 @@ protected:
   void addCoeffsSetIDsToFilenames(std::vector<std::string>&, std::string&);
   void setupOFiles(std::vector<std::string>&, std::vector<std::unique_ptr<OFile>>&, const bool multi_sim_single_files=false);
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords(Keywords&);
   static void useMultipleWalkersKeywords(Keywords&);
   static void useHessianKeywords(Keywords&);
