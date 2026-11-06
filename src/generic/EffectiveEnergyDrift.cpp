@@ -261,7 +261,9 @@ void EffectiveEnergyDrift::writeCheckpoint(CheckpointWriter& w) {
   w.write("eed",eed);
   w.write("initialBias",initialBias);
   std::vector<double> boxes;
-  for(const Tensor* t : {&box,&pbox,&fbox,&pfbox}) {
+  for(const Tensor* t : {
+        &box,&pbox,&fbox,&pfbox
+      }) {
     for(unsigned i=0; i<3; ++i)
       for(unsigned j=0; j<3; ++j) {
         boxes.push_back((*t)(i,j));
@@ -296,7 +298,9 @@ void EffectiveEnergyDrift::readCheckpoint(CheckpointReader& r) {
   r.read("boxes",boxes);
   plumed_massert(boxes.size()==36,"checkpoint: wrong data for "+getLabel());
   unsigned n=0;
-  for(Tensor* t : {&box,&pbox,&fbox,&pfbox}) {
+  for(Tensor* t : {
+        &box,&pbox,&fbox,&pfbox
+      }) {
     for(unsigned i=0; i<3; ++i)
       for(unsigned j=0; j<3; ++j) {
         (*t)(i,j)=boxes[n++];
