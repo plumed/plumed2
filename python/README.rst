@@ -50,6 +50,15 @@ Bundled executables, libraries and resources live under ``plumed/runtime``. No s
 ``plumed_runtime`` package is installed. Wrapper-only installations use the same
 Python package layout without bundled runtime resources.
 
+Data-file ownership
+-------------------
+
+``read_as_pandas`` and ``write_pandas`` close files they open, including gzip
+streams and error paths. Streams supplied by the caller, including stdout,
+remain open. A chunked reader keeps its internally opened file alive until
+exhaustion, an error, or ``close()``. Use ``with plumed.read_as_pandas(...,
+chunksize=...) as reader:`` when stopping iteration early.
+
 InputBuilder metadata
 ---------------------
 

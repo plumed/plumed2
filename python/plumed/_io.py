@@ -23,6 +23,7 @@
 """Readers, writers and HILLS utilities for PLUMED data files."""
 
 import array
+from contextlib import ExitStack, nullcontext
 import gzip
 import math
 import re
@@ -34,6 +35,7 @@ from ._plumed import Plumed
 try:
     import numpy as np
 except ImportError:
+    # Importing the package and using the native wrapper do not require NumPy.
     pass
 
 
@@ -44,18 +46,19 @@ class FormatError(Exception):
 
 
 def _fix_file(file, mode):
-    """Internal utility: returns a file open with mode.
+    """Return a context manager that closes only streams opened here.
 
-    Takes care of opening file (if it receives a string)
-    and or unzipping (if the file has ".gz" suffix).
+    Paths are opened once, using gzip directly for compressed files. Named raw
+    gzip streams retain the legacy filename-based decoding behavior; already
+    decoded gzip text streams and other caller-supplied streams are borrowed.
     """
-    # allow passing a string
+    name = file if isinstance(file, str) else getattr(file, "name", "")
+    decoded = isinstance(getattr(file, "buffer", None), gzip.GzipFile)
+    if isinstance(name, str) and re.match(r".*\.gz", name) and not decoded:
+        return gzip.open(name, mode)
     if isinstance(file, str):
-        file = open(file, mode)
-    # takes care of gzipped files
-    if re.match(r".*\.gz", file.name):
-        file = gzip.open(file.name, mode)
-    return file
+        return open(file, mode)
+    return nullcontext(file)
 
 
 def _build_convert_function(kernel=None):
@@ -144,6 +147,9 @@ def read_as_pandas(
 
     file_or_path : str or file
         Either string containing the path of the file or an already opened file object.
+        Internally opened files are closed after reading; supplied streams remain open.
+        Chunked results support ``with`` and ``close()``. Use either when stopping
+        before exhaustion to release the parser and any internally opened file.
 
     enable_constants : str or boolean, optional (default is True)
         If 'columns', constants are read and added as constant columns.
@@ -300,92 +306,133 @@ def read_as_pandas(
         if enable_conversion == "all":
             convert_all = convert
 
-    # handle file
-    file_or_path = _fix_file(file_or_path, "rt")
+    with ExitStack() as files:
+        # handle file
+        file_or_path = files.enter_context(_fix_file(file_or_path, "rt"))
 
-    # read first line
-    line = file_or_path.readline()
-    columns = line.split()
+        # read first line
+        line = file_or_path.readline()
+        columns = line.split()
 
-    # check header
-    if len(columns) < 2:
-        raise FormatError(
-            "Error reading PLUMED file " + file_or_path.name + ". Not enough columns"
+        # check header
+        if len(columns) < 2:
+            raise FormatError(
+                "Error reading PLUMED file "
+                + file_or_path.name
+                + ". Not enough columns"
+            )
+        if columns[0] != "#!" or columns[1] != "FIELDS":
+            raise FormatError(
+                "Error reading PLUMED file"
+                + file_or_path.name
+                + ". Columns: "
+                + columns[0]
+                + " "
+                + columns[1]
+            )
+
+        # read column names
+        columns = columns[2:]
+
+        # read constants
+        constants = []
+        if enable_constants != "no":
+            while True:
+                pos = file_or_path.tell()
+                line = file_or_path.readline()
+                file_or_path.seek(pos)
+                if not line:
+                    break
+                sets = line.split()
+                if len(sets) < 4:
+                    break
+                if sets[0] != "#!" or sets[1] != "SET":
+                    break
+                if convert:
+                    v = convert(sets[3])
+                else:
+                    v = sets[3]
+                # name / value / string
+                constants.append((sets[2], v, sets[3]))
+                file_or_path.readline()  # read again to go to next line
+
+        # read the rest of the file
+        # notice that if chunksize was provided the result will be an iterable object
+        df = pd.read_csv(
+            file_or_path,
+            sep=r"\s+",
+            comment="#",
+            header=None,
+            names=columns,
+            usecols=usecols,
+            skiprows=skiprows,
+            nrows=nrows,
+            chunksize=chunksize,
+            index_col=index_col,
         )
-    if columns[0] != "#!" or columns[1] != "FIELDS":
-        raise FormatError(
-            "Error reading PLUMED file"
-            + file_or_path.name
-            + ". Columns: "
-            + columns[0]
-            + " "
-            + columns[1]
-        )
 
-    # read column names
-    columns = columns[2:]
+        if chunksize is None:
+            # just perform conversions and attach constants to the dataframe
+            return process_dataframe(df, enable_constants, constants, convert_all)
+        else:
+            # declare an alternate class that is iterable to read the file in chunks
+            class TextFileReader(type(df)):
+                """Subclass of pandas.io.TestFileReader, needed for storing constants"""
 
-    # read constants
-    constants = []
-    if enable_constants != "no":
-        while True:
-            pos = file_or_path.tell()
-            line = file_or_path.readline()
-            file_or_path.seek(pos)
-            if not line:
-                break
-            sets = line.split()
-            if len(sets) < 4:
-                break
-            if sets[0] != "#!" or sets[1] != "SET":
-                break
-            if convert:
-                v = convert(sets[3])
-            else:
-                v = sets[3]
-            # name / value / string
-            constants.append((sets[2], v, sets[3]))
-            file_or_path.readline()  # read again to go to next line
+                # some information (constant values and conversion function)
+                # should be stored in the class to be used while iterating on it
+                def __init__(self, reader, enable_constants, constants, convert_all):
+                    self.TextFileReader = reader
+                    self._files = ExitStack()
+                    self._closed = False
+                    self.enable_constants = enable_constants
+                    self.constants = constants
+                    self.convert_all = convert_all
 
-    # read the rest of the file
-    # notice that if chunksize was provided the result will be an iterable object
-    df = pd.read_csv(
-        file_or_path,
-        sep=r"\s+",
-        comment="#",
-        header=None,
-        names=columns,
-        usecols=usecols,
-        skiprows=skiprows,
-        nrows=nrows,
-        chunksize=chunksize,
-        index_col=index_col,
-    )
+                def __next__(self):
+                    if self._closed:
+                        raise StopIteration
+                    succeeded = False
+                    try:
+                        chunk = self.TextFileReader.__next__()
+                        result = process_dataframe(
+                            chunk,
+                            self.enable_constants,
+                            self.constants,
+                            self.convert_all,
+                        )
+                        succeeded = True
+                        return result
+                    finally:
+                        # Exhaustion and all failures release the parser and owned file.
+                        if not succeeded:
+                            self.close()
 
-    if chunksize is None:
-        # just perform conversions and attach constants to the dataframe
-        return process_dataframe(df, enable_constants, constants, convert_all)
-    else:
-        # declare an alternate class that is iterable to read the file in chunks
-        class TextFileReader(type(df)):
-            """Subclass of pandas.io.TestFileReader, needed for storing constants"""
+                def close(self):
+                    """Close the parser and owned stream, leaving borrowed streams open."""
+                    if self._closed:
+                        return
+                    self._closed = True
+                    try:
+                        self.TextFileReader.close()
+                    finally:
+                        self._files.close()
 
-            # some information (constant values and conversion function)
-            # should be stored in the class to be used while iterating on it
-            def __init__(self, reader, enable_constants, constants, convert_all):
-                self.TextFileReader = reader
-                self.enable_constants = enable_constants
-                self.constants = constants
-                self.convert_all = convert_all
+                def __enter__(self):
+                    return self
 
-            def __next__(self):
-                # override __next__
-                df = self.TextFileReader.__next__()
-                return process_dataframe(
-                    df, self.enable_constants, self.constants, self.convert_all
-                )
+                def __exit__(self, exc_type, exc_value, traceback):
+                    self.close()
 
-        return TextFileReader(df, enable_constants, constants, convert_all)
+                def __del__(self):
+                    if not getattr(self, "_closed", True):
+                        self.close()
+
+            reader = TextFileReader(df, enable_constants, constants, convert_all)
+            # Transfer ownership only after construction succeeds. A plain DataFrame
+            # is fully read here; a chunked result must keep its stream until close.
+            reader._files = files.pop_all()
+            return reader
 
 
 def write_pandas(df, file_or_path=None):
@@ -397,7 +444,8 @@ def write_pandas(df, file_or_path=None):
 
     file_or_path: str, file, or None (default is None)
         path to the file to be written, or already opened file object.
-        If None, stdout is used.
+        If None, stdout is used. Internally opened files are closed after writing,
+        including on errors; supplied streams and stdout remain open.
 
     Examples
     --------
@@ -424,26 +472,28 @@ def write_pandas(df, file_or_path=None):
     # handle file
     if file_or_path is None:
         file_or_path = sys.stdout
-    file_or_path = _fix_file(file_or_path, "wt")
-    # write header
-    file_or_path.write("#! FIELDS")
-    if has_index:
-        file_or_path.write(" " + str(df.index.name))
-    for n in df.columns:
-        file_or_path.write(" " + str(n))
-    file_or_path.write("\n")
-    # write constants
-    if hasattr(df, "plumed_constants") and isinstance(df.plumed_constants, Constants):
-        for c in df.plumed_constants:
-            # notice that string constants are written (e.g. pi) rather than the numeric ones (e.g. 3.14...)
-            file_or_path.write("#! SET " + c[0] + " " + c[2] + "\n")
-    # write data
-    for i in range(df.shape[0]):
+    with _fix_file(file_or_path, "wt") as file_or_path:
+        # write header
+        file_or_path.write("#! FIELDS")
         if has_index:
-            file_or_path.write(" " + str(df.index[i]))
-        for j in df.columns:
-            file_or_path.write(" " + str(df[j][i]))
+            file_or_path.write(" " + str(df.index.name))
+        for n in df.columns:
+            file_or_path.write(" " + str(n))
         file_or_path.write("\n")
+        # write constants
+        if hasattr(df, "plumed_constants") and isinstance(
+            df.plumed_constants, Constants
+        ):
+            for c in df.plumed_constants:
+                # notice that string constants are written (e.g. pi) rather than the numeric ones (e.g. 3.14...)
+                file_or_path.write("#! SET " + c[0] + " " + c[2] + "\n")
+        # write data
+        for i in range(df.shape[0]):
+            if has_index:
+                file_or_path.write(" " + str(df.index[i]))
+            for j in df.columns:
+                file_or_path.write(" " + str(df[j][i]))
+            file_or_path.write("\n")
 
 
 def hills_time_average(

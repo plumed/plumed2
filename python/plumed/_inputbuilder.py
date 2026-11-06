@@ -55,8 +55,8 @@ def _guessplumedroot(kernel=None):
                         break
             if root and len(root) > 0:
                 return root
-    except BaseException:
-        # Preserve the legacy fallback on every failure during root discovery.
+    except Exception:
+        # Ordinary lookup failures retain the legacy fallback; interrupts propagate.
         pass
     # alternative solution, search for a plumed executable in the path
     import subprocess
