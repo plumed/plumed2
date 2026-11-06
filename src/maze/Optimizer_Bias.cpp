@@ -142,7 +142,7 @@ public:
   /**
    * Calculate the adaptive biasing potential for ligand unbinding.
    */
-  void calculate();
+  void calculate() override;
 
 private:
   /**

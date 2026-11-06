@@ -440,8 +440,8 @@ public:
   }
   void writeCheckpoint(CheckpointWriter& w) override;
   void readCheckpoint(CheckpointReader& r) override;
-  void calculate();
-  void update();
+  void calculate() override;
+  void update() override;
   void updateNVE();
   void updateNVT();
   void updateVS();

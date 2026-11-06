@@ -94,12 +94,12 @@ public:
   /**
    * Calculate the optimal direction of pulling.
    */
-  void calculate();
+  void calculate() override;
 
   /**
    * Prepare the neighbor list.
    */
-  void prepare();
+  void prepare() override;
 
   /**
    * Score a ligand-protein configuration.
