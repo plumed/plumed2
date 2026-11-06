@@ -1,0 +1,5 @@
+LOAD FILE=@pycvpath@
+
+cvPY: PYCVINTERFACE ATOMS=1,4 IMPORT=pyerrors CALCULATE=ok
+
+PRINT FILE=colvar.out ARG=*

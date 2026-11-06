@@ -108,14 +108,16 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: "3.12"
+        python-version: "3.14"
     - name: Check that python/plumed.c is up to date
       working-directory: ./python
       run: |
         # keep the version consistent with CYTHON_VERSION in python/Makefile
         pip install cython==3.2.4
-        python -m cython plumed.pyx
-        if ! git diff --exit-code --stat plumed.c ; then
+        python -m cython plumed.pyx -o "$RUNNER_TEMP/plumed.c"
+        # the compressed copies of the strings depend on the python running cython
+        # (version and compression libraries), so they are ignored in the comparison
+        if ! ./compare_plumed_c.sh plumed.c "$RUNNER_TEMP/plumed.c" ; then
           echo "::error file=python/plumed.c::python/plumed.c is not consistent with plumed.pyx and cplumed.pxd. Regenerate it with 'make -C python cythonize' using cython 3.2.4 and commit it."
           exit 1
         fi

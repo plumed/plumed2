@@ -1,3 +1,4 @@
 build
 twine
-Cython==3.2.4
+Cython==3.2.4; python_version < "3.15"
+Cython==3.3.1; python_version >= "3.15"

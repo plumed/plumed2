@@ -298,6 +298,13 @@ FISST::FISST(const ActionOptions&ao):
             "Consider setting temperature manually with the KBT keyword.");
     }
 
+    if(period_ <= 0) {
+      error("PERIOD must be a positive number of steps");
+    }
+    if(n_interpolation_ <= 0) {
+      error("NINTERPOLATE must be positive");
+    }
+
     log.printf("  kBT = %f\n",kbt_);
     log.printf("  Updating with a time scale of %i steps\n",period_);
 

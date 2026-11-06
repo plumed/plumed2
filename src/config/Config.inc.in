@@ -24,6 +24,7 @@
 #include "version.h"
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #if defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
 #include <dlfcn.h>
 #endif
@@ -78,6 +79,15 @@ std::string getPlumedRoot() {
   char *env = std::getenv("PLUMED_ROOT");
   std::string ss;
   if( env == NULL) {
+#ifdef __PLUMED_PIP_BUNDLE
+    const std::string library=getLibraryPath();
+    if(!library.empty()) {
+      const std::filesystem::path candidate=std::filesystem::path(library).parent_path().parent_path()/"share"/"plumed";
+      if(std::filesystem::exists(candidate/"scripts")) {
+        return candidate.string();
+      }
+    }
+#endif
     ss=plumed_root();
   } else {
     ss=std::string( env );

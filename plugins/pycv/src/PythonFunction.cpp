@@ -214,7 +214,8 @@ void PythonFunction::calculate() {
       readReturn(r, getPntrToValue());
     }
   } catch (const py::error_already_set &e) {
-    plumed_error_nested()<<"("<<getLabel()<<") caught a python exception:\n"<<e.what();
+    // not plumed_error_nested(): the nested py::error_already_set would be destroyed after the interpreter is finalized
+    plumed_error()<<"("<<getLabel()<<") caught a python exception:\n"<<e.what();
   }
 }
 

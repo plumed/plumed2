@@ -233,6 +233,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
   std::string deltaFsFileName;
   parse("FILE",deltaFsFileName);
   parse("PRINT_STRIDE",print_stride_);
+  plumed_massert(print_stride_>0,"PRINT_STRIDE must be greater than zero");
   std::string fmt;
   parse("FMT",fmt);
 //output checkpoint of current state
@@ -328,6 +329,7 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
           ifile.scanField();
           tmp_lambda.clear();
         }
+        plumed_massert(deltaF_name_.size()>0,"RESTART - no DeltaF values found in '"+restartFileName+"'");
         log.printf("  successfully read %lu DeltaF values\n",deltaF_name_.size());
         if(NumParallel_>1) {
           all_deltaF_=deltaF_;

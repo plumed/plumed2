@@ -81,6 +81,12 @@ static int read_pdb_record(FILE *f, char *retStr) {
   int ch;
   char inbuf[PDB_BUFFER_LENGTH]; /* space for line + cr + lf + NUL */
   int recType = PDB_UNKNOWN;
+
+  /* Records shorter than 80 characters are read at fixed offsets by the */
+  /* get_pdb_* functions: pad the buffer so that they do not read        */
+  /* uninitialized bytes after the end of the line.                      */
+  memset(inbuf, ' ', sizeof(inbuf));
+  inbuf[sizeof(inbuf)-1] = '\0';
  
   /* XXX This PDB record reading code breaks with files that use
    * Mac or DOS style line breaks with ctrl-M characters.  We need
@@ -137,7 +143,8 @@ static int read_pdb_record(FILE *f, char *retStr) {
       retStr[0] = '\0';
     }
 #else
-    strcpy(retStr, inbuf);
+    /* copy the whole buffer: the padding follows the terminating NUL */
+    memcpy(retStr, inbuf, sizeof(inbuf));
 #endif
   }
 
@@ -261,7 +268,10 @@ static void get_pdb_conect(const char *record, int natoms, int *idxmap,
 
     memcpy(bondstr, record + start, fieldwidth);
     bondstr[5] = '\0';
-    if (sscanf(bondstr, "%d", &bondto[numbonds]) < 0)
+    if (sscanf(bondstr, "%d", &bondto[numbonds]) != 1)
+      break;
+    /* idxmap has 100000 entries */
+    if (bondto[numbonds] < 0 || bondto[numbonds] >= 100000)
       break;
     numbonds++; 
   }

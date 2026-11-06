@@ -534,6 +534,11 @@ bool Keywords::numbered( const std::string & k ) const {
   return keywords.at(k).allowmultiple;
 }
 
+bool Keywords::explicitlyNumbered( const std::string & k ) const {
+  plumed_massert( exists(k), "Did not find keyword " + k );
+  return keywords.at(k).allowmultiple;
+}
+
 bool Keywords::style( const std::string & k, const std::string & t ) const {
   if( getStyle(k)==t ) {
     return true;

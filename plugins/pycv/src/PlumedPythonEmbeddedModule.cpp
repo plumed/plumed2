@@ -68,6 +68,9 @@ PYBIND11_MODULE(plumedCommunications, m) {
   /****************************End of Action methods***************************/
   .def("getPosition",
   [](PLMD::pycv::PythonCVInterface* self, int i) -> py::array_t<double> {
+    if(i<0 || i>=static_cast<int>(self->getPositions().size())) {
+      throw py::index_error("atom index out of range");
+    }
     py::array_t<double>::ShapeContainer shape({3});
     py::array_t<double> atom(shape,&self->getPosition(i)[0]);
     return atom;
@@ -118,11 +121,21 @@ PYBIND11_MODULE(plumedCommunications, m) {
   },
   "Get the vector of absolute indexes.")
 
-  .def("charge", &PLMD::pycv::PythonCVInterface::getCharge,
-       "Get charge of i-th atom", py::arg("i"))
+  .def("charge", [](PLMD::pycv::PythonCVInterface* self, int i) -> double {
+    if(i<0 || i>=static_cast<int>(self->getPositions().size())) {
+      throw py::index_error("atom index out of range");
+    }
+    return self->getCharge(i);
+  },
+  "Get charge of i-th atom", py::arg("i"))
 
-  .def("mass", &PLMD::pycv::PythonCVInterface::getMass,
-       "Get mass of i-th atom", py::arg("i"))
+  .def("mass", [](PLMD::pycv::PythonCVInterface* self, int i) -> double {
+    if(i<0 || i>=static_cast<int>(self->getPositions().size())) {
+      throw py::index_error("atom index out of range");
+    }
+    return self->getMass(i);
+  },
+  "Get mass of i-th atom", py::arg("i"))
 
   .def("masses",
   [](PLMD::pycv::PythonCVInterface* self) -> py::array_t<double> {
@@ -156,7 +169,9 @@ PYBIND11_MODULE(plumedCommunications, m) {
   py::class_<PLMD::Pbc>(m, "Pbc")
   //.def(py::init<>())
   .def("apply",[](const PLMD::Pbc* self, py::array_t<double, py::array::c_style | py::array::forcecast>& deltas) -> py::array_t<double> {
-    //TODO:shape check
+    if(deltas.ndim()!=2 || deltas.shape(1)!=3) {
+      throw py::value_error("apply needs an array of shape (n,3)");
+    }
     //TODO: this modifies the passed deltas, so no new intialization
     //      ^this needs to be VERY clear to te user
     self->apply(PLMD::VectorView(deltas.mutable_unchecked<2>().mutable_data(0,0),deltas.shape(0)));
@@ -233,8 +248,13 @@ return toRet;
   "puts a string in the PLUMED output (and appends a newline)",py::arg("s"))
 
   /****************************End of Action methods***************************/
-  .def("argument", &PLMD::pycv::PythonFunction::
-       getArgument,"Get value of the of i-th argument", py::arg("i"))
+  .def("argument", [](PLMD::pycv::PythonFunction* self, int i) -> double {
+    if(i<0 || i>=static_cast<int>(self->getNumberOfArguments())) {
+      throw py::index_error("argument index out of range");
+    }
+    return self->getArgument(i);
+  },
+  "Get value of the of i-th argument", py::arg("i"))
 
   .def("arguments", [](PLMD::pycv::PythonFunction* self) -> py::array_t<double> {
     auto nargs=self->getNumberOfArguments();

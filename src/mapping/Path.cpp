@@ -417,6 +417,9 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
       argnames[i] = pdb.getArgumentNames()[i];
     }
   }
+  if( pdb.getPositions().size()==0 && argnames.size()==0 ) {
+    action->error("reference file " + reference + " contains neither atoms nor arguments: use the ARG keyword or a REMARK ARG= line in the pdb file");
+  }
   std::vector<Value*> theargs;
   if( argnames.size()>0 ) {
     ActionWithArguments::interpretArgumentList( argnames, action->plumed.getActionSet(), action, theargs );

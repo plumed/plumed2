@@ -13,22 +13,32 @@ on:
         type: boolean
         default: false
 
+# Match the main CI policy: cancel superseded pull request runs, and keep branch
+# runs grouped so only the newest queued run is retained.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build and validate source distribution
-    runs-on: ubuntu-22.04
+  sdist:
+    name: Build source distribution
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
-      - name: Install build tools
-        run: python -m pip install --upgrade pip -r python/requirements_build.txt
+      - name: Install build and validation tools
+        run: python -m pip install --upgrade pip build twine
+
+      - name: Prepare package version
+        working-directory: python
+        run: cp ../VERSION.txt PLUMED_VERSION
 
       - name: Check release tag version
         if: startsWith(github.ref, 'refs/tags/v')
@@ -41,49 +51,74 @@ jobs:
           }
 
       - name: Build source distribution
-        run: make -C python pypi
-
-      - name: Build a wheel from the source distribution
-        run: python -m build --wheel python/pypi/dist/*.tar.gz --outdir python/pypi/wheel-check
-
-      - name: Validate distributions
-        run: python -m twine check python/pypi/dist/*.tar.gz python/pypi/wheel-check/*.whl
-
-      - name: Install and import the interface
-        run: |
-          python -m pip install --no-deps python/pypi/wheel-check/*.whl
-          python -c "import plumed; print(plumed.__file__)"
+        working-directory: python
+        run: python -m build --sdist
 
       - uses: actions/upload-artifact@v6
         with:
           name: python-package-sdist
-          path: python/pypi/dist/*.tar.gz
+          path: python/dist/*.tar.gz
 
-  publish-testpypi:
-    name: Publish to TestPyPI
-    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
-    needs: build
-    runs-on: ubuntu-22.04
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/plumed
-    permissions:
-      id-token: write
+  wheels:
+    name: Wheels (${{ matrix.os }}, ${{ matrix.arch }})
+    needs: sdist
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-15
+            arch: arm64
+    runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
       - uses: actions/download-artifact@v7
         with:
           name: python-package-sdist
           path: dist
-      - name: Publish distributions
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
 
-  publish-pypi:
+      - name: Extract source distribution
+        run: |
+          mkdir source
+          tar -xzf dist/*.tar.gz -C source
+          archive_root="$(tar -tzf dist/*.tar.gz | sed -n '1s,/.*,,p')"
+          echo "PROJECT_DIR=$PWD/source/$archive_root" >> "$GITHUB_ENV"
+
+      - name: Build and test wheels
+        env:
+          CIBW_ARCHS: ${{ matrix.arch }}
+        run: |
+          python -m pip install --upgrade cibuildwheel twine
+          python -m cibuildwheel "$PROJECT_DIR" --output-dir wheelhouse
+          python -m twine check wheelhouse/*.whl
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            python -m pip install auditwheel
+            for wheel in wheelhouse/*.whl; do auditwheel show "$wheel"; done
+          fi
+
+      # also when a later wheel fails, so that the ones already built can be inspected
+      - uses: actions/upload-artifact@v6
+        if: success() || failure()
+        with:
+          name: python-package-wheels-${{ matrix.os }}-${{ matrix.arch }}
+          path: wheelhouse/*.whl
+          if-no-files-found: ignore
+
+  publish:
     name: Publish to PyPI
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-22.04
+    needs: [sdist, wheels]
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/p/plumed
@@ -92,7 +127,56 @@ jobs:
     steps:
       - uses: actions/download-artifact@v7
         with:
-          name: python-package-sdist
+          pattern: python-package-sdist
           path: dist
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: python-package-wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate release artifacts
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_to_testpypi
+    needs: [sdist, wheels]
+    runs-on: ubuntu-24.04
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/plumed
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: python-package-sdist
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: python-package-wheels-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Publish distributions
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

@@ -12,5 +12,9 @@ restart-stride/emvbstatus IDENTICAL
 restart-stride/model.dat-0 IDENTICAL
 restart-stride/model.dat-4 IDENTICAL
 Restarting from checkpoint plumed.cpt written at step 4
+<<<<<<< HEAD
 PLUMED: Restarting from checkpoint plumed.cpt written at step 4
+=======
+PLUMED: Restarting from checkpoint plumed.cpt written at step 4 
+>>>>>>> 24047cb6d910be96f9a131152d7c57535ea7139b
 PLUMED: Checkpoint state restored at step 4

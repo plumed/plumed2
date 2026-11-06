@@ -220,6 +220,9 @@ Collect::Collect( const ActionOptions& ao ):
     nvals=1;
     usefirstconf=(getStride()==0);
   } else if( clearstride>0 ) {
+    if( getStride()==0 ) {
+      error("CLEAR cannot be used with STRIDE=0");
+    }
     if( clearstride%getStride()!=0 ) {
       error("CLEAR parameter must be a multiple of STRIDE");
     }

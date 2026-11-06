@@ -1,0 +1,27 @@
+plumed_modules=maze
+type=driver
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --timestep 1 --igro trajectory.gro"
+extra_files="../traj/trajectory.gro"
+driver_args="--timestep 1 --igro trajectory.gro"
+
+# inputs found by .ci/audit-inputs.py: they crashed (segmentation fault or floating point exception)
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail; the message is recorded
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver $driver_args --plumed bad.dat > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -e "^PLUMED: ERROR in input" -e "^PLUMED: maze> .* should" bad.out | sed -e "s/^PLUMED: //" -e "s/with label [^ ]* //" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "MAZE_RANDOM_WALK without LIGAND" "l: MAZE_LOSS PARAMS=1,1,1
+opt: MAZE_RANDOM_WALK LOSS=l OPTIMIZER_STRIDE=200 PROTEIN=1-2634"
+  expect_error "MAZE_OPTIMIZER_BIAS with one argument" "p: POSITION ATOM=2635 NOPBC
+l: MAZE_LOSS PARAMS=1,1,1
+opt: MAZE_RANDOM_WALK LOSS=l OPTIMIZER_STRIDE=200 LIGAND=2635-2646 PROTEIN=1-2634
+MAZE_OPTIMIZER_BIAS ARG=p.x BIASING_RATE=0.02 ALPHA=3.6 OPTIMIZER=opt"
+}

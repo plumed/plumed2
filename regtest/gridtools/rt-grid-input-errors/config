@@ -1,0 +1,50 @@
+type=driver
+plumed_modules="gridtools contour"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# inputs found by .ci/audit-inputs.py: each bad_NAME.dat crashed, read out of bounds, ran out of memory,
+# hung, read outside the grid or silently gave a nan grid on master, and must now be rejected with an error message containing the text below
+function plumed_regtest_before(){
+  {
+    echo 5 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 0 ; echo X 0 1 0 ; echo X 0 0 1 ; echo X 1 1 1
+  } > traj.xyz
+  echo "d: DISTANCE ATOMS=1,2" > plumed.dat
+  echo "PRINT ARG=d FILE=colvar" >> plumed.dat
+  d="d: DISTANCE ATOMS=1,2"
+  dc="dc: DISTANCES ATOMS1=2,1 ATOMS2=3,1 ATOMS3=4,1 COMPONENTS"
+  printf "$dc\nhu: SPHERICAL_KDE ARG=dc.x,dc.y,dc.z CONCENTRATION=100 GRID_BIN=0\n" > bad_spherical_kde_bins.dat
+  printf "$dc\nhu: SPHERICAL_KDE ARG=dc.x,dc.y,dc.z CONCENTRATION=100 GRID_BIN=10\nsc: FIND_SPHERICAL_CONTOUR ARG=hu CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 NPOINTS=0\n" > bad_spherical_contour_npoints.dat
+  printf "g: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 GRID_SPACING=-1 FUNC=x*x VAR=x PERIODIC=NO\n" > bad_reference_grid_spacing.dat
+  printf "g: REFERENCE_GRID GRID_MIN=0 GRID_MAX=10 FUNC=x*x VAR=x PERIODIC=NO\n" > bad_reference_grid_nobins.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=1 GRID_SPACING=-0.5 BANDWIDTH=0.1\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_kde_spacing.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=1 GRID_BIN=0 BANDWIDTH=0.1\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_kde_bins.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=-1 GRID_BIN=10 BANDWIDTH=0.1\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_kde_max.dat
+  printf "$d\nh: HISTOGRAM ARG=d GRID_MIN=0 GRID_MAX=1 GRID_BIN=10 BANDWIDTH=-1\n" > bad_histogram_bandwidth.dat
+  printf "dc: DISTANCE_FROM_CONTOUR ATOM=1 BANDWIDTH=0.5,0.5,0.5 DIR=z CONTOUR=0.2\n" > bad_contour_positions.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=0.9 GRID_BIN=10 KERNEL=DISCRETE\nDUMPGRID ARG=k FILE=grid STRIDE=1\n" > bad_discrete_outside.dat
+  printf "pp: PAIRENTROPY GROUP=1-5 MAXR=2.0 GRID_BIN=20 BANDWIDTH=0.13 DENSITY=0\n" > bad_pairentropy_density.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+spherical_kde_bins the number of points on the sphere should be at least 1
+spherical_contour_npoints the number of points on the sphere should be at least 1
+reference_grid_spacing GRID_SPACING should be positive
+reference_grid_nobins GRID_BIN or GRID_SPACING must be set
+kde_spacing GRID_SPACING should be positive
+kde_bins GRID_BIN should be at least 1
+pairentropy_density DENSITY should be positive
+kde_max GRID_MAX should be larger than GRID_MIN
+histogram_bandwidth BANDWIDTH should not be negative
+contour_positions no atoms were specified with POSITIONS
+discrete_outside point is outside grid range
+EOT
+}

@@ -1355,10 +1355,12 @@ void CudaCoordination<calculateFloat>::calculate() {
 
   Tensor virial;
   double coordination=0.0;
+  // on all the processes, so that the error for a box that is too small
+  // is raised everywhere and not only on the process that owns the GPU
+  if (pbc) {
+    setupPBC();
+  }
   if(mpiActive) {
-    if (pbc) {
-      setupPBC();
-    }
     /***************************copying data on the GPU**************************/
     // only the active atoms (the ones in the cell lists) are needed on the GPU
     const auto & positions = getPositions();
@@ -1633,6 +1635,13 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     if (mm_ == 0) {
       mm_ = 2 * nn_;
     }
+    // sf.set below does not check them
+    if (nn_ <= 0 || mm_ <= 0) {
+      error ("NN and MM should be positive");
+    }
+    if (nn_ == mm_) {
+      error ("NN and MM should be different");
+    }
     parse ("D_0", d0);
     sf.set(nn_,mm_,r0_,d0);
   } else {
@@ -1660,6 +1669,16 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     std::tie (nn_,mm_) = getNNandMM(sf,NNs,MMs);
   }
   dmax = sf.get_dmax();
+
+  if (r0_ <= 0.0) {
+    error ("R_0 should be explicitly specified and positive");
+  }
+  if (nn_ <= 0 || mm_ <= 0) {
+    error ("NN and MM should be positive");
+  }
+  if (nn_ == mm_) {
+    error ("NN and MM should be different");
+  }
 
   plumed_assert (!(d0<0.0)) << "d0 should be >=0, d0="<<d0;
   switchingParameters.nn = nn_;

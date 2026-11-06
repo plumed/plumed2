@@ -47,6 +47,7 @@
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
+#include "InputBuilderMetadata.h"
 #include "small_vector/small_vector.h"
 #include <cmath>
 #include <cstdlib>
@@ -71,6 +72,7 @@
 #include <optional>
 #include <variant>
 #include <filesystem>
+#include <limits>
 
 namespace PLMD {
 
@@ -778,8 +780,35 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(10));
+        val.set(int(11));
         break;
+      case cmd_getInputBuilderJSONLength: {
+        CHECK_NOTNULL(val,word);
+        std::ostringstream output;
+        writeInputBuilderJSON(output,nullptr,dlloader.getHandles());
+        std::string metadata=output.str();
+        if(metadata.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+          plumed_merror("InputBuilder metadata exceeds the supported transfer size");
+        }
+        inputBuilderMetadataJSON=std::move(metadata);
+        val.set(static_cast<int>(inputBuilderMetadataJSON.size()));
+      }
+      break;
+      case cmd_getInputBuilderJSON: {
+        CHECK_NOTNULL(val,word);
+        const std::size_t size=inputBuilderMetadataJSON.size();
+        if(size==0) {
+          plumed_merror("call getInputBuilderJSONLength before getInputBuilderJSON");
+        }
+        if(val.getNelem()<size) {
+          plumed_merror("buffer passed to getInputBuilderJSON is too small");
+        }
+        int* buffer=val.get<int*>(static_cast<int>(size));
+        for(std::size_t i=0; i<size; ++i) {
+          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSON[i]);
+        }
+      }
+      break;
       // commands which can be used only before initialization:
       case cmd_init:
         CHECK_NOTINIT(initialized,word);
@@ -1778,6 +1807,7 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
     if( av && av->calculateOnUpdate() ) {
+      p->prepare();
       p->calculate();
     } else if( ap && !av && ap->getStride()==0 ) {
       p->update();

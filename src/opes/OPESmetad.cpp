@@ -25,6 +25,8 @@
 #include "tools/OpenMP.h"
 #include "tools/Checkpoint.h"
 
+#include <algorithm>
+
 namespace PLMD {
 namespace opes {
 
@@ -89,6 +91,7 @@ Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not pu
 
 Through the EXCLUDED_REGION keywork, it is possible to specify a region of CV space where no kernels will be deposited.
 This can be useful for example for making sure the bias does not modify the transition region, thus allowing for rate calculation.
+With WALKERS_MPI, a walker that is in the excluded region does not deposit, while the other walkers do.
 See below for an example of how to use this keyword.
 
 Restart can be done from a KERNELS file, but it might be not perfect (due to limited precision when printing kernels to file, or if adaptive SIGMA is used).
@@ -1185,8 +1188,18 @@ void OPESmetad<mode>::update() {
     }
   }
 
-//do update
-  if(getStep()%stride_==0 && (excluded_region_==NULL || excluded_region_->get()==0)) {
+//do update. A walker in the EXCLUDED_REGION does not deposit, but it still takes part in the
+//communication with the other walkers, which might deposit
+  const bool deposit=(excluded_region_==NULL || excluded_region_->get()==0);
+  std::vector<int> all_deposit(NumWalkers_,deposit?1:0);
+  if(NumWalkers_>1 && getStep()%stride_==0) {
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Allgather(deposit?1:0,all_deposit);
+    }
+    comm.Bcast(all_deposit,0);
+  }
+  const unsigned num_deposit=std::count(all_deposit.begin(),all_deposit.end(),1);
+  if(getStep()%stride_==0 && num_deposit>0) {
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
@@ -1203,7 +1216,7 @@ void OPESmetad<mode>::update() {
       }
       comm.Bcast(log_weight,0);
     }
-    double height=std::exp(log_weight);
+    double height=deposit?std::exp(log_weight):0;
 
     //update sum_weights_ and neff
     double sum_heights=height;
@@ -1216,7 +1229,8 @@ void OPESmetad<mode>::update() {
       comm.Bcast(sum_heights,0);
       comm.Bcast(sum_heights2,0);
     }
-    counter_+=NumWalkers_;
+    const bool first_deposition=(counter_==1);
+    counter_+=num_deposit;
     sum_weights_+=sum_heights;
     sum_weights2_+=sum_heights2;
     const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
@@ -1233,7 +1247,7 @@ void OPESmetad<mode>::update() {
     std::vector<double> sigma=sigma0_;
     if(adaptive_sigma_) {
       const double factor=mode::explore?1:biasfactor_;
-      if(counter_==1+NumWalkers_) { //first time only
+      if(first_deposition) {
         for(unsigned i=0; i<ncv_; i++) {
           av_M2_[i]*=biasfactor_;  //from unbiased, thus must be adjusted
         }
@@ -1340,7 +1354,9 @@ void OPESmetad<mode>::update() {
       for(unsigned w=0; w<NumWalkers_; w++) {
         std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
         std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
-        addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
+        if(all_deposit[w]) {
+          addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
+        }
       }
     }
     getPntrToComponent("nker")->set(kernels_.size());

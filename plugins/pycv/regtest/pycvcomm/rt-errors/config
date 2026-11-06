@@ -1,0 +1,64 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# each bad_NAME.dat crashed (segmentation fault, or a crash at exit after the error message)
+# and must now stop with exit status 1 and an error message containing the text below
+
+plumed_regtest_before() {
+    if [[ -z $PLUMED_PYTHON_BIN ]]; then
+        PLUMED_PYTHON_BIN=python
+    fi
+    pycvpath=$($PLUMED_PYTHON_BIN -m pycv)
+    sed -i.bak "s%@pycvpath@%${pycvpath}%g" plumed.dat
+    load="LOAD FILE=${pycvpath}"
+    cv="c: PYCVINTERFACE ATOMS=1,2 IMPORT=pyerrors CALCULATE"
+    pr="PRINT ARG=c FILE=colvar.bad"
+    for name in raises position mass charge pbc neighbourlist; do
+        printf "$load\n$cv=$name\n$pr\n" >bad_$name.dat
+    done
+    printf "$load\nc: PYCVINTERFACE ATOMS=1,2 IMPORT=doesnotexist\n$pr\n" >bad_import.dat
+    printf "$load\nd: DISTANCE ATOMS=1,2\nc: PYFUNCTION ARG=d IMPORT=pyerrors CALCULATE=raises\n$pr\n" >bad_function_raises.dat
+    printf "$load\nd: DISTANCE ATOMS=1,2\nc: PYFUNCTION ARG=d IMPORT=pyerrors CALCULATE=argument\n$pr\n" >bad_function_argument.dat
+}
+
+plumed_regtest_after() {
+    rm -f errors
+    while read -r name text; do
+        $plumed driver --plumed bad_$name.dat --ixyz traj.xyz >bad_$name.out 2>bad_$name.err
+        if test $? -eq 1 && grep -q -F "$text" bad_$name.out bad_$name.err; then
+            echo "$name: rejected" >>errors
+        else
+            echo "$name: NOT REJECTED PROPERLY" >>errors
+        fi
+    done <<'EOT'
+import ModuleNotFoundError: No module named 'doesnotexist'
+raises ValueError: raised in python
+position IndexError: atom index out of range
+mass IndexError: atom index out of range
+charge IndexError: atom index out of range
+pbc ValueError: apply needs an array of shape (n,3)
+neighbourlist there is no neighbour list
+function_raises ValueError: raised in python
+function_argument IndexError: argument index out of range
+EOT
+}
+
+plumed_custom_skip() {
+    if test -n "$PLUMED_PYTHON_SELECT"; then
+        export PLUMED_PYTHON_BIN="$PLUMED_PYTHON_SELECT"
+        if $PLUMED_PYTHON_BIN -c "import pycv"; then
+            return 1
+        fi
+
+        return 0
+    fi
+    for python_bin in python python3 python3.12 python3.11 python3.10 python3.9 python3.8 python3.7; do
+        if $python_bin -c "import pycv" 2>/dev/null; then
+            if [ $python_bin != python ]; then
+                export PLUMED_PYTHON_BIN=$python_bin
+            fi
+            return 1
+        fi
+    done
+    return 0
+}

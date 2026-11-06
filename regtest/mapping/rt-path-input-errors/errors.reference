@@ -1,0 +1,18 @@
+PATH with a reference pdb without atoms and arguments: exit code 1
+ERROR in input to action PATH : reference file mypath.pdb contains neither atoms nor arguments: use the ARG keyword or a REMARK ARG= line in the pdb file 
+GPATH with a reference pdb without atoms and arguments: exit code 1
+ERROR in input to action GPATH : reference file mypath.pdb contains neither atoms nor arguments: use the ARG keyword or a REMARK ARG= line in the pdb file 
+ADAPTIVE_PATH with a reference pdb without atoms and arguments: exit code 1
+ERROR in input to action ADAPTIVE_PATH : reference file mypath.pdb contains neither atoms nor arguments: use the ARG keyword or a REMARK ARG= line in the pdb file 
+RMSD with only one argument: exit code 1
+ERROR in input to action RMSD_VECTOR : there should be two arguments: a vector of positions and a vector or matrix of reference positions 
+COLLECT with STRIDE=0 and CLEAR: exit code 1
+ERROR in input to action COLLECT : CLEAR cannot be used with STRIDE=0 
+FARTHEST_POINT_SAMPLING with more landmarks than frames: exit code 1
+ERROR in input to action FARTHEST_POINT_SAMPLING : NZEROS is larger than the number of rows of the input matrix 
+FARTHEST_POINT_SAMPLING without landmarks: exit code 1
+ERROR in input to action FARTHEST_POINT_SAMPLING : NZEROS should be greater than zero 
+CLASSICAL_MDS with more dimensions than frames: exit code 1
+ERROR in input to action CLASSICAL_MDS : NLOW_DIM is larger than the number of stored frames 
+CLASSICAL_MDS without dimensions: exit code 1
+ERROR in input to action CLASSICAL_MDS : NLOW_DIM should be greater than zero 
