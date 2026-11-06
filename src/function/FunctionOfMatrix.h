@@ -244,6 +244,47 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
     }
     base += myarg->getNumberOfColumns();
   }
+  // The elements of a sparse matrix that are not stored are zero, and the function is not
+  // evaluated for them: this is only right if the function is zero when the matrices are zero.
+  // The diagonal of a square matrix is not counted: a matrix built from one GROUP never
+  // stores the pairs of an atom with itself.
+  bool hasMissingElements=false;
+  if( getNumberOfMasks()<=0 && argstart==0 ) {
+    const std::size_t ncolsfull=myarg->getShape()[1];
+    const bool square=(ncolsfull==nrows);
+    for(unsigned i=0; i<nrows && !hasMissingElements; ++i) {
+      const std::size_t rowlen=myarg->getRowLength(i);
+      if( rowlen+1<ncolsfull || (rowlen+1==ncolsfull && !square) ) {
+        hasMissingElements=true;
+      } else if( rowlen+1==ncolsfull ) {
+        // the only element that may be missing is the diagonal one
+        for(unsigned j=0; j<rowlen; ++j) {
+          if( myarg->getRowIndex(i,j)==i ) {
+            hasMissingElements=true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if( hasMissingElements ) {
+    const unsigned nargs = getNumberOfFunctionArguments();
+    std::vector<double> args( nargs, 0.0 ), vals( getNumberOfComponents(), 0.0 ), derivs( getNumberOfComponents()*nargs, 0.0 );
+    for(unsigned i=0; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) {
+        args[i] = getPntrToArgument(i)->get();
+      }
+    }
+    auto funcout = FunctionOutput::create( getNumberOfComponents(), vals.data(), nargs, derivs.data() );
+    CV::calc( taskmanager.getActionInput().f, true, View<const double>( args.data(), nargs ), funcout );
+    for(const auto & v : vals) {
+      if( std::isfinite(v) && std::fabs(v)>epsilon ) {
+        error("the input matrix " + myarg->getName() + " is sparse and this function is not zero when its matrix arguments are zero, "
+              "so the elements that are not stored in " + myarg->getName() + " would be wrong. Calculate " + myarg->getName() + " without a cutoff, "
+              "or use the MASK keyword to say which elements should be computed");
+      }
+    }
+  }
   if( getNumberOfMasks()>0 && doNotCalculateDerivatives() ) {
     return active_tasks;
   }

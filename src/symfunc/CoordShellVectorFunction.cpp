@@ -581,7 +581,7 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
     std::string alpha;
     parse("ALPHA",alpha);
     readInputLine( vfuncLab + ": FCCUBIC_FUNC "
-                   "ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha);
+                   "ARG=" + xvec + "," + yvec + "," + zvec+ " ALPHA=" + alpha + " MASK=" + xvec);
   } else if( getName()=="TETRAHEDRAL" ) {
     readInputLine( rLab + ": CUSTOM ARG=" + xvec + "," + yvec + "," + zvec + " "
                    "PERIODIC=NO FUNC=sqrt(x*x+y*y+z*z)");
