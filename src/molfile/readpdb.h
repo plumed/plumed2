@@ -290,10 +290,12 @@ static void get_pdb_conect(const char *record, int natoms, int *idxmap,
         newfromlist = (int *) realloc(*from, newmax * sizeof(int));
         newtolist = (int *) realloc(*to, newmax * sizeof(int));
 
-        if (newfromlist != NULL || newtolist != NULL) {
+        /* PLUMED: keep each list that was reallocated, and fail if either was not
+           (with || a failed realloc replaced a valid list with NULL) */
+        if (newfromlist != NULL) *from = newfromlist;
+        if (newtolist != NULL) *to = newtolist;
+        if (newfromlist != NULL && newtolist != NULL) {
           *maxbnum = newmax;
-          *from = newfromlist;
-          *to = newtolist;
         } else {
           printf("readpdb) failed to allocate memory for bondlists\n");
           return; /* abort */
