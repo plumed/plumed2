@@ -411,6 +411,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
   parse("FULLSAMPLES", fullsamples);
   parseVector("MAXFACTOR", maxFactors);
   parse("OUTPUTFREQ", outputfreq);
+  if (int(outputfreq) < 1) {
+    error("eABF/DRR: OUTPUTFREQ must be at least 1");
+  }
   parse("HISTORYFREQ", historyfreq);
   parse("OUTPUTPREFIX", outputprefix);
   string restart_prefix;
@@ -526,6 +529,11 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
         zgspacing[i] = (h - l) / zgbin[i];
         log << "ZGRID_BIN[" << i << "] is " << zgbin[i] << '\n';
       }
+    }
+  }
+  for (size_t i = 0; i < ndims; ++i) {
+    if (gbin[i] == 0 || zgbin[i] == 0) {
+      error("eABF/DRR: the number of bins of the grid must be positive");
     }
   }
   checkRead();

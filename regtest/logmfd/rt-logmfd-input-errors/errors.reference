@@ -1,0 +1,2 @@
+LOGMFD with INTERVAL=0: exit code 1
+ERROR in input to action LOGMFD : INTERVAL must be positive 

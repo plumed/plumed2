@@ -591,6 +591,9 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   backup.weight = 0.0;
 
   parse("INTERVAL",interval);
+  if( interval<=0 ) {
+    error("INTERVAL must be positive");
+  }
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
   kbt = getkBT(); // read as temperature

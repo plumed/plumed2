@@ -195,6 +195,11 @@ Optimizer::Optimizer(const ActionOptions& ao)
   parseAtomList("LIGAND", ga_list);
   parseAtomList("PROTEIN", gb_list);
 
+  plumed_massert(
+    ga_list.size() > 0,
+    "maze> LIGAND should be specified and contain at least one atom.\n"
+  );
+
   bool nopbc = !pbc_;
   parseFlag("NOPBC", nopbc);
 

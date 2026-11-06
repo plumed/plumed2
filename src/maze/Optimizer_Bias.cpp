@@ -281,6 +281,11 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
   log.printf("\n");
 
   args_ = getArguments();
+
+  plumed_massert(
+    args_.size() >= 3,
+    "maze> ARG should be the three components of a position (e.g. p.x,p.y,p.z).\n"
+  );
   log.printf(
     "maze> Number of args %zu\n",
     args_.size()
