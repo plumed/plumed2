@@ -72,8 +72,9 @@ between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this w
 ```plumed
 d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 LINKCELL_CUTOFF=1.0
 # Apply a switching function to determine the elements in the matrix d5
-# where the distance is less than the cutoff
-cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO
+# where the distance is less than the cutoff. MASK=d5 computes it only for the
+# elements that d5 stores: the others are not zero distances, they are beyond the cutoff
+cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO MASK=d5
 # Taking the element-wise product in the next command gives us a matrix
 # where every element that is greater than the cutoff is zero.
 d5cut: CUSTOM ARG=d5,cut FUNC=x*y PERIODIC=NO
