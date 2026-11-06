@@ -95,6 +95,8 @@ class IFile;
 class OFile;
 class KernelFunctions;
 class Communicator;
+class CheckpointWriter;
+class CheckpointReader;
 
 /// \ingroup TOOLBOX
 class GridBase {
@@ -229,6 +231,9 @@ protected:
 /// move the values after resize(): oldnbin are the numbers of points before resizing; the point with index k
 /// along direction i before resizing has index k+shift[i] after (it was removed if this is out of range)
   virtual void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift);
+/// the values (and derivatives) for writeCheckpoint/readCheckpoint
+  virtual void writeCheckpointData(CheckpointWriter& w) const;
+  virtual void readCheckpointData(CheckpointReader& r);
 
 
 public:
@@ -273,6 +278,11 @@ public:
 /// at the points that are kept do not change; new points are set to zero, the values at removed points are lost.
 /// The new bounds (getMin, getMax, written in the grid files) have 12 significant digits.
   void resize(const std::vector<long long> & lower, const std::vector<long long> & upper);
+/// Store the range, the spacing and the data of the grid in a checkpoint section (see CHECKPOINT)
+  void writeCheckpoint(CheckpointWriter& w) const;
+/// Restore a grid stored by writeCheckpoint: the range, spacing and data are replaced (bitwise), the dimension,
+/// periodicity and the presence of derivatives must be the same
+  void readCheckpoint(CheckpointReader& r);
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
 /// get if the grid has derivatives
@@ -379,6 +389,9 @@ class Grid : public GridBase {
   std::vector<double> grid_;
   std::vector<double> der_;
   double contour_location=0.0;
+protected:
+  void writeCheckpointData(CheckpointWriter& w) const override;
+  void readCheckpointData(CheckpointReader& r) override;
 public:
   Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
        const std::vector<std::string> & gmax,
@@ -460,6 +473,9 @@ class SparseGrid : public GridBase {
 
   std::map<index_t,double> map_;
   std::map< index_t,std::vector<double> > der_;
+protected:
+  void writeCheckpointData(CheckpointWriter& w) const override;
+  void readCheckpointData(CheckpointReader& r) override;
 
 public:
   SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,

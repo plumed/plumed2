@@ -59,6 +59,7 @@ class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
+class Checkpointing;
 class DLLoader;
 class Communicator;
 class Stopwatch;
@@ -173,6 +174,13 @@ private:
   ForwardDecl<Citations> citations_fwd;
 /// tools/Citations.holder
   Citations& citations=*citations_fwd;
+
+/// Forward declaration.
+  ForwardDecl<Checkpointing> checkpointing_fwd;
+public:
+/// Exact-restart checkpoint, see CHECKPOINT.
+  Checkpointing& checkpointing=*checkpointing_fwd;
+private:
 
 /// Present step number.
   long long int step=0;

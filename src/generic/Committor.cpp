@@ -24,6 +24,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "tools/Checkpoint.h"
 
 namespace PLMD {
 namespace generic {
@@ -50,6 +51,10 @@ COMMITTOR ...
 ... COMMITTOR
 ```
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the basin of the previous step is stored in the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -67,6 +72,11 @@ private:
   bool doNotStop;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   explicit Committor(const ActionOptions&ao);
   void calculate() override;
   void apply() override {}
@@ -152,6 +162,20 @@ Committor::Committor(const ActionOptions&ao):
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ofile.setupPrintValue( getPntrToArgument(i) );
   }
+}
+
+// the basin the system was in at the previous step (a new basin is printed only when it changes)
+void Committor::writeCheckpoint(CheckpointWriter& w) {
+  w.write("basin",(long long) basin);
+}
+
+void Committor::readCheckpoint(CheckpointReader& r) {
+  long long b;
+  r.read("basin",b);
+  if(b<0 || b>(long long) nbasins) {
+    error("the checkpoint was written with a different number of basins");
+  }
+  basin=static_cast<decltype(basin)>(b);
 }
 
 void Committor::calculate() {

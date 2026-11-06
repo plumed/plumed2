@@ -98,5 +98,27 @@ void MetainferenceBase::update() {
   core_->update();
 }
 
+void MetainferenceBase::writeCheckpoint(CheckpointWriter& w) {
+  core_->writeCheckpoint(w);
+  // the components that are not set at every step (for example at a replica exchange step) keep their old value
+  std::vector<double> v;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    v.push_back(copyOutput(i)->get());
+  }
+  w.write("components",v);
+}
+
+void MetainferenceBase::readCheckpoint(CheckpointReader& r) {
+  core_->readCheckpoint(r);
+  std::vector<double> v;
+  r.read("components",v);
+  if(v.size()!=getNumberOfComponents()) {
+    error("the checkpoint was written with a different number of components");
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    copyOutput(i)->set(v[i]);
+  }
+}
+
 }
 }

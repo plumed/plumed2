@@ -1,0 +1,40 @@
+size 385
+OK   format version
+OK   plumed version
+OK   int64 scalar
+OK   double scalar
+OK   float scalar
+OK   unsigned scalar
+OK   negative int
+OK   bool scalar
+OK   string
+OK   has
+OK   hasSection
+OK   double array
+OK   int array
+OK   array shape
+OK   2d array as float
+OK   nested hasSection
+OK   nested string
+OK   names are relative to the section
+OK   section list
+OK   entry list
+OK   entry full name
+OK   missing entry -> checkpoint: entry 'missing' not found
+OK   type mismatch -> checkpoint: entry 'time' has an unexpected type
+OK   array as scalar -> checkpoint: entry 'a1/x' is an array, not a scalar
+OK   missing section -> checkpoint: section 'nope' not found
+OK   truncated file -> checkpoint: checksum mismatch (corrupted or truncated file)
+OK   truncated file, one byte -> checkpoint: checksum mismatch (corrupted or truncated file)
+OK   corrupted byte -> checkpoint: checksum mismatch (corrupted or truncated file)
+OK   trailing garbage -> checkpoint: checksum mismatch (corrupted or truncated file)
+OK   not a checkpoint -> checkpoint: not a PLUMED checkpoint file
+OK   newer format version -> checkpoint: file format version 9 is newer than the one supported by this PLUMED version (1)
+OK   unclosed section on finalize -> checkpoint: section 'a' was not closed
+OK   invalid name -> checkpoint: invalid entry name 'a/b'
+OK   empty section count
+OK   section count
+OK   file and previous file
+OK   no temporary file left
+OK   missing file -> checkpoint: cannot open nonexistent.cpt for reading
+OK   empty arrays

@@ -179,6 +179,9 @@ class OFile:
   std::vector<Field> fields;
 /// All the defined constant fields
   std::vector<Field> const_fields;
+/// Values of the constant fields in the header of the last line written before a checkpoint
+/// (see setLastFields): they are given to the constant fields when they are added
+  std::vector<Field> restored_const_fields;
 /// Prefix for line (e.g. "PLUMED: ")
   std::string linePrefix;
 /// Temporary ostringstream for << output
@@ -270,6 +273,12 @@ public:
   this method can be used to clean the field list.
   */
   OFile& clearFields();
+/// Header of the last line written with printField() (field names and the
+/// current values of the constant fields), as a string. Stored in the checkpoint
+/// so that a restart does not print the header again.
+  std::string getLastFields() const;
+/// Set the header of the last line written, see getLastFields().
+  void setLastFields(const std::string& str);
 /// Formatted output with explicit format - a la printf
   int printf(const char*fmt,...);
 /// Formatted output with << operator

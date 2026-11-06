@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "tools/Exception.h"
 #include "core/ExchangePatterns.h"
+#include "tools/Checkpoint.h"
 
 namespace PLMD {
 namespace generic {
@@ -86,6 +87,10 @@ METAD ARG=@replicas:t1,t2,t3 HEIGHT=0.1 PACE=100 SIGMA=0.3
     The directive should appear in the input file for every replica. If SEED is specified, it
     should be the same in all input files.
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the state of the random number generator is stored in the checkpoint, so that the sequence of exchanges continues exactly.
+
 */
 //+ENDPLUMEDOC
 
@@ -93,6 +98,11 @@ class RandomExchanges:
   public Action {
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   explicit RandomExchanges(const ActionOptions&ao);
   void calculate() override {}
   void apply() override {}
@@ -104,6 +114,18 @@ void RandomExchanges::registerKeywords( Keywords& keys ) {
   Action::registerKeywords(keys);
   keys.add("optional","SEED","seed for random exchanges");
   keys.addDOI("10.1021/jp067873l");
+}
+
+// the generator is shared by all the replicas (same seed, same sequence), so every
+// replica stores the same state: the list of exchanges continues exactly
+void RandomExchanges::writeCheckpoint(CheckpointWriter& w) {
+  w.write("random",plumed.getExchangePatterns().getRandomState());
+}
+
+void RandomExchanges::readCheckpoint(CheckpointReader& r) {
+  std::string state;
+  r.read("random",state);
+  plumed.getExchangePatterns().setRandomState(state);
 }
 
 RandomExchanges::RandomExchanges(const ActionOptions&ao):

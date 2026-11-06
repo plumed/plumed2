@@ -25,6 +25,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "tools/IFile.h"
+#include "tools/Checkpoint.h"
 #include <memory>
 
 namespace PLMD {
@@ -106,6 +107,10 @@ mixing variables that have been calculated from a trajectory with variables that
 `IGNORE_TIME` flag.  Notice also that you can use the `EVERY` flag to tell PLUMED to ignore parts of the COLVAR file if data
 has been output to that file more frequently that data has been output to the trajectory.
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the position in the file is stored in the checkpoint, so that the file is read again up to the step of the checkpoint.
+
 */
 //+ENDPLUMEDOC
 
@@ -117,6 +122,8 @@ private:
   bool ignore_forces;
   bool cloned_file;
   unsigned nlinesPerStep;
+/// number of times the file has been advanced to the next line by this action (state of the checkpoint)
+  long long nadvanced=0;
   std::string filename;
 /// Unique pointer with the same scope as ifile.
   std::unique_ptr<IFile> ifile_ptr;
@@ -127,6 +134,11 @@ private:
   std::vector<std::unique_ptr<Value>> readvals;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   explicit Read(const ActionOptions&);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void prepare() override;
@@ -292,6 +304,32 @@ void Read::turnOnDerivatives() {
           "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
+// The file is read sequentially: the state is the number of lines consumed. At
+// restart the file is read again from the beginning, with the same sequence of
+// calls, up to the line of the checkpointing step (that is then read again by
+// the replayed step). A file shared with another READ is advanced only by the
+// action that opened it.
+void Read::writeCheckpoint(CheckpointWriter& w) {
+  w.write("nadvanced",nadvanced);
+}
+
+void Read::readCheckpoint(CheckpointReader& r) {
+  long long n;
+  r.read("nadvanced",n);
+  if( cloned_file ) {
+    return;
+  }
+  double du_time;
+  if( n>0 && !ifile->scanField("time",du_time) ) {
+    error("Reached end of file " + filename + " before the line of the checkpoint");
+  }
+  for(long long i=0; i<n; ++i) {
+    ifile->scanField();
+    ifile->scanField("time",du_time);
+  }
+  nadvanced=n;
+}
+
 void Read::prepare() {
   if( !cloned_file ) {
     double du_time;
@@ -323,6 +361,7 @@ void Read::calculate() {
 void Read::update() {
   if( !cloned_file ) {
     for(unsigned i=0; i<nlinesPerStep; ++i) {
+      nadvanced++;
       ifile->scanField();
       double du_time;
       if( !ifile->scanField("time",du_time) && !plumed.inputsAreActive() ) {

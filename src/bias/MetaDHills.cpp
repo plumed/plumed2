@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetaDHills.h"
+#include "tools/Checkpoint.h"
 #include "MetaDGrid.h"
 #include "core/ActionWithValue.h"
 #include "core/Value.h"
@@ -234,7 +235,7 @@ void MetaDHillsFiles::noStretchWarning() {
   noStretchWarningDone_=true;
 }
 
-unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
+unsigned MetaDHillsFiles::read(unsigned i, const Callback& f, unsigned long long maxhills) {
   IFile* ifile=ifiles_[i].get();
   const unsigned ncv=args_.size();
   std::vector<double> center(ncv);
@@ -266,7 +267,7 @@ unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
       std::exception_ptr exception;
       try {
         double time;
-        while(nread<chunksize && (more=scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time))) {
+        while(nread<chunksize && nhills+nread<maxhills && (more=scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate,time))) {
           buffer.push_back(time);
           buffer.push_back(multivariate ? 1.0 : 0.0);
           buffer.push_back(height);
@@ -274,6 +275,9 @@ unsigned MetaDHillsFiles::read(unsigned i, const Callback& f) {
           buffer.insert(buffer.end(),sigma.begin(),sigma.end());
           buffer.resize(buffer.size()+nsigmamax-sigma.size(),0.0);
           nread++;
+        }
+        if(nhills+nread>=maxhills) {
+          more=false;
         }
       } catch(const std::exception& e) {
         failed=1;
@@ -637,6 +641,53 @@ unsigned MetaDDiffusionRestart::compute(double tol, double now, unsigned blocksi
   }
   lasttime=time_[last];
   return own.size();
+}
+
+void MetaDHillsFiles::writeCheckpoint(CheckpointWriter& w) const {
+  w.write("nread",nread_);
+}
+
+void MetaDHillsFiles::readCheckpoint(CheckpointReader& r, unsigned own) {
+  Log& log=action_.log;
+  std::vector<unsigned long long> nread;
+  r.read("nread",nread);
+  if(nread.size()!=nread_.size()) {
+    action_.error("the checkpoint was written with a different number of hills files (WALKERS_N)");
+  }
+  for(unsigned i=0; i<nread.size(); i++) {
+    if(i==own || nread[i]==0) {
+      continue;
+    }
+    if(!isOpen(i) && !openIfExists(i)) {
+      log.printf("  WARNING: %s does not exist, %llu hills had been read from it when the checkpoint was written\n",
+                 ifilesnames_[i].c_str(),nread[i]);
+      continue;
+    }
+    // the hills read before the checkpoint are already in the bias: they are skipped
+    nread_[i]=0;
+    const unsigned n=read(i,[](double,bool,double,const std::vector<double>&,const std::vector<double>&) {},nread[i]);
+    reset(i);
+    if(n<nread[i]) {
+      log.printf("  WARNING: %s has %u hills, %llu had been read from it when the checkpoint was written\n",
+                 ifilesnames_[i].c_str(),n,nread[i]);
+    } else {
+      log.printf("  Skipping the %llu hills of %s that are in the checkpoint\n",nread[i],ifilesnames_[i].c_str());
+    }
+  }
+}
+
+void MetaDHillSchedule::writeCheckpoint(CheckpointWriter& w) const {
+  w.write("runStarted",runStarted_);
+  w.write("runStartStep",runStartStep_);
+  w.write("lastHillTimeKnown",lastHillTimeKnown_);
+  w.write("lastHillTime",lastHillTime_);
+}
+
+void MetaDHillSchedule::readCheckpoint(CheckpointReader& r) {
+  r.read("runStarted",runStarted_);
+  r.read("runStartStep",runStartStep_);
+  r.read("lastHillTimeKnown",lastHillTimeKnown_);
+  r.read("lastHillTime",lastHillTime_);
 }
 
 }

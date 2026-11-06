@@ -52,6 +52,10 @@ protected:
   void setOutputForce(int i,double force);
 /// set the value of the bias
   void setBias(double bias);
+/// Store the values of the components in a checkpoint (see CHECKPOINT), and restore them: the components that are
+/// set at some steps only (e.g. in update) keep at the restarted step the value they had in the original run
+  void writeComponentValues(CheckpointWriter& w) const;
+  void readComponentValues(CheckpointReader& r);
 public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);

@@ -24,6 +24,8 @@
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
+#include "tools/Checkpoint.h"
 #include "tools/Communicator.h"
 #include "tools/Matrix.h"
 #include "core/GenericMolInfo.h"
@@ -81,6 +83,10 @@ the Metainference approach that is introduced in the paper  cited below. The app
 ## Examples
 
 Complete tutorials for single-structure and ensemble refinement can be found <a href="https://github.com/COSBlab/EMMIVox">here</a>.
+
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) scale, offset, the Bfactors and their Monte Carlo state are stored in the checkpoint and the status file is trimmed and not read. The neighbor sphere and list are rebuilt at the first step. A file of the model density (`WRITE_MAP`) of a previous run is never appended to: it is renamed as a backup.
 
 */
 //+ENDPLUMEDOC
@@ -197,6 +203,12 @@ private:
   double get_median(std::vector<double> v);
 // read and write status
   void read_status();
+  // checkpoint
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   void print_status(long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
@@ -522,7 +534,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   initialize_Bfactor(reso);
 
   // read status file if restarting
-  if(getRestart() || bfactread_) {
+  // (with a checkpoint scale, offset and Bfactors are read from it and the status file is trimmed)
+  if((getRestart() && !plumed.checkpointing.isRestartingFromCheckpoint()) || bfactread_) {
     read_status();
   }
 
@@ -600,6 +613,9 @@ void EMMIVOX::write_model_density(long int step) {
   std::string num;
   Tools::convert(step,num);
   std::string name = mapfilename_+"-"+num;
+  // a file of a previous run is never appended to (it would be duplicated when a
+  // step is replayed after a checkpoint restart)
+  ovfile.enforceBackup();
   ovfile.open(name);
   ovfile.setHeavyFlush();
   ovfile.fmtField("%10.7e ");
@@ -628,6 +644,53 @@ double EMMIVOX::get_median(std::vector<double> v) {
     } else {
       return v[size/2];
     }
+  }
+}
+
+// The state is the one at the beginning of the step: scale, offset, the Bfactors
+// (in the order of the residue list), the MC counters and generator and all the
+// components. The neighbor sphere and list are rebuilt at the first step and the
+// status file is trimmed by the checkpoint.
+void EMMIVOX::writeCheckpoint(CheckpointWriter& w) {
+  w.write("scale",scale_);
+  w.write("offset",offset_);
+  std::vector<double> bf;
+  for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
+    bf.push_back(Model_b_.at(Model_rlist_[ir]));
+  }
+  w.write("bfactors",bf);
+  w.write("MCBaccept",MCBaccept_);
+  w.write("MCBtrials",MCBtrials_);
+  w.write("random",random_.stateToString());
+  std::vector<double> v;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    v.push_back(copyOutput(i)->get());
+  }
+  w.write("components",v);
+}
+
+void EMMIVOX::readCheckpoint(CheckpointReader& r) {
+  r.read("scale",scale_);
+  r.read("offset",offset_);
+  std::vector<double> v;
+  r.read("bfactors",v);
+  if(v.size()!=Model_rlist_.size()) {
+    error("the checkpoint was written with a different number of residues");
+  }
+  for(unsigned ir=0; ir<Model_rlist_.size(); ++ir) {
+    Model_b_[Model_rlist_[ir]]=v[ir];
+  }
+  r.read("MCBaccept",MCBaccept_);
+  r.read("MCBtrials",MCBtrials_);
+  std::string state;
+  r.read("random",state);
+  random_.stateFromString(state);
+  r.read("components",v);
+  if(v.size()!=getNumberOfComponents()) {
+    error("the checkpoint was written with a different number of components");
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    copyOutput(i)->set(v[i]);
   }
 }
 

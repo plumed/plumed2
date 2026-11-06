@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 #include "tools/Matrix.h"
+#include "tools/Checkpoint.h"
 
 namespace PLMD {
 
@@ -174,6 +175,18 @@ void FlexibleBin::setStatistics(const std::vector<double>& av, const std::vector
   average=av;
   variance=var;
   nsamples=ns;
+}
+
+void FlexibleBin::writeCheckpoint(CheckpointWriter& w) const {
+  w.write("average",average);
+  w.write("variance",variance);
+  w.write("nsamples",nsamples);
+}
+
+void FlexibleBin::readCheckpoint(CheckpointReader& r) {
+  r.read("average",average);
+  r.read("variance",variance);
+  r.read("nsamples",nsamples);
 }
 
 std::vector<double> FlexibleBin::getMatrix() const {

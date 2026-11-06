@@ -1,0 +1,9 @@
+# exact restart test: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+# MOVINGRESTRAINT accumulates the work from one step to the next:
+# its state must come from the checkpoint
+mr: MOVINGRESTRAINT ARG=d1,d2 STEP0=0 AT0=1.0,1.0 KAPPA0=100,100 STEP1=60 AT1=2.0,0.5 KAPPA1=200,100
+PRINT ARG=* FILE=COLVAR STRIDE=1 FMT=%8.4f
+PRINT ARG=d1 FILE=COLVAR2 STRIDE=3 FMT=%8.4f

@@ -175,6 +175,10 @@ private:
   std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> formTensorMomentVb(const MPS& coeff);
 
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   explicit TTMetaD(const ActionOptions&);
   void calculate() override;
   void update() override;

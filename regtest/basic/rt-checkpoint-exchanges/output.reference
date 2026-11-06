@@ -1,0 +1,6 @@
+step 20: 2 3 1 0
+step 25: 1 0 2 3
+step 30: 3 0 1 2
+step 35: 2 3 1 0
+restarted lists identical to the reference: YES
+a run without the checkpoint gives different lists: YES

@@ -64,6 +64,12 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
+/// The Monte Carlo state, the averages and the values of the components are stored in the checkpoint
+  bool hasCheckpointState() const override {
+    return doscore_;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   explicit MetainferenceBase(const ActionOptions&);
   ~MetainferenceBase();
   void Initialise(const unsigned input);

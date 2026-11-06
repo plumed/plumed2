@@ -114,8 +114,10 @@ struct MetaDHillsInput {
 /// walkers). Then the incomplete last line of these files (an interrupted run) is removed, and they are closed, to be
 /// written. With WALKERS_MPI and no WALKERS_DIR, the files with a relative path are in the directory of the first
 /// replica (walkers.dir is set). To be called by all the processes of all the replicas.
+/// fromCheckpoint: restart from a checkpoint (see CHECKPOINT), the files are opened but not read (the bias, the schedule
+/// and the hills read from the files of the other walkers come from the checkpoint, the own files have been trimmed)
 void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<MetaDHillsInput>& inputs, bool restartedFromGrid,
-                      MetaDHillSchedule& schedule);
+                      MetaDHillSchedule& schedule, bool fromCheckpoint=false);
 
 /// WALKERS_N: add the hills that the other walkers have written in their files since the last read
 /// (the files that did not exist yet are opened, if they exist now)
