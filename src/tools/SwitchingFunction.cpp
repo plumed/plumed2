@@ -584,7 +584,7 @@ class leptonSwitch {
       lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
       deriv=ped.createCompiledExpression();
       {
-        auto vars=expression.getVariables();
+        auto vars=deriv.getVariables();
         if (vars.size()==0) {
           varDevRef=nullptr;
         } else {
@@ -614,7 +614,7 @@ class leptonSwitch {
       }
 
       {
-        auto vars=expression.getVariables();
+        auto vars=deriv.getVariables();
         if (vars.size()==0) {
           varDevRef=nullptr;
         } else {
@@ -645,7 +645,7 @@ class leptonSwitch {
         }
 
         {
-          auto vars=expression.getVariables();
+          auto vars=deriv.getVariables();
           if (vars.size()==0) {
             varDevRef=nullptr;
           } else {
