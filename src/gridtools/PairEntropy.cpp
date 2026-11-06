@@ -137,6 +137,14 @@ void PairEntropy::registerKeywords( Keywords& keys ) {
 PairEntropy::PairEntropy(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
+  // CUTOFF was removed with the new syntax for the kernels: say what to write instead
+  double oldcut=-1;
+  parse("CUTOFF",oldcut);
+  if( oldcut>=0 ) {
+    std::string dmax;
+    Tools::convert( std::sqrt(2*oldcut), dmax );
+    error("CUTOFF was removed in PLUMED 2.11: the kernels are now truncated with KERNEL, use KERNEL={GAUSSIAN D_MAX=" + dmax + "} (D_MAX=sqrt(2*CUTOFF), in units of BANDWIDTH)");
+  }
   std::string ref_str, ref_name;
   parse("REFERENCE",ref_name);
   if( ref_name.length()>0 ) {
