@@ -128,7 +128,8 @@ void CoordAngles::createAngles( const std::string& lab, const std::string& catom
   readInputLine( lab + "_wmat: CUSTOM ARG=" + lab + "_swd FUNC=0.5*x PERIODIC=NO");
   // And the matrix of dot products and the angles
   readInputLine( lab + "_dpmat: MATRIX_PRODUCT ELEMENTS_ON_DIAGONAL_ARE_ZERO ARG=" + lab + "_stack," + lab + "_stackT");
-  readInputLine( lab + "_angles: CUSTOM ARG=" + lab + "_dpmat FUNC=acos(x) PERIODIC=NO");
+  // the dot product of two unit vectors can be out of [-1,1] by rounding when the bonds are parallel or antiparallel (acos would give nan)
+  readInputLine( lab + "_angles: CUSTOM ARG=" + lab + "_dpmat FUNC=acos(max(-1,min(1,x))) PERIODIC=NO");
 }
 
 CoordAngles::CoordAngles(const ActionOptions& ao):
