@@ -62,15 +62,11 @@ private:
     return i*ncv - (i*(i-1))/2 + (j-i);
   }
 public:
-  explicit KernelFunctions( const std::string& input );
   KernelFunctions( const std::vector<double>& at,
                    const std::vector<double>& sig,
                    const std::string& type,
                    const std::string& mtype,
                    const double& w );
-  explicit KernelFunctions( const KernelFunctions* in );
-/// Normalise the function and scale the height accordingly
-  void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
 /// Get the cutoff for a kernel
