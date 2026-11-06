@@ -1,0 +1,15 @@
+BF_WAVELETS with a negative FUNCTION_LENGTH: exit code 1
++++ assertion failed: function_length>0
+FUNCTION_LENGTH has to be positive
+BF_WAVELETS with a zero FUNCTION_LENGTH: exit code 1
++++ assertion failed: function_length>0
+FUNCTION_LENGTH has to be positive
+OPT_DUMMY with COEFFS_OUTPUT=0: exit code 1
++++ assertion failed: coeffs_wstride_>0
+COEFFS_OUTPUT has to be positive, use OFF to switch off the output
+OPT_DUMMY with GRADIENT_OUTPUT=0: exit code 1
++++ assertion failed: gradient_wstride_>0
+GRADIENT_OUTPUT has to be positive
+OPT_DUMMY with HESSIAN_OUTPUT=0: exit code 1
++++ assertion failed: hessian_wstride_>0
+HESSIAN_OUTPUT has to be positive
