@@ -31,6 +31,9 @@
 #include "core/GenericMolInfo.h"
 
 #include <vector>
+#include <array>
+#include <algorithm>
+#include <cmath>
 
 namespace PLMD {
 namespace generic {
@@ -160,6 +163,14 @@ class WrapAround:
   std::vector<std::pair<std::size_t,std::size_t> > p_reference;
   unsigned groupby;
   bool pair_;
+  // cells of the reference atoms (orthorhombic boxes): the reference atoms of cell c are
+  // cellatoms[cellstart[c]] ... cellatoms[cellstart[c+1]-1], in increasing order
+  std::array<unsigned,3> ncells;
+  std::vector<unsigned> cellstart, cellatoms, cellstamp;
+  unsigned stamp=0;
+  void buildCells(const Vector& diag, const Vector& invdiag);
+  unsigned cellOf(const Vector& x, const Vector& invdiag, std::array<int,3>& c) const;
+  int closestInCells(const Vector& first, const Vector& diag, const Vector& invdiag);
 public:
   explicit WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -254,6 +265,116 @@ WrapAround::WrapAround(const ActionOptions&ao):
   doNotForce();
 }
 
+unsigned WrapAround::cellOf(const Vector& x, const Vector& invdiag, std::array<int,3>& c) const {
+  for(unsigned k=0; k<3; ++k) {
+    double f=x[k]*invdiag[k];
+    f-=std::floor(f);
+    c[k]=std::min(static_cast<int>(f*ncells[k]),static_cast<int>(ncells[k])-1);
+  }
+  return (c[0]*ncells[1]+c[1])*ncells[2]+c[2];
+}
+
+void WrapAround::buildCells(const Vector& diag, const Vector& invdiag) {
+  const unsigned nref=refatoms.size();
+  // about one reference atom per cell (the fastest choice in tests with 64 to 2000 reference atoms)
+  const double side=std::cbrt(diag[0]*diag[1]*diag[2]/nref);
+  for(unsigned k=0; k<3; ++k) {
+    ncells[k]=std::max(1,std::min(256,static_cast<int>(diag[k]/side)));
+  }
+  const unsigned ntot=ncells[0]*ncells[1]*ncells[2];
+  cellstart.assign(ntot+1,0);
+  std::vector<unsigned> cellof(nref);
+  std::array<int,3> c;
+  for(unsigned j=0; j<nref; ++j) {
+    cellof[j]=cellOf(refatoms[j],invdiag,c);
+    cellstart[cellof[j]+1]++;
+  }
+  for(unsigned i=0; i<ntot; ++i) {
+    cellstart[i+1]+=cellstart[i];
+  }
+  cellatoms.resize(nref);
+  std::vector<unsigned> fill(cellstart.begin(),cellstart.end()-1);
+  for(unsigned j=0; j<nref; ++j) {
+    cellatoms[fill[cellof[j]]++]=j;
+  }
+  if(cellstamp.size()!=ntot) {
+    cellstamp.assign(ntot,0);
+    stamp=0;
+  }
+}
+
+// The reference atom closest to first, with the same distances and the same choice
+// among equal distances (the lowest index) as the loop over all the reference atoms.
+// The cells are visited in shells of increasing distance, and the search stops when
+// the cells that are left are farther than the closest atom found.
+int WrapAround::closestInCells(const Vector& first, const Vector& diag, const Vector& invdiag) {
+  std::array<int,3> c0;
+  cellOf(first,invdiag,c0);
+  // width of the cells, and distance of the atom from the closest face of its cell
+  std::array<double,3> w, dface;
+  int rmax=0;
+  for(unsigned k=0; k<3; ++k) {
+    w[k]=diag[k]/ncells[k];
+    double f=first[k]*invdiag[k];
+    f-=std::floor(f);
+    const double u=std::min(std::max(f*ncells[k]-c0[k],0.0),1.0);
+    dface[k]=std::min(u,1.0-u)*w[k];
+    rmax=std::max(rmax,static_cast<int>(ncells[k]/2)+1);
+  }
+  if(++stamp==0) {
+    std::fill(cellstamp.begin(),cellstamp.end(),0);
+    stamp=1;
+  }
+  double mindist2=std::numeric_limits<double>::max();
+  int closest=-1;
+  for(int r=0; r<=rmax; ++r) {
+    for(int a=-r; a<=r; ++a) {
+      const int ia=((c0[0]+a)%static_cast<int>(ncells[0])+ncells[0])%ncells[0];
+      for(int b=-r; b<=r; ++b) {
+        const int ib=((c0[1]+b)%static_cast<int>(ncells[1])+ncells[1])%ncells[1];
+        // only the surface of the cube of side 2r+1: the inside was visited before
+        const bool face=(std::abs(a)==r || std::abs(b)==r);
+        for(int e=-r; e<=r; e+=(face || r==0 ? 1 : 2*r)) {
+          const int ie=((c0[2]+e)%static_cast<int>(ncells[2])+ncells[2])%ncells[2];
+          const unsigned cell=(ia*ncells[1]+ib)*ncells[2]+ie;
+          if(cellstamp[cell]==stamp) {
+            continue;
+          }
+          cellstamp[cell]=stamp;
+          for(unsigned m=cellstart[cell]; m<cellstart[cell+1]; ++m) {
+            const unsigned j=cellatoms[m];
+            double distance2=0.0;
+            for(unsigned k=0; k<3; ++k) {
+              const double d=Tools::pbc((refatoms[j][k]-first[k])*invdiag[k])*diag[k];
+              distance2+=d*d;
+            }
+            if(distance2<mindist2 || (distance2==mindist2 && static_cast<int>(j)<closest)) {
+              mindist2=distance2;
+              closest=j;
+            }
+          }
+        }
+      }
+    }
+    // A cell that is not visited yet differs by more than r cells along a direction k in which
+    // the visited cells do not cover the whole box: it is at least r*w[k]+dface[k] away
+    double bound=std::numeric_limits<double>::max();
+    for(unsigned k=0; k<3; ++k) {
+      if(2*r+1<static_cast<int>(ncells[k])) {
+        bound=std::min(bound,r*w[k]+dface[k]);
+      }
+    }
+    if(bound==std::numeric_limits<double>::max()) {
+      break; // all the cells were visited
+    }
+    // (with a margin for rounding, so that atoms at the same distance are never split)
+    if(closest>=0 && mindist2<bound*bound*(1.0-1e-9)) {
+      break;
+    }
+  }
+  return closest;
+}
+
 void WrapAround::calculate() {
   const unsigned nref=p_reference.size();
   for(unsigned j=0; j<nref; ++j) {
@@ -270,6 +391,8 @@ void WrapAround::calculate() {
 #endif
   const Vector diag(pbc.getBox()(0,0),pbc.getBox()(1,1),pbc.getBox()(2,2));
   const Vector invdiag(pbc.getInvBox()(0,0),pbc.getInvBox()(1,1),pbc.getInvBox()(2,2));
+  // with few reference atoms the loop over all of them is faster than the cells
+  const unsigned cellsMinReference=128;
   for(unsigned i=0; i<p_atoms.size(); i+=groupby) {
     Vector second, first=getGlobalPosition(p_atoms[i]);
     int closest=-1;
@@ -277,7 +400,12 @@ void WrapAround::calculate() {
       closest = i/groupby;
     } else {
       double mindist2=std::numeric_limits<double>::max();
-      if(orthorombic) {
+      if(orthorombic && nref>=cellsMinReference) {
+        if(i==0) {
+          buildCells(diag,invdiag);
+        }
+        closest=closestInCells(first,diag,invdiag);
+      } else if(orthorombic) {
         // same operations as Pbc::distance, written out so that the loop is inlined
         for(unsigned j=0; j<nref; ++j) {
           double distance2=0.0;
