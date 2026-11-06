@@ -58,7 +58,10 @@ include $(wildcard $(DEPFILES))
 
 CudaCoordination.$(SOEXT): $(OBJS)
 	@echo Linking $@
-	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(LDSHARED)  $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+# -ccbin takes only the compiler: LDSHARED can carry extra flags that nvcc does not
+# understand (e.g. "-Wl,--enable-new-dtags -Wl,-R ..." added by configure when
+# LIBRARY_PATH is set, as on clusters with modules); -shared is in NVCCLDFLAGS
+	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(CXX) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 #clean should work even if Makefile.conf is not here
 clean:
