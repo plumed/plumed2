@@ -72,6 +72,119 @@ constexpr std::size_t qchunk=PLUMED_SAXS_ACC_QCHUNK;
 constexpr std::size_t targetThreads=PLUMED_SAXS_ACC_TARGET_THREADS;
 constexpr std::size_t maxTiles=64;
 
+/// Rows of the Debye sum, see OpenACCDebye. Thread t deals with row i=f+m*s,
+/// q values k0..k0+qchunk-1 and particles j of a tile; consecutive threads have
+/// consecutive rows and the same chunk and tile, so they read the same j at the same time.
+/// With Exact=false sin(q_k r) and cos(q_k r) come from angle addition on the grid
+/// q0+k*dq plus a Taylor correction for eps_k=q_k-q0-k*dq (|eps_k r|<=0.1 for all pairs);
+/// with Exact=true they are computed directly. The loops over the chunk contain no
+/// function calls, so that the compiler can unroll them and keep the per-q
+/// accumulators in registers.
+template<bool Exact>
+void debyeRows(const double* dpos, const double* dff, const double* dq_list, const double* deps,
+               double* outpartial, double* outgrad,
+               const std::size_t n, const std::size_t numq, const std::size_t nmine,
+               const std::size_t nchunk, const std::size_t nrows, const std::size_t tilesize,
+               const std::size_t f, const std::size_t s, const std::size_t ntot,
+               const double q0, const double dq) {
+#pragma acc parallel loop gang vector async(saxsQueue) \
+  deviceptr(dpos,dff,dq_list,deps,outpartial,outgrad) \
+  firstprivate(n,numq,nmine,nchunk,nrows,tilesize,f,s,ntot,q0,dq) default(none)
+  for(std::size_t t=0; t<ntot; ++t) {
+    const std::size_t m=t%nmine;
+    const std::size_t ct=t/nmine;
+    const std::size_t c=ct%nchunk;
+    const std::size_t tile=ct/nchunk;
+    const std::size_t i=f+m*s;
+    const std::size_t k0=c*qchunk;
+    const std::size_t nk = numq-k0<qchunk ? numq-k0 : qchunk;
+    const std::size_t jbegin=tile*tilesize;
+    const std::size_t jend = jbegin+tilesize<n ? jbegin+tilesize : n;
+    const double xi=dpos[3*i];
+    const double yi=dpos[3*i+1];
+    const double zi=dpos[3*i+2];
+    const double qbase=q0+k0*dq;
+    // beyond the last q value (l>=nk) fi is zero and the other values are those of k0
+    double fi[qchunk];
+    double qk[qchunk];
+    double invq[qchunk];
+    double ek[qchunk];
+    double intensity[qchunk];
+    double gx[qchunk];
+    double gy[qchunk];
+    double gz[qchunk];
+    for(std::size_t l=0; l<qchunk; ++l) {
+      const std::size_t k = l<nk ? k0+l : k0;
+      fi[l] = l<nk ? dff[i*numq+k] : 0.0;
+      qk[l]=dq_list[k];
+      invq[l]=1./dq_list[k];
+      ek[l]=deps[k];
+      intensity[l]=0.;
+      gx[l]=0.;
+      gy[l]=0.;
+      gz[l]=0.;
+    }
+#pragma acc loop seq
+    for(std::size_t j=jbegin; j<jend; ++j) {
+      if(j==i) {
+        continue;
+      }
+      const double dx=dpos[3*j]-xi;
+      const double dy=dpos[3*j+1]-yi;
+      const double dz=dpos[3*j+2]-zi;
+      const double r2=dx*dx+dy*dy+dz*dz;
+      const double r=std::sqrt(r2);
+      const double invr=1./r;
+      const double twoinvr2=2.*invr*invr;
+      const double* ffj=dff+j*numq+k0;
+      double sk[qchunk];
+      double ck[qchunk];
+      if(Exact) {
+        for(std::size_t l=0; l<qchunk; ++l) {
+          sk[l]=std::sin(qk[l]*r);
+          ck[l]=std::cos(qk[l]*r);
+        }
+      } else {
+        // sin and cos on the grid, from the first q of the chunk by angle addition
+        double sg=std::sin(qbase*r);
+        double cg=std::cos(qbase*r);
+        const double sd=std::sin(dq*r);
+        const double cd=std::cos(dq*r);
+        for(std::size_t l=0; l<qchunk; ++l) {
+          const double x=ek[l]*r;
+          const double x2=x*x;
+          const double cx=1.-x2*(1./2-x2*(1./24-x2*(1./720-x2*(1./40320))));
+          const double sx=x*(1.-x2*(1./6-x2*(1./120-x2*(1./5040-x2*(1./362880)))));
+          sk[l]=sg*cx+cg*sx;
+          ck[l]=cg*cx-sg*sx;
+          const double s2=sg*cd+cg*sd;
+          cg=cg*cd-sg*sd;
+          sg=s2;
+        }
+      }
+      for(std::size_t l=0; l<qchunk; ++l) {
+        const double sinc=sk[l]*invq[l]*invr;
+        const double weight=fi[l]*ffj[l<nk ? l : 0];
+        intensity[l]+=weight*sinc;
+        // d/dr_i of 2 f_i f_j sinc(q r_ij): the pair appears twice in the sum
+        const double scale=weight*(sinc-ck[l])*twoinvr2;
+        gx[l]+=dx*scale;
+        gy[l]+=dy*scale;
+        gz[l]+=dz*scale;
+      }
+    }
+    const std::size_t base=tile*nrows+m*numq+k0;
+    for(std::size_t l=0; l<qchunk; ++l) {
+      if(l<nk) {
+        outpartial[base+l]=intensity[l];
+        outgrad[3*(base+l)]=gx[l];
+        outgrad[3*(base+l)+1]=gy[l];
+        outgrad[3*(base+l)+2]=gz[l];
+      }
+    }
+  }
+}
+
 /// Debye sum with OpenACC: one thread per (particle i of this rank, chunk of
 /// qchunk q values, tile of particles j). Each pair is computed twice (once for
 /// row i and once for row j), but there are no atomics, the result does not depend
@@ -80,7 +193,8 @@ constexpr std::size_t maxTiles=64;
 /// For every pair the distance is computed once per chunk and, as in SAXS::sincos_q,
 /// sin(q_k r) and cos(q_k r) are obtained by angle addition from the first q of the
 /// chunk on the uniform grid q0+k*dq, corrected for the deviations eps_k of the
-/// actual q values with a Taylor expansion (exact sin and cos when |eps_k r|>0.1).
+/// actual q values with a Taylor expansion (exact sin and cos, in another version of
+/// the kernel, when |eps_k r|>0.1 is possible for some pair or there are less than 4 q values).
 class OpenACCDebye :
   public SAXSDebyeBackend {
   CachedUpload ff_;
@@ -163,8 +277,17 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
     heps_[k]=q[k]-(q0+k*dq);
     maxeps=std::max(maxeps,std::fabs(heps_[k]));
   }
-  // with fewer than 4 q values sin and cos are always computed directly
-  const double epslimit = numq<4 ? -1.0 : 0.1;
+  // the angle addition with the Taylor correction is used if |eps_k r|<=0.1 for all the
+  // pairs (r is at most the diagonal of the bounding box) and there are at least 4 q values
+  Vector lo=pos[0];
+  Vector hi=pos[0];
+  for(const auto & p : pos) {
+    for(unsigned d=0; d<3; ++d) {
+      lo[d]=std::min(lo[d],p[d]);
+      hi[d]=std::max(hi[d],p[d]);
+    }
+  }
+  const bool exact = numq<4 || maxeps*(hi-lo).modulo()>0.1;
 
   // work split: chunks of q values and, for small systems, tiles of j
   const std::size_t nchunk=(numq+qchunk-1)/qchunk;
@@ -198,100 +321,10 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   const std::size_t s=stride;
   const std::size_t ntot=ntile*nthreads;
 
-  // consecutive threads have consecutive rows i and the same chunk and tile:
-  // they read the same particles j at the same time
-#pragma acc parallel loop gang vector async(saxsQueue) \
-  deviceptr(dpos,dff,dq_list,deps,outpartial,outgrad) \
-  firstprivate(n,numq,nmine,nchunk,nrows,tilesize,f,s,ntot,q0,dq,maxeps,epslimit) default(none)
-  for(std::size_t t=0; t<ntot; ++t) {
-    const std::size_t m=t%nmine;
-    const std::size_t ct=t/nmine;
-    const std::size_t c=ct%nchunk;
-    const std::size_t tile=ct/nchunk;
-    const std::size_t i=f+m*s;
-    const std::size_t k0=c*qchunk;
-    const std::size_t nk = numq-k0<qchunk ? numq-k0 : qchunk;
-    const std::size_t jbegin=tile*tilesize;
-    const std::size_t jend = jbegin+tilesize<n ? jbegin+tilesize : n;
-    const double xi=dpos[3*i];
-    const double yi=dpos[3*i+1];
-    const double zi=dpos[3*i+2];
-    const double qbase=q0+k0*dq;
-    double fi[qchunk];
-    double qk[qchunk];
-    double ek[qchunk];
-    double intensity[qchunk];
-    double gx[qchunk];
-    double gy[qchunk];
-    double gz[qchunk];
-#pragma acc loop seq
-    for(std::size_t l=0; l<qchunk; ++l) {
-      const std::size_t k = l<nk ? k0+l : k0;
-      fi[l] = l<nk ? dff[i*numq+k] : 0.0;
-      qk[l]=dq_list[k];
-      ek[l]=deps[k];
-      intensity[l]=0.;
-      gx[l]=0.;
-      gy[l]=0.;
-      gz[l]=0.;
-    }
-#pragma acc loop seq
-    for(std::size_t j=jbegin; j<jend; ++j) {
-      if(j==i) {
-        continue;
-      }
-      const double dx=dpos[3*j]-xi;
-      const double dy=dpos[3*j+1]-yi;
-      const double dz=dpos[3*j+2]-zi;
-      const double r2=dx*dx+dy*dy+dz*dz;
-      const double r=std::sqrt(r2);
-      const double invr2=1./r2;
-      const bool exact = maxeps*r>epslimit;
-      // sin and cos on the grid, from the first q of the chunk by angle addition
-      double sg=std::sin(qbase*r);
-      double cg=std::cos(qbase*r);
-      const double sd=std::sin(dq*r);
-      const double cd=std::cos(dq*r);
-      const double* ffj=dff+j*numq+k0;
-#pragma acc loop seq
-      for(std::size_t l=0; l<qchunk; ++l) {
-        double sk;
-        double ck;
-        if(exact) {
-          sk=std::sin(qk[l]*r);
-          ck=std::cos(qk[l]*r);
-        } else {
-          const double x=ek[l]*r;
-          const double x2=x*x;
-          const double cx=1.-x2*(1./2-x2*(1./24-x2*(1./720-x2*(1./40320))));
-          const double sx=x*(1.-x2*(1./6-x2*(1./120-x2*(1./5040-x2*(1./362880)))));
-          sk=sg*cx+cg*sx;
-          ck=cg*cx-sg*sx;
-        }
-        const double sinc=sk/(qk[l]*r);
-        // fi is zero beyond the last q value, so these terms vanish
-        const double weight=fi[l]*ffj[l<nk ? l : 0];
-        intensity[l]+=weight*sinc;
-        // d/dr_i of 2 f_i f_j sinc(q r_ij): the pair appears twice in the sum
-        const double scale=2.*weight*(sinc-ck)*invr2;
-        gx[l]+=dx*scale;
-        gy[l]+=dy*scale;
-        gz[l]+=dz*scale;
-        const double s2=sg*cd+cg*sd;
-        cg=cg*cd-sg*sd;
-        sg=s2;
-      }
-    }
-    const std::size_t base=tile*nrows+m*numq+k0;
-#pragma acc loop seq
-    for(std::size_t l=0; l<qchunk; ++l) {
-      if(l<nk) {
-        outpartial[base+l]=intensity[l];
-        outgrad[3*(base+l)]=gx[l];
-        outgrad[3*(base+l)+1]=gy[l];
-        outgrad[3*(base+l)+2]=gz[l];
-      }
-    }
+  if(exact) {
+    debyeRows<true>(dpos,dff,dq_list,deps,outpartial,outgrad,n,numq,nmine,nchunk,nrows,tilesize,f,s,ntot,q0,dq);
+  } else {
+    debyeRows<false>(dpos,dff,dq_list,deps,outpartial,outgrad,n,numq,nmine,nchunk,nrows,tilesize,f,s,ntot,q0,dq);
   }
 
   // sum of the tiles, in a fixed order
