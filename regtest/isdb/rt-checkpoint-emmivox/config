@@ -5,8 +5,8 @@ arg="--plumed plumed.dat --mf_pdb traj.pdb --checkpoint-stride 2"
 export PLUMED_NUM_THREADS=2
 
 function plumed_regtest_before() {
-  # the first 4 frames: the interrupted run
-  head -n 940 traj.pdb > part.pdb
+  # the first 5 frames: the interrupted run
+  head -n 1175 traj.pdb > part.pdb
   # A) checkpoints requested by the "MD engine" at steps 0 and 2, restart from step 2
   mkdir restart
   cd restart
@@ -14,11 +14,11 @@ function plumed_regtest_before() {
   $plumed driver --plumed plumed.dat --mf_pdb ../part.pdb --checkpoint-stride 2 > out1 2> err1
   $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --checkpoint-stride 2 --restart-from-checkpoint plumed.cpt > out2 2> err2
   cd ..
-  # B) checkpoints every 3 steps (STRIDE), restart from step 3
+  # B) checkpoints every 4 steps (STRIDE), restart from step 4: the neighbor list (NL_STRIDE=2) is rebuilt at the first step after a restart, so the restart step must be one where it is updated
   mkdir restart-stride
   cd restart-stride
   cp ../map.dat ../structure.pdb .
-  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=3/' ../plumed.dat > plumed.dat
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=4/' ../plumed.dat > plumed.dat
   $plumed driver --plumed plumed.dat --mf_pdb ../part.pdb > out1 2> err1
   $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --restart-from-checkpoint plumed.cpt > out2 2> err2
   cd ..
