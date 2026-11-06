@@ -120,9 +120,10 @@ static void *open_gro_read(const char *filename, const char *,
         return NULL;
     }
 
-    // read in the header data (careful not to rewind!)
+    // read in the header data and rewind: read_gro_timestep() expects
+    // the header of the first frame at the current position
     if (gro_header(mf, mdh.title, MAX_MDIO_TITLE,
-    &mdh.timeval, &mdh.natoms, 0) < 0) {
+    &mdh.timeval, &mdh.natoms, 1) < 0) {
         fprintf(stderr, "gromacsplugin) Cannot read header fromm '%s', %s\n",
                 filename, mdio_errmsg(mdio_errno()));
             // XXX should free the file handle...
@@ -148,6 +149,10 @@ static int read_gro_structure(void *mydata, int *optflags,
   gmxdata *gmx = (gmxdata *)mydata;
 
   *optflags = MOLFILE_NOOPTIONS; // no optional data
+
+  // skip the header (the file is positioned at the start of the first frame)
+  if (gro_header(gmx->mf, NULL, 0, NULL, NULL, 0) < 0)
+    return MOLFILE_ERROR;
 
   // read in each atom and add it into the molecule
   for (int i = 0; i < gmx->natoms; i++) {
@@ -188,6 +193,12 @@ static int read_gro_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 
   if (mdio_timestep(gmx->mf, &mdts) < 0)
     return MOLFILE_ERROR;
+  if (mdts.natoms != gmx->natoms) {
+    fprintf(stderr, "gromacsplugin) Timestep in file contains wrong number of atoms\n");
+    fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, gmx->natoms);
+    mdio_tsfree(&mdts);
+    return MOLFILE_ERROR;
+  }
   if (ts) {
     memcpy(ts->coords, mdts.pos, 3 * sizeof(float) * gmx->natoms);
     if (mdts.box) {
@@ -447,6 +458,12 @@ static int read_g96_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 
   if (mdio_timestep(gmx->mf, &mdts) < 0)
     return MOLFILE_ERROR;
+  if (mdts.natoms != gmx->natoms) {
+    fprintf(stderr, "gromacsplugin) Timestep in file contains wrong number of atoms\n");
+    fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, gmx->natoms);
+    mdio_tsfree(&mdts);
+    return MOLFILE_ERROR;
+  }
   if (ts) {
     memcpy(ts->coords, mdts.pos, 3 * sizeof(float) * gmx->natoms);
     if (mdts.box) {

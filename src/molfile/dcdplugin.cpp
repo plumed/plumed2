@@ -404,6 +404,12 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
   CHECK_FEOF(ret_val, "reading number of atoms");
   if (*reverseEndian) swap4_aligned(N, 1);
 
+  /* the number of atoms and of fixed atoms are used to size buffers and */
+  /* frames: reject values that cannot belong to a valid file            */
+  if (*N < 0 || *NAMNF < 0 || *NAMNF > *N) {
+    return DCD_BADFORMAT;
+  }
+
   if (*N > (1L<<30)) {
     hugefile=1;
     printf("dcdplugin) ***\n");
@@ -453,6 +459,13 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
 
     if (*reverseEndian)
       swap4_aligned((*FREEINDEXES), ((*N)-(*NAMNF)));
+
+    /* indexes are 1-based atom numbers, used to place the free atoms */
+    for (i=0; i<(*N)-(*NAMNF); i++) {
+      if ((*FREEINDEXES)[i] < 1 || (*FREEINDEXES)[i] > *N) {
+        return DCD_BADFORMAT;
+      }
+    }
 
     input_integer[1]=0;
     ret_val = READ(fd, input_integer, rec_scale*sizeof(int));
@@ -934,6 +947,8 @@ static void *open_dcd_read(const char *path, const char *filetype,
          &dcd->fixedcoords, &dcd->reverse, &dcd->charmm))) {
     print_dcderror("read_dcdheader", rc);
     fio_fclose(dcd->fd);
+    free(dcd->freeind);
+    free(dcd->fixedcoords);
     free(dcd);
     return NULL;
   }
@@ -950,8 +965,8 @@ static void *open_dcd_read(const char *path, const char *filetype,
 
     extrablocksize = dcd->charmm & DCD_HAS_EXTRA_BLOCK ? 48 + 8 : 0;
     ndims = dcd->charmm & DCD_HAS_4DIMS ? 4 : 3;
-    firstframesize = (dcd->natoms+2) * ndims * sizeof(float) + extrablocksize;
-    framesize = (dcd->natoms-dcd->nfixed+2) * ndims * sizeof(float) 
+    firstframesize = ((fio_size_t) dcd->natoms+2) * ndims * sizeof(float) + extrablocksize;
+    framesize = ((fio_size_t) dcd->natoms-dcd->nfixed+2) * ndims * sizeof(float) 
       + extrablocksize;
 
     /* 
@@ -975,6 +990,8 @@ static void *open_dcd_read(const char *path, const char *filetype,
     if (trjsize < 0) {
       printf("dcdplugin) file '%s' appears to contain no timesteps.\n", path);
       fio_fclose(dcd->fd);
+      free(dcd->freeind);
+      free(dcd->fixedcoords);
       free(dcd);
       return NULL;
     }

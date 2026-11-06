@@ -772,6 +772,9 @@ public:
       api->open_file_read(trajectoryFile.c_str(), trajectory_fmt_str.c_str(), &natoms),
       {api}
     };
+    if(!h_in) {
+      return "cannot read "+trajectoryFile+" with the molfile "+trajectory_fmt_str+" plugin";
+    }
     if(natoms==MOLFILE_NUMATOMS_UNKNOWN) {
       if(command_line_natoms>=0) {
         natoms=command_line_natoms;

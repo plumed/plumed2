@@ -188,7 +188,7 @@ static int read_pdb_structure(void *mydata, int *optflags,
           ridstr, atom->insertion, atom->altloc, elementsymbol,
           NULL, NULL, NULL, &atom->occupancy, &atom->bfactor);
 
-      if (pdb->idxmap != NULL && atomserial < 100000) {
+      if (pdb->idxmap != NULL && atomserial >= 0 && atomserial < 100000) {
         pdb->idxmap[atomserial] = i; /* record new serial number translation */ 
       }
  
