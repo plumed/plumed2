@@ -35,7 +35,43 @@ def check_package_layout():
         "write_pandas",
         "hills_time_average",
     ):
-        assert getattr(plumed, name) is getattr(plumed._plumed, name), name
+        assert getattr(plumed, name) is getattr(
+            sys.modules[getattr(plumed, name).__module__], name
+        ), name
+
+
+def check_native_exception_identity():
+    """Native errors use the same exception class exported by the Python package."""
+    with plumed.Plumed() as instance:
+        try:
+            instance.cmd("readInputLine", "NOT_AN_ACTION")
+        except plumed.PlumedError as error:
+            assert type(error) is plumed.PlumedError
+        else:
+            raise AssertionError("An invalid action must raise PlumedError")
+
+
+def check_alternate_package_import():
+    """A differently named package must not borrow the default package's helpers."""
+    with tempfile.TemporaryDirectory(prefix="plumed alternate package ") as directory:
+        root = Path(directory)
+        shutil.copytree(
+            Path(plumed.__file__).resolve().parent, root / "plumed_alternate"
+        )
+        script = """
+import plumed
+import plumed_alternate as alternate
+from pathlib import Path
+
+assert alternate._plumed.__package__ == 'plumed_alternate'
+assert alternate._plumed.PlumedError is alternate.PlumedError
+assert alternate.PlumedError is not plumed.PlumedError
+assert alternate._plumed._bundled_kernel_path.__module__ == 'plumed_alternate._runtime'
+assert Path(alternate._bundled_kernel_path()).parent.parent.parent == Path(alternate.__file__).parent
+with alternate.Plumed() as instance:
+    assert 'DISTANCE' in alternate.InputBuilder(toplumed=instance)._vimdict
+"""
+        subprocess.run([sys.executable, "-c", script], cwd=root, check=True)
 
 
 def check_package_relocation():
@@ -76,9 +112,10 @@ def check_package_relocation():
             capture_output=True,
             text=True,
         )
-        assert Path(command.stdout.strip()).resolve() == (
-            root / "plumed" / "runtime" / "share" / "plumed"
-        ).resolve()
+        assert (
+            Path(command.stdout.strip()).resolve()
+            == (root / "plumed" / "runtime" / "share" / "plumed").resolve()
+        )
 
 
 def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
@@ -412,12 +449,12 @@ def check_vim_fallback():
     """Emulate an older kernel without embedded metadata: InputBuilder must use
     the Vim files of the kernel installation, consistently with the metadata."""
     reference = plumed.InputBuilder()._vimdict
-    original = plumed._plumed._readkernelmetadata
-    plumed._plumed._readkernelmetadata = lambda kernel=None, instance=None: None
+    original = plumed._inputbuilder._readkernelmetadata
+    plumed._inputbuilder._readkernelmetadata = lambda kernel=None, instance=None: None
     try:
         legacy = plumed.InputBuilder()._vimdict
     finally:
-        plumed._plumed._readkernelmetadata = original
+        plumed._inputbuilder._readkernelmetadata = original
     assert legacy is not reference
     assert set(legacy) == set(reference)
     for action, keywords in reference.items():
@@ -641,6 +678,8 @@ PLUMED_REGISTER_CLTOOL(WheelOnlyCLTool,"wheel_only_tool")
 
 def main():
     check_package_layout()
+    check_native_exception_identity()
+    check_alternate_package_import()
     check_package_relocation()
     os.environ.pop("PLUMED_KERNEL", None)
     os.environ.pop("PLUMED_ROOT", None)

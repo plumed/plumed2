@@ -446,7 +446,7 @@ install/python.config: FORCE
 install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
                       ../../python/build_backend.py ../../python/pyproject.toml \
                       ../../python/onlyBuild.sh ../../python/README.rst ../../python/MANIFEST.in \
-                      ../../python/plumed/__init__.py ../../python/plumed/runtime/__init__.py ../../python/plumed/runtime/cli.py \
+                      $(wildcard ../../python/plumed/*.py) ../../python/plumed/runtime/__init__.py ../../python/plumed/runtime/cli.py \
                       ../wrapper/Plumed.h ../../VERSION.txt ../../Makefile.conf install/python.config
 	$(MAKE) -C ../../python plumed.c
 	rm -fr install/python
