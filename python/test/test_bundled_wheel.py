@@ -12,7 +12,73 @@ import sys
 import tempfile
 
 import plumed
-from plumed_runtime import kernel_path, package_root, resource_root
+from plumed.runtime import kernel_path, package_root, resource_root
+
+
+def check_package_layout():
+    """The public interface and bundled runtime share one import namespace."""
+    import importlib.util
+
+    root = Path(plumed.__file__).resolve().parent
+    assert root.name == "plumed", root
+    assert Path(plumed._plumed.__file__).resolve().parent == root
+    assert package_root() == root / "runtime"
+    assert importlib.util.find_spec("plumed_runtime") is None
+    for name in (
+        "Plumed",
+        "InputBuilder",
+        "PlumedError",
+        "LeptonError",
+        "FormatError",
+        "Constants",
+        "read_as_pandas",
+        "write_pandas",
+        "hills_time_average",
+    ):
+        assert getattr(plumed, name) is getattr(plumed._plumed, name), name
+
+
+def check_package_relocation():
+    """Both Python kernel discovery and the command follow a moved package."""
+    with tempfile.TemporaryDirectory(prefix="plumed relocated package ") as temporary:
+        root = Path(temporary)
+        shutil.copytree(Path(plumed.__file__).resolve().parent, root / "plumed")
+        env = {
+            name: value
+            for name, value in os.environ.items()
+            if not name.startswith(("PLUMED_", "LD_", "DYLD_"))
+        }
+        env["PYTHONPATH"] = str(root)
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import plumed; from pathlib import Path; "
+                "assert Path(plumed.__file__).resolve().parent.parent == Path.cwd(); "
+                "assert 'DISTANCE' in plumed.InputBuilder()._vimdict",
+            ],
+            cwd=root,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        command = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; from plumed.runtime.cli import main; "
+                "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()",
+            ],
+            cwd=root,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        assert Path(command.stdout.strip()).resolve() == (
+            root / "plumed" / "runtime" / "share" / "plumed"
+        ).resolve()
 
 
 def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
@@ -274,7 +340,7 @@ def check_vim_generation(executable):
 
 def check_json_matches_vim():
     """JSON-derived InputBuilder classifications match Vim, except LABEL."""
-    from plumed_runtime import resource_root
+    from plumed.runtime import resource_root
 
     json_dict, json_doc = plumed._readkernelmetadata()
     vim_dict, vim_doc = plumed._readvimdict(plumedroot=str(resource_root()))
@@ -346,12 +412,12 @@ def check_vim_fallback():
     """Emulate an older kernel without embedded metadata: InputBuilder must use
     the Vim files of the kernel installation, consistently with the metadata."""
     reference = plumed.InputBuilder()._vimdict
-    original = plumed._readkernelmetadata
-    plumed._readkernelmetadata = lambda kernel=None, instance=None: None
+    original = plumed._plumed._readkernelmetadata
+    plumed._plumed._readkernelmetadata = lambda kernel=None, instance=None: None
     try:
         legacy = plumed.InputBuilder()._vimdict
     finally:
-        plumed._readkernelmetadata = original
+        plumed._plumed._readkernelmetadata = original
     assert legacy is not reference
     assert set(legacy) == set(reference)
     for action, keywords in reference.items():
@@ -574,6 +640,8 @@ PLUMED_REGISTER_CLTOOL(WheelOnlyCLTool,"wheel_only_tool")
 
 
 def main():
+    check_package_layout()
+    check_package_relocation()
     os.environ.pop("PLUMED_KERNEL", None)
     os.environ.pop("PLUMED_ROOT", None)
     bundled = kernel_path()

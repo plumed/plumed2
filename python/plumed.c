@@ -1114,8 +1114,8 @@ static int __Pyx_init_co_variables(void) {
   #endif
 #endif
 
-#define __PYX_HAVE__plumed
-#define __PYX_HAVE_API__plumed
+#define __PYX_HAVE__plumed___plumed
+#define __PYX_HAVE_API__plumed___plumed
 /* Early includes */
 #include "Plumed.h"
 #include "pythread.h"
@@ -1593,9 +1593,9 @@ typedef struct {
 /* #### Code section: type_declarations ### */
 
 /*--- Type declarations ---*/
-struct __pyx_obj_6plumed_Plumed;
-struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function;
-struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas;
+struct __pyx_obj_6plumed_7_plumed_Plumed;
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function;
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas;
 struct __pyx_array_obj;
 struct __pyx_MemviewEnum_obj;
 struct __pyx_memoryview_obj;
@@ -1608,9 +1608,9 @@ struct __pyx_memoryviewslice_obj;
  *      cdef cplumed.plumed c_plumed
  *      #cdef int initialized #not used
 */
-struct __pyx_obj_6plumed_Plumed {
+struct __pyx_obj_6plumed_7_plumed_Plumed {
   PyObject_HEAD
-  struct __pyx_vtabstruct_6plumed_Plumed *__pyx_vtab;
+  struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *__pyx_vtab;
   plumed c_plumed;
 };
 
@@ -1622,7 +1622,7 @@ struct __pyx_obj_6plumed_Plumed {
  *     """Internal utility: returns a function that can be used for conversions.
  * 
 */
-struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function {
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function {
   PyObject_HEAD
   PyObject *__pyx_v_convert_func;
 };
@@ -1635,7 +1635,7 @@ struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function {
  *     """Import a plumed data file as a pandas dataset.
  * 
 */
-struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas {
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas {
   PyObject_HEAD
   PyObject *__pyx_v_PlumedDataFrame;
   PyObject *__pyx_v_PlumedSeries;
@@ -1728,20 +1728,20 @@ struct __pyx_memoryviewslice_obj {
  *      #cdef int initialized #not used
 */
 
-struct __pyx_vtabstruct_6plumed_Plumed {
-  PyObject *(*raise_exception)(struct __pyx_obj_6plumed_Plumed *, plumed_error);
-  PyObject *(*cmd_low_level)(struct __pyx_obj_6plumed_Plumed *, char const *, void const *, size_t, size_t *, size_t);
-  PyObject *(*cmd_ndarray_double)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_ndarray_int)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_ndarray_long)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_array_double)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_array_int)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_array_long)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
-  PyObject *(*cmd_float)(struct __pyx_obj_6plumed_Plumed *, PyObject *, double);
-  PyObject *(*cmd_int)(struct __pyx_obj_6plumed_Plumed *, PyObject *, int);
-  PyObject *(*cmd_mpi)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *);
+struct __pyx_vtabstruct_6plumed_7_plumed_Plumed {
+  PyObject *(*raise_exception)(struct __pyx_obj_6plumed_7_plumed_Plumed *, plumed_error);
+  PyObject *(*cmd_low_level)(struct __pyx_obj_6plumed_7_plumed_Plumed *, char const *, void const *, size_t, size_t *, size_t);
+  PyObject *(*cmd_ndarray_double)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_ndarray_int)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_ndarray_long)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_array_double)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_array_int)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_array_long)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
+  PyObject *(*cmd_float)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, double);
+  PyObject *(*cmd_int)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, int);
+  PyObject *(*cmd_mpi)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *);
 };
-static struct __pyx_vtabstruct_6plumed_Plumed *__pyx_vtabptr_6plumed_Plumed;
+static struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *__pyx_vtabptr_6plumed_7_plumed_Plumed;
 
 
 /* "View.MemoryView":110
@@ -3338,17 +3338,17 @@ static PyObject *__pyx_memoryview__get_base(struct __pyx_memoryview_obj *__pyx_v
 static PyObject *__pyx_memoryviewslice_convert_item_to_object(struct __pyx_memoryviewslice_obj *__pyx_v_self, char *__pyx_v_itemp); /* proto*/
 static PyObject *__pyx_memoryviewslice_assign_item_from_object(struct __pyx_memoryviewslice_obj *__pyx_v_self, char *__pyx_v_itemp, PyObject *__pyx_v_value); /* proto*/
 static PyObject *__pyx_memoryviewslice__get_base(struct __pyx_memoryviewslice_obj *__pyx_v_self); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, plumed_error __pyx_v_error); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, char const *__pyx_v_ckey, void const *__pyx_v_val, size_t __pyx_v_nelem, size_t *__pyx_v_shape, size_t __pyx_v_flags); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, double __pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, int __pyx_v_val); /* proto*/
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_raise_exception(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, plumed_error __pyx_v_error); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, char const *__pyx_v_ckey, void const *__pyx_v_val, size_t __pyx_v_nelem, size_t *__pyx_v_shape, size_t __pyx_v_flags); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, double __pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, int __pyx_v_val); /* proto*/
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val); /* proto*/
 
 /* Module declarations from "cplumed" */
 
@@ -3358,7 +3358,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed
 
 /* Module declarations from "cython" */
 
-/* Module declarations from "plumed" */
+/* Module declarations from "plumed._plumed" */
 static PyObject *__pyx_collections_abc_Sequence = 0;
 static PyObject *generic = 0;
 static PyObject *strided = 0;
@@ -3406,11 +3406,11 @@ static const __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(dou
 static const __Pyx_TypeInfo __Pyx_TypeInfo_int = { "int", NULL, sizeof(int), { 0 }, 0, __PYX_IS_UNSIGNED(int) ? 'U' : 'I', __PYX_IS_UNSIGNED(int), 0 };
 static const __Pyx_TypeInfo __Pyx_TypeInfo_long = { "long", NULL, sizeof(long), { 0 }, 0, __PYX_IS_UNSIGNED(long) ? 'U' : 'I', __PYX_IS_UNSIGNED(long), 0 };
 /* #### Code section: before_global_var ### */
-#define __Pyx_MODULE_NAME "plumed"
-extern int __pyx_module_is_main_plumed;
-int __pyx_module_is_main_plumed = 0;
+#define __Pyx_MODULE_NAME "plumed._plumed"
+extern int __pyx_module_is_main_plumed___plumed;
+int __pyx_module_is_main_plumed___plumed = 0;
 
-/* Implementation of "plumed" */
+/* Implementation of "plumed._plumed" */
 /* #### Code section: global_var ### */
 static PyObject *__pyx_builtin_open;
 static PyObject *__pyx_builtin_property;
@@ -3465,66 +3465,66 @@ static void __pyx_memoryviewslice___pyx_pf_15View_dot_MemoryView_16_memoryviewsl
 static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_15View_dot_MemoryView___pyx_unpickle_Enum(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
-static int __pyx_pf_6plumed_6Plumed___cinit__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self); /* proto */
-static void __pyx_pf_6plumed_6Plumed_2__dealloc__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self); /* proto */
-static int __pyx_pf_6plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_kernel); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_6finalize(struct __pyx_obj_6plumed_Plumed *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_8__enter__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v_type, CYTHON_UNUSED PyObject *__pyx_v_value, CYTHON_UNUSED PyObject *__pyx_v_traceback); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_key, PyObject *__pyx_v_val); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_Plumed *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_pf_6plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file, PyObject *__pyx_v_mode); /* proto */
-static PyObject *__pyx_pf_6plumed_23_build_convert_function_convert_func(PyObject *__pyx_self, PyObject *__pyx_v_a); /* proto */
-static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel); /* proto */
-static PyObject *__pyx_pf_6plumed_9Constants___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_l, PyObject *__pyx_v_kernel, PyObject *__pyx_v_convert); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_process_dataframe(PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_reader, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all); /* proto */
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file_or_path, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_enable_conversion, PyObject *__pyx_v_kernel, PyObject *__pyx_v_chunksize, PyObject *__pyx_v_usecols, PyObject *__pyx_v_skiprows, PyObject *__pyx_v_nrows, PyObject *__pyx_v_index_col); /* proto */
-static PyObject *__pyx_pf_6plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_file_or_path); /* proto */
-static PyObject *__pyx_pf_6plumed_10hills_time_average(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_hills, PyObject *__pyx_v_tofile, PyObject *__pyx_v_t0, PyObject *__pyx_v_t1, PyObject *__pyx_v_frac0, PyObject *__pyx_v_frac1, PyObject *__pyx_v_inplace); /* proto */
-static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static int __pyx_pf_6plumed_7_plumed_6Plumed___cinit__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self); /* proto */
+static void __pyx_pf_6plumed_7_plumed_6Plumed_2__dealloc__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self); /* proto */
+static int __pyx_pf_6plumed_7_plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_kernel); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_6finalize(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_8__enter__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v_type, CYTHON_UNUSED PyObject *__pyx_v_value, CYTHON_UNUSED PyObject *__pyx_v_traceback); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_key, PyObject *__pyx_v_val); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file, PyObject *__pyx_v_mode); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_23_build_convert_function_convert_func(PyObject *__pyx_self, PyObject *__pyx_v_a); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_4_build_convert_function(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_9Constants___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_l, PyObject *__pyx_v_kernel, PyObject *__pyx_v_convert); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_process_dataframe(PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_reader, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader_2__next__(PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file_or_path, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_enable_conversion, PyObject *__pyx_v_kernel, PyObject *__pyx_v_chunksize, PyObject *__pyx_v_usecols, PyObject *__pyx_v_skiprows, PyObject *__pyx_v_nrows, PyObject *__pyx_v_index_col); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_file_or_path); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_10hills_time_average(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_hills, PyObject *__pyx_v_tofile, PyObject *__pyx_v_t0, PyObject *__pyx_v_t1, PyObject *__pyx_v_frac0, PyObject *__pyx_v_frac1, PyObject *__pyx_v_inplace); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel); /* proto */
 static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_item); /* proto */
-static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel, PyObject *__pyx_v_instance); /* proto */
-static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_plumedroot, PyObject *__pyx_v_kernel); /* proto */
-static PyObject *__pyx_pf_6plumed_18_create_functions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc, PyObject *__pyx_v_append_underscores); /* proto */
-static PyObject *__pyx_pf_6plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args); /* proto */
-static PyObject *__pyx_pf_6plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args); /* proto */
-static PyObject *__pyx_pf_6plumed_20_format_at_one_residue(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
-static PyObject *__pyx_pf_6plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
-static PyObject *__pyx_pf_6plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
-static PyObject *__pyx_pf_6plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder); /* proto */
-static PyObject *__pyx_pf_6plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
-static PyObject *__pyx_pf_6plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_comma); /* proto */
-static PyObject *__pyx_pf_6plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_level); /* proto */
-static PyObject *__pyx_pf_6plumed_30_format_numbered(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_pf_6plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_pf_6plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_label); /* proto */
-static PyObject *__pyx_pf_6plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_pf_6plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_ret, PyObject *__pyx_v_action); /* proto */
-static PyObject *__pyx_pf_6plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_verbatim); /* proto */
-static PyObject *__pyx_pf_6plumed_42_format_anything(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_tofile, PyObject *__pyx_v_toplumed, PyObject *__pyx_v_kernel, PyObject *__pyx_v_append_underscores, PyObject *__pyx_v_comma_separator, PyObject *__pyx_v_minimize_braces, PyObject *__pyx_v_enable_at, PyObject *__pyx_v_load_dict, PyObject *__pyx_v_enable_mda_groups, PyObject *__pyx_v_post_format, PyObject *__pyx_v_pre_format); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_action, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_4__init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_line); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_pf_6plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg); /* proto */
-static PyObject *__pyx_tp_new_6plumed_Plumed(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
-static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct___build_convert_function(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
-static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_pf_6plumed_7_plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel, PyObject *__pyx_v_instance); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_plumedroot, PyObject *__pyx_v_kernel); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_18_create_functions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc, PyObject *__pyx_v_append_underscores); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_20_format_at_one_residue(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_comma); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_level); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_30_format_numbered(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_label); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_ret, PyObject *__pyx_v_action); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_verbatim); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_42_format_anything(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_tofile, PyObject *__pyx_v_toplumed, PyObject *__pyx_v_kernel, PyObject *__pyx_v_append_underscores, PyObject *__pyx_v_comma_separator, PyObject *__pyx_v_minimize_braces, PyObject *__pyx_v_enable_at, PyObject *__pyx_v_load_dict, PyObject *__pyx_v_enable_mda_groups, PyObject *__pyx_v_post_format, PyObject *__pyx_v_pre_format); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_action, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_4__init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_line); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg); /* proto */
+static PyObject *__pyx_tp_new_6plumed_7_plumed_Plumed(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct___build_convert_function(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_array(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_Enum(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_memoryview(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3549,16 +3549,16 @@ typedef struct {
   PyObject *__pyx_empty_tuple;
   PyObject *__pyx_empty_bytes;
   PyObject *__pyx_empty_unicode;
-  PyObject *__pyx_type_6plumed_Plumed;
-  PyObject *__pyx_type_6plumed___pyx_scope_struct___build_convert_function;
-  PyObject *__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas;
+  PyObject *__pyx_type_6plumed_7_plumed_Plumed;
+  PyObject *__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function;
+  PyObject *__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas;
   PyObject *__pyx_type___pyx_array;
   PyObject *__pyx_type___pyx_MemviewEnum;
   PyObject *__pyx_type___pyx_memoryview;
   PyObject *__pyx_type___pyx_memoryviewslice;
-  PyTypeObject *__pyx_ptype_6plumed_Plumed;
-  PyTypeObject *__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function;
-  PyTypeObject *__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas;
+  PyTypeObject *__pyx_ptype_6plumed_7_plumed_Plumed;
+  PyTypeObject *__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function;
+  PyTypeObject *__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas;
   PyTypeObject *__pyx_array_type;
   PyTypeObject *__pyx_MemviewEnum_type;
   PyTypeObject *__pyx_memoryview_type;
@@ -3569,7 +3569,7 @@ typedef struct {
   PyObject *__pyx_slice[3];
   PyObject *__pyx_tuple[14];
   PyObject *__pyx_codeobj_tab[54];
-  PyObject *__pyx_string_tab[677];
+  PyObject *__pyx_string_tab[678];
   PyObject *__pyx_number_tab[12];
 /* #### Code section: module_state_contents ### */
 /* CommonTypesMetaclass.module_state_decls */
@@ -3585,13 +3585,13 @@ PyTypeObject *__pyx_CyFunctionType;
 
 
 #if CYTHON_USE_FREELISTS
-struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *__pyx_freelist_6plumed___pyx_scope_struct___build_convert_function[8];
-int __pyx_freecount_6plumed___pyx_scope_struct___build_convert_function;
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *__pyx_freelist_6plumed_7_plumed___pyx_scope_struct___build_convert_function[8];
+int __pyx_freecount_6plumed_7_plumed___pyx_scope_struct___build_convert_function;
 #endif
 
 #if CYTHON_USE_FREELISTS
-struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_freelist_6plumed___pyx_scope_struct_1_read_as_pandas[8];
-int __pyx_freecount_6plumed___pyx_scope_struct_1_read_as_pandas;
+struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_freelist_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas[8];
+int __pyx_freecount_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas;
 #endif
 /* CodeObjectCache.module_state_decls */
 struct __Pyx_CodeObjectCache __pyx_code_cache;
@@ -4107,8 +4107,8 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #define __pyx_n_u_platform __pyx_string_tab[483]
 #define __pyx_n_u_plumed __pyx_string_tab[484]
 #define __pyx_n_u_plumedDictionary __pyx_string_tab[485]
-#define __pyx_n_u_plumed_constants __pyx_string_tab[486]
-#define __pyx_n_u_plumed_runtime __pyx_string_tab[487]
+#define __pyx_n_u_plumed__plumed __pyx_string_tab[486]
+#define __pyx_n_u_plumed_constants __pyx_string_tab[487]
 #define __pyx_n_u_plumedroot __pyx_string_tab[488]
 #define __pyx_n_u_pop __pyx_string_tab[489]
 #define __pyx_n_u_pos __pyx_string_tab[490]
@@ -4166,138 +4166,139 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #define __pyx_n_u_root_2 __pyx_string_tab[542]
 #define __pyx_n_u_rstrip __pyx_string_tab[543]
 #define __pyx_n_u_rt __pyx_string_tab[544]
-#define __pyx_n_u_seek __pyx_string_tab[545]
-#define __pyx_n_u_self __pyx_string_tab[546]
-#define __pyx_n_u_sep __pyx_string_tab[547]
-#define __pyx_n_u_separator __pyx_string_tab[548]
-#define __pyx_n_u_setLogFile __pyx_string_tab[549]
-#define __pyx_n_u_setNestedExceptions __pyx_string_tab[550]
-#define __pyx_n_u_setRealPrecision __pyx_string_tab[551]
-#define __pyx_n_u_set_dictionary __pyx_string_tab[552]
-#define __pyx_n_u_set_name __pyx_string_tab[553]
-#define __pyx_n_u_setdefault __pyx_string_tab[554]
-#define __pyx_n_u_sets __pyx_string_tab[555]
-#define __pyx_n_u_setstate __pyx_string_tab[556]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[557]
-#define __pyx_n_u_shape __pyx_string_tab[558]
-#define __pyx_n_u_size __pyx_string_tab[559]
-#define __pyx_n_u_skiprows __pyx_string_tab[560]
-#define __pyx_n_u_sorted __pyx_string_tab[561]
-#define __pyx_n_u_source __pyx_string_tab[562]
-#define __pyx_n_u_split __pyx_string_tab[563]
-#define __pyx_n_u_start __pyx_string_tab[564]
-#define __pyx_n_u_stdout __pyx_string_tab[565]
-#define __pyx_n_u_step __pyx_string_tab[566]
-#define __pyx_n_u_stop __pyx_string_tab[567]
-#define __pyx_n_u_string __pyx_string_tab[568]
-#define __pyx_n_u_struct __pyx_string_tab[569]
-#define __pyx_n_u_sub __pyx_string_tab[570]
-#define __pyx_n_u_subn __pyx_string_tab[571]
-#define __pyx_n_u_subprocess __pyx_string_tab[572]
-#define __pyx_n_u_suffix __pyx_string_tab[573]
-#define __pyx_n_u_sugar __pyx_string_tab[574]
-#define __pyx_n_u_syntax __pyx_string_tab[575]
-#define __pyx_n_u_syntax_file __pyx_string_tab[576]
-#define __pyx_n_u_sys __pyx_string_tab[577]
-#define __pyx_n_u_t __pyx_string_tab[578]
-#define __pyx_n_u_t0 __pyx_string_tab[579]
-#define __pyx_n_u_t1 __pyx_string_tab[580]
-#define __pyx_n_u_tell __pyx_string_tab[581]
-#define __pyx_n_u_tempfile __pyx_string_tab[582]
-#define __pyx_n_u_test __pyx_string_tab[583]
-#define __pyx_n_u_thisdoc __pyx_string_tab[584]
-#define __pyx_n_u_time __pyx_string_tab[585]
-#define __pyx_n_u_tmp __pyx_string_tab[586]
-#define __pyx_n_u_tmpfile __pyx_string_tab[587]
-#define __pyx_n_u_tobytes __pyx_string_tab[588]
-#define __pyx_n_u_tofile __pyx_string_tab[589]
-#define __pyx_n_u_tofile_2 __pyx_string_tab[590]
-#define __pyx_n_u_toplumed __pyx_string_tab[591]
-#define __pyx_n_u_toplumed_2 __pyx_string_tab[592]
-#define __pyx_n_u_traceback __pyx_string_tab[593]
-#define __pyx_n_u_type __pyx_string_tab[594]
-#define __pyx_n_u_typecode __pyx_string_tab[595]
-#define __pyx_n_u_types __pyx_string_tab[596]
-#define __pyx_n_u_unpack __pyx_string_tab[597]
-#define __pyx_n_u_update __pyx_string_tab[598]
-#define __pyx_n_u_use_index __pyx_string_tab[599]
-#define __pyx_n_u_use_time __pyx_string_tab[600]
-#define __pyx_n_u_usecols __pyx_string_tab[601]
-#define __pyx_n_u_v __pyx_string_tab[602]
-#define __pyx_n_u_v0 __pyx_string_tab[603]
-#define __pyx_n_u_v1 __pyx_string_tab[604]
-#define __pyx_n_u_v2 __pyx_string_tab[605]
-#define __pyx_n_u_v3 __pyx_string_tab[606]
-#define __pyx_n_u_v4 __pyx_string_tab[607]
-#define __pyx_n_u_val __pyx_string_tab[608]
-#define __pyx_n_u_value __pyx_string_tab[609]
-#define __pyx_n_u_values __pyx_string_tab[610]
-#define __pyx_n_u_verbatim __pyx_string_tab[611]
-#define __pyx_n_u_version_info __pyx_string_tab[612]
-#define __pyx_n_u_vimdict __pyx_string_tab[613]
-#define __pyx_n_u_w __pyx_string_tab[614]
-#define __pyx_n_u_warn __pyx_string_tab[615]
-#define __pyx_n_u_warnings __pyx_string_tab[616]
-#define __pyx_n_u_water __pyx_string_tab[617]
-#define __pyx_n_u_weakref __pyx_string_tab[618]
-#define __pyx_n_u_word __pyx_string_tab[619]
-#define __pyx_n_u_write __pyx_string_tab[620]
-#define __pyx_n_u_write_pandas __pyx_string_tab[621]
-#define __pyx_n_u_wt __pyx_string_tab[622]
-#define __pyx_n_u_x __pyx_string_tab[623]
-#define __pyx_n_u_zeros __pyx_string_tab[624]
-#define __pyx_n_u_zeta __pyx_string_tab[625]
-#define __pyx_kp_b__6 __pyx_string_tab[626]
-#define __pyx_kp_b_iso88591_1 __pyx_string_tab[627]
-#define __pyx_kp_b_iso88591_1F_c_A_q_1HA_e1A_1HE_Jaxq_t2U_D __pyx_string_tab[628]
-#define __pyx_kp_b_iso88591_1_ARq_uA_2Qaq_waq_5_Qc_c_as_A_a __pyx_string_tab[629]
-#define __pyx_kp_b_iso88591_1_j_Yc_ha __pyx_string_tab[630]
-#define __pyx_kp_b_iso88591_4wa_q_AQ_4r_a_Q_r_q_j_Rt2Q_r_q __pyx_string_tab[631]
-#define __pyx_kp_b_iso88591_66M_Yhhu_v_D_D_O_O_P_n_r_A_1_A __pyx_string_tab[632]
-#define __pyx_kp_b_iso88591_9A_a_2V1HA_a_1_1_q_r_3az_1_A_E __pyx_string_tab[633]
-#define __pyx_kp_b_iso88591_A_1Kt47J_a_E_9F_a_a_1F_9AV1_HD_Q __pyx_string_tab[634]
-#define __pyx_kp_b_iso88591_A_1_Qm9G_V1LPQ_E_q_AQ_Q_a_3ar_1 __pyx_string_tab[635]
-#define __pyx_kp_b_iso88591_A_2Yaq_2Q_1AT_1_2Q_aq_q __pyx_string_tab[636]
-#define __pyx_kp_b_iso88591_A_3auBa_WAT_Q_T_1A_e1 __pyx_string_tab[637]
-#define __pyx_kp_b_iso88591_A_3auBa_z_as_E_Qa_Qc_E_E_Qa_Qc_i __pyx_string_tab[638]
-#define __pyx_kp_b_iso88591_A_4_U_T_Q_1_AYd_9Cq_1_Ba_q __pyx_string_tab[639]
-#define __pyx_kp_b_iso88591_A_4_iq_D0B_kQUUV __pyx_string_tab[640]
-#define __pyx_kp_b_iso88591_A_4t_QfA_U_axuHA_85_S_AWA __pyx_string_tab[641]
-#define __pyx_kp_b_iso88591_A_4z_6_Qa_q_HA_L_b_E_1_q_Qa_q __pyx_string_tab[642]
-#define __pyx_kp_b_iso88591_A_A_a_Kq_M __pyx_string_tab[643]
-#define __pyx_kp_b_iso88591_A_G4q_Kxz_87R___q_AXRr_7_Bb_V7_6 __pyx_string_tab[644]
-#define __pyx_kp_b_iso88591_A_Kq_IQ_1_l_l_a_IQ_N_Kq_M_N_1_y __pyx_string_tab[645]
-#define __pyx_kp_b_iso88591_A_Qe2T_4q __pyx_string_tab[646]
-#define __pyx_kp_b_iso88591_A_a_d_t4r_q_t1A_7_T_E_7_5_d_4r_q __pyx_string_tab[647]
-#define __pyx_kp_b_iso88591_A_gQb_xt2V6_Kt7_2WIT_6_qPSSZZ_q __pyx_string_tab[648]
-#define __pyx_kp_b_iso88591_A_y __pyx_string_tab[649]
-#define __pyx_kp_b_iso88591_Jc_q_2U_q_xq_xq_A_82U_Q __pyx_string_tab[650]
-#define __pyx_kp_b_iso88591_Q __pyx_string_tab[651]
-#define __pyx_kp_b_iso88591_Q_1A_2Q_Q_b_Q_a_HA_wfAQ_Rt1Jc_A __pyx_string_tab[652]
-#define __pyx_kp_b_iso88591_Q_2 __pyx_string_tab[653]
-#define __pyx_kp_b_iso88591_Q_IQ __pyx_string_tab[654]
-#define __pyx_kp_b_iso88591_Q_Q_4A __pyx_string_tab[655]
-#define __pyx_kp_b_iso88591_Q_Q_vQ_A_a_A_aq_axq_XQ_2_b_A_6c __pyx_string_tab[656]
-#define __pyx_kp_b_iso88591_Q_s_9AQ_S_4q_Q __pyx_string_tab[657]
-#define __pyx_kp_b_iso88591_Q_s_Ba_1_D_1_auE_5_JauA_q_JauA __pyx_string_tab[658]
-#define __pyx_kp_b_iso88591_T_S_t1Bb8H __pyx_string_tab[659]
-#define __pyx_kp_b_iso88591_T_Zq_E_7_b_axuBa_WL_8_ha_Q __pyx_string_tab[660]
-#define __pyx_kp_b_iso88591_Ya_A_5_Q_G6_7_1E_V1A_uA_E_s_2Qa __pyx_string_tab[661]
-#define __pyx_kp_b_iso88591_e6_auAQ_t1Jas_3a_t6_1A_a_1AQ __pyx_string_tab[662]
-#define __pyx_kp_b_iso88591_iq_G6_A __pyx_string_tab[663]
-#define __pyx_kp_b_iso88591_iy_LXYj_t_QfBa_nAQ_Q_e5_7_s_WA __pyx_string_tab[664]
-#define __pyx_kp_b_iso88591_q_7_S_4q_0_q_7_3a_xvQd_A_87_1_w __pyx_string_tab[665]
-#define __pyx_kp_b_iso88591_q_Jd_av __pyx_string_tab[666]
-#define __pyx_kp_b_iso88591_q_e3a_AXQ_4q_L_a_4q_AXU_Kq_Q __pyx_string_tab[667]
-#define __pyx_kp_b_iso88591_q_wm7_7_aq_w_m3c_AT_5_q_S_z_a_r __pyx_string_tab[668]
-#define __pyx_kp_b_iso88591_q_z_wa_y_2Q __pyx_string_tab[669]
-#define __pyx_kp_b_iso88591_q_z_wa_y_q_Je1 __pyx_string_tab[670]
-#define __pyx_kp_b_iso88591_t3a_q_z_a_1_4r_1_1E_1 __pyx_string_tab[671]
-#define __pyx_kp_b_iso88591_t3a_q_z_a_Bk_FRXXY_8_vQ_4r_b_Ba __pyx_string_tab[672]
-#define __pyx_kp_b_iso88591_vS_q_z_3avRq_1_uAQ_1A __pyx_string_tab[673]
-#define __pyx_kp_b_iso88591_z_a_Cq_A_E_t_Qb_iq_AXT_Qc_AQ_q __pyx_string_tab[674]
-#define __pyx_kp_b_iso88591_z_q_T_q_r_q_Q_t5_V1_1 __pyx_string_tab[675]
-#define __pyx_n_b_O __pyx_string_tab[676]
+#define __pyx_n_u_runtime __pyx_string_tab[545]
+#define __pyx_n_u_seek __pyx_string_tab[546]
+#define __pyx_n_u_self __pyx_string_tab[547]
+#define __pyx_n_u_sep __pyx_string_tab[548]
+#define __pyx_n_u_separator __pyx_string_tab[549]
+#define __pyx_n_u_setLogFile __pyx_string_tab[550]
+#define __pyx_n_u_setNestedExceptions __pyx_string_tab[551]
+#define __pyx_n_u_setRealPrecision __pyx_string_tab[552]
+#define __pyx_n_u_set_dictionary __pyx_string_tab[553]
+#define __pyx_n_u_set_name __pyx_string_tab[554]
+#define __pyx_n_u_setdefault __pyx_string_tab[555]
+#define __pyx_n_u_sets __pyx_string_tab[556]
+#define __pyx_n_u_setstate __pyx_string_tab[557]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[558]
+#define __pyx_n_u_shape __pyx_string_tab[559]
+#define __pyx_n_u_size __pyx_string_tab[560]
+#define __pyx_n_u_skiprows __pyx_string_tab[561]
+#define __pyx_n_u_sorted __pyx_string_tab[562]
+#define __pyx_n_u_source __pyx_string_tab[563]
+#define __pyx_n_u_split __pyx_string_tab[564]
+#define __pyx_n_u_start __pyx_string_tab[565]
+#define __pyx_n_u_stdout __pyx_string_tab[566]
+#define __pyx_n_u_step __pyx_string_tab[567]
+#define __pyx_n_u_stop __pyx_string_tab[568]
+#define __pyx_n_u_string __pyx_string_tab[569]
+#define __pyx_n_u_struct __pyx_string_tab[570]
+#define __pyx_n_u_sub __pyx_string_tab[571]
+#define __pyx_n_u_subn __pyx_string_tab[572]
+#define __pyx_n_u_subprocess __pyx_string_tab[573]
+#define __pyx_n_u_suffix __pyx_string_tab[574]
+#define __pyx_n_u_sugar __pyx_string_tab[575]
+#define __pyx_n_u_syntax __pyx_string_tab[576]
+#define __pyx_n_u_syntax_file __pyx_string_tab[577]
+#define __pyx_n_u_sys __pyx_string_tab[578]
+#define __pyx_n_u_t __pyx_string_tab[579]
+#define __pyx_n_u_t0 __pyx_string_tab[580]
+#define __pyx_n_u_t1 __pyx_string_tab[581]
+#define __pyx_n_u_tell __pyx_string_tab[582]
+#define __pyx_n_u_tempfile __pyx_string_tab[583]
+#define __pyx_n_u_test __pyx_string_tab[584]
+#define __pyx_n_u_thisdoc __pyx_string_tab[585]
+#define __pyx_n_u_time __pyx_string_tab[586]
+#define __pyx_n_u_tmp __pyx_string_tab[587]
+#define __pyx_n_u_tmpfile __pyx_string_tab[588]
+#define __pyx_n_u_tobytes __pyx_string_tab[589]
+#define __pyx_n_u_tofile __pyx_string_tab[590]
+#define __pyx_n_u_tofile_2 __pyx_string_tab[591]
+#define __pyx_n_u_toplumed __pyx_string_tab[592]
+#define __pyx_n_u_toplumed_2 __pyx_string_tab[593]
+#define __pyx_n_u_traceback __pyx_string_tab[594]
+#define __pyx_n_u_type __pyx_string_tab[595]
+#define __pyx_n_u_typecode __pyx_string_tab[596]
+#define __pyx_n_u_types __pyx_string_tab[597]
+#define __pyx_n_u_unpack __pyx_string_tab[598]
+#define __pyx_n_u_update __pyx_string_tab[599]
+#define __pyx_n_u_use_index __pyx_string_tab[600]
+#define __pyx_n_u_use_time __pyx_string_tab[601]
+#define __pyx_n_u_usecols __pyx_string_tab[602]
+#define __pyx_n_u_v __pyx_string_tab[603]
+#define __pyx_n_u_v0 __pyx_string_tab[604]
+#define __pyx_n_u_v1 __pyx_string_tab[605]
+#define __pyx_n_u_v2 __pyx_string_tab[606]
+#define __pyx_n_u_v3 __pyx_string_tab[607]
+#define __pyx_n_u_v4 __pyx_string_tab[608]
+#define __pyx_n_u_val __pyx_string_tab[609]
+#define __pyx_n_u_value __pyx_string_tab[610]
+#define __pyx_n_u_values __pyx_string_tab[611]
+#define __pyx_n_u_verbatim __pyx_string_tab[612]
+#define __pyx_n_u_version_info __pyx_string_tab[613]
+#define __pyx_n_u_vimdict __pyx_string_tab[614]
+#define __pyx_n_u_w __pyx_string_tab[615]
+#define __pyx_n_u_warn __pyx_string_tab[616]
+#define __pyx_n_u_warnings __pyx_string_tab[617]
+#define __pyx_n_u_water __pyx_string_tab[618]
+#define __pyx_n_u_weakref __pyx_string_tab[619]
+#define __pyx_n_u_word __pyx_string_tab[620]
+#define __pyx_n_u_write __pyx_string_tab[621]
+#define __pyx_n_u_write_pandas __pyx_string_tab[622]
+#define __pyx_n_u_wt __pyx_string_tab[623]
+#define __pyx_n_u_x __pyx_string_tab[624]
+#define __pyx_n_u_zeros __pyx_string_tab[625]
+#define __pyx_n_u_zeta __pyx_string_tab[626]
+#define __pyx_kp_b__6 __pyx_string_tab[627]
+#define __pyx_kp_b_iso88591_1 __pyx_string_tab[628]
+#define __pyx_kp_b_iso88591_1F_c_A_q_1HA_e1A_1HE_Jaxq_t2U_D __pyx_string_tab[629]
+#define __pyx_kp_b_iso88591_1_ARq_uA_2Qaq_waq_5_Qc_c_as_A_a __pyx_string_tab[630]
+#define __pyx_kp_b_iso88591_1_j_Yc_ha __pyx_string_tab[631]
+#define __pyx_kp_b_iso88591_4wa_q_AQ_4r_a_Q_r_q_j_Rt2Q_r_q __pyx_string_tab[632]
+#define __pyx_kp_b_iso88591_66M_Yhhu_v_D_D_O_O_P_n_r_A_1_A __pyx_string_tab[633]
+#define __pyx_kp_b_iso88591_9A_a_2V1HA_a_1_1_q_r_3az_1_A_E __pyx_string_tab[634]
+#define __pyx_kp_b_iso88591_A_1Kt47J_a_E_9F_a_a_1F_9AV1_HD_Q __pyx_string_tab[635]
+#define __pyx_kp_b_iso88591_A_1_Qm9G_V1LPQ_E_q_AQ_Q_a_3ar_1 __pyx_string_tab[636]
+#define __pyx_kp_b_iso88591_A_2Yaq_2Q_1AT_1_2Q_aq_q __pyx_string_tab[637]
+#define __pyx_kp_b_iso88591_A_3auBa_WAT_Q_T_1A_e1 __pyx_string_tab[638]
+#define __pyx_kp_b_iso88591_A_3auBa_z_as_E_Qa_Qc_E_E_Qa_Qc_i __pyx_string_tab[639]
+#define __pyx_kp_b_iso88591_A_4_U_T_Q_1_AYd_9Cq_1_Ba_q __pyx_string_tab[640]
+#define __pyx_kp_b_iso88591_A_4_iq_D0B_kQUUV __pyx_string_tab[641]
+#define __pyx_kp_b_iso88591_A_4t_QfA_U_axuHA_85_S_AWA __pyx_string_tab[642]
+#define __pyx_kp_b_iso88591_A_4z_6_Qa_q_HA_L_b_E_1_q_Qa_q __pyx_string_tab[643]
+#define __pyx_kp_b_iso88591_A_A_a_Kq_M __pyx_string_tab[644]
+#define __pyx_kp_b_iso88591_A_G4q_Kxz_87R___q_AXRr_7_Bb_V7_6 __pyx_string_tab[645]
+#define __pyx_kp_b_iso88591_A_Kq_IQ_1_l_l_a_IQ_N_Kq_M_N_1_y __pyx_string_tab[646]
+#define __pyx_kp_b_iso88591_A_Qe2T_4q __pyx_string_tab[647]
+#define __pyx_kp_b_iso88591_A_a_d_t4r_q_t1A_7_T_E_7_5_d_4r_q __pyx_string_tab[648]
+#define __pyx_kp_b_iso88591_A_gQb_xt2V6_Kt7_2WIT_6_qPSSZZ_q __pyx_string_tab[649]
+#define __pyx_kp_b_iso88591_A_y __pyx_string_tab[650]
+#define __pyx_kp_b_iso88591_Jc_q_2U_q_xq_xq_A_82U_Q __pyx_string_tab[651]
+#define __pyx_kp_b_iso88591_Q __pyx_string_tab[652]
+#define __pyx_kp_b_iso88591_Q_1A_2Q_Q_b_Q_a_HA_wfAQ_Rt1Jc_A __pyx_string_tab[653]
+#define __pyx_kp_b_iso88591_Q_2 __pyx_string_tab[654]
+#define __pyx_kp_b_iso88591_Q_IQ __pyx_string_tab[655]
+#define __pyx_kp_b_iso88591_Q_Q_4A __pyx_string_tab[656]
+#define __pyx_kp_b_iso88591_Q_Q_vQ_A_a_A_aq_axq_XQ_2_b_A_6c __pyx_string_tab[657]
+#define __pyx_kp_b_iso88591_Q_s_9AQ_S_4q_Q __pyx_string_tab[658]
+#define __pyx_kp_b_iso88591_Q_s_Ba_1_D_1_auE_5_JauA_q_JauA __pyx_string_tab[659]
+#define __pyx_kp_b_iso88591_T_S_t1Bb8H __pyx_string_tab[660]
+#define __pyx_kp_b_iso88591_T_Zq_E_7_b_axuBa_WL_8_ha_Q __pyx_string_tab[661]
+#define __pyx_kp_b_iso88591_Ya_A_5_Q_G6_7_1E_V1A_uA_E_s_2Qa __pyx_string_tab[662]
+#define __pyx_kp_b_iso88591_e6_auAQ_t1Jas_3a_t6_1A_a_1AQ __pyx_string_tab[663]
+#define __pyx_kp_b_iso88591_iq_G6_A __pyx_string_tab[664]
+#define __pyx_kp_b_iso88591_iy_LXYj_t_QfBa_nAQ_Q_e5_7_s_WA __pyx_string_tab[665]
+#define __pyx_kp_b_iso88591_q_7_S_4q_0_q_7_3a_xvQd_A_87_1_w __pyx_string_tab[666]
+#define __pyx_kp_b_iso88591_q_Jd_av __pyx_string_tab[667]
+#define __pyx_kp_b_iso88591_q_e3a_AXQ_4q_L_a_4q_AXU_Kq_Q __pyx_string_tab[668]
+#define __pyx_kp_b_iso88591_q_wm7_7_aq_w_m3c_AT_5_q_S_z_a_r __pyx_string_tab[669]
+#define __pyx_kp_b_iso88591_q_z_wa_y_2Q __pyx_string_tab[670]
+#define __pyx_kp_b_iso88591_q_z_wa_y_q_Je1 __pyx_string_tab[671]
+#define __pyx_kp_b_iso88591_t3a_q_z_a_1_4r_1_1E_1 __pyx_string_tab[672]
+#define __pyx_kp_b_iso88591_t3a_q_z_a_Bk_FRXXY_8_vQ_4r_b_Ba __pyx_string_tab[673]
+#define __pyx_kp_b_iso88591_vS_q_z_3avRq_1_uAQ_1A __pyx_string_tab[674]
+#define __pyx_kp_b_iso88591_z_a_Cq_A_E_t_Qb_iq_AXT_Qc_AQ_q __pyx_string_tab[675]
+#define __pyx_kp_b_iso88591_z_q_T_q_r_q_Q_t5_V1_1 __pyx_string_tab[676]
+#define __pyx_n_b_O __pyx_string_tab[677]
 #define __pyx_float_0_0 __pyx_number_tab[0]
 #define __pyx_float_1_0 __pyx_number_tab[1]
 #define __pyx_int_0 __pyx_number_tab[2]
@@ -4324,12 +4325,12 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   #if CYTHON_PEP489_MULTI_PHASE_INIT
   __Pyx_State_RemoveModule(NULL);
   #endif
-  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed_Plumed);
-  Py_CLEAR(clear_module_state->__pyx_type_6plumed_Plumed);
-  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function);
-  Py_CLEAR(clear_module_state->__pyx_type_6plumed___pyx_scope_struct___build_convert_function);
-  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas);
-  Py_CLEAR(clear_module_state->__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas);
+  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed_7_plumed_Plumed);
+  Py_CLEAR(clear_module_state->__pyx_type_6plumed_7_plumed_Plumed);
+  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function);
+  Py_CLEAR(clear_module_state->__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function);
+  Py_CLEAR(clear_module_state->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas);
+  Py_CLEAR(clear_module_state->__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas);
   Py_CLEAR(clear_module_state->__pyx_array_type);
   Py_CLEAR(clear_module_state->__pyx_type___pyx_array);
   Py_CLEAR(clear_module_state->__pyx_MemviewEnum_type);
@@ -4341,7 +4342,7 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   for (int i=0; i<3; ++i) { Py_CLEAR(clear_module_state->__pyx_slice[i]); }
   for (int i=0; i<14; ++i) { Py_CLEAR(clear_module_state->__pyx_tuple[i]); }
   for (int i=0; i<54; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<677; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<678; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<12; ++i) { Py_CLEAR(clear_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
@@ -4365,12 +4366,12 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   __Pyx_VISIT_CONST(traverse_module_state->__pyx_empty_tuple);
   __Pyx_VISIT_CONST(traverse_module_state->__pyx_empty_bytes);
   __Pyx_VISIT_CONST(traverse_module_state->__pyx_empty_unicode);
-  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed_Plumed);
-  Py_VISIT(traverse_module_state->__pyx_type_6plumed_Plumed);
-  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function);
-  Py_VISIT(traverse_module_state->__pyx_type_6plumed___pyx_scope_struct___build_convert_function);
-  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas);
-  Py_VISIT(traverse_module_state->__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas);
+  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed_7_plumed_Plumed);
+  Py_VISIT(traverse_module_state->__pyx_type_6plumed_7_plumed_Plumed);
+  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function);
+  Py_VISIT(traverse_module_state->__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function);
+  Py_VISIT(traverse_module_state->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas);
+  Py_VISIT(traverse_module_state->__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas);
   Py_VISIT(traverse_module_state->__pyx_array_type);
   Py_VISIT(traverse_module_state->__pyx_type___pyx_array);
   Py_VISIT(traverse_module_state->__pyx_MemviewEnum_type);
@@ -4382,7 +4383,7 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   for (int i=0; i<3; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_slice[i]); }
   for (int i=0; i<14; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_tuple[i]); }
   for (int i=0; i<54; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<677; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<678; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<12; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
@@ -17673,23 +17674,23 @@ static PyObject *__pyx_unpickle_Enum__set_state(struct __pyx_MemviewEnum_obj *__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_1_bundled_kernel_path(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed__bundled_kernel_path, "Return the installed private kernel path, if this is a bundled wheel.");
-static PyMethodDef __pyx_mdef_6plumed_1_bundled_kernel_path = {"_bundled_kernel_path", (PyCFunction)__pyx_pw_6plumed_1_bundled_kernel_path, METH_NOARGS, __pyx_doc_6plumed__bundled_kernel_path};
-static PyObject *__pyx_pw_6plumed_1_bundled_kernel_path(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_6plumed_7_plumed_1_bundled_kernel_path(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed__bundled_kernel_path, "Return the installed private kernel path, if this is a bundled wheel.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_1_bundled_kernel_path = {"_bundled_kernel_path", (PyCFunction)__pyx_pw_6plumed_7_plumed_1_bundled_kernel_path, METH_NOARGS, __pyx_doc_6plumed_7_plumed__bundled_kernel_path};
+static PyObject *__pyx_pw_6plumed_7_plumed_1_bundled_kernel_path(PyObject *__pyx_self, CYTHON_UNUSED PyObject *unused) {
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("_bundled_kernel_path (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_6plumed__bundled_kernel_path(__pyx_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed__bundled_kernel_path(__pyx_self);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *__pyx_self) {
+static PyObject *__pyx_pf_6plumed_7_plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *__pyx_self) {
   PyObject *__pyx_v_suffix = NULL;
   PyObject *__pyx_v_path = NULL;
   PyObject *__pyx_r = NULL;
@@ -17740,7 +17741,7 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
  *     suffix = ".dylib" if sys.platform == "darwin" else ".so"
  *     path = os.path.join(             # <<<<<<<<<<<<<<
  *         os.path.dirname(os.path.abspath(__file__)),
- *         "plumed_runtime",
+ *         "runtime",
 */
   __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_os); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 73, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
@@ -17754,7 +17755,7 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
  *     suffix = ".dylib" if sys.platform == "darwin" else ".so"
  *     path = os.path.join(
  *         os.path.dirname(os.path.abspath(__file__)),             # <<<<<<<<<<<<<<
- *         "plumed_runtime",
+ *         "runtime",
  *         "lib",
 */
   __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_os); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 74, __pyx_L1_error)
@@ -17795,7 +17796,7 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
   }
 
   /* "plumed.pyx":77
- *         "plumed_runtime",
+ *         "runtime",
  *         "lib",
  *         "libplumedKernel" + suffix,             # <<<<<<<<<<<<<<
  *     )
@@ -17805,7 +17806,7 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_t_12 = 0;
   {
-    PyObject *__pyx_callargs[5] = {__pyx_t_3, __pyx_t_2, __pyx_mstate_global->__pyx_n_u_plumed_runtime, __pyx_mstate_global->__pyx_n_u_lib, __pyx_t_8};
+    PyObject *__pyx_callargs[5] = {__pyx_t_3, __pyx_t_2, __pyx_mstate_global->__pyx_n_u_runtime, __pyx_mstate_global->__pyx_n_u_lib, __pyx_t_8};
     __pyx_t_1 = __Pyx_PyObject_FastCallMethod((PyObject*)__pyx_mstate_global->__pyx_n_u_join, __pyx_callargs+__pyx_t_12, (5-__pyx_t_12) | (1*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -17874,7 +17875,7 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
   __Pyx_XDECREF(__pyx_t_9);
   __Pyx_XDECREF(__pyx_t_10);
   __Pyx_XDECREF(__pyx_t_11);
-  __Pyx_AddTraceback("plumed._bundled_kernel_path", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._bundled_kernel_path", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_suffix);
@@ -17893,8 +17894,8 @@ static PyObject *__pyx_pf_6plumed__bundled_kernel_path(CYTHON_UNUSED PyObject *_
 */
 
 /* Python wrapper */
-static int __pyx_pw_6plumed_6Plumed_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_6plumed_6Plumed_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_6plumed_7_plumed_6Plumed_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_6plumed_7_plumed_6Plumed_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_r;
@@ -17910,14 +17911,14 @@ static int __pyx_pw_6plumed_6Plumed_1__cinit__(PyObject *__pyx_v_self, PyObject 
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_VARARGS(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return -1;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__cinit__", __pyx_kwds); return -1;}
-  __pyx_r = __pyx_pf_6plumed_6Plumed___cinit__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed___cinit__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_6plumed_6Plumed___cinit__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self) {
+static int __pyx_pf_6plumed_7_plumed_6Plumed___cinit__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self) {
   int __pyx_r;
 
   /* "plumed.pyx":88
@@ -17951,19 +17952,19 @@ static int __pyx_pf_6plumed_6Plumed___cinit__(struct __pyx_obj_6plumed_Plumed *_
 */
 
 /* Python wrapper */
-static void __pyx_pw_6plumed_6Plumed_3__dealloc__(PyObject *__pyx_v_self); /*proto*/
-static void __pyx_pw_6plumed_6Plumed_3__dealloc__(PyObject *__pyx_v_self) {
+static void __pyx_pw_6plumed_7_plumed_6Plumed_3__dealloc__(PyObject *__pyx_v_self); /*proto*/
+static void __pyx_pw_6plumed_7_plumed_6Plumed_3__dealloc__(PyObject *__pyx_v_self) {
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_pf_6plumed_6Plumed_2__dealloc__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self));
+  __pyx_pf_6plumed_7_plumed_6Plumed_2__dealloc__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
 }
 
-static void __pyx_pf_6plumed_6Plumed_2__dealloc__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self) {
+static void __pyx_pf_6plumed_7_plumed_6Plumed_2__dealloc__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self) {
 
   /* "plumed.pyx":92
  *          # this is guaranteed to be called once
@@ -17994,8 +17995,8 @@ static void __pyx_pf_6plumed_6Plumed_2__dealloc__(struct __pyx_obj_6plumed_Plume
 */
 
 /* Python wrapper */
-static int __pyx_pw_6plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_6plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_6plumed_7_plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_6plumed_7_plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_kernel = 0;
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
@@ -18050,11 +18051,11 @@ static int __pyx_pw_6plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.Plumed.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_6Plumed_4__init__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self), __pyx_v_kernel);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_4__init__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self), __pyx_v_kernel);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -18064,7 +18065,7 @@ static int __pyx_pw_6plumed_6Plumed_5__init__(PyObject *__pyx_v_self, PyObject *
   return __pyx_r;
 }
 
-static int __pyx_pf_6plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_kernel) {
+static int __pyx_pf_6plumed_7_plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_kernel) {
   PyObject *__pyx_v_py_kernel = 0;
   char *__pyx_v_ckernel;
   PyObject *__pyx_v_api = NULL;
@@ -18636,7 +18637,7 @@ static int __pyx_pf_6plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_Plumed *_
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed.Plumed.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_py_kernel);
@@ -18655,16 +18656,16 @@ static int __pyx_pf_6plumed_6Plumed_4__init__(struct __pyx_obj_6plumed_Plumed *_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_7finalize(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_7finalize(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_6Plumed_6finalize, " Explicitly finalize a Plumed object.\n\n             Can be used in cases where one wants to make sure the Plumed object is finalized\n             (so that all output files are flushed and all calculations are finalized) but there is\n             a dangling reference to that Plumed object. Notice that after this call the self object\n             will be invalid so that using cmd will raise an exception.\n\n             It is also called by __exit__ in order to allow the following usage:\n             ````\n             with plumed.Plumed() as p:\n                 p.cmd(\"init\")\n                 # ETC\n\n             # p object will be finalized when exiting from this context\n             ````\n         ");
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_7finalize = {"finalize", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_7finalize, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_6Plumed_6finalize};
-static PyObject *__pyx_pw_6plumed_6Plumed_7finalize(PyObject *__pyx_v_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_6Plumed_6finalize, " Explicitly finalize a Plumed object.\n\n             Can be used in cases where one wants to make sure the Plumed object is finalized\n             (so that all output files are flushed and all calculations are finalized) but there is\n             a dangling reference to that Plumed object. Notice that after this call the self object\n             will be invalid so that using cmd will raise an exception.\n\n             It is also called by __exit__ in order to allow the following usage:\n             ````\n             with plumed.Plumed() as p:\n                 p.cmd(\"init\")\n                 # ETC\n\n             # p object will be finalized when exiting from this context\n             ````\n         ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_7finalize = {"finalize", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_7finalize, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_6Plumed_6finalize};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_7finalize(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -18690,14 +18691,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("finalize", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6plumed_6Plumed_6finalize(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_6finalize(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_6finalize(struct __pyx_obj_6plumed_Plumed *__pyx_v_self) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_6finalize(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("finalize", 0);
@@ -18744,15 +18745,15 @@ static PyObject *__pyx_pf_6plumed_6Plumed_6finalize(struct __pyx_obj_6plumed_Plu
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_9__enter__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_9__enter__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_9__enter__ = {"__enter__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_9__enter__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_6Plumed_9__enter__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_9__enter__ = {"__enter__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_9__enter__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_9__enter__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -18778,14 +18779,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__enter__", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6plumed_6Plumed_8__enter__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_8__enter__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_8__enter__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_8__enter__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__enter__", 0);
@@ -18826,15 +18827,15 @@ static PyObject *__pyx_pf_6plumed_6Plumed_8__enter__(struct __pyx_obj_6plumed_Pl
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_11__exit__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_11__exit__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_11__exit__ = {"__exit__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_11__exit__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_6Plumed_11__exit__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_11__exit__ = {"__exit__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_11__exit__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_11__exit__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -18912,11 +18913,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.Plumed.__exit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__exit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_6Plumed_10__exit__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self), __pyx_v_type, __pyx_v_value, __pyx_v_traceback);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_10__exit__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self), __pyx_v_type, __pyx_v_value, __pyx_v_traceback);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -18926,7 +18927,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v_type, CYTHON_UNUSED PyObject *__pyx_v_value, CYTHON_UNUSED PyObject *__pyx_v_traceback) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v_type, CYTHON_UNUSED PyObject *__pyx_v_value, CYTHON_UNUSED PyObject *__pyx_v_traceback) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -18970,7 +18971,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_Pl
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("plumed.Plumed.__exit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__exit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -18986,7 +18987,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_10__exit__(struct __pyx_obj_6plumed_Pl
  *           try:
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, plumed_error __pyx_v_error) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_raise_exception(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, plumed_error __pyx_v_error) {
   PyObject *__pyx_v_e = NULL;
   PyObject *__pyx_v_raise_from = NULL;
   char const *__pyx_v_msg;
@@ -19046,7 +19047,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plume
  *           except Exception as e:
  *             raise_from = e
 */
-        __pyx_t_5 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->raise_exception(__pyx_v_self, (*((plumed_error *)__pyx_v_error.nested))); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 150, __pyx_L4_error)
+        __pyx_t_5 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->raise_exception(__pyx_v_self, (*((plumed_error *)__pyx_v_error.nested))); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 150, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_5);
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
@@ -19074,7 +19075,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plume
 */
       __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_Exception))));
       if (__pyx_t_6) {
-        __Pyx_AddTraceback("plumed.Plumed.raise_exception", __pyx_clineno, __pyx_lineno, __pyx_filename);
+        __Pyx_AddTraceback("plumed._plumed.Plumed.raise_exception", __pyx_clineno, __pyx_lineno, __pyx_filename);
         if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 151, __pyx_L6_except_error)
         __Pyx_XGOTREF(__pyx_t_5);
         __Pyx_XGOTREF(__pyx_t_7);
@@ -20009,7 +20010,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plume
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("plumed.Plumed.raise_exception", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.raise_exception", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __Pyx_XDECREF(__pyx_v_e);
   __Pyx_XDECREF(__pyx_v_raise_from);
@@ -20029,7 +20030,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_raise_exception(struct __pyx_obj_6plume
  *          cdef cplumed.plumed_nothrow_handler nothrow
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, char const *__pyx_v_ckey, void const *__pyx_v_val, size_t __pyx_v_nelem, size_t *__pyx_v_shape, size_t __pyx_v_flags) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, char const *__pyx_v_ckey, void const *__pyx_v_val, size_t __pyx_v_nelem, size_t *__pyx_v_shape, size_t __pyx_v_flags) {
   plumed_safeptr __pyx_v_safe;
   plumed_nothrow_handler __pyx_v_nothrow;
   plumed_error __pyx_v_error;
@@ -20180,7 +20181,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_
  *            finally:
  *              cplumed.plumed_error_finalize(error)
 */
-      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->raise_exception(__pyx_v_self, __pyx_v_error); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 217, __pyx_L8_error)
+      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->raise_exception(__pyx_v_self, __pyx_v_error); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 217, __pyx_L8_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     }
@@ -20252,7 +20253,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_low_level", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_low_level", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -20268,7 +20269,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_low_level(struct __pyx_obj_6plumed_
  *          cdef size_t ashape[5]
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   size_t __pyx_v_ashape[5];
   PyObject *__pyx_v_shape = NULL;
@@ -20412,7 +20413,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6pl
     __Pyx_RaiseBufferIndexError(__pyx_t_11);
     __PYX_ERR(0, 228, __pyx_L1_error)
   }
-  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x40000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
+  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x40000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -20431,7 +20432,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6pl
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_4, 1);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_ndarray_double", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_ndarray_double", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -20449,7 +20450,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_double(struct __pyx_obj_6pl
  *          cdef size_t ashape[5]
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   size_t __pyx_v_ashape[5];
   PyObject *__pyx_v_shape = NULL;
@@ -20593,7 +20594,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plume
     __Pyx_RaiseBufferIndexError(__pyx_t_11);
     __PYX_ERR(0, 237, __pyx_L1_error)
   }
-  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 237, __pyx_L1_error)
+  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -20612,7 +20613,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plume
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_4, 1);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_ndarray_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_ndarray_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -20630,7 +20631,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_int(struct __pyx_obj_6plume
  *          cdef size_t ashape[5]
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   size_t __pyx_v_ashape[5];
   PyObject *__pyx_v_shape = NULL;
@@ -20774,7 +20775,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plum
     __Pyx_RaiseBufferIndexError(__pyx_t_11);
     __PYX_ERR(0, 246, __pyx_L1_error)
   }
-  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_9, (&(*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_10 * __pyx_v_abuffer.strides[0]) )))), 0, (&(__pyx_v_ashape[0])), (((sizeof((*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_12 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 246, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -20793,7 +20794,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plum
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_4, 1);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_ndarray_long", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_ndarray_long", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -20811,7 +20812,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_ndarray_long(struct __pyx_obj_6plum
  *          self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -20869,7 +20870,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plum
     __Pyx_RaiseBufferIndexError(__pyx_t_4);
     __PYX_ERR(0, 249, __pyx_L1_error)
   }
-  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x40000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 249, __pyx_L1_error)
+  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((double *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x40000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 249, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
@@ -20887,7 +20888,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plum
   __pyx_L1_error:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_1, 1);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_array_double", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_array_double", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -20904,7 +20905,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_double(struct __pyx_obj_6plum
  *          self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -20962,7 +20963,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_
     __Pyx_RaiseBufferIndexError(__pyx_t_4);
     __PYX_ERR(0, 252, __pyx_L1_error)
   }
-  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 252, __pyx_L1_error)
+  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((int *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 252, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
@@ -20980,7 +20981,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_
   __pyx_L1_error:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_1, 1);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_array_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_array_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -20997,7 +20998,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_int(struct __pyx_obj_6plumed_
  *          self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   __Pyx_memviewslice __pyx_v_abuffer = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -21055,7 +21056,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed
     __Pyx_RaiseBufferIndexError(__pyx_t_4);
     __PYX_ERR(0, 255, __pyx_L1_error)
   }
-  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
+  __pyx_t_7 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_2, (&(*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_3 * __pyx_v_abuffer.strides[0]) )))), __pyx_t_5, NULL, (((sizeof((*((long *) ( /* dim=0 */ (__pyx_v_abuffer.data + __pyx_t_6 * __pyx_v_abuffer.strides[0]) ))))) + 0x30000) + 0x4000000)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
@@ -21073,7 +21074,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed
   __pyx_L1_error:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_t_1, 1);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_array_long", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_array_long", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_abuffer, 1);
@@ -21090,7 +21091,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_array_long(struct __pyx_obj_6plumed
  *      cdef cmd_int(self, ckey, int val):
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, double __pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, double __pyx_v_val) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   char const *__pyx_t_1;
@@ -21108,7 +21109,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_Plum
  *          self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value)
 */
   __pyx_t_1 = __Pyx_PyObject_AsString(__pyx_v_ckey); if (unlikely((!__pyx_t_1) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L1_error)
-  __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_1, (&__pyx_v_val), 1, NULL, (((sizeof(__pyx_v_val)) + 0x40000) + 0x2000000)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_1, (&__pyx_v_val), 1, NULL, (((sizeof(__pyx_v_val)) + 0x40000) + 0x2000000)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
@@ -21125,7 +21126,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_Plum
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_float", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_float", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -21141,7 +21142,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_float(struct __pyx_obj_6plumed_Plum
  *      cdef cmd_mpi(self, ckey, val):
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, int __pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, int __pyx_v_val) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   char const *__pyx_t_1;
@@ -21159,7 +21160,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_Plumed
  *          import mpi4py.MPI as MPI
 */
   __pyx_t_1 = __Pyx_PyObject_AsString(__pyx_v_ckey); if (unlikely((!__pyx_t_1) && PyErr_Occurred())) __PYX_ERR(0, 259, __pyx_L1_error)
-  __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_1, (&__pyx_v_val), 1, NULL, (((sizeof(__pyx_v_val)) + 0x30000) + 0x2000000)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 259, __pyx_L1_error)
+  __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_1, (&__pyx_v_val), 1, NULL, (((sizeof(__pyx_v_val)) + 0x30000) + 0x2000000)); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 259, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
@@ -21176,7 +21177,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_Plumed
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_int", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -21192,7 +21193,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_int(struct __pyx_obj_6plumed_Plumed
  *          cdef size_t comm_addr = MPI._addressof(val)
 */
 
-static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
+static PyObject *__pyx_f_6plumed_7_plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_ckey, PyObject *__pyx_v_val) {
   PyObject *__pyx_v_MPI = NULL;
   size_t __pyx_v_comm_addr;
   PyObject *__pyx_r = NULL;
@@ -21254,7 +21255,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed
  *          cdef bytes py_bytes = key.encode() + b'\x00'  # Explicitly add null terminator
 */
   __pyx_t_6 = __Pyx_PyObject_AsString(__pyx_v_ckey); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 263, __pyx_L1_error)
-  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_6, ((void *)__pyx_v_comm_addr), 0, NULL, 0x6010000); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 263, __pyx_L1_error)
+  __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_t_6, ((void *)__pyx_v_comm_addr), 0, NULL, 0x6010000); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 263, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
@@ -21272,7 +21273,7 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed.Plumed.cmd_mpi", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd_mpi", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_MPI);
@@ -21290,15 +21291,15 @@ static PyObject *__pyx_f_6plumed_6Plumed_cmd_mpi(struct __pyx_obj_6plumed_Plumed
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_13cmd(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_13cmd(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_13cmd = {"cmd", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_13cmd, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_6Plumed_13cmd(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_13cmd = {"cmd", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_13cmd, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_13cmd(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -21375,11 +21376,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.Plumed.cmd", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_6Plumed_12cmd(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self), __pyx_v_key, __pyx_v_val);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_12cmd(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self), __pyx_v_key, __pyx_v_val);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -21389,7 +21390,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_key, PyObject *__pyx_v_val) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, PyObject *__pyx_v_key, PyObject *__pyx_v_val) {
   PyObject *__pyx_v_py_bytes = 0;
   char *__pyx_v_ckey;
   char *__pyx_v_cval;
@@ -21470,7 +21471,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
  *             return
  *          if isinstance(val, int ):
 */
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, NULL, 0, NULL, 0x20000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 269, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, NULL, 0, NULL, 0x20000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 269, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
@@ -21514,7 +21515,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
     __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 272, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_6 = __Pyx_PyLong_As_int(__pyx_v_val); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 272, __pyx_L1_error)
-    __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_int(__pyx_v_self, __pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
+    __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_int(__pyx_v_self, __pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -21559,7 +21560,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
     __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 275, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_7 = __Pyx_PyFloat_AsDouble(__pyx_v_val); if (unlikely((__pyx_t_7 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 275, __pyx_L1_error)
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_float(__pyx_v_self, __pyx_t_1, __pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 275, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_float(__pyx_v_self, __pyx_t_1, __pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 275, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -21641,7 +21642,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 280, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 280, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 280, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -21686,7 +21687,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 282, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_int(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 282, __pyx_L1_error)
+      __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_int(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 282, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -21731,7 +21732,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 284, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 284, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 284, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -21847,7 +21848,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 290, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 290, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -21895,7 +21896,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 292, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_int(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 292, __pyx_L1_error)
+      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_int(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 292, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -21943,7 +21944,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 294, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 294, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 294, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -22061,7 +22062,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
       __PYX_ERR(0, 302, __pyx_L1_error)
     }
     __pyx_t_10 = __Pyx_PyBytes_GET_SIZE(__pyx_v_py_bytes); if (unlikely(__pyx_t_10 == ((Py_ssize_t)-1))) __PYX_ERR(0, 302, __pyx_L1_error)
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, __pyx_v_cval, __pyx_t_10, NULL, 0x16030001); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 302, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, __pyx_v_cval, __pyx_t_10, NULL, 0x16030001); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 302, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
@@ -22140,7 +22141,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
       __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 307, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_mpi(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 307, __pyx_L1_error)
+      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_mpi(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 307, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -22223,7 +22224,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
   __Pyx_XDECREF(__pyx_t_9);
   __Pyx_XDECREF(__pyx_t_13);
   __Pyx_XDECREF(__pyx_t_14);
-  __Pyx_AddTraceback("plumed.Plumed.cmd", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.cmd", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_py_bytes);
@@ -22240,15 +22241,15 @@ static PyObject *__pyx_pf_6plumed_6Plumed_12cmd(struct __pyx_obj_6plumed_Plumed 
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_15__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_15__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_15__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_15__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_6Plumed_15__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_15__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_15__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_15__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -22274,14 +22275,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   const Py_ssize_t __pyx_kwds_len = unlikely(__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
   if (unlikely(__pyx_kwds_len < 0)) return NULL;
   if (unlikely(__pyx_kwds_len > 0)) {__Pyx_RejectKeywords("__reduce_cython__", __pyx_kwds); return NULL;}
-  __pyx_r = __pyx_pf_6plumed_6Plumed_14__reduce_cython__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self));
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_14__reduce_cython__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_Plumed *__pyx_v_self) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -22306,7 +22307,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED stru
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.Plumed.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -22321,15 +22322,15 @@ static PyObject *__pyx_pf_6plumed_6Plumed_14__reduce_cython__(CYTHON_UNUSED stru
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_6Plumed_17__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_17__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_6Plumed_17__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_17__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_6Plumed_17__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_6Plumed_17__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_17__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_6Plumed_17__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -22391,11 +22392,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.Plumed.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_6Plumed_16__setstate_cython__(((struct __pyx_obj_6plumed_Plumed *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6Plumed_16__setstate_cython__(((struct __pyx_obj_6plumed_7_plumed_Plumed *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -22405,7 +22406,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_6plumed_7_plumed_Plumed *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -22430,7 +22431,7 @@ static PyObject *__pyx_pf_6plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED st
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.Plumed.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Plumed.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -22446,16 +22447,16 @@ static PyObject *__pyx_pf_6plumed_6Plumed_16__setstate_cython__(CYTHON_UNUSED st
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_3_fix_file(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_3_fix_file(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_2_fix_file, "Internal utility: returns a file open with mode.\n\n       Takes care of opening file (if it receives a string)\n       and or unzipping (if the file has \".gz\" suffix).\n    ");
-static PyMethodDef __pyx_mdef_6plumed_3_fix_file = {"_fix_file", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_3_fix_file, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_2_fix_file};
-static PyObject *__pyx_pw_6plumed_3_fix_file(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_2_fix_file, "Internal utility: returns a file open with mode.\n\n       Takes care of opening file (if it receives a string)\n       and or unzipping (if the file has \".gz\" suffix).\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_3_fix_file = {"_fix_file", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_3_fix_file, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_2_fix_file};
+static PyObject *__pyx_pw_6plumed_7_plumed_3_fix_file(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -22525,11 +22526,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._fix_file", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._fix_file", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_2_fix_file(__pyx_self, __pyx_v_file, __pyx_v_mode);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_2_fix_file(__pyx_self, __pyx_v_file, __pyx_v_mode);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -22539,7 +22540,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file, PyObject *__pyx_v_mode) {
+static PyObject *__pyx_pf_6plumed_7_plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file, PyObject *__pyx_v_mode) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -22706,7 +22707,7 @@ static PyObject *__pyx_pf_6plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self,
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed._fix_file", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._fix_file", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_file);
@@ -22724,16 +22725,16 @@ static PyObject *__pyx_pf_6plumed_2_fix_file(CYTHON_UNUSED PyObject *__pyx_self,
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_5_build_convert_function(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_5_build_convert_function(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_4_build_convert_function, "Internal utility: returns a function that can be used for conversions.\n\n       kernel : Plumed instance or str\n           The object used to perform conversion.\n           Pass a string to load a Plumed() instance giving the\n           path to the libplumedKernel library, or pass None\n           to load the default Plumed() instance.\n\n       In case of failure, it writes a warning and returns None.\n\n       Notice that this function will store a reference to the passed Plumed() object,\n       thus potentially increasing its lifetime.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_5_build_convert_function = {"_build_convert_function", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_5_build_convert_function, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_4_build_convert_function};
-static PyObject *__pyx_pw_6plumed_5_build_convert_function(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_4_build_convert_function, "Internal utility: returns a function that can be used for conversions.\n\n       kernel : Plumed instance or str\n           The object used to perform conversion.\n           Pass a string to load a Plumed() instance giving the\n           path to the libplumedKernel library, or pass None\n           to load the default Plumed() instance.\n\n       In case of failure, it writes a warning and returns None.\n\n       Notice that this function will store a reference to the passed Plumed() object,\n       thus potentially increasing its lifetime.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_5_build_convert_function = {"_build_convert_function", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_5_build_convert_function, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_4_build_convert_function};
+static PyObject *__pyx_pw_6plumed_7_plumed_5_build_convert_function(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -22798,11 +22799,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_4_build_convert_function(__pyx_self, __pyx_v_kernel);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_4_build_convert_function(__pyx_self, __pyx_v_kernel);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -22821,15 +22822,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_23_build_convert_function_1convert_func(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_23_build_convert_function_1convert_func(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_23_build_convert_function_1convert_func = {"convert_func", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_23_build_convert_function_1convert_func, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_23_build_convert_function_1convert_func(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_23_build_convert_function_1convert_func = {"convert_func", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_23_build_convert_function_1convert_func, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_23_build_convert_function_1convert_func(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -22891,11 +22892,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._build_convert_function.convert_func", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._build_convert_function.convert_func", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_23_build_convert_function_convert_func(__pyx_self, __pyx_v_a);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_23_build_convert_function_convert_func(__pyx_self, __pyx_v_a);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -22905,9 +22906,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_23_build_convert_function_convert_func(PyObject *__pyx_self, PyObject *__pyx_v_a) {
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_23_build_convert_function_convert_func(PyObject *__pyx_self, PyObject *__pyx_v_a) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *__pyx_outer_scope;
   PyObject *__pyx_v_r = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -22923,7 +22924,7 @@ static PyObject *__pyx_pf_6plumed_23_build_convert_function_convert_func(PyObjec
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("convert_func", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":354
@@ -23090,7 +23091,7 @@ static PyObject *__pyx_pf_6plumed_23_build_convert_function_convert_func(PyObjec
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed._build_convert_function.convert_func", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._build_convert_function.convert_func", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_r);
@@ -23107,8 +23108,8 @@ static PyObject *__pyx_pf_6plumed_23_build_convert_function_convert_func(PyObjec
  * 
 */
 
-static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel) {
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *__pyx_cur_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_4_build_convert_function(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *__pyx_cur_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -23129,9 +23130,9 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_build_convert_function", 0);
-  __pyx_cur_scope = (struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)__pyx_tp_new_6plumed___pyx_scope_struct___build_convert_function(__pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function, __pyx_mstate_global->__pyx_empty_tuple, NULL);
+  __pyx_cur_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct___build_convert_function(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function, __pyx_mstate_global->__pyx_empty_tuple, NULL);
   if (unlikely(!__pyx_cur_scope)) {
-    __pyx_cur_scope = ((struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)Py_None);
+    __pyx_cur_scope = ((struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)Py_None);
     __Pyx_INCREF(Py_None);
     __PYX_ERR(0, 330, __pyx_L1_error)
   } else {
@@ -23162,7 +23163,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
  *             kernel=Plumed(kernel=kernel)
  *     except Exception:
 */
-      __pyx_t_4 = __Pyx_TypeCheck(__pyx_v_kernel, __pyx_mstate_global->__pyx_ptype_6plumed_Plumed); 
+      __pyx_t_4 = __Pyx_TypeCheck(__pyx_v_kernel, __pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed); 
       __pyx_t_5 = (!__pyx_t_4);
       if (__pyx_t_5) {
 
@@ -23180,7 +23181,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
           __pyx_t_9 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 347, __pyx_L3_error)
           __Pyx_GOTREF(__pyx_t_9);
           if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_kernel, __pyx_v_kernel, __pyx_t_9, __pyx_callargs+1, 0) < (0)) __PYX_ERR(0, 347, __pyx_L3_error)
-          __pyx_t_6 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_callargs+__pyx_t_8, (1-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_9);
+          __pyx_t_6 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_callargs+__pyx_t_8, (1-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_9);
           __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
           __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
           if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 347, __pyx_L3_error)
@@ -23224,7 +23225,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
 */
     __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_Exception))));
     if (__pyx_t_10) {
-      __Pyx_AddTraceback("plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("plumed._plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
       if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_9, &__pyx_t_7) < 0) __PYX_ERR(0, 348, __pyx_L5_except_error)
       __Pyx_XGOTREF(__pyx_t_6);
       __Pyx_XGOTREF(__pyx_t_9);
@@ -23326,7 +23327,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
  *             r=array.array('d',[float('nan')])
  *             convert_func.kernel.cmd("convert "+str(a),r)
 */
-      __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_23_build_convert_function_1convert_func, 0, __pyx_mstate_global->__pyx_n_u_build_convert_function_locals_c, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 353, __pyx_L12_error)
+      __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_23_build_convert_function_1convert_func, 0, __pyx_mstate_global->__pyx_n_u_build_convert_function_locals_c, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 353, __pyx_L12_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_GIVEREF(__pyx_t_7);
       __pyx_cur_scope->__pyx_v_convert_func = __pyx_t_7;
@@ -23348,7 +23349,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
  *             warnings.warn("PLUMED instance seems to have a non-working convert cmd, conversions do not work and will be disabled")
  *             return None
 */
-      __pyx_t_7 = __pyx_pf_6plumed_23_build_convert_function_convert_func(__pyx_cur_scope->__pyx_v_convert_func, __pyx_mstate_global->__pyx_n_u_pi); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 361, __pyx_L12_error)
+      __pyx_t_7 = __pyx_pf_6plumed_7_plumed_23_build_convert_function_convert_func(__pyx_cur_scope->__pyx_v_convert_func, __pyx_mstate_global->__pyx_n_u_pi); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 361, __pyx_L12_error)
       __Pyx_GOTREF(__pyx_t_7);
       __pyx_t_5 = (__Pyx_PyUnicode_Equals(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_pi, Py_EQ)); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 361, __pyx_L12_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -23447,7 +23448,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
 */
     __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_Exception))));
     if (__pyx_t_10) {
-      __Pyx_AddTraceback("plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("plumed._plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
       if (__Pyx_GetException(&__pyx_t_7, &__pyx_t_11, &__pyx_t_9) < 0) __PYX_ERR(0, 366, __pyx_L14_except_error)
       __Pyx_XGOTREF(__pyx_t_7);
       __Pyx_XGOTREF(__pyx_t_11);
@@ -23548,7 +23549,7 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
   __Pyx_XDECREF(__pyx_t_12);
   __Pyx_XDECREF(__pyx_t_13);
   __Pyx_XDECREF(__pyx_t_14);
-  __Pyx_AddTraceback("plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._build_convert_function", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_kernel);
@@ -23567,15 +23568,15 @@ static PyObject *__pyx_pf_6plumed_4_build_convert_function(CYTHON_UNUSED PyObjec
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_9Constants_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_9Constants_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_9Constants_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_9Constants_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_9Constants_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_9Constants_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_9Constants_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_9Constants_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -23672,11 +23673,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.Constants.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Constants.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_9Constants___init__(__pyx_self, __pyx_v_self, __pyx_v_l, __pyx_v_kernel, __pyx_v_convert);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_9Constants___init__(__pyx_self, __pyx_v_self, __pyx_v_l, __pyx_v_kernel, __pyx_v_convert);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -23686,7 +23687,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_9Constants___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_l, PyObject *__pyx_v_kernel, PyObject *__pyx_v_convert) {
+static PyObject *__pyx_pf_6plumed_7_plumed_9Constants___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_l, PyObject *__pyx_v_kernel, PyObject *__pyx_v_convert) {
   PyObject *__pyx_v_k = NULL;
   Py_ssize_t __pyx_v_i;
   PyObject *__pyx_r = NULL;
@@ -24115,7 +24116,7 @@ static PyObject *__pyx_pf_6plumed_9Constants___init__(CYTHON_UNUSED PyObject *__
   __Pyx_XDECREF(__pyx_t_13);
   __Pyx_XDECREF(__pyx_t_14);
   __Pyx_XDECREF(__pyx_t_15);
-  __Pyx_AddTraceback("plumed.Constants.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.Constants.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_k);
@@ -24134,16 +24135,16 @@ static PyObject *__pyx_pf_6plumed_9Constants___init__(CYTHON_UNUSED PyObject *__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_7read_as_pandas(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_7read_as_pandas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_6read_as_pandas, "Import a plumed data file as a pandas dataset.\n\n       file_or_path : str or file\n           Either string containing the path of the file or an already opened file object.\n\n       enable_constants : str or boolean, optional (default is True)\n           If 'columns', constants are read and added as constant columns.\n           If 'metadata' or True, constants are read and stored as metadata.\n           If 'no' or False, constants are not read at all.\n       enable_conversion : str or boolean, optional (default is True)\n           If 'constant' or True, only constants are converted.\n           If 'all', all data are converted. Might be slow and probably useless.\n           If 'no' or False, no data are converted.\n       kernel : str or Plumed, optional\n           The Plumed kernel used for conversions. If a string, it is interpreted\n           as the path to a kernel. If None, the default Plumed loading procedure is used\n           (with PLUMED_KERNEL env val). If an existing Plumed object, a pointer is stored\n           and this object is used for conversion.\n\n       chunksize : int, optional\n           Return an iterable object. Useful to process large files in chunks.\n       usecols : list-like or callable, optional\n           Directly passed to pandas.\n       skiprows : list-like, int or callable, optional\n           Directly passed to pandas.\n       nrows : int, optional\n           Directly passed to pandas.\n       index_col : int, str, sequence of int / str, or False, default None\n           Directly passed to pandas.\n\n       Returns\n       -------\n       By default, it returns a special subclass of pandas.DataFrame that includes\n       metadata with constant values in an attribute named `plumed_constants`.\n       If using `enable_constants='no'` or `enable_constants='columns'`,\n       it returns a plain pandas.DataFrame.\n\n       If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader""\n       that can be iterated in order to read a file in chunks. Every iteration returns an object\n       equivalent to the one that would have been returned with a call to\n       read_as_pandas with chunksize=None (that is: either a pandas.DataFrame\n       or a subclass of it).\n\n       Comments\n       --------\n\n       Gzipped files are supported and automatically detected when a file name ends with '.gz'.\n\n       `pandas` module is imported the first time this function is used. Since importing `pandas` is quite slow,\n       the first call to this function will be significantly slower than the following ones.\n       Following calls should be faster. The overall speed is comparable or better to loading with `numpy.loadtxt`.\n\n       Examples\n       --------\n\n       colvar=plumed.read_as_pandas(\"COLVAR\")\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",usecols=[0,4])\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",usecols=[\"time\",\"distance\"])\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",enable_constants='columns')\n       print(colvar) # this dataframe will contain extra columns with the constants\n\n       for chunk in plumed.read_as_pandas(\"COLVAR\",chunksize=10):\n           print(chunk) # show the datasheet. actually here you should process the chunk\n           print(chunk.plumed_constants) # show the constant columns\n\n       Limitations\n       -----------\n\n       Only the initial header is read, which implies that files resulting from concatenating\n       datasets with a different number of columns or different column names will not\n       be read correctly and that only constants set at the beginning"" of the file will be considered.\n\n       This issues might be solved using `PLMD::IFile` for reading,\n       which could be useful but possibly a bit complicated to implement.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_7read_as_pandas = {"read_as_pandas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7read_as_pandas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_6read_as_pandas};
-static PyObject *__pyx_pw_6plumed_7read_as_pandas(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_6read_as_pandas, "Import a plumed data file as a pandas dataset.\n\n       file_or_path : str or file\n           Either string containing the path of the file or an already opened file object.\n\n       enable_constants : str or boolean, optional (default is True)\n           If 'columns', constants are read and added as constant columns.\n           If 'metadata' or True, constants are read and stored as metadata.\n           If 'no' or False, constants are not read at all.\n       enable_conversion : str or boolean, optional (default is True)\n           If 'constant' or True, only constants are converted.\n           If 'all', all data are converted. Might be slow and probably useless.\n           If 'no' or False, no data are converted.\n       kernel : str or Plumed, optional\n           The Plumed kernel used for conversions. If a string, it is interpreted\n           as the path to a kernel. If None, the default Plumed loading procedure is used\n           (with PLUMED_KERNEL env val). If an existing Plumed object, a pointer is stored\n           and this object is used for conversion.\n\n       chunksize : int, optional\n           Return an iterable object. Useful to process large files in chunks.\n       usecols : list-like or callable, optional\n           Directly passed to pandas.\n       skiprows : list-like, int or callable, optional\n           Directly passed to pandas.\n       nrows : int, optional\n           Directly passed to pandas.\n       index_col : int, str, sequence of int / str, or False, default None\n           Directly passed to pandas.\n\n       Returns\n       -------\n       By default, it returns a special subclass of pandas.DataFrame that includes\n       metadata with constant values in an attribute named `plumed_constants`.\n       If using `enable_constants='no'` or `enable_constants='columns'`,\n       it returns a plain pandas.DataFrame.\n\n       If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader""\n       that can be iterated in order to read a file in chunks. Every iteration returns an object\n       equivalent to the one that would have been returned with a call to\n       read_as_pandas with chunksize=None (that is: either a pandas.DataFrame\n       or a subclass of it).\n\n       Comments\n       --------\n\n       Gzipped files are supported and automatically detected when a file name ends with '.gz'.\n\n       `pandas` module is imported the first time this function is used. Since importing `pandas` is quite slow,\n       the first call to this function will be significantly slower than the following ones.\n       Following calls should be faster. The overall speed is comparable or better to loading with `numpy.loadtxt`.\n\n       Examples\n       --------\n\n       colvar=plumed.read_as_pandas(\"COLVAR\")\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",usecols=[0,4])\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",usecols=[\"time\",\"distance\"])\n       print(colvar) # show the datasheet\n       print(colvar.plumed_constants) # show the constant columns\n\n       colvar=plumed.read_as_pandas(\"COLVAR\",enable_constants='columns')\n       print(colvar) # this dataframe will contain extra columns with the constants\n\n       for chunk in plumed.read_as_pandas(\"COLVAR\",chunksize=10):\n           print(chunk) # show the datasheet. actually here you should process the chunk\n           print(chunk.plumed_constants) # show the constant columns\n\n       Limitations\n       -----------\n\n       Only the initial header is read, which implies that files resulting from concatenating\n       datasets with a different number of columns or different column names will not\n       be read correctly and that only constants set at the beginning"" of the file will be considered.\n\n       This issues might be solved using `PLMD::IFile` for reading,\n       which could be useful but possibly a bit complicated to implement.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_7read_as_pandas = {"read_as_pandas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_7read_as_pandas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_6read_as_pandas};
+static PyObject *__pyx_pw_6plumed_7_plumed_7read_as_pandas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24304,11 +24305,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_6read_as_pandas(__pyx_self, __pyx_v_file_or_path, __pyx_v_enable_constants, __pyx_v_enable_conversion, __pyx_v_kernel, __pyx_v_chunksize, __pyx_v_usecols, __pyx_v_skiprows, __pyx_v_nrows, __pyx_v_index_col);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_6read_as_pandas(__pyx_self, __pyx_v_file_or_path, __pyx_v_enable_constants, __pyx_v_enable_conversion, __pyx_v_kernel, __pyx_v_chunksize, __pyx_v_usecols, __pyx_v_skiprows, __pyx_v_nrows, __pyx_v_index_col);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24327,15 +24328,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_1_constructor(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_1_constructor(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_12PlumedSeries_1_constructor = {"_constructor", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_1_constructor, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_1_constructor(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_1_constructor = {"_constructor", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_1_constructor, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_1_constructor(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24397,11 +24398,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedSeries._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedSeries._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_12PlumedSeries__constructor(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries__constructor(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24411,16 +24412,16 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_constructor", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":487
@@ -24446,7 +24447,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries__constructor(P
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedSeries._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedSeries._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -24463,15 +24464,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries__constructor(P
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim = {"_constructor_expanddim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim = {"_constructor_expanddim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24533,11 +24534,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedSeries._constructor_expanddim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedSeries._constructor_expanddim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24547,16 +24548,16 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_2_constructor_expanddim(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_constructor_expanddim", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":490
@@ -24582,7 +24583,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries_2_constructor_
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedSeries._constructor_expanddim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedSeries._constructor_expanddim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -24599,15 +24600,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_12PlumedSeries_2_constructor_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_1_constructor(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_1_constructor(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_15PlumedDataFrame_1_constructor = {"_constructor", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_1_constructor, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_1_constructor(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_1_constructor = {"_constructor", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_1_constructor, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_1_constructor(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24669,11 +24670,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedDataFrame._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedDataFrame._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame__constructor(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame__constructor(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24683,16 +24684,16 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame__constructor(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_constructor", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":496
@@ -24718,7 +24719,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame__constructo
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedDataFrame._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedDataFrame._constructor", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -24735,15 +24736,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame__constructo
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced = {"_constructor_sliced", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced = {"_constructor_sliced", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24805,11 +24806,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedDataFrame._constructor_sliced", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedDataFrame._constructor_sliced", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24819,16 +24820,16 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_2_constructor_sliced(PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_constructor_sliced", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":499
@@ -24854,7 +24855,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame_2_construct
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.read_as_pandas.PlumedDataFrame._constructor_sliced", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.PlumedDataFrame._constructor_sliced", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -24871,15 +24872,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_15PlumedDataFrame_2_construct
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_1process_dataframe(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_1process_dataframe(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_1process_dataframe = {"process_dataframe", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_1process_dataframe, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_1process_dataframe(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_1process_dataframe = {"process_dataframe", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_1process_dataframe, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_1process_dataframe(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -24965,11 +24966,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.process_dataframe", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.process_dataframe", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_process_dataframe(__pyx_self, __pyx_v_df, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_process_dataframe(__pyx_self, __pyx_v_df, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -24979,9 +24980,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_process_dataframe(PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_process_dataframe(PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_v_c = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -24996,7 +24997,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_process_dataframe(PyObject *_
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("process_dataframe", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
   __Pyx_INCREF(__pyx_v_df);
 
@@ -25200,7 +25201,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_process_dataframe(PyObject *_
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.read_as_pandas.process_dataframe", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.process_dataframe", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_c);
@@ -25219,15 +25220,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_process_dataframe(PyObject *_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_14TextFileReader_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_14TextFileReader_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -25321,11 +25322,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.TextFileReader.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.TextFileReader.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_14TextFileReader___init__(__pyx_self, __pyx_v_self, __pyx_v_reader, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader___init__(__pyx_self, __pyx_v_self, __pyx_v_reader, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -25335,7 +25336,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_reader, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all) {
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_reader, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_constants, PyObject *__pyx_v_convert_all) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -25391,7 +25392,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader___init__(CYT
   __pyx_r = Py_None; __Pyx_INCREF(Py_None);
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_AddTraceback("plumed.read_as_pandas.TextFileReader.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.TextFileReader.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -25408,15 +25409,15 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader___init__(CYT
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_3__next__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_3__next__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_14read_as_pandas_14TextFileReader_3__next__ = {"__next__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_3__next__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_14read_as_pandas_14TextFileReader_3__next__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_14read_as_pandas_14TextFileReader_3__next__ = {"__next__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_3__next__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_14read_as_pandas_14TextFileReader_3__next__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -25478,11 +25479,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.read_as_pandas.TextFileReader.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.TextFileReader.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader_2__next__(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -25492,9 +25493,9 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(PyObject *__pyx_self, PyObject *__pyx_v_self) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_14read_as_pandas_14TextFileReader_2__next__(PyObject *__pyx_self, PyObject *__pyx_v_self) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_outer_scope;
   PyObject *__pyx_v_df = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -25507,7 +25508,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(Py
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__next__", 0);
-  __pyx_outer_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
+  __pyx_outer_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *) __Pyx_CyFunction_GetClosure(__pyx_self);
   __pyx_cur_scope = __pyx_outer_scope;
 
   /* "plumed.pyx":596
@@ -25548,7 +25549,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(Py
   __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_mstate_global->__pyx_n_u_convert_all); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 597, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (unlikely(!__pyx_cur_scope->__pyx_v_process_dataframe)) { __Pyx_RaiseClosureNameError("process_dataframe"); __PYX_ERR(0, 597, __pyx_L1_error) }
-  __pyx_t_5 = __pyx_pf_6plumed_14read_as_pandas_process_dataframe(__pyx_cur_scope->__pyx_v_process_dataframe, __pyx_v_df, __pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 597, __pyx_L1_error)
+  __pyx_t_5 = __pyx_pf_6plumed_7_plumed_14read_as_pandas_process_dataframe(__pyx_cur_scope->__pyx_v_process_dataframe, __pyx_v_df, __pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 597, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -25571,7 +25572,7 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(Py
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_AddTraceback("plumed.read_as_pandas.TextFileReader.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas.TextFileReader.__next__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_df);
@@ -25588,8 +25589,8 @@ static PyObject *__pyx_pf_6plumed_14read_as_pandas_14TextFileReader_2__next__(Py
  * 
 */
 
-static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file_or_path, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_enable_conversion, PyObject *__pyx_v_kernel, PyObject *__pyx_v_chunksize, PyObject *__pyx_v_usecols, PyObject *__pyx_v_skiprows, PyObject *__pyx_v_nrows, PyObject *__pyx_v_index_col) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
+static PyObject *__pyx_pf_6plumed_7_plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_file_or_path, PyObject *__pyx_v_enable_constants, PyObject *__pyx_v_enable_conversion, PyObject *__pyx_v_kernel, PyObject *__pyx_v_chunksize, PyObject *__pyx_v_usecols, PyObject *__pyx_v_skiprows, PyObject *__pyx_v_nrows, PyObject *__pyx_v_index_col) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *__pyx_cur_scope;
   PyObject *__pyx_v_pd = NULL;
   PyObject *__pyx_v_convert = NULL;
   PyObject *__pyx_v_convert_all = NULL;
@@ -25619,9 +25620,9 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("read_as_pandas", 0);
-  __pyx_cur_scope = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)__pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas(__pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas, __pyx_mstate_global->__pyx_empty_tuple, NULL);
+  __pyx_cur_scope = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, __pyx_mstate_global->__pyx_empty_tuple, NULL);
   if (unlikely(!__pyx_cur_scope)) {
-    __pyx_cur_scope = ((struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)Py_None);
+    __pyx_cur_scope = ((struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)Py_None);
     __Pyx_INCREF(Py_None);
     __PYX_ERR(0, 392, __pyx_L1_error)
   } else {
@@ -25662,7 +25663,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_4 = __Pyx_CalculateMetaclass(NULL, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_Py3MetaclassPrepare(__pyx_t_4, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_PlumedSeries, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 484, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_Py3MetaclassPrepare(__pyx_t_4, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_PlumedSeries, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   if (__pyx_t_1 != __pyx_t_3) {
     if (unlikely((PyDict_SetItemString(__pyx_t_5, "__orig_bases__", __pyx_t_3) < 0))) __PYX_ERR(0, 484, __pyx_L1_error)
@@ -25677,7 +25678,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *             return PlumedSeries
 */
   __pyx_t_6 = NULL;
-  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_12PlumedSeries_1_constructor, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri_2, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 485, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_1_constructor, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri_2, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 485, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_8 = 1;
   {
@@ -25699,7 +25700,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *             return PlumedDataFrame
 */
   __pyx_t_7 = NULL;
-  __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 488, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_12PlumedSeries_3_constructor_expanddim, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedSeri_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 488, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_8 = 1;
   {
@@ -25747,7 +25748,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_5 = __Pyx_CalculateMetaclass(NULL, __pyx_t_1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 492, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_3 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_PlumedDataFrame, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 492, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_PlumedDataFrame, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 492, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (__pyx_t_1 != __pyx_t_4) {
     if (unlikely((PyDict_SetItemString(__pyx_t_3, "__orig_bases__", __pyx_t_4) < 0))) __PYX_ERR(0, 492, __pyx_L1_error)
@@ -25777,7 +25778,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *             return PlumedDataFrame
 */
   __pyx_t_6 = NULL;
-  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_15PlumedDataFrame_1_constructor, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData_2, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 494, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_1_constructor, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData_2, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 494, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_8 = 1;
   {
@@ -25799,7 +25800,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *             return PlumedSeries
 */
   __pyx_t_7 = NULL;
-  __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 497, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_15PlumedDataFrame_3_constructor_sliced, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_PlumedData_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 497, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_8 = 1;
   {
@@ -25836,7 +25837,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *         if convert_all: df=df.applymap(convert_all)
  *         if enable_constants=='columns':
 */
-  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_1process_dataframe, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_process_da, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 503, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_1process_dataframe, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_process_da, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 503, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_cur_scope->__pyx_v_process_dataframe = __pyx_t_1;
@@ -26798,7 +26799,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  * # declare an alternate class that is iterable to read the file in chunks
 */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __pyx_pf_6plumed_14read_as_pandas_process_dataframe(__pyx_cur_scope->__pyx_v_process_dataframe, __pyx_v_df, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 582, __pyx_L1_error)
+    __pyx_t_3 = __pyx_pf_6plumed_7_plumed_14read_as_pandas_process_dataframe(__pyx_cur_scope->__pyx_v_process_dataframe, __pyx_v_df, __pyx_v_enable_constants, __pyx_v_constants, __pyx_v_convert_all); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 582, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_r = __pyx_t_3;
     __pyx_t_3 = 0;
@@ -26830,7 +26831,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_5 = __Pyx_CalculateMetaclass(NULL, __pyx_t_1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 585, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_4 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_TextFileReader, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_kp_u_Subclass_of_pandas_io_TestFileRe); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 585, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_1, __pyx_mstate_global->__pyx_n_u_TextFileReader, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_kp_u_Subclass_of_pandas_io_TestFileRe); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 585, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     if (__pyx_t_1 != __pyx_t_3) {
       if (unlikely((PyDict_SetItemString(__pyx_t_4, "__orig_bases__", __pyx_t_3) < 0))) __PYX_ERR(0, 585, __pyx_L1_error)
@@ -26844,7 +26845,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  *                 self.TextFileReader=reader
  *                 self.enable_constants=enable_constants
 */
-    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_14TextFileReader_1__init__, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 589, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_14TextFileReader_1__init__, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 589, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     if (__Pyx_SetNameInClass(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_init, __pyx_t_3) < (0)) __PYX_ERR(0, 589, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -26856,7 +26857,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
  * # override __next__
  *                 df=self.TextFileReader.__next__()
 */
-    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_14read_as_pandas_14TextFileReader_3__next__, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 594, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_14read_as_pandas_14TextFileReader_3__next__, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas_locals_TextFileRe_3, ((PyObject*)__pyx_cur_scope), __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 594, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     if (__Pyx_SetNameInClass(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_next, __pyx_t_3) < (0)) __PYX_ERR(0, 594, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -26922,7 +26923,7 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.read_as_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.read_as_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_pd);
@@ -26954,16 +26955,16 @@ static PyObject *__pyx_pf_6plumed_6read_as_pandas(CYTHON_UNUSED PyObject *__pyx_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_9write_pandas(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_9write_pandas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_8write_pandas, "Save a pandas dataframe as a PLUMED file.\n\n       df: pandas dataframe or derived class\n           the dataframe. If it contains a list attribute `plumed_constants`, this is\n           interpreted as a list of constants and written with `SET` lines.\n\n       file_or_path: str, file, or None (default is None)\n           path to the file to be written, or already opened file object.\n           If None, stdout is used.\n\n       Examples\n       --------\n\n       colvar=plumed.read_as_colvar(\"COLVAR\")\n       colvar[\"distance\"]=colvar[\"distance\"]*2\n       plumed.write_pandas(colvar)\n\n    ");
-static PyMethodDef __pyx_mdef_6plumed_9write_pandas = {"write_pandas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_9write_pandas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_8write_pandas};
-static PyObject *__pyx_pw_6plumed_9write_pandas(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_8write_pandas, "Save a pandas dataframe as a PLUMED file.\n\n       df: pandas dataframe or derived class\n           the dataframe. If it contains a list attribute `plumed_constants`, this is\n           interpreted as a list of constants and written with `SET` lines.\n\n       file_or_path: str, file, or None (default is None)\n           path to the file to be written, or already opened file object.\n           If None, stdout is used.\n\n       Examples\n       --------\n\n       colvar=plumed.read_as_colvar(\"COLVAR\")\n       colvar[\"distance\"]=colvar[\"distance\"]*2\n       plumed.write_pandas(colvar)\n\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_9write_pandas = {"write_pandas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_9write_pandas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_8write_pandas};
+static PyObject *__pyx_pw_6plumed_7_plumed_9write_pandas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -27040,11 +27041,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.write_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.write_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_8write_pandas(__pyx_self, __pyx_v_df, __pyx_v_file_or_path);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_8write_pandas(__pyx_self, __pyx_v_df, __pyx_v_file_or_path);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -27054,7 +27055,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_file_or_path) {
+static PyObject *__pyx_pf_6plumed_7_plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_df, PyObject *__pyx_v_file_or_path) {
   CYTHON_UNUSED PyObject *__pyx_v_pd = NULL;
   PyObject *__pyx_v_has_index = NULL;
   PyObject *__pyx_v_has_mindex = NULL;
@@ -27852,7 +27853,7 @@ static PyObject *__pyx_pf_6plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_se
   __Pyx_XDECREF(__pyx_t_8);
   __Pyx_XDECREF(__pyx_t_11);
   __Pyx_XDECREF(__pyx_t_12);
-  __Pyx_AddTraceback("plumed.write_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.write_pandas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_pd);
@@ -27877,16 +27878,16 @@ static PyObject *__pyx_pf_6plumed_8write_pandas(CYTHON_UNUSED PyObject *__pyx_se
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_11hills_time_average(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_11hills_time_average(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_10hills_time_average, "Compute a time-averaged hills file.\n\n       hills: dataframe containing a hills file, or file, or filename\n\n       tofile: write the resulting dataframe to a file or filename\n\n       t0: initial time for averaging\n\n       t1: final time for averaging\n\n       frac0: initial fraction for averaging\n\n       frac1: final fraction for averaging\n\n       inplace: pass true to avoid copying the dataframe (for very large dataframes)\n\n       Returns\n       -------\n\n       if inplace=False and tofile=None (default): a modified copy of the dataframe\n       if inplace=True or tofile!=None: None\n\n       This tool takes as an input a pandas dataframe read from a HILLS file and\n       returns an equivalent dataframe where Gaussian heights have been scaled\n       with a windowing function so as to effectively result in a time-averaged\n       potential. By default, the average is taken along to entire list based on the\n       value of the time column. The averaging windows can be specified in two ways:\n       - using the time field, from t0 to t1. If t0 (t1) is omitted, its default is\n         to be set to np.min(hills.time) (np.max(hills.time))\n       - using the index of the hill, from frac0 to frac1 specified as a fraction\n         of the entire length; that is, frac0=0.5 implies avering from the mid of the\n         simulation. If frac0 (frac1) is omitted, its default is to be set to 0.0 (1.0)\n\n       If tofile is specified, nothing is returned and the resulting dataframe is written\n       on file.\n\n       Examples\n       --------\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT\") # time average along entire file\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT1\",t0=100,t1=200) # time average between 100 and 200 ps\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT2\",frac0=0.5) # time average in second half of the file\n\n       df=plumed.hills_time_average(\"HILLS\") # time average and return dataframe\n\n       df=plum""ed.read_as_pandas(\"HILLS\") # first read hills file\n       df=plumed.hills_time_average(df) # then perform time average\n\n\n    ");
-static PyMethodDef __pyx_mdef_6plumed_11hills_time_average = {"hills_time_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_11hills_time_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_10hills_time_average};
-static PyObject *__pyx_pw_6plumed_11hills_time_average(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_10hills_time_average, "Compute a time-averaged hills file.\n\n       hills: dataframe containing a hills file, or file, or filename\n\n       tofile: write the resulting dataframe to a file or filename\n\n       t0: initial time for averaging\n\n       t1: final time for averaging\n\n       frac0: initial fraction for averaging\n\n       frac1: final fraction for averaging\n\n       inplace: pass true to avoid copying the dataframe (for very large dataframes)\n\n       Returns\n       -------\n\n       if inplace=False and tofile=None (default): a modified copy of the dataframe\n       if inplace=True or tofile!=None: None\n\n       This tool takes as an input a pandas dataframe read from a HILLS file and\n       returns an equivalent dataframe where Gaussian heights have been scaled\n       with a windowing function so as to effectively result in a time-averaged\n       potential. By default, the average is taken along to entire list based on the\n       value of the time column. The averaging windows can be specified in two ways:\n       - using the time field, from t0 to t1. If t0 (t1) is omitted, its default is\n         to be set to np.min(hills.time) (np.max(hills.time))\n       - using the index of the hill, from frac0 to frac1 specified as a fraction\n         of the entire length; that is, frac0=0.5 implies avering from the mid of the\n         simulation. If frac0 (frac1) is omitted, its default is to be set to 0.0 (1.0)\n\n       If tofile is specified, nothing is returned and the resulting dataframe is written\n       on file.\n\n       Examples\n       --------\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT\") # time average along entire file\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT1\",t0=100,t1=200) # time average between 100 and 200 ps\n\n       plumed.hills_time_average(\"HILLS\",\"HILLSOUT2\",frac0=0.5) # time average in second half of the file\n\n       df=plumed.hills_time_average(\"HILLS\") # time average and return dataframe\n\n       df=plum""ed.read_as_pandas(\"HILLS\") # first read hills file\n       df=plumed.hills_time_average(df) # then perform time average\n\n\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_11hills_time_average = {"hills_time_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_11hills_time_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_10hills_time_average};
+static PyObject *__pyx_pw_6plumed_7_plumed_11hills_time_average(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -27983,11 +27984,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.hills_time_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.hills_time_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_10hills_time_average(__pyx_self, __pyx_v_hills, __pyx_v_tofile, __pyx_v_t0, __pyx_v_t1, __pyx_v_frac0, __pyx_v_frac1, __pyx_v_inplace);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_10hills_time_average(__pyx_self, __pyx_v_hills, __pyx_v_tofile, __pyx_v_t0, __pyx_v_t1, __pyx_v_frac0, __pyx_v_frac1, __pyx_v_inplace);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -27997,7 +27998,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_10hills_time_average(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_hills, PyObject *__pyx_v_tofile, PyObject *__pyx_v_t0, PyObject *__pyx_v_t1, PyObject *__pyx_v_frac0, PyObject *__pyx_v_frac1, PyObject *__pyx_v_inplace) {
+static PyObject *__pyx_pf_6plumed_7_plumed_10hills_time_average(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_hills, PyObject *__pyx_v_tofile, PyObject *__pyx_v_t0, PyObject *__pyx_v_t1, PyObject *__pyx_v_frac0, PyObject *__pyx_v_frac1, PyObject *__pyx_v_inplace) {
   PyObject *__pyx_v_pd = NULL;
   PyObject *__pyx_v_use_time = NULL;
   PyObject *__pyx_v_use_index = NULL;
@@ -28820,7 +28821,7 @@ static PyObject *__pyx_pf_6plumed_10hills_time_average(CYTHON_UNUSED PyObject *_
   __Pyx_XDECREF(__pyx_t_14);
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
-  __Pyx_AddTraceback("plumed.hills_time_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.hills_time_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_pd);
@@ -28848,16 +28849,16 @@ static PyObject *__pyx_pf_6plumed_10hills_time_average(CYTHON_UNUSED PyObject *_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_13_guessplumedroot(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_13_guessplumedroot(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12_guessplumedroot, "Guess plumed root.\n\n       kernel: path to the plumed kernel\n\n       In case the Plumed object cannot be created, try to launch a `plumed` executable and obtain the root\n       dir from there.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_13_guessplumedroot = {"_guessplumedroot", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_13_guessplumedroot, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12_guessplumedroot};
-static PyObject *__pyx_pw_6plumed_13_guessplumedroot(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12_guessplumedroot, "Guess plumed root.\n\n       kernel: path to the plumed kernel\n\n       In case the Plumed object cannot be created, try to launch a `plumed` executable and obtain the root\n       dir from there.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_13_guessplumedroot = {"_guessplumedroot", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_13_guessplumedroot, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12_guessplumedroot};
+static PyObject *__pyx_pw_6plumed_7_plumed_13_guessplumedroot(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -28922,11 +28923,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12_guessplumedroot(__pyx_self, __pyx_v_kernel);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12_guessplumedroot(__pyx_self, __pyx_v_kernel);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -28936,7 +28937,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel) {
   PyObject *__pyx_v_NamedTemporaryFile = NULL;
   PyObject *__pyx_v_tmpfile = NULL;
   PyObject *__pyx_v_log = NULL;
@@ -29117,7 +29118,7 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
                 __pyx_t_9 = 1;
                 {
                   PyObject *__pyx_callargs[2] = {__pyx_t_4, __pyx_v_kernel};
-                  __pyx_t_10 = __Pyx_PyObject_FastCall((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_callargs+__pyx_t_9, (2-__pyx_t_9) | (__pyx_t_9*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
+                  __pyx_t_10 = __Pyx_PyObject_FastCall((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_callargs+__pyx_t_9, (2-__pyx_t_9) | (__pyx_t_9*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
                   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
                   if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 754, __pyx_L13_error)
                   __Pyx_GOTREF((PyObject *)__pyx_t_10);
@@ -29218,7 +29219,7 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
                     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
                     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
                     /*except:*/ {
-                      __Pyx_AddTraceback("plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
+                      __Pyx_AddTraceback("plumed._plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
                       if (__Pyx_GetException(&__pyx_t_7, &__pyx_t_10, &__pyx_t_4) < 0) __PYX_ERR(0, 754, __pyx_L25_except_error)
                       __Pyx_XGOTREF(__pyx_t_7);
                       __Pyx_XGOTREF(__pyx_t_10);
@@ -29545,7 +29546,7 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
                     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
                     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
                     /*except:*/ {
-                      __Pyx_AddTraceback("plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
+                      __Pyx_AddTraceback("plumed._plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
                       if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_4, &__pyx_t_10) < 0) __PYX_ERR(0, 758, __pyx_L39_except_error)
                       __Pyx_XGOTREF(__pyx_t_8);
                       __Pyx_XGOTREF(__pyx_t_4);
@@ -29669,7 +29670,7 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
             __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
             __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
             /*except:*/ {
-              __Pyx_AddTraceback("plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
+              __Pyx_AddTraceback("plumed._plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
               if (__Pyx_GetException(&__pyx_t_10, &__pyx_t_4, &__pyx_t_8) < 0) __PYX_ERR(0, 752, __pyx_L15_except_error)
               __Pyx_XGOTREF(__pyx_t_10);
               __Pyx_XGOTREF(__pyx_t_4);
@@ -29895,7 +29896,7 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
   __Pyx_XDECREF(__pyx_t_22);
   __Pyx_XDECREF(__pyx_t_23);
   __Pyx_XDECREF(__pyx_t_24);
-  __Pyx_AddTraceback("plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._guessplumedroot", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_NamedTemporaryFile);
@@ -29920,16 +29921,16 @@ static PyObject *__pyx_pf_6plumed_12_guessplumedroot(CYTHON_UNUSED PyObject *__p
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_15_readkernelmetadata(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_15_readkernelmetadata(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_14_readkernelmetadata, "Read live metadata from a selected kernel or an existing PLUMED instance.\n\n       An existing instance takes precedence and is borrowed without finalizing\n       or initializing it. Return None for older kernels so callers can use\n       their installed Vim files.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_15_readkernelmetadata = {"_readkernelmetadata", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_15_readkernelmetadata, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_14_readkernelmetadata};
-static PyObject *__pyx_pw_6plumed_15_readkernelmetadata(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_14_readkernelmetadata, "Read live metadata from a selected kernel or an existing PLUMED instance.\n\n       An existing instance takes precedence and is borrowed without finalizing\n       or initializing it. Return None for older kernels so callers can use\n       their installed Vim files.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_15_readkernelmetadata = {"_readkernelmetadata", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_15_readkernelmetadata, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_14_readkernelmetadata};
+static PyObject *__pyx_pw_6plumed_7_plumed_15_readkernelmetadata(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30006,11 +30007,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_14_readkernelmetadata(__pyx_self, __pyx_v_kernel, __pyx_v_instance);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_14_readkernelmetadata(__pyx_self, __pyx_v_kernel, __pyx_v_instance);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -30029,15 +30030,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_19_readkernelmetadata_lambda(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_19_readkernelmetadata_lambda(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_19_readkernelmetadata_lambda = {"lambda", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_19_readkernelmetadata_lambda, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_19_readkernelmetadata_lambda(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_19_readkernelmetadata_lambda = {"lambda", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_19_readkernelmetadata_lambda, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_19_readkernelmetadata_lambda(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -30099,7 +30100,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._readkernelmetadata.lambda", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readkernelmetadata.lambda", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
@@ -30151,7 +30152,7 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("plumed._readkernelmetadata.lambda", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readkernelmetadata.lambda", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -30167,7 +30168,7 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
  * 
 */
 
-static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel, PyObject *__pyx_v_instance) {
+static PyObject *__pyx_pf_6plumed_7_plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_kernel, PyObject *__pyx_v_instance) {
   PyObject *__pyx_v_json = NULL;
   PyObject *__pyx_v_nullcontext = NULL;
   PyObject *__pyx_v_p = NULL;
@@ -30299,7 +30300,7 @@ static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *
       __pyx_t_8 = 1;
       {
         PyObject *__pyx_callargs[2] = {__pyx_t_7, __pyx_v_kernel};
-        __pyx_t_4 = __Pyx_PyObject_FastCall((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
+        __pyx_t_4 = __Pyx_PyObject_FastCall((PyObject*)__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_callargs+__pyx_t_8, (2-__pyx_t_8) | (__pyx_t_8*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
         __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
         if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 780, __pyx_L1_error)
         __Pyx_GOTREF((PyObject *)__pyx_t_4);
@@ -30633,7 +30634,7 @@ static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *
         __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
         __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
         /*except:*/ {
-          __Pyx_AddTraceback("plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
+          __Pyx_AddTraceback("plumed._plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
           if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_6, &__pyx_t_1) < 0) __PYX_ERR(0, 780, __pyx_L9_except_error)
           __Pyx_XGOTREF(__pyx_t_4);
           __Pyx_XGOTREF(__pyx_t_6);
@@ -31338,7 +31339,7 @@ static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *
  *     return dictionary,doc
  * 
 */
-    __pyx_t_19 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_19_readkernelmetadata_lambda, 0, __pyx_mstate_global->__pyx_n_u_readkernelmetadata_locals_lambd, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_19)) __PYX_ERR(0, 825, __pyx_L1_error)
+    __pyx_t_19 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_19_readkernelmetadata_lambda, 0, __pyx_mstate_global->__pyx_n_u_readkernelmetadata_locals_lambd, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_19)) __PYX_ERR(0, 825, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_19);
     __pyx_t_8 = 1;
     {
@@ -31417,7 +31418,7 @@ static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *
   __Pyx_XDECREF(__pyx_t_17);
   __Pyx_XDECREF(__pyx_t_18);
   __Pyx_XDECREF(__pyx_t_19);
-  __Pyx_AddTraceback("plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readkernelmetadata", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_json);
@@ -31449,16 +31450,16 @@ static PyObject *__pyx_pf_6plumed_14_readkernelmetadata(CYTHON_UNUSED PyObject *
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_17_readvimdict(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_17_readvimdict(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_16_readvimdict, "Read VIM dictionary given the path to PLUMED root and return (dictionary,doc).\n\n       If plumedroot is not given, it is guessed by launching `plumed` executable.\n       The dictionary is structured as follows:\n       - The keys are the names of the actions (e.g. \"RESTRAINT\").\n       - The values are dictionaries structured as follows:\n         - The keys are the available options.\n         - The value is a string describing the option type.\n       For instance `dictionary[\"RESTRAINT\"][\"NUMERICAL_DERIVATIVES\"]==\"(flag)\"`.\n\n       The doc is a dictionary structured as follows:\n       - The keys are the names of the actions (e.g. \"RESTRAINT\").\n       - The values are docstrings for the corresponding actions.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_17_readvimdict = {"_readvimdict", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_17_readvimdict, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_16_readvimdict};
-static PyObject *__pyx_pw_6plumed_17_readvimdict(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_16_readvimdict, "Read VIM dictionary given the path to PLUMED root and return (dictionary,doc).\n\n       If plumedroot is not given, it is guessed by launching `plumed` executable.\n       The dictionary is structured as follows:\n       - The keys are the names of the actions (e.g. \"RESTRAINT\").\n       - The values are dictionaries structured as follows:\n         - The keys are the available options.\n         - The value is a string describing the option type.\n       For instance `dictionary[\"RESTRAINT\"][\"NUMERICAL_DERIVATIVES\"]==\"(flag)\"`.\n\n       The doc is a dictionary structured as follows:\n       - The keys are the names of the actions (e.g. \"RESTRAINT\").\n       - The values are docstrings for the corresponding actions.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_17_readvimdict = {"_readvimdict", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_17_readvimdict, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_16_readvimdict};
+static PyObject *__pyx_pw_6plumed_7_plumed_17_readvimdict(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -31535,11 +31536,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_16_readvimdict(__pyx_self, __pyx_v_plumedroot, __pyx_v_kernel);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_16_readvimdict(__pyx_self, __pyx_v_plumedroot, __pyx_v_kernel);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -31549,7 +31550,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_plumedroot, PyObject *__pyx_v_kernel) {
+static PyObject *__pyx_pf_6plumed_7_plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_plumedroot, PyObject *__pyx_v_kernel) {
   PyObject *__pyx_v_syntax_file = NULL;
   PyObject *__pyx_v_help_dir = NULL;
   PyObject *__pyx_v_plumedDictionary = NULL;
@@ -31945,7 +31946,7 @@ static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_s
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
         __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
         /*except:*/ {
-          __Pyx_AddTraceback("plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
+          __Pyx_AddTraceback("plumed._plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
           if (__Pyx_GetException(&__pyx_t_3, &__pyx_t_6, &__pyx_t_13) < 0) __PYX_ERR(0, 850, __pyx_L10_except_error)
           __Pyx_XGOTREF(__pyx_t_3);
           __Pyx_XGOTREF(__pyx_t_6);
@@ -32330,7 +32331,7 @@ static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_s
           __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
           __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
           /*except:*/ {
-            __Pyx_AddTraceback("plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
+            __Pyx_AddTraceback("plumed._plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
             if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_2, &__pyx_t_6) < 0) __PYX_ERR(0, 861, __pyx_L32_except_error)
             __Pyx_XGOTREF(__pyx_t_4);
             __Pyx_XGOTREF(__pyx_t_2);
@@ -32572,7 +32573,7 @@ static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_s
   __Pyx_XDECREF(__pyx_t_20);
   __Pyx_XDECREF(__pyx_t_21);
   __Pyx_XDECREF(__pyx_t_22);
-  __Pyx_AddTraceback("plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._readvimdict", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_syntax_file);
@@ -32601,16 +32602,16 @@ static PyObject *__pyx_pf_6plumed_16_readvimdict(CYTHON_UNUSED PyObject *__pyx_s
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_19_create_functions(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_19_create_functions(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_18_create_functions, "Create functions given dictionary and, optionally, documentation.\n\n       Given a dictionary a doc produced with _readvimdict, it returns a dictionary\n       containing the functions corresponding to each action. The functions are stored\n       in string that should be then evaluated with exec. For each action (say, \"RESTRAINT\")\n       we define both a function `def RESTRAINT and a docstring `RESTRAINT.__doc__`.\n       These functions are only using builtins and functions from the _format_tools dictionary.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_19_create_functions = {"_create_functions", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_19_create_functions, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_18_create_functions};
-static PyObject *__pyx_pw_6plumed_19_create_functions(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_18_create_functions, "Create functions given dictionary and, optionally, documentation.\n\n       Given a dictionary a doc produced with _readvimdict, it returns a dictionary\n       containing the functions corresponding to each action. The functions are stored\n       in string that should be then evaluated with exec. For each action (say, \"RESTRAINT\")\n       we define both a function `def RESTRAINT and a docstring `RESTRAINT.__doc__`.\n       These functions are only using builtins and functions from the _format_tools dictionary.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_19_create_functions = {"_create_functions", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_19_create_functions, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_18_create_functions};
+static PyObject *__pyx_pw_6plumed_7_plumed_19_create_functions(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -32680,11 +32681,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._create_functions", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._create_functions", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_18_create_functions(__pyx_self, __pyx_v_dictionary, __pyx_v_doc, __pyx_v_append_underscores);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_18_create_functions(__pyx_self, __pyx_v_dictionary, __pyx_v_doc, __pyx_v_append_underscores);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -32694,7 +32695,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_18_create_functions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc, PyObject *__pyx_v_append_underscores) {
+static PyObject *__pyx_pf_6plumed_7_plumed_18_create_functions(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc, PyObject *__pyx_v_append_underscores) {
   PyObject *__pyx_v_functions = NULL;
   PyObject *__pyx_v_action = NULL;
   PyObject *__pyx_v_fname = NULL;
@@ -33860,7 +33861,7 @@ static PyObject *__pyx_pf_6plumed_18_create_functions(CYTHON_UNUSED PyObject *__
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_12);
-  __Pyx_AddTraceback("plumed._create_functions", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._create_functions", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_functions);
@@ -33884,15 +33885,15 @@ static PyObject *__pyx_pf_6plumed_18_create_functions(CYTHON_UNUSED PyObject *__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_9_numbered_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_9_numbered_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_9_numbered_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_9_numbered_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_9_numbered_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_9_numbered_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_9_numbered_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_9_numbered_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -33963,11 +33964,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     Py_XDECREF(values[__pyx_temp]);
   }
   __Pyx_DECREF(__pyx_v_args); __pyx_v_args = 0;
-  __Pyx_AddTraceback("plumed._numbered.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._numbered.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_9_numbered___init__(__pyx_self, __pyx_v_self, __pyx_v_args);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_9_numbered___init__(__pyx_self, __pyx_v_self, __pyx_v_args);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -33978,7 +33979,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args) {
+static PyObject *__pyx_pf_6plumed_7_plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args) {
   PyObject *__pyx_v_i = NULL;
   PyObject *__pyx_v_x = NULL;
   PyObject *__pyx_r = NULL;
@@ -34315,7 +34316,7 @@ static PyObject *__pyx_pf_6plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed._numbered.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._numbered.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_i);
@@ -34334,15 +34335,15 @@ static PyObject *__pyx_pf_6plumed_9_numbered___init__(CYTHON_UNUSED PyObject *__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_9_replicas_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_9_replicas_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_9_replicas_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_9_replicas_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_9_replicas_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_9_replicas_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_9_replicas_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_9_replicas_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -34413,11 +34414,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     Py_XDECREF(values[__pyx_temp]);
   }
   __Pyx_DECREF(__pyx_v_args); __pyx_v_args = 0;
-  __Pyx_AddTraceback("plumed._replicas.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._replicas.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_9_replicas___init__(__pyx_self, __pyx_v_self, __pyx_v_args);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_9_replicas___init__(__pyx_self, __pyx_v_self, __pyx_v_args);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -34428,7 +34429,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args) {
+static PyObject *__pyx_pf_6plumed_7_plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_args) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   Py_ssize_t __pyx_t_1;
@@ -34546,7 +34547,7 @@ static PyObject *__pyx_pf_6plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed._replicas.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._replicas.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -34563,15 +34564,15 @@ static PyObject *__pyx_pf_6plumed_9_replicas___init__(CYTHON_UNUSED PyObject *__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_21_format_at_one_residue(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_21_format_at_one_residue(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_21_format_at_one_residue = {"_format_at_one_residue", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_21_format_at_one_residue, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_21_format_at_one_residue(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_21_format_at_one_residue = {"_format_at_one_residue", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_21_format_at_one_residue, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_21_format_at_one_residue(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -34657,11 +34658,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_at_one_residue", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at_one_residue", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_20_format_at_one_residue(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_20_format_at_one_residue(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -34671,7 +34672,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_20_format_at_one_residue(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
+static PyObject *__pyx_pf_6plumed_7_plumed_20_format_at_one_residue(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
   int __pyx_v_digit;
   PyObject *__pyx_v_i = NULL;
   PyObject *__pyx_r = NULL;
@@ -34956,7 +34957,7 @@ static PyObject *__pyx_pf_6plumed_20_format_at_one_residue(CYTHON_UNUSED PyObjec
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed._format_at_one_residue", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at_one_residue", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_i);
@@ -34975,15 +34976,15 @@ static PyObject *__pyx_pf_6plumed_20_format_at_one_residue(CYTHON_UNUSED PyObjec
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_23_format_at_one_chain(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_23_format_at_one_chain(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_23_format_at_one_chain = {"_format_at_one_chain", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_23_format_at_one_chain, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_23_format_at_one_chain(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_23_format_at_one_chain = {"_format_at_one_chain", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_23_format_at_one_chain, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_23_format_at_one_chain(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -35069,11 +35070,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_at_one_chain", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at_one_chain", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_22_format_at_one_chain(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_22_format_at_one_chain(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -35083,7 +35084,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
+static PyObject *__pyx_pf_6plumed_7_plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
   PyObject *__pyx_v_res = NULL;
   PyObject *__pyx_v_x = NULL;
   PyObject *__pyx_r = NULL;
@@ -35326,7 +35327,7 @@ static PyObject *__pyx_pf_6plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject 
   __Pyx_XDECREF(__pyx_t_8);
   __Pyx_XDECREF(__pyx_t_9);
   __Pyx_XDECREF(__pyx_t_10);
-  __Pyx_AddTraceback("plumed._format_at_one_chain", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at_one_chain", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_res);
@@ -35345,15 +35346,15 @@ static PyObject *__pyx_pf_6plumed_22_format_at_one_chain(CYTHON_UNUSED PyObject 
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_25_format_at(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_25_format_at(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_25_format_at = {"_format_at", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_25_format_at, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_25_format_at(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_25_format_at = {"_format_at", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_25_format_at, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_25_format_at(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -35446,11 +35447,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_at", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_24_format_at(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_24_format_at(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -35460,7 +35461,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
+static PyObject *__pyx_pf_6plumed_7_plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
   PyObject *__pyx_v_res = NULL;
   PyObject *__pyx_v_x = NULL;
   PyObject *__pyx_r = NULL;
@@ -35695,7 +35696,7 @@ static PyObject *__pyx_pf_6plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_sel
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("plumed._format_at", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_at", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_res);
@@ -35714,15 +35715,15 @@ static PyObject *__pyx_pf_6plumed_24_format_at(CYTHON_UNUSED PyObject *__pyx_sel
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_3_at_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_3_at_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_3_at_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_3_at_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_3_at_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_3_at_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_3_at_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_3_at_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -35792,11 +35793,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._at.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._at.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_3_at___init__(__pyx_self, __pyx_v_self, __pyx_v_builder);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_3_at___init__(__pyx_self, __pyx_v_self, __pyx_v_builder);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -35806,7 +35807,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder) {
+static PyObject *__pyx_pf_6plumed_7_plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder) {
   PyObject *__pyx_v_weakref = NULL;
   PyObject *__pyx_v__at_global = NULL;
   PyObject *__pyx_v_x = NULL;
@@ -36155,7 +36156,7 @@ static PyObject *__pyx_pf_6plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_se
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed._at.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._at.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_weakref);
@@ -36177,15 +36178,15 @@ static PyObject *__pyx_pf_6plumed_3_at___init__(CYTHON_UNUSED PyObject *__pyx_se
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_3_at_3__call__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_3_at_3__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_3_at_3__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_3_at_3__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_3_at_3__call__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_3_at_3__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_3_at_3__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_3_at_3__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -36278,11 +36279,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._at.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._at.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_3_at_2__call__(__pyx_self, __pyx_v_self, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_3_at_2__call__(__pyx_self, __pyx_v_self, __pyx_v_name, __pyx_v_residue, __pyx_v_chain);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -36292,7 +36293,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
+static PyObject *__pyx_pf_6plumed_7_plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name, PyObject *__pyx_v_residue, PyObject *__pyx_v_chain) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -36367,7 +36368,7 @@ static PyObject *__pyx_pf_6plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_s
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_AddTraceback("plumed._at.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._at.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -36384,16 +36385,16 @@ static PyObject *__pyx_pf_6plumed_3_at_2__call__(CYTHON_UNUSED PyObject *__pyx_s
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_27_fix_braces(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_27_fix_braces(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_26_fix_braces, " Fix braces.\n\n        If comma is true, consider comma as a separator. Otherwise, only consider space as a separator.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_27_fix_braces = {"_fix_braces", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_27_fix_braces, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_26_fix_braces};
-static PyObject *__pyx_pw_6plumed_27_fix_braces(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_26_fix_braces, " Fix braces.\n\n        If comma is true, consider comma as a separator. Otherwise, only consider space as a separator.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_27_fix_braces = {"_fix_braces", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_27_fix_braces, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_26_fix_braces};
+static PyObject *__pyx_pw_6plumed_7_plumed_27_fix_braces(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -36471,11 +36472,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._fix_braces", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._fix_braces", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_26_fix_braces(__pyx_self, __pyx_v_builder, __pyx_v_arg, __pyx_v_comma);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_26_fix_braces(__pyx_self, __pyx_v_builder, __pyx_v_arg, __pyx_v_comma);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -36485,7 +36486,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_comma) {
+static PyObject *__pyx_pf_6plumed_7_plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_comma) {
   int __pyx_v_always;
   PyObject *__pyx_v_tmp = NULL;
   PyObject *__pyx_v_go = NULL;
@@ -36918,7 +36919,7 @@ static PyObject *__pyx_pf_6plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_se
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_AddTraceback("plumed._fix_braces", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._fix_braces", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_tmp);
@@ -36937,16 +36938,16 @@ static PyObject *__pyx_pf_6plumed_26_fix_braces(CYTHON_UNUSED PyObject *__pyx_se
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_29_format_single(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_29_format_single(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_28_format_single, "Format a single argument.\n\n       Level keeps track of recursions.\n    ");
-static PyMethodDef __pyx_mdef_6plumed_29_format_single = {"_format_single", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_29_format_single, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_28_format_single};
-static PyObject *__pyx_pw_6plumed_29_format_single(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_28_format_single, "Format a single argument.\n\n       Level keeps track of recursions.\n    ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_29_format_single = {"_format_single", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_29_format_single, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_28_format_single};
+static PyObject *__pyx_pw_6plumed_7_plumed_29_format_single(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -37031,11 +37032,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_28_format_single(__pyx_self, __pyx_v_builder, __pyx_v_arg, __pyx_v_level);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_28_format_single(__pyx_self, __pyx_v_builder, __pyx_v_arg, __pyx_v_level);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -37045,7 +37046,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_level) {
+static PyObject *__pyx_pf_6plumed_7_plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_arg, PyObject *__pyx_v_level) {
   PyObject *__pyx_v_numbers = NULL;
   PyObject *__pyx_v_MDAnalysis = NULL;
   PyObject *__pyx_v_string = NULL;
@@ -37715,7 +37716,7 @@ static PyObject *__pyx_pf_6plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx
   __Pyx_XDECREF(__pyx_t_11);
   __Pyx_XDECREF(__pyx_t_12);
   __Pyx_XDECREF(__pyx_t_15);
-  __Pyx_AddTraceback("plumed._format_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_single", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_numbers);
@@ -37737,16 +37738,16 @@ static PyObject *__pyx_pf_6plumed_28_format_single(CYTHON_UNUSED PyObject *__pyx
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_31_format_numbered(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_31_format_numbered(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_30_format_numbered, "Format a numbered argument.");
-static PyMethodDef __pyx_mdef_6plumed_31_format_numbered = {"_format_numbered", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_31_format_numbered, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_30_format_numbered};
-static PyObject *__pyx_pw_6plumed_31_format_numbered(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_30_format_numbered, "Format a numbered argument.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_31_format_numbered = {"_format_numbered", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_31_format_numbered, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_30_format_numbered};
+static PyObject *__pyx_pw_6plumed_7_plumed_31_format_numbered(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -37824,11 +37825,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_30_format_numbered(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_30_format_numbered(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -37838,7 +37839,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_30_format_numbered(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_30_format_numbered(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
   PyObject *__pyx_v_ret = NULL;
   PyObject *__pyx_v_x = NULL;
   PyObject *__pyx_r = NULL;
@@ -38121,7 +38122,7 @@ static PyObject *__pyx_pf_6plumed_30_format_numbered(CYTHON_UNUSED PyObject *__p
   __Pyx_XDECREF(__pyx_t_9);
   __Pyx_XDECREF(__pyx_t_10);
   __Pyx_XDECREF(__pyx_t_11);
-  __Pyx_AddTraceback("plumed._format_numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_ret);
@@ -38141,16 +38142,16 @@ static PyObject *__pyx_pf_6plumed_30_format_numbered(CYTHON_UNUSED PyObject *__p
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_33_format_flag(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_33_format_flag(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_32_format_flag, "Format a flag.");
-static PyMethodDef __pyx_mdef_6plumed_33_format_flag = {"_format_flag", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_33_format_flag, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_32_format_flag};
-static PyObject *__pyx_pw_6plumed_33_format_flag(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_32_format_flag, "Format a flag.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_33_format_flag = {"_format_flag", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_33_format_flag, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_32_format_flag};
+static PyObject *__pyx_pw_6plumed_7_plumed_33_format_flag(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -38228,11 +38229,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_flag", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_flag", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_32_format_flag(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_32_format_flag(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -38242,7 +38243,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -38388,7 +38389,7 @@ static PyObject *__pyx_pf_6plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_s
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed._format_flag", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_flag", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -38405,16 +38406,16 @@ static PyObject *__pyx_pf_6plumed_32_format_flag(CYTHON_UNUSED PyObject *__pyx_s
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_35_format_label(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_35_format_label(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_34_format_label, "Format a label.");
-static PyMethodDef __pyx_mdef_6plumed_35_format_label = {"_format_label", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_35_format_label, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_34_format_label};
-static PyObject *__pyx_pw_6plumed_35_format_label(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_34_format_label, "Format a label.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_35_format_label = {"_format_label", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_35_format_label, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_34_format_label};
+static PyObject *__pyx_pw_6plumed_7_plumed_35_format_label(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -38484,11 +38485,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_label", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_label", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_34_format_label(__pyx_self, __pyx_v_builder, __pyx_v_label);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_34_format_label(__pyx_self, __pyx_v_builder, __pyx_v_label);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -38498,7 +38499,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_label) {
+static PyObject *__pyx_pf_6plumed_7_plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_label) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -38639,7 +38640,7 @@ static PyObject *__pyx_pf_6plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed._format_label", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_label", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -38656,16 +38657,16 @@ static PyObject *__pyx_pf_6plumed_34_format_label(CYTHON_UNUSED PyObject *__pyx_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_37_format_opt(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_37_format_opt(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_36_format_opt, "Format an option.");
-static PyMethodDef __pyx_mdef_6plumed_37_format_opt = {"_format_opt", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_37_format_opt, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_36_format_opt};
-static PyObject *__pyx_pw_6plumed_37_format_opt(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_36_format_opt, "Format an option.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_37_format_opt = {"_format_opt", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_37_format_opt, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_36_format_opt};
+static PyObject *__pyx_pw_6plumed_7_plumed_37_format_opt(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -38743,11 +38744,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_opt", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_opt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_36_format_opt(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_36_format_opt(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -38757,7 +38758,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
   PyObject *__pyx_v_string = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -38997,7 +38998,7 @@ static PyObject *__pyx_pf_6plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_se
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("plumed._format_opt", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_opt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_string);
@@ -39015,16 +39016,16 @@ static PyObject *__pyx_pf_6plumed_36_format_opt(CYTHON_UNUSED PyObject *__pyx_se
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_39_format_return(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_39_format_return(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_38_format_return, "Format the return statement");
-static PyMethodDef __pyx_mdef_6plumed_39_format_return = {"_format_return", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_39_format_return, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_38_format_return};
-static PyObject *__pyx_pw_6plumed_39_format_return(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_38_format_return, "Format the return statement");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_39_format_return = {"_format_return", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_39_format_return, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_38_format_return};
+static PyObject *__pyx_pw_6plumed_7_plumed_39_format_return(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -39109,11 +39110,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_38_format_return(__pyx_self, __pyx_v_builder, __pyx_v_ret, __pyx_v_action);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_38_format_return(__pyx_self, __pyx_v_builder, __pyx_v_ret, __pyx_v_action);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -39123,7 +39124,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_ret, PyObject *__pyx_v_action) {
+static PyObject *__pyx_pf_6plumed_7_plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_ret, PyObject *__pyx_v_action) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -39218,7 +39219,7 @@ static PyObject *__pyx_pf_6plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx
  *           raise
 */
       /*except:*/ {
-        __Pyx_AddTraceback("plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
+        __Pyx_AddTraceback("plumed._plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
         if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_7, &__pyx_t_6) < 0) __PYX_ERR(0, 1137, __pyx_L6_except_error)
         __Pyx_XGOTREF(__pyx_t_1);
         __Pyx_XGOTREF(__pyx_t_7);
@@ -39516,7 +39517,7 @@ static PyObject *__pyx_pf_6plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_return", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -39533,15 +39534,15 @@ static PyObject *__pyx_pf_6plumed_38_format_return(CYTHON_UNUSED PyObject *__pyx
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_41_format_verbatim(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_41_format_verbatim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_41_format_verbatim = {"_format_verbatim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_41_format_verbatim, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_41_format_verbatim(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_41_format_verbatim = {"_format_verbatim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_41_format_verbatim, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_41_format_verbatim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -39611,11 +39612,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_40_format_verbatim(__pyx_self, __pyx_v_builder, __pyx_v_verbatim);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_40_format_verbatim(__pyx_self, __pyx_v_builder, __pyx_v_verbatim);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -39625,7 +39626,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_verbatim) {
+static PyObject *__pyx_pf_6plumed_7_plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_builder, PyObject *__pyx_v_verbatim) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
@@ -39746,7 +39747,7 @@ static PyObject *__pyx_pf_6plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__p
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed._format_verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -39763,16 +39764,16 @@ static PyObject *__pyx_pf_6plumed_40_format_verbatim(CYTHON_UNUSED PyObject *__p
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_43_format_anything(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_43_format_anything(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_42_format_anything, "Choose format based on arg type");
-static PyMethodDef __pyx_mdef_6plumed_43_format_anything = {"_format_anything", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_43_format_anything, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_42_format_anything};
-static PyObject *__pyx_pw_6plumed_43_format_anything(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_42_format_anything, "Choose format based on arg type");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_43_format_anything = {"_format_anything", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_43_format_anything, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_42_format_anything};
+static PyObject *__pyx_pw_6plumed_7_plumed_43_format_anything(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -39850,11 +39851,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed._format_anything", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_anything", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_42_format_anything(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_42_format_anything(__pyx_self, __pyx_v_builder, __pyx_v_name, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -39864,7 +39865,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_42_format_anything(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_42_format_anything(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name, PyObject *__pyx_v_arg) {
   PyObject *__pyx_v_ret = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -40123,7 +40124,7 @@ static PyObject *__pyx_pf_6plumed_42_format_anything(CYTHON_UNUSED PyObject *__p
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed._format_anything", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed._format_anything", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_ret);
@@ -40141,16 +40142,16 @@ static PyObject *__pyx_pf_6plumed_42_format_anything(CYTHON_UNUSED PyObject *__p
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder___init__, "Constructor.\n\n           Parameters\n           ----------\n           tofile:\n             PLUMED input is also forwarded to this file. Useful for preparing input files.\n           toplumed:\n             PLUMED input is also forwarded to this PLUMED object. This is useful for\n             interactively testing an input. Its live metadata is used when supported,\n             including previously loaded actions. A successful LOAD through this builder\n             refreshes its methods. The supplied object is borrowed and remains usable.\n           kernel:\n             Path to PLUMED kernel used when no toplumed object is supplied, or for legacy\n             Vim-file lookup. By default, the default kernel (PLUMED_KERNEL) is used.\n           append_underscores:\n             Append the two underscores to method names to avoid autocompletion problems in older ipython versions.\n           comma_separator:\n             Use comma as a separator rather than a space.\n           minimize_braces:\n             Minimize the number of braces. Setting this to False triggers a bug in the PLUMED parser\n             (fixed in 2.4.5 and 2.5.1).\n           enable_at:\n             Enable `ib.at.chi(1,\"A\")` syntax.\n           load_dict:\n             Load full dictionary. Set to false to make initialization faster, at the price of loosing autocompletion.\n           enable_mda_groups:\n             Enable MDAnalysis groups. Notice that MDAnalysis is not explicitly imported. Only set to false if you\n             have a non-working MDAnalysis module installed.\n        ");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder___init__};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_1__init__(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder___init__, "Constructor.\n\n           Parameters\n           ----------\n           tofile:\n             PLUMED input is also forwarded to this file. Useful for preparing input files.\n           toplumed:\n             PLUMED input is also forwarded to this PLUMED object. This is useful for\n             interactively testing an input. Its live metadata is used when supported,\n             including previously loaded actions. A successful LOAD through this builder\n             refreshes its methods. The supplied object is borrowed and remains usable.\n           kernel:\n             Path to PLUMED kernel used when no toplumed object is supplied, or for legacy\n             Vim-file lookup. By default, the default kernel (PLUMED_KERNEL) is used.\n           append_underscores:\n             Append the two underscores to method names to avoid autocompletion problems in older ipython versions.\n           comma_separator:\n             Use comma as a separator rather than a space.\n           minimize_braces:\n             Minimize the number of braces. Setting this to False triggers a bug in the PLUMED parser\n             (fixed in 2.4.5 and 2.5.1).\n           enable_at:\n             Enable `ib.at.chi(1,\"A\")` syntax.\n           load_dict:\n             Load full dictionary. Set to false to make initialization faster, at the price of loosing autocompletion.\n           enable_mda_groups:\n             Enable MDAnalysis groups. Notice that MDAnalysis is not explicitly imported. Only set to false if you\n             have a non-working MDAnalysis module installed.\n        ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder___init__};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -40384,11 +40385,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder___init__(__pyx_self, __pyx_v_self, __pyx_v_tofile, __pyx_v_toplumed, __pyx_v_kernel, __pyx_v_append_underscores, __pyx_v_comma_separator, __pyx_v_minimize_braces, __pyx_v_enable_at, __pyx_v_load_dict, __pyx_v_enable_mda_groups, __pyx_v_post_format, __pyx_v_pre_format);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder___init__(__pyx_self, __pyx_v_self, __pyx_v_tofile, __pyx_v_toplumed, __pyx_v_kernel, __pyx_v_append_underscores, __pyx_v_comma_separator, __pyx_v_minimize_braces, __pyx_v_enable_at, __pyx_v_load_dict, __pyx_v_enable_mda_groups, __pyx_v_post_format, __pyx_v_pre_format);
 
   /* "plumed.pyx":1188
  *        Check the constructor to see all the available options.
@@ -40406,7 +40407,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_tofile, PyObject *__pyx_v_toplumed, PyObject *__pyx_v_kernel, PyObject *__pyx_v_append_underscores, PyObject *__pyx_v_comma_separator, PyObject *__pyx_v_minimize_braces, PyObject *__pyx_v_enable_at, PyObject *__pyx_v_load_dict, PyObject *__pyx_v_enable_mda_groups, PyObject *__pyx_v_post_format, PyObject *__pyx_v_pre_format) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_tofile, PyObject *__pyx_v_toplumed, PyObject *__pyx_v_kernel, PyObject *__pyx_v_append_underscores, PyObject *__pyx_v_comma_separator, PyObject *__pyx_v_minimize_braces, PyObject *__pyx_v_enable_at, PyObject *__pyx_v_load_dict, PyObject *__pyx_v_enable_mda_groups, PyObject *__pyx_v_post_format, PyObject *__pyx_v_pre_format) {
   PyObject *__pyx_v_metadata = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -40753,7 +40754,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed.InputBuilder.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_metadata);
@@ -40771,16 +40772,16 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder___init__(CYTHON_UNUSED PyObject
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_3_set_dictionary(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_3_set_dictionary(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder_2_set_dictionary, "Replace generated methods, syntax and help with one metadata snapshot.");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_3_set_dictionary = {"_set_dictionary", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_3_set_dictionary, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder_2_set_dictionary};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_3_set_dictionary(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder_2_set_dictionary, "Replace generated methods, syntax and help with one metadata snapshot.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_3_set_dictionary = {"_set_dictionary", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_3_set_dictionary, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder_2_set_dictionary};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_3_set_dictionary(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -40858,11 +40859,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder._set_dictionary", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder._set_dictionary", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_2_set_dictionary(__pyx_self, __pyx_v_self, __pyx_v_dictionary, __pyx_v_doc);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_2_set_dictionary(__pyx_self, __pyx_v_self, __pyx_v_dictionary, __pyx_v_doc);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -40872,7 +40873,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_dictionary, PyObject *__pyx_v_doc) {
   PyObject *__pyx_v_functions = NULL;
   PyObject *__pyx_v_methods = NULL;
   PyObject *__pyx_v_name = NULL;
@@ -41245,7 +41246,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED 
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed.InputBuilder._set_dictionary", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder._set_dictionary", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_functions);
@@ -41267,16 +41268,16 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_2_set_dictionary(CYTHON_UNUSED 
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_5refresh(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_5refresh(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder_4refresh, "Refresh syntax, help and methods from the attached PLUMED instance.\n\n           Use after loading an action directly through that instance. LOAD sent\n           through this builder refreshes automatically. Return True on refresh,\n           or False for an unattached builder, disabled dictionary loading, or\n           an older kernel using static Vim metadata. The instance is not finalized.\n        ");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_5refresh = {"refresh", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_5refresh, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder_4refresh};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_5refresh(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder_4refresh, "Refresh syntax, help and methods from the attached PLUMED instance.\n\n           Use after loading an action directly through that instance. LOAD sent\n           through this builder refreshes automatically. Return True on refresh,\n           or False for an unattached builder, disabled dictionary loading, or\n           an older kernel using static Vim metadata. The instance is not finalized.\n        ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_5refresh = {"refresh", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_5refresh, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder_4refresh};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_5refresh(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -41338,11 +41339,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_4refresh(__pyx_self, __pyx_v_self);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_4refresh(__pyx_self, __pyx_v_self);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -41352,7 +41353,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self) {
   PyObject *__pyx_v_metadata = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -41531,7 +41532,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("plumed.InputBuilder.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_metadata);
@@ -41549,15 +41550,15 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_4refresh(CYTHON_UNUSED PyObject
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_7__call__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_7__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_7__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_7__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_7__call__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_7__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_7__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_7__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -41658,11 +41659,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     Py_XDECREF(values[__pyx_temp]);
   }
   __Pyx_DECREF(__pyx_v_kwargs); __pyx_v_kwargs = 0;
-  __Pyx_AddTraceback("plumed.InputBuilder.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_6__call__(__pyx_self, __pyx_v_self, __pyx_v_action, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_6__call__(__pyx_self, __pyx_v_self, __pyx_v_action, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -41673,7 +41674,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_action, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_action, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
   PyObject *__pyx_v_ret = NULL;
   PyObject *__pyx_v_retlist = NULL;
   PyObject *__pyx_v_arg = NULL;
@@ -42000,7 +42001,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObjec
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.InputBuilder.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_ret);
@@ -42021,15 +42022,15 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_6__call__(CYTHON_UNUSED PyObjec
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_9__getattr__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_9__getattr__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_9__getattr__ = {"__getattr__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_9__getattr__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_9__getattr__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_9__getattr__ = {"__getattr__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_9__getattr__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_9__getattr__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -42099,11 +42100,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_8__getattr__(__pyx_self, __pyx_v_self, __pyx_v_name);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_8__getattr__(__pyx_self, __pyx_v_self, __pyx_v_name);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -42122,15 +42123,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_1__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_1__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_1__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_1__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_1__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -42208,11 +42209,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme___init__(__pyx_self, __pyx_v_self, __pyx_v_builder, __pyx_v_name);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme___init__(__pyx_self, __pyx_v_self, __pyx_v_builder, __pyx_v_name);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -42222,7 +42223,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme___init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -42282,7 +42283,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme___init__
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -42299,15 +42300,15 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme___init__
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_3__call__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_3__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_3__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_3__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_3__call__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_3__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_3__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_3__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -42400,11 +42401,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     Py_XDECREF(values[__pyx_temp]);
   }
   __Pyx_DECREF(__pyx_v_kwargs); __pyx_v_kwargs = 0;
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_2__call__(__pyx_self, __pyx_v_self, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_2__call__(__pyx_self, __pyx_v_self, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -42415,7 +42416,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_2__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
   PyObject *__pyx_v_func = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -42499,7 +42500,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_2__call_
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_func);
@@ -42517,15 +42518,15 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_2__call_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_5__init__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_5__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_5__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_5__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_5__init__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_5__init__ = {"__init__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_5__init__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_5__init__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -42603,11 +42604,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_4__init__(__pyx_self, __pyx_v_self, __pyx_v_builder, __pyx_v_name);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_4__init__(__pyx_self, __pyx_v_self, __pyx_v_builder, __pyx_v_name);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -42617,7 +42618,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_4__init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_4__init__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_builder, PyObject *__pyx_v_name) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -42669,7 +42670,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_4__init_
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -42686,15 +42687,15 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_4__init_
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_7__call__(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_7__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_7__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_7__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11__getattr___7_callme_7__call__(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_7__call__ = {"__call__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_7__call__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_7__call__(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -42787,11 +42788,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
     Py_XDECREF(values[__pyx_temp]);
   }
   __Pyx_DECREF(__pyx_v_kwargs); __pyx_v_kwargs = 0;
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_6__call__(__pyx_self, __pyx_v_self, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_6__call__(__pyx_self, __pyx_v_self, __pyx_v_LABEL, __pyx_v_verbatim, __pyx_v_kwargs);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -42802,7 +42803,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_6__call__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_LABEL, PyObject *__pyx_v_verbatim, PyObject *__pyx_v_kwargs) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -42872,7 +42873,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_6__call_
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__._callme.__call__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -42888,7 +42889,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_11__getattr___7_callme_6__call_
  *            class _callme:
 */
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_name) {
   PyObject *__pyx_v__callme = NULL;
   PyObject *__pyx_v_name__ = NULL;
   PyObject *__pyx_r = NULL;
@@ -42927,7 +42928,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                def __init__(self,builder,name):
  *                    self._builder=builder
 */
-    __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_callme, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1304, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_callme, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1304, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
 
     /* "plumed.pyx":1305
@@ -42937,7 +42938,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                    self._builder=builder
  *                    self._name=name
 */
-    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_1__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1305, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_1__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1305, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_init, __pyx_t_3) < (0)) __PYX_ERR(0, 1305, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -42949,7 +42950,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                    func=getattr(self._builder,self._name)
  *                    return func(LABEL,verbatim,**kwargs)
 */
-    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_3__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_3, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1309, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_3__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_3, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1309, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_3, __pyx_mstate_global->__pyx_tuple[7]);
     if (__Pyx_SetNameInClass(__pyx_t_1, __pyx_mstate_global->__pyx_n_u_call, __pyx_t_3) < (0)) __PYX_ERR(0, 1309, __pyx_L1_error)
@@ -43284,7 +43285,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                    self._builder=builder
 */
   /*else*/ {
-    __pyx_t_5 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_callme, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1322, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_callme, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1322, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
 
     /* "plumed.pyx":1323
@@ -43294,7 +43295,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                    self._builder=builder
  *                    self._name=name
 */
-    __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_5__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 1323, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_5__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_2, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 1323, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     if (__Pyx_SetNameInClass(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_init, __pyx_t_6) < (0)) __PYX_ERR(0, 1323, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -43306,7 +43307,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
  *                    return self._builder(self._name,LABEL,verbatim,**kwargs)
  *            if re.match(".*[^_]__$",name):
 */
-    __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_11__getattr___7_callme_7__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_3, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 1327, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_11__getattr___7_callme_7__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr___locals_3, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 1327, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_6, __pyx_mstate_global->__pyx_tuple[7]);
     if (__Pyx_SetNameInClass(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_call, __pyx_t_6) < (0)) __PYX_ERR(0, 1327, __pyx_L1_error)
@@ -43421,7 +43422,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("plumed.InputBuilder.__getattr__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.__getattr__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v__callme);
@@ -43441,16 +43442,16 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_8__getattr__(CYTHON_UNUSED PyOb
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11verbatim(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11verbatim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder_10verbatim, "Create an arbitrary line.");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_11verbatim = {"verbatim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_11verbatim, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder_10verbatim};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_11verbatim(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder_10verbatim, "Create an arbitrary line.");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_11verbatim = {"verbatim", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_11verbatim, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder_10verbatim};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_11verbatim(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -43520,11 +43521,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_10verbatim(__pyx_self, __pyx_v_self, __pyx_v_line);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_10verbatim(__pyx_self, __pyx_v_self, __pyx_v_line);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -43534,7 +43535,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_line) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_self, PyObject *__pyx_v_line) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -43629,7 +43630,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObje
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("plumed.InputBuilder.verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.verbatim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -43646,16 +43647,16 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_10verbatim(CYTHON_UNUSED PyObje
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_13numbered(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_13numbered(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder_12numbered, "Shortcut for numbered syntax.\n\n        Accepts either a list/tuple or a dictionary with integer keys.\n        ");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_13numbered = {"numbered", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_13numbered, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder_12numbered};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_13numbered(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder_12numbered, "Shortcut for numbered syntax.\n\n        Accepts either a list/tuple or a dictionary with integer keys.\n        ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_13numbered = {"numbered", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_13numbered, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder_12numbered};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_13numbered(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -43725,11 +43726,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_12numbered(__pyx_self, __pyx_v_self, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_12numbered(__pyx_self, __pyx_v_self, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -43739,7 +43740,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -43799,7 +43800,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObje
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("plumed.InputBuilder.numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.numbered", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -43816,16 +43817,16 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_12numbered(CYTHON_UNUSED PyObje
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6plumed_12InputBuilder_15replicas(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_15replicas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_6plumed_12InputBuilder_14replicas, "Shortcut for replica syntax.\n\n        Accepts a list/tuple.\n        ");
-static PyMethodDef __pyx_mdef_6plumed_12InputBuilder_15replicas = {"replicas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_12InputBuilder_15replicas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_12InputBuilder_14replicas};
-static PyObject *__pyx_pw_6plumed_12InputBuilder_15replicas(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_6plumed_7_plumed_12InputBuilder_14replicas, "Shortcut for replica syntax.\n\n        Accepts a list/tuple.\n        ");
+static PyMethodDef __pyx_mdef_6plumed_7_plumed_12InputBuilder_15replicas = {"replicas", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_12InputBuilder_15replicas, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_12InputBuilder_14replicas};
+static PyObject *__pyx_pw_6plumed_7_plumed_12InputBuilder_15replicas(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -43895,11 +43896,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
     Py_XDECREF(values[__pyx_temp]);
   }
-  __Pyx_AddTraceback("plumed.InputBuilder.replicas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.replicas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6plumed_12InputBuilder_14replicas(__pyx_self, __pyx_v_self, __pyx_v_arg);
+  __pyx_r = __pyx_pf_6plumed_7_plumed_12InputBuilder_14replicas(__pyx_self, __pyx_v_self, __pyx_v_arg);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -43909,7 +43910,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg) {
+static PyObject *__pyx_pf_6plumed_7_plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObject *__pyx_self, CYTHON_UNUSED PyObject *__pyx_v_self, PyObject *__pyx_v_arg) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -43967,7 +43968,7 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObje
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("plumed.InputBuilder.replicas", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("plumed._plumed.InputBuilder.replicas", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -43975,26 +43976,26 @@ static PyObject *__pyx_pf_6plumed_12InputBuilder_14replicas(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 /* #### Code section: module_exttypes ### */
-static struct __pyx_vtabstruct_6plumed_Plumed __pyx_vtable_6plumed_Plumed;
+static struct __pyx_vtabstruct_6plumed_7_plumed_Plumed __pyx_vtable_6plumed_7_plumed_Plumed;
 
-static PyObject *__pyx_tp_new_6plumed_Plumed(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
-  struct __pyx_obj_6plumed_Plumed *p;
+static PyObject *__pyx_tp_new_6plumed_7_plumed_Plumed(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  struct __pyx_obj_6plumed_7_plumed_Plumed *p;
   PyObject *o;
   o = __Pyx_AllocateExtensionType(t, 0);
   if (unlikely(!o)) return 0;
-  p = ((struct __pyx_obj_6plumed_Plumed *)o);
-  p->__pyx_vtab = __pyx_vtabptr_6plumed_Plumed;
-  if (unlikely(__pyx_pw_6plumed_6Plumed_1__cinit__(o, __pyx_mstate_global->__pyx_empty_tuple, NULL) < 0)) goto bad;
+  p = ((struct __pyx_obj_6plumed_7_plumed_Plumed *)o);
+  p->__pyx_vtab = __pyx_vtabptr_6plumed_7_plumed_Plumed;
+  if (unlikely(__pyx_pw_6plumed_7_plumed_6Plumed_1__cinit__(o, __pyx_mstate_global->__pyx_empty_tuple, NULL) < 0)) goto bad;
   return o;
   bad:
   Py_DECREF(o); o = 0;
   return NULL;
 }
 
-static void __pyx_tp_dealloc_6plumed_Plumed(PyObject *o) {
+static void __pyx_tp_dealloc_6plumed_7_plumed_Plumed(PyObject *o) {
   #if CYTHON_USE_TP_FINALIZE
   if (unlikely(__Pyx_PyObject_GetSlot(o, tp_finalize, destructor)) && (!PyType_IS_GC(Py_TYPE(o)) || !__Pyx_PyObject_GC_IsFinalized(o))) {
-    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed_Plumed) {
+    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed_7_plumed_Plumed) {
       if (PyObject_CallFinalizerFromDealloc(o)) return;
     }
   }
@@ -44003,7 +44004,7 @@ static void __pyx_tp_dealloc_6plumed_Plumed(PyObject *o) {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
     __Pyx_SET_REFCNT(o, Py_REFCNT(o) + 1);
-    __pyx_pw_6plumed_6Plumed_3__dealloc__(o);
+    __pyx_pw_6plumed_7_plumed_6Plumed_3__dealloc__(o);
     __Pyx_SET_REFCNT(o, Py_REFCNT(o) - 1);
     PyErr_Restore(etype, eval, etb);
   }
@@ -44021,38 +44022,38 @@ static void __pyx_tp_dealloc_6plumed_Plumed(PyObject *o) {
   #endif
 }
 
-static PyMethodDef __pyx_methods_6plumed_Plumed[] = {
-  {"finalize", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_7finalize, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_6Plumed_6finalize},
-  {"__enter__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_9__enter__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__exit__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_11__exit__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"cmd", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_13cmd, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_15__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_6Plumed_17__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+static PyMethodDef __pyx_methods_6plumed_7_plumed_Plumed[] = {
+  {"finalize", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_7finalize, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_6plumed_7_plumed_6Plumed_6finalize},
+  {"__enter__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_9__enter__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__exit__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_11__exit__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"cmd", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_13cmd, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__reduce_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_15__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_6plumed_7_plumed_6Plumed_17__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
-static PyType_Slot __pyx_type_6plumed_Plumed_slots[] = {
-  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed_Plumed},
-  {Py_tp_methods, (void *)__pyx_methods_6plumed_Plumed},
-  {Py_tp_init, (void *)__pyx_pw_6plumed_6Plumed_5__init__},
-  {Py_tp_new, (void *)__pyx_tp_new_6plumed_Plumed},
+static PyType_Slot __pyx_type_6plumed_7_plumed_Plumed_slots[] = {
+  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed_7_plumed_Plumed},
+  {Py_tp_methods, (void *)__pyx_methods_6plumed_7_plumed_Plumed},
+  {Py_tp_init, (void *)__pyx_pw_6plumed_7_plumed_6Plumed_5__init__},
+  {Py_tp_new, (void *)__pyx_tp_new_6plumed_7_plumed_Plumed},
   {0, 0},
 };
-static PyType_Spec __pyx_type_6plumed_Plumed_spec = {
-  "plumed.Plumed",
-  sizeof(struct __pyx_obj_6plumed_Plumed),
+static PyType_Spec __pyx_type_6plumed_7_plumed_Plumed_spec = {
+  "plumed._plumed.Plumed",
+  sizeof(struct __pyx_obj_6plumed_7_plumed_Plumed),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE,
-  __pyx_type_6plumed_Plumed_slots,
+  __pyx_type_6plumed_7_plumed_Plumed_slots,
 };
 #else
 
-static PyTypeObject __pyx_type_6plumed_Plumed = {
+static PyTypeObject __pyx_type_6plumed_7_plumed_Plumed = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""Plumed", /*tp_name*/
-  sizeof(struct __pyx_obj_6plumed_Plumed), /*tp_basicsize*/
+  "plumed._plumed.""Plumed", /*tp_name*/
+  sizeof(struct __pyx_obj_6plumed_7_plumed_Plumed), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_6plumed_Plumed, /*tp_dealloc*/
+  __pyx_tp_dealloc_6plumed_7_plumed_Plumed, /*tp_dealloc*/
   0, /*tp_vectorcall_offset*/
   0, /*tp_getattr*/
   0, /*tp_setattr*/
@@ -44075,7 +44076,7 @@ static PyTypeObject __pyx_type_6plumed_Plumed = {
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
   0, /*tp_iternext*/
-  __pyx_methods_6plumed_Plumed, /*tp_methods*/
+  __pyx_methods_6plumed_7_plumed_Plumed, /*tp_methods*/
   0, /*tp_members*/
   0, /*tp_getset*/
   0, /*tp_base*/
@@ -44085,9 +44086,9 @@ static PyTypeObject __pyx_type_6plumed_Plumed = {
   #if !CYTHON_USE_TYPE_SPECS
   0, /*tp_dictoffset*/
   #endif
-  __pyx_pw_6plumed_6Plumed_5__init__, /*tp_init*/
+  __pyx_pw_6plumed_7_plumed_6Plumed_5__init__, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new_6plumed_Plumed, /*tp_new*/
+  __pyx_tp_new_6plumed_7_plumed_Plumed, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -44120,16 +44121,16 @@ static PyTypeObject __pyx_type_6plumed_Plumed = {
 };
 #endif
 
-static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct___build_convert_function(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+static PyObject *__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct___build_convert_function(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
   PyObject *o;
   #if CYTHON_USE_FREELISTS
-  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct___build_convert_function > 0) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(t, __pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function))))
+  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct___build_convert_function > 0) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(t, __pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function))))
   {
-    o = (PyObject*)__pyx_mstate_global->__pyx_freelist_6plumed___pyx_scope_struct___build_convert_function[--__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct___build_convert_function];
+    o = (PyObject*)__pyx_mstate_global->__pyx_freelist_6plumed_7_plumed___pyx_scope_struct___build_convert_function[--__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct___build_convert_function];
     #if CYTHON_USE_TYPE_SPECS
     Py_DECREF(Py_TYPE(o));
     #endif
-    memset(o, 0, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function));
+    memset(o, 0, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function));
     #if CYTHON_COMPILING_IN_LIMITED_API
     (void) PyObject_Init(o, t);
     #else
@@ -44145,11 +44146,11 @@ static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct___build_convert_functio
   return o;
 }
 
-static void __pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function(PyObject *o) {
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)o;
+static void __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct___build_convert_function(PyObject *o) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)o;
   #if CYTHON_USE_TP_FINALIZE
   if (unlikely(__Pyx_PyObject_GetSlot(o, tp_finalize, destructor)) && !__Pyx_PyObject_GC_IsFinalized(o)) {
-    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function) {
+    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct___build_convert_function) {
       if (PyObject_CallFinalizerFromDealloc(o)) return;
     }
   }
@@ -44157,9 +44158,9 @@ static void __pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function
   PyObject_GC_UnTrack(o);
   Py_CLEAR(p->__pyx_v_convert_func);
   #if CYTHON_USE_FREELISTS
-  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct___build_convert_function < 8) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(Py_TYPE(o), __pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function))))
+  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct___build_convert_function < 8) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(Py_TYPE(o), __pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function))))
   {
-    __pyx_mstate_global->__pyx_freelist_6plumed___pyx_scope_struct___build_convert_function[__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct___build_convert_function++] = ((struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)o);
+    __pyx_mstate_global->__pyx_freelist_6plumed_7_plumed___pyx_scope_struct___build_convert_function[__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct___build_convert_function++] = ((struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)o);
   } else
   #endif
   {
@@ -44178,9 +44179,9 @@ static void __pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function
   }
 }
 
-static int __pyx_tp_traverse_6plumed___pyx_scope_struct___build_convert_function(PyObject *o, visitproc v, void *a) {
+static int __pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct___build_convert_function(PyObject *o, visitproc v, void *a) {
   int e;
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)o;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)o;
   {
     e = __Pyx_call_type_traverse(o, 1, v, a);
     if (e) return e;
@@ -44191,37 +44192,37 @@ static int __pyx_tp_traverse_6plumed___pyx_scope_struct___build_convert_function
   return 0;
 }
 
-static int __pyx_tp_clear_6plumed___pyx_scope_struct___build_convert_function(PyObject *o) {
+static int __pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct___build_convert_function(PyObject *o) {
   PyObject* tmp;
-  struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function *)o;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function *)o;
   tmp = ((PyObject*)p->__pyx_v_convert_func);
   p->__pyx_v_convert_func = Py_None; Py_INCREF(Py_None);
   Py_XDECREF(tmp);
   return 0;
 }
 #if CYTHON_USE_TYPE_SPECS
-static PyType_Slot __pyx_type_6plumed___pyx_scope_struct___build_convert_function_slots[] = {
-  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function},
-  {Py_tp_traverse, (void *)__pyx_tp_traverse_6plumed___pyx_scope_struct___build_convert_function},
-  {Py_tp_clear, (void *)__pyx_tp_clear_6plumed___pyx_scope_struct___build_convert_function},
-  {Py_tp_new, (void *)__pyx_tp_new_6plumed___pyx_scope_struct___build_convert_function},
+static PyType_Slot __pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function_slots[] = {
+  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct___build_convert_function},
+  {Py_tp_traverse, (void *)__pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct___build_convert_function},
+  {Py_tp_clear, (void *)__pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct___build_convert_function},
+  {Py_tp_new, (void *)__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct___build_convert_function},
   {0, 0},
 };
-static PyType_Spec __pyx_type_6plumed___pyx_scope_struct___build_convert_function_spec = {
-  "plumed.__pyx_scope_struct___build_convert_function",
-  sizeof(struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function),
+static PyType_Spec __pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function_spec = {
+  "plumed._plumed.__pyx_scope_struct___build_convert_function",
+  sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_HAVE_GC,
-  __pyx_type_6plumed___pyx_scope_struct___build_convert_function_slots,
+  __pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function_slots,
 };
 #else
 
-static PyTypeObject __pyx_type_6plumed___pyx_scope_struct___build_convert_function = {
+static PyTypeObject __pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""__pyx_scope_struct___build_convert_function", /*tp_name*/
-  sizeof(struct __pyx_obj_6plumed___pyx_scope_struct___build_convert_function), /*tp_basicsize*/
+  "plumed._plumed.""__pyx_scope_struct___build_convert_function", /*tp_name*/
+  sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct___build_convert_function), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_6plumed___pyx_scope_struct___build_convert_function, /*tp_dealloc*/
+  __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct___build_convert_function, /*tp_dealloc*/
   0, /*tp_vectorcall_offset*/
   0, /*tp_getattr*/
   0, /*tp_setattr*/
@@ -44238,8 +44239,8 @@ static PyTypeObject __pyx_type_6plumed___pyx_scope_struct___build_convert_functi
   0, /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_HAVE_GC, /*tp_flags*/
   0, /*tp_doc*/
-  __pyx_tp_traverse_6plumed___pyx_scope_struct___build_convert_function, /*tp_traverse*/
-  __pyx_tp_clear_6plumed___pyx_scope_struct___build_convert_function, /*tp_clear*/
+  __pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct___build_convert_function, /*tp_traverse*/
+  __pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct___build_convert_function, /*tp_clear*/
   0, /*tp_richcompare*/
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
@@ -44256,7 +44257,7 @@ static PyTypeObject __pyx_type_6plumed___pyx_scope_struct___build_convert_functi
   #endif
   0, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new_6plumed___pyx_scope_struct___build_convert_function, /*tp_new*/
+  __pyx_tp_new_6plumed_7_plumed___pyx_scope_struct___build_convert_function, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -44289,16 +44290,16 @@ static PyTypeObject __pyx_type_6plumed___pyx_scope_struct___build_convert_functi
 };
 #endif
 
-static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+static PyObject *__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
   PyObject *o;
   #if CYTHON_USE_FREELISTS
-  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct_1_read_as_pandas > 0) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(t, __pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas))))
+  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas > 0) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(t, __pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas))))
   {
-    o = (PyObject*)__pyx_mstate_global->__pyx_freelist_6plumed___pyx_scope_struct_1_read_as_pandas[--__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct_1_read_as_pandas];
+    o = (PyObject*)__pyx_mstate_global->__pyx_freelist_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas[--__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas];
     #if CYTHON_USE_TYPE_SPECS
     Py_DECREF(Py_TYPE(o));
     #endif
-    memset(o, 0, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas));
+    memset(o, 0, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas));
     #if CYTHON_COMPILING_IN_LIMITED_API
     (void) PyObject_Init(o, t);
     #else
@@ -44314,11 +44315,11 @@ static PyObject *__pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas(PyType
   return o;
 }
 
-static void __pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o) {
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)o;
+static void __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o) {
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)o;
   #if CYTHON_USE_TP_FINALIZE
   if (unlikely(__Pyx_PyObject_GetSlot(o, tp_finalize, destructor)) && !__Pyx_PyObject_GC_IsFinalized(o)) {
-    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas) {
+    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas) {
       if (PyObject_CallFinalizerFromDealloc(o)) return;
     }
   }
@@ -44328,9 +44329,9 @@ static void __pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas(PyObjec
   Py_CLEAR(p->__pyx_v_PlumedSeries);
   Py_CLEAR(p->__pyx_v_process_dataframe);
   #if CYTHON_USE_FREELISTS
-  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct_1_read_as_pandas < 8) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(Py_TYPE(o), __pyx_mstate_global->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas, sizeof(struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas))))
+  if (likely((int)(__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas < 8) & __PYX_CHECK_FINAL_TYPE_FOR_FREELISTS(Py_TYPE(o), __pyx_mstate_global->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas))))
   {
-    __pyx_mstate_global->__pyx_freelist_6plumed___pyx_scope_struct_1_read_as_pandas[__pyx_mstate_global->__pyx_freecount_6plumed___pyx_scope_struct_1_read_as_pandas++] = ((struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)o);
+    __pyx_mstate_global->__pyx_freelist_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas[__pyx_mstate_global->__pyx_freecount_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas++] = ((struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)o);
   } else
   #endif
   {
@@ -44349,9 +44350,9 @@ static void __pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas(PyObjec
   }
 }
 
-static int __pyx_tp_traverse_6plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o, visitproc v, void *a) {
+static int __pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o, visitproc v, void *a) {
   int e;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)o;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)o;
   {
     e = __Pyx_call_type_traverse(o, 1, v, a);
     if (e) return e;
@@ -44368,9 +44369,9 @@ static int __pyx_tp_traverse_6plumed___pyx_scope_struct_1_read_as_pandas(PyObjec
   return 0;
 }
 
-static int __pyx_tp_clear_6plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o) {
+static int __pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas(PyObject *o) {
   PyObject* tmp;
-  struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas *)o;
+  struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *p = (struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas *)o;
   tmp = ((PyObject*)p->__pyx_v_PlumedDataFrame);
   p->__pyx_v_PlumedDataFrame = Py_None; Py_INCREF(Py_None);
   Py_XDECREF(tmp);
@@ -44383,28 +44384,28 @@ static int __pyx_tp_clear_6plumed___pyx_scope_struct_1_read_as_pandas(PyObject *
   return 0;
 }
 #if CYTHON_USE_TYPE_SPECS
-static PyType_Slot __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas_slots[] = {
-  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas},
-  {Py_tp_traverse, (void *)__pyx_tp_traverse_6plumed___pyx_scope_struct_1_read_as_pandas},
-  {Py_tp_clear, (void *)__pyx_tp_clear_6plumed___pyx_scope_struct_1_read_as_pandas},
-  {Py_tp_new, (void *)__pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas},
+static PyType_Slot __pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas_slots[] = {
+  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas},
+  {Py_tp_traverse, (void *)__pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas},
+  {Py_tp_clear, (void *)__pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas},
+  {Py_tp_new, (void *)__pyx_tp_new_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas},
   {0, 0},
 };
-static PyType_Spec __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas_spec = {
-  "plumed.__pyx_scope_struct_1_read_as_pandas",
-  sizeof(struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas),
+static PyType_Spec __pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas_spec = {
+  "plumed._plumed.__pyx_scope_struct_1_read_as_pandas",
+  sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_HAVE_GC,
-  __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas_slots,
+  __pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas_slots,
 };
 #else
 
-static PyTypeObject __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas = {
+static PyTypeObject __pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""__pyx_scope_struct_1_read_as_pandas", /*tp_name*/
-  sizeof(struct __pyx_obj_6plumed___pyx_scope_struct_1_read_as_pandas), /*tp_basicsize*/
+  "plumed._plumed.""__pyx_scope_struct_1_read_as_pandas", /*tp_name*/
+  sizeof(struct __pyx_obj_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_6plumed___pyx_scope_struct_1_read_as_pandas, /*tp_dealloc*/
+  __pyx_tp_dealloc_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, /*tp_dealloc*/
   0, /*tp_vectorcall_offset*/
   0, /*tp_getattr*/
   0, /*tp_setattr*/
@@ -44421,8 +44422,8 @@ static PyTypeObject __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas = {
   0, /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_HAVE_GC, /*tp_flags*/
   0, /*tp_doc*/
-  __pyx_tp_traverse_6plumed___pyx_scope_struct_1_read_as_pandas, /*tp_traverse*/
-  __pyx_tp_clear_6plumed___pyx_scope_struct_1_read_as_pandas, /*tp_clear*/
+  __pyx_tp_traverse_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, /*tp_traverse*/
+  __pyx_tp_clear_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, /*tp_clear*/
   0, /*tp_richcompare*/
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
@@ -44439,7 +44440,7 @@ static PyTypeObject __pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas = {
   #endif
   0, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new_6plumed___pyx_scope_struct_1_read_as_pandas, /*tp_new*/
+  __pyx_tp_new_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -44597,7 +44598,7 @@ static PyType_Slot __pyx_type___pyx_array_slots[] = {
   {0, 0},
 };
 static PyType_Spec __pyx_type___pyx_array_spec = {
-  "plumed.array",
+  "plumed._plumed.array",
   sizeof(struct __pyx_array_obj),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_SEQUENCE,
@@ -44631,7 +44632,7 @@ static PyBufferProcs __pyx_tp_as_buffer_array = {
 
 static PyTypeObject __pyx_type___pyx_array = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""array", /*tp_name*/
+  "plumed._plumed.""array", /*tp_name*/
   sizeof(struct __pyx_array_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_array, /*tp_dealloc*/
@@ -44776,7 +44777,7 @@ static PyType_Slot __pyx_type___pyx_MemviewEnum_slots[] = {
   {0, 0},
 };
 static PyType_Spec __pyx_type___pyx_MemviewEnum_spec = {
-  "plumed.Enum",
+  "plumed._plumed.Enum",
   sizeof(struct __pyx_MemviewEnum_obj),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_GC,
@@ -44786,7 +44787,7 @@ static PyType_Spec __pyx_type___pyx_MemviewEnum_spec = {
 
 static PyTypeObject __pyx_type___pyx_MemviewEnum = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""Enum", /*tp_name*/
+  "plumed._plumed.""Enum", /*tp_name*/
   sizeof(struct __pyx_MemviewEnum_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_Enum, /*tp_dealloc*/
@@ -45053,7 +45054,7 @@ static PyType_Slot __pyx_type___pyx_memoryview_slots[] = {
   {0, 0},
 };
 static PyType_Spec __pyx_type___pyx_memoryview_spec = {
-  "plumed.memoryview",
+  "plumed._plumed.memoryview",
   sizeof(struct __pyx_memoryview_obj),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_GC,
@@ -45087,7 +45088,7 @@ static PyBufferProcs __pyx_tp_as_buffer_memoryview = {
 
 static PyTypeObject __pyx_type___pyx_memoryview = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""memoryview", /*tp_name*/
+  "plumed._plumed.""memoryview", /*tp_name*/
   sizeof(struct __pyx_memoryview_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_memoryview, /*tp_dealloc*/
@@ -45230,7 +45231,7 @@ static PyType_Slot __pyx_type___pyx_memoryviewslice_slots[] = {
   {0, 0},
 };
 static PyType_Spec __pyx_type___pyx_memoryviewslice_spec = {
-  "plumed._memoryviewslice",
+  "plumed._plumed._memoryviewslice",
   sizeof(struct __pyx_memoryviewslice_obj),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_GC|Py_TPFLAGS_SEQUENCE,
@@ -45240,7 +45241,7 @@ static PyType_Spec __pyx_type___pyx_memoryviewslice_spec = {
 
 static PyTypeObject __pyx_type___pyx_memoryviewslice = {
   PyVarObject_HEAD_INIT(0, 0)
-  "plumed.""_memoryviewslice", /*tp_name*/
+  "plumed._plumed.""_memoryviewslice", /*tp_name*/
   sizeof(struct __pyx_memoryviewslice_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc__memoryviewslice, /*tp_dealloc*/
@@ -45379,77 +45380,77 @@ static int __Pyx_modinit_type_init_code(__pyx_mstatetype *__pyx_mstate) {
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_init_code", 0);
   /*--- Type init code ---*/
-  __pyx_vtabptr_6plumed_Plumed = &__pyx_vtable_6plumed_Plumed;
-  __pyx_vtable_6plumed_Plumed.raise_exception = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, plumed_error))__pyx_f_6plumed_6Plumed_raise_exception;
-  __pyx_vtable_6plumed_Plumed.cmd_low_level = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, char const *, void const *, size_t, size_t *, size_t))__pyx_f_6plumed_6Plumed_cmd_low_level;
-  __pyx_vtable_6plumed_Plumed.cmd_ndarray_double = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_ndarray_double;
-  __pyx_vtable_6plumed_Plumed.cmd_ndarray_int = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_ndarray_int;
-  __pyx_vtable_6plumed_Plumed.cmd_ndarray_long = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_ndarray_long;
-  __pyx_vtable_6plumed_Plumed.cmd_array_double = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_array_double;
-  __pyx_vtable_6plumed_Plumed.cmd_array_int = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_array_int;
-  __pyx_vtable_6plumed_Plumed.cmd_array_long = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_array_long;
-  __pyx_vtable_6plumed_Plumed.cmd_float = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, double))__pyx_f_6plumed_6Plumed_cmd_float;
-  __pyx_vtable_6plumed_Plumed.cmd_int = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, int))__pyx_f_6plumed_6Plumed_cmd_int;
-  __pyx_vtable_6plumed_Plumed.cmd_mpi = (PyObject *(*)(struct __pyx_obj_6plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_6Plumed_cmd_mpi;
+  __pyx_vtabptr_6plumed_7_plumed_Plumed = &__pyx_vtable_6plumed_7_plumed_Plumed;
+  __pyx_vtable_6plumed_7_plumed_Plumed.raise_exception = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, plumed_error))__pyx_f_6plumed_7_plumed_6Plumed_raise_exception;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_low_level = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, char const *, void const *, size_t, size_t *, size_t))__pyx_f_6plumed_7_plumed_6Plumed_cmd_low_level;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_ndarray_double = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_double;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_ndarray_int = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_int;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_ndarray_long = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_ndarray_long;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_array_double = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_double;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_array_int = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_int;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_array_long = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_array_long;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_float = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, double))__pyx_f_6plumed_7_plumed_6Plumed_cmd_float;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_int = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, int))__pyx_f_6plumed_7_plumed_6Plumed_cmd_int;
+  __pyx_vtable_6plumed_7_plumed_Plumed.cmd_mpi = (PyObject *(*)(struct __pyx_obj_6plumed_7_plumed_Plumed *, PyObject *, PyObject *))__pyx_f_6plumed_7_plumed_6Plumed_cmd_mpi;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_6plumed_Plumed = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed_Plumed_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed_Plumed)) __PYX_ERR(0, 81, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed_Plumed_spec, __pyx_mstate->__pyx_ptype_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed_7_plumed_Plumed_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed_7_plumed_Plumed_spec, __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
   #else
-  __pyx_mstate->__pyx_ptype_6plumed_Plumed = &__pyx_type_6plumed_Plumed;
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed = &__pyx_type_6plumed_7_plumed_Plumed;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
-  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed_Plumed);
+  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed);
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed_Plumed->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed_Plumed->tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_mstate->__pyx_ptype_6plumed_Plumed->tp_getattro = PyObject_GenericGetAttr;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed->tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed->tp_getattro = PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_6plumed_Plumed, __pyx_vtabptr_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
-  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_Plumed, (PyObject *) __pyx_mstate->__pyx_ptype_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_6plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_vtabptr_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_Plumed, (PyObject *) __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_mstate->__pyx_ptype_6plumed_7_plumed_Plumed) < (0)) __PYX_ERR(0, 81, __pyx_L1_error)
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed___pyx_scope_struct___build_convert_function_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function)) __PYX_ERR(0, 330, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed___pyx_scope_struct___build_convert_function_spec, __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function) < (0)) __PYX_ERR(0, 330, __pyx_L1_error)
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function)) __PYX_ERR(0, 330, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function_spec, __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function) < (0)) __PYX_ERR(0, 330, __pyx_L1_error)
   #else
-  __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function = &__pyx_type_6plumed___pyx_scope_struct___build_convert_function;
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function = &__pyx_type_6plumed_7_plumed___pyx_scope_struct___build_convert_function;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function) < (0)) __PYX_ERR(0, 330, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function) < (0)) __PYX_ERR(0, 330, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
-  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function);
+  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function);
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function->tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct___build_convert_function->tp_getattro = PyObject_GenericGetAttr;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function->tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct___build_convert_function->tp_getattro = PyObject_GenericGetAttr;
   }
   #endif
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas)) __PYX_ERR(0, 392, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas_spec, __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas) < (0)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas_spec, NULL); if (unlikely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas)) __PYX_ERR(0, 392, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas_spec, __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas) < (0)) __PYX_ERR(0, 392, __pyx_L1_error)
   #else
-  __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas = &__pyx_type_6plumed___pyx_scope_struct_1_read_as_pandas;
+  __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas = &__pyx_type_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas) < (0)) __PYX_ERR(0, 392, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas) < (0)) __PYX_ERR(0, 392, __pyx_L1_error)
   #endif
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
-  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas);
+  PyUnstable_Object_EnableDeferredRefcount((PyObject*)__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas);
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas->tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_mstate->__pyx_ptype_6plumed___pyx_scope_struct_1_read_as_pandas->tp_getattro = PyObject_GenericGetAttr;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas->tp_dictoffset && __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas->tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_mstate->__pyx_ptype_6plumed_7_plumed___pyx_scope_struct_1_read_as_pandas->tp_getattro = PyObject_GenericGetAttr;
   }
   #endif
   __pyx_vtabptr_array = &__pyx_vtable_array;
@@ -45615,10 +45616,10 @@ static int __Pyx_modinit_function_import_code(__pyx_mstatetype *__pyx_mstate) {
 
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 static PyObject* __pyx_pymod_create(PyObject *spec, PyModuleDef *def); /*proto*/
-static int __pyx_pymod_exec_plumed(PyObject* module); /*proto*/
+static int __pyx_pymod_exec__plumed(PyObject* module); /*proto*/
 static PyModuleDef_Slot __pyx_moduledef_slots[] = {
   {Py_mod_create, (void*)__pyx_pymod_create},
-  {Py_mod_exec, (void*)__pyx_pymod_exec_plumed},
+  {Py_mod_exec, (void*)__pyx_pymod_exec__plumed},
   #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
   {Py_mod_gil, __Pyx_FREETHREADING_COMPATIBLE},
   #endif
@@ -45637,7 +45638,7 @@ namespace {
   #endif
   {
       PyModuleDef_HEAD_INIT,
-      "plumed",
+      "_plumed",
       0, /* m_doc */
     #if CYTHON_USE_MODULE_STATE
       sizeof(__pyx_mstatetype), /* m_size */
@@ -45675,8 +45676,8 @@ namespace {
   #endif
 #endif
 
-__Pyx_PyMODINIT_FUNC PyInit_plumed(void) CYTHON_SMALL_CODE; /*proto*/
-__Pyx_PyMODINIT_FUNC PyInit_plumed(void)
+__Pyx_PyMODINIT_FUNC PyInit__plumed(void) CYTHON_SMALL_CODE; /*proto*/
+__Pyx_PyMODINIT_FUNC PyInit__plumed(void)
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 {
   return PyModuleDef_Init(&__pyx_moduledef);
@@ -45783,7 +45784,7 @@ bad:
 }
 
 
-static CYTHON_SMALL_CODE int __pyx_pymod_exec_plumed(PyObject *__pyx_pyinit_module)
+static CYTHON_SMALL_CODE int __pyx_pymod_exec__plumed(PyObject *__pyx_pyinit_module)
 #endif
 {
   int stringtab_initialized = 0;
@@ -45810,7 +45811,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_plumed(PyObject *__pyx_pyinit_modu
   #if CYTHON_PEP489_MULTI_PHASE_INIT
   if (__pyx_m) {
     if (__pyx_m == __pyx_pyinit_module) return 0;
-    PyErr_SetString(PyExc_RuntimeError, "Module 'plumed' has already been imported. Re-initialisation is not supported.");
+    PyErr_SetString(PyExc_RuntimeError, "Module '_plumed' has already been imported. Re-initialisation is not supported.");
     return -1;
   }
   #else
@@ -45826,7 +45827,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_plumed(PyObject *__pyx_pyinit_modu
   #if CYTHON_USE_MODULE_STATE
   {
     int add_module_result = __Pyx_State_AddModule(__pyx_t_1, &__pyx_moduledef);
-    __pyx_t_1 = 0; /* transfer ownership from __pyx_t_1 to "plumed" pseudovariable */
+    __pyx_t_1 = 0; /* transfer ownership from __pyx_t_1 to "_plumed" pseudovariable */
     if (unlikely((add_module_result < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
     pystate_addmodule_run = 1;
   }
@@ -45854,7 +45855,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_plumed(PyObject *__pyx_pyinit_modu
   }
   #endif
   
-__Pyx_RefNannySetupContext("PyInit_plumed", 0);
+__Pyx_RefNannySetupContext("PyInit__plumed", 0);
   __Pyx_init_runtime_version();
   if (__Pyx_check_binary_version(__PYX_LIMITED_VERSION_HEX, __Pyx_get_runtime_version(), CYTHON_COMPILING_IN_LIMITED_API) < (0)) __PYX_ERR(0, 1, __pyx_L1_error)
   __pyx_mstate->__pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_mstate->__pyx_empty_tuple)) __PYX_ERR(0, 1, __pyx_L1_error)
@@ -45865,13 +45866,13 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   if (__Pyx_InitConstants(__pyx_mstate) < (0)) __PYX_ERR(0, 1, __pyx_L1_error)
   stringtab_initialized = 1;
   if (__Pyx_InitGlobals() < (0)) __PYX_ERR(0, 1, __pyx_L1_error)
-  if (__pyx_module_is_main_plumed) {
+  if (__pyx_module_is_main_plumed___plumed) {
     if (PyObject_SetAttr(__pyx_m, __pyx_mstate_global->__pyx_n_u_name_2, __pyx_mstate_global->__pyx_n_u_main) < (0)) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "plumed")) {
-      if (unlikely((PyDict_SetItemString(modules, "plumed", __pyx_m) < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "plumed._plumed")) {
+      if (unlikely((PyDict_SetItemString(modules, "plumed._plumed", __pyx_m) < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
     }
   }
   /*--- Builtin init code ---*/
@@ -46594,7 +46595,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
 */
     __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(((PyTypeObject*)PyExc_ImportError))));
     if (__pyx_t_10) {
-      __Pyx_AddTraceback("plumed", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("plumed._plumed", __pyx_clineno, __pyx_lineno, __pyx_filename);
       if (__Pyx_GetException(&__pyx_t_4, &__pyx_t_5, &__pyx_t_11) < 0) __PYX_ERR(0, 49, __pyx_L38_except_error)
       __Pyx_XGOTREF(__pyx_t_4);
       __Pyx_XGOTREF(__pyx_t_5);
@@ -46649,7 +46650,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_4 = __Pyx_CalculateMetaclass(NULL, __pyx_t_5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_12 = __Pyx_Py3MetaclassPrepare(__pyx_t_4, __pyx_t_5, __pyx_mstate_global->__pyx_n_u_PlumedError, __pyx_mstate_global->__pyx_n_u_PlumedError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_Py3MetaclassPrepare(__pyx_t_4, __pyx_t_5, __pyx_mstate_global->__pyx_n_u_PlumedError, __pyx_mstate_global->__pyx_n_u_PlumedError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   if (__pyx_t_5 != __pyx_t_11) {
     if (unlikely((PyDict_SetItemString(__pyx_t_12, "__orig_bases__", __pyx_t_11) < 0))) __PYX_ERR(0, 64, __pyx_L1_error)
@@ -46679,7 +46680,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_12 = __Pyx_CalculateMetaclass(NULL, __pyx_t_4); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 67, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
-  __pyx_t_11 = __Pyx_Py3MetaclassPrepare(__pyx_t_12, __pyx_t_4, __pyx_mstate_global->__pyx_n_u_LeptonError, __pyx_mstate_global->__pyx_n_u_LeptonError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 67, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_Py3MetaclassPrepare(__pyx_t_12, __pyx_t_4, __pyx_mstate_global->__pyx_n_u_LeptonError, __pyx_mstate_global->__pyx_n_u_LeptonError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 67, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   if (__pyx_t_4 != __pyx_t_5) {
     if (unlikely((PyDict_SetItemString(__pyx_t_11, "__orig_bases__", __pyx_t_5) < 0))) __PYX_ERR(0, 67, __pyx_L1_error)
@@ -46703,7 +46704,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Return the installed private kernel path, if this is a bundled wheel."""
  *     suffix = ".dylib" if sys.platform == "darwin" else ".so"
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_1_bundled_kernel_path, 0, __pyx_mstate_global->__pyx_n_u_bundled_kernel_path, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 70, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_1_bundled_kernel_path, 0, __pyx_mstate_global->__pyx_n_u_bundled_kernel_path, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 70, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -46718,12 +46719,12 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *          """ Explicitly finalize a Plumed object.
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_7finalize, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed_finalize, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[14])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_7finalize, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed_finalize, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[14])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_mstate_global->__pyx_n_u_finalize, __pyx_t_4) < (0)) __PYX_ERR(0, 124, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_mstate_global->__pyx_n_u_finalize, __pyx_t_4) < (0)) __PYX_ERR(0, 124, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "plumed.pyx":143
@@ -46733,12 +46734,12 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *          return self
  *      def __exit__(self, type, value, traceback):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_9__enter__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___enter, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[15])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 143, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_9__enter__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___enter, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[15])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 143, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_mstate_global->__pyx_n_u_enter, __pyx_t_4) < (0)) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_mstate_global->__pyx_n_u_enter, __pyx_t_4) < (0)) __PYX_ERR(0, 143, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "plumed.pyx":145
@@ -46748,12 +46749,12 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         self.finalize()
  *      cdef raise_exception(self,cplumed.plumed_error error):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_11__exit__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___exit, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[16])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 145, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_11__exit__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___exit, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[16])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 145, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_mstate_global->__pyx_n_u_exit, __pyx_t_4) < (0)) __PYX_ERR(0, 145, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_mstate_global->__pyx_n_u_exit, __pyx_t_4) < (0)) __PYX_ERR(0, 145, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "plumed.pyx":264
@@ -46763,13 +46764,13 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *          cdef bytes py_bytes = key.encode() + b'\x00'  # Explicitly add null terminator
  *          cdef char* ckey = py_bytes
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_13cmd, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed_cmd, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[17])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 264, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_13cmd, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed_cmd, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[17])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
   __Pyx_CyFunction_SetDefaultsTuple(__pyx_t_4, __pyx_mstate_global->__pyx_tuple[9]);
-  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_Plumed, __pyx_mstate_global->__pyx_n_u_cmd, __pyx_t_4) < (0)) __PYX_ERR(0, 264, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict(__pyx_mstate_global->__pyx_ptype_6plumed_7_plumed_Plumed, __pyx_mstate_global->__pyx_n_u_cmd, __pyx_t_4) < (0)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "(tree fragment)":1
@@ -46777,7 +46778,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_15__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[18])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_15__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___reduce_cython, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[18])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -46791,7 +46792,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_6Plumed_17__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[19])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 3, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_6Plumed_17__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_mstate_global->__pyx_n_u_Plumed___setstate_cython, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[19])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -46812,7 +46813,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_GOTREF(__pyx_t_12);
   __pyx_t_11 = __Pyx_CalculateMetaclass(NULL, __pyx_t_12); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 311, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_5 = __Pyx_Py3MetaclassPrepare(__pyx_t_11, __pyx_t_12, __pyx_mstate_global->__pyx_n_u_FormatError, __pyx_mstate_global->__pyx_n_u_FormatError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_kp_u_Custom_error_reported_by_read_as); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 311, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_Py3MetaclassPrepare(__pyx_t_11, __pyx_t_12, __pyx_mstate_global->__pyx_n_u_FormatError, __pyx_mstate_global->__pyx_n_u_FormatError, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_kp_u_Custom_error_reported_by_read_as); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 311, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   if (__pyx_t_12 != __pyx_t_4) {
     if (unlikely((PyDict_SetItemString(__pyx_t_5, "__orig_bases__", __pyx_t_4) < 0))) __PYX_ERR(0, 311, __pyx_L1_error)
@@ -46836,7 +46837,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Internal utility: returns a file open with mode.
  * 
 */
-  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_3_fix_file, 0, __pyx_mstate_global->__pyx_n_u_fix_file, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[20])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 316, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_3_fix_file, 0, __pyx_mstate_global->__pyx_n_u_fix_file, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[20])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 316, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_12);
@@ -46851,7 +46852,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Internal utility: returns a function that can be used for conversions.
  * 
 */
-  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_5_build_convert_function, 0, __pyx_mstate_global->__pyx_n_u_build_convert_function, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[21])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 330, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_5_build_convert_function, 0, __pyx_mstate_global->__pyx_n_u_build_convert_function, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[21])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 330, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_12);
@@ -46873,7 +46874,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_5 = __Pyx_CalculateMetaclass(NULL, __pyx_t_11); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 370, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_11, __pyx_mstate_global->__pyx_n_u_Constants, __pyx_mstate_global->__pyx_n_u_Constants, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_kp_u_Custom_class_used_to_store_plume); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 370, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_Py3MetaclassPrepare(__pyx_t_5, __pyx_t_11, __pyx_mstate_global->__pyx_n_u_Constants, __pyx_mstate_global->__pyx_n_u_Constants, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_kp_u_Custom_class_used_to_store_plume); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 370, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   if (__pyx_t_11 != __pyx_t_12) {
     if (unlikely((PyDict_SetItemString(__pyx_t_4, "__orig_bases__", __pyx_t_12) < 0))) __PYX_ERR(0, 370, __pyx_L1_error)
@@ -46887,7 +46888,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *        if(isinstance(l,dict)):
  *            for k in l:
 */
-  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_9Constants_1__init__, 0, __pyx_mstate_global->__pyx_n_u_Constants___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[22])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 373, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_9Constants_1__init__, 0, __pyx_mstate_global->__pyx_n_u_Constants___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[22])); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 373, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_12);
@@ -46921,7 +46922,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Import a plumed data file as a pandas dataset.
  * 
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7read_as_pandas, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[23])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_7read_as_pandas, 0, __pyx_mstate_global->__pyx_n_u_read_as_pandas, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[23])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 392, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -46937,7 +46938,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Save a pandas dataframe as a PLUMED file.
  * 
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_9write_pandas, 0, __pyx_mstate_global->__pyx_n_u_write_pandas, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[24])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 600, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_9write_pandas, 0, __pyx_mstate_global->__pyx_n_u_write_pandas, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[24])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 600, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -46960,7 +46961,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   if (PyDict_SetItem(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_frac0, Py_None) < (0)) __PYX_ERR(0, 652, __pyx_L1_error)
   if (PyDict_SetItem(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_frac1, Py_None) < (0)) __PYX_ERR(0, 652, __pyx_L1_error)
   if (PyDict_SetItem(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_inplace, ((PyObject*)Py_False)) < (0)) __PYX_ERR(0, 652, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_11hills_time_average, 0, __pyx_mstate_global->__pyx_n_u_hills_time_average, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[25])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 652, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_11hills_time_average, 0, __pyx_mstate_global->__pyx_n_u_hills_time_average, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[25])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 652, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -46978,7 +46979,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Guess plumed root.
  * 
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_13_guessplumedroot, 0, __pyx_mstate_global->__pyx_n_u_guessplumedroot, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[26])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 741, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_13_guessplumedroot, 0, __pyx_mstate_global->__pyx_n_u_guessplumedroot, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[26])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 741, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -46994,7 +46995,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Read live metadata from a selected kernel or an existing PLUMED instance.
  * 
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_15_readkernelmetadata, 0, __pyx_mstate_global->__pyx_n_u_readkernelmetadata, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[27])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 771, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_15_readkernelmetadata, 0, __pyx_mstate_global->__pyx_n_u_readkernelmetadata, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[27])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 771, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47010,7 +47011,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Read VIM dictionary given the path to PLUMED root and return (dictionary,doc).
  * 
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_17_readvimdict, 0, __pyx_mstate_global->__pyx_n_u_readvimdict, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[28])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 828, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_17_readvimdict, 0, __pyx_mstate_global->__pyx_n_u_readvimdict, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[28])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 828, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47030,7 +47031,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_GOTREF(__pyx_t_5);
   if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_doc_2, Py_None) < (0)) __PYX_ERR(0, 877, __pyx_L1_error)
   if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_append_underscores, ((PyObject*)Py_False)) < (0)) __PYX_ERR(0, 877, __pyx_L1_error)
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_19_create_functions, 0, __pyx_mstate_global->__pyx_n_u_create_functions, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[29])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 877, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_19_create_functions, 0, __pyx_mstate_global->__pyx_n_u_create_functions, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[29])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 877, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47047,7 +47048,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     def __init__(self,*args):
  * # this is experimental:
 */
-  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_numbered_3, __pyx_mstate_global->__pyx_n_u_numbered_3, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 949, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_numbered_3, __pyx_mstate_global->__pyx_n_u_numbered_3, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 949, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
 
   /* "plumed.pyx":950
@@ -47057,7 +47058,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  * # this is experimental:
  * # it allows calling _numbered(arg1,arg2,arg3)
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_9_numbered_1__init__, 0, __pyx_mstate_global->__pyx_n_u_numbered___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[30])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 950, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_9_numbered_1__init__, 0, __pyx_mstate_global->__pyx_n_u_numbered___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[30])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 950, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47088,7 +47089,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     def __init__(self,*args):
  * # this is experimental:
 */
-  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_replicas_2, __pyx_mstate_global->__pyx_n_u_replicas_2, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 972, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_replicas_2, __pyx_mstate_global->__pyx_n_u_replicas_2, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 972, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
 
   /* "plumed.pyx":973
@@ -47098,7 +47099,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  * # this is experimental:
  * # it allows calling _replicas(arg1,arg2,arg3)
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_9_replicas_1__init__, 0, __pyx_mstate_global->__pyx_n_u_replicas___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[31])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 973, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_9_replicas_1__init__, 0, __pyx_mstate_global->__pyx_n_u_replicas___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[31])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 973, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47129,7 +47130,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *       if isinstance(chain,int):
  *         chain=str(chain)
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_21_format_at_one_residue, 0, __pyx_mstate_global->__pyx_n_u_format_at_one_residue, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[32])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 987, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_21_format_at_one_residue, 0, __pyx_mstate_global->__pyx_n_u_format_at_one_residue, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[32])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 987, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47144,7 +47145,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *       res=""
  *       if hasattr(residue,'__iter__') and not isinstance(residue,str):
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_23_format_at_one_chain, 0, __pyx_mstate_global->__pyx_n_u_format_at_one_chain, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[33])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1001, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_23_format_at_one_chain, 0, __pyx_mstate_global->__pyx_n_u_format_at_one_chain, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[33])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1001, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47159,7 +47160,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *       res=""
  *       if hasattr(chain,'__iter__') and not isinstance(chain,str):
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_25_format_at, 0, __pyx_mstate_global->__pyx_n_u_format_at, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[34])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1011, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_25_format_at, 0, __pyx_mstate_global->__pyx_n_u_format_at, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[34])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1011, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47175,7 +47176,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     def __init__(self,builder):
  *       import weakref
 */
-  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_at, __pyx_mstate_global->__pyx_n_u_at, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1020, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_at, __pyx_mstate_global->__pyx_n_u_at, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, (PyObject *) NULL); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1020, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
 
   /* "plumed.pyx":1021
@@ -47185,7 +47186,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *       import weakref
  *       self._builder=weakref.ref(builder)
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_3_at_1__init__, 0, __pyx_mstate_global->__pyx_n_u_at___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[35])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1021, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_3_at_1__init__, 0, __pyx_mstate_global->__pyx_n_u_at___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[35])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1021, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47200,7 +47201,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *        return _format_at(self._builder(),name,residue,chain)
  * 
 */
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_3_at_3__call__, 0, __pyx_mstate_global->__pyx_n_u_at___call, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[36])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1032, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_3_at_3__call__, 0, __pyx_mstate_global->__pyx_n_u_at___call, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[36])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1032, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_5);
@@ -47232,7 +47233,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """ Fix braces.
  * 
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_27_fix_braces, 0, __pyx_mstate_global->__pyx_n_u_fix_braces, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[37])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1037, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_27_fix_braces, 0, __pyx_mstate_global->__pyx_n_u_fix_braces, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[37])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1037, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47247,7 +47248,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format a single argument.
  * 
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_29_format_single, 0, __pyx_mstate_global->__pyx_n_u_format_single, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[38])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1058, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_29_format_single, 0, __pyx_mstate_global->__pyx_n_u_format_single, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[38])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1058, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47263,7 +47264,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format a numbered argument."""
  *     if isinstance(arg,_numbered):
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_31_format_numbered, 0, __pyx_mstate_global->__pyx_n_u_format_numbered, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[39])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1089, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_31_format_numbered, 0, __pyx_mstate_global->__pyx_n_u_format_numbered, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[39])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1089, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47278,7 +47279,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format a flag."""
  *     if arg is None:
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_33_format_flag, 0, __pyx_mstate_global->__pyx_n_u_format_flag, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[40])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1101, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_33_format_flag, 0, __pyx_mstate_global->__pyx_n_u_format_flag, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[40])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1101, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47293,7 +47294,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format a label."""
  *     if label is None:
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_35_format_label, 0, __pyx_mstate_global->__pyx_n_u_format_label, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[41])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1112, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_35_format_label, 0, __pyx_mstate_global->__pyx_n_u_format_label, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[41])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47308,7 +47309,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format an option."""
  *     if arg is None:
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_37_format_opt, 0, __pyx_mstate_global->__pyx_n_u_format_opt, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[42])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1122, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_37_format_opt, 0, __pyx_mstate_global->__pyx_n_u_format_opt, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[42])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1122, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47323,7 +47324,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Format the return statement"""
  *     if not builder._toplumed is None :
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_39_format_return, 0, __pyx_mstate_global->__pyx_n_u_format_return, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[43])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1132, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_39_format_return, 0, __pyx_mstate_global->__pyx_n_u_format_return, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[43])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1132, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47339,7 +47340,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *   if not verbatim is None:
  *     if(len(verbatim)>0):
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_41_format_verbatim, 0, __pyx_mstate_global->__pyx_n_u_format_verbatim, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[44])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1152, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_41_format_verbatim, 0, __pyx_mstate_global->__pyx_n_u_format_verbatim, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[44])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1152, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47354,7 +47355,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *    """Choose format based on arg type"""
  *    ret=""
 */
-  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_43_format_anything, 0, __pyx_mstate_global->__pyx_n_u_format_anything, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[45])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1158, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_43_format_anything, 0, __pyx_mstate_global->__pyx_n_u_format_anything, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[45])); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1158, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_11);
@@ -47457,7 +47458,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *     """Object used to construct plumed input files.
  * 
 */
-  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_InputBuilder, __pyx_mstate_global->__pyx_n_u_InputBuilder, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_kp_u_Object_used_to_construct_plumed); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1182, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_mstate_global->__pyx_empty_tuple, __pyx_mstate_global->__pyx_n_u_InputBuilder, __pyx_mstate_global->__pyx_n_u_InputBuilder, (PyObject *) NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_kp_u_Object_used_to_construct_plumed); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 1182, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
 
   /* "plumed.pyx":1188
@@ -47528,7 +47529,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *                  *,
  *                  tofile=None,
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_1__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[46])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1188, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_1__init__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___init, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[46])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1188, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47545,7 +47546,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         """Replace generated methods, syntax and help with one metadata snapshot."""
  *         functions=_create_functions(dictionary,doc=doc,append_underscores=self._append_underscores)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_3_set_dictionary, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder__set_dictionary, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[47])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1255, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_3_set_dictionary, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder__set_dictionary, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[47])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1255, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47560,7 +47561,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         """Refresh syntax, help and methods from the attached PLUMED instance.
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_5refresh, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_refresh, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[48])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1272, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_5refresh, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_refresh, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[48])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1272, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47575,7 +47576,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         ret=""
  *         ret+=_format_label(self,LABEL)
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_7__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___call, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[49])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1288, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_7__call__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___call, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[49])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1288, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47591,7 +47592,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *        if self._has_dict:
  *            class _callme:
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_9__getattr__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[50])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1302, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_9__getattr__, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder___getattr, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[50])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1302, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47606,7 +47607,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         """Create an arbitrary line."""
  *         return _format_return(self,re.sub("[\n\t]"," ",line))
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_11verbatim, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_verbatim, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[51])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1333, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_11verbatim, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_verbatim, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[51])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1333, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47621,7 +47622,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         """Shortcut for numbered syntax.
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_13numbered, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_numbered, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[52])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1337, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_13numbered, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_numbered, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[52])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1337, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47636,7 +47637,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
  *         """Shortcut for replica syntax.
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_12InputBuilder_15replicas, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_replicas, NULL, __pyx_mstate_global->__pyx_n_u_plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[53])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1344, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_6plumed_7_plumed_12InputBuilder_15replicas, 0, __pyx_mstate_global->__pyx_n_u_InputBuilder_replicas, NULL, __pyx_mstate_global->__pyx_n_u_plumed__plumed, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[53])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1344, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
@@ -47680,7 +47681,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
   __Pyx_XDECREF(__pyx_t_12);
   if (__pyx_m) {
     if (__pyx_mstate->__pyx_d && stringtab_initialized) {
-      __Pyx_AddTraceback("init plumed", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init plumed._plumed", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     #if !CYTHON_USE_MODULE_STATE
     Py_CLEAR(__pyx_m);
@@ -47694,7 +47695,7 @@ __Pyx_RefNannySetupContext("PyInit_plumed", 0);
     }
     #endif
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init plumed");
+    PyErr_SetString(PyExc_ImportError, "init plumed._plumed");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -47965,39 +47966,39 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 10; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{11},{14},{48},{45},{26},{34},{36},{36},{26},{25},{9},{6},{29},{33},{45},{22},{15},{5},{20},{179},{192},{37},{35},{14},{72},{101},{42},{44},{67},{55},{7},{30},{66},{32},{23},{66},{1},{0},{1},{1},{1},{40},{2},{5},{2},{1},{1},{2},{2},{3},{3},{2},{1},{1},{3},{1},{1},{8},{6},{7},{8},{1},{1},{4},{5},{3},{1},{9},{1},{1},{2},{1},{1},{8},{17},{22},{5},{51},{6},{62},{43},{15},{29},{23},{25},{8},{4},{7},{11},{6},{24},{6},{27},{39},{3},{6},{21},{20},{2},{6},{35},{6},{20},{50},{16},{9},{30},{48},{12},{7},{27},{7},{28},{54},{50},{8},{10},{39},{8},{8},{8},{30},{44},{67},{10},{47},{57},{10},{17},{9},{8},{33},{39},{17},{13},{61},{36},{40},{35},{17},{33},{6},{3},{32},{5},{8},{28},{70},{23},{3},{20},{32},{22},{14},{4},{28},{30},{37},{15},{5},{9},{22},{75},{64},{5},{9},{1},{4},{9},{18},{9},{8},{6},{11},{9},{1},{12},{21},{24},{41},{50},{50},{21},{28},{21},{20},{21},{21},{1},{5},{4},{11},{10},{3},{10},{18},{6},{13},{6},{15},{11},{12},{16},{15},{24},{26},{10},{15},{20},{3},{8},{6},{14},{15},{2},{1},{1},{3},{7},{6},{10},{3},{8},{15},{5},{6},{3},{6},{18},{19},{8},{3},{4},{5},{18},{3},{2},{12},{12},{10},{11},{4},{4},{4},{6},{23},{45},{7},{8},{12},{20},{1},{8},{7},{5},{12},{3},{4},{9},{4},{9},{17},{18},{4},{3},{7},{5},{15},{7},{7},{9},{12},{22},{19},{10},{7},{11},{12},{4},{4},{5},{17},{4},{1},{6},{6},{5},{11},{2},{8},{10},{5},{7},{7},{3},{4},{6},{5},{15},{9},{16},{17},{18},{17},{7},{6},{9},{5},{9},{7},{7},{5},{8},{6},{1},{8},{4},{12},{3},{8},{11},{9},{4},{5},{5},{6},{16},{10},{20},{22},{12},{13},{16},{11},{14},{14},{13},{16},{7},{5},{5},{6},{8},{4},{10},{9},{5},{3},{13},{19},{25},{11},{12},{2},{6},{16},{4},{9},{9},{10},{6},{6},{4},{8},{5},{18},{7},{6},{9},{1},{2},{2},{2},{10},{5},{9},{7},{4},{8},{4},{7},{8},{4},{4},{4},{13},{7},{6},{5},{4},{5},{8},{8},{1},{4},{4},{1},{6},{3},{4},{7},{6},{1},{5},{8},{12},{3},{5},{6},{5},{3},{15},{4},{8},{9},{5},{3},{8},{5},{4},{3},{7},{7},{4},{13},{8},{9},{7},{3},{16},{15},{4},{10},{7},{6},{10},{15},{1},{4},{8},{5},{6},{5},{9},{3},{7},{4},{7},{8},{2},{12},{2},{5},{7},{11},{8},{9},{18},{7},{5},{3},{5},{4},{4},{3},{2},{6},{1},{4},{6},{4},{7},{2},{3},{2},{8},{6},{16},{16},{14},{10},{3},{3},{12},{11},{11},{10},{11},{17},{8},{7},{3},{8},{14},{11},{10},{19},{14},{12},{1},{5},{2},{13},{14},{39},{52},{59},{36},{49},{59},{38},{47},{47},{41},{8},{6},{19},{37},{8},{12},{10},{17},{13},{3},{7},{8},{7},{9},{8},{18},{3},{7},{3},{7},{4},{6},{2},{4},{4},{3},{10},{10},{19},{16},{15},{12},{10},{4},{12},{19},{5},{4},{8},{6},{6},{5},{5},{6},{4},{4},{6},{6},{3},{4},{10},{6},{5},{6},{11},{3},{1},{2},{2},{4},{8},{8},{7},{4},{3},{7},{7},{6},{7},{9},{8},{9},{4},{8},{5},{6},{6},{9},{8},{7},{1},{2},{2},{2},{2},{2},{3},{5},{6},{8},{12},{8},{1},{4},{8},{5},{7},{4},{5},{12},{2},{1},{5},{4},{1},{7},{113},{215},{24},{169},{742},{496},{155},{592},{86},{59},{139},{71},{38},{87},{115},{32},{260},{196},{23},{208},{339},{13},{77},{7},{326},{9},{9},{24},{181},{48},{450},{25},{86},{123},{71},{26},{356},{166},{35},{91},{304},{28},{33},{59},{94},{63},{97},{61},{1}};
+    const struct { const unsigned int length: 10; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{11},{14},{48},{45},{26},{34},{36},{36},{26},{25},{9},{6},{29},{33},{45},{22},{15},{5},{20},{179},{192},{37},{35},{14},{72},{101},{42},{44},{67},{55},{7},{30},{66},{32},{23},{66},{1},{0},{1},{1},{1},{40},{2},{5},{2},{1},{1},{2},{2},{3},{3},{2},{1},{1},{3},{1},{1},{8},{6},{7},{8},{1},{1},{4},{5},{3},{1},{9},{1},{1},{2},{1},{1},{8},{17},{22},{5},{51},{6},{62},{43},{15},{29},{23},{25},{8},{4},{7},{11},{6},{24},{6},{27},{39},{3},{6},{21},{20},{2},{6},{35},{6},{20},{50},{16},{9},{30},{48},{12},{7},{27},{7},{28},{54},{50},{8},{10},{39},{8},{8},{8},{30},{44},{67},{10},{47},{57},{10},{17},{9},{8},{33},{39},{17},{13},{61},{36},{40},{35},{17},{33},{6},{3},{32},{5},{8},{28},{70},{23},{3},{20},{32},{22},{14},{4},{28},{30},{37},{15},{5},{9},{22},{75},{64},{5},{9},{1},{4},{9},{18},{9},{8},{6},{11},{9},{1},{12},{21},{24},{41},{50},{50},{21},{28},{21},{20},{21},{21},{1},{5},{4},{11},{10},{3},{10},{18},{6},{13},{6},{15},{11},{12},{16},{15},{24},{26},{10},{15},{20},{3},{8},{6},{14},{15},{2},{1},{1},{3},{7},{6},{10},{3},{8},{15},{5},{6},{3},{6},{18},{19},{8},{3},{4},{5},{18},{3},{2},{12},{12},{10},{11},{4},{4},{4},{6},{23},{45},{7},{8},{12},{20},{1},{8},{7},{5},{12},{3},{4},{9},{4},{9},{17},{18},{4},{3},{7},{5},{15},{7},{7},{9},{12},{22},{19},{10},{7},{11},{12},{4},{4},{5},{17},{4},{1},{6},{6},{5},{11},{2},{8},{10},{5},{7},{7},{3},{4},{6},{5},{15},{9},{16},{17},{18},{17},{7},{6},{9},{5},{9},{7},{7},{5},{8},{6},{1},{8},{4},{12},{3},{8},{11},{9},{4},{5},{5},{6},{16},{10},{20},{22},{12},{13},{16},{11},{14},{14},{13},{16},{7},{5},{5},{6},{8},{4},{10},{9},{5},{3},{13},{19},{25},{11},{12},{2},{6},{16},{4},{9},{9},{10},{6},{6},{4},{8},{5},{18},{7},{6},{9},{1},{2},{2},{2},{10},{5},{9},{7},{4},{8},{4},{7},{8},{4},{4},{4},{13},{7},{6},{5},{4},{5},{8},{8},{1},{4},{4},{1},{6},{3},{4},{7},{6},{1},{5},{8},{12},{3},{5},{6},{5},{3},{15},{4},{8},{9},{5},{3},{8},{5},{4},{3},{7},{7},{4},{13},{8},{9},{7},{3},{16},{15},{4},{10},{7},{6},{10},{15},{1},{4},{8},{5},{6},{5},{9},{3},{7},{4},{7},{8},{2},{12},{2},{5},{7},{11},{8},{9},{18},{7},{5},{3},{5},{4},{4},{3},{2},{6},{1},{4},{6},{4},{7},{2},{3},{2},{8},{6},{16},{14},{16},{10},{3},{3},{12},{11},{11},{10},{11},{17},{8},{7},{3},{8},{14},{11},{10},{19},{14},{12},{1},{5},{2},{13},{14},{39},{52},{59},{36},{49},{59},{38},{47},{47},{41},{8},{6},{19},{37},{8},{12},{10},{17},{13},{3},{7},{8},{7},{9},{8},{18},{3},{7},{3},{7},{4},{6},{2},{7},{4},{4},{3},{10},{10},{19},{16},{15},{12},{10},{4},{12},{19},{5},{4},{8},{6},{6},{5},{5},{6},{4},{4},{6},{6},{3},{4},{10},{6},{5},{6},{11},{3},{1},{2},{2},{4},{8},{8},{7},{4},{3},{7},{7},{6},{7},{9},{8},{9},{4},{8},{5},{6},{6},{9},{8},{7},{1},{2},{2},{2},{2},{2},{3},{5},{6},{8},{12},{8},{1},{4},{8},{5},{7},{4},{5},{12},{2},{1},{5},{4},{1},{7},{113},{215},{24},{169},{742},{496},{155},{592},{86},{59},{139},{71},{38},{87},{115},{32},{260},{196},{23},{208},{339},{13},{77},{7},{326},{9},{9},{24},{181},{48},{450},{25},{86},{123},{71},{26},{356},{166},{35},{91},{304},{28},{33},{59},{94},{63},{97},{61},{1}};
     #if (CYTHON_COMPRESS_STRINGS) == 3 && __PYX_LIMITED_VERSION_HEX >= 0x030e0000 /* compression: zstd (7760 bytes) */
-const char* const cstring = "(\265/\375`7;5\362\000\352\361\2243H\360\354\272\001\314\300\304\210\255\014\362N< `\205\024\222\nX!\205\244\301l\033\370H\"2#\275\262\033B\334,W.\241\017\327@]\007\234\021\0218\264\023\215\213\205*4\255A<\322\234u\000\007\351?\264\336, \235\240\361\002\375\002L\003$\215KmuUf\255dx\352\266m\326\212\247&\nz\242\240\204\241\347'\037K\315s(\271\307\225\334j\030f=\266\\\351I\236%'.\237\237\232\227]n\250\241\254r\257NNZ;\210\227(\276\353\0059\006&\223\235\223LVK\245j\251JN\200\032\240,\360Q\255\\[e-\220a\355V\253\032\027\262\271~N\\\333\357Vy\264\221^|\347\345\216\364\322uA6Ug\226M\227\265UI\355g\315-\236\252\273\252\323p\247\231Do#7\365\311#y\244+\307\3440\034Q2\014]\265M\236\\\006\246o\3616zmj\325(j^\271\313\325\344\353\270[\220[\276\305r\211\331B\274\257V\224,W\264\253V\344\271\323T\273H@>1\344\326\241gH\222\232\204\365\000(\334`R\022\206\030$\037\020\036\200Z\331\347\304\005\342\004\010\204\207\r>\036T2\020T1(\020H,\022KEb\261Z*\222\252\345:i\235\270PN\\%1'\n~bH\336\353\314W\234\276M\255\326<W{X <\254\366\232O\035z\006\235;\346\366\034\365\347\016\271[z\353D\360}\323\\(\237\241\352\026\342i3\247\333\3172-6\273y\333\271\325M\316\330\234\352\352\267\312U\235\313\376DU\236;\267\272;\017\032ui\256\247\366\232\324~\233&\312\251\365-\233d\347dYr]\220\212\352PR\335\271\026Y\242\031E\375\213GQ\235\374\242\302\342J\211\221\351{\034\365\211^H\321\222\353\234.\313\255\242A\343\276\321lq\344{\204e\222_\323\223\373qU\305\013\256\235\343&\241\366\273\347s\337|\327\351>\363\212\362r\315\346\344\276\344k\337b\357\260\325\025\227\025\224\234XN>\375\310+\325-\362r\2234{\3147\333\212\236\026\262k\237\250\205\030\036\034\030[n\231\230d\223\321\244\265I\224\227:w\332\244\253\r\253\363\235^\345N\236+*\346\032\232\375\212\332\354^\352\0101\263\232\233\230M\204\234\"\331%\257m\265\334\247\272\203\262N\363M\314\202N\254BX\023\303\331\271\311\321h\031\343iU\325\256\023\275y\336XKW\257o=\363|j\306xM\326i\330u\310\023\275\212\246*\252\252;g\222\253\373S\3731\315[%w_s9\322\370\221&\277\364\323""\\K\224&\273<\357\247V\275I\336)\317\347\233\347\272l\242jm\227\242\366\\\325\241\220\031\365\371\264\361\336\265\213\247\242\3466s_\321\325\306\375\211\216\271\363\354\365\315\213Y\347\355\365V\307\314+O4\237\232\246o\222\253\276\347\335\321t\267\373F\311\254\333<\227\325]\253\2553\274\354\331\243g&O\235\311\275\333\344\311\363\026\263\357\253\231\311\003\331vrr\217[Ms?Q\336\317mr2\227%,\277\004p\312\310\037A\001O\034@X/\3110\265#+c)X\006\275\014\013\315\352\202\270V\267\2626\245=\265&\354ic\355qd\000q\254\016\013cOz$\013\340\313\375\300\206\000\370\270\240~e/\311;z\021\270#\267\246U\265;l\n\353{\034\360\356\325/\005\027\345\306\332\t\260m2\261\246\014 \214\235\320{\3652.\200\270\336\201\036\251\002\010\353\225*\200)\326\304\216\275\215\013`\252\215\300\276X\001=\214\n\240h\304\213E\225\202\242\236\204P\337y\335\016\322[\247\352N]_\311\251\344Rr\257\334\202\\\256\357\276\222\351\332Q\217z\237\232\336\373\262\334\376\345\027x\337y}\355\265\265\237\342\332S\324\367t\253\275\247<\250\207=\314)\367\270\363}[\260\2417~\367\240\275\273WS\256\366\320\266\325\232\232\353\243\353F\253\245^q>w\306\202F\236\236\253\271\366\276=O\014y\251\347\245{Dw\270\3254\014;\232\246hz\256\252\347)\277\245d\352\323\264\243h\327\266m\242\274\264\227\345z\216\343zv\035\252\236\351\211\372\235\331\317\315Q\325\305KWz\271\232\274\233\3466Isg\206\241\r-{\332+\224;\267\313>\226[]K\256e4)\232\272\204)\311\036t\242\275\303\311\321\016\035\372\251\317\316;\037\313\364\344h/\3030$\371\213/\3406\336\315\367\233\357\374\026\366\262\3447\325\337l|\337\314\256oa\312\205l}\257\350\215\205\0133\n<<\205i[X{-\350\276\014}\255\207\273ro\236zv[\250I3\324a\347!yzn\343d\030\326H\256\216\335\227[G\256\274\024\035\275\311\311\335\016SU\217\351\250U\037\362\366m|\205c\030\206\375\\\265\337\342\356Z\024K-\242\245-\364'\367+:\352\236j\223W\206\350\330\3175\344\251\356<\255+\265\276\245\245\016{\r\355a\027\265\016\303\320E\333\343\271W\334\236\325\266\216\337m\013\341\216w\362Z\367|\267\373\346\352\236\345X\3304\322""\202M\016\016\257\324'\254\006\347D}\272onn\265\255\206~\367m\272dz\t\343R\275\327~\333\302\320&C\016\316\216\205p\006\233\020\241\363\236\306\"\324\230&J3\223\256\250*\301D=\314\306\206f\006S\240\300\363\327\250S\220\226\373\246\300\3449\005.(5\277\272\\\333\353q5\361)\363\n'&\373\235w\311\354Q]\321~\2220%\212\212\254\225\030\2724\253\005d\342b\225|\350?5\260\0137\017X/\t\200^|^\036\254N\372\317\206\004\375\307\243\250\212\202\322\312\253\256\002\362iy\336\251wZ\274\211\315\300nZ\265r\367U\030\252b\022\250T1\231\304\272\215-\336\267\332R\275\364\276s\371\225\203N\255\352R\217;^\317z\344j\202\254R\255hZ\315;^\332S\024\025\224\224\254\003)1#4\353\000$6\201M\260\220\253Q27\327\352\240\214\375\320q\000\372@=\277\307\002\327\"m\000\227\005\024\303\037\346\244\276\310\355\000\364 \213m\260\356\245yk\356\355\205\3655\035\032,/\313\035\3611XY\354Z\013\232\375\267\354\323~\024\277\020\237\310W\023\257\342\253;\340\361]L>ZL\021\343`\r\257G\205[k+Z^\317B\207\341\265\271%,\355\316M\004an\t\200\023\366\244b9YiWU\267\0056\276\254\3471!\313\3717<\361\013,\301L0\202\3611&$6\206`n\251\025\221\3708\266B{\223\341\"hI\226\002\254\355am\016\330\260\036\022J\246+\303\230\020|\305<0\014n\360\246^\017\355\001\224\273\321\206\260,H\t\230z#\270\r\364\257\344G\241\345\257TpG4\350\260\016L\001\343\336\225\367\364\312\2402\2002\227\025x\004\213\255\323?\221\200?\323\317&\177\\\313\203=\264OC\360\033\375\304\032\035\331W\177:\277\224\024\337\311\247\306\017`\254\212=\231\2003\235\257\223\363\305\337\314\257\246\362\215|\020D~\212\035\261!\270R0%N\264\"\035@\355\316\270*\023\221{\001\302\252AX\373j\005\260\261^\311c%\244b\301\276\264F\211\247\227\022L\261\244\323\020\354m\340\222H|X|\002\247\244\376\030\242\327\201A\032\332\320H\271\246\002\270X\003\314\240\344\2432\307\207\261(V(\310\363)\374N|\021\342\032\234\341\265q'\264\003<x|\024\276\2208\006Ox{\\\017W&\200\213!{a\357\304+\272*n\312%{\330\217R\020W\322azU\230;\341\316D\226\236cW:J@\212V\244\004\024\275\274\026\006h*\261\035%`\210\326\266""\036\007.\375)\372Q\362\223\343\037\365\327\034>\207\014?\346\365\002xg.\314\355iIH\330\336\323\257\337\351\307\342\373\300\"\340\233\332 \227^\252\327\021\260do\303\345\2610oL\233j\003\260'\370\307\265e\374\214\213\240\350\305\271&\035\277\343\002H\233\375\231\354\313 \374Y\034\223\340{\027&\300\305\027\261\035\023\032\0310|\014<\237'\302W\361e\304\"\314\202\340\253\270{\000\220\206\257\301\346\217\276V<\212]L>\215\273\266:-\201\322_E\000Z\021\023\252\r`\361=\206*($J/\366b\204B\342\202\204\241\262\"\032%\211\32194\312\031]\2700\252\031\325\210r\022\022C\353\355\3372\374\237\037\016\313g\311?K\374\t\340\213v\263}\333\317\377\361\371>;\177g\366\375\017\344\027\363\325b\n< .mdgX\224\016(k5.(do\212\216;\240\305`q=\220\236*sI\\\017\037\254*\353\301z\252\036i\002\210\033a1\001\024\365.&\202+\275\022\205\004iH4B\303\267\367\343\035\335\014\255G\207\336\006\311\304\027\271\270V\003\013\322!Q1\244\333\231\026\325\212\332\032T\007P\307\2628%N\305$,\203I\340>\363\276^\037\304\371\264o\306\367\362\371X\307*\261\2075<\003\277`\257si\334\227{rE\023-\216\rA\275\340T\027^\275\214\t\340\313\345\t\3226P$#4\271\234\026s\361\201x%\343\272x\320\371\021b\352+\3360\005\013\327A\376<!\326X\333\177\207?\234\360{\3756\304\030F`<|\317\227\375\330\017\365\023q\301\253 \020\"m\3433\034\003W@<\232n\211\256e\0014\001PT\330\321\356\007\006\013\340\036Q\001\000\200\010\366\201\311\t\223y\276|\323\211\302\326\226\234B(\202ZT;\0260\203\004$\005E\360\202\374\005\260&R\002\266\005\327\032\220\260\245D\277\231\0176\023O\350\320\032\350H@\005\365[\362\222\256\354\224\362\362`\325\221\026\204\361^\265\r\002#ia\200q\326^z^\324a(\003\206\177\363+\361\327\345\033\221 \000\005Lq|\216\024\334_\026\353\306\3556%\366x\245$0\000\002\022\230\250\270\371>|\"\261(vQ\375\221{\263\372v2\253/\272\255\013\232\210h\204\3507\301\345\213\026$\032,LE\300\307\000rl\254\016x\240f\233\374\244\313\367A\241:\033bzY\036\210L\rT\024\020\3037\213=Tp\200w\3646,\2125}p\004I>N9\016\000;'-I\002i\333\225\202\350\364\3066X\000lM\020hb""\000\003H\361M\270\223\254\001\306H\366C~B\261E\354\003\304\276\354\2404\200\002\002\310|\266\370#\036a\226\003_l\013\004\020\2150\354N8\020\246\221SH\2565\240\021\224\265\004.\200\035C\360J\201_@\343\213$TC\260\030\245_\025\006]\202o\275\301*/\tm\020\027\213:/\312\200\277Vh\241\2614\2022_,\345\267\274\tF>\017\013\323\251\301.&&F\255O\006\352\243HX\017\005R\022\037\003(\033!{\023\270\010\030\355\016\300\005(\374\3644F\360H*\021\210\356<\251\361\325\"\245S\313\3279y\311`O\247G\301\243\342a\232\261\037 x\320'\347\343Xh\261\r\334\223z[\\\317\"\006WC\022\0072jX\017\016\315V\260b0\010\203UpJ\001\326\204\253\251\t@~I\006\00375\342\0014\301\261w\304\245\265xV\344\273\000\201U\357\232\234>\231z\003\270\252\216\016\016\335+\201W`V\212\2739D\023\3316\200'\362\361`\0138\344\343\177\340d\013A\223\233*e\0220C\300\223I\210\367y\270\217\353\360;\210_\374\371?;?\367\253 \3062\006\276\216\310h\034\211\342\210\207gdc#RqA?\250\300\237\031\225F;#\032m\204\2033\212\305D!@\350\276N\375\252\371\315\236\257\341\207\301\207\341\266kANq\013\305+\266\250\030z\341\206\277A\347\267\374\\|\002b\241\n\025'\033\032&\027\247\202\307oK\037m\360\003\003\343\"H\241K\031,\003\206`\355\200YO#\276\200\031\274.*\214 ,\236\000\257\357\016\201\306NO\003\003\010\223\301/+ !)\211\317#\373A\276\022\337\314\202_\363\242^\321\273\n\371!/wEt\004a=]j\000\223o\006\327\364M2\232K\342\356x\3500}\230\202\037\001>L\243\311\243\215u\022+\2302\301\330\236\236\006i-\301F`\270y\343\2130\2754\027\3463\242\003\210L\250\244N0\224\232\234\204P!\221\031`\300\000C0P\360\360\240@.\235\230\252~\024\315\211\311\006a\0142\343\210A\n\004`\000@\000\020\220\000\022\0000L\332\265qn\254\034o\0363V\240\326\026\222y.\332N'\376\253\334\032\334c\361\006\316\\Z\003M\371\247\242S\222g\267\213\300g\360\242\321\020\035\276\260\344\316\265\346\222\n\201\005F\207\375\004\333%\006\034e\273\266&u\013\000S\367\235a\372\005\325\213@~z\226\226N]\201\tf\334_\336E>\t\335\350\r\276b\273\005D\024\3307`\260JL#[\234q91\026\365s\272~\206\374\243\243\025\321""\210\300\000\253@\205\272\210^\234\327{\314\027\320\313\215/\366iGW\017\355\3465ku2Y\321x\367!0\335O\3247z\375\242\262\275H\031\036\231rda\347H)r\276/\333\355&\231\335\210\347x8\205\247\005\263\211,z\210^;\265S*\2046W\372\202\3352t0\000\335\362:\020\014Q\024\231\020\267\022\032\350\355Mj6\252\206<\035i\004\017?\371*\365\023E\201?Yl\343;l\273R\237\006\233\022\272\007Y\226\213\337\3268\241\331V:\372\030\023\242\242\237\244?\332\021\360\032\233?it\3166\036G\214g`d\235\000\317\320\246\222\366\026\316\212\242\230{\032\254\366W\020P\340\202\361\345L\000\2431`\244\021C\027\027j=j\336\351\360\302\344K\255\334\335\301\221S\370\352w\334M\222\304\215R\342\254\361\227\256\240\251\263\2712|\223\270L\251:\223\323\316\340\324\371\177p;\344\361\002u\257JK\3224\237\300l\356Z\331\2508[\275\226 xK\007\330N27\242{\264V\244\350~Q\213a\351\333\251\216B\345\237\313\014o\256\014\202a\2661\265Z\366\027\365;\272\213\020yS\256\336\002\3666\221B\337;\033\200\235\031\207\331\027e\355\360\337f\313\363\276\231S\306[1\260pR\203\2514\360\272up\364o\327\177\355\265q\214\371d\217D\316\311L\207\216\305\267X\252<\300\001\370\307g\013\367\334\325\235\216\311(\020\304\320<\243\177\234[~ \034Gj\220{\366;\213\273\324\037\325-\235\214\217\023\240B\247U\236\341\261\020\226l\211\013\324Ne\350}\355\311\333\3733\356\223\204\024 \030\243\257v-B\347O\243[\036Q\332\211\3618Ub2?\216\323\007\373\350c\0050%\277/j\236=%\tC\270\336y\356\264$\301\224\374\373#\006\nT\310\206r\033b\036\355 \032\343\332\251\003\010J\177,L\316\305\005\027\000N\301\203\257P\262\016\026e\207.^#\206(T\214\203\266\342[\240,\302\241\013\336\300D\325\263l.Ob\367?\221)\313;\261k\010\213\023:\020\r\007\255s*\336T\314l\244z\002\020&#\333\222\352e\202\025\317N\300/( y\311\262\032\013\234#\316i\341[\341r@\365U\026\344\364\262\252\361\310.\001a\340\006\354\361\204g\301\215p\253\300\262sG\013bQ\364\367\374\253{\260\305 \014\231|\213Iy\342\304e\214\266p\031\010\220\t\025}\360\324\013\260\002\231\236\306d\202\320\300\235*\204\374c\253\014{\030(\300\036""\250\301\210/\024\271~\021\246\214\325\002\241i\316\013\375\361\264\336\243\376\3565:\322\021<\360Dt\246\331R\314v!\304\305r\331\305\311rtI4\242\344\273\273\231\325\206\030`\016\310\034\323\372\026*H%\224\213\202\t\\c\"\314\257\361\215C\226\271@\"\007\252\267\026\262\271;\331:i>\354o\312\373o\217^\343x\354\020\301KA\n\273z \235\337A\nx\200\306\200-O\273\344\263\206\350\254p(~A5\006z*\313b\264N\333\000\305\343\371\356\377&e%\310-w\213<\003Q\320\374R\365\235hX\234\267\244\253sN\250n\314\030\262B\313\223\304\235\311V\340@\234\014\266g\022e9a\333~r\034\315\344\227\003\037\226<\340Z\246\274&\277\214\272\301y\211T\215g\353\316;\372\3450\336\027h\310q+\032\"\025dzP\242\213\321\032\003\021S\361\276/\036\347T1\024\230\267\006\212x\213s\357\250\262\247}\267&\374\353\256?/\332\220\240d\310\007\205\330\002\367\036\265\205gs\320S7\216\201Z\322~\255\266>P\266\222\374\014J\303K\245<&\"\261\030$R\004\315\270\r\216\007\022\214\036\025)G\202R{\271\203\361\022\350\376T\002\323\233\220\376\226%\246\033\236[w\340\244\207r\312r\002\200\215y\373Mq\250\211k\207\253\276p\372\253+x>\216\273~\314\362N\362w\247\261\325\224K\327\257\251x\260\335s\302sE[\224\020E\227\310A\230\332\366\377\330Cp_I(e\273Q\263h\233\205\316\241VM\021otR\373\t\344\200,\334\376B:`\005\250q\222Tw\264\025$\026\304\202\202>\242-\017\243\323\262i-\003gE\311\344\205\217\303\316>\377zK\031\355_\227\211z\240\373\220\214P8\034\307\251\001m\372\251\232\230\337\301tJl\035\275t\212\337w\020\220*j\312\177M\352\272#\320\003%\004\\\363\024\201M;$\313l^\365\367\360M\\\272\376\030\027\217T\241\030\203\rY\254\201\321\300\341\017jM\273\261c\244\246\2029\351\275\220\227NJ\007\253y\337\017S\317aoX\237\226\003\217\374 \302\274m\n\230\264:\004pY\02678\362\177\205 %<CH\231\322|evH^\346\003\2138\027\230\016\307_\252\365\356\004\373\357\350\264\327e\206z\305*XD&\003Z\210H_\242E\323p\276Iv\201\360\\\302\326\357\316\205\277\222\022sH\312\354\3150\257K*k:\200\316`\010\022\272\217s\2535l\206\200\234'\010_\242;E\212\207Y%\357\322\004\325\335\313""\357\261\320\273\t\262\343q\342\327\346\363|^D\275L\230N\331AH\0369+\254\036\260\346\230\230\271\205Tk\237\357\020C\304ao\017\2506\t\353\344\025\2740\214F\224L\275\247\342\213\365&\220\2028\320|#\335\200\235Ik\204}cS\"\372Z1<o\366\340D\252\206\303\r\344v\027\373\276\037\016\350\025\366\271\006\260\256\341\345] \236\337\333\026\236\000\034\253\017\273\217\252\341\332k\363\374\361\252\255\274\313\r\257t+\205\213\222\301\327\036\357%O\270\032\267;\010\242\215\014\300\2553z\246P@ZBr\260\212\200\003\3243\241\3651\235\356\014\363{\242\305\226\255\025\255\256N\374\002\306|\246KV\342\035\374\267\023\222J\250Ei\204z\330\322\177\317\020\177]\345\201\354S\350^\036M\213$\0253\317\274\317|\301\351\315@\333N\325\245'>\353\336\275\201wd^\271\312\322\353|v\031\254T\206j\027\007`\"UA\365:\323\3357xy\335\262\205\226\222j\237\032(\310\332\344\320\327\231\233N\026E@kXG\027\213\245Em?\303L,\323(@\3753?pZ\024\263\311\034\355\251\276\335#\225\r\245^NGJ\331\252\303N\t0\032\333:/\255\203#\335\302\"^L\252X\242V\250\225\033\311\341\237\237\246+p\234\307\214,\320\361\227\254#x\313\303\353\233\262\311\354\320\272\245\301j\374\242\315\271v\362\t}$\3121\014$\225`\307<\251\003\253;Qe\261\376\027Q\3447\243\276kuX\367\036 \030M;i\004`\264\233\tg}r\377#G?/SS\316\235<DH2\370s\333W` '\371\013#\033\257l\320N\2202\243p\374\272\261\321\255j8K\316\320\250\354\261\316\024G\032T\277\341\3507xE\004\252\267i\t\356n\231$\243\306k\204Irl9.R\237\241\345AP>p\227\372\213Q\r\274U\354\242?~Wv\n\361\327\212\\\315G_\006)\003#\316\274j\177[\027\222u\320\302\334f\233jye\272Y\024\035\027\264\036C#\225\260\357\263e\327}u\366\302X\246\024\014\233Q\016S^\241\255\367\263\310NJ-eC\305\310+\345\234\263\377\217\\x\362Am(\257\220\273\344\010\302\214\000\177kY\316\340ht\271Lw\325\301\251\t\376\023\274\343\007_d\252\305\252&\356\200X\247Y*R,a\353\035!\224\206\377J\031^o\200\302\006\356\313X\307/\036(\305\302)P\365\241p\"\224b\036F\343\207`\311\366\267\237\211O\265\004\305!\303?\017\323\203\017\275T\256O\330S+\356\010#\220U\230\264h""\323\272\220P\257\376\225\303\235f\274\204\200\205\344N\325\356\216\204\372\236\014\235B#\004\023\333te\033H\327\362\256\235h\332H\346\267\313\267\223\2647#vo\251\206\274\277H\313k\270N6\233J\265\201&\342\025;\006?\\\340\207no\275H\357}WvQ\266s0\302\316\271\006p\370`\343A\336?Nn\014\244\312\000\237pP\235s\2331\336\346\256\245\303\004E\202\340Q\3510\305\374\272\257\343m\222\364\036Ym\372\3769\313E35<~\260\026b\317F\216N$\233\240\312H\261I\264\003\202\263\251~\234}\302\253\025hJ?l\323e\030\355\326.{\242f\304\236\322\357\222.w\350T<R\026\216w\313x\3177:P\230\205g\256\210\021]\006\032z\222\027a&Ni?L\223\262\013\033\315\210\226<\302\335\350\203\201\235\177\314\263\222\3025\244&\355\306\371u\246\314\007\246\255\025\270/\004\241Q\221y\022\275< \334Y4\371\355\374.\364_\365\246\364|\244.\357=\317P\300\230\030\306\212\\\032\241\212\253\364\312\022P)SS\352\266\245\240qP\271z\262\rfo\266\320\001q@G\261fL\215\331\302,\024\255\315\263\372c\001\261\251\214v\316\344\261\277t\227T\272\351\324`\351$\023\324\302{\247\364\036\233\224L\331R\314\\:'\3403%q>\302\210\337\370\374\203,\226\033j\276\t\000\226\327\031\030k\301\350\014\3141i\237\350\300n\361q\256\333\020\314\212\023\370\214\354\177gX\003\313\314\264\022N\3574\256{\314\202[FP'- Y\312\350(\032\037\270}et\001\304\225\264Fnj\276\310\3366\272\370C!*6M\223\242\347\034\321\317\377\207\232\267\214\250\2610\320a\373\241C\215d\006\233\201\355\020~\234\202\262B)\227\224$\242\3649\276\277%\240\345)%&\333\007\225\264\2453\"h\r@\255\222G\005\340\333\205#\247\353\357J\202\264\330\\\256a\030eH\250s\334\265\020\010\244\373P\025\223TL\\|\342\224\263>8[\\\027h\322P\226\305s\326\013/\367<;\0235\254\240\n@d\271Hk4\325\261_\360\312\336Y=\231\247{suP/\374O+\212.'\252U\224r!'\267\t\375\231\332g\350\251\227ay\267\315r\235\302\2619N\305\032\027\321\002\267\351\251\267\004\"\314*\026\024\204\220\266\001V@\001\224\231\016\021\316`\216\332\331\020g$\242 &e\023c\235v\332%<\336\202\232\310b\225\275s\013\2772\212X^\352\241\234\251g\212\207%8m\251>C\354\226""\234\010\036\037\320\260\232\021\243\223t\265\305\r\274\325\343G\334f\001\226\347.Gm\207\254s\265\224|C?]  \256\235\220O`\025\301\304O\331\221\271s\306\032\350*\255\250\"\311E\270\016\261J\305\003<E>\222D\327#E\202\0305QW,\263a\216\311G\255\346\250\326y\001\312\010D\244\234\023G\"(\331\234tz\212Z\024,R#\\%=\211\010$e\254\371[\257)\034`W\217\306\027e\201Y L\305\266\023\252f\272\304\331[_\016\033Ax\020C\367d\305=\344b\261\222\252\362F>t~x&\032p\005A\371d\331\341\251\2072\262d\t9\273\236\036\376\371\353\025B\314\311\221\307\240\013\377\354\352U<\356b\346>?\246\213\013\312\010\207\372\317\023\023(\310\242r,\221\221\367\0249\336w\264z\376i\321U\375\024\3666\265\205*_\251\210bB\375\373\242\254\003\\\273\371\223\337o\307\202@\221\326\363\226\234\361\014\345\227}0n=[\373\023\311MG\203\240\312\237W\034c\312I\363\223\376\336\035T\256i!\367?M\306S\347\2168\346R\350*\000\365\375\327\360\210\254\215II\372n\374\341\177\271_\236\"WH\0252\325\356\032L+!\215\271\323\031\204\346\032\347\020\037M\3512/Q\374P\311\2059\377\221\022\310\326%ai\324\301\tr\016\333\270\211 \014\336\267\240\222\251\033\021\017\337\310\326\334\035\270,/\014\036P\325\233\027\037\025S?\307\321o1\372i\204\262\307+r\003\3527\252\325\017\375:cU@4>\314\345\311B>c\345\254\200x\364\037\270\206\244\323\007\225\366\251b0\215\246\326\212\223\201\346\2105M6w\235\376\002[\226\305j_\357\244\370\203P\204\243\320O*\232%\365i\235\270e\336\366t\036\302\"^\251\016\224\313\355\275\243L\235+\333di\303\345g\310\0235\300\217)\3470&\202\205K\363\226\221V\r<\005#\351\250\3673\232+\035\375\375i\232RG\266\241\227\372\376\373\336\332\233\247-6S\333\340\017\265Id\t<Bdxq\020\007 \341\371\356\227\314\277S\203\206\223B\371ai\326^\343\326\2418\330\243V\330tI\345\253\364\371\344\270\257\014\206\331\3454.\206\006\271\\k\262\2728\324\370\000@\024\3003\3648\340R\326\370U\310\213#\273\255T\0145%^J\321\333aS\345IR)Q\003\350\360\334P\260U\ra#\324'\215c\201\177\312p\233\001\326A\004\367G\377\277\264\334\n\302\3407e\207\344\244X\264\257\323\275\273*""\320\3334n\3451Zn\323\344'\372\346a\246A\206\212\032\022!}\016\307\231\2034j\370ha\254\204\376\325\007f\353J\332\033\201\246\267\323\360s\"~\334+}f]\013\265\224\204\r\305\032\334G\353\247u\022\006omo\256pL\355\212\254\006\01739t\263\243\001^\265\017\"qw\036O\007za\000<\2613L\246k\217\232\003\331c:\350:\3748t\250\347\026S\332\037\261\321\356\204\2241\264p*\212\031`T\224\"\000\326\3424\267@\217L\034C\021$\242\222\306\007\343\306;\020[ \234\365\016p\237\021\030\026\325\242\303\017}+\003\366\235s\263\271\243c\334\025rm\006\334|s\240\0267\3506\261z\004i\364\207\025\267\355\273D\313`\274G\336N-\3715\2747\tT$8\342!,v\351u\2124\356\262\245\037I\366\r\010\306V\235\254VC\231\365\030\341w?E\316\341\n\246\223 \225\016\340\213\205\2048\247\344mC\357\211<0\213p3\177\261f\324\217\321\253\2039\352\331\000'\373~\006\237\004Q\346\331\314O\274y\314\235D^\247+\352<\322\342\027\225\002\032F\363\034\202%\347\030\325v\372>\212\032Nb>\304j\250\321\312HSdA@\006\246\0065\251\265\020&\321L\242\271,\333\223\003A\245wJ\316;\204\241\216V\226Z\253\311}\036K\264\026\263\3751'mr\026\257\323\025}\213G\321\026U\356\273r:t\252\334\32287\320\027\251\365\314)\221\353S}\375\276\274\007o\310\022@\247ar\302U\025\240\276)\372\r\2416\010\214\244f\270\026UP\020\355\\\215\233\367\375\362\236\277\343u\316\216S6U\274(\336\000z-s\244d\260O;1T(\252ssCA\207\005\030A,\347$\324\nv\341\352\312K\001\205\222\277\277\321\207\215\003\235\370C\314\350\377\213\3262i\326\206\017\207H\032\033\231^>L\005\312\364@\235\014\253\010=c\031\373\273G/Tf\252\320\210t\2518\333\315w\375\204\263\255c\270XR~\224\"/\275\273N\207\263\202QL\021\013\010~s\214\3178\373\316\253\271\201\026\376UYJ\350\234\t\374\230*|h\200SkK\221\215hm\217.\3403\007\275\016\306&\211f\336\315\r\303\274\007\352y\355\024\231\376\267\364\"\274\276\365\275,\337p\310+rl5\277ip\234\017i\344\007\363J\357-\220\252\321\320\020|\022\247Z\366c\016\310\354\357\355\237\317&n T\013\276\343\374\031\215\355p\373\204\310>\225L\335\364\337\362r2%[\224\013\265\325\223\321O\310\257z""\356\321\024\324\254\250\304\t\356\334\2655\217\002\340L\241\227-K\223\344\362\016\026@}\206x\341\2126\321O\301\245\257a\212\025[\350\224\256Z\354\241\026\255\312w\2141\204\021R\\/\252\261\337\224\027\027\024\n\300\034\027\314/\020\212\242\027\034\325\317\253\377e@\373\"\350R\275\001";
+const char* const cstring = "(\265/\375`>;5\362\000z\361x3H\360\354\272\001\314\300\304\210\255\014\362N< `\205\024\222\nX!\205\244\301l\033\370H\"2#\275\262\033B\334,W.\241\017\327@]\007\234\021\0218\264\023\215\213\205*4\255A<\322\234u\000\007\351?\264\336, \235\240\357\002\373\002J\003$\215KmuUf\255dx\352\266m\326\212\247&\nz\242\240\204\241\347'\037K\315s(\271\307\225\334j\030f=\266\\\351I\236%'.\237\237\232\227]n\250\241\254r\257NNZ;\210\227(\276\353\0059\006&\223\235\223LVK\245j\251JN\200\032\240,\360Q\255\\[e-\220a\355V\253\032\027\262\271~N\\\333\357Vy\264\221^|\347\345\216\364\322uA6Ug\226M\227\265UI\355g\315-\236\252\273\252\323p\247\231Do#7\365\311#y\244+\307\3440\034Q2\014]\265M\236\\\006\246o\3616zmj\325(j^\271\313\325\344\353\270[\220[\276\305r\211\331B\274\257V\224,W\264\253V\344\271\323T\273H@>1\344\326\241gH\222\232\204\365\000(\334`R\022\206\030$\037\020\036\200Z\331\347\304\005\342\004\010\204\207\r>\036T2\020T1(\020H,\022KEb\261Z*\222\252\345:i\235\270PN\\%1'\n~bH\336\353\314W\234\276M\255\326<W{X <\254\366\232O\035z\006\235;\346\366\034\365\347\016\271[z\353D\360}\323\\(\237\241\352\026\342i3\247\333\3172-6\273y\333\271\325M\316\330\234\352\352\267\312U\235\313\376DU\236;\267\272;\017\032ui\256\247\366\232\324~\233&\312\251\365-\233d\347dYr]\220\212\352PR\335\271\026Y\242\031E\375\213GQ\235\374\242\302\342J\211\221\351{\034\365\211^H\321\222\353\234.\313\255\242A\343\276\321lq\344{\204e\222_\323\223\373qU\305\013\256\235\343&\241\366\273\347sw\235\3563\257(/\327lN\356K\276\366-\366\016[]qYA\311\211\345\344\323\217\274R\335\"/7I\263\307|\263\255\350i!\273\366\211Z\210\341\301\201\261\345\226\211I6\031MZ\233Dy\251s\247M\272\332\260:\337\351U\356\344\271\242b\256\241\331\257\250\315\356\245\216\0203\253\271\211\331D\310)\222]\362\332V\313}\252;(\3534\337\304,\350\304*\20451\234\235\233\034\215\2261\236VU\355:\321\233\347\215\265t\365\372\3263\317\247f\214\327d\235\206]\207<\321\253h\252\242\252\272s&\271\272?\265\037\323\274Ur\3675\227#\215\037i\362K?\315\265Di\262\313\363~j""\325\233\344\235\362|\276y\256\313&\252\326v)j\317U\035\n\231Q\237O\033\357]\273x*jn3\367\025]m\334\237\350\230;\317^\337\274\230u\336^ou\314\274\362D\363\251i\372&\271\352{\336\035Mw\273o\224\314\272\315sY\335\265\332:\303\313\236=zf\362\324\231\334\273M\236<o1\373\276\232\231<\220m''\367\270\3254\367\023\345\375\334&'sY\302\362K)8e\344\217\240\200'\016 \254\227d\230\332\221\225\261\024,\203^\206\205fuA\\\253[Y\233\322\236Z\023\366\264\261\36682\2008V\207\205\261'=\222\005\360\345~`C\000|\\P\277\262\227\344\035\275\010\334\221[\323\252\332\0356\205\365=\016x\367\352\227\202\213rc\355\004\3306\231XS\006\020\306N\350\275z\031\027@\\\357@\217T\001\204\365J\025\300\024kb\307\336\306\0050\325F`_\254\200\036F\005P4\342\305\242JAQOB\250\357\274n\007\351\255Su\247\256\257\344Tr)\271WnA.\327w_\311t\355\250G\275OM\357}Yn\377\362\013\274\357\274\276\366\332\332Oq\355)\352{\272\325\336S\036\324\303\036\346\224{\334\371\276-\330\320\033\277{\320\336\375TS\256\366\320\266\325\232\232\353\243\353F\253\245^q>w\306\202F\236\236\253\271\366\276=O\014y\251\347\245{Dw\270\3254\014;\232\246h\352y\312o)\231\3724\355(\332\265m\233(/\355e\271\236\343\270\236]\207\252gz\242~g\366ssTu\361\322\225^\256&\357\246\271M\322\334\231ahC\313\236\366\n\345\316\355\262\217\345V\327\222k\031M\212\246.aJ\262\007\235h\357pr\264C\207~\352\263\363\316\3072=9\332\3130\014I\376\342\013\270\215w\363\375\346;\277\205\275,\371M\3657\033\3377\263\353[\230r![\337+zc\341\302\214\002\017Oa\332\026\326^\013\272/C_\353\341\256\334\233\247\236\335\026j\322\014u\330yH\236\236\3338\031\2065\222\253c\367\345\326\221+/EGorr\267\303T\325c:j\325\207\274}\033_\341\030\206a?W\355\267\270\273\026\305R\213hi\013\375\311\375\212\216\272\247\332\344\225!:\366s\ry\252;O\353J\255oi\251\303^C{\330E\255\3030t\321\366x\356\025\267g\265\255\343w\333B\270\343\235\274\326=\337\355\276\271\272g9\0266\215\264`\223\203\303+\365\t\253\3019Q\237\356\233\233[m\253\241\337}\233.\231^\302\270T\357\265\337\2660\264\311\220\203\263c!\234\301&D""\350\274\247\261\0105\246\211\322\314\244+\252J0Q\017\263\261\241\231\301\024(\360\3745\352\024\244\345\276)0yN\201\013J\315\257.\327\366z\\M|\312\274\302\211\311~\347]2{TW\264\237$L\211\242\"k%\206.\315j\001\231\270X%\037\372O\r\354\302\315\003\326K\002\240\027\237\227\007\253\223\376\263!A\377\361(\252\242\240\264\362\252\253\200|Z\236w\352\235\026ob3\260\233V\255\334}\025\206\252\230\004*UL&\261nc\213\367\255\266T/\275\357\\~\345\240S\253\272\324\343\216\327\263\036\271\232 \253T+\232V\363\216\227\366\024E\005%%\3531#4\353\000$6\201M\260\220\253Q27\327\352\240\214\375\320q\000\372@=\277\307\002\327\"m\000\227\005\024\303\037\346\244\276\310\355\000\364 \213m\260\356\245yk\356\355\205\3655\035\032,/\313\035\3611XY\354Z\013\232\375\267\354\323~\024\277\020\237\310W\023\257\342\253;\340\361]L>ZL\021\343`\r\257G\205[k+Z^\317B\207\341\265\271%,\355\316M\004an\t\200\023\366\244b9YiWU\267\0056\276\254\3471!\313\3717<\361\013,\301L0\202\3611&$6\206`n\251\025\221\3708\266B{\223\341\"hI\226\002\254\355am\016\330\260\036\022J\246+\303\230\020|\305<0\014n\360\246^\017\355\001\224\273\321\206\260,H\t\230z#\270\r\364\257\344G\241\345\257TpG4\350\260\016L\001\343\336\225\367\364\312\2402\2002\227\025x\004\213\255\323?\221\200?\323\317&\177\\\313\203=\264OC\360\033\375\304\032\035\331W\177:\277\224\024\337\311\247\306\017`\254\212=\231\2003\235\257\223\363\305\337\314\257\246\362\215|\020D~\212\035\261!\270R0%N\264\"\035@\355\316\270*\023\221{\001\302\252AX\373j\005\260\261^\311c%\244b\301\276\264F\211\247\227\022L\261\244\323\020\354m\340\222H|X|\002\247\244\376\030\242\327\201A\032\332\320H\271\246\002\270X\003\314\240\344\2432\307\207\261(V(\310\363)\374N|\021\342\032\234\341\265q'\264\003<x|\024\276\2208\006Ox{\\\017W&\200\213!{a\357\304+\272*n\312%{\330\217R\020W\322azU\230;\341\316D\226\236cW:J@\212V\244\004\024\275\274\026\006h*\261\035%`\210\326\266\036\007.\375)\372Q\362\223\343\037\365\327\034>\207\014?\346\365\002xg.\314\355iIH\330\336\323\257\337\351\307\342\373\300""\"\340\233\332 \227^\252\327\021\260do\303\345\2610oL\233j\003\260'\370\307\265e\374\214\213\240\350\305\271&\035\277\343\002H\233\375\231\354\313 \374Y\034\223\340{\027&\300\305\027\261\035\023\032\0310|\014<\237'\302W\361e\304\"\314\202\340\253\270{\000\220\206\257\301\346\217\276V<\212]L>\215\273\266:-\201\322_E\000Z\021\023\252\r`\361=\206*($J/\366b\204B\342\202\204\241\262\"\032%\211\32194\312\031]\2700\252\031\325\210r\022\022C\353\355\3372\374\237\037\016\313g\311?K\374\t\340\213v\263}\333\317\377\361\371>;\177g\366\375\017\344\027\363\325b\n< .mdgX\224\016(k5.(do\212\216;\240\305`q=\220\236*sI\\\017\037\254*\353\301z\252\036i\002\210\033a1\001\024\365.&\202+\275\022\205\004iH4B\303\267\367\343\035\335\014\255G\207\336\006\311\304\027\271\270V\003\013\322!Q1\244\333\231\026\325\212\332\032T\007P\307\2628%N\305$,\203I\340>\363\276^\037\304\371\264o\306\367\362\371X\307*\261\2075<\003\277`\257si\334\227{rE\023-\216\rA\275\340\027^\275\214\t\340\313\345\t\3226P$#4\271\234\026s\361\201x%\343\272x\320\371\021b\352+\3360\005\013\327A\376<!\326X\333\177\207?\234\360{\3756\304\030F`<|\317\227\375\330\017\365\023q\301\253 \020\"m\3433\034\003W@<\232n\211\256e\0014\001PT\330\321\356\007\006\013\340\036Q\001\000\200\010\366\201\311\t\223y\276|\323\211\302\326\226\234B(\202ZT;\0260\203\004$\005E\360\202\374\005\260&R\002\266\005\327\032\220\260\245D\277\231\0176\023O\350\320\032\350H@\005\365[\362\222\256\354\224\362\362`\325\221\026\204\361^\265\r\002#ia\200q\326^z^\324a(\003\206\177\363+\361\327\345\033\221 \000\005Lq|\216\024\334_\026\353\306\3556%\366x\245$0\000\002\022\230\250\270\371>|\"\261(vQ\375\221{\263\372v2\253/\272\255\013\232\210h\204\3507\301\345\213\026$\032,LE\300\307\000rl\254\016x\240f\233\374\244\313\367A\241:\033bzY\036\210L\rT\024\020\3037\213=Tp\200w\3646,\2125}p\004I>N9\016\000;'-I\002i\333\225\202\350\364\3066X\000lM\020hb\000\003H\361M\270\223\254\001\306H\366C~B\261E\354\003\304\276\354\2404\200\002\002\310|\266\370#\036a\226\003_l\013\004\020""\2150\354N8\020\246\221SH\2565\240\021\224\265\004.\200\035C\360J\201_@\343\213$TC\260\030\245_\025\006]\202o\275\301*/\tm\020\027\213:/\312\200\277Vh\241\2614\2022_,\345\267\274\tF>\017\013\323\251\301.&&F\255O\006\352\243HX\017\005R\022\037\003(\033!{\023\270\010\030\355\016\300\005(\374\3644F\360H*\021\210\356<\251\361\325\"\245S\313\3279y\311`O\247G\301\243\342a\232\261\037 x\320'\347\343Xh\261\r\334\223z[\\\317\"\006WC\022\0072jX\017\016\315V\260b0\010\203UpJ\001\326\204\253\251\t@~I\006\00375\342\0014\301\261w\304\245\265xV\344\273\000\201U\357\232\234>\231z\003\270\252\216\016\016\335+\201W`V\212\2739D\023\3316\200'\362\361`\0138\344\343\177\340X\010\232\334T)\223\200\031\002\236LB\274\317\303}\\\207\337A\374\342\317\377\331\371\271_\0051\2261\360uDF\343H\024G<<#\033\033\221\212\013\372A\005\376\314\2504\332\031\321h#\034\234Q,&\n\001B\367u\352W\315o\366|\r?\014>\014\267]\013r\212[(^\261E\305\320\0137\374\r:\277\345\347\342\023\020\013U\2508\331\3200\2718\025<~[\372h\203\037\030\030\027A\n]\312`\0310\004k\007\314z\032\361\005\314\340uQa\004a\361\004x}w\0104vz\032\030@\230\014~Y\001\tII|\036\331\017\362\225\370f\026\374\232\027\365\212\336U\310\017y\271+\242#\010\353\351R\003\230|3\270\246o\222\321\\\022w\307C\207\351\303\024\374\010\3601\232<\332X'\261\202)\023\214\355\351i\220\326\022l\004\206\2337\276\010\323Ksa>#:%\210P\250\304.0\224\232\234\204N!\221\031`\300\000C0P\000\361\240@.\035\230\252~\004\315\211\311\006a\0142\344\210A\n\004`\000@\000\020\220\000\022\0000LZ\266In\254\014o\336t]`\321\226\276),\372O\247\374+\313\032\254\261\210\006^]\336\001\215\373'\261\223\216g\000\212\3407x\357\321\030\t_\226r\307\265\342\222\007\201\"\206\205\375\201\332E\007\034\315\271\376\222:\232\270\255{\340\220\231\202:O \365{\226\237N\355\300.3\272?\357\250]\202o\340\203\276N\274A\"V\330\322d\260gH\017[\276q\232\030B\3643R\377\177\355\247\245\025E\r`\000I\265\224\272\250//\327;\346\243\321\373\220/(c\305V\017\255\366\232\271:\251\254\250\274K#0\275O\324\027z\375\242\022""\276H\r\030\231Bd\341\345H/\262\254/\333\355'\251\333\210\347x8\204\247\227\263\216|{h\323\232\271\023\"D8\207\372\202\0132\324H\000\350\363\220 \310Q\3002a\317\022\346\3505\233TLT\215=\335t\004\030~x\252\341g\242p\177rm/w6\273\242\034\0056\304\272jI\346\213\253k\354\240i\253\025}=&\243\"\034Iy\332\001{\375\231\1776\232Y\033U\301\306\0130D\235\260lh{I;\013\347E\200\230;\rU\373+0;p\327\270\344\254\213\221\020.\323\326a\025w\276\036\264o\\x\303\344V\255\353\216\275\310!\274\377;!J\360\306\r)q\246\363Wz\320\250\313\\,\370\366sA)\031\223}g\233\251\377?2;\216\343\002\\\257\352&I4O\300\016\356\330\262\211\271)\236\376\221\267e\031\320'i\242C\327\264&\024\350\276G\215\223\245\321S\003B\265\256\316\316o~\002\242\305\354\313\324\267\354\325\365\353`g\350y\243_\335\001V\303\024\205\004\357,\000\2630\016\212/\307Z\367_\016K\355\236\221\023\216\027e`\205\244!\323\027\360\362\326A\3647\251\237\2637p\014\375\311\017I\272\223\005\207\275\213j\361\\y\367\203\340\217\361\026\\\335\025n\372\266Q\250\210\027<\273~\217[\266@>\216\374\220K\357\027\214[\324\337\235[D\031\267\"\360\213NN\256\347q,,\306\022\002\3105\025\327\033\376\223\227\237e\034D\032)Y0\232_\255Y\004EOR\267\362\242T\020\343C\250\370d\302\034\205\037\264\332\307\022\340_{_\2702{.\244\021p\225\341\3341\217\004\325:\240G\275(\220\207\215\254m\010o4B\344~\350D\207x(\241\261\240\237\223\033\334\001\374\364\006\231B\331*x\222\235\272\370Y\024Q\340\027\007u\005\240@\311\200c\224\275\201\235UO\262\343\230\023\335w23\207w\022\3270\026?\204 \031\016Z\007TyS<3\223\032\t\200\234L\267E\321\313,+\376\235j\276\240\200\304\222E5j\020\203?_\303w\316\325A\300\253\200\220/\227\245\320\243\251\004\321\201C\263G\023~\223[\327\026\212\235\345\016\021\344\240\350\352\331]wc\373@pg\262\024C\327\304\177\2361\315\302Q\321\010\351U$\3403\027\240\013|z\252\305\004c\202;H\010\371\217\r5,g\240\200\235\245&\020\267P\024\372E\225\302VK\232\\;/\354O\326z\213\372\273\211|\024\341\335#\211xI\263Hq\334\205\226\213\315\255\013l\326\321\245\331\230\223\367""\354\206]\033\033`\" \237MkV(\204\225\220\\\030'\000\311\002\235\037\342\033=Y\326\005\022<P\271\005\213\224]pk\020\371\200\277\371\354\277-z\212c\337\371\t^\005\020\226\374@%\217\r\242\340\001\231A\226<c2N\033B\266BL\360\225\325\000\321\323\224)\323\372\266\271\213\247\344[\364\233\304\225T\267\256[d\006#A;\244&\366\374\260V\336j[\035 \241\232%b\010\031\332\031\211m&s\r\007(2\230\236\275P\345\204\321\366\317\3211\323^\256\377xs\236k-\371]~o\352\252\3478\251~\235Mw\236\367K\317x\020\010v\006\306i\261T\224\351\311\210nD\267\014(M\335\373\252x \322\322Xj\336!\024\323\026\343\274Ceo\370n]x\237\273y^\370A\342\226\301e\024\346\000L\375[\037\216\315\342N\334\306\006\252\244\r\273V\236M\211$\037\031\314\317\313\267\350\231\364#,\310\245\210R\343r8&$\330\035\365\025\216\204\\G\271\205a\023\270\371\323 L9B\306-\303\231\356yn\344\200\246\376\346\024~\004\304\0303\304\007KtM\255\035\272:B\351\257F\360a\221|\345c\326;5\205;\307\366\246\374P\277I\305\335v+\023\356\026\365\241\244\024=x\016\313\324\"\377\207\036\202\312J\242\224y\215\272\242\201\354}\016x\325^\274L'\247O*\0076\342V\026\022\036+\246\001\221\244Wv|\244@^\320\026\244uZ\255~\022\335\222\315@\001\234.\312\"/\200\0342\373.\325\373@\350;]f\320\003M\207$K\304\333h\027\271h\327Wjb4\307\321)/\353\356\245\201\377\352\301\221hQS\317iR\323\035\202\036# X\315\300\010\030\331!L\346\341U\013\017+\342V\351Op1i\020\024el\310\302\010L\001Gy\220;\332#;\212$\025\250I\344\245\336~\322w\320\234\037\223\241y\356\320\r\267\264\245\361\\\006!\333[\202\200a\242C+\227\201q\023\314\016W\253\245\214\030*\206)\331\327\260\243\313{,\330\235s\\Sd\374\231\255E'-\365}\247%.3\253\227Z\205Vdt\240\375\210\354%Z\202\206\017\233d\003\210\241%\000\372\303\\\206.\031b\016\267\314\330\"\345\231$A\260c\327YL\2206\372|n\240\021\334\020\344\210\0051\310A^\370\353@\020\205`\026\022,w_~\326B\345\315.;\365\211K\033y\345\037E\204\221\211pJ\0200\367\254Y\351\355\301/\307\335\014uH\225\373\214'\321D<z\033\202\236\"\264\"\017\301oa0\2420\352g*x\254.\201$\010\214""\346\330\323\321\354jZ\304\324g4\025Q\016+jx\323\004<\322\031\314\247S\356\272`\367Y\341\220\256\0021\322\020\352\242^\354\005\343\360\333Y\200\006\300\\=cw\261\232\316^\210g\201\327\253\311\313\334`\245\255v\276\222\014\212\353\261\031Y\203\253\271\270\023%\332\300\000\324\372\223g\031\005\246%6\004[\t\320\242\036+Z\343\322\235\316 \277\347[l\331\276\305\352\357\3047\340\311G\270\347I\244\201\374V%)\022\332\224\336CO0]\3439\351_\010n\311,E\361\245G4F\222j\246\314\267\030\227\231\306(\014\241\323B\372V\263\340\273\007/\216\212W!2\356\2725\270FJeQ\235\342/L\037+\263\257s\301\335\025t\273.\233\321RJ\231S\275\010ZL\226\371\352\342\246*+\027\020P\325\350\305\214\271\246+d8kb\202\027\240\373L\007\246\026}6\\G\224j\272\213H\351\247\324\220\023^)^u\274\323\001\006\3056\3455\331\000X\263\020\210\267\222*\032\250\025k\326Fr\373\347\322\024p\203\341H\324C\356\177\2454Biy\340\364\0227\335\216\302n\277\200\332\277\340s-;\334\0059\262\321\n\010I\260\334\201\220\344 `'\245,\\\371\205\231\274\315\302\337\263>\3536\202\200\001AN\203`\201\266l\202\324g\365\177\341h\367e&\312\341&\323\227\222\034\177\276+zH\340\222\277\321a\023\225\315\243\023\227\3145\203\237\350m\350\325\272\263\2013\032\225\275\2573\271aC\375o\031\215\007\027\210\360\364\354Xj]^F\321p2\036qO\316\254\236\213\357_h/\020&\006n\247~N\252[\267\252^$\334\310\225~!\006\265FU\263\350\323\312l`\304\231\260\355\357\352B\253\256?\230\364lc-\017LW>\221\352\001\300;4\257\022\013}ZvgWJ ,\313t\315\274\230\023`\344\025Z\326>\002\371\214\250\240\030\212\000x\207\244>\370\374\331\017\017\031l\201\262\002\315\027\213\200\211Qqa\315~\310\t\211\226gt7\276\234\266\340\310B?\376\373\205\262\372\241j\222\216s5\230\2457E#\266\226\027\262\322\340/\265\341\375\006(n\340\242\214\275\374\342\201R\344\235\002U\037\n'B+f[4z\010\226;\177\277\021\372dKP\0342\374\363l=\370\326K\345\373\274\305\262\342\2310\022g\215\r\215\306\3103\215y\356';NYGB\230-p}5\356\267'n\363M\354\211\334C&\340\233,7\036^u\370\303h)8\007\361\375\001\373\251\255\r\001\253Y""\005\271\324\214\363eK\341^\340\010\256`Z\211^\374\021\340\211$\023\215\340\255\214\337\036\262\324\244\334&>\3225\341\r\240aBD\207\244uf\353\032\034\331\350Z\356\240\036\353\2331\374\347\020\246q\n\212>\301\033\360\020\322|\222_M\024%\351Y\262\332\204\004to\276S\320\364a\305\276D\253\"I\253\030\26621\263+\312x\213\365C\344\000\341\375A\034\031h\325\271\346\t-~\330\231\226\241\266\333\215\354\023\315\2205i\274\030]:\240{{\314[X\371-3\375o^ W\n\017\271#\246]f6\364\023\027\204\261\037\365\375\014S\242q\r\224\021\227<\223\266\200\203N\346\340\030Wl\010\327\314\212\244\0377\277M\233\037L\026+q\277\020\204FE\306I\364\362\200rg\303\364\333\373]\350\277\352\241\364\002K]\336{\236\241\2001!\214\225\\\032C\335U\351\232%P1Ss\353\266\240\272q\300\266\272\261\275Nu\213\354e\342\n\007\242\346\243\006\327\302G\250\240M<\342G\0249\247\214\032\235q\322\177)\"\223\365\014\020\240\314\312\023l\234\253\247\204\326N\007*\214\364\342\334\253\023p\233R8\007`\204h<\367\223\254\316\r5\274\361\021\313\352\354\215\265\373\321\223\346\370T\224&\263[\313\310\225[J\316\212-?\303\365\027\027\346$+0]\021To\035\256+3\316\255I\034\233n\324\035r:\"\213Q\266#\344\277\000\250<\326\250\324\030\235Qoe&\310\241\240\212\211\246\275hK\216@\346\336PScF\302\030\033(\254\032\320\241F2\303O!;\264HGA\321\023\306e\230$L|\253\356oA`\225\244\314\272\346\203\220\3322\337\021\024\006\016\251\304\267B\343v\207\221\263\340z?A\302F.\204a-U\032\352\337\326K\210\027\256|8\217\311ML\007\037z\212\326\332\234\265Q\027\324i\370\215\3169\375\013-\227A\237\t\0271\240i\"\362Q\244\337\232N\2617x\225\357\006\375\346\231z\273,\242W}\365\023\205#\247\243}\313?!wZ\014\376h\354C\355\324\233\260B\333\222\246N\255\273e\247\206\023\027\267\364\r\364\352A\002r\263=\275\202\352\245\r@\242(\374f\335\301\354\031D\243u6\\\030\211S\305\244nb\366'F\273\335E\006\251I\255\254\322{\267\364#\243\023\345%!Jj~%<g\242i\327\345\343b\267\244\212@\255\201_\376\031\351\273\257)Z\334\357\311\217g\342\001\026n1U\241D;D\210k\246\244\031}n\001\245X\355\304""\363\004\326\010\246q\312F\2458O\257=\256\245\230\374H.\274\365\246U\n\r\360\003\353H2e\216\244\202gT\271\256\370\232\030\031&A\265)\243\346\351\005\027G\240i\345\244\216\262\240\272i\351l\025\305RpI\341\340R\354I\n\220\320X\366o\371N\t`B\217\032/\350\002_ \306J\263\235nG\202\036\347V\034&7\002\230 \316\337O\225{r\313g%U\345\215\265\260\374\300\\4\022\005\235\202\346\362\215_\017\235\262e)vV\235G\034\360\267\014\0102\313\221\237AW<\263\313U\241\\\337\314O~\237\027+\225q\0165\237'\020(\222Eh]Z\312\256\3219\300\017\233\333\373i\224F\243\030\316mb\036*\205R2l\032\370WJY(\277\360\242'v\337\020K\233\242l\363\033\311\343\311\345\233\370\320\342Pl5O\2710}\006au#n\034\306T\223&.\275\275\353P\271\323RN~\032\000O\375\034q/\227\002\244\0004\367\337\370\021Y\033\246$y\270\361\203\377%~yX\271B\330d\252\277h=-\n\271\357\376\231A4\327\010H\362zn\027zI\367\253\353_1\377w]\366\260\016\013\252\221\255\023Lr\360q\373@\212y\277\001e\354n\270\036\nY6j\367\331\345\177a\226\342a/I\372\366L\263\037\177\277\211\344\007\005\224aR\351MT\334\240bo\210\337\205y\2258\354P\235\0177\362\r!f7\324\237\237\357\207$\257\017\177\366;g0\204\306\324\n\2341\342\010h\032\235$\247\370\205\270H\210\325\246\316\221\302\0179\021N\240g\2134\223\324\333Eu;p\273\323y\016\353p\205\035\370)o{\0052{\240\224\311r4\227\033!'\326\\?\032M\341D\204\263-\315/\323\205\032\364\024\354\245#\357\367\324\250t\364\027w\t\023\037\370\206\223\325\365\377{\350o\236[\240Nm\223\177\246f\235%\024\t\227\341b\343\240\200TG\267\337\332\347N\315T'\231\022G\322\276r\036P\367\366\220\307y\264\006\322I\030\241\364\345\341\236:\330f\367\3248\030\372\310E\325Duy\250q\013\300\233\317q\364\364XQV\372\205\230\217#K\255T\024jj/%\323+t\217de#\252,a\356d\271\361a\2031\231\245T.\ri\301\315T[wL\nA|\353\037\331\237\367\270\332\303\300\234\262\r\311]X\202^\037\274\273+\360\266\201h\3251\311n\313\362s\374\262m\346\224\014H5h\tc\016\355\254\3144'|h\302K\311\374\003\005\373\315J\320\215\027\323\336\311\340\3511~\210+\230\263r\005l(\241\016%\034\374\376""\003V\017\023\236\270\366\301\\\341\314\325\212\363\007\2239\221\334Y\311\000\274\306\207\237x<oL\007\262aH<\261\031L\246\024_\231{\263\025\331\362\272\000\027tusC)\335\276\246\321\036\204\266\035B>5\\\010\030\024J\030\000\312\357tP<o>.C\021\240R\t\352\203t\320\035\304-\374\316\006\000\360k\022Hru\255\243\017\355\200A\370N83\374\213\037\334\n\371\344\007\214\2569c\3531\270O\260\036\3315\251\227'\267\330\335\224\321'\034B\t\247N\302\265\245\267\227)\3028\266;,\275\3641\21227\374\322\253\306\377\006\016\243\257N\277T\313\264\365\332\360\013(E\023\344\020\245\220 \215\017\356\201\005\177\374\221\331\266\251Wi<\030\213 \235\1771P\324\232\021\323\221RTm\200\205\033}\006\022\007\311\344y\236W\274=\347\356\211\275r+\016<\302\361k*\255\032f\3339\234%;0\352\354t>\n5\\\227|\254\266(\321\036\211\332\313\362Af\270\205\272b\345%FHb\344\251L\240\235\003A\245UJ\3179\204\251\356V\346[\217\311}KK}\026\241\3751U\332\352l2\323\356}\333F\241?\252\304w\344t\355T\246\345.w\366\227G\365T)=\364A\035\372\033\271y\311\220%\000\000\302\204\205;*(}\323\330\033\316l\020@\t\315\2602\250\340D\204\272j6^\370\365}\020\352\223nv\310\330^\3425q\006\364e\331K\211\030}\006\341\241eQ\326\366\r<\352\340@\025b\002gR\363\336\362\"\027#\005\032%\367\376\346,\033\020\344t\036\013\243sF\232\216Q\260\332~:\204\220lX\366\362\340*\036\332\303\3063D+\\\032\253\3767\312\373V\231Ka-\344\321\305\331@\216''\371\3557\303\304B\262\267\024~\211\324-\005\\+b\306\324.\200\3427\001\370p\337\367\274\272\016\262\365/\312RB\361\314\340G\251\206\206\0176\367RVH10\022\324\036\276\303\247\016\324\272\347f\261\315\204\303\r\371<\303\253\207\330\3752\225\335\342V \177\233z\031\321P\366\030\362U\365\275\331\302\341\nJ\220\331\314\211^\035\001_c@x\371,\235\252\361\017\031\240k\211\267:i\266\274\201\260-\3706\345\017h\244\215\333\247\n{T2\033\323\263\251\313\207\311\314\"^\250\352\036c?\237W\265\242\247\217`\273\213\240\307\033\271\233\374I\024\272\301\r-,\372\315 \3136\310\001\3511$X\025\255o?l\027\255\372*A[\256Q\222m\261\244Z\377""\341\1771f\003NDp{P\245\335[\312[^I\300\342\224L.\007\320\377\215`\260~N\374/s\335\027\257\233\352\r";
     PyObject *data = __Pyx_DecompressString(cstring, 7760, 3);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (7471 bytes) */
-const char* const cstring = "BZh91AY&SY\254\205Y2\000\006\341\177\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\300@@@@@@@@@@@@\000@\000`\036_{\335\236\366P\311\206\013\267\240v\316t\352\343,\331us\2076\251\314\365gZr\311\275\347\234y@\013CM\232\263\006\315\213\271\275k\236:\265\333\262\217Ax\007\201A\215\000\000\014\000xh \211\241\023\310\323FQ\2324\023S\031\244\332\0234A\215\t\202h\324\333\020O)\246\231O@\247\251\345\036\240\364\217S\321\265'\205\002P\200\214@D\302\232z\230L\247\250b\246\302e=\r\023jg\252m4\010\036\241\350\320\236\223\001\014\231\240\2324\0324\323\321\030i\220\"\"!O\324\304\324\362\236SLz\2402\031\2424\323\324\362j=OSm'\251\032yG\265M\032\006\200\003M=M6\232\020d\000$\324\204 S\323D\247\352cJz\230\206\232l\246@2i\240\310\321\351\00044\r\017S&\232i\240\001\220\321\3520\320\324\020i\211\201\006\000&\232i\246\000#\001\030\2310\t\200\000\214#\000\000\214\000\2312a1\002D\2024I\350#\020\004\311\243&$\324\366\202\247\264jz4\232\231\032\006\206\206@\003A\210\032\006\232\000\000\320\377\344\215<\231\360\314\326\236m\272f\2662+\003-\364g)\331\356O\nvg\255'\003<_\205#\207\275Ag`\026'\231\350\372]\237\351\333\366\273]\240\020\017f\036\324\366\373s<\260\036\337o@YDC\213q\203\023\214\246E\340&\r\"\\b\355\304\226\010X|0H\021\030\310\r\250\307@\204\323x\375\177\002\275~?/5\233\261\317\357@:R\000\267!m\322\227,\\7\365\177>\034{\370q\361\361\361\376\236\177\376{\236S\226r\311\303\22423\021QUQ\021E\202 \240\261I\025\030(\243\020s2\231\023)\024\333\340\004#w\022`L\2313yv\375\376\217\240\001\210&*\026=\033%\202\307\241TW0\320\3061\227`\000h\265\202\332\026\215\027\006H1A\231\240PY\025EPX\002\250\240\261H\241\005\001B(\252Dd\202\223k\272L@\330M\201\253T\3068\0275h\0241C\201\262\321\017\257\311\344\362!\227\312\r\303qh\327[\221\241\037{\353m7\210\264\177/,w\333\353^\236\376\323\264\225j\364\322\253\304:|\363\213\210\361-*\322\305\253\036\344\345\3428+\024\235\031\221\252\nE\0015%\005!E%1\313\227\232\323\223\224\351\006\260\021\00561\021B\n\240,\025E ,\212l\003q\314\272oe\231""\001P^uE\013\034x\274xz\341}Qj\251Tj\322\252\223a\231pl\305\300Q\376\250\211\221D(\211\007\332na\256p\3672\0309\221\342\336d\372|t\242!\210\265LH\256\251Q\223j\025\024X1\004\334\224\325\0240\325T\202\370&\363P\032\320P\213840Y6XM\272\215Qu@65M\301\nnD\241D@3\344/E\232J\3262\327v\033\271\324\261\315G\252T\215H\013!\026\003\240\016\205\263\247\202\355\031Yp0\301\321\214\272.jg\306\335\023mDD\021X\214h9\006#\234\341\315\316\341\316\007\267x7\221\301\270\265\275\334\265\355\371T\234F\316\022\253R4\240\316\215F\255\206\265\226[s\202\335\\\r#x\\9\315\025TAE\321X\321\215MD\325\rMS]\372\232\314#\273 \3117\246\262\313\023\205\354\344z3&I\220\205Q2L\214\242|\234S\035\235\350\006+\206_\034\310l\314\314\363\317.3\307T\263\252\264rh)T*V\272\226\332\226\261y\337\245\225\302r\262X\251C)V\251\313M0\366\025\314\304\214C\0256\342ba\201$\336h\227\216\346b\256.6\206\272$\311\342E\013[\313$\327\201\316|\222d\354Z\372s\323i\265JR\364^\214\026\234\226\262\317\312SN\223FX_\005\362\355I\007:\360\277\373a\326\324\372\240\353i\246\177w\263d\307\320F\037\035\005\375\217=\2423\374\343\242\343\344>\177\361c\275\0041kB\375\034\274\303\206c\244\010\322\345A-\330I\367a\260\254\333!U\357\247\310\261\377V\274qU\013\224\300\370!ne\262\305Y~\323\271\212\317\251\370\304\336\336G\261\306\211\223\224\316\010\200Pg\\\266\267\341yq;\237\207\336}\352\316\360\331\255\327$!\262\355\006{\237\027`\366\263b\265E\367\262\300\270\370\033\225\362\327\\\334\376C\014r\237\333\300r\322r\317Hu\335\215\027\3037\357\3351\312c\314\245\236\353\246\321s\340BRY[\372T \364\375\223\212\360&C\262\025\342\277\005\265\2667\312\2168\334\305\363-j\032\311\362U\216[^\303\306\036\333/\377\010s\375\331\332\305\232\354\032\2614u\356,b\367\021\357f\362\024n f\246\307N\220YN\362\234\266\260E\363\273\031\335\036+2d2\234\025\367\364\312\367\264\344\227\212\345\315\330^\320\224j\261R\222\223\373\266L\225\321tW\246u\201\025QxsH\272X\344\357\234{>\217\227\325\337\366\227\230=\347\254K\332\205\364\354\360=\342^\304}U\363\"\327\262\322\254\344""\312\326\031C\274\002!@!\020`\225\017\017\365\242\014#\322\3619\375\002\333\376?\214\360\t\363+\3553|E\333\t\334\277\213T\3152C\211\304\3154M\207\315>\037/?\n%\004\362\247\265\362\272l\026-\367\2767o\356\335\276\020\027\233\020LD\304\353\303\346n\310\313wU\370m\013\003\222\310_w\\\240A$\314y\274F\313\300\310\300\212N\211\226,\220$\221_H\221?\016\373\037w\261\214v\335N\323\200\267)G\371Q\372\365n\337\037/\025\226\367\231\216\216\247ww\311\265\202.\304:0\310\306<{\233r\376\223?<\237t5a\317\251{8~'\247J\367\030\247\007\027\217\207V=\231\020\177.\364\306\305*`\2600\357\303\223\274\347\277\240:\263\342c\367~\333\325\343\3301\251\201\020\374\231\200\264\264f\321((\007^\033\005\363\0220\214\252.M%N\307\312\366\346\337I\341\215\207\360\356kw\347\017rb\217V\001\025\324U\035\326\232(N\303Ys2\366$\020\023J\335/\345\236\272\312\200\025\311\226\n\337\234\001\300\247Q\n\n\036\0054P2f\200\320*\307\017\036?\313\214f\345\r41\273R\357^0\215\006m3\210e\310\223&}.\276|\036\207\220\354\261\246\326\365\261z\317TB\010@\220\210R\"\035\026\336\002\272-\325\301\274c\t9b\023\246!\022\003\202\342N\023\221\005\027E\360\202\262\252\305\355\t\305\312B\3373\032\320\212$\204(\223C\324\366\357Z\030\030<\245\001/\013\320\277\360\342\227\217\277\233\305\251J\010d\211T&U9\374\266$H\224\202G\217\017[l\302b\023\t\3173\337\367\352\232\246\312\024J\"P(H\246\335\373\177\256\362\364\274\010\321\206nD\273h\320\007\274\244\023\252a\036!\336\363*j\246\225sN\374\263\222R\312E\322\211\272\346 \304\253z\000\tH\303\343L\020{N\336Wg\277yF*_\275(\323\343k\307+{`\230=\347L\"(\367\252\004K\352\233K\372\275\257\311\261\213\243\357\347\335\324\330\277\202v\031\377\276\237w\314\331\3700\325x\013\347*\0072 \360\033\340o\201\361\351Jyk5i\375k\020a\336\t\"\244\022\230\363\222$JM4\340\263\340\314\033|\221Y\254X\020bg\350w\233\341\356340\226\r\200,\243\002\213^@\022C\350\335\342\367\206<\313\257\213]\210\300.\245\001(\245\035o\207\274\210M?zP\nW\207\262\247\262\244\353P\346N>\034c\206\010\211\372\215\247H\255\374\337\2519\316""\336\255w\354Q\357\364\366\233PM\250m\016\006\304\353>\177_]\274\036{z\371\344\207\267\263\322C$LS\301^\275H\006\246\240\355\223\004\302c.5\033\005\n\027\337!\362\376(]\235\335\357\177)e\337\264\300\237Cz\372\332\3640CpB\354O\033\363\377\034\212\213\210\252\342\272\274:\0267\206%\255n\216\300\373't\036\007\364\345\034).\317^\263\"\223\027J\377\373\314\377$Ey\220\232H'\317\217\037\325\364,\376\235\374\244\\a\014\227F\036\031R\275w\203\034JkgE\353\030xX\331\233\365\340\340\355\002\2727B\374\303v\312\013\337\344W\007\247\021o\364\276\3663o\2636\370\020\337\030O\205\340\260\277\253\342\341\236]S\345\305\245=Gx\013%\221\304\r\035\351Aa\001B/\223\004\302\313\242\362\253\226\333\003o0\347\216>\313a\240\031\013\354\035\217lS\365\236g\257O\246\357\326d\220\374]\364\321g\351h\032\030\232!\273r\345\237w\207\303\300\320\307\300\235J\331\256Y\"d\006Bq28\343\331\217Z\"x\362L\271`\230&\006\006\332l\255\350z~\237j\322\201J&\251\322l\342\177\004\262\345\352\256)\312\304B\326-\313\375\211\204\245$\2168\343>7\336\204\322\227C\3772\375\201$\262D\267\177\207\243w\330\367\216\377\275\364*zg\341\217\377?\255\334s\333\240\233\324\355\375`\221B9uO\355o-\022\332L\330\271$\231j\177\331\260\355\240\370\346\333iI\2332}y!\345NB\365p\226\204\202\0008\310f\025\033\305\003\230\347\031\0273\354~\227\360d\021\203\356\204C\334\017\204\213\021\2766\t*\356\224[Y\363[b\361w\373\035Mo8K(\304\307f\250\004\377J\240\017P\262\211\367g\3723\201\351.k\215\360\275\036\317a\\f\260\336\320\321e\n:\035\027\275\311\034\201\030y$oE\213\32168\332\034\215H\016\306i1Z\346\353ii\022'bp\034M^3\375\306M\225cU\232\224\027\013\230\261\n<ou\263\330\324|=\010;U\312SY\343\031\207\324 \026\353\260\210]\240\374w\247K\t\200\250\207\032@A\301\0274\340I`M\"J\207\002\275\227\001\226\336;\3150\031\212p%\tr\016+M\334h\212\330\323#\014\n:\321\340D\315\330\343\361ux\r\250\353<\376\236\275\031\270\006\2327\340\31641\234t\360l\337\340E^\264\366\373\3471Nd.\014\324\325#+\240|$\007\330\"\347\271\235\214p\224\370\367\200\026H\237\243G\2429G""\212\212\254\225I^\307\337N\312\017R1\226\213\216W\t\231\014\236\024\256\016\021\346\213\362\325{m\004D\371eC\232\324\"\024O\242\224\t\301\35795\356\362\263\316\026\t\321\200U\264\\d\212\370W\300\032\027\356\240k\336C\236;\237\236)\222z\207\205\336$\262\300\346a\253r\325\313)b\355\231\252&\\\227\220T\251\300%s\\\256\032\322lo\325\266\2034\234\370mIB\010\323b\252>\202\030\245#\224\304uP\310\310\246\253\263n\001g\220\255:^T\255\021\312n,\212\343E\334Q\337*C\026o\303\363\374\337\017\260C@H\003\344\027\312\204\201\3460\353n\344d\014\344\344\240I%\301G\251s\244Q\255%\304\020\203\214))\270Q\021u\247k7\024\374~\316\315\323\205v\372\367E\332Uu\354\035\340\023D\211!4\323\355\260\3604\314\212H\246u\244\252\256\342^\326*\320\356\255B\347\3208-\"\330n\233\346\376\374\345\264\365e\267\307\253\303\335\313SO\201\3657u\336Ma\260aT\224\037\211\307p\246\257\301\307\024\007+\343E\025K\234M\227\262L\257\035\227\224\315l\330J\332\027\327\301\360|\220\250\253%\031L\256\223\272\236d\376\250\370\273\257\255\t3G\315\256\335\230\300\214\306EDYy\336\330\347\212\037\334\262\30203\335\344\260\370\326\341\317\233<5\024C0QM\375:\233\220\0219'\"\200@\342\373\027\207R:\227Q\322\216\243\304K\307\227\263-\326\250ox\000\225\021\244\243\317\303j\343\252o\013QC\006\343\216\256e\244\202\205$\310\316\341-\202\2129\231\241\3204*]\222`9\023t\210\344\251|\255q\030\250\305RW\234.E\305\314L`65[\206E\322A\340ct\307\007f\237\336\234\247>.\013\263\315\017\020\334\2314\323/\312\024\350sE\236D&\307?~\355/)Q\212\024\315\302\027\350\203\207\341]y\316s\202s\234\3478o\r\305\324W78Wi\361K\265m\271d\232]Fj\302\3230\260\032\007\304\310Zt\\\032\330\351\013\204\254SxY2\322b9\213\034\325b3\266\013^\257\273\2253I8E\204:R\226\2624\207\227x\030\233q\000\320\214\303a\3111zJ\232\3232\321\0303\003 \017\014\035\365D\370uA\257C<\357\2654\233]\333\263\317.\323\030\221\273kq[~\375'V\306\336+\321\260\344u\234\344\274S$\023}I\245\332\3342Z\221\237;\240\345{)\0250|\220\276\242\216\214\363Q\304\344\035m\027;\307\r!R\217\225\234lA]d\022""\2565[\224\272\364| \026=\301Q\277\236\254\216\222Y\303\351\330\251\341\225w\327`\027_\375\n\351\353p\212\241@\223v\332:C\004\325\002\223e\2041\267\362z\331h\331t\311\010$\344\331(#d\260\244\205\214\261sA\273~\010\276g ~\3231\343.\207\253\0307\027\275\2534\033n\345\362l\233\323\260\221\330c\265\302\266\274\251\024\272\022\224\262a\367I]t\231\027ks\323\344-!zZboF\022\332X\007\240\365c\220\255P\"\350\2449\262H\266\214n\306\374\351he*r10\330i\r7\023\235J\355G\331\361\007`v#\256\336\333\370E\321\242\027\324\370\245\272#;+qk\344t\013Z/z\212\355\255\304\216\n\021O\203gT\314_\271\341\311\205\306\000Q\005\032KG\305\311_\265wz\275F\367\305\200\030\323\210\342=\007\031\356>\032\364\347I6\0318\207\017\201\270\2264\247\017\357\322\342\232\372m\241\025~\330\267/z\264\027]\017a\305\232FA\203\270R\202\345\313\227J\333\265m6\233y\364\364X\\\315\034\014\350}\240\344\0335K\271\222\030G\322\252\336\366Z\276\261\2240\254H\243[\216O\211\241U\004Dz\262\245;\270v{\r\236\033\257\372\214\313\223\267\256F\207\253\321)y\021\330\304r_=\222\372L\263P\323aP\355\232\206o\241\213\023\324\333\033\367\227Y\225\334N\376\245\330\010\363\037\212&\214\355\020\316e\244\276\245\3267\006bA\013L\221\001\306g\351\235\251wH\242\301\256\354\211e^\227J\263T\201\227\277\211\256\244j\031\363t\3120g\245\312\273d\345\213\032X\357\320\014\027\305M\3575u\234\017U\353\031\333b[V{b\240\306APUi\017\013W;\177\rwt\340\023\230\332\026\013\205\201\201\024\306\031c\350d\320\260\207D\232\206\320\262\252\2061W\334\375\266\307\030\313x\222e\272\227\277r\\=h3*\371\017 \236a\344\356\373\336\260\233t\365\335\342\322\202P{\2627\241\346\363x\351\313\201\035\221\216\307\334\327\273\006\006\357\256nd\366\256\371U\3217\036O\301Jd\212\252\275\254\216p+\036\346\317R\r\314\235\246>\004!\345/\325\023\313(%|\210\030P\232\210\030\357\361\312\320\210j\010\206\2168\213\334\007K!7\214\033XH\311\352\307\246\217K\227\312-{\263A%\320\326\272(\231&h}\375r\316is\233*\240\242\245\367$p=\325r\025S5\254F=\325D\":\200\243\250\312Sf\344D\212RqpH\232\214""\223]\250ke\3339\016&\340\362\310\210\"\260d\316b\347v\027\274+?\001r\255\310\354\224I\3409\256M\276 \026ipHz3\026\022\330T\356\214CQT\332Q\025@\244\322y^\2152\250\263T\313\272t\233Fk\326\020\334\016\202-\317\027'\224H,\322Q\221$O1ww\265\215\332\306\244\270U\324\244f\250\257\250\344\365\365\235\307>\377m\205\273\240\266\267)\342K\226s\221H\224\251\313I9\335I\324M\202\250+\231\225W3\373 \200\362\355%\306\034\037\330\246\376\013\n\201P\2609k\027C\020\300K\001\257\311\264\003<\037:\242\206y\326\227\240\304\304\241\335\320-QCK\331]\276+it.\300\0245\312\243&\005\330\333I\301\251.\232\007\311\2017+e&\306\3060cNR\332\023W\342\361\320\326@\034\370\2514\271\210\210k\000%\224\241\014A\342\232\225\231=A\004\333$\211\312J\240<9\374\031y\036\236\267\351gL\310\265\261\324\336BS7r<$`-\214\353\035\314%c\016;\237 \262\014\265\333\025A\003\271>\200\337\330\331\020J\3101\274\365Z\307G\237M\371\210\177#,\\\3539\204\215!\223\276 \3248&\302\000=\203B\373mXO+\316\201]%\202\"Z\312(\200[\222\374\331\005\352\343\241p9r\374=-\373\367uK\0358&\321\024e\033\032\205M\211\265\357GH\324\3613!.\\1\275\006\345u\002\354\251I\253\247\270\213\321i\220\351\211k\332qu\0258\320m2\270+\221\322\271\367\250oS\036@\314\0243j\264\3250|s\261\252\270\244W\261\217\031$\350\200\223 -\257\255\371$\325UT\013\326\240j2=LLL\331<\350\\\350\323'\265S\245\350\230\346\214\336\307\267m\324\205VY\031\341\306(\350*GXm]\0203K\371>\031\212\253\335\215q\330^\216\311\315D\031Q\262Vg\210\024?\2760h_D'\335l\274\237;\372\014\0178/\204D\221\361\224D\247B\027\326>\017\253:4Ec\361\246\005\031L\350\207\227\200\361\234\303\241n\342\314\007\264i8\201.\021\363w\027;Uo\270w\034U\005\212\363P\024=\305P\311\026*\320*S\020Q\357\213\034\301V\354\275`\262\230:\216x4=\370\024Me\346K\216q\005\035c\236\037Dqr:\036\373\211\037E\367zY\211\361\345\322#\004\027-\203\360\357|\037\006W1\345Zd)\r\312\263\032\330G\035\300\320\343\272yt54\314\024\351mW\203\234\010\231r\216\004\240\336f\2404\275\276\245\372r\250\222\326\026w\245f\337&\013A\252\343\321#\nmH""\322\273~\014\334|+\362s\244\271\231\362\305\024\032F\324\006\272\251h\221\223)Ji\025\211y\353\r\214j\221\003O\314\036T\035\302\354<\301\346<\276}\375\246\316t79\203\300pC\276\357\"%\024|\207\274N\376U\nzW\241z\314\362\373,\236\026\022p\300\272A\322\227y\217\021\231\271\252\363F\340F3\006\004\020e\305F\037\230\371,T\023z\305\311[]N\253\254=\244\227\256mx\305\024'\202\366|T\017\214\272\3032\235^\003a~y\271\3415<\371\353\251+\222:2\003\204\272\025{\351(#%\312\214*\304\331\264\311r\271\353\333J\030o\333sH0\267n>n\177\016Nu.\343twz]\347p.\213\336\243\004e5\271/\304o!c\032\317\201\244&\251\306\314\234\353C\241\317.\237\306\212\n\355\217\270CM\333&i\n\347\374<1\222/\016\365v\220\370\223\312|\335\035\307r'q\334\007\276\236\025\367luoM\203\306\257\016u-\014\346\023;\326.c\002c\035\021\231\312\022y$W2h\tjN2\315\312\340Y\225A\226\254\314\2566\201\"K)2v\221v\267tj\365\2461&\315\013\330\035\256\002\330LU\022R\022\276\271U\201\225\025\\\321&\202\0321\242(\214\324 \264\355u\325\006\300}hI\021u\300\366\332\026\303\355\036\226\221\221C\215\027\360\272\005M\r\327\335\334\220\340\261<\354*\363\325FT\351V\274b\221}\310@\006\312\352\243\202d\335{<\215IE\313z\346\325Z\010\006\016xH\323\000D\342X!F|Y\356\261uhx\253aV\010Q\025\323,\233'\251\027\337\254\3035E\241\243\275\342\322%Vn0\252\271ssf\300\373FX\tN\202HC\257\263H\242g\234\225\310\335o\267Pr\020\352:\203\314/\n\360\371\211y\270x?\367\177\302\311\246\267QL\351\021\306\302\347\321#\254\373\254\274\264\022lI\204 \251nO/\327\213\346|\314\026\000\006$B\177\235\315\346A\304e\221\363\323\233\267r\352\357n(\346\353UR\026y\"\025\271\373\034)k=\307I/\261\010\nHC*$\005\022\024AQ\243GG\010]eR\310\310\364\363`\227c\004\013\2016uUp\310F\250\277\316\024S\237\003\231\202\265\217Z\237\240\362\337k\313I\355\345\\\247*\357\344\357\335A\324\030\3721\333\331\322\033\273\332\324\330\260\240O\3133\324\351\262\246\035\276\335\200l\026\301k]g]4~\306\234\374\332\017lN\\\321\021)\007\217\335DL\030\330R4\310\023\320h9CI\247\227\204\263\037}\244\265//\317Y#q""\316N<\243%>+\253\0344a*\3540G\330li\022v\271Z/\314s\233\236~\301`\027nQ\243\227\223j\332m9H\366zx\220l\364\306\354\371\261\021\210\002\021\323\351\216\235:\022<\233\211\303\024E\024\273d)c\314?3\001\357\r\353f(\013\1777/\322\014/\215\352Ub\255\214}\374Q\227\237>\247\261'\261\022,\005\001EC-\325\017\320\036X\316\366\"\207)i\003\330\220=a;\357\202P\026E\201\373\021l2\317w^\2737\010\026H\247\030\242\260\227d\177\332\234\225?\002u\322\236\270\227g^u\"\036\270\366S\363T(\275\027Ai \242\277N\304\354\306\007\242xtv\033=\316\337y\245\342!B\"\262\t\352PZ\324P\2317{\244\272\342\2452\354\355\371G\253x\262RI\322\364(\371\010d\311\3439U\031\002\016\352<^\363\372\327T\017\035\357\346\031s\256x\tfVje\214e\014\222\262P\177\345\345*\235k>\205\025\021\365\273X\3601YW\234\230\305\030\177\235\210\020Hbx0\2318D\003\355$\206\236G\252\022\365\374\227\217\352\207\254\274\267&H\036\346\256\341A\375\0203\020D\201\032\027\024\360\366\225\246\270B\032\331\004|\277(\217\313\336\352\376\243\"\253\335\270\377\021\022\014OHDD\010\231\252\357\3518\304\240\345\203\204\307.\376\371\313\214\352\275\277\345\323\035>\320^u\003\035\327\277\033\276w\016\211\364\321\301\204'Oq\3653T\360\372\303\344\205 \322Dt\310\273\377\274\035^\262#\372\001\2103\212\246\035PG\257f\311\210\205R\230\340  \3150D:\353zc\356\317\234!\017w\352\036\260C\256\341\307\220\270\262z\272}-2\266\022\212\rw*\343\255=+\005-\233\370\376G\247\344\211\301\267\201\373\362\224+]\237zkma\356\210\364\352\236H\323]?Mz4\020(\264\220\356h\207Ic\317\364\033\263\300\270[\330\364]&\227@~\361c\320\025\365\307\263\304\247ZN_]0v\325\274\241}\354\004\365\232\333 `\354\265%\035=\276\036\024\007\253\332\374\235\274\212\277h\237\333\227n\343\257\177\213\267<R25wi\202\202\234\227\3424Z\360\204_k\322\356ql~\333\270\342\373q\334\303\216'<\215\"m\r&?\002\n\201\326\250,\341\302\325hA\310\356\346&\335A\356\356\357{S\372\330\257\374H6\250\337\036C\341y*\203T'E\n=D\rg!\331\020\270\034Q:(\360\302qH\257\275\344\025\214}\370\277\010\025\201\334\003\226\323T\315\360#""\254\230D\264\326\013H\236Y\037\274w6\030\243\00444%\205\226\177\367\025\237\2278\344\n8\371\301\242\333\224!\320\031\270\032\371\325lb\245\014\265VMf\3254{?\210O8\2571\363]w{\035\2174\363\277?\267x\346P\020\231\254f=\357xS\0160\367\210\027\316\313\034\003\335\227\303\346\345\026\224q\273\316\245\307\310F\023\316\2158\271[\003\021\362\022<P\247'\017!\331>\216F\023-*\232\361\257(I\234\206\360\350C\340g\231\341<\342&>\021\252\020qrp\371\254\241qq\003\373B\2604\030\262\343e\244\201\310\363\017T\021\354wEa\304\214\264\207e~\354\341\3621\226\222\026 \020!5J\311\261\257T\202+\\\003\212\315\212\372d\305\230kh\355ZFZ\342|G\003B\221\372\317\312a\321&\357\216\322\r\373\216\025\261\304<\210\372\250\320\307\253\341W\302\306\264\303^\220\301\366\256*\r\345\257Z\305w\030y\357\372\341\205\253\003\377\333\027\251\304\211\301_G~\262\357O\261\354s\024\353\261l>\030\316{\336\345\340=\315!\341\260\026\347\330\303J\3151Y\241\021Uu\366\374\036\005\365\203M\335\337\026\350\233\013\334f\364US\347\330\033\233\235\325`\365\017\t\205GxW\304d{\034\272\336\035\221\350\335P\256#]\267\261\037\272\3078;^\256\266\256\333\027Y\231\373\t\264\030\247\003\240H#\352j\236\245]T\325o\317]\212\020\335\314\360m\253\255\312\232\213\247U\032\203Y\333\014\372U\253\255\252\203D)\236\226\235]F\205\363w\264m|\352\260\325\225,\350\350\217\347\247\244\343f\210\251\203\305\237\240j;\254i\232\354\214\354\321\333\260\273\346\211\333ou\314\353\242hU\251\333\303\316\320\014\006\253Z\277q\272\036\256\326vx\256\252c\017z\240\302\023\020f**T\\\344\250\347\276\343+\3203\207\243/7\264\3431\235QF\267.jg\014\363%\231\231\235\230\233\214]\306\256f\3254\314U\315\362\366G\273\2642\314\251\323\306\331\354\354\344\255A\215\337\245['_)\271T\261\305-<\223\312\312\357\365\362i\371\224\270\017\263\317\2622jp \330\372\323N\006\354\354\2376Qc\211\23361\205-\r\212\374\2419r1\266\251.\324\375\247\033:\335\332\324\351\366R\225\320\354\035\203\353\326\305\330\315\301\303\303\313\032^C\303\030isW\016\237W\365\2421\006\"v\360p;\203\001\234""\267\324(s\365*P\036\372\203\300{\223\266\372\246`\365:Kt\314WO\317\0038`S+\242\234\014\275\245\010\375\006\232\017\204I\360$\024\007\203q/\367\314\r\234\203\247B\2269D]9\325=5\206\r\033\341\354\252\227\373\3062.0v\370\363j\350\357T\266\337u\211\275\310\255\347J\376Pz?f.\326\336/\247M:C\300w\007o0\341\304\364\r\214\02058\305m\375!u\345\003\225\245\324$\003\333\262]\005\367!\342\023\350\016\320\343\0362\330/}\016q\320:0\260\264\251\341\364e\024P\353x\375\235\351\207T\245\321\227\203P\362D\305J\252\242\214GD\371\352\356d%\024C\337H'\004\370\077\077\2579\240\253\035y\322N\323-CUG\003\260a\361d\337*1\221R\225\340V*\252\213\314\264\207\n\205Z\020Z^A{\265i\346\245]\377\035\333\314b\372\030\360\351kX#\004\221\252\200\353f\212,\256\332\250+8\270\267\031$\206\340\022\276Y\252\306S\356&\266\343T\006\326^m\370\347\006\024\342\242\347f\221,\256\\s\342H\274\244\345\020\034\320 \337\304\305G^\254\235#\223\246\217#-\262\037\032Z\266RsF\"C\362\223\325\277\207\030\275*\004\007\373\313\025\201)|\001q\250\2476\2436\350By\240\251\320\300\231\211\n\373\030S\204\024\326\014`y>T\014\350\030\021\234\333\344e\301Z\t\024\035\223\211J\220\212\217\221n\034\250\260\364L,\242\271%\252Oh\2159\323&\363\242\251\021\315\201\213PC\272Z\273\200b\026&'\020\361\021?2\342y \003\303\335\306\004\0356:hYx#'L\241\364\206\316\023\214\270\306\027\251\232\301\315\263L\277x\273\222)\302\204\205d*\311\220";
-    PyObject *data = __Pyx_DecompressString(cstring, 7471, 2);
+    #elif (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (7453 bytes) */
+const char* const cstring = "BZh91AY&SY\256\017\335\010\000\006\341\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377\300@@@@@@@@@@@@\000@\000`\036_{\335\236\366\002I\356\006\366\350-fS^\334\343,\275\\\341\314ir\257e[SFs\031H\016[^\270ti\221\226\332\236\346\366.\357*\312\200\353\244\360\017\005\003\306\203@|\205\200\000\320I\220@\230&\214\251\263F\223\322jf\tO\323&h\231=\032\023\023M'\252o2M\251\3454\323&AOS\310\324\036\221\352z2Lj\004\242\t\211\246\200!4\323S\004\323@\241\344\364\243\023&\2311\030\2001\r\032h\320\320\3204\323@\000\321\246\232\000\323 DD\022z\2312\230\310\231\265 d1\244\031\251\223F\236G\244\3124\362\233j\203@\320\000hi\352z4@\332\200\004\232\221\002F\206\220\312\030S 6\021\352\232i\352z\215=A\342\236S\324\000\000\323j\036\246OSM=@4\003#\3243#(\rI\225=@\000\000\003@\000\364\324\361\252dd\000\032{R4\006\207\250\031\017Q\240\032h\000\001\240\001\"@\232\023@\243\000#\010\325?B$\375$\375O&\215I\215O(\000\003j\032\000\006@\0004\000\006\207\377$m\347\327\216mm\351\341\3335\300\310\254\014\277\3079N\357T\361\247~\272\322p3\267\356\244l\370\010,\355\202\304\364\373\277\323\275\374\274^\357\203\300\002\001\356C\335\236\037\024\313\034\003\303\342\314\026Q\020\342\334`\304\343)\221x\t\203H\227\030\273q%\202\026\037\014\021\364F1\363y\030\327\320\2367\017\313\352,\331\344\362s\334\276\035\036\344\002\3628\022\210I\274\2310M{\364\377\035\233\373\2737\367\367\367\377G\037\377>O\001\3018$\331\300\030\231\010\250\252\250\210\242\301\020PX\244\212\214\024Q\2109\030\314I\214\2514\353\002\025Ki\020\"D\211\260\226\315\235\376\360\005\300\227(P\357\321(\024>\005QY\206\3061\214\266 \006\313\334/\261l\331`\321\006H3h\024\026EQT\026\000\252(,R(A@P\212*\221\031 \244\333u\311\204\r\242m\006\232L0\330d\315(\224\222\232\024\322\251\362\371\274\336l\023;Q\254\3277\271\030\345\r\350~\377\257\266n\210\264z\375\241\335\267\325\275>m\247\201*\325\375R\253\246r\270\346\366\361\323\264\253K\026\2549g\006\361\261X\244\361\346&\220R(\t\242PR\024RS\034x96\234n\003\310\r@\"\nm1\021B\n\240,""\025E ,\212m\001\254\344\256{\254\263 *\013\271QCQ\311\3112a\361\2069\247\233Y\250\317,\332\302\010\207\244m\036\203'\364\304\266\031#$\251=XJ\010\274\211\312\021\244\241Lx\233'\227\271d\221\254y\255e^\222\243&\332\025\024X1\004\326\224\325\0240\322\251\005\351\033\246\200jAB,\330\320\301d\332\260\233z\032E\322\001\264\3257\004)\271\022\205\021\000\317\250`\213\264\225\356i\341\266;\365\251e\235\036\351R7 .\204\\\016\240:\227\007g\035\266iu\306\303\027F2\321f\246{[\242$\262I\005Ik \270\032\203\020\214\030\260a\003\312\340\003\201\207/kw\247\274\267M\177%\032\254f\255\245I\212\030 \\\206&:\215\022\333u\334\t\222p*!\230\233n1UQ\005\027\025a\213\014\214\204\311\014\214\223-\231\031D*\327x^\233\023(_q\301[\032\216F1/K\304,D\275//\250\362nK\263\341x\\\266\337\362\013\306``a\206\027\355\215\331%\033b\315\251\210\245\210XYfE4JP\254\342\235\025\242o\242P\260\231|,\2617\343\215\276R\265\214 \\\027)\245\305\305\266\220M\206)X\335L,i#@\313\024\211\033\212\220\245<\330&\\\006\343\311\"F\205+\236\351\350h\244\347Z/\035\253N{\335k\350)\267i\263Lp\203\ty\222A\343]o\376\330w5?,\035\3154\317\271\354\3341\363\020\217\206\222\376g\242\360\205\336a\364\233\361\037/\370\261\234\202\010\266`u|\334\343\202{c\210fK~cm\203\245ne\221e\342\253\235?\"\207\367\245cK\024$\245\247\300\372jZ-J\305\366\033\250\254\373\037\204M\355\344v\267\242d\3453\202 \024\031\327|\326\375W\227\023\271\367\376\007\340\254\360\r\231JH\367\347,F9\256\251\266\271\224e\313b/\257}\244\217\201\233\353\206Y`\327o\0300\337\037\301h\325\234a\206/\346\225\323^x\273f\270\215R\355JQ\315\224YS\\\361\360\202\302\236\222\203\334\236\374j^\002#\372\357\263j\374\024\312\227W\t\264\333&\025\304\245&e\007AV\253\364s\007\014\034\314\353\374\257\335\370\243J\024d\255e\225\030\266\266\224.sJ\270pp\371\263h\030)\233c7\254#Y=\3720*teteV\325\211\021\367\305\352\352\371![\231\030%b\264\357\276\346\212n\266\032#[\270\361\2700/4\364|,l\221D\203\313\344\330\315\356\357?\020\351\366t\3632\371K \rA\332\004U\210\025\210\016\021\250\010\273d;""\305\335!\003\346 V\261L5\250\312\035\340\021\n\001\010\203\004\250x~\234A\204z>/7\234[\207\310\361\336\001?:\275\2063\305]\037\031/\267\222`\227\241\264\332`\230\246g\236x7\366\355\232LO5=\017/\222\201B\236\317\215\321\3775\354{\305\325p%\302\\s[\3635\336_\257\226\273t\n\003R\210W.h<zH\236\343p\2077\017/\016)\025\314\261\244\001 \213\006<zUprw\361\362\016OS\266\320%\024\263\373j~\335k\347F\315\306d\253\374\346\306S\276\276\345\357\342\013\341\005x#\344\036L\351E\370O\376\177\313\333\005\2104k`Q\037ZIy\201\220TC\207\243n3\355Z0\366\263p\252#_ZVW\337\257\213\276rG\224;\027L\237\344\366W\036\215B\215|8\207\332\3145\312\257B\241?L6\374\3300X\220\210UD\343Itr{^\314\374\031\034p\325\367\351\354\367\250\217jc\017N\031\025\354U\233\327\240)\321\252\263'\346\355\307 (\024\244\302\230{K-\360S\214\261\027\010\337\016\005:\210PP\357i\242\201\211J\200\320*\307W~?\313\214f\345\r41\273O7\325\220!\177?0\342\031\261\344H\245\225\330\321\177\245\304;,x\336{\257\215\327r\242\020B\004\204C(\241\321\234p\307\243:\331\271g\236uVbU\252%(Xl`\347VK\264^\242d\242MB\234S\221;z[\2735\024\315a\206\255\206\035\016\306\207Q\2707 N`\225\205hW\355\\\225\216\257Ws\"s\020\275\022\304\"X\233\274\332\020 B\001\003\273o\211\244B\"\021\010\307\003\334\367,L\2239\223I\242L&@\236\2334\372\325\225\244 C\010\317\313\231&\027\303\234Q\311\265\272\247\212x\034\352\233\t\253d\323\2750\344\024\302\217z\242\206\321\207\361l`\000\002e\030t3\303\376\303\225/\263\336\277\251\026W\351\225\r(v\243\024\251!1;\255\236DQ\260\024\010\2174N\020\341m~\023P@\337u\346.\022Ie\361b\013\317\367/\317Vo\256D\303\276\007\214d\004\362 \300\007\010\034 |ZR\236Z\315Z\177j\304\030w\202H\251\004\246>\002D\211I\246\234\026|\031\203o\222+5\213\002\014L\374\377q\274-\306f\206\022\301\260\003\212\020QmG\002@uK\354n\350\311\237{\360y\270\254\002\366X\022\312Y\360\373\375\304B\201\373\222\230R\332y\312y\312F\313\003Rm\347\272\253mDOt\320\344\025\237O\335M\307G.[3Q\316\352\320\321\004\321\r\003\200\3159\217\235\315\315N\267m\236>\027\241\351""\347\341!z%\311\326\263\233!\341\221\220.\341\202a1\223u\336~\235<\037\210\370\376\264\357\216\373\003\275\332Y\230O\030\024\251\360`\311\300\014\020M!|)\034S\377\035\n\213\224\252\345\265y6,\260\014\213\336\375]\341\363\236x<O\345\224r$\273\375^\022AH\212\363\013\373\317\377$E\177\226\232\250)R\215\033\323\363-\037\263\nZ.@\202Ca\036\031r\375W\343$Ky\3529z\206\035ll\317\364\340\343\363\001]\233\303\014\306\357\244\030?\303\256/nB\342\354~\226\031\270Y\233\204\010o\210'\303\345\260\277\251\317\303<\272\247\313\213J}\007x\013%\221\304\r\035\351Aa\001B/\223\004\302\313\242\362\253\276m\201\270\030sF\376\313a\240\022\n\350\035w2\344\367\216\307\217?\260\337x\275\037\355\361&+\037\013\020\304\270\305\rz\326\374:y\371\370\014K\272\311\312\254\301o\275\022\360/\023iy\266\356\275\334\310\211\335\275/\337jZ\226\226\232O;+C\253\253\241g0\234\323$\3443\332|8_\277\343-\311\276\205AJ\024\337\374\310\204!\004\252\353\256\216\332\353B)9?\374\337\357\204\022\211QN.\016\374\276\357\256qz\377>\303\250\366\252\377\256\346n\3344\226(u;\237\263\361\351\306.\261\376\362\246\"I\221B.Y\006Z\377\366\204\033\250>\031\362udP\237J\314\200\342\314\216\275n\252\323\216@\006\231\014\342\251~\240s\235\023\"\347u\257>\023\371d`\365\002!\357\007@E\212\367\337\002J\273\245\026\326|\326\330\271\374>\247\241\255\347\te\030\230\352U\000\237\350T\001\354\026Q\217\033\177\267\277#\311;\347wI\321\241B\005\306\371\236\371O \334\352\363\316\322\035\253x\006B\t#\202,^\211\261\275\241\310\324\200\354f\223\025\256n\266\226\221\"v'\001\310\253\206;\324bgc\014\226*L[d\302\203\346\341\236\2530\315\223s\373\317nK|\"\270\3063\017\250@-\327a\020\272\341\367\336\235,&\002\242\034i\001\007\004\\\323\201%\2014\211*\034\n\355\270\014\266\357\367\221V\300i6\340J\022\344\031\234&\344\037\023\006\222\220\365\251\353`\307\0313w_\261\306kC\244\357ut\337g\000\250\250l\203X\320\306sS\305\301\305\306\212\277\n|?Vs\024\346B\343\316\233\244ih\037!\001\373\005e9D\265\327Ka\311\312\000\354\227\366\356\232Rd\306\233\205\232\2660}""\245\333\220\345*\252\030\255\327\310L\007\336\340\235\226\264G\030\257\230\253\321G\242'\230X\032\2512\240\201|\314\200f\327\344\337\216\257\317\265\221 \\h\010\226\r\322\254m\372\347@1+\3270\313\205\r\325kv\027%\351\361Nv\367\022\212\363S\006Y%\261\253\010\\\334\360TM\3565\344\025*l\t\\\233\225\263RM\246\374\373f39\307\206\332J\020F\233\025Q\364P\305)\035\006C\252\206F\2057[=@]\350+\316\230\025+Dt\032\226\205r\242\363\224xJ\220\305\237\335\371>\267\257\330!\240$\001\365\005\367\320\300=\010v7t4\r4thUl4\3652\303U\361q\325\205\213\245\0261\244\246\341DE\257;\335\270\247\340\367\367\3579\027\233\325\274^b\253\273\200x\000M\022,\204\317?\266\303\213<\210\244\212eY\312\252\341\227\265\212\264<\253P\271x\306\t\200\232\214\215\206\315\216n\263\301n\276\214y\273\233\3520\343^\302\254!\331\3205\n\025\"#\017\247\315aMa\213\216X\016\207\314\212*\226q6`\3112\274\327^\203;\347\214\257\261z6\271\356\202\026\n\260Q\212_(7\225\305\356\345\253\271\323]\223 \306U\331\263L\356yTF&\223\267\177\347\022\230\303\366]\264\255\r\274>\366\242u\316\344\247\204L7\214F\320c8\266\356n@D\344\234\212\001\003\214.`\036TyW\224\354G\224\355%\344\323\331\271\256\325\r\327`\tQ\032J=\\\033V\375SxZ\212\0307\0349\366$\002l!\212\245\246\nT \203\225\230\034F\004)\264\225\003{7\221\034\3650\225\354FJ2T\226\007#\221b\314L`65[\014\213I\007\211\215\323,]\332\177\3139N|\274v\3274<\203T\311\246\231\206\220\247C\255S\034T\021a\273\212X\326\223\260a2x4B\274Ph\353l\313q\270\340M\306\343p\377W=s\323N\216\006\177\026p5\367\247R\263]ol\236\2526*\302\023t\236\274\365\017}\214\225\tX\246\360\362e\244\304s\026;\365b3\266\013^\257\273\2253I8E\204:R\226\2624\207\227x\030\233q\000\320\214\303a\3111zJ\232\3232\321\0303\005@>\020z\342\005\351\210\014p-i\346\314\026oV\253Z\277\362\323LNnR\331-z\360^i\031\354\234\031\033\336&\214\232mU\2035\302XM\306\241\245(d\360\274\344\350C*\315'dc\230\311W\r\254\221\205\203\256+)z)\272\231\231:\024i\232\n\332 \2264\311d\244\253G=\341C\324\025\031\365,b6\tF\216\237]S\236\026l\2630%_\242""\255\216R\021T&\020gE*\305\366\246H\023X\275\367S\345\370\232l\340\264\311\010$\344\331(#\202X\322B\312Y9\240\337\206(\302g8~\263'\270\203\027\031\260\242y*\222T\rp\337\331\324\345\303P\323\264OZ\261%\245\257c\343\026\242:7\260s\340\255\224\030\213\2437O\310Y\276\264\244D\330\214\022\230\320\007 \345a\274X\250\021h\2449\262H\276\314\255\226\032\322\330\312T\347ba\300m\r\266':\225\341G\317\332\035\341\336\216\353\374Xr\013\253d/\233\341\226\361\032\331[\027\302GP\274(\301\356+\303[\0228\350E=\356\017,\314\237\271\343\317\215\214@\242\n4\226\317\207\236\277\265oJ\301G\203\341\304\014\251\312r\237\001\314{\217]{5\244\233\r\034C\207\306\334K*S\223\367)b\236\036\313\354E_\305\027\350\364\253\301kC\3409s\221\240b\354)Ae\321\247b\341\341\\'\t\303\343\333\325qt\264q\263\251\371\201\31087K\316\311\014#\353\325x=\227\257\250e\014k\022(\326\247'\312\320\252\202\">\367JS\317\311\301\3548:\355\207\314\3159\374\335\3226=\377>\326\346\303\234\220\345\347~\013u\223FS\0241\016}\345'\215\004\233GEQz\206Z&:\343\237\302\234\340\207\021\327#\r\326\024\236\362l3\304\313CX\231\020B\333$@s\032\373'z[\260Qp\360\333BZW\261\322\254\335 f\017\305d\247U\201\206\256HT\3669$\253\244\032\2650\306\207\024\300\265{\223\330\343&\321\240\345z\006V\332Ki\226\334T\030\310*\n\255!\361\364\334\335\331\252\356{\0015\032\005\002B\274\264\251.}\367w\257c\350!\307\006L\320(\252\241uJ\351:ty2Z\352\000\234\207\004P\262\364\240\0148\202!\2368\307\005Tc\342\364v\301N\227\242\275yq\002\230\346\336lC\263\253\273=\374\005Y\325Vn\223+m\254\006q.\rbz\022\362\354\3055\237\013\363\316w\246\333\362B\224\201\301\372\036\017U#\201y\r}(\247\312c\275/\226\324Y\373\3104\310\301\2102\342\346\225\341\020\324\021\r\034\321\0308\016\306Bo(8XH\321\356\313\262\223W\177(\363\356\332\205o\024j\275R\330\266\243\355o\331\267\005yF\314\320\306\261\272\256\207\331rFl\332\363\251\007\331i\025%\2202YC2\360p\244\252\262\302\262\013\030#$\325j\032\332\273g\021\302k\016\320(\210\"\260d\312as\2500x\326~\"\312\266G|\242O\021\315s\360\366\200""\263\227\034\207\2632\342\\\005O<d\033\212\246\322\210\250\205&\223\323\004m\225E\235M<\364\223Tfx,a\270%4\3571\354\231\222\243\301Z\266,\227\225\360\362\357\255\367\3272\334y\313,\253\203Eu\202\265t\351;\207&\316\334\204\312\362Z+]1\273\334\346\217cZ\375\357j\272\017uBl\033\007(\206\336\323\347\242\t\227\335nJq\317\265\234\\n\231\201\230j\t<\353*Q\024\005 1\374\271 -C\353\302l-h\302p\024TP=\\E\252(g{+\267\324m.\205\330\002\206\251Tb\300\273\033g65&W\200\362\365\027m\246\345\224Q\020F6\267\010^g\264\355o3@\017\036JM.\222\"\032\304\ti(C\020v\315J\354\236\340\202m\222D\345%P\036>?\026\237A\355\356\177I\235\223\"\367\313sz\tL\337\241\326F\"\340gp\354\302W1\346\263\347\026\201\247\206\371*\010\035\223\352\016.\006\310\202W@\234O\004\244r\367\260\215\203\027\310RD\026\2478\032`\026\254X\303\021X9A\200\036Q\211]4W\306\372\3161[\005z\"R\212(\200Sz\371\360\n\325\247\033\320\350\350\375\036Mz\365y\211\034\310fc\033\032\203'\010\205\2233}\303\3018]<\210K\227\0147PnW0.\312\224\232r\265\221|v\231\016P\226sR\375\350\375\310\032\313`\025Zs\247&o3|\370\202\300yf2r>\265\334\351\030\327$\214\373`\364\026^*\013\002\203\325\216x\354X6\333\003\027\230\033\310Se\305\306\014N\323\344\332\247{\231br9\022\354\021\220o\225\351\323Z\331\235F\0067m\251\033b\245Y\323\007\271\006\325\217D\351\264m\367k\317w\200\305Kd\243$CQ\261\304LA\221\366\353H\2469\"~{\351\364>G\364X\037x\013\326\"H\366\224D\247B\027\344\036\367\341N\215\n\227J\000Q\224\316\210yx\017\031\314:\026\356,\300{F\223\210\022\342\236\236\345r\364\255\333\207\016\365Ab\274\232\002\207\206\250d\213\025h\025)\210(\363\213\034\220\253w\236\200YL\016c\226\006g4\n&\242\352\255\323B\n:\307\216\037Tr\363\272\037V\304\217\215\371\376\2232=\272v\010\305\005\227\000xsq\361\344N\215.\353 H'+2$\210\303L<\032w\256/\243\311\254`\250\314y\\\016\210\"g\"\261%\201v\331A\261\341\350\317F\330\222N@h\347&\212\362\365M\343\177#\317\261\253\016\031\014\353\305\322\232\317:\374m\311.d|\261E\006\221\265\001\252\252Z$I\213k\\#^u\351De\352\206<A\346@\350""\023\234q\007\021\346eP\275\023\351\240\221~'(0\253&[\036CC\354\253\237z\254\010\320\325j:\023V\300\365\r\302O\013\t8`] \351K\274\307\212\314\335\372\274\321\270\021\214\301\201\004\031r\263\302\\s\263\253\005\304\353%\236\253\345\325}D\342\313\027\2661 \311\206\026}\276\324\0362\345\216\005\234\274fexX\327\004T\355\307,\210I*\305\210\r\022O\261\316\234\036\214I*0U\250\317B\365\276N^\211\314\267f\222d\002\332t]\331\303\301\006\266r\333*\265\370\\-\343\273\254\346\330\320\306\241\306\246Sa\254D\212bz0B\272\334\325]\243\003fc\224\371H\240\255\315\322\020\307^q1}\230x|\027A\027\203\206\315\007\370\261\276:\270\372N\224]\307p\036U\353\236\254\235\365\263!\356m\355\322\033\201\256Q\226\234Re(2\223\313\005\256P\223\311\"\271\223@KRq\226nW\022\314\252\014\265feq\264\t\022YH\243\2601;\014\034\025\013\023,\332\340C\200v\031\001\344\211H2\206\n\276\251U\201\245\025\\\321&\202\0322\242(\214\350Ay\336\326\250\t\000>\264$\210\272\342{m\013a\366\217[H\310\241\275\027\340\363\212\232\033\257\273\271\"CM\363@\3376l\206\274n1 \312\263\272(\004l\276jA\201\204\261\211\225\314\265\\\274\026mU\240\200`\347\214\215\260\004N%\212\024k\311\236\353\226\255\016\332\334U\202\024Ev\313F\311\356F\030xLs\250\2664z^M\"\263l\324\302\254\333\021\266\002\232\253m\005\227\210\262)\327\333\272\251m\333g%\035s\325\324\035\002:\216\240\367\305\326\272\375\362^\377'\037\376\361u\262i\255\350\246\264\210\346ag\325#\270\373l\300\274\022lI\204 \251~\177G\346F\023>\263\005\212\000\310\210O\362\272}\364\034\246\232\037%:|\332\255_\006\245\035=\312\252B\327$B\277\217\275\302\227\204\367\035\204\276\304 \003\312\020\312\241\001P\205@U*T\257\325\027\275\254\254\274\277G>!c\342\0014P\243aZ2\321\345:\275\247dx\361:X+\334\365)\374\007\243\013\340^O\207\241t\035\013\323\317\351\336\203\312\031|\031k\355s\206Y\350\216Q+x;\272\343\300\257\325Q_o\306\324\006\2415\t\242t\235/\277\326\302\356\235\207\305\023\227LDJA\344\367Q\023\0066\024\215\262\004\366\033\016\200\332m\350\344.\307\351\274\226\345\350\371+$js\223\217@""\311O\226\325\216J0\225x\014Q\366\033\032A\253($\231\033\016B\235\356\320\225\204(\365C\177\026\264\326k7\214\361:\270P5u3'u\246!0$qq\034^\016Jz\337I\236\254\346\223\312\346&G\336=%\010@\177s\303h7\227gK\272%\272\276\315V\025l0\374\030Q\217\253>\237~N\374H\260\024\005\025\014u\324?8v\206yq\0248\013H\035\371\003\332\023\235\360\312\002\310\260?Z-\206Y\367\265\355\263X\201d\212o\212+\tvG\375)\306\251\350\247e)\354\211vvg2!\355\217y?-B\213\321t\026\222\n+\364\254N\364`wOB\216\333g\311\333\367\371\336\"\024\"+ \236\315\005\255E\t\213w\312K\256\025)\227g\213\357\037\362\361d\244\223\310\365\250\371\010b\311\325q\2521\004\035tu>\017\363\256x\035w\315\2302\347d\342K2\262S\0340\306\030\245b\240\377\273\312U:\026}j*#\355x0\342\302\261\256\342&P\227\371\230\201\004\206'\213\t\223\204@>\352Hi\344\373!/\337\345<\177T=\245\34692@\367\365w\n\017\346\201\230\202$\010\320\270\247\207\264\2555\302\020\326\310#\346t\010\374~\347\243\372\014\212\257\347q\376\"$\030\236\210\210\210\0213U\334\322q\211A\313\007\t\216]\373\247.3\252\367\277\217\236<\376\270_F\201\217m\357\307\356\035\303\242}4pa\t\323\337}L\325<>\260\371!H4\221\036y\027\177\367\213\321\364\221\037\320\014A\234U1\326\023\327\311\311o{\3268Ts(.\341\214)-]\217H\355a\325/G{\256\366\002\035'\006zd\313\221\375\261\351\342\236HA\001\244\005\000\350Gi\300D\271\217\247\323\376^\260#\213o\023\367%(V\272\237\004\326\332\303\335\021\366\252\236H\323]?=u\250 Qi!\334\321\016\222\307\247\352\267S\211u[\265\326t\232]\001\373E\217TW\325\035\2765:\322r\372\351\203\266\255\345\013\3670\023\326kl\201\203\262\324\224t\367\272\275T\007\263\327\374]\214\212\277t\237\327\227n\313\256\357\037bx\344dj\356\323\005\0059/\306h\265\341\010\276\277\255\331\343\330\375\207q\307\353\307g\0168\334\3624\211\2644\230\373\310*\007Z\240\263\207\013U\241\007#\361\201\2179T\036\376\377\007\261?\033V\177X\346\362\216!\343>7\022\2505BlP#\224>\3639N\340\201\240\342\211\261F\202\003\212=\236\017\030\3411\374[\372\240V\006\370\2075\327\224\315\317\243n\030D\272\363""\005\324O$\177\3223^\202(B\032\032\022\300\313\237\372\335\317\217@\345\n9:\001\242\312(\003_3h\333\271kX\302\245\014\265V-d\3254{\236\220\235\302\2757\324u]\355\366\375C\271\371\274,#p@ 3XX\3479\301L4\303\234\037_3-x\207\2677\217\313\314.\250\344o\231K\223\224\214'\231\0368\271\236}\210\350\351\032(\023\227\217\224\356\037\323\225\204\313\252\246\274\213\314\022\177)\2706\000\347\331\345pO0\211\216\200l\004\026\371x\374\267\020\255\333\007\373\300\257\274\014\\i\262\352>\324q\207*\010\326\265\007\010\266\214\272\207q\177\206q\370\330\313\251\003\020\007\320\236R\270ly\312\217\305w\304-\334\265gX\230\263\315n\235\333\250\313\266\335\021\276\360R?Q\371\0146$\337\373\356\240\342\233\306\266\255\217\032;\322R\"\336\362\367\230\231\"mg\037\357\262<\321\366\037\263\353\361\366h\213?g\365g2\370\277~\037\301\266\211\342\263_\213\205x)Z\365\265\212vX\266\235\004-s\234\325\361\036\366\250\360\332\013;\326\303N\027\214p\274\021\025Wkw\301\340_P4\337\337\373\267\305\010\034\3237\"\252\237F\330\336\336\324V\017H\360\230To\205~\343#\333\346\331\360\356\016\235\365\n\3225\335s\021\333\354kCv\254l\354n\261vY\243\266\235\360\3057\332\372?\033_`\365\354l&\303\337-\246(Co;\201\275cg\2315\327Z\302<\203e\273l\371\330\261\263\260\202\270S=]k\032\357\005\362\367k\335\371Xa\253+\\\257\\\177]mV\233+\212\330\226\364t\215F\243\0363]\301\241\236;\226\227\210\321;\217j5\235\204M+\025\273\225t4\203\001\252\360\331\323{K\323\333\320\321\026ULU\340\254:\242z\014\345EJ\313\240\225\232\347M\355t\215\001\323\233\237\333i\230\320\254\243g\233=4\006\211\222\317\316\320\316,\t\003@L\316\237\260WF5\334%\2073\261t\221\030aD,\205\314\360(\371X+\344\2353\252\344+\210\272G;\353u\330\3321\032Ih\210\013\274h\241\237\246\n\322hB[\247#\221B\2155\002\267\254\3516\n\335\312\217\362\227\277K\276\323g_S\20733\262\231W\243\034\355\037c\207\033o?\022\255\\\321\253\343:\242\252N\261W3\255\371T\030\243\025;\230\230zc\r\234\3304\351\364u+S\036\352\303\300{\324wz\306`\365\357\026\365\230\315\245\242\006\200\303\314+\322""\242\014\275\205\000\363\215d\036\370\223\336H)\217\006\362aq\030\033\231g\231O+$\242/\262\215oG\010\304\251\202=v\023\013\200\306\\\334M\336L\373\025\370+I\342m\252\032qJ\243/\372?\323\371\261{\373\270\336\215d\274\036\003\232r\247\234\030\275!\232\3601\241\210:\230b\212\020\r\246J\222\024\016T\0229?\0103E;\200\354C\032\004d\221\234D\021\307w\237\317\372^_\017\227(\242\207\245\344u8&\035R\227F^\rC\311\023\025*\252\2121\036Y\364\325\334\310J(\207\276\210N\t\345\374\336\224\346\202\254t\247I;L\265\rU\034\017P\303\342\311\276Tc\"\245+\300\254UU\027\231i\016\025\n\264 \264\274\202\367j\323\315J\273\376\033\267\230\305\363\261\342R\326\260F\t#U\001\326\315\024Y]\205PVqqn2I\r\304%|\223U\214\247\334Mm\275P\033Yy\267\33780\247\025\027;4\211er\343\233\022E\345'(\200\346\201\006\376\036*:Ud\351\034\2354y\031m\220\370\322\325\262\223\2321\022\037\224\236\255\374H\305\351P ?\334X\254\tK\274\027\032\212sj3n\204'\232\n\235\014\t\230\220\257\324\302\234 \246\260c\003\312\350@\316\201\201\031\315\276F\\\025\240\221A\3318\224\251\010\250\370\326\341\312\213\017D\302\312+\222Z\244\365\310\323\300\2317\235\025H\216\376\006-A\016\351j\356\001\210X\230\234C\304D\374\253\211\344\200\017W\333\306\004\0356:hYx##\302\271\353\005\2778\253\346T\350F\371\227\\\034\215\357\376.\344\212p\241!\\\037\272\020";
+    PyObject *data = __Pyx_DecompressString(cstring, 7453, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (7838 bytes) */
-const char* const cstring = "x\332\235Y\313_\023\331\326\005\004y\010Jx\210\217\276v\201(\017\221\026DT\256\3327*\266\370j\003\210v\243]\267\222\024IIR\225TU\200\350\355{\035fX\303\014k\230a\206\031f\310\260\206\031\346O\360O\370\326\336\247*\004\260\373\353{\375I\252r\352\234S\347\354\275\366\332k\237,I\341TJ\212kiU\2674C\267\244\214\251\306\324\270\246'\016\032\245+q)\235\263l)\252J\232\036W\367\324\270\244\350qI7l\311Ji\350\3760\267\265\245\232\322\216\246\356JqC\265\370\221\272\2271,U\262lS\213\253\326#E\227\014=\225\227b\246\252\330\252\244HQ1\310N*\266\244YR\314\320m-\2213r\026^\"\245\325\264a\346g1\212\246R,KK\350\222mH\030\034\277\316\363\210\036\364J\277\223?\361\256\251\331J4\245\372\035\304\242\266L#\375gcy[\322\256f'%;\237Q\245\t\277\3356\025\335\342m\034\014\021\3350B\203\251\354&\333\315J\217\214T.\255[K\322#\177\2231\233\354\367\010\306\303\373c)\354C\312Y0\037v\202&S\2252\030\200\357\330\274e+\272m\315\366HR\320_5M\303\304\2523\206i\243O4\317;\220\025K\316\300\374\212\350+=nv\223&L/\226\266\234\316\330y\311J*\330\220\235\313\300$[\230/\226\267\223\206>\253\230\246\222_\3467\244\014\205\035\376\372\305\233\227\313\217\345\347\313\253\257\226_H\360JF\301F\277\325G\332VM]M\035\351C\253k\352\263\245\341\215\177\370\344\362\250\364de\371\305\343\265\373O\224\224\245\256\260\003\214\234-\031[R\324\310\351qK\232T\366\260\237+\361\251\225\343\266\026\340\313e\204mV\364\035%\245\001\245F\\\235!\340\2413,6\021\233\220\360\366\tl\233\03491#%0*\350,\014\003\254\361k\356\275d\007o\220\203\261\204\373\257\014]\235\225^\021\216u#\227H\302E\354[\264\250\002\263\217\330\220d\362\270\232\322\242\252\t\217\003[\204w\274\235\201\255K\257\227___\270\263\300\361b\252\037\261.\013\313\2162\024\020'\264\331\234\226\262\261\n\302\035 \264\262%\345\215\234\244\253\002%\031\202L\323\000;\251\352\222\245\332t#M0H\025\302\230\214\341\260\360\204\357zmG\245\321l\332\331\237\243\364\336\006\360\030kf\016->\3704=\003\273\223S\000)\306\024\376\205\2613\306dL\245U\332I\354\323\020\023\305\260/P\301_\233\317\237""\356QR\215m\363\242\033\335\341\031\n\003\025a\002\n\242G\312\216\242\2458v\215\214\315\021\305\303\177>\204\n\230\334g\016%\026S\255\000&>\264\036\334\237\237]\024D\343\243\003\217\204\243n\212.K\322\252a\330K\301\200\306&1\207m\030\222\221\212\317\320\032wTS\000-n0\326v\rs\233\275\270\253a\265\330~\\\263h\251\361\243\363`Ci\232JJ*;Ds\272\241_\247\301\204\1771/,\230\376\337^\222Vm%\256\330\n\346&\226\0248\326si\200\217\246\247\360>\3323\245\304\266\005\253k`\261o\366e\206\rL\217u\261\253\000B\363\010#\250\372\216f\032:B\320\226v\024S\243\356\376\024\246j\347\300\010\224\027\032\353Z!\030<\004\272\343\360\325\301zT=a'\021\375k\313\353\322\232\255f\244\264\222\347%`\273\237T\3238\010\3735\037\366\344|\237\3614cv]\265\354'\300\326*8E5g8R\360b\332\017Q\252of\301\246otF\223\000)[^\263\3254}\027P~\243o\353\306\256\216\335\244r\252`\376\311\317\277O\275E\n\341\014\210\005o\231J\032q\307\234\3772\207He\246B\213v\204\203\210\0149Jl\220T\317\375\367?L\377\305\177\367\307g\247\257\317N\317L\317\316\214\365\214\315LM\365\214M\365L\365\374\343\372\375\261\177<\030\373\274\371\333\347\337?L\377>;\275\211+>\245\306e\346\303\347\3377{\272\361M\226\307\361\177\002\315\277\311\037p\367\343\024\014|Y\211\307e\235\350\212\377!\310\214]5~\177\363C\317\241\206Y%\223Q\365\370\344\030\003\217\323\002\030'i\344Rqr\t\033%n\344\310\216\223\226\366I\275\177gj\006>\266g$N\0130\0236~c/&\022&\345\211\243\241u\030\352\014m\337\337\r\324\371\243s\244\027\2644\314\254\350*\224\000\242\230\254\311+\203#8\233\202\207SjL\320\203\022\215\215\261pP4N\tzZ\261cIr]\024\275U\353^\223\250\2409\0049>8\332\034\344\362\007\001J\342\352V\020z\263\262\0347b\262,\335\227f\343y\360|<\257+i-F\210N\032qD\026lAoT\031k\342S>\3300o\225\003B\244\363\214\202fVW\274\007\305\314\317H9\037\206l\353\367[\343\223[)%1%1\246\0253A9j{\0277\326R\217h\334\243&\304\\J\263\354\245\236DL\232\244\304\226\340\314O\324\310\353\331\263\021\250,\246\016\224\334\354\364\373\331\304'\341\177mk\022\3018\2717\365\340\306\324RO\320\306\3535""\325Y\344\234\311\261\315\033\327\357~\230\036\037\233\031\033\233\301\373\2478[\n\3304F\244\t\376\030\321\003~\341\315\307)\306\010)\322\275\373\322\215c\232\303\227\016\201\240T\204\202\240\254\211E\263\201\354\344\365\224\266\255\3721:3=-6\217EN\002,jj\212?\2330\n~\300x6\337o)\344\306\350\222\177\021\t\351q\303\324\3577g\247\307A$\337\004\271\236\231\0258\237\241[x5\306\020\027\367\010$B\205\002hJ\262l\252\361\\L\005(\3429f\027\342xl`GSRx\032\323t\315\226\345\353\327u\343z:\243M\n\322U\343S\301\215\310\365\301\3739O\340\025j\002<\271\255\346\203<\373`Rd\301)q\221\306\374\244(\371\301\302\306;\200Q\360\364`W\302\2463>\351\323^\340\031\223\\$\3542\373(\340\311\246A\264vl\003\356\213\013\322\003e\003ed\343\371\3534\307\315\353P\222\266\345O\221\311\357I\301?S\241\024\263\216\275\261\352\233\034\013pM\030\036\223\256\321\025\274\006A\213\242A\221\254<\342vO\344j\037T\202\305cJJ\341\345B\263mKs\322\216Jb\301\n\006ZKc3\246ji\260\375L,\211\310\237\002\024\021\014\367\307\306\304\315\265\373c\376U\306|\240\004\231\0013i\251\251\255\231\027\341\207\313/\246z\216t@\260F\241\243\322\242O\360m\252G:\330\034u\337\023\343\310 \007<\3527\004<\032L\251\350\000=\354/\246\304\326g\004\2147\361\361aj\252\347\017\007R\360\213Ac\177\330'@\322\377\327\017\2408\326\305B\274N\372\357G\322\226\202\276\342\253\350\216\373\231\353\327M\010\245\367\326\265\337\336[\323\223?.m\342\272\364\341\332\022\276M\375\370\342\347\360c\264\275\267\3765>E#f'>\314\320u\252\311\312pH\303\224\254\247\203\271\233|\207>\r\362\361\215\331\274&E,\177V\216\n\03519\205\235\034\n\374\250a\2448\236\260\257{\242\326\214\037\342\372\343m\034\t\372\267\236\037n\325\023\026DPL}0k\357\331\340\177\241\320_2\357\023\312'\245\024\205\337\346D\256!3\010\3071\256\374\210bX@\314~\343\251(=\350\215~u<\033\204\212\237Ur\366\326\365;?\354h\351\037\222j*\3037\"\\~\360\343\016-\273T\n VRD\234\rj\341\230\235\243P\313\221PC\252\266\233\014&\202\371\007\256\006\1778\340\216CS\005a\366_L\025^{\264\262\022F\315\372\223i\3442\017\037""\031\351t\203[\0327\310\244\202\030\037\303*OHV-\343\205\031K\263D!\370\204]\316\324\3614\274&\277z\363\362\365/+\315\"\262\371\036\223\321ze\371Hc\002:\323\266\315?n\237\275G>HY\017fy\202\264\372\227;6\326\377\337\214\370\346\"\2775\rj:\371\300!\207\236\005\276=\324h\252[\010\244\344\2216\341\271C\215A\004\276\340\230\244\270}\241flCgC\277|\034\326\225T\036>x\371z\345\000\331\257\340\234\370\272J\251\035\213!\265\375\212\327p\250\036x\315H\024\237\r\227\212\257<\267\270]\203\032Q-q\217\255\003G*Lu\360}\217L\321\370\352'V\241\027\232\332a\035\200\310>\366\004\205\224\177\267\245\351\234\265\360(\277\207?J\372\362+\210\240Uu\013\245\306\232\232\315\251\320\242b9\353h?\250!\250\346\237=(\377eYV ,\225\250ERD\210N\031Z\032\346\266\214-\370\223\376\003\353V\020\316\262\250G\225T&\251(\251]H\013%\243\t\"\026\2372\nW\250\301\230\201)\344\343MhI\345\323\n\224a\202\022\004S\207\202p\217\241\332A\007#\007}I\003m&\304\006\250\304\275\300\022\356\345D\312\210*)\231\231\234\0316\212\322/\252Xj\024\000\025K\0244\352\253Sd\232\234.v\367\355\346\003<7?\361\2318`dY\366\0170,\231n\3658\004\240,4\236L\366\2135\226+b\202Y\237KL\031\033\003N\241\327\361\177.\226\004\005\222j\214A\002\2413\025~\262\034\334 \306HU\322W\330\002\233\226m\022\370\264C\264d\000\003\377x&\006\352Q\370\003\230\201E\341(\223\276\002w\270d\340\363Fq(7\235D\034\272W\367\250\332\204h>\324*N:\251r\000xP\007\3706\tL\203\3155[)fd\362\344\334\230\221\203x\024G\223\r\303Z1\024\004q\310\320]:w\214\031H?*J\036\344\201\230\251\261\214\213o\311\314\006r\023'\304\265\204f#?\241\374P\375\242\204>\360'dk\234\362\023\177\310\232%\013\r\351\227#\212}P\227\210\315\037\253Sd\277%\035W\344\004\261\270\365\007\rq\204\021V\334\010e\\\314\274\n\216\342\0030\377\214@\005\255\2436\344\222'\010r.Hhct2$>\371\016=\010(\010\340F\014oi{\262\250\340\370\226\273B\025\321\237\265E\373\017\244\322a\251u\240\032\232\356\260\n\231Aw\244\315\017\222f\325uH.\036\225ZM\222\352\260b\n\276QY\227j\314gC\227XG\345\245\177\020I\245\354\r\372\230\333b\216""\221\031\031\376g\003$\215\233\204\0028#\002\360?\234\3216\204\277\360\245\231\346\237\255\375\374\352\033M/\370\264\245)G\361\255\240R9a\010\277\312\211\034\250M\010\013\222|\211OZFN*\026c\217\256|:N7iq\307\254\231T\265D\322&yB\177\350k&Q\331[\374!S\325.\243\2561\261\356\244F\3472\371$\336\032\333N\346\361\212\004U\243\332\rmN\213\203\300\270\200\224\305K\370\003\250L\221\022\203\373\201\t#\3408\256L\364L\n\260\010N\026\2500\243B\215\254D\240o\260\245fq\264h\026AG\263tE'\372\020\205\251_\235bB\306\357\307\217\206\246\177\264\014}[\260\026\350\207\2120\374\355\032f\\h\366\024#\342^JIG\343\312\0030\022 \240h\251\234\251\246b\026\213@q\254\225RwTh\232(\376\013s>\347)\211\263\360\007_\307T: a\303\322\215\2252\022\262\234&p\312|t\201\017\374\355!\346(\301\244\3254\375\340\000\362\312\3419\\\350\263bp\230\326\270\021\252\321\202{\310EZ\232\266'\342\347\350W\216\\|\346R\215\253\005Z\\\310\344\305\347,t\000\036\230\006\3075R\245,\353\202p\304'_\016\032,\376\240}\301\304~a\255\023s\312:'R\\\366\340:\324\307\206\336p\275\236\321Mc\327\322s1\370&\246\347\2309\211U\033\241v\354\246\221\350D\003\306\2463yP\234\221V\023\n\242\3312\220T\021\231\206%\222J\006K\332\026g\206\024`\370\203\257\365L<\223\3242\032 dS`\n\027\035=#\020\337\017\230\322\377n\202\307\001\352\203(\311\030\231\214a\311\370\013\370\240\351V\316\230\001\023\034\334\311\324\212\234\244\322\215Ag\327r\343\204\021\r\031\344\216<\2566`\r\372\314\344\345h\336&\007\240\306\2269cZ\271\264\370\346\0070\3352\337\363]N\317h\261m\370uY\017\372\355\360/a\344\207lNI\t\267\301E\000\251\251\322o2L\027/\200\316\303?,\035\371\231\251!\003\216h\275\277\330m\2669\215\376/c\374\324\373\347C\205\260\373+}\376\213\365|c\300\201:\370\243\241\207\305\345_\353\325\300\367_\356.\002\353\217\272\037\303\027w\214Y;&\217\347q\202\356\032\\r\274\351`\272\200\371\250\017\0130\272A\t*$Jp\032vL\2767\032\300\3512\027,\\\263\230j\002)\201L\303d.\007eKpm44Y\305\362\3235R\256\177\216A1hR\371\2341!g\324m:'\200\344;\220}\250\031^\030\t2\032\356^\251x""c|y/\246\212c24\301\224\251\327\374\273\010\311\237\303\365\027W\034>\345\341\316?\371\243*\244\251\026\221\277Q\227peO\351\305\332\306\302\300r\026\3778 \016\022\300%\032\365\307\202mh6|B'\331F\306?l`\204Y\271(\376\353\370\363}hA\271k{V\016\265\2018\002\020\237,\212\254\274e\3337\3549\0339\006i-#\224\025H\0036\243\337\"\240\r\211\264\354t\306\026\017m\2039\3056\270g\343\"X\255q\r\2445q\013\375\221\336\343\303\017P\014\232s\031\240C\315Y\252\310\331tCo\301\025\211\333\332\331\271\2613\2673\277ssg\001*\227\177Y\341\017+\020A\201\340\344\334\356\203h\027iV\247?\262\303.f7wUe\033x\241\034L\277\350\253\374\341\343|\327\336\243_\212\254O\000jK\241\265\336;\350\314}i\255\235\354.\\p\346\234'\305\321Z\327\351B\314\t9\243\265\223\275\205p\355dO\341J![\353:U\230+<u\302\265S!'D\275C\324O\305\220p0\366iq\331\035t\237\225\224\322^\031\003\316\024lg\336yS\034+>v\333\334\253\245\266\322\345R\244\244\324\361 \353\235\030q\376\345\316\325:{\n\323N\330Yu\262\265Sg\n9\314uz\300\231(\016\024\347\213\221\242R\314\326\321\272\353(x\334y\252p\313\351p\"N\254\030\302\032O\2115\216\343\231\2057\204kg\006\350Km\360\242wq\276<Z\236\243\206\321\332\340\210\223-\266c\001\255\356\200;\347>rw\261:\273<W~XV\312v\345fE\251\330\325\271\352\303\252R\315\326\217u\266Ks\245\207\030`\225/\227#\345xe\2642_\211T\224Z?L\346<.\266\026\007\213\017\213\312\327\223-\375g\235_\213Y\267\325k\277L\233:]\370\210\207C\305_\334Xi\270\224,+_Z\277\366\264t\364\026\026h3\365\366\256Bk\255\275\363K\266\326\336S\030+\204\013\021\332\335B\301t\206\261\235\317\356e7B\217\315\302\331B\326\351.\262\241i\302\357\334U,i\276\024\301\033;\272\374\347}\305\010\231:K#va\223A\347!L4T\\w\317r\347\rl\366Ye\253\272\274\177v\337\366\326\336xo6\275\315\367\336\373\204\227H\006>Z\207\301\347j\355\360\260\327\"y\322\242\267\370r\377\275\367K\322K\346\276\266\264\354\264>n\303\345q\333\317t\371\271\355u\333W\275\255\245\267\217\266t\3161i}@\003\326\324\335\203KWK\307EvH\027\354\357\314\035z\326\333\322q\362\353\020\326\356u\236\207\355""\3025\\BX\370\261\257\347\212'\260 \\Z\217|\025;\317y\275\177+\256\026s\356#o\342N\245\2552S\215y+\277z\277b[\037\002c\321D\324\361;\270HuozW\027\313\321\312\251\352M\357\311\206\267\361\316{\367K\243#\315\331\007\240\267\367;\255\360\215\327u\036\346\270\347\332\336\265\373\2255\357\037\021/\262\346\255\255\327\272\372\275\376\t7[j\255w\235\362N\321\264\t\367}\231G\0178\347\213\243\305\373%^^o\341\236\223w\261\360\323\205\270s5X\262U\030-\334\341`\301k\267\213!\357\302\"\020\370\257\352\342\376\300\376\234\360\235R\260\234\313\210\227\313\305\267n\330]+\235(\315}\243\363},\335\373\345\237\336?\025O\211y\261\270\027'OzI\30332^&Ko;SH N\024q\253\260\005G|?\325z\373\235^\204i\250\206\260\277W\314\227Zk\275\347\212\035\024l\265^\002\303\\\255\237\237-8;\000\026\232,xq\221\361A\017\270\013\020\026\305\2305\267\035\353\\u\315R\310\177\226\255\365S\364\206\212\343\034\273\375\034\222N\266\336;\354\274\205\275\342\356\250{\323\215\226\332K\341R\204\336\333\3552^\010\312\347\361\232\007\356\220\373\266\364\264\274\\\031\251vT7`\227\241\357\212O\335\225\322/\345\255\312\223\352\364\3763o\2036^\207\271>\001\350aP\211wFB\270\016z\343\267\312\277Vh\367\335\227\000\375\220;\212\211\373N\003\242\370\350j\351\356/\374\033{\214y\243\363\345\351J\330k\271\354\336-\205\277\016\370\006\352*\3648\243pka\276\260\301<\026\256\365\366\221\355\025\246=\262\307\234\010\262\256~\247S\230\022`\241\2077\341\266O\330\361$\366\206\216C\344\340\336\302\262s\2418W\014\327a\023\3239\013V\351\002 \204\215\250\363\004\0268\346>t\301$\347@8\017\213Q\020\344h\275\371\213\377\202\346\217^\206\334\252\233\365[\376\3445\002\331#\260\214\360\213\323\006.\354?\347\235\373G\265\255:\006\272\333\332\177\270\037\365^\257z\253k\265\320\2003\206e\323\343\037+fu\240:\017\333\317\357\257\356\233^d\265\371\351c\014\214\356\267\355_\345\201\353\336:\"\351m\035\334\247\025\263\236\264\262\037\332\207\021\217,\273\261\310Z\317\20070\003:\215\226\333\312G\267W?\276\333\306\207\327\277\000\266&\362\275\203\225E\310ML""\243\265S\203\014\314\007\245\201\322B)[\356(\257\226-\364\272Kl^\353B\226\"(2\253}\001R\360vp\263\373\034\354\277\340\335~\266?\276\257\034Z\342]\367Ii\264\326{\026\023#FZ\235\221\342i\370\207<\217\234x\245\370\2714Z\272[\016\2277*su\214x\n\372\357\006\\#n\032\251\246\227R\327O\024\"C\316\n\303\357\ny\251\267\260\002\334\207\211\240{\013\317\234x\361\252{\212b\272\267\360\242\310\357}\356d\275\226s\305^7\374\3654\010\265\326\336\355u_\3044 \313k\210\3404@\372Sy\251\262\201\014\365\302{\035\021K=\313I\212g\355.\014\025\"\336\351KE%\200\242\311y;\300k\216\322yq\2012S\243\3634v\211\316\213\3508\206@\306\026\007\234i1]\363\200\023\260\025\014R\232k\014\034w\303\365v\262\375\016\226\246\026\027\261\313q7Qz\007\263\357\"\215\"\001q\026\342\334\326U\350,\344\213'\213[n\270\306\376\"\324_uO\"\037\016\225~-g+\035\225\365j\010\021-\002\2152\305\035\354[h\014o\350\nP\276\013\240\220Ks\225\307\325\326\352\310~\307\376:\340\350\255\202\000TO\025\331KH\222G0Hgq\017\324\334\211L=\t\010\334\252\372n\275HT\347N\225\026\231\247\373\372\261\301\307M\261h;K`\205\244\273UzT\332-'*\021\277\3753Eh\r\300\376\210\224>\372\232\341\016\322E\342\224=\031\274\033\2551\243\205\005C\322\336\246\020\374\375\347\213\347\030\022\312\301\334\032p\020\314\363\212\"\356\255\367\0263}\360>`\246\177R?R7\273\210y\254i\330\211 \334\370Z\347/\204F<T\212;.\345\374\356A\266\023\271\347\244\253\270\237\312\241\362D\345,,O\200%\240\377\335Q\276\260\301\357#a\316C~(\004Cd\253\213\244\247\250[\207\263I\354\002\347\206\335\365RH8\370\240\303\231\302\177\210\271A \336i\311\355\246\016\314{_\302D\242\275\014\261\034\243\246\247\257\360\026\302m\035{\277\034LM_F\353\300\323\024\263R\017\313\303\343C}\223Q\216\260@t\210\231e\350\025\312@\241s,\233@\324d~j\017QF9\324g\370|\243\3070\272\373\364\343B\307\322\022\"\304}J\315\277\017\r7\026\030\0023c)\375\264\224\0058\370r\361\rt\326:\340\030\361\303%\344\205\000q\367\227R\274\314\021r\227\200\345?\353\025:Bac\024\302\365~J\220\377q\265\022\274;\342\215L\226ZK\203\245""\307\336\215\207\325\361\352\266\027\201\310\332\360Z0\033\211\347Q\222\307#`\224\263P\274\013\320dK\320\222[\225p\255\273\257\360\006{\353\0033]\205\247\366J\271\362\323J\270\336\r\333\217\301EwJ\267\312]\025\010\363\276\302\032F#\335\021\344\274\226\357\212\341\257\337AH\325\033\2015!\322\371\242\177{\252\227\210\215\244\262\342+\303\216zW7\304W\3670\245\266\272\340\237\3420\203\256\227\255\\\024\234\301\322\374\330xH\243\376!o\210\266C\327\253\224\266\206\234\347\200\t./\335\020 \327w\232v:\r\016\024ds\222\330w\272\370\034\233\372T\271P\275\263\177\333[\375\315\373Mn\024\023(,\n\357 \373M\020\370m\316\205\321R\007\264\352\355\n\3145\300\222\343,Bz\027\3429QyW}\267\377\253\367\026\023@\360@\352\244\275\264\351\231\273\336\356\357\320\243\377n]&Y\272\334\366\222./\333\326\351\262\336\366\246-xW/\001\310\247\3646(\323\207\336\245mo\033s@1e\321\327l]\241!+m\033t\331h\213\322%\332\026k\023\203\316q1\262\352}\377\240\022\345\344\371|\177\307{\003\245\031\365\242\037\275\217Y/\233\367\362\237\220a\020\271\177\372\377\353\275\026x\034\224/\022CDH\013\004I\nA#.\0144fs\\G\335P]\364\244\313+~\352\017\367z%\227\031\356%)\021\377!\013\225ao\230\3008R\356,\347A\202\010\265<kgp\323w`\246\004\241\035\031Ub\275!\206\364;\355L\241\255\224%\317\260NR\335yf\207\251\362B\031\261OU\3328\242\n\3008\323\217h\356\037s\317\227FAH\230>\356\rL\000\323\013%\263|\026\274\336\205\227\366\21786g|D\311m\004\332\272{\261\264\\\016\325\206.\302\325\243\356-h\316S\244\215\307\275\263\327\216\01649\270\267P{e\377lx\310\271D\222c\276<V\016\327\017/\253\216\271\243\316I\020'\325\227g\206@\370d\200SB\230^\301\260\026P\301\327I\344\333:$:)\345(\247\017Q,-B{\242\n \243</\332\356m0\344|\351my\005\371j\000\372\373\354~\326{\215r\000\305\306f\235K8\250D\215\254G\337~g\312\350\032v\326\250p\t\005U\001Mw\222\213X1b\210\263\354M\301\1770\365\006H\030)\263\243\260Z8\366t\256\026\014\256\007E\002\321E\2744\r1\262\352\335\206\352\022\251n\000\341\013I}\022\343\240\352\231\332Q)\226bH\022\243~\275\233\255\363[@:""\250\3716\330E\002\002b\230\305\362\\\201\236?\0139\325\332\230\366\370\363Pi\214%\274\277V\342\370\036\322\330y*\247\276`\277}\205\367(\350\236!\335_*g)3\315\343\255W\3106\024\223{\260W\033\\A)\233\204\t\377\277@E#\t\214;|h@\022\371Z)\362%R\353F\024z-`g\004\304\327KT-|F\231\204\227\017z\203\244\350\270p;\305\371\013\357\335\304\314\243\365v\312\236\355\004\204..\005\021x\201N\352\345C\014N\274[\234\301\221iW\031\260\264\\N;ag\303\273x\255t\333\233_\256F\032\212\246\325\257\023\016NB\202\233z\037\321\335\024\226\260\356\016\0002c\245\347\3305\327\002\210.\254\200\302/T\343\244A\331<\307\322\177\350;\357\273\353\245U\010\217h\245U\250tt\255\3737\300l\361'\344\2009(\300\233\345$\004V\256\312\324\375\223\277\353\272_\233\335!\250\210\023\t(P\277\312\272\205\342\361fI\001\371\016V\302\2205\254\333\262_Z\351\300\001\312\362K\304\347\240/\221\257c-0l+\351\026X\311\353\273\344]Z(#\313\300\200H\226\035'k]h\374[1R\357\373\236TH\r[\035\301\206\006(S_\204\355C\242\306\373\375\3406\213\214\006+\r\220v\331C\222@\022~\0073#Y\267A\002\266R\t6Z;\177\t\331\007\345\243we\261\034\253\014W\022\325\010D\373\371\013\265>!$\006\341\2327\014\177\322\004\010nR\307\247\nK\316\007\026/+\245\315Jg\345\323\376\010T\261\027\361\353al\257\255\033\205$\201\003\261B\025\367]\3702\022d\320\001\230?+T;u\014y\035\330W\255\373{\000{\002\351\373aI\251\221\372\256C!<vN8L\215\247\331]\313(1n!\"\260\210nR\362\212\223+\006\276E\236\312\036\177\320\203\260X\244\264\354?\210\027\247\241-\336P\334\220P9\301\225\013A\366\014PL\331\177\007\34140\214\250D\256\301\204g|pSMr\244\231D\n\030\243~fX\2349\035z9W\366!\210\205\025\364\267\021\256\261\322y\220\344re\250\262V\355\346\263\206\2469j\203$\236LX\204N\033\356\022I\3401\352\360\220{\025\221\371\355\247?\302\003\213\245\320\267\337\217\315\2178\026\242w\2201\316\242\242\311\214\203\240\215M\357N\334\213\253\376\260\025p%\361\363\340P\240\013\257\260*<=\340L\3726<}\246\326\315\217\274\0137I 4N\355\302N\037\027[\227\261\300N\377T/\352\335y\272\337J\347\231M\312""\353\034\222\337\272_yt\005\265\001&\246\0043\343F\275\311\007\230q\257\232CQ\254\324\273H\331\276p\333\274\261;\225\326\312\271\352p5\211\326\223\304 \355\177#M\315\352\005qQ\370\200\005\336\242D\214g\215Z\362'\326a\254\247n\027G\211G\346\220\276\206\250p\204\346\353\022\207\234\376\002\374\020\236g\251\305\212\337\2176d`.\340D2^p\263`\237^\222\323\213\276p\316\301\201|\204\322\t/\317\361\231\253\005\236\277Y\366k\017^\0033\374\031\256h\211\036\020\n\336\231Q\312\221\265\301\013\230\005\265I\251\035\364\262X\271XE\304#\362gK\032dC\357\376\013\357\335/_?\266r\320u~\261\021v\021\220%\353\337\323\005\235Y\263\233\367LK\272U\344\004w\002\333%\327]v\337\226\302\224\374\316\202\353T p\013\257\230\243\344\225GN\r7N\335\352\376\314\353\224\361\271\\\367\363)\025\2621a\034\323\031\342Zs\356\217Z\351\370\224r\324\274_\222\016 \233F\220\034\307\351\230\231\212\334\301\340\300\372\330\267\233|\3366\352{\353x\003M\375\023&^%T3\261\337\005x\327\341\311U\240\250\275\362\260\262U\rW\327\366[\205&\000\345\020\367\214\212,\235p89\206)\313\372\246\242C\357\226\357\213YJq\267\235k\3055\256\311k=!\347\002\211fO\272Qn\255\367\260\260\251\365\234\252q\257)\346v\014\335\243\32380\373\030e;J\221\267\311\273\342]\333\305\021\267\003\360\036)\267\212=\017\340\351x1\201\240\350\300z\007\340\337\220\267\304\352\0330\2402\233\207\351H/\214\261]'-\262\2508\202\01650B\340\312\202\244\237qE\304\220\241Jt\263\214\360\252\237 _\2358\371E%\273\325:\271@\n\027\337\001\224\\\315/\320\211\275\2503\316\271\303\0243\007\255A\3277\020k\235,iQ\222w`\344\t\204,\333\010jB@o\267\220&\321G\307\343\267\235\031*M\305i\352.\225H\343n\032\200\217U\230!\374\037\022\326\213\027\220\374:Q\227u\023\351w\005\007\301\237\304o\005\264_\001\037\215\342\346\340IB\234\177X|d\335\334\337Ww\207\332\350\227\210V\302\242_\351\322\310\337\021\036\333\020F\223\345\331jk\365\334\376\340\376\262\027\241\3631\357-\264\"\245\247\340\220\327n\234%\372$0\204\304}\017\252\352\"\024\335\273\312o\373s\373O\371hM\234\323\313\236\254z\352""\026\r\331\361\177\375\240\"\017\211|\212b\032\363\014\2168\237\320\202\013\304\005]\362\236\364w\372\245\342\233\317\334N\016\373ge\2652\367\245UD!\2710\370\r\241i\227s\342 \330D\260r\031\354\277s\231N\203\377t\350\267\314\361\304[\245Sw*1>\003\274w\334\007P\246\223\225+\225\235j$\300\3360\2448\235\200*b\366\035J\333\207f\277Zl\034\272\356\360\217F\007']\224\350\003\243\210\341\215\345\364\026\036\3715g\023\361\212\363\031>w\361O\020(q^ddR\355s\231\305\363 |\022\374\276\302\347+\2204\340\336/\255_O\023\016\351\025,k\373\n\353\342\266\336\364\303\315\220\000\225M\024\211/\033\256\370\215\345\347\377\003\220\221\nY";
-    PyObject *data = __Pyx_DecompressString(cstring, 7838, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (7839 bytes) */
+const char* const cstring = "x\332\235Y\313_\023\331\326\005\004y\010Jx\210\217\276v\201(\017\221\026DT\256\3327*\266\370j\003\210v\243]\267\222\024IIR\225TU\200\350\355{\035fX\303\014k\230a\206\031f\310\260\206\031\346O\360O\370\326\336\247*\004\260\373\353{\375I\252r\352\234S\347\354\275\366\332k\237,I\341TJ\212kiU\2674C\267\244\214\251\306\324\270\246'\016\032\245+q)\235\263l)\252J\232\036W\367\324\270\244\350qI7l\311Ji\350\3760\267\265\245\232\322\216\246\356JqC\265\370\221\272\2271,U\262lS\213\253\326#E\227\014=\225\227b\246\252\330\252\244HQ1\310N*\266\244YR\314\320m-\2213r\026^\"\245\325\264a\346g1\212\246R,KK\350\222mH\030\034\277\316\363\210\036\364J\277\223?\361\256\251\331J4\245\372\035\304\242\266L#\375gcy[\322\256f'%;\237Q\245\t\277\3356\025\335\342m\034\014\021\3350B\203\251\354&\333\315J\217\214T.\255[K\322#\177\2231\233\354\367\010\306\303\373c)\354C\312Y0\037v\202&S\2252\030\200\357\330\274e+\272m\315\366HR\320_5M\303\304\2523\206i\243O4\317;\220\025K\316\300\374\212\350+=nv\223&L/\226\266\234\316\330y\311J*\330\220\235\313\300$[\230/\226\267\223\206>\253\230\246\222_\3467\244\014\205\035\376\372\305\233\227\313\217\345\347\313\253\257\226_H\360JF\301F\277\325G\332VM]M\035\351C\253k\352\263\245\341\215\177\370\344\362\250\364de\371\305\343\265\373O\224\224\245\256\260\003\214\234-\031[R\324\310\351qK\232T\366\260\237+\361\251\225\343\266\026\340\313e\204mV\364\035%\245\001\245F\\\235!\340\2413,6\021\233\220\360\366\tl\233\03491#%0*\350,\014\003\254\361k\356\275d\007o\220\203\261\204\373\257\014]\235\225^\021\216u#\227H\302E\354[\264\250\002\263\217\330\220d\362\270\232\322\242\252\t\217\003[\204w\274\235\201\255K\257\227___\270\263\300\361b\252\037\261.\013\313\2162\024\020'\264\331\234\226\262\261\n\302\035 \264\262%\345\215\234\244\253\002%\031\202L\323\000;\251\352\222\245\332t#M0H\025\302\230\214\341\260\360\204\357zmG\245\321l\332\331\237\243\364\336\006\360\030kf\016->\3704=\003\273\223S\000)\306\024\376\205\2613\306dL\245U\332I\354\323\020\023\305\260/P\301_\233\317\237""\356QR\215m\363\242\033\335\341\031\n\003\025a\002\n\242G\312\216\242\2458v\215\214\315\021\305\303\177>\204\n\230\334g\016%\026S\255\000&>\264\036\334\237\237]\024D\343\243\003\217\204\243n\212.K\322\252a\330K\301\200\306&1\207m\030\222\221\212\317\320\032wTS\000-n0\326v\rs\233\275\270\253a\265\330~\\\263h\251\361\243\363`Ci\232JJ*;Ds\272\241_\247\301\204\1771/,\230\376\337^\222Vm%\256\330\n\346&\226\0248\326si\200\217\246\247\360>\3323\245\304\266\005\253k`\261o\366e\206\rL\217u\261\253\000B\363\010#\250\372\216f\032:B\320\226v\024S\243\356\376\024\246j\347\300\010\224\027\032\353Z!\030<\004\272\343\360\325\301zT=a'\021\375k\313\353\322\232\255f\244\264\222\347%`\273\237T\3238\010\3735\037\366\344|\237\3614cv]\265\354'\300\326*8E5g8R\360b\332\017Q\252of\301\246otF\223\000)[^\263\3254}\027P~\243o\353\306\256\216\335\244r\252`\376\311\317\277O\275E\n\341\014\210\005o\231J\032q\307\234\3772\207He\246B\213v\204\203\210\0149Jl\220T\317\375\367?L\377\305\177\367\307g\247\257\317N\317L\317\316\214\365\214\315LM\365\214M\365L\365\374\343\372\375\261\177<\030\373\274\371\333\347\337?L\377>;\275\211+>\245\306e\346\303\347\3377{\272\361M\226\307\361\177\002\315\277\311\037p\367\343\024\014|Y\211\307e\235\350\212\377!\310\214]5~\177\363C\317\241\206Y%\223Q\365\370\344\030\003\217\323\002\030'i\344Rqr\t\033%n\344\310\216\223\226\366I\275\177gj\006>\266g$N\0130\0236~c/&\022&\345\211\243\241u\030\352\014m\337\337\r\324\371\243s\244\027\2644\314\254\350*\224\000\242\230\254\311+\203#8\233\202\207SjL\320\203\022\215\215\261pP4N\tzZ\261cIr]\024\275U\353^\223\250\2409\0049>8\332\034\344\362\007\001J\342\352V\020z\263\262\0347b\262,\335\227f\343y\360|<\257+i-F\210N\032qD\026lAoT\031k\342S>\3300o\225\003B\244\363\214\202fVW\274\007\305\314\317H9\037\206l\353\367[\343\223[)%1%1\246\0253A9j{\0277\326R\217h\334\243&\304\\J\263\354\245\236DL\232\244\304\226\340\314O\324\310\353\331\263\021\250,\246\016\224\334\354\364\373\331\304'\341\177mk\022\3018\2717\365\340\306\324RO\320\306\3535""\325Y\344\234\311\261\315\033\327\357~\230\036\037\233\031\033\233\301\373\2478[\n\3304F\244\t\376\030\321\003~\341\315\307)\306\010)\322\275\373\322\215c\232\303\227\016\201\240T\204\202\240\254\211E\263\201\354\344\365\224\266\255\3721:3=-6\217EN\002,jj\212?\2330\n~\300x6\337o)\344\306\350\222\177\021\t\351q\303\324\3577g\247\307A$\337\004\271\236\231\0258\237\241[x5\306\020\027\367\010$B\205\002hJ\262l\252\361\\L\005(\3429f\027\342xl`GSRx\032\323t\315\226\345\353\327u\343z:\243M\n\322U\343S\301\215\310\365\301\3739O\340\025j\002<\271\255\346\203<\373`Rd\301)q\221\306\374\244(\371\301\302\306;\200Q\360\364`W\302\2463>\351\323^\340\031\223\\$\3542\373(\340\311\246A\264vl\003\356\213\013\322\003e\003ed\343\371\3534\307\315\353P\222\266\345O\221\311\357I\301?S\241\024\263\216\275\261\352\233\034\013pM\030\036\223\256\321\025\274\006A\213\242A\221\254<\342vO\344j\037T\202\305cJJ\341\345B\263mKs\322\216Jb\301\n\006ZKc3\246ji\260\375L,\211\310\237\002\024\021\014\367\307\306\304\315\265\373c\376U\306|\240\004\231\0013i\251\251\255\231\027\341\207\313/\246z\216t@\260F\241\243\322\242O\360m\252G:\330\034u\337\023\343\310 \007<\3527\004<\032L\251\350\000=\354/\246\304\326g\004\2147\361\361aj\252\347\017\007R\360\213Ac\177\330'@\322\377\327\017\2408\326\305B\274N\372\357G\322\226\202\276\342\253\350\216\373\231\353\327M\010\245\367\326\265\337\336[\323\223?.m\342\272\364\341\332\022\276M\375\370\342\347\360c\264\275\267\3765>E#f'>\314\320u\252\311\312pH\303\224\254\247\203\271\233|\207>\r\362\361\215\331\274&E,\177V\216\n\03519\205\235\034\n\374\250a\2448\236\260\257{\242\326\214\037\342\372\343m\034\t\372\267\236\037n\325\023\026DPL}0k\357\331\340\177\241\320_2\357\023\312'\245\024\205\337\346D\256!3\010\3071\256\374\210bX@\314~\343\251(=\350\215~u<\033\204\212\237Ur\366\326\365;?\354h\351\037\222j*\3037\"\\~\360\343\016-\273T\n VRD\234\rj\341\230\235\243P\313\221PC\252\266\233\014&\202\371\007\256\006\1778\340\216CS\005a\366_L\025^{\264\262\022F\315\372\223i\3442\017\037""\031\351t\203[\0327\310\244\202\030\037\303*OHV-\343\205\031K\263D!\370\204]\316\324\3614\274&\277z\363\362\365/+\315\"\262\371\036\223\321ze\371Hc\002:\323\266\315?n\237\275G>HY\017fy\202\264\372\227;6\326\377\337\214\370\346\"\2775\rj:\371\300!\207\236\005\276=\324h\252[\010\244\344\2216\341\271C\215A\004\276\340\230\244\270}\241flCgC\277|\034\326\225T\036>x\371z\345\000\331\257\340\234\370\272J\251\035\213!\265\375\212\327p\250\036x\315H\024\237\r\227\212\257<\267\270]\203\032Q-q\217\255\003G*Lu\360}\217L\321\370\352'V\241\027\232\332a\035\200\310>\366\004\205\224\177\267\245\351\234\265\360(\277\207?J\372\362+\210\240Uu\013\245\306\232\232\315\251\320\242b9\353h?\250!\250\346\237=(\377eYV ,\225\250ERD\210N\031Z\032\346\266\214-\370\223\376\003\353V\020\316\262\250G\225T&\251(\251]H\013%\243\t\"\026\2372\nW\250\301\230\201)\344\343MhI\345\323\n\224a\202\022\004S\207\202p\217\241\332A\007#\007}I\003m&\304\006\250\304\275\300\022\356\345D\312\210*)\231\231\234\0316\212\322/\252Xj\024\000\025K\0244\352\253Sd\232\234.v\367\355\346\003<7?\361\2318`dY\366\0170,\231n\3658\004\240,4\236L\366\2135\226+b\202Y\237KL\031\033\003N\241\327\361\177.\226\004\005\222j\214A\002\2413\025~\262\034\334 \306HU\322W\330\002\233\226m\022\370\264C\264d\000\003\377x&\006\352Q\370\003\230\201E\341(\223\276\002w\270d\340\363Fq(7\235D\034\272W\367\250\332\204h>\324*N:\251r\000xP\007\3706\tL\203\3155[)fd\362\344\334\230\221\203x\024G\223\r\303Z1\024\004q\310\320]:w\214\031H?*J\036\344\201\230\251\261\214\213o\311\314\006r\023'\304\265\204f#?\241\374P\375\242\204>\360'dk\234\362\023\177\310\232%\013\r\351\227#\212}P\227\210\315\037\253Sd\277%\035W\344\004\261\270\365\007\rq\204\021V\334\010e\\\314\274\n\216\342\0030\377\214@\005\255\2436\344\222'\010r.Hhct2$>\371\016=\010(\010\340F\014oi{\262\250\340\370\226\273B\025\321\237\265E\373\017\244\322a\251u\240\032\232\356\260\n\231Aw\244\315\017\222f\325uH.\036\225ZM\222\352\260b\n\276QY\227j\314gC\227XG\345\245\177\020I\245\354\r\372\230\333b\216""\221\031\031\376g\003$\215\233\204\0028#\002\360?\234\3216\204\277\360\245\231\346\237\255\375\374\352\033M/\370\264\245)G\361\255\240R9a\010\277\312\211\034\250M\010\013\222|\211OZFN*\026c\217\256|:N7iq\307\254\231T\265D\322&yB\177\350k&Q\331[\374!S\325.\243\2561\261\356\244F\3472\371$\336\032\333N\346\361\212\004U\243\332\rmN\213\203\300\270\200\224\305K\370\003\250L\221\022\203\373\201\t#\3408\256L\364L\n\260\010N\026\2500\243B\215\254D\240o\260\245fq\264h\026AG\263tE'\372\020\205\251_\235bB\306\357\307\217\206\246\177\264\014}[\260\026\350\207\2120\374\355\032f\\h\366\024#\342^JIG\343\312\0030\022 \240h\251\234\251\246b\026\213@q\254\225RwTh\232(\376\013s>\347)\211\263\360\007_\307T: a\303\322\215\2252\022\262\234&p\312|t\201\017\374\355!\346(\301\244\3254\375\340\000\362\312\3419\\\350\263bp\230\326\270\021\252\321\202{\310EZ\232\266'\342\347\350W\216\\|\346R\215\253\005Z\\\310\344\305\347,t\000\036\230\006\3075R\245,\353\202p\304'_\016\032,\376\240}\301\304~a\255\023s\312:'R\\\366\340:\324\307\206\336p\275\236\321Mc\327\322s1\370&\246\347\2309\211U\033\241v\354\246\221\350D\003\306\2463yP\234\221V\023\n\242\3312\220T\021\231\206%\222J\006K\332\026g\206\024`\370\203\257\365L<\223\3242\032 dS`\n\027\035=#\360\005\266\334\374\364\2007\017\242$cd2\206%\343/\340\203\246[9c\006Lpp'S+r\222J7\006\235]\313\215\023F4d\220;\362\270\332\2005\3503\223\227\243y\233\034\200\032[\346\214i\345\322\342\233\037\300t\313|\317w9=\243\305\266\341\327e=\350\267\303\277\204\221\037\2629%%\334\006\027\001\244\246J\277\3110]\274\000:\017\377\260t\344g\246\206\0148\242\365\376b\267\331\3464\372\277\214\361S\357\237\017\025\302\356\257\364\371/\326\363\215\001\007\352\340\217\206\036\026\227\177\255W\003\337\177\271\273\010\254?\352~\014_\3341f\355\230<\236\307\t\272kp\311\361\246\203\351\002\346\243>,\300\350\006%\250\220(\301i\3301\371\336h\000\247\313\\\260p\315b\252\t\244\0042\r\223\271\034\224-\301\265\321\320d\025\313O\327H\271\3769\006\305\240I\345s\0069\025\"\013\031\307R\325m:.""\200\362;P\177(\035^\030\t\262\035\356^\251xq|y/\246\212\32324\301\242\251\327\374\363\010\251\240\303e\030\027\036>\363\341\316?\000\244b\244\251$\221\277Q\236p\201OY\306\332\306\372@v\026\377F \316\023@\"\032\3657\361\001\351\206O\310%\333\310\370g\016\0144+\027\305\177\035\177\276+-\010xm\317\312\241D\020'\001\342\223\265\221\225\267l\373\206=g#\325 \273e\204\300\002w\300t\364\223\004$\"\231\307Ngl\361\3206\230Zl\203{6.\202\334\032\327@a\023\305\320\037\311>>\003\001\323\2409\227\001H\324\234\245\212\324M7\364\026\\\221\277\255\235\235\033;s;\363;7w\026 v\371\007\026\376\260\002-\024\350NN\361>\226v\221mu\372#;\354bvsWU\266\001\033J\305\364\303\276\312\037>\334w\355=\372\301\310\372\004\274\266\024Z\353\275\203\316\334\227\326\332\311\356\302\005g\316yR\034\255u\235.\304\234\2203Z;\331[\010\327N\366\024\256\024\262\265\256S\205\271\302S'\\;\025rB\324;D\375T\014\t\007c\237\026\227\335A\367YI)\355\2251\340L\301v\346\2357\305\261\342c\267\315\275Zj+].EJJ\035\017\262\336\211\021\347_\356\\\255\263\2470\355\204\235U'[;u\246\220\303\\\247\007\234\211\342@q\276\030)*\305l\035\255\273\216\202\307\235\247\n\267\234\016'\342\304\212!\254\361\224X\3438\236YxC\270vf\200\276\324\006/z\027\347\313\243\3459j\030\255\r\2168\331b;\026\320\352\016\270s\356#w\027\253\263\313s\345\207e\245lWnV\224\212]\235\253>\254*\325l\375Xg\2734Wz\210\001V\371r9R\216WF+\363\225HE\251\365\303d\316\343bkq\260\370\260\250|=\331\322\177\326\371\265\230u[\275\366\313\264\251\323\205\217x8T\374\305\215\225\206K\311\262\362\245\365kOKGoa\2016So\357*\264\326\332;\277dk\355=\205\261B\270\020\241\335-\024Lg\030\333\371\354^v#\364\330,\234-d\235\356\"\033\232&\374\316]\305\222\346K\021\274\261\243\313\177\336W\214\220\251\2634b\0276\031t\036\302DC\305u\367,w\336\300f\237U\266\252\313\373g\367mo\355\215\367f\323\333|\357\275Ox\211d\340\243u\030|\256\326\016\017{-\222'-z\213/\367\337{\277$\275d\356kK\313N\353\3436\\\036\267\375L\227\237\333^\267}\325\333Zz\373hK\347\034\223\326\0074`M\335=\270t\265t\\d\207t""\301\376\316\334\241g\275-\035'\277\016a\355^\347y\330.\\\303%\204\205\037\373z\256x\002\013\302\245\365\310W\261\363\234\327\373\267\342j1\347>\362&\356T\332*3\325\230\267\362\253\367+\266\365!0\026MD\035\277\203\213T\367\246wu\261\034\255\234\252\336\364\236lx\033\357\274w\2774:\322\234}\000z{\277\323\n\337x]\347a\216{\256\355]\273_Y\363\376\021\361\"k\336\332z\255\253\337\353\237p\263\245\326z\327)\357\024M\233p\337\227y\364\200s\2768Z\274_\342\345\365\026\3569y\027\013?]\210;W\203%[\205\321\302\035\016\026\274v\273\030\362.,\002\201\377\252.\356\017\354\317\t\337)\005\313\271\214x\271\\|\353\206\335\265\322\211\322\3347:\337\307\322\275_\376\351\375S\361\224\230\027\213{q\362\244\2274<#\343e\262\364\2663\205\004\342D\021\267\n[p\304\367S\255\267\337\351E\230\206j\010\373{\305|\251\265\326{\256\330A\301V\353%0\314\325\372\371\331\202\263\003`\241\311\202\027\027\031\037\364\200\273\000aQ\214Ys\333\261\316U\327,\205\374g\331Z?Eo\2508\316\261\333\317!\351d\353\275\303\316[\330+\356\216\2727\335h\251\275\024.E\350\275\335.\343\205\240|\036\257y\340\016\271oKO\313\313\225\221jGu\003v\031\372\256\370\324])\375R\336\252<\251N\357?\3636h\343u\230\353\023\200\036\006\225xg$\204\353\2407~\253\374k\205v\337}\t\320\017\271\243\230\270\3574 \212\217\256\226\356\376\302\277\261\307\2307:_\236\256\204\275\226\313\356\335R\370\353\200o\240\256B\2173\n\267\026\346\013\033\314c\341Zo\037\331^a\332#{\314\211 \353\352w:\205)\001\026zx\023n\373\204\035Obo\3508D\016\356-,;\027\212s\305p\03561\235\263`\225.\000B\330\210:O`\201c\356C\027Lr\016\204\363\260\030\005A\216\326\233\277\370/h\376\350e\310\255\272Y\277\345O^#\220=\002\313\010\2778m\340\302\376s\336\271\177T\333\252c\240\273\255\375\207\373Q\357\365\252\267\272V\013\r8cX6=\376\261bV\007\252\363\260\375\374\376\352\276\351EV\233\237>\306\300\350~\333\376U\036\270\356\255#\222\336\326\301}Z1\353I+\373\241}\030\361\310\262\033\213\254\365\014x\0033\240\323h\271\255|t{\365\343\273m|x\375\013`k\"\337;XY\204\334\3044Z;5\310\300|P""\032(-\224\262\345\216\362j\331B\257\273\304\346\265.d)\202\"\263\332\027 \005o\0077\273\317\301\376\013\336\355g\373\343\373\312\241%\336u\237\224Fk\275g11b\244\325\031)\236\206\177\310\363\310\211W\212\237K\243\245\273\345py\2432W\307\210\247\240\377n\3005\342\246\221jz)u\375D!2\344\2540\374\256\220\227z\013+\300}\230\010\272\267\360\314\211\027\257\272\247(\246{\013/\212\374\336\347N\326k9W\354u\303_O\203Pk\355\335^\367EL\003\262\274\206\010N\003\244?\225\227*\033\310P/\274\327\021\261\324\263\234\244x\326\356\302P!\342\235\276TT\002(\232\234\267\003\274\346(\235\027\027(35:Oc\227\350\274\210\216c\010dlq\300\231\026\3235\0178\001[\301 \245\271\306\300q7\\o'\333\357`ijq\021\273\034w\023\245w0\373.\322(\022\020g!\316m]\205\316B\276x\262\270\345\206k\354/B\375U\367$\362\341P\351\327r\266\322QY\257\206\020\321\"\320(S\334\301\276\205\306\360\206\256\000\345\273\000\n\2714Wy\\m\255\216\354w\354\257\003\216\336*\010@\365T\221\275\204$y\004\203t\026\367@\315\235\310\324\223\200\300\255\252\357\326\213Du\356Ti\221y\272\257\037\033|\334\024\213\266\263\004VH\272[\245G\245\335r\242\022\361\333?S\204\326\000\354\217H\351\243\257\031\356 ]$N\331\223\301\273\321\0323ZX0$\355m\n\301\337\177\276x\216!\241\034\314\255\001\007\301<\257(\342\336zo1\323\007\357\003f\372'\365#u\263\213\230\307\232\206\235\010\302\215\257u\376Bh\304C\245\270\343R\316\357\036d;\221{N\272\212\373\251\034*OT\316\302\362\004X\002\372\337\035\345\013\033\374>\022\346<\344\207B0D\266\272Hz\212\272u8\233\304.pn\330]/\205\204\203\017:\234)\374\207\230\033\004\342\235\226\334n\352\300\274\367%L$\332\313\020\3131jz\372\no!\334\326\261\367\313\301\324\364e\264\016<M1+\365\260<<>\3247\031\345\010\013D\207\230Y\206^\241\014\024:\307\262\tDM\346\247\366\020e\224C}\206\3177z\014\243\273O?.t,-!B\334\247\324\374\373\320pc\201!03\226\322OKY\200\203/\027\337@g\255\003\216\021?\\B^\010\020w\177)\305\313\034!w\tX\376\263^\241#\0246F!\\\357\247\004\371\037W+\301\273#\336\310d\251\2654Xz\354\335xX\035\257n{\021\210\254""\r\257\005\263\221x\036%y<\002F9\013\305\273\000M\266\004-\271U\t\327\272\373\no\260\267>0\323Uxj\257\224+?\255\204\353\335\260\375\030\\t\247t\253\334U\2010\357+\254a4\322\035A\316k\371\256\030\376\372\035\204T\275\021X\023\"\235/\372\267\247z\211\330H*+\2762\354\250wuC|u\017Sj\253\013\376)\0163\350z\331\312E\301\031,\315\217\215\2074\352\037\362\206h;t\275Jik\310y\016\230\340\362\322\r\001r}\247i\247\323\340@A6'\211}\247\213\317\261\251O\225\013\325;\373\267\275\325\337\274\337\344F1\201\302\242\360\016\262\337\004\201\337\346\\\030-u@\253\336\256\300\\\003,9\316\"\244w!\236\023\225w\325w\373\277zo1\001\004\017\244N\332K\233\236\271\353\355\376\016=\372\357\326e\222\245\313m/\351\362\262m\235.\353mo\332\202w\365\022\200|Jo\2032}\350]\332\366\2661\007\024S\026}\315\326\025\032\262\322\266A\227\215\266(]\242m\26161\350\034\027#\253\336\367\017*QN\236\317\367w\2747P\232Q/\372\321\373\230\365\262y/\377\t\031\006\221\373\247\377\277\336k\201\307A\371\"1D\204\264@\220\244\0204\342\302@c6\307u\324\r\325EO\272\274\342\247\376p\257Wr\231\341^\222\022\361\037\262P\031\366\206\t\214#\345\316r\036$\210P\313\263v\0067}\007fJ\020\332\221Q%\326\033bH\277\323\316\024\332JY\362\014\353$\325\235gv\230*/\224\021\373T\245\215#\252\000\2143\375\210\346\3761\367|i\024\204\204\351\343\336\300\0040\275P2\313g\301\353]xi\377\210cs\306G\224\334F\240\255\273\027K\313\345Pm\350\"\\=\352\336\202\346<E\332x\334;{\355\350@\223\203{\013\265W\366\317\206\207\234K$9\346\313c\345p\375\360\262\352\230;\352\234\004qR}yf\010\204O\0068%\204\351\025\014k\001\025|\235D\276\255C\242\223R\216r\372\020\305\322\"\264'\252\0002\312\363\242\355\336\006C\316\227\336\226W\220\257\006\240\277\317\356g\275\327(\007Pll\326\271\204\203J\324\310z\364\355w\246\214\256ag\215\n\227PP\025\320t'\271\210\025#\2068\313\336\024\374\007So\200\204\2212;\n\253\205cO\347j\301\340zP$\020]\304K\323\020#\253\336m\250.\221\352\006\020\276\220\324'1\016\252\236\251\035\225b)\206$1\352\327\273\331:\277\005\244\203\232o\203]$  \206Y,""\317\025\350\371\263\220S\255\215i\217?\017\225\306X\302\373k%\216\357!\215\235\247r\352\013\366\333Wx\217\202\356\031\322\375\245r\2262\323<\336z\205lC1\271\007{\265\301\025\224\262I\230\360\377\013T4\222\300\270\303\207\006$\221\257\225\"_\"\265nD\241\327\002vF@|\275D\325\302g\224Ix\371\2407H\212\216\013\267S\234\277\360\336M\314<Zo\247\354\331N@\350\342R\020\201\027\350\244^>\304\340\304\273\305\031\034\231v\225\001K\313\345\264\023v6\274\213\327J\267\275\371\345j\244\241hZ\375:\341\340$$\270\251\367\021\335Ma\t\353\356\000 3Vz\216]s-\200\350\302\n(\374B5N\032\224\315s,\375\207\276\363\276\273^Z\205\360\210VZ\205JG\327\272\177\003\314\026\177B\016\230\203\002\274YNB`\345\252L\335?\371\273\256\373\265\331\035\202\2128\221\200\002\365\253\254[(\036o\226\024\220\357`%\014Y\303\272-\373\245\225\016\034\240,\277D|\016\372\022\371:\326\002\303\266\222n\201\225\274\276K\336\245\2052\262\014\014\210d\331q\262\326\205\306\277\025#\365\276\357I\205\324\260\325\021lh\2002\365E\330>$j\274\337\017n\263\310h\260\322\000i\227=$\t$\341w03\222u\033$`+\225`\243\265\363\227\220}P>zW\026\313\261\312p%Q\215@\264\237\277P\353\023Bb\020\256y\303\360'M\200\340&u|\252\260\344|`\361\262R\332\254tV>\355\217@\025{\021\277\036\306\366\332\272QH\0228\020+Tq\337\205/#A\006\035\200\371\263B\265S\307\220\327\201}\325\272\277\007\260'\220\276\037\226\224\032\251\357:\024\302c\347\204\303\324x\232\335\265\214\022\343\026\"\002\213\350&%\2578\271b\340[\344\251\354\361\007=\010\213EJ\313\376\203xq\032\332\342\r\305\r\t\225\023\\\271\020d\317\000\305\224\375w\020N\003\303\210J\344\032Lx\306\0077\325$G\232I\244\2001\352g\206\305\231\323\241\227se\037\202XXA\177\033\341\032+\235\007I.W\206*k\325n>kh\232\2436H\342\311\204E\350\264\341.\221\004\036\243\016\017\271W\021\231\337~\372#<\260X\n}\373\375\330\374\210c!z\007\031\343,*\232\3148\010\332\330\364\356\304\275\270\352\017[\001W\022?\017\016\005\272\360\n\253\302\323\003\316\244o\303\323gj\335\374\310\273p\223\004B\343\324.\354\364q\261u\031\013\354""\364O\365\242\336\235\247\373\255t\236\331\244\274\316!\371\255\373\225GWP\033`bJ03n\324\233|\200\031\367\2529\024\305J\275\213\224\355\013\267\315\033\273Si\255\234\253\016W\223h=I\014\322\3767\322\324\254^\020\027\205\017X\340-J\304x\326\250%\177b\035\306z\352vq\224xd\016\351k\210\nGh\276.q\310\351/\300\017\341y\226Z\254\370\375hC\006\346\002N$\343\0057\013\366\351%9\275\350\013\347\034\034\310G(\235\360\362\034\237\271Z\340\371\233e\277\366\34050\303\237\341\212\226\350\001\241\340\235\031\245\034Y\033\274\200YP\233\224\332A/\213\225\213UD<\"\177\266\244A6\364\356\277\360\336\375\362\365c+\007]\347\027\033a\027\001Y\262\376=]\320\2315\273y\317\264\244[ENp'\260]r\335e\367m)L\311\357,\270N\005\002\267\360\2129J^y\344\324p\343\324\255\356\317\274N\031\237\313u?\237R!\033\023\3061\235!\2565\347\376\250\225\216O)G\315\373%\351\000\262i\004\311q\234\216\231\251\310\035\014\016\254\217}\273\311\347m\243\276\267\2167\320\324?a\342UB5\023\373]\200w\035\236\\\005\212\332+\017+[\325pum\277Uh\002P\016q\317\250\310\322\t\207\223c\230\262\254o*:\364n\371\276\230\245\024w\333\271V\\\343\232\274\326\023r.\220h\366\244\033\345\326z\017\013\233Z\317\251\032\367\232bn\307\320=:\215\003\263\217Q\266\243\024y\233\274+\336\265]\034q;\000\357\221r\253\330\363\000\236\216\027\023\010\212\016\254w\000\376\ryK\254\276\001\003*\263y\230\216\364\302\030\333u\322\"\213\212#\350P\003#\004\256,H\372\031WD\014\031\252D7\313\010\257\372\t\362\325\211\223_T\262[\255\223\013\244p\361\035@\311\325\374\002\235\330\213:\343\234;L1s\320\032t}\003\261\326\311\222\026%y\007F\236@\310\262\215\240&\004\364v\013i\022}t<~\333\231\241\322T\234\246\356R\2114\356\246\001\370X\205\031\302\377!a\275x\001\311\257\023uY7\221~Wp\020\374I\374V@\373\025\360\321(n\016\236$\304\371\207\305G\326\315\375}uw\250\215~\211h%,\372\225.\215\374\035\341\261\ra4Y\236\255\266V\317\355\017\356/{\021:\037\363\336B+Rz\n\016y\355\306Y\242O\002CH\334\367\240\252.B\321\275\253\374\266?\267\377\224\217\326\3049\275\354\311\252\247n""\321\220\035\377\327\017*\362\220\310\247(\2461\317\340\210\363\t-\270@\\\320%\357I\177\247_*\276\371\314\355\344\260\177VV+s_ZE\024\222\013\203\337\020\232v9'\016\202M\004+\227\301\376;\227\3514\370O\207~\313\034O\274U:u\247\022\3433\300{\307}\000e:Y\271R\331\251F\002\354\rC\212\323\t\250\"f\337\241\264}h\366\253\305\306\241\353\016\377htp\322E\211>0\212\030\336XNo\341\221_s6\021\2578\237\341s\027\377\004\201\022\347EF&\325>\227Y<\017\302'\301\357+|\276\002I\003\356\375\322\372\3654\341\220^\301\262\266\257\260.n\353M?\334\014\tP\331D\221\370\262\341\212\337X~\376?\003\313\r\016";
+    PyObject *data = __Pyx_DecompressString(cstring, 7839, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (15415 bytes) */
-const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensions. Columns: Create action Custom class used to store plumed constants.\n   Custom error reported by read_as_pandas.\n    Dimension %d is not directEmpty shape tuple for cython.arrayError loading PLUMED_KERNEL at path Error loading PLUMED kernel at path Error reading PLUMED file Error reading PLUMED file#! FIELDS=FalseIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of =None. Not enough columnsNote that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Object used to construct plumed input files.\n\n       An instance of this object can be used to construct plumed input files.\n       Check the constructor to see all the available options.\n    Out of bounds on buffer access (axis PLUMED >=2.6 only supports Python 3PLUMED: Root: PLUMED instance is too old, conversions do not work and will be disabledPLUMED instance seems to have a non-working convert cmd, conversions do not work and will be disabledPLUMED metadata has invalid numbering for PLUMED metadata lacks precise numbering for PLUMED not available, check your PLUMED_KERNEL environment variablePLUMED returned an invalid InputBuilder metadata length#! SET Step may not be zero (axis %d)Subclass of pandas.io.TestFileReader, needed for storing constantsUnable to convert item to objectUnknown value type ({})Writing dataframes with MultiIndexes is not supported at this time\n=\\/****************************************=$.*-.*,*.,\"\n\",))\n\")\n)\n@-=\"@>\"{[^{}]*}.*[{}].*[ {}].*[ {},]{""}[\n\t].*__$__$'.*[^_]__$?)#! #add_note      allowed=[]\n      allowed.append(\" and arrays should be type double (size=8), int, or long at 0xcannot load PLUMED instance, conversions will not be availablecannot use simultaneously time and fractioncollections.abc\" contains nonmatching braces<contiguous and direct><contiguous and indirect>convert def disable.__doc__ = .dylibdynamic method printing enableenable_conversion not validerror parsing dictionary, unknown type \\f$(flag)  for arg in kwargs:\n  for x in retlist:\ngc (got got differing extents in dimension .*\\.gz      if(len(x)>0):\n      if not re.sub(\"[0-9]*$\",\"\",arg) in allowed:\n      import re\nisenableditemsize <= 0 for cython.arraykernel must be a path string or path-like object,**kwargs):\n(label)label should be of str type^let b:^let b:plumedDictionary\\[.*$ndarrays should be type np.double, np.intc, or np.int_no default __reduce__ due to non-trivial __cinit__--no-mpi(numbered)numbered types should have integer keys object>(option)option \"options cannot be a dictionaryoptions should be string, number or iterableplumed.Constants should be initialized with a list of 2- or 3-pletsplumed.pyx         raise TypeError(\"unknown arg \" + arg)\n@replica syntax only allowed for scalar or rank 1 vectors@replicas:\",residue,chain)\n  ret=\"\"\n  ret+=\"  ret+=_format_label(self,LABEL)\n  ret+=_format_verbatim(self,verbatim)\n          ret+=x\n  retlist=[]\n      retlist.append(_format_anything(self,arg,kwargs[arg]))\n  retlist.append(_format_flag(self,\"  retlist.append(_format_numbered(self,\"  retlist.append(_format_opt(self,\"  retlist.sort()\n  return _format_return(self,ret,--root\\s+^\\s*(?:[^\\s:]+:\\s*)?LOAD(?:\\s|$)self.'],self)(self,LABEL=\"\",verbatim=None(self,residue,chain=\"\"):\n          return _format_at(self._builder(),\" should be of bool type.so<strided and direct><strided and direct or indirect><strided and indirect><stringsource>.txt = types.MethodType( ldict['unable to allocate array d""ata.unable to allocate shape and strides.unknown method utf-8/vim/help/vim/syntax/plumed.vimwhen calling numbered with 1 argument, it should be a list/tuple/dictionarywhen calling replicas with 1 argument, it should be a list/tupleASCIIAtomGroupBCommConstantsConstants.__init__DataFrameEllipsisFIELDSFormatErrorHAS_NUMPYIInputBuilderInputBuilder.__call__InputBuilder.__getattr__InputBuilder.__getattr__.<locals>._callmeInputBuilder.__getattr__.<locals>._callme.__init__InputBuilder.__getattr__.<locals>._callme.__call__InputBuilder.__init__InputBuilder._set_dictionaryInputBuilder.numberedInputBuilder.refreshInputBuilder.replicasInputBuilder.verbatimLLABELLOADLeptonErrorMDAnalysisMPIMethodTypeNamedTemporaryFileNumberPLUMED_KERNELPlumedPlumedDataFramePlumedErrorPlumedSeriesPlumed.__enter__Plumed.__exit__Plumed.__reduce_cython__Plumed.__setstate_cython__Plumed.cmdPlumed.finalize__Pyx_PyDict_NextRefSETSequenceSeriesTextFileReaderView.MemoryView___aabcabspathaction_addressofallallatomsallocate_bufferalphaalwaysapiappendappend_underscores_append_underscoresapplymapargargsarrayasyncio.coroutines_atat_at.__call___at.__init___at_global_at_residuebackbasebetabuffer_build_convert_function_build_convert_function.<locals>.convert_funcbuilder_builder__builtins___bundled_kernel_pathc__call___callmechaincheck_outputchichi1chunksizeckey__class____class_getitem__cline_in_tracebackclipcmdcolumnscommacomma_separatorcommentcompileconstants_constructor_constructor_expanddim_constructor_slicedcontextlibconvertconvert_allconvert_funccopycorecount_create_functionscvalddarwindecodedeltadescriptiondf__dict__dictionarydigitdirname__doc__doc_docdoubledtypedtype_is_objectenable_atenable_constantsenable_conversion_enable_mda_groupsenable_mda_groupsenabledencode__enter__entryenumerateenvironepsilonerror__exit__extendf__file__filefile_or_pathfinfinalize_fix_braces_fix_fileflagflagsfnameformat_format_anything_format_at_format_at_one_chain_format_at_one_residue_format_flag_format_label_format_numbered_form""at_opt_format_return_format_single_format_tools_format_verbatimfortranfrac0frac1fspath__func__func_functionsfunctionsgammagetgetApiVersiongetInputBuilderJSONgetInputBuilderJSONLength__getattr____getstate__gogroups_guessplumedrootgzip_has_dicthas_indexhas_mindexheaderheighthelphelp_dirhillshills_time_averagehistoryhstackhydrogensii0i1id__import__indexindex_colindicesinfo__init__initinplaceinstanceint_intcions_is_coroutineisdigitisfileisnanitemitemsitemsize__iter__jjoinjsonkkernelkeykeyskeywordkwargsllabel<lambda>last_failurelcsldictlengthlevelliblibplumedKernellinelinspaceload_dictloadslog__main__matchmathmaxmdatomsmemviewmenu__metaclass__metadata_metadatamethodsmin_minimize_bracesminimize_bracesmode__module__modulesmpi4pympi4py.MPI__mro_entries__nname__name___namename__namesnamespacenanndarrayndim__new____next__nononhydrogensnpnrowsnucleicnullcontextnumbered_numbered_numbered.__init__numbersnumpyobjomegaonesopenoptosoutputppackpandaspathpatternpdphipiplatformplumedplumedDictionaryplumed_constantsplumed_runtimeplumedrootpoppos_post_formatpost_format_pre_formatpre_format__prepare__process_dataframepropertyproteinpsipy_bytes__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable____qualname__rravelrereadInputLineread_as_pandasread_as_pandas.<locals>.PlumedDataFrameread_as_pandas.<locals>.PlumedDataFrame._constructorread_as_pandas.<locals>.PlumedDataFrame._constructor_slicedread_as_pandas.<locals>.PlumedSeriesread_as_pandas.<locals>.PlumedSeries._constructorread_as_pandas.<locals>.PlumedSeries._constructor_expanddimread_as_pandas.<locals>.TextFileReaderread_as_pandas.<locals>.TextFileReader.__init__read_as_pandas.<locals>.TextFileReader.__next__read_as_pandas.<locals>.process_dataframeread_csvreader_readkernelmetadata_readkernelmetadata.<locals>.<lambda>readline_readvimdict__reduce____reduce_cython____reduce_ex__refrefreshregisterreplace_replicasreplicas_replicas.__init__resresidueretretlistrootrstriprtseekselfsep_separatorsetLogFilesetNestedExceptionssetReal""Precision_set_dictionary__set_name__setdefaultsets__setstate____setstate_cython__shapesizeskiprowssortedsourcesplitstartstdoutstepstopstringstructsubsubnsubprocesssuffixsugarsyntaxsyntax_filesystt0t1telltempfile__test__thisdoctimetmptmpfiletobytestofile_tofile_toplumedtoplumedtracebacktypetypecodetypesunpackupdateuse_indexuse_timeusecolsvv0v1v2v3v4valvaluevaluesverbatimversion_info_vimdictwwarnwarningswaterweakrefwordwritewrite_pandaswtxzeroszeta\000\210\001\340\014\023\2201\200\001\330\006\t\210\032\2201\220F\230!\330\010\016\210c\220\021\220!\330\006\014\210A\330\006\n\210%\210q\330\010\013\2101\210H\220A\330\013\021\220\021\330\006\t\210\021\330\010\016\210e\2201\220A\330\006\t\210\032\2201\220H\230E\240\023\240J\250a\250x\260q\330\010\017\210t\2202\220U\230\"\230D\240\002\240&\250\002\250#\250Q\250a\340\010\017\210q\320\003\027\220|\2401\330\007\n\210*\220A\220R\220q\330\013\017\210u\220A\330\016\022\220'\230\022\2302\230Q\230a\230q\340\013\017\210w\220a\220q\330\007\013\2105\220\005\220Q\220c\230\021\230!\330\013\016\210c\220\021\220$\220a\220s\230\"\230A\330\017\022\220$\220a\330\023\033\320\0332\260!\2601\330\017\022\220!\330\023\027\220q\230\004\230D\240\001\240\022\2401\240C\240w\250a\250t\2601\260B\260a\260t\2703\270a\270t\3001\300B\300a\300q\340\023\027\220q\230\004\230D\240\001\240\022\2401\240C\240t\2501\250B\250a\250s\260#\260Q\260d\270!\2702\270Q\270a\330\020\023\2201\220D\230\001\230\023\230B\230a\360\006\000\020\026\220Z\230q\240\001\320\004#\2401\330\007\016\210j\230\001\230\024\230Y\240c\250\025\250h\260a\200\001\360\n\000\005\014\2104\210w\220a\340\004\010\210\001\330\004\007\200q\330\004\n\210\"\210A\210Q\330\007\013\2104\210r\220\025\220a\220{\240#\240Q\330\004\007\200r\210\026\210q\220\t\230\021\330\010\016\210j\230\001\230\034\240R\240t\2502\250Q\360\006\000\005\010\200r\210\026\210q\220\r\230Q\330\010\017\210q\330\004\007\200w\210c\220\023\220B\220c\230\024\230T\240\026\240t\2502\250V\2601\260J\270f\300E\310\026\310t\320SU\320U[\320[\\\320""\\g\320gh\330\010\017\210t\2202\220T\230\022\2301\330\004\013\2101\320\000 \320 6\3206M\310\\\320Yh\320hu\360\000\000v\001D\002\360\000\000D\002O\002\360\000\000O\002P\002\360n\002\000\014\r\360\n\000\005\030\220r\230\021\330\010\t\210\021\360\006\000\t\n\210\021\360\010\000\005\033\230\"\230A\330\010\022\220!\2201\330\010\t\210\021\360\006\000\t\n\210\021\360\014\000\005\006\360\024\000\005\010\320\007\031\230\023\230A\330\007\031\230\021\330\004\007\320\007\031\230\023\230A\330\007\031\230\021\330\004\007\320\007\030\230\003\2301\330\007\030\230\001\330\004\007\320\007\030\230\003\2301\330\007\030\230\001\360\006\000\005\010\200u\320\014\035\230R\230u\240C\320'8\270\002\270,\300c\320IZ\320Z\\\320\\]\330\010\016\210j\230\001\230\021\330\004\007\200u\320\014\034\230B\230e\2403\320&6\260b\270\013\3003\320FV\320VX\320XY\330\010\016\210j\230\001\230\021\360\006\000\005\r\210A\330\004\020\220\001\340\004\010\320\010\031\230\022\230<\240t\320+=\270S\320@Q\320QS\320ST\330\010\020\320\020'\240q\250\001\340\010\013\320\013\034\230B\230g\240\\\260\021\360\006\000\005\022\220\031\230!\230=\250\001\360\006\000\005\014\210<\220y\240\001\330\004\016\210d\220&\230\001\360\006\000\005\010\200s\210!\2108\2201\220A\330\010\016\210k\230\021\320\0326\260a\260|\3006\310\022\3101\330\004\007\200w\210a\210s\220#\220U\230#\230W\240A\240S\250\003\2501\330\010\016\210k\230\021\320\0326\260a\260|\3006\310\022\310=\320XY\320Y`\320`a\320ac\320cd\320dg\320gh\320ho\320op\320pq\360\006\000\005\017\210g\220Q\220a\360\006\000\005\017\210a\330\004\007\320\007\027\220r\230\021\330\010\t\330\014\020\220\014\230E\240\021\330\014\023\220<\230y\250\001\330\014\030\230\005\230Q\230a\330\014\017\210t\2201\330\020\021\330\014\023\2204\220v\230Q\330\014\017\210s\220!\2206\230\022\2301\330\020\021\330\014\017\210t\2201\220B\220b\230\005\230S\240\004\240A\240R\240r\250\021\330\020\021\330\014\017\210q\330\020\022\220'\230\021\230$\230a\230q\340\020\022\220$\220a\220q\340\014\025\220W\230B\230d\240!\2403\240b""\250\004\250A\250Q\330\014\030\230\t\240\021\360\010\000\005\010\200r\210\031\220!\220>\240\024\240W\250H\260E\270\027\300\005\300V\3101\330\024\034\230H\240I\250Y\260f\270F\300*\310J\320V`\320`a\340\004\007\200z\220\023\220A\340\010\017\320\017 \240\001\240\023\320$5\260Z\270q\360\006\000\t\036\230T\240\021\240!\360\010\000\r\016\360\n\000\r\016\360\010\000\t\020\210~\230Q\230c\320!2\260*\270A\320\000#\2409\250A\360\022\000\005\017\210a\330\004\010\210\n\220!\340\010\013\2102\210V\2201\220H\230A\330\014\r\330\010\016\210a\330\010\013\2101\330\014\023\2201\330\010\017\210q\330\010\020\220\007\220r\230\021\330\010\020\220\001\330\010\013\2103\210a\210z\230\021\230(\240!\2401\330\014\024\220A\330\010\014\210E\220\032\2301\230A\340\014\017\210r\220\026\220q\230\010\240\001\330\020\021\330\014\017\210z\230\021\230'\240\021\240\"\240B\240a\330\020\030\230\004\230B\230b\240\002\240!\340\020\030\230\004\230B\230b\240\002\240!\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\014\230B\230g\240R\240q\330\010\020\220\001\330\010\014\210E\220\032\2301\230A\340\014\017\210r\220\026\220q\230\010\240\001\330\020\021\330\014\016\210j\230\001\230\027\240\001\240\021\330\014\017\210q\220\002\220!\330\020\030\320\030@\300\002\300\"\300B\300f\310B\310b\320PR\320RS\330\021\022\220\"\220A\330\020\030\320\030?\270r\300\022\3002\300V\3102\310R\310r\320QR\330\021\022\220\"\220A\330\020\030\320\030D\300B\300b\310\002\310&\320PR\320RT\320TV\320VW\340\020\026\220i\230q\320 I\310\021\310!\340\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\014\210E\220\032\2301\230A\330\n\022\320\022,\250B\250b\260\002\260!\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\340\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\320\0204\260B\260d\270!\2708\3002\300Q\340\010\013\2104\210w\220a\330\013\023\2206\230\022\230>\250\022\2504\250q\260\005\260R\260s\270!\2709\300B\300a\330\010\021\220\021\220'""\230\021\330\004\013\2101\200A\340\010\022\320\022#\2401\240K\250t\2604\3207J\310$\310a\330\010\020\220\001\330\010\014\210E\220\032\2309\240F\250!\330\014\026\220a\330\014\020\220\001\220\027\230\016\240a\330\014\023\2201\220F\230%\230{\250!\2509\260A\260V\2701\340\010\014\210H\220D\230\t\240\024\240Q\240m\2601\330\014\017\210u\220G\2301\330\020\024\220I\230T\240\021\240%\240q\330\010\014\210I\220W\230A\230Q\330\010\014\210J\220d\230&\240\013\2501\330\010\014\210L\230\001\330\010\014\210K\220q\320\000\030\230\014\240A\360\016\000\014\r\330\004\t\320\t\033\2301\330\t\n\210+\220Q\220m\2409\250G\260:\270V\3001\300L\320PQ\330\010\014\210E\220\026\220q\230\004\230A\230Q\330\010\t\210\024\210Q\320\016\036\230a\330\010\013\2103\210a\210r\220\021\220!\330\014\023\2201\330\010\017\210u\220F\230!\2304\230q\240\001\330\010\t\210\024\210Q\320\016*\250!\330\010\013\2106\220\021\220\"\220B\220a\330\014\022\220*\230A\230Q\330\010\017\210u\220F\230!\2304\230q\240\003\2401\240F\250!\2501\330\010\t\210\024\210Q\320\016$\240A\340\004\013\2104\210v\220Q\220e\2306\240\021\240$\240g\250X\260R\260w\270a\270q\330\004\017\210q\330\004\010\210\001\330\004\010\210\007\210y\230\006\230f\240A\330\010\013\2104\210z\230\021\230&\240\006\240c\250\024\250Z\260q\270\005\270T\300\021\300*\310A\330\014\r\330\010\022\220!\2208\2301\330\010\013\2101\210H\320\024%\240R\240w\250b\260\005\260R\260u\270D\300\001\300\027\310\005\310T\320QR\320R`\320`e\320eg\320gh\330\010\013\2101\210H\220C\220q\230\007\230x\240q\250\007\250s\260(\270!\2705\300\001\330\010\014\210E\220\033\230E\240\021\240)\2506\260\021\360\006\000\r\020\210u\220D\230\010\240\001\330\020\021\330\014\017\210t\220:\230Q\230h\240f\250C\250w\260g\270Q\330\020\021\330\014\017\210{\230'\240\021\330\020\026\220j\240\001\320!P\320PR\320RY\320Y[\320[_\320_a\320ab\330\014\025\220W\230A\230Q\330\014\017\210z\230\021\230)\2401\330\020\031\230\030\240\024\240Q\240a\330\014\017\210t\220:\230Q\230i\240q\330\020\026\220j\240\001\320!N\310b\320PW\320WY\320Y]""\320]_\320_`\330\014\017\210w\220a\220w\230b\240\001\330\020\025\220Q\330\021\022\330\020\025\220Q\340\020\025\220Q\330\014\026\220a\220w\230a\230v\240Q\360\006\000\t\023\220!\2208\2304\230q\240\006\240a\240z\260\021\260'\270\026\270q\330\014\020\220\001\330\004\013\210;\220a\200A\330\010\013\210=\230\003\2302\230Y\240a\240q\330\010\013\320\013\033\2302\230Q\330\014\020\220\005\220[\240\002\240!\2401\240A\240T\250\021\250!\2501\330\010\013\320\013\033\2302\230Q\330\014\017\210\177\230a\230q\330\014\016\320\016 \240\t\250\021\250!\330\010\017\210q\200A\360\010\000\t\014\2103\210a\210u\220B\220a\330\n\r\210W\220A\220T\230\021\230#\230Q\330\014\020\220\005\220T\230\021\230!\340\014\022\220)\2301\230A\340\n\016\210e\2201\200A\360\010\000\t\014\2103\210a\210u\220B\220a\330\014\017\210z\230\021\230$\230a\230s\240!\330\020\024\220E\230\024\230Q\230a\330\021\030\230\001\230\024\230Q\230c\240\021\330\020\024\220E\230\021\330\020\022\220!\330\020\024\220E\230\024\230Q\230a\330\025\031\230\024\230Q\230c\240\021\330\025\030\230\001\340\020\026\220i\230q\240\001\340\014\020\220\005\220Q\330\014\016\210a\330\014\020\220\005\220Q\330\021\025\220T\230\021\230#\230Q\330\021\024\220A\200A\360\020\000\t\014\2104\210{\230#\230U\240#\240T\250\024\250Q\330\014\023\2201\330\010\021\320\021$\240A\240Y\250d\260!\330\010\013\2109\220C\220q\330\014\023\2201\330\010\014\320\014\034\230B\230a\330\010\017\210q\210A\340\020\023\2204\220\177\240i\250q\330\020\027\320\027(\250\001\250\023\250D\3200B\300$\300k\320QU\320UV\320\000$\240A\330\006\n\210!\330\006\t\210\027\220\001\220\026\220|\2404\240t\250:\260Q\260f\270A\330\t\r\210U\220!\330\r\022\320\022&\240a\240x\250u\260H\270A\340\t\016\320\016\"\240!\2408\2505\260\010\270\001\330\006\r\210S\220\001\220\023\220A\220W\230A\320\000\034\230A\360\034\000\005\006\340\010\013\2104\210z\230\021\230'\240\021\330\014\023\2206\230\021\230'\240\021\330\013\014\330\010\020\220\005\220Q\220a\330\010\017\210q\330\004\005\340\010\t\360\014\000\t\025\220H\230A""\340\010\014\210L\230\001\230\025\230b\240\001\330\014\024\220E\230\021\230!\330\014\023\2201\340\010\017\210q\330\013\014\330\010\020\220\005\220Q\220a\330\010\017\210q\210A\330\020\024\320\024$\240A\330\020\024\320\024&\240a\330\020\024\220K\230q\330\020\024\220M\240\021\200A\330\r\016\330\006\n\210*\220G\2304\230q\240\001\330\006\021\220\021\220*\230K\240x\250z\270\032\3008\3107\320R^\320^_\330\006\n\210%\210q\330\010\014\210A\210X\220R\220r\230\022\2307\240\"\240B\240b\250\005\250V\2607\270!\330\006\022\220!\2206\230\026\230x\240w\250h\260g\270X\300X\310Z\320W^\320^c\320ch\320hm\320mr\320rw\320w}\360\000\000~\001E\002\360\000\000E\002M\002\360\000\000M\002T\002\360\000\000T\002U\002\330\006\n\210%\210q\330\014\022\220!\330\014\020\220\001\220\027\230\002\230\"\230B\320\036k\320km\320mo\320oq\360\000\000r\001I\002\360\000\000I\002V\002\360\000\000V\002b\002\360\000\000b\002c\002\330\014\020\220\001\220\030\230\022\2302\230R\320\037>\270b\300\002\300\"\300K\310v\320U\\\320\\b\320bj\320jq\320qy\320yz\200A\340\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\360<\000\t\r\210K\220q\330\010\014\210I\220Q\330\010\013\2101\330\n\016\210l\230!\340\n\016\210l\230!\330\010\014\320\014\036\230a\330\010\014\320\014!\240\021\340\010\014\210I\220Q\340\010\014\210N\230!\330\010\014\210K\220q\330\010\014\320\014 \240\001\330\010\014\210M\230\021\330\010\014\210N\230!\330\010\013\2101\330\014\025\320\025(\250\001\250\027\260\007\260y\300\001\330\014\017\210y\230\003\2301\330\020\031\230\034\240Q\240g\250Q\330\014\020\320\020 \240\002\240!\340\010\013\2101\330\014\020\220\004\220C\220q\230\001\200A\340\010\017\210~\230Q\230e\2402\240T\250\021\250)\2604\260q\200A\330\007\n\210$\210a\330\013\014\330\017\020\360\010\000\020\"\240\031\250!\360\006\000\014\017\210d\320\022'\240t\2504\250r\260\026\260q\270\010\300\001\330\020\027\220t\2301\230A\330\020\023\2207\230#\230T\240\033\250E\260\021\330\024\033\2307""\240!\2405\250\001\330\013\016\210d\220$\320\026+\2504\250r\260\026\260q\270\010\300\001\330\020\027\220r\230\024\230Q\230f\240C\240q\330\020\023\2207\230#\230T\240\033\250E\260\021\330\024\033\2307\240!\2405\250\001\330\013\021\220\036\230q\320 2\260\"\260A\340\013\014\330\017\020\360\010\000\020\"\240\031\250!\340\013\016\210b\220\006\220a\220|\2401\330\017\024\220D\230\003\2301\330\013\022\220'\230\021\230%\230q\320\000\024\220A\360(\000\014\r\340\004\016\210g\220Q\220b\230\007\230x\240t\2502\250V\2606\270\027\300\001\340\004\020\220\004\220K\230t\2407\250!\2502\250W\260I\270T\300\022\3006\310\026\310q\320PS\320SZ\320Z[\340\004\007\200q\330\010\016\210i\220q\230\001\340\004\007\200}\220C\220q\330\010\025\220S\230\001\330\004\021\220\031\230!\230=\250\001\340\004\020\220\006\220a\220q\330\004\007\200q\330\010\024\220F\230!\2303\230a\230s\240!\2402\240V\2501\330\004\010\210\005\210R\210q\330\010\024\220F\230!\2303\230a\230s\240!\2401\330\004\020\220\006\220a\220q\340\004\007\200w\210a\210s\320\022&\240d\250*\260A\260R\3207I\310\021\330\010\014\210E\220\022\2201\340\014\030\230\006\230a\230y\250\001\250\021\250!\2502\250Q\250c\260\021\260!\2601\260B\260a\260q\340\004\010\210\005\210U\220!\2202\220V\2301\230A\330\010\013\2101\330\014\030\230\006\230a\230s\240!\2403\240a\240r\250\026\250q\260\001\330\010\014\210E\220\022\2201\330\014\030\230\006\230a\230s\240!\2403\240a\240r\250\021\250\"\250A\250Q\330\010\024\220F\230!\2301\200A\360\n\000\t\020\210y\230\001\230\021\200\001\340\004\r\210\\\230\023\230J\240c\250\036\260q\330\004\013\2102\210U\220%\220q\330\010\n\210%\210x\220q\230\002\230%\230x\240q\250\001\330\010\t\330\010\t\330\010\032\230\"\230A\340\004\013\2108\2202\220U\230'\240\021\240+\250Q\200Q\330\t\020\220\001\320\000\021\320\021!\240\021\360\036\000\005\010\200{\220#\220Q\330\010\023\320\023#\2401\240A\330\004\020\220\013\2302\230Q\330\004\r\210[\230\002\230!\340\004\025\220Q\330\004\016\210b\220\010\230\001\230\021\330\t\r\210Q\320\016\036\230a\330\010""\014\210H\220A\330\014\017\210w\220f\230A\230Q\330\020\025\220R\220t\2301\230J\240c\250\021\330\020\024\220A\220V\320\033+\2507\3202E\300Q\330\004\010\210\001\330\004\010\210\001\330\004\010\210\n\220!\330\010\013\2101\210H\220A\330\010\013\2101\210H\220A\340\r\021\220\021\220)\2302\230T\240\022\2407\250\"\250K\260q\330\014\024\220A\330\014\020\220\010\230\001\330\020\031\230\021\330\020\023\2204\220w\230a\230u\240B\240a\330\024\034\320\034-\250R\250w\260b\270\001\330\014\017\210q\220\010\230\001\340\014\017\210q\220\010\230\003\2301\230G\2408\2501\250G\2603\260h\270a\270u\300A\340\010\014\210G\320\023#\2401\240A\340\014\017\210s\220!\2208\2303\230a\330\020\023\2201\220G\2301\230B\230d\240!\2405\250\003\2503\250a\250z\270\023\270A\270Q\330\004\013\2104\210q\200\001\330\004\n\210+\220Q\200Q\330\010\014\210I\220Q\200Q\360\"\000\021!\240\001\240\024\240Q\330\t\r\320\r\036\320\0364\260A\320\000\025\220Q\360\020\000\005\006\330\010\r\320\r\035\230Q\340\r\037\230v\240Q\330\r\021\220\027\230\001\330\022\030\230\001\230\033\240A\330\021\022\220$\220a\220}\240A\330\021\022\220$\220a\220q\330\r\022\220!\330\022\026\220a\220x\230q\330\021\025\220X\230Q\330\025\030\230\002\230&\240\001\320!2\260!\330\031\036\230b\240\004\240A\320%6\260c\270\025\270g\300Q\300a\330\031\032\330\r\020\220\005\220T\230\023\230A\230U\240!\2401\330\021\030\230\001\360\010\000\014\r\330\004\013\210:\220]\240!\2401\240I\250[\270\007\270z\310\027\320PQ\320QY\320Y`\320`a\200\001\330\002\t\210\031\220#\220Q\330\004\007\200s\210!\2109\220A\220Q\330\006\r\210S\220\001\220\022\2204\220q\230\t\240\024\240Q\330\002\t\210\021\320\005\035\230Q\330\t\037\230s\240'\250\023\250B\250a\330\t\033\2301\340\t\014\210D\220\003\2201\330\014\020\220\016\230a\230u\240E\250\022\2505\260\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\010\230\001\230\026\230q\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\n\230!\2306\240\021\330\014\r\330\t\014\210J\220d\230*\240A\240U\250\"\250A\340\014\020\220\003\2206""\230\022\2302\230Q\330\017\023\320\023&\240a\240v\250Q\330\022\025\220V\2302\230R\230q\330\017\023\320\023#\2401\240F\250!\330\022\025\220V\2302\230R\230q\330\017\023\320\023$\240A\240V\2501\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230E\240\021\330\014\021\220\023\220I\230R\230t\2403\240c\250\031\260\"\260E\270\024\270S\300\t\310\022\3101\330\017\023\320\023$\240A\240V\2501\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220>\240\021\240&\250\001\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220?\240!\2406\250\021\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\027\220s\230'\240\023\240B\240a\330\014\023\2201\340\014\020\220\016\230a\230u\240E\250\023\250A\250[\3208d\320de\330\014\r\330\t\014\210I\220S\230\003\2301\330\023\024\330\014\017\210z\230\021\230%\230s\240!\330\016\022\220(\230!\2306\240\021\330\016\017\330\t\017\210z\230\021\320\0323\2607\270!\2703\270a\270t\3001\300A\220\r\230T\240\021\240#\240S\250\007\250t\2601\260B\260b\3208H\310\001\200\001\330\006\n\210!\330\006\t\210\027\220\001\220\030\230\034\240T\250\024\250Z\260q\270\010\300\001\330\010\014\210E\220\021\330\016\023\2207\230,\240b\320(>\270a\270x\300u\310B\310a\340\010\r\210W\220L\240\002\320\"8\270\001\270\030\300\025\300h\310a\340\006\r\210Q\320\004\035\230Y\240a\330\010\014\210A\330\010\r\210]\230!\2305\240\001\330\010\r\210Q\330\010\020\220\001\330\010\014\210G\2206\230\021\230!\330\014\023\2207\230!\320\033+\2501\250E\260\024\260V\2701\270A\330\010\017\210u\220A\330\010\014\210E\220\021\330\014\017\210s\220!\2202\220Q\220a\330\020\025\220Q\330\010\r\320\r\035\230Q\230e\2401\330\010\017\210~\230Q\230e\2404\240q\210\001\330\014\016\210e\2206\230\021\230$\230a\230u\240A\240Q\330\014\030\230\007\230t\2401\240J\250a\250s\260!\2603\260a\330\014\017\210t\2206\230\021\230!\2301\230A\330\017\026\220a\330\014\023\2201\220A\220Q\320\017!\240\031\250!\330\023\032\230$\230i\240q\250\004\250G\2606\270\033""\300A\320\000\036\320\036.\250i\260y\300\014\310L\320XY\360j\001\000\014\r\330\004\007\200t\210:\220Q\220f\230B\230a\330\010\016\210n\230A\230Q\330\t\r\210Q\330\010\016\210e\2205\230\001\340\004\020\220\003\2207\230%\230s\240#\240W\250A\330\004\021\220\026\220w\230e\2403\240f\250G\2601\340\004\007\200y\220\004\220A\330\010\016\210j\230\001\230\021\340\004\007\200t\210:\220T\230\024\230Q\330\010\021\220\021\340\004\007\200q\330\010\013\2103\210c\220\021\330\014\017\210r\220\024\220Q\220e\2301\330\010\013\2103\210c\220\021\330\014\017\210r\220\024\220Q\220e\2301\330\010\n\210\"\210E\220\022\2202\220Q\220e\2306\240\022\2402\240Q\240d\250$\250a\340\010\013\2106\220\023\220A\330\013\021\220\021\330\010\013\2106\220\023\220A\330\013\021\220\021\330\010\013\2103\210a\210s\220!\2206\230\021\230!\330\010\013\2103\210a\210s\220!\2206\230\021\230!\330\010\n\210\"\210G\2202\220R\220u\230A\230T\240\022\2409\250A\250T\260\024\260R\260q\270\004\270B\270f\300A\300S\310\001\310\026\310q\320PQ\330\004\t\210\031\220!\340\004\007\200w\210g\220Q\330\010\024\220A\220V\2301\330\t\r\210Q\330\010\017\210q\320\000\037\230q\340\004\013\2107\220+\230S\240\001\330\010\t\330\n\021\220\032\2304\230q\320 0\260\001\340\n\021\220\036\230q\330\n\013\330\004\013\2107\220)\2303\230a\330\010\017\210x\220v\230Q\230d\240\"\240A\330\004\013\2108\2207\230!\2301\340\004\007\200w\210k\230\027\240\005\240T\250\027\260\001\340\010\013\2106\220\022\2207\230$\230g\240S\250\005\250T\260\022\2606\270\021\320:^\320^_\330\014\023\2208\2301\330\004\007\200w\210n\230G\2401\330\010\017\210w\220m\2401\240A\330\004\013\2104\210r\220\021\320\017!\240\031\250!\330\023\030\230\007\230q\240\004\240J\250d\260!\330\023\032\230$\230a\230v\240[\260\001\200\001\340\003\007\200q\330\003\006\200e\2103\210a\330\007\014\320\014\034\230A\230X\240Q\330\010\022\220!\2204\220q\330\007\014\210L\230\001\230\030\240\025\240a\330\010\022\220!\2204\220q\330\007\014\320\014\034\230A\230X\240U\250!\340\007\014\210K\220q\230\010\240\005\240Q\330""\003\n\210!\320\000\037\230q\360\n\000\014\r\330\004\007\200w\210m\2307\240!\330\007\013\2107\220,\230a\230q\360\006\000\005\010\200w\320\016\"\240$\240m\2603\260c\270\021\330\016\017\330\007\n\210*\220A\220T\230\032\2405\250\007\250q\330\t\r\210S\220\010\230\001\230\021\330\004\007\200z\220\021\220$\220a\330\010\017\210r\220\024\220Q\220i\230t\2401\330\004\007\200z\220\021\220$\220g\230Q\330\010\017\210s\220!\2201\330\004\007\200z\220\021\220$\220a\330\010\016\210i\220q\230\001\330\004\007\200z\220\021\220$\220a\330\010\013\2105\220\001\220\021\330\014\022\220)\2301\230A\330\010\017\210}\230B\230k\250\021\250(\260.\300\001\300\030\310\023\310E\320QV\320VW\320WZ\320Z`\320`a\330\004\007\200w\210a\210t\2201\330\010\017\210q\330\010\014\210E\220\021\330\014\024\220G\230<\240r\250\033\260A\260X\270^\3101\310H\320TV\320V[\320[\\\320\\_\320_e\320ef\330\010\017\210v\220Q\220c\230\021\230'\240\021\330\004\n\210)\2201\220A\210q\330\023\027\220z\240\021\330\023\027\220w\230a\330\023\027\220y\320 ;\2702\270Q\210q\330\023\027\220z\240\021\330\023\027\220w\230a\330\023\027\220y\240\007\240q\250\004\250J\260e\2701\200\001\340\004\007\200t\2103\210a\330\010\017\210q\330\004\007\200z\220\021\220$\220a\330\010\013\2101\330\014\023\2204\220r\230\021\340\014\023\2201\330\004\n\210)\2201\220E\230\022\2301\200\001\340\004\007\200t\2103\210a\330\010\017\210q\330\004\007\200z\220\021\220$\220a\330\010\017\210}\230B\230k\250\021\250(\260.\300\001\300\030\310\023\310F\320RX\320XY\340\010\017\210{\230!\2308\240>\260\021\260(\270%\270v\300Q\330\004\013\2104\210r\220\025\220b\230\004\230B\230a\200\001\340\004\007\200v\210S\220\001\330\010\017\210q\330\004\007\200z\220\021\220&\230\001\330\010\013\2103\210a\210v\220R\220q\330\014\023\2201\330\010\017\210u\220A\220Q\330\004\n\210)\2201\220A\200\001\340\004\007\200z\220\021\220$\220a\330\010\014\210C\210q\330\010\014\210A\330\010\014\210E\220\021\330\014\017\210t\220:\230Q\230b\240\001\330\020\026\220i\230q\240\001\330\014\021\220\033\230A\230X""\240T\250\021\250#\250Q\250c\260\023\260A\260Q\330\010\017\210q\330\004\013\210;\220a\220x\230u\240A\200\001\360\016\000\005\010\200z\220\021\220%\220q\330\010\r\210T\220\021\220%\220q\340\004\007\200r\210\026\210q\220\t\230\024\230Q\330\010\017\210t\2205\230\001\230\024\230V\2401\330\004\013\2101O";
+    #else /* compression: none (15422 bytes) */
+const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensions. Columns: Create action Custom class used to store plumed constants.\n   Custom error reported by read_as_pandas.\n    Dimension %d is not directEmpty shape tuple for cython.arrayError loading PLUMED_KERNEL at path Error loading PLUMED kernel at path Error reading PLUMED file Error reading PLUMED file#! FIELDS=FalseIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of =None. Not enough columnsNote that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Object used to construct plumed input files.\n\n       An instance of this object can be used to construct plumed input files.\n       Check the constructor to see all the available options.\n    Out of bounds on buffer access (axis PLUMED >=2.6 only supports Python 3PLUMED: Root: PLUMED instance is too old, conversions do not work and will be disabledPLUMED instance seems to have a non-working convert cmd, conversions do not work and will be disabledPLUMED metadata has invalid numbering for PLUMED metadata lacks precise numbering for PLUMED not available, check your PLUMED_KERNEL environment variablePLUMED returned an invalid InputBuilder metadata length#! SET Step may not be zero (axis %d)Subclass of pandas.io.TestFileReader, needed for storing constantsUnable to convert item to objectUnknown value type ({})Writing dataframes with MultiIndexes is not supported at this time\n=\\/****************************************=$.*-.*,*.,\"\n\",))\n\")\n)\n@-=\"@>\"{[^{}]*}.*[{}].*[ {}].*[ {},]{""}[\n\t].*__$__$'.*[^_]__$?)#! #add_note      allowed=[]\n      allowed.append(\" and arrays should be type double (size=8), int, or long at 0xcannot load PLUMED instance, conversions will not be availablecannot use simultaneously time and fractioncollections.abc\" contains nonmatching braces<contiguous and direct><contiguous and indirect>convert def disable.__doc__ = .dylibdynamic method printing enableenable_conversion not validerror parsing dictionary, unknown type \\f$(flag)  for arg in kwargs:\n  for x in retlist:\ngc (got got differing extents in dimension .*\\.gz      if(len(x)>0):\n      if not re.sub(\"[0-9]*$\",\"\",arg) in allowed:\n      import re\nisenableditemsize <= 0 for cython.arraykernel must be a path string or path-like object,**kwargs):\n(label)label should be of str type^let b:^let b:plumedDictionary\\[.*$ndarrays should be type np.double, np.intc, or np.int_no default __reduce__ due to non-trivial __cinit__--no-mpi(numbered)numbered types should have integer keys object>(option)option \"options cannot be a dictionaryoptions should be string, number or iterableplumed.Constants should be initialized with a list of 2- or 3-pletsplumed.pyx         raise TypeError(\"unknown arg \" + arg)\n@replica syntax only allowed for scalar or rank 1 vectors@replicas:\",residue,chain)\n  ret=\"\"\n  ret+=\"  ret+=_format_label(self,LABEL)\n  ret+=_format_verbatim(self,verbatim)\n          ret+=x\n  retlist=[]\n      retlist.append(_format_anything(self,arg,kwargs[arg]))\n  retlist.append(_format_flag(self,\"  retlist.append(_format_numbered(self,\"  retlist.append(_format_opt(self,\"  retlist.sort()\n  return _format_return(self,ret,--root\\s+^\\s*(?:[^\\s:]+:\\s*)?LOAD(?:\\s|$)self.'],self)(self,LABEL=\"\",verbatim=None(self,residue,chain=\"\"):\n          return _format_at(self._builder(),\" should be of bool type.so<strided and direct><strided and direct or indirect><strided and indirect><stringsource>.txt = types.MethodType( ldict['unable to allocate array d""ata.unable to allocate shape and strides.unknown method utf-8/vim/help/vim/syntax/plumed.vimwhen calling numbered with 1 argument, it should be a list/tuple/dictionarywhen calling replicas with 1 argument, it should be a list/tupleASCIIAtomGroupBCommConstantsConstants.__init__DataFrameEllipsisFIELDSFormatErrorHAS_NUMPYIInputBuilderInputBuilder.__call__InputBuilder.__getattr__InputBuilder.__getattr__.<locals>._callmeInputBuilder.__getattr__.<locals>._callme.__init__InputBuilder.__getattr__.<locals>._callme.__call__InputBuilder.__init__InputBuilder._set_dictionaryInputBuilder.numberedInputBuilder.refreshInputBuilder.replicasInputBuilder.verbatimLLABELLOADLeptonErrorMDAnalysisMPIMethodTypeNamedTemporaryFileNumberPLUMED_KERNELPlumedPlumedDataFramePlumedErrorPlumedSeriesPlumed.__enter__Plumed.__exit__Plumed.__reduce_cython__Plumed.__setstate_cython__Plumed.cmdPlumed.finalize__Pyx_PyDict_NextRefSETSequenceSeriesTextFileReaderView.MemoryView___aabcabspathaction_addressofallallatomsallocate_bufferalphaalwaysapiappendappend_underscores_append_underscoresapplymapargargsarrayasyncio.coroutines_atat_at.__call___at.__init___at_global_at_residuebackbasebetabuffer_build_convert_function_build_convert_function.<locals>.convert_funcbuilder_builder__builtins___bundled_kernel_pathc__call___callmechaincheck_outputchichi1chunksizeckey__class____class_getitem__cline_in_tracebackclipcmdcolumnscommacomma_separatorcommentcompileconstants_constructor_constructor_expanddim_constructor_slicedcontextlibconvertconvert_allconvert_funccopycorecount_create_functionscvalddarwindecodedeltadescriptiondf__dict__dictionarydigitdirname__doc__doc_docdoubledtypedtype_is_objectenable_atenable_constantsenable_conversion_enable_mda_groupsenable_mda_groupsenabledencode__enter__entryenumerateenvironepsilonerror__exit__extendf__file__filefile_or_pathfinfinalize_fix_braces_fix_fileflagflagsfnameformat_format_anything_format_at_format_at_one_chain_format_at_one_residue_format_flag_format_label_format_numbered_form""at_opt_format_return_format_single_format_tools_format_verbatimfortranfrac0frac1fspath__func__func_functionsfunctionsgammagetgetApiVersiongetInputBuilderJSONgetInputBuilderJSONLength__getattr____getstate__gogroups_guessplumedrootgzip_has_dicthas_indexhas_mindexheaderheighthelphelp_dirhillshills_time_averagehistoryhstackhydrogensii0i1id__import__indexindex_colindicesinfo__init__initinplaceinstanceint_intcions_is_coroutineisdigitisfileisnanitemitemsitemsize__iter__jjoinjsonkkernelkeykeyskeywordkwargsllabel<lambda>last_failurelcsldictlengthlevelliblibplumedKernellinelinspaceload_dictloadslog__main__matchmathmaxmdatomsmemviewmenu__metaclass__metadata_metadatamethodsmin_minimize_bracesminimize_bracesmode__module__modulesmpi4pympi4py.MPI__mro_entries__nname__name___namename__namesnamespacenanndarrayndim__new____next__nononhydrogensnpnrowsnucleicnullcontextnumbered_numbered_numbered.__init__numbersnumpyobjomegaonesopenoptosoutputppackpandaspathpatternpdphipiplatformplumedplumedDictionaryplumed._plumedplumed_constantsplumedrootpoppos_post_formatpost_format_pre_formatpre_format__prepare__process_dataframepropertyproteinpsipy_bytes__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable____qualname__rravelrereadInputLineread_as_pandasread_as_pandas.<locals>.PlumedDataFrameread_as_pandas.<locals>.PlumedDataFrame._constructorread_as_pandas.<locals>.PlumedDataFrame._constructor_slicedread_as_pandas.<locals>.PlumedSeriesread_as_pandas.<locals>.PlumedSeries._constructorread_as_pandas.<locals>.PlumedSeries._constructor_expanddimread_as_pandas.<locals>.TextFileReaderread_as_pandas.<locals>.TextFileReader.__init__read_as_pandas.<locals>.TextFileReader.__next__read_as_pandas.<locals>.process_dataframeread_csvreader_readkernelmetadata_readkernelmetadata.<locals>.<lambda>readline_readvimdict__reduce____reduce_cython____reduce_ex__refrefreshregisterreplace_replicasreplicas_replicas.__init__resresidueretretlistrootrstriprtruntimeseekselfsep_separatorsetLogFilesetNestedExceptions""setRealPrecision_set_dictionary__set_name__setdefaultsets__setstate____setstate_cython__shapesizeskiprowssortedsourcesplitstartstdoutstepstopstringstructsubsubnsubprocesssuffixsugarsyntaxsyntax_filesystt0t1telltempfile__test__thisdoctimetmptmpfiletobytestofile_tofile_toplumedtoplumedtracebacktypetypecodetypesunpackupdateuse_indexuse_timeusecolsvv0v1v2v3v4valvaluevaluesverbatimversion_info_vimdictwwarnwarningswaterweakrefwordwritewrite_pandaswtxzeroszeta\000\210\001\340\014\023\2201\200\001\330\006\t\210\032\2201\220F\230!\330\010\016\210c\220\021\220!\330\006\014\210A\330\006\n\210%\210q\330\010\013\2101\210H\220A\330\013\021\220\021\330\006\t\210\021\330\010\016\210e\2201\220A\330\006\t\210\032\2201\220H\230E\240\023\240J\250a\250x\260q\330\010\017\210t\2202\220U\230\"\230D\240\002\240&\250\002\250#\250Q\250a\340\010\017\210q\320\003\027\220|\2401\330\007\n\210*\220A\220R\220q\330\013\017\210u\220A\330\016\022\220'\230\022\2302\230Q\230a\230q\340\013\017\210w\220a\220q\330\007\013\2105\220\005\220Q\220c\230\021\230!\330\013\016\210c\220\021\220$\220a\220s\230\"\230A\330\017\022\220$\220a\330\023\033\320\0332\260!\2601\330\017\022\220!\330\023\027\220q\230\004\230D\240\001\240\022\2401\240C\240w\250a\250t\2601\260B\260a\260t\2703\270a\270t\3001\300B\300a\300q\340\023\027\220q\230\004\230D\240\001\240\022\2401\240C\240t\2501\250B\250a\250s\260#\260Q\260d\270!\2702\270Q\270a\330\020\023\2201\220D\230\001\230\023\230B\230a\360\006\000\020\026\220Z\230q\240\001\320\004#\2401\330\007\016\210j\230\001\230\024\230Y\240c\250\025\250h\260a\200\001\360\n\000\005\014\2104\210w\220a\340\004\010\210\001\330\004\007\200q\330\004\n\210\"\210A\210Q\330\007\013\2104\210r\220\025\220a\220{\240#\240Q\330\004\007\200r\210\026\210q\220\t\230\021\330\010\016\210j\230\001\230\034\240R\240t\2502\250Q\360\006\000\005\010\200r\210\026\210q\220\r\230Q\330\010\017\210q\330\004\007\200w\210c\220\023\220B\220c\230\024\230T\240\026\240t\2502\250V\2601\260J\270f\300E\310\026\310t\320SU\320U[\320[""\\\320\\g\320gh\330\010\017\210t\2202\220T\230\022\2301\330\004\013\2101\320\000 \320 6\3206M\310\\\320Yh\320hu\360\000\000v\001D\002\360\000\000D\002O\002\360\000\000O\002P\002\360n\002\000\014\r\360\n\000\005\030\220r\230\021\330\010\t\210\021\360\006\000\t\n\210\021\360\010\000\005\033\230\"\230A\330\010\022\220!\2201\330\010\t\210\021\360\006\000\t\n\210\021\360\014\000\005\006\360\024\000\005\010\320\007\031\230\023\230A\330\007\031\230\021\330\004\007\320\007\031\230\023\230A\330\007\031\230\021\330\004\007\320\007\030\230\003\2301\330\007\030\230\001\330\004\007\320\007\030\230\003\2301\330\007\030\230\001\360\006\000\005\010\200u\320\014\035\230R\230u\240C\320'8\270\002\270,\300c\320IZ\320Z\\\320\\]\330\010\016\210j\230\001\230\021\330\004\007\200u\320\014\034\230B\230e\2403\320&6\260b\270\013\3003\320FV\320VX\320XY\330\010\016\210j\230\001\230\021\360\006\000\005\r\210A\330\004\020\220\001\340\004\010\320\010\031\230\022\230<\240t\320+=\270S\320@Q\320QS\320ST\330\010\020\320\020'\240q\250\001\340\010\013\320\013\034\230B\230g\240\\\260\021\360\006\000\005\022\220\031\230!\230=\250\001\360\006\000\005\014\210<\220y\240\001\330\004\016\210d\220&\230\001\360\006\000\005\010\200s\210!\2108\2201\220A\330\010\016\210k\230\021\320\0326\260a\260|\3006\310\022\3101\330\004\007\200w\210a\210s\220#\220U\230#\230W\240A\240S\250\003\2501\330\010\016\210k\230\021\320\0326\260a\260|\3006\310\022\310=\320XY\320Y`\320`a\320ac\320cd\320dg\320gh\320ho\320op\320pq\360\006\000\005\017\210g\220Q\220a\360\006\000\005\017\210a\330\004\007\320\007\027\220r\230\021\330\010\t\330\014\020\220\014\230E\240\021\330\014\023\220<\230y\250\001\330\014\030\230\005\230Q\230a\330\014\017\210t\2201\330\020\021\330\014\023\2204\220v\230Q\330\014\017\210s\220!\2206\230\022\2301\330\020\021\330\014\017\210t\2201\220B\220b\230\005\230S\240\004\240A\240R\240r\250\021\330\020\021\330\014\017\210q\330\020\022\220'\230\021\230$\230a\230q\340\020\022\220$\220a\220q\340\014\025\220W\230B\230d\240!\2403""\240b\250\004\250A\250Q\330\014\030\230\t\240\021\360\010\000\005\010\200r\210\031\220!\220>\240\024\240W\250H\260E\270\027\300\005\300V\3101\330\024\034\230H\240I\250Y\260f\270F\300*\310J\320V`\320`a\340\004\007\200z\220\023\220A\340\010\017\320\017 \240\001\240\023\320$5\260Z\270q\360\006\000\t\036\230T\240\021\240!\360\010\000\r\016\360\n\000\r\016\360\010\000\t\020\210~\230Q\230c\320!2\260*\270A\320\000#\2409\250A\360\022\000\005\017\210a\330\004\010\210\n\220!\340\010\013\2102\210V\2201\220H\230A\330\014\r\330\010\016\210a\330\010\013\2101\330\014\023\2201\330\010\017\210q\330\010\020\220\007\220r\230\021\330\010\020\220\001\330\010\013\2103\210a\210z\230\021\230(\240!\2401\330\014\024\220A\330\010\014\210E\220\032\2301\230A\340\014\017\210r\220\026\220q\230\010\240\001\330\020\021\330\014\017\210z\230\021\230'\240\021\240\"\240B\240a\330\020\030\230\004\230B\230b\240\002\240!\340\020\030\230\004\230B\230b\240\002\240!\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\014\230B\230g\240R\240q\330\010\020\220\001\330\010\014\210E\220\032\2301\230A\340\014\017\210r\220\026\220q\230\010\240\001\330\020\021\330\014\016\210j\230\001\230\027\240\001\240\021\330\014\017\210q\220\002\220!\330\020\030\320\030@\300\002\300\"\300B\300f\310B\310b\320PR\320RS\330\021\022\220\"\220A\330\020\030\320\030?\270r\300\022\3002\300V\3102\310R\310r\320QR\330\021\022\220\"\220A\330\020\030\320\030D\300B\300b\310\002\310&\320PR\320RT\320TV\320VW\340\020\026\220i\230q\320 I\310\021\310!\340\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\014\210E\220\032\2301\230A\330\n\022\320\022,\250B\250b\260\002\260!\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\340\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\220\001\330\010\020\320\0204\260B\260d\270!\2708\3002\300Q\340\010\013\2104\210w\220a\330\013\023\2206\230\022\230>\250\022\2504\250q\260\005\260R\260s\270!\2709\300B\300a\330\010\021\220\021""\220'\230\021\330\004\013\2101\200A\340\010\022\320\022#\2401\240K\250t\2604\3207J\310$\310a\330\010\020\220\001\330\010\014\210E\220\032\2309\240F\250!\330\014\026\220a\330\014\020\220\001\220\027\230\016\240a\330\014\023\2201\220F\230%\230{\250!\2509\260A\260V\2701\340\010\014\210H\220D\230\t\240\024\240Q\240m\2601\330\014\017\210u\220G\2301\330\020\024\220I\230T\240\021\240%\240q\330\010\014\210I\220W\230A\230Q\330\010\014\210J\220d\230&\240\013\2501\330\010\014\210L\230\001\330\010\014\210K\220q\320\000\030\230\014\240A\360\016\000\014\r\330\004\t\320\t\033\2301\330\t\n\210+\220Q\220m\2409\250G\260:\270V\3001\300L\320PQ\330\010\014\210E\220\026\220q\230\004\230A\230Q\330\010\t\210\024\210Q\320\016\036\230a\330\010\013\2103\210a\210r\220\021\220!\330\014\023\2201\330\010\017\210u\220F\230!\2304\230q\240\001\330\010\t\210\024\210Q\320\016*\250!\330\010\013\2106\220\021\220\"\220B\220a\330\014\022\220*\230A\230Q\330\010\017\210u\220F\230!\2304\230q\240\003\2401\240F\250!\2501\330\010\t\210\024\210Q\320\016$\240A\340\004\013\2104\210v\220Q\220e\2306\240\021\240$\240g\250X\260R\260w\270a\270q\330\004\017\210q\330\004\010\210\001\330\004\010\210\007\210y\230\006\230f\240A\330\010\013\2104\210z\230\021\230&\240\006\240c\250\024\250Z\260q\270\005\270T\300\021\300*\310A\330\014\r\330\010\022\220!\2208\2301\330\010\013\2101\210H\320\024%\240R\240w\250b\260\005\260R\260u\270D\300\001\300\027\310\005\310T\320QR\320R`\320`e\320eg\320gh\330\010\013\2101\210H\220C\220q\230\007\230x\240q\250\007\250s\260(\270!\2705\300\001\330\010\014\210E\220\033\230E\240\021\240)\2506\260\021\360\006\000\r\020\210u\220D\230\010\240\001\330\020\021\330\014\017\210t\220:\230Q\230h\240f\250C\250w\260g\270Q\330\020\021\330\014\017\210{\230'\240\021\330\020\026\220j\240\001\320!P\320PR\320RY\320Y[\320[_\320_a\320ab\330\014\025\220W\230A\230Q\330\014\017\210z\230\021\230)\2401\330\020\031\230\030\240\024\240Q\240a\330\014\017\210t\220:\230Q\230i\240q\330\020\026\220j\240\001\320!N\310b\320PW\320WY""\320Y]\320]_\320_`\330\014\017\210w\220a\220w\230b\240\001\330\020\025\220Q\330\021\022\330\020\025\220Q\340\020\025\220Q\330\014\026\220a\220w\230a\230v\240Q\360\006\000\t\023\220!\2208\2304\230q\240\006\240a\240z\260\021\260'\270\026\270q\330\014\020\220\001\330\004\013\210;\220a\200A\330\010\013\210=\230\003\2302\230Y\240a\240q\330\010\013\320\013\033\2302\230Q\330\014\020\220\005\220[\240\002\240!\2401\240A\240T\250\021\250!\2501\330\010\013\320\013\033\2302\230Q\330\014\017\210\177\230a\230q\330\014\016\320\016 \240\t\250\021\250!\330\010\017\210q\200A\360\010\000\t\014\2103\210a\210u\220B\220a\330\n\r\210W\220A\220T\230\021\230#\230Q\330\014\020\220\005\220T\230\021\230!\340\014\022\220)\2301\230A\340\n\016\210e\2201\200A\360\010\000\t\014\2103\210a\210u\220B\220a\330\014\017\210z\230\021\230$\230a\230s\240!\330\020\024\220E\230\024\230Q\230a\330\021\030\230\001\230\024\230Q\230c\240\021\330\020\024\220E\230\021\330\020\022\220!\330\020\024\220E\230\024\230Q\230a\330\025\031\230\024\230Q\230c\240\021\330\025\030\230\001\340\020\026\220i\230q\240\001\340\014\020\220\005\220Q\330\014\016\210a\330\014\020\220\005\220Q\330\021\025\220T\230\021\230#\230Q\330\021\024\220A\200A\360\020\000\t\014\2104\210{\230#\230U\240#\240T\250\024\250Q\330\014\023\2201\330\010\021\320\021$\240A\240Y\250d\260!\330\010\013\2109\220C\220q\330\014\023\2201\330\010\014\320\014\034\230B\230a\330\010\017\210q\210A\340\020\023\2204\220\177\240i\250q\330\020\027\320\027(\250\001\250\023\250D\3200B\300$\300k\320QU\320UV\320\000$\240A\330\006\n\210!\330\006\t\210\027\220\001\220\026\220|\2404\240t\250:\260Q\260f\270A\330\t\r\210U\220!\330\r\022\320\022&\240a\240x\250u\260H\270A\340\t\016\320\016\"\240!\2408\2505\260\010\270\001\330\006\r\210S\220\001\220\023\220A\220W\230A\320\000\034\230A\360\034\000\005\006\340\010\013\2104\210z\230\021\230'\240\021\330\014\023\2206\230\021\230'\240\021\330\013\014\330\010\020\220\005\220Q\220a\330\010\017\210q\330\004\005\340\010\t\360\014\000\t\025\220H""\230A\340\010\014\210L\230\001\230\025\230b\240\001\330\014\024\220E\230\021\230!\330\014\023\2201\340\010\017\210q\330\013\014\330\010\020\220\005\220Q\220a\330\010\017\210q\210A\330\020\024\320\024$\240A\330\020\024\320\024&\240a\330\020\024\220K\230q\330\020\024\220M\240\021\200A\330\r\016\330\006\n\210*\220G\2304\230q\240\001\330\006\021\220\021\220*\230K\240x\250z\270\032\3008\3107\320R^\320^_\330\006\n\210%\210q\330\010\014\210A\210X\220R\220r\230\022\2307\240\"\240B\240b\250\005\250V\2607\270!\330\006\022\220!\2206\230\026\230x\240w\250h\260g\270X\300X\310Z\320W^\320^c\320ch\320hm\320mr\320rw\320w}\360\000\000~\001E\002\360\000\000E\002M\002\360\000\000M\002T\002\360\000\000T\002U\002\330\006\n\210%\210q\330\014\022\220!\330\014\020\220\001\220\027\230\002\230\"\230B\320\036k\320km\320mo\320oq\360\000\000r\001I\002\360\000\000I\002V\002\360\000\000V\002b\002\360\000\000b\002c\002\330\014\020\220\001\220\030\230\022\2302\230R\320\037>\270b\300\002\300\"\300K\310v\320U\\\320\\b\320bj\320jq\320qy\320yz\200A\340\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\330\021\022\360<\000\t\r\210K\220q\330\010\014\210I\220Q\330\010\013\2101\330\n\016\210l\230!\340\n\016\210l\230!\330\010\014\320\014\036\230a\330\010\014\320\014!\240\021\340\010\014\210I\220Q\340\010\014\210N\230!\330\010\014\210K\220q\330\010\014\320\014 \240\001\330\010\014\210M\230\021\330\010\014\210N\230!\330\010\013\2101\330\014\025\320\025(\250\001\250\027\260\007\260y\300\001\330\014\017\210y\230\003\2301\330\020\031\230\034\240Q\240g\250Q\330\014\020\320\020 \240\002\240!\340\010\013\2101\330\014\020\220\004\220C\220q\230\001\200A\340\010\017\210~\230Q\230e\2402\240T\250\021\250)\2604\260q\200A\330\007\n\210$\210a\330\013\014\330\017\020\360\010\000\020\"\240\031\250!\360\006\000\014\017\210d\320\022'\240t\2504\250r\260\026\260q\270\010\300\001\330\020\027\220t\2301\230A\330\020\023\2207\230#\230T\240\033\250E\260\021\330\024\033""\2307\240!\2405\250\001\330\013\016\210d\220$\320\026+\2504\250r\260\026\260q\270\010\300\001\330\020\027\220r\230\024\230Q\230f\240C\240q\330\020\023\2207\230#\230T\240\033\250E\260\021\330\024\033\2307\240!\2405\250\001\330\013\021\220\036\230q\320 2\260\"\260A\340\013\014\330\017\020\360\010\000\020\"\240\031\250!\340\013\016\210b\220\006\220a\220|\2401\330\017\024\220D\230\003\2301\330\013\022\220'\230\021\230%\230q\320\000\024\220A\360(\000\014\r\340\004\016\210g\220Q\220b\230\007\230x\240t\2502\250V\2606\270\027\300\001\340\004\020\220\004\220K\230t\2407\250!\2502\250W\260I\270T\300\022\3006\310\026\310q\320PS\320SZ\320Z[\340\004\007\200q\330\010\016\210i\220q\230\001\340\004\007\200}\220C\220q\330\010\025\220S\230\001\330\004\021\220\031\230!\230=\250\001\340\004\020\220\006\220a\220q\330\004\007\200q\330\010\024\220F\230!\2303\230a\230s\240!\2402\240V\2501\330\004\010\210\005\210R\210q\330\010\024\220F\230!\2303\230a\230s\240!\2401\330\004\020\220\006\220a\220q\340\004\007\200w\210a\210s\320\022&\240d\250*\260A\260R\3207I\310\021\330\010\014\210E\220\022\2201\340\014\030\230\006\230a\230y\250\001\250\021\250!\2502\250Q\250c\260\021\260!\2601\260B\260a\260q\340\004\010\210\005\210U\220!\2202\220V\2301\230A\330\010\013\2101\330\014\030\230\006\230a\230s\240!\2403\240a\240r\250\026\250q\260\001\330\010\014\210E\220\022\2201\330\014\030\230\006\230a\230s\240!\2403\240a\240r\250\021\250\"\250A\250Q\330\010\024\220F\230!\2301\200A\360\n\000\t\020\210y\230\001\230\021\200\001\340\004\r\210\\\230\023\230J\240c\250\036\260q\330\004\013\2102\210U\220%\220q\330\010\n\210%\210x\220q\230\002\230%\230x\240q\250\001\330\010\t\330\010\t\330\010\032\230\"\230A\340\004\013\2108\2202\220U\230'\240\021\240+\250Q\200Q\330\t\020\220\001\320\000\021\320\021!\240\021\360\036\000\005\010\200{\220#\220Q\330\010\023\320\023#\2401\240A\330\004\020\220\013\2302\230Q\330\004\r\210[\230\002\230!\340\004\025\220Q\330\004\016\210b\220\010\230\001\230\021\330\t\r\210Q\320\016\036\230a\330""\010\014\210H\220A\330\014\017\210w\220f\230A\230Q\330\020\025\220R\220t\2301\230J\240c\250\021\330\020\024\220A\220V\320\033+\2507\3202E\300Q\330\004\010\210\001\330\004\010\210\001\330\004\010\210\n\220!\330\010\013\2101\210H\220A\330\010\013\2101\210H\220A\340\r\021\220\021\220)\2302\230T\240\022\2407\250\"\250K\260q\330\014\024\220A\330\014\020\220\010\230\001\330\020\031\230\021\330\020\023\2204\220w\230a\230u\240B\240a\330\024\034\320\034-\250R\250w\260b\270\001\330\014\017\210q\220\010\230\001\340\014\017\210q\220\010\230\003\2301\230G\2408\2501\250G\2603\260h\270a\270u\300A\340\010\014\210G\320\023#\2401\240A\340\014\017\210s\220!\2208\2303\230a\330\020\023\2201\220G\2301\230B\230d\240!\2405\250\003\2503\250a\250z\270\023\270A\270Q\330\004\013\2104\210q\200\001\330\004\n\210+\220Q\200Q\330\010\014\210I\220Q\200Q\360\"\000\021!\240\001\240\024\240Q\330\t\r\320\r\036\320\0364\260A\320\000\025\220Q\360\020\000\005\006\330\010\r\320\r\035\230Q\340\r\037\230v\240Q\330\r\021\220\027\230\001\330\022\030\230\001\230\033\240A\330\021\022\220$\220a\220}\240A\330\021\022\220$\220a\220q\330\r\022\220!\330\022\026\220a\220x\230q\330\021\025\220X\230Q\330\025\030\230\002\230&\240\001\320!2\260!\330\031\036\230b\240\004\240A\320%6\260c\270\025\270g\300Q\300a\330\031\032\330\r\020\220\005\220T\230\023\230A\230U\240!\2401\330\021\030\230\001\360\010\000\014\r\330\004\013\210:\220]\240!\2401\240I\250[\270\007\270z\310\027\320PQ\320QY\320Y`\320`a\200\001\330\002\t\210\031\220#\220Q\330\004\007\200s\210!\2109\220A\220Q\330\006\r\210S\220\001\220\022\2204\220q\230\t\240\024\240Q\330\002\t\210\021\320\005\035\230Q\330\t\037\230s\240'\250\023\250B\250a\330\t\033\2301\340\t\014\210D\220\003\2201\330\014\020\220\016\230a\230u\240E\250\022\2505\260\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\010\230\001\230\026\230q\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\n\230!\2306\240\021\330\014\r\330\t\014\210J\220d\230*\240A\240U\250\"\250A\340\014\020\220\003""\2206\230\022\2302\230Q\330\017\023\320\023&\240a\240v\250Q\330\022\025\220V\2302\230R\230q\330\017\023\320\023#\2401\240F\250!\330\022\025\220V\2302\230R\230q\330\017\023\320\023$\240A\240V\2501\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230E\240\021\330\014\021\220\023\220I\230R\230t\2403\240c\250\031\260\"\260E\270\024\270S\300\t\310\022\3101\330\017\023\320\023$\240A\240V\2501\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220>\240\021\240&\250\001\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220?\240!\2406\250\021\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\027\220s\230'\240\023\240B\240a\330\014\023\2201\340\014\020\220\016\230a\230u\240E\250\023\250A\250[\3208d\320de\330\014\r\330\t\014\210I\220S\230\003\2301\330\023\024\330\014\017\210z\230\021\230%\230s\240!\330\016\022\220(\230!\2306\240\021\330\016\017\330\t\017\210z\230\021\320\0323\2607\270!\2703\270a\270t\3001\300A\220\r\230T\240\021\240#\240S\250\007\250t\2601\260B\260b\3208H\310\001\200\001\330\006\n\210!\330\006\t\210\027\220\001\220\030\230\034\240T\250\024\250Z\260q\270\010\300\001\330\010\014\210E\220\021\330\016\023\2207\230,\240b\320(>\270a\270x\300u\310B\310a\340\010\r\210W\220L\240\002\320\"8\270\001\270\030\300\025\300h\310a\340\006\r\210Q\320\004\035\230Y\240a\330\010\014\210A\330\010\r\210]\230!\2305\240\001\330\010\r\210Q\330\010\020\220\001\330\010\014\210G\2206\230\021\230!\330\014\023\2207\230!\320\033+\2501\250E\260\024\260V\2701\270A\330\010\017\210u\220A\330\010\014\210E\220\021\330\014\017\210s\220!\2202\220Q\220a\330\020\025\220Q\330\010\r\320\r\035\230Q\230e\2401\330\010\017\210~\230Q\230e\2404\240q\210\001\330\014\016\210e\2206\230\021\230$\230a\230u\240A\240Q\330\014\030\230\007\230t\2401\240J\250a\250s\260!\2603\260a\330\014\017\210t\2206\230\021\230!\2301\230A\330\017\026\220a\330\014\023\2201\220A\220Q\320\017!\240\031\250!\330\023\032\230$\230i\240q\250\004\250G\2606\270""\033\300A\320\000\036\320\036.\250i\260y\300\014\310L\320XY\360j\001\000\014\r\330\004\007\200t\210:\220Q\220f\230B\230a\330\010\016\210n\230A\230Q\330\t\r\210Q\330\010\016\210e\2205\230\001\340\004\020\220\003\2207\230%\230s\240#\240W\250A\330\004\021\220\026\220w\230e\2403\240f\250G\2601\340\004\007\200y\220\004\220A\330\010\016\210j\230\001\230\021\340\004\007\200t\210:\220T\230\024\230Q\330\010\021\220\021\340\004\007\200q\330\010\013\2103\210c\220\021\330\014\017\210r\220\024\220Q\220e\2301\330\010\013\2103\210c\220\021\330\014\017\210r\220\024\220Q\220e\2301\330\010\n\210\"\210E\220\022\2202\220Q\220e\2306\240\022\2402\240Q\240d\250$\250a\340\010\013\2106\220\023\220A\330\013\021\220\021\330\010\013\2106\220\023\220A\330\013\021\220\021\330\010\013\2103\210a\210s\220!\2206\230\021\230!\330\010\013\2103\210a\210s\220!\2206\230\021\230!\330\010\n\210\"\210G\2202\220R\220u\230A\230T\240\022\2409\250A\250T\260\024\260R\260q\270\004\270B\270f\300A\300S\310\001\310\026\310q\320PQ\330\004\t\210\031\220!\340\004\007\200w\210g\220Q\330\010\024\220A\220V\2301\330\t\r\210Q\330\010\017\210q\320\000\037\230q\340\004\013\2107\220+\230S\240\001\330\010\t\330\n\021\220\032\2304\230q\320 0\260\001\340\n\021\220\036\230q\330\n\013\330\004\013\2107\220)\2303\230a\330\010\017\210x\220v\230Q\230d\240\"\240A\330\004\013\2108\2207\230!\2301\340\004\007\200w\210k\230\027\240\005\240T\250\027\260\001\340\010\013\2106\220\022\2207\230$\230g\240S\250\005\250T\260\022\2606\270\021\320:^\320^_\330\014\023\2208\2301\330\004\007\200w\210n\230G\2401\330\010\017\210w\220m\2401\240A\330\004\013\2104\210r\220\021\320\017!\240\031\250!\330\023\030\230\007\230q\240\004\240J\250d\260!\330\023\032\230$\230a\230v\240[\260\001\200\001\340\003\007\200q\330\003\006\200e\2103\210a\330\007\014\320\014\034\230A\230X\240Q\330\010\022\220!\2204\220q\330\007\014\210L\230\001\230\030\240\025\240a\330\010\022\220!\2204\220q\330\007\014\320\014\034\230A\230X\240U\250!\340\007\014\210K\220q\230\010\240\005\240Q""\330\003\n\210!\320\000\037\230q\360\n\000\014\r\330\004\007\200w\210m\2307\240!\330\007\013\2107\220,\230a\230q\360\006\000\005\010\200w\320\016\"\240$\240m\2603\260c\270\021\330\016\017\330\007\n\210*\220A\220T\230\032\2405\250\007\250q\330\t\r\210S\220\010\230\001\230\021\330\004\007\200z\220\021\220$\220a\330\010\017\210r\220\024\220Q\220i\230t\2401\330\004\007\200z\220\021\220$\220g\230Q\330\010\017\210s\220!\2201\330\004\007\200z\220\021\220$\220a\330\010\016\210i\220q\230\001\330\004\007\200z\220\021\220$\220a\330\010\013\2105\220\001\220\021\330\014\022\220)\2301\230A\330\010\017\210}\230B\230k\250\021\250(\260.\300\001\300\030\310\023\310E\320QV\320VW\320WZ\320Z`\320`a\330\004\007\200w\210a\210t\2201\330\010\017\210q\330\010\014\210E\220\021\330\014\024\220G\230<\240r\250\033\260A\260X\270^\3101\310H\320TV\320V[\320[\\\320\\_\320_e\320ef\330\010\017\210v\220Q\220c\230\021\230'\240\021\330\004\n\210)\2201\220A\210q\330\023\027\220z\240\021\330\023\027\220w\230a\330\023\027\220y\320 ;\2702\270Q\210q\330\023\027\220z\240\021\330\023\027\220w\230a\330\023\027\220y\240\007\240q\250\004\250J\260e\2701\200\001\340\004\007\200t\2103\210a\330\010\017\210q\330\004\007\200z\220\021\220$\220a\330\010\013\2101\330\014\023\2204\220r\230\021\340\014\023\2201\330\004\n\210)\2201\220E\230\022\2301\200\001\340\004\007\200t\2103\210a\330\010\017\210q\330\004\007\200z\220\021\220$\220a\330\010\017\210}\230B\230k\250\021\250(\260.\300\001\300\030\310\023\310F\320RX\320XY\340\010\017\210{\230!\2308\240>\260\021\260(\270%\270v\300Q\330\004\013\2104\210r\220\025\220b\230\004\230B\230a\200\001\340\004\007\200v\210S\220\001\330\010\017\210q\330\004\007\200z\220\021\220&\230\001\330\010\013\2103\210a\210v\220R\220q\330\014\023\2201\330\010\017\210u\220A\220Q\330\004\n\210)\2201\220A\200\001\340\004\007\200z\220\021\220$\220a\330\010\014\210C\210q\330\010\014\210A\330\010\014\210E\220\021\330\014\017\210t\220:\230Q\230b\240\001\330\020\026\220i\230q\240\001\330\014\021\220\033\230A""\230X\240T\250\021\250#\250Q\250c\260\023\260A\260Q\330\010\017\210q\330\004\013\210;\220a\220x\230u\240A\200\001\360\016\000\005\010\200z\220\021\220%\220q\330\010\r\210T\220\021\220%\220q\340\004\007\200r\210\026\210q\220\t\230\024\230Q\330\010\017\210t\2205\230\001\230\024\230V\2401\330\004\013\2101O";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 626; i++) {
+    for (int i = 0; i < 627; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
       if (likely(string) && i >= 172) PyUnicode_InternInPlace(&string);
@@ -48008,7 +48009,7 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 626; i < 677; i++) {
+    for (int i = 627; i < 678; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -48019,14 +48020,14 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 677; i++) {
+    for (Py_ssize_t i = 0; i < 678; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 626;
+      PyObject **table = stringtab + 627;
       for (Py_ssize_t i=0; i<51; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         #if PY_VERSION_HEX < 0x030E0000
