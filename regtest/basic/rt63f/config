@@ -1,0 +1,5 @@
+type=driver
+# FIT_TO_TEMPLATE with an all-zero beta column (as in many reference files) stopped with an error.
+# The beta column only enters the value (the RMSD), not the fit: the references (positions, forces, virial)
+# were written with align1.pdb (beta=1, same occupancy); with align0.pdb the value is zero.
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --igro helix.input.gro --dump-forces ff --dump-full-virial --dump-forces-fmt=%8.4f"
