@@ -25,9 +25,6 @@
 #include "core/Value.h"
 #include "File.h"
 #include "Exception.h"
-#include "KernelFunctions.h"
-#include "RootFindingBase.h"
-#include "Communicator.h"
 #include "Checkpoint.h"
 #include "small_vector/small_vector.h"
 
@@ -461,46 +458,6 @@ std::vector<GridBase::index_t> GridBase::getNearestNeighbors(const std::vector<u
   return getNearestNeighbors(getIndex(indices));
 }
 
-void GridBase::addKernel( const KernelFunctions& kernel ) {
-  plumed_dbg_assert( kernel.ndim()==dimension_ );
-  std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
-  std::vector<index_t> neighbors=getNeighbors( kernel.getCenter(), nneighb );
-  std::vector<double> xx( dimension_ );
-  std::vector<std::unique_ptr<Value>> vv( dimension_ );
-  std::string str_min, str_max;
-  for(unsigned i=0; i<dimension_; ++i) {
-    vv[i]=Tools::make_unique<Value>();
-    if( pbc_[i] ) {
-      Tools::convert(min_[i],str_min);
-      Tools::convert(max_[i],str_max);
-      vv[i]->setDomain( str_min, str_max );
-    } else {
-      vv[i]->setNotPeriodic();
-    }
-  }
-
-// vv_ptr contains plain pointers obtained from vv.
-// this is the simplest way to replace a unique_ptr here.
-// perhaps the interface of kernel.evaluate() should be changed
-// in order to accept a std::vector<std::unique_ptr<Value>>
-  auto vv_ptr=Tools::unique2raw(vv);
-
-  std::vector<double> der( dimension_ );
-  for(unsigned i=0; i<neighbors.size(); ++i) {
-    index_t ineigh=neighbors[i];
-    getPoint( ineigh, xx );
-    for(unsigned j=0; j<dimension_; ++j) {
-      vv[j]->set(xx[j]);
-    }
-    double newval = kernel.evaluate( vv_ptr, der, usederiv_ );
-    if( usederiv_ ) {
-      addValueAndDerivatives( ineigh, newval, der );
-    } else {
-      addValue( ineigh, newval );
-    }
-  }
-}
-
 double GridBase::getValue(const std::vector<unsigned> & indices) const {
   return getValue(getIndex(indices));
 }
@@ -663,30 +620,6 @@ void Grid::writeToFile(OFile& ofile) {
         ofile.printField("der_" + argnames[j],der[j]);
       }
     ofile.printField();
-  }
-}
-
-void GridBase::writeCubeFile(OFile& ofile, const double& lunit) {
-  plumed_assert( dimension_==3 );
-  ofile.printf("PLUMED CUBE FILE\n");
-  ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
-  // Number of atoms followed by position of origin (origin set so that center of grid is in center of cell)
-  ofile.printf("%d %f %f %f\n",1,-0.5*lunit*(max_[0]-min_[0]),-0.5*lunit*(max_[1]-min_[1]),-0.5*lunit*(max_[2]-min_[2]));
-  ofile.printf("%u %f %f %f\n",nbin_[0],lunit*dx_[0],0.0,0.0);  // Number of bins in each direction followed by
-  ofile.printf("%u %f %f %f\n",nbin_[1],0.0,lunit*dx_[1],0.0);  // shape of voxel
-  ofile.printf("%u %f %f %f\n",nbin_[2],0.0,0.0,lunit*dx_[2]);
-  ofile.printf("%d %f %f %f\n",1,0.0,0.0,0.0); // Fake atom otherwise VMD doesn't work
-  std::vector<unsigned> pp(3);
-  for(pp[0]=0; pp[0]<nbin_[0]; ++pp[0]) {
-    for(pp[1]=0; pp[1]<nbin_[1]; ++pp[1]) {
-      for(pp[2]=0; pp[2]<nbin_[2]; ++pp[2]) {
-        ofile.printf("%f ",getValue(pp) );
-        if(pp[2]%6==5) {
-          ofile.printf("\n");
-        }
-      }
-      ofile.printf("\n");
-    }
   }
 }
 
@@ -855,21 +788,6 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ) {
   }
 }
 
-void Grid::logAllValuesAndDerivatives( const double& scalef ) {
-  if(usederiv_) {
-    for(index_t i=0; i<grid_.size(); ++i) {
-      grid_[i] = scalef*std::log(grid_[i]);
-      for(unsigned j=0; j<dimension_; ++j) {
-        der_[i*dimension_+j] = scalef/der_[i*dimension_+j];
-      }
-    }
-  } else {
-    for(index_t i=0; i<grid_.size(); ++i) {
-      grid_[i] = scalef*std::log(grid_[i]);
-    }
-  }
-}
-
 void Grid::setMinToZero() {
   double min=grid_[0];
   for(index_t i=1; i<grid_.size(); ++i)
@@ -898,67 +816,6 @@ void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), dou
 
 double Grid::getDifferenceFromContour( const std::vector<double>& x, std::vector<double>& der ) const {
   return getValueAndDerivatives( x, der ) - contour_location;
-}
-
-void Grid::findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch,
-                                    unsigned& npoints, std::vector<std::vector<double> >& points ) {
-// Set contour location for function
-  contour_location=target;
-// Resize points to maximum possible value
-  points.resize( dimension_*maxsize_ );
-
-// Two points for search
-  std::vector<unsigned> ind(dimension_);
-  std::vector<double> direction( dimension_, 0 );
-
-// Run over whole grid
-  npoints=0;
-  RootFindingBase<Grid> mymin( this );
-  for(unsigned i=0; i<maxsize_; ++i) {
-    for(unsigned j=0; j<dimension_; ++j) {
-      ind[j]=getIndices(i)[j];
-    }
-
-    // Get the value of a point on the grid
-    double val1=getValue(i) - target;
-
-    // Now search for contour in each direction
-    bool edge=false;
-    for(unsigned j=0; j<dimension_; ++j) {
-      if( nosearch[j] ) {
-        continue ;
-      }
-      // Make sure we don't search at the edge of the grid
-      if( !pbc_[j] && (ind[j]+1)==nbin_[j] ) {
-        continue;
-      } else if( (ind[j]+1)==nbin_[j] ) {
-        edge=true;
-        ind[j]=0;
-      } else {
-        ind[j]+=1;
-      }
-      double val2=getValue(ind) - target;
-      if( val1*val2<0 ) {
-        // Use initial point location as first guess for search
-        points[npoints].resize(dimension_);
-        for(unsigned k=0; k<dimension_; ++k) {
-          points[npoints][k]=getPoint(i)[k];
-        }
-        // Setup direction vector
-        direction[j]=0.999999999*dx_[j];
-        // And do proper search for contour point
-        mymin.linesearch( direction, points[npoints], &Grid::getDifferenceFromContour );
-        direction[j]=0.0;
-        npoints++;
-      }
-      if( pbc_[j] && edge ) {
-        edge=false;
-        ind[j]=nbin_[j]-1;
-      } else {
-        ind[j]-=1;
-      }
-    }
-  }
 }
 
 /// OVERRIDES ARE BELOW
@@ -1208,10 +1065,6 @@ Grid::index_t SparseGrid::getSize() const {
   return map_.size();
 }
 
-Grid::index_t SparseGrid::getMaxSize() const {
-  return maxsize_;
-}
-
 double SparseGrid::getValue(index_t index)const {
   plumed_assert(index<maxsize_);
   double value=0.0;
@@ -1440,55 +1293,6 @@ Grid Grid::project(const std::vector<std::string> & proj, WeightBase *ptr2obj ) 
   }
 
   return smallgrid;
-}
-
-double Grid::integrate( std::vector<unsigned>& npoints ) {
-  plumed_dbg_assert( npoints.size()==dimension_ );
-  plumed_assert( dospline_ );
-
-  unsigned ntotgrid=1;
-  double box_vol=1.0;
-  std::vector<double> ispacing( npoints.size() );
-  for(unsigned j=0; j<dimension_; ++j) {
-    if( !pbc_[j] ) {
-      ispacing[j] = ( max_[j] - dx_[j] - min_[j] ) / static_cast<double>( npoints[j] );
-      npoints[j]+=1;
-    } else {
-      ispacing[j] = ( max_[j] - min_[j] ) / static_cast<double>( npoints[j] );
-    }
-    ntotgrid*=npoints[j];
-    box_vol*=ispacing[j];
-  }
-
-  std::vector<double> vals( dimension_ );
-  std::vector<unsigned> t_index( dimension_ );
-  double integral=0.0;
-  for(unsigned i=0; i<ntotgrid; ++i) {
-    t_index[0]=(i%npoints[0]);
-    unsigned kk=i;
-    for(unsigned j=1; j<dimension_-1; ++j) {
-      kk=(kk-t_index[j-1])/npoints[j-1];
-      t_index[j]=(kk%npoints[j]);
-    }
-    if( dimension_>=2 ) {
-      t_index[dimension_-1]=((kk-t_index[dimension_-2])/npoints[dimension_-2]);
-    }
-
-    for(unsigned j=0; j<dimension_; ++j) {
-      vals[j]=min_[j] + t_index[j]*ispacing[j];
-    }
-
-    integral += getValue( vals );
-  }
-
-  return box_vol*integral;
-}
-
-void Grid::mpiSumValuesAndDerivatives( Communicator& comm ) {
-  comm.Sum( grid_ );
-  for(unsigned i=0; i<der_.size(); ++i) {
-    comm.Sum( der_[i] );
-  }
 }
 
 
