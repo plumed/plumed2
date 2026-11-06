@@ -128,6 +128,7 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
 
 //set umbrellas
   parse("SIGMA",sigma_);
+  plumed_massert(sigma_>0,"SIGMA must be greater than zero");
   std::vector<double> cv_min;
   std::vector<double> cv_max;
   parseVector("CV_MIN",cv_min);
@@ -136,6 +137,7 @@ ECVumbrellasLine::ECVumbrellasLine(const ActionOptions&ao):
   plumed_massert(cv_max.size()==getNumberOfArguments(),"wrong number of CV_MAXs");
   double spacing;
   parse("SPACING",spacing);
+  plumed_massert(spacing>0,"SPACING must be greater than zero");
   double length=0;
   for(unsigned j=0; j<getNumberOfArguments(); j++) {
     length+=std::pow(cv_max[j]-cv_min[j],2);
