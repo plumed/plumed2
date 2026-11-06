@@ -23,7 +23,6 @@
 """Readers, writers and HILLS utilities for PLUMED data files."""
 
 import array
-from contextlib import ExitStack, nullcontext
 import gzip
 import math
 import re
@@ -46,7 +45,7 @@ class FormatError(Exception):
 
 
 def _fix_file(file, mode):
-    """Return a context manager that closes only streams opened here.
+    """Return a stream and whether it was opened here and must be closed.
 
     Paths are opened once, using gzip directly for compressed files. Named raw
     gzip streams retain the legacy filename-based decoding behavior; already
@@ -55,10 +54,10 @@ def _fix_file(file, mode):
     name = file if isinstance(file, str) else getattr(file, "name", "")
     decoded = isinstance(getattr(file, "buffer", None), gzip.GzipFile)
     if isinstance(name, str) and re.match(r".*\.gz", name) and not decoded:
-        return gzip.open(name, mode)
+        return gzip.open(name, mode), True
     if isinstance(file, str):
-        return open(file, mode)
-    return nullcontext(file)
+        return open(file, mode), True
+    return file, False
 
 
 def _build_convert_function(kernel=None):
@@ -306,10 +305,9 @@ def read_as_pandas(
         if enable_conversion == "all":
             convert_all = convert
 
-    with ExitStack() as files:
-        # handle file
-        file_or_path = files.enter_context(_fix_file(file_or_path, "rt"))
-
+    file_or_path, owns_file = _fix_file(file_or_path, "rt")
+    file_to_close = file_or_path if owns_file else None
+    try:
         # read first line
         line = file_or_path.readline()
         columns = line.split()
@@ -383,7 +381,7 @@ def read_as_pandas(
                 # should be stored in the class to be used while iterating on it
                 def __init__(self, reader, enable_constants, constants, convert_all):
                     self.TextFileReader = reader
-                    self._files = ExitStack()
+                    self._owned_file = None
                     self._closed = False
                     self.enable_constants = enable_constants
                     self.constants = constants
@@ -416,7 +414,8 @@ def read_as_pandas(
                     try:
                         self.TextFileReader.close()
                     finally:
-                        self._files.close()
+                        if self._owned_file is not None:
+                            self._owned_file.close()
 
                 def __enter__(self):
                     return self
@@ -431,8 +430,13 @@ def read_as_pandas(
             reader = TextFileReader(df, enable_constants, constants, convert_all)
             # Transfer ownership only after construction succeeds. A plain DataFrame
             # is fully read here; a chunked result must keep its stream until close.
-            reader._files = files.pop_all()
+            reader._owned_file = file_to_close
+            file_to_close = None
             return reader
+    finally:
+        # Explicit ownership also makes cleanup visible to static analysis.
+        if file_to_close is not None:
+            file_to_close.close()
 
 
 def write_pandas(df, file_or_path=None):
@@ -472,7 +476,8 @@ def write_pandas(df, file_or_path=None):
     # handle file
     if file_or_path is None:
         file_or_path = sys.stdout
-    with _fix_file(file_or_path, "wt") as file_or_path:
+    file_or_path, owns_file = _fix_file(file_or_path, "wt")
+    try:
         # write header
         file_or_path.write("#! FIELDS")
         if has_index:
@@ -494,6 +499,10 @@ def write_pandas(df, file_or_path=None):
             for j in df.columns:
                 file_or_path.write(" " + str(df[j][i]))
             file_or_path.write("\n")
+
+    finally:
+        if owns_file:
+            file_or_path.close()
 
 
 def hills_time_average(
