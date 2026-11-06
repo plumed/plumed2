@@ -38,6 +38,15 @@ This allows you to mix different PLUMED versions in the same Python script.
 
 Source builds bundle a kernel by default. Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
 
+Package layout
+--------------
+
+The public API remains available through ``import plumed``. Its compiled
+implementation is the private ``plumed._plumed`` extension; bundled executables,
+libraries and resources live under ``plumed/runtime``. No separate top-level
+``plumed_runtime`` package is installed. Wrapper-only installations use the same
+Python package layout without bundled runtime resources.
+
 InputBuilder metadata
 ---------------------
 

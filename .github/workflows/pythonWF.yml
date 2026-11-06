@@ -114,7 +114,7 @@ jobs:
       run: |
         # keep the version consistent with CYTHON_VERSION in python/Makefile
         pip install cython==3.2.4
-        python -m cython plumed.pyx -o "$RUNNER_TEMP/plumed.c"
+        python -m cython --module-name plumed._plumed plumed.pyx -o "$RUNNER_TEMP/plumed.c"
         # the compressed copies of the strings depend on the python running cython
         # (version and compression libraries), so they are ignored in the comparison
         if ! ./compare_plumed_c.sh plumed.c "$RUNNER_TEMP/plumed.c" ; then

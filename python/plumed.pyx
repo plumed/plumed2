@@ -72,7 +72,7 @@ def _bundled_kernel_path():
     suffix = ".dylib" if sys.platform == "darwin" else ".so"
     path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "plumed_runtime",
+        "runtime",
         "lib",
         "libplumedKernel" + suffix,
     )
