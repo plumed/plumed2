@@ -86,7 +86,9 @@ typedef ssize_t molfile_ssize_t;      /**< for frame counts */
 /* File plugin symbolic constants for better code readability */
 #define MOLFILE_SUCCESS           0   /**< succeeded in reading file      */
 #define MOLFILE_EOF              -1   /**< end of file                    */
-#define MOLFILE_ERROR            -1   /**< error reading/opening a file   */
+#define MOLFILE_ERROR            -3   /**< error reading/opening a file   */
+/* PLUMED: MOLFILE_ERROR is not equal to MOLFILE_EOF as in VMD, so that the driver can tell
+   a corrupted file from the end of the trajectory. Plugins return MOLFILE_EOF at the end of the file. */
 #define MOLFILE_NOSTRUCTUREDATA  -2   /**< no structure data in this file */
 
 #define MOLFILE_NUMATOMS_UNKNOWN -1   /**< unknown number of atoms       */

@@ -803,6 +803,9 @@ public:
     if(rc==MOLFILE_EOF) {
       return "EOF";
     }
+    if(rc!=MOLFILE_SUCCESS) {
+      return "error reading a frame of "+trajectoryFile+" with the molfile "+trajectory_fmt_str+" plugin";
+    }
     return std::nullopt;
   }
 

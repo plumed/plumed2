@@ -106,6 +106,14 @@ static void convert_vmd_box_for_writing(const molfile_timestep_t *ts, float *x, 
                                - ca*ca - cb*cb - cg*cg)/(1.0 - cg*cg));
 }
 
+// MOLFILE_EOF when mdio failed because the file ended (mdio reports a failed
+// read at the end of a trr file as an I/O error), MOLFILE_ERROR otherwise
+static int mdio_failure() {
+  if (mdio_errno() == MDIO_EOF || mdio_errno() == MDIO_IOERROR)
+    return MOLFILE_EOF;
+  return MOLFILE_ERROR;
+}
+
 static void *open_gro_read(const char *filename, const char *,
     int *natoms) {
 
@@ -192,7 +200,7 @@ static int read_gro_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   mdts.natoms = natoms;
 
   if (mdio_timestep(gmx->mf, &mdts) < 0)
-    return MOLFILE_ERROR;
+    return mdio_failure();
   if (mdts.natoms != gmx->natoms) {
     fprintf(stderr, "gromacsplugin) Timestep in file contains wrong number of atoms\n");
     fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, gmx->natoms);
@@ -457,7 +465,7 @@ static int read_g96_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   mdts.natoms = natoms;
 
   if (mdio_timestep(gmx->mf, &mdts) < 0)
-    return MOLFILE_ERROR;
+    return mdio_failure();
   if (mdts.natoms != gmx->natoms) {
     fprintf(stderr, "gromacsplugin) Timestep in file contains wrong number of atoms\n");
     fprintf(stderr, "gromacsplugin) Found %d, expected %d\n", mdts.natoms, gmx->natoms);
@@ -536,7 +544,7 @@ static int read_trr_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   if (mdio_timestep(gmx->mf, &mdts) < 0) {
     if (mdio_errno() == MDIO_EOF || mdio_errno() == MDIO_IOERROR) {
       // XXX Lame, why does mdio treat IOERROR like EOF?
-      return MOLFILE_ERROR;
+      return MOLFILE_EOF;
     }
     fprintf(stderr, "gromacsplugin) Error reading timestep, %s\n",
             mdio_errmsg(mdio_errno()));

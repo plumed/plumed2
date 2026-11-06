@@ -122,7 +122,8 @@ static int read_crd_timestep(void *mydata, int natoms, molfile_timestep_t *ts) {
   for (i=0; i<natoms; i++) {
     j = fscanf(crd->file, "%f %f %f", &x, &y, &z);
     if (j == EOF) {
-      return MOLFILE_ERROR;
+      /* end of the trajectory, or a frame that is cut */
+      return (i == 0) ? MOLFILE_EOF : MOLFILE_ERROR;
     } else if (j != 3) {
       fprintf(stderr, "Problem reading CRD file\n");
       return MOLFILE_ERROR;
