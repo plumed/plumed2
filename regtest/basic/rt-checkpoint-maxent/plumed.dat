@@ -1,0 +1,9 @@
+# exact restart of MAXENT (multipliers, averages, works, first-step flags) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+# updated every 3 steps (also at the replayed step 21), printed every 2
+m1: MAXENT ARG=d1,d2 TYPE=EQUAL AT=1.0,1.0 KAPPA=1.0,2.0 TAU=10,20 PACE=3 PRINT_STRIDE=2 FILE=m1.LAGMULT FMT=%.17g TEMP=300
+# one-sided, Laplace prior, average of the multipliers between 10 and 30 (the checkpoints are inside the window)
+m2: MAXENT ARG=d1 TYPE=INEQUAL< AT=0.9 KAPPA=3.0 TAU=15 PACE=2 FILE=m2.LAGMULT FMT=%.17g TEMP=300 ERROR_TYPE=LAPLACE SIGMA=0.2 TSTART=10 TEND=30
+PRINT ARG=m1.*,m2.* FILE=COLVAR STRIDE=1 FMT=%.17g

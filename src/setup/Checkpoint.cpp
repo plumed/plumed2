@@ -93,7 +93,9 @@ The actions that store their state in the checkpoint include [METAD](METAD.md),
 [PBMETAD](PBMETAD.md), [OPES_METAD](OPES_METAD.md), [OPES_METAD_EXPLORE](OPES_METAD_EXPLORE.md),
 [METAINFERENCE](METAINFERENCE.md) (and the ISDB collective variables with DOSCORE),
 [EDS](EDS.md), [DRR](DRR.md), [MOVINGRESTRAINT](MOVINGRESTRAINT.md), [ABMD](ABMD.md),
-[EXTENDED_LAGRANGIAN](EXTENDED_LAGRANGIAN.md), [ACCUMULATE](ACCUMULATE.md) and [COLLECT](COLLECT.md): they
+[EXTENDED_LAGRANGIAN](EXTENDED_LAGRANGIAN.md), [ACCUMULATE](ACCUMULATE.md), [COLLECT](COLLECT.md),
+[COMMITTOR](COMMITTOR.md), [MAXENT](MAXENT.md), [READ](READ.md), [RANDOM_EXCHANGES](RANDOM_EXCHANGES.md) and
+[EFFECTIVE_ENERGY_DRIFT](EFFECTIVE_ENERGY_DRIFT.md) (only with a single process): they
 restore their state from it, so that their hills, kernels or status files are not read
 (the growing ones are truncated).
 Actions that keep an internal state but do not store it in the checkpoint
