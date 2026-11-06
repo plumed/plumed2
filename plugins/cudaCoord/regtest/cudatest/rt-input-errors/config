@@ -29,7 +29,7 @@ nn_neg NN and MM should be positive
 mm_neg NN and MM should be positive
 nn_zero NN and MM should be positive
 r0_neg R_0 should be explicitly specified and positive
-r0_missing R_0 should be explicitly specified and positive
+r0_missing keyword R_0 is compulsory for this action
 EOT
 }
 extra_files="../../trajectories/traj-nopbc.xyz"
