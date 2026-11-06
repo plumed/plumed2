@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
 #include "core/ActionRegister.h"
 #include <ctime>
 
@@ -73,6 +74,10 @@ ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
 PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
 ```
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the running minimum, the noise intensity and the random number generators are stored in the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -87,10 +92,11 @@ public:
   explicit ABMD(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
-/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
   bool hasCheckpointState() const override {
     return true;
   }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 };
 
 PLUMED_REGISTER_ACTION(ABMD,"ABMD")
@@ -172,6 +178,35 @@ ABMD::ABMD(const ActionOptions&ao):
   componentIsNotPeriodic("force2");
 }
 
+
+// The running minimum, the noise intensity (it is set to zero at run time when
+// the CV is close enough to the target) and the generators are the state of the
+// bias; the components are written by Bias
+void ABMD::writeCheckpoint(CheckpointWriter& w) {
+  w.write("min",min);
+  w.write("temp",temp);
+  for(unsigned i=0; i<random.size(); ++i) {
+    w.write("random"+std::to_string(i),random[i].stateToString());
+  }
+  writeComponentValues(w);
+}
+
+void ABMD::readCheckpoint(CheckpointReader& r) {
+  std::vector<double> m,t;
+  r.read("min",m);
+  r.read("temp",t);
+  if(m.size()!=getNumberOfArguments() || t.size()!=getNumberOfArguments()) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  min=m;
+  temp=t;
+  for(unsigned i=0; i<random.size(); ++i) {
+    std::string state;
+    r.read("random"+std::to_string(i),state);
+    random[i].stateFromString(state);
+  }
+  readComponentValues(r);
+}
 
 void ABMD::calculate() {
   double ene=0.0;

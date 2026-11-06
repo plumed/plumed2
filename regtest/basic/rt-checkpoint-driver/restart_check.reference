@@ -12,7 +12,7 @@ PLUMED: Restarting from checkpoint plumed.cpt written at step 21
 PLUMED:   file COLVAR truncated from 2883 to 2436 bytes
 PLUMED:   file COLVAR2 truncated from 194 to 154 bytes
 PLUMED: Checkpoint state restored at step 21
-PLUMED: WARNING: the following actions have an internal state that is not stored in the checkpoint, an exact restart is not guaranteed: ab
+PLUMED: WARNING: the following actions have an internal state that is not stored in the checkpoint, an exact restart is not guaranteed: cm
 PLUMED:   file GRID is rewritten at every write and is not truncated
 PLUMED:   file HILLS truncated from 567 to 451 bytes
 PLUMED:   file COLVAR_METAD truncated from 740 to 595 bytes
