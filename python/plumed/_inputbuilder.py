@@ -162,7 +162,7 @@ def _readvimdict(plumedroot=None, kernel=None):
     help_dir = plumedroot + "/vim/help"
     # local dictionary, read from VIM
     plumedDictionary = {}
-    pattern = re.compile("^let b:plumedDictionary\[.*$")
+    pattern = re.compile(r"^let b:plumedDictionary\[.*$")
     with open(syntax_file) as fin:
         for line in fin:
             if pattern.match(line):
