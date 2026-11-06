@@ -121,11 +121,15 @@ PRINT ARG=restraint.bias
 
 With [CHECKPOINT](CHECKPOINT.md) the Lagrangian multipliers, their averages and works are stored in the checkpoint, the LAGMULT file is trimmed and not read, and the restart is exact.
 
-Without CHECKPOINT, a run with [RESTART](RESTART.md) reads the multipliers from the LAGMULT file and rebuilds their average between TSTART and TEND.
-The file is written before the multipliers are updated, so the multipliers obtained at the last update of the previous run are only in the file
-if the MD code repeats the step at which it restarts (as GROMACS does when it restarts from a checkpoint).
-The average is rebuilt exactly only if the file has the multipliers of every update (PRINT_STRIDE equal to PACE, the default).
-The works are not in the file, so they restart from zero.
+A run with [RESTART](RESTART.md) and no CHECKPOINT is __not exact__ in general: it reads the multipliers from the LAGMULT file and rebuilds their average between TSTART and TEND,
+but the file does not hold the whole state of the action.
+- The file is written before the multipliers are updated, so the multipliers obtained at the last update of the previous run are only in the file
+  if the MD code repeats the step at which it restarts (as GROMACS does when it restarts from a checkpoint). Otherwise that update is lost.
+- The average is rebuilt exactly only if the file has the multipliers of every update (PRINT_STRIDE equal to PACE, the default).
+- The multipliers are read back with the precision of the file (set it with FMT).
+- The works are not in the file, so they restart from zero.
+
+Use CHECKPOINT when an exact restart is needed.
 
 The works are in energy units: each update of the multipliers adds $k_B T \Delta\lambda_i s_i$ to the work of argument $i$.
 
