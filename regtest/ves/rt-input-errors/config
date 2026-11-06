@@ -22,5 +22,8 @@ bf: BF_CHEBYSHEV ORDER=3 MINIMUM=-4.0 MAXIMUM=4.0
 VES_LINEAR_EXPANSION ARG=arg1 BASIS_FUNCTIONS=bf TEMP=300.0 GRID_BINS=20 LABEL=ves1
 OPT_DUMMY BIAS=ves1 STRIDE=1000 LABEL=o1 COEFFS_FILE=coeffs.data GRADIENT_FILE=gradient.data HESSIAN_FILE=hessian.data ${k}_OUTPUT=0"
   done
+  expect_error "TD_VONMISES with a CENTER without its SIGMA" "td: TD_VONMISES CENTER1=1.0 CENTER2=-1.0 SIGMA1=0.5"
+  expect_error "VES_DELTA_F without FILE_F0" "arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME IGNORE_FORCES
+VES_DELTA_F ARG=arg1 TEMP=300 FILE_F1=fes1.data LABEL=vdf"
   rm -f bad.dat bad.out coeffs.data gradient.data hessian.data
 }
