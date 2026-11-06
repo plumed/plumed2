@@ -101,9 +101,9 @@ public:
   }
   static void registerKeywords( Keywords& keys );
   PathReparameterization(const ActionOptions&);
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PathReparameterization,"REPARAMETERIZE_PATH")

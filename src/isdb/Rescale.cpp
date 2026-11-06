@@ -168,7 +168,7 @@ public:
   }
   void writeCheckpoint(CheckpointWriter& w) override;
   void readCheckpoint(CheckpointReader& r) override;
-  void calculate();
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 

@@ -144,11 +144,11 @@ public:
   }
   static void registerKeywords( Keywords& keys );
   explicit PathDisplacements(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void clearDerivatives( const bool& force=false ) {}
-  void calculate() {}
-  void apply() {}
-  void update();
+  unsigned getNumberOfDerivatives() override;
+  void clearDerivatives( const bool& force=false ) override {}
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PathDisplacements,"AVERAGE_PATH_DISPLACEMENT")

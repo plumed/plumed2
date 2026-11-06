@@ -168,9 +168,9 @@ public:
   }
   void writeCheckpoint(CheckpointWriter& w) override;
   void readCheckpoint(CheckpointReader& r) override;
-  void calculate();
-  void update();
-  void turnOnDerivatives();
+  void calculate() override;
+  void update() override;
+  void turnOnDerivatives() override;
   static void registerKeywords(Keywords& keys);
   ~FISST();
 };
