@@ -16,8 +16,10 @@ test-command = [
     "python {package}/test/test_action_description_generators.py",
     "python {package}/test/test_vim_make.py",
     "python {package}/test/test_input_builder.py",
+    "python {package}/test/test_io.py",
     "python {package}/test/test_bundled_wheel.py {package}/plumed_source",
 ]
+test-requires = ["numpy", "pandas"]
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
 # The PLUMED kernel does not depend on the Python version: build it once per

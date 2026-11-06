@@ -42,8 +42,11 @@ Package layout
 --------------
 
 The public API remains available through ``import plumed``. Its compiled
-implementation is the private ``plumed._plumed`` extension; bundled executables,
-libraries and resources live under ``plumed/runtime``. No separate top-level
+native interface is the private ``plumed._plumed`` extension. InputBuilder,
+metadata parsing, data-file IO and HILLS averaging are implemented in ordinary
+Python modules, with their existing names reexported from ``plumed``. The native
+command path, including argument marshalling and GIL release, remains compiled.
+Bundled executables, libraries and resources live under ``plumed/runtime``. No separate top-level
 ``plumed_runtime`` package is installed. Wrapper-only installations use the same
 Python package layout without bundled runtime resources.
 
