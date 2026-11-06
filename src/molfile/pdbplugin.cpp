@@ -188,7 +188,7 @@ static int read_pdb_structure(void *mydata, int *optflags,
           ridstr, atom->insertion, atom->altloc, elementsymbol,
           NULL, NULL, NULL, &atom->occupancy, &atom->bfactor);
 
-      if (pdb->idxmap != NULL && atomserial < 100000) {
+      if (pdb->idxmap != NULL && atomserial >= 0 && atomserial < 100000) {
         pdb->idxmap[atomserial] = i; /* record new serial number translation */ 
       }
  
@@ -283,7 +283,7 @@ static int read_next_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   float *x, *y, *z;
   float occup, bfac;
   if (pdb->natoms == 0) 
-    return MOLFILE_ERROR; /* EOF */
+    return MOLFILE_EOF;
   if (ts) {
     x = ts->coords;
     y = x+1;
@@ -295,7 +295,8 @@ static int read_next_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   do {
     indx = read_pdb_record(pdb->fd, pdbstr);
     if((indx == PDB_END || indx == PDB_EOF) && (i < pdb->natoms)) {
-      return MOLFILE_ERROR;
+      /* no more frames, or a frame with too few atoms */
+      return (i == 0) ? MOLFILE_EOF : MOLFILE_ERROR;
     } else if(indx == PDB_ATOM) {
       if(i++ >= pdb->natoms) {
         break;      

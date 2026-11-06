@@ -1,0 +1,6 @@
+nn_eq_mm: rejected
+nn_neg: rejected
+mm_neg: rejected
+nn_zero: rejected
+r0_neg: rejected
+r0_missing: rejected

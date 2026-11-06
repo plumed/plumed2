@@ -601,6 +601,7 @@ static int mdio_header(md_file *mf, md_header *mdh) {
 
 		// Get number of atoms
 		if (xtc_int(mf, &n) < 0) return -1;
+		if (n < 0) return mdio_seterror(MDIO_BADFORMAT);
 		mdh->natoms = n;
 		rewind(mf->f);
 		return 0;
@@ -1062,7 +1063,7 @@ static int gro_header(md_file *mf, char *title, int titlelen, float *timeval,
   if (mdio_readline(mf, buf, MAX_GRO_LINE + 1) < 0) return -1;
 
   // Store the number of atoms
-  if (natoms && (!(*natoms = atoi(buf))))
+  if (natoms && ((*natoms = atoi(buf)) <= 0))
     return mdio_seterror(MDIO_BADFORMAT);
 
   // Now we rewind the file so that subsequent calls to
@@ -1173,6 +1174,11 @@ static int gro_timestep(md_file *mf, md_ts *ts) {
     n = sscanf(buf, "%*5c%*5c%*5c%*5c%8c%8c%8c", xposc, yposc, zposc);
     if (n != 3) 
       return mdio_seterror(MDIO_BADFORMAT);
+
+    // %8c does not null terminate
+    xposc[8] = 0;
+    yposc[8] = 0;
+    zposc[8] = 0;
 
     if ((sscanf(xposc, "%f", &ts->pos[coord    ]) != 1) ||
         (sscanf(yposc, "%f", &ts->pos[coord + 1]) != 1) ||
@@ -1289,7 +1295,7 @@ static int trx_header(md_file *mf, int rewind) {
 	if (trx_int(mf, &hdr->nre) < 0) return -1;
 
 	// Make sure there are atoms...
-	if (!hdr->natoms) return mdio_seterror(MDIO_BADFORMAT);
+	if (hdr->natoms <= 0) return mdio_seterror(MDIO_BADFORMAT);
 
 	// Try to determine precision (float? double?)
 	if (hdr->x_size) mf->prec = hdr->x_size / (hdr->natoms * 3);
@@ -1406,6 +1412,7 @@ static int trx_string(md_file *mf, char *str, int max) {
 	if (!mf) return mdio_seterror(MDIO_BADPARAMS);
 
 	if (trx_int(mf, &size) < 0) return -1;
+	if (size < 0) return mdio_seterror(MDIO_BADFORMAT);
   ssize = (size_t)size;
 
 	if (str && size <= max) {
@@ -1414,7 +1421,7 @@ static int trx_string(md_file *mf, char *str, int max) {
 		str[size] = 0;
 		return size;
 	} else if (str) {
-		if (fread(str, 1, max, mf->f) != ssize)
+		if (fread(str, 1, max, mf->f) != (size_t)max)
 			return mdio_seterror(MDIO_IOERROR);
 		if (fseek(mf->f, size - max, SEEK_CUR) != 0)
 			return mdio_seterror(MDIO_IOERROR);
@@ -1637,7 +1644,10 @@ static int xtc_timestep(md_file *mf, md_ts *ts) {
 	int n;
 	float f, x[3], y[3], z[3];
 
-	int size = 0; // explicitly initialized to zero.
+	// The number of atoms is stored twice in each frame: the second
+	// copy (read by xtc_3dfcoord) must agree with the first one, which
+	// sets the size of the position buffer.
+	int size;
 	float precision;
 
 	if (!mf || !ts) return mdio_seterror(MDIO_BADPARAMS);
@@ -1650,7 +1660,9 @@ static int xtc_timestep(md_file *mf, md_ts *ts) {
 
 	// Get number of atoms
 	if (xtc_int(mf, &n) < 0) return -1;
+	if (n < 0) return mdio_seterror(MDIO_BADFORMAT);
 	ts->natoms = n;
+	size = n;
 
 	// Get the simulation step
 	if (xtc_int(mf, &n) < 0) return -1;
@@ -1709,6 +1721,8 @@ static int xtc_magicints[] = {
 	5284491, 6658042, 8388607, 10568983, 13316085, 16777216 };
 
 #define FIRSTIDX 9
+/* spare ints at the end of the buffer used to decompress coordinates */
+#define XTC_BUFSLACK 64
 /* note that magicints[FIRSTIDX-1] == 0 */
 #define LASTIDX (sizeof(xtc_magicints) / sizeof(*xtc_magicints))
 
@@ -1825,6 +1839,7 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 	static int *ip = NULL;
 	static int oldsize;
 	static int *buf;
+	static int bufints; // allocated size of buf, in ints
 
 	int minint[3], maxint[3], *lip;
 	int smallidx;
@@ -1834,7 +1849,7 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 	float *lfp;
 	int tmp, *thiscoord,  prevcoord[3];
 
-	int bufsize, lsize;
+	int bufsize, lsize, datalen;
 	unsigned int bitsize;
 	float inv_precision;
 
@@ -1847,6 +1862,9 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 
 	if (*size != 0 && lsize != *size) return mdio_seterror(MDIO_BADFORMAT);
 
+	// size3 * 1.2 must fit an int
+	if (lsize > 0x10000000) return mdio_seterror(MDIO_BADFORMAT);
+
 	*size = lsize;
 	size3 = *size * 3;
 	if (*size <= 9) {
@@ -1857,35 +1875,44 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 		}
 		return *size;
 	}
-	xtc_float(mf, precision);
+	if (xtc_float(mf, precision) < 0) return -1;
 	if (ip == NULL) {
 		ip = (int *)malloc(size3 * sizeof(*ip));
 		if (ip == NULL) return mdio_seterror(MDIO_BADMALLOC);
-		bufsize = (int) (size3 * 1.2);
+		// the decoder may read up to XTC_BUFSLACK ints past the
+		// end of the data of a corrupted frame (see below)
+		bufsize = (int) (size3 * 1.2) + XTC_BUFSLACK;
 		buf = (int *)malloc(bufsize * sizeof(*buf));
 		if (buf == NULL) return mdio_seterror(MDIO_BADMALLOC);
+		bufints = bufsize;
 		oldsize = *size;
 	} else if (*size > oldsize) {
 		ip = (int *)realloc(ip, size3 * sizeof(*ip));
 		if (ip == NULL) return mdio_seterror(MDIO_BADMALLOC);
-		bufsize = (int) (size3 * 1.2);
+		bufsize = (int) (size3 * 1.2) + XTC_BUFSLACK;
 		buf = (int *)realloc(buf, bufsize * sizeof(*buf));
 		if (buf == NULL) return mdio_seterror(MDIO_BADMALLOC);
+		bufints = bufsize;
 		oldsize = *size;
 	}
 	buf[0] = buf[1] = buf[2] = 0;
 
-	xtc_int(mf, &(minint[0]));
-	xtc_int(mf, &(minint[1]));
-	xtc_int(mf, &(minint[2]));
-
-	xtc_int(mf, &(maxint[0]));
-	xtc_int(mf, &(maxint[1]));
-	xtc_int(mf, &(maxint[2]));
+	if (xtc_int(mf, &(minint[0])) < 0 ||
+	    xtc_int(mf, &(minint[1])) < 0 ||
+	    xtc_int(mf, &(minint[2])) < 0 ||
+	    xtc_int(mf, &(maxint[0])) < 0 ||
+	    xtc_int(mf, &(maxint[1])) < 0 ||
+	    xtc_int(mf, &(maxint[2])) < 0) return -1;
 		
 	sizeint[0] = maxint[0] - minint[0]+1;
 	sizeint[1] = maxint[1] - minint[1]+1;
 	sizeint[2] = maxint[2] - minint[2]+1;
+
+	/* sizeint is used as a divisor when decoding */
+	if (!sizeint[0] || !sizeint[1] || !sizeint[2]) {
+		printf("XTC corrupted, sizeint==0\n");
+		return mdio_seterror(MDIO_BADFORMAT);
+	}
 	
 	/* check if one of the sizes is to big to be multiplied */
 	if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff) {
@@ -1897,7 +1924,11 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 		bitsize = xtc_sizeofints(3, sizeint);
 	}
 
-	xtc_int(mf, &smallidx);
+	if (xtc_int(mf, &smallidx) < 0) return -1;
+	if (smallidx < FIRSTIDX || smallidx >= (int) LASTIDX) {
+		printf("XTC corrupted, smallidx out of range\n");
+		return mdio_seterror(MDIO_BADFORMAT);
+	}
 	smaller = xtc_magicints[FIRSTIDX > smallidx - 1 ? FIRSTIDX : smallidx - 1] / 2;
 	small = xtc_magicints[smallidx] / 2;
 	sizesmall[0] = sizesmall[1] = sizesmall[2] = xtc_magicints[smallidx];
@@ -1911,8 +1942,13 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 
 	/* buf[0] holds the length in bytes */
 	if (xtc_int(mf, &(buf[0])) < 0) return -1;
+	datalen = buf[0];
+	if (datalen > (bufints - 3 - XTC_BUFSLACK) * 4) {
+		printf("XTC corrupted, compressed data larger than the frame\n");
+		return mdio_seterror(MDIO_BADFORMAT);
+	}
 
-	if (xtc_data(mf, (char *) &buf[3], (int) buf[0]) < 0) return -1;
+	if (xtc_data(mf, (char *) &buf[3], datalen) < 0) return -1;
 
 	buf[0] = buf[1] = buf[2] = 0;
 
@@ -1922,6 +1958,13 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 	i = 0;
 	lip = ip;
 	while (i < lsize) {
+		/* buf[0] is the number of bytes consumed: a corrupted frame
+		 * must not make the decoder run past the data (an atom needs
+		 * less than XTC_BUFSLACK*4 bytes) */
+		if (buf[0] > datalen) {
+			printf("XTC corrupted, data exhausted\n");
+			return mdio_seterror(MDIO_BADFORMAT);
+		}
 		thiscoord = (int *)(lip) + i * 3;
 
 		if (bitsize == 0) {
@@ -1951,6 +1994,11 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 			is_smaller--;
 		}
 		if (run > 0) {
+			/* the run must not go beyond the last atom */
+			if (i + run / 3 > lsize) {
+				printf("XTC corrupted, run beyond the last atom\n");
+				return mdio_seterror(MDIO_BADFORMAT);
+			}
 			thiscoord += 3;
 			for (k = 0; k < run; k+=3) {
 				xtc_receiveints(buf, 3, smallidx, sizesmall, thiscoord);
@@ -1992,6 +2040,10 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 			*lfp++ = thiscoord[2] * inv_precision;		
 		}
 		smallidx += is_smaller;
+		if (smallidx < FIRSTIDX || smallidx >= (int) LASTIDX) {
+			printf("XTC corrupted, smallidx out of range\n");
+			return mdio_seterror(MDIO_BADFORMAT);
+		}
 		if (is_smaller < 0) {
 			small = smaller;
 			if (smallidx > FIRSTIDX) {

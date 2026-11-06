@@ -1,0 +1,117 @@
+type=driver
+plumed_needs=molfile_plugins
+arg="--plumed plumed.dat --mf_gro ok.gro"
+export PLUMED_STACK_TRACE=no
+# The main run reads a valid two-frame gro file (on master the %8c fields were not null terminated,
+# and the header of the first frame was consumed when the file was opened, so the first frame was misread).
+# The other files are corrupted trajectories that crashed, hung, read uninitialized memory or wrote outside
+# of the buffers on master: the driver must report them and stop without a signal.
+
+# big endian (xdr) and little endian (dcd) 32 bit integers, written as raw bytes
+function be32(){ printf "$(printf '\\%03o\\%03o\\%03o\\%03o' $(( ($1>>24)&255 )) $(( ($1>>16)&255 )) $(( ($1>>8)&255 )) $(( $1&255 )))" ; }
+function le32(){ printf "$(printf '\\%03o\\%03o\\%03o\\%03o' $(( $1&255 )) $(( ($1>>8)&255 )) $(( ($1>>16)&255 )) $(( ($1>>24)&255 )))" ; }
+function zeros(){ head -c $1 /dev/zero ; }
+function xtc_box(){ for v in 0x40400000 0 0 0 0x40400000 0 0 0 0x40400000 ; do be32 $v ; done ; }
+# xtc_frame natoms natoms2 smallidx minint maxint datalen
+function xtc_frame(){
+  be32 1995 ; be32 $1 ; be32 0 ; be32 0 ; xtc_box
+  be32 $2 ; be32 0x447a0000
+  be32 $4 ; be32 $4 ; be32 $4 ; be32 $5 ; be32 $5 ; be32 $5 ; be32 $3
+  be32 $6 ; zeros $6
+}
+# trr_header titlesize natoms
+function trr_header(){
+  be32 1993 ; be32 1 ; be32 $1 ; printf "GMX_trn_file" ; be32 0 ; be32 0 ; be32 36 ; be32 0 ; be32 0 ; be32 0 ; be32 0
+  be32 $(( 12*$2 )) ; be32 0 ; be32 0 ; be32 $2 ; be32 0 ; be32 0 ; be32 0 ; be32 0
+}
+# dcd natoms nfixed followed by the list of free atoms indexes (little endian, CHARMM style header)
+function dcd_file(){
+  natoms=$1 ; nfixed=$2 ; shift 2
+  le32 84 ; printf CORD ; le32 1 ; le32 0 ; le32 1 ; for i in 1 2 3 4 ; do le32 0 ; done ; le32 $nfixed ; le32 0x3f800000
+  for i in 1 2 3 4 5 6 7 8 ; do le32 0 ; done ; le32 24 ; le32 84
+  le32 84 ; le32 1 ; zeros 80 ; le32 84
+  le32 4 ; le32 $natoms ; le32 4
+  if test $nfixed -gt 0 ; then
+    le32 $(( 4*$# )) ; for i in "$@" ; do le32 $i ; done ; le32 $(( 4*$# ))
+  fi
+  n=$natoms ; test $n -lt 0 && n=0
+  for i in 1 2 3 ; do le32 $(( 4*n )) ; zeros $(( 4*n )) ; le32 $(( 4*n )) ; done
+}
+function pdb_atom(){ printf "ATOM  %5s  CA  ALA A   1    %8.3f%8.3f%8.3f  1.00  0.00           C\n" "$@" ; }
+
+function plumed_regtest_before(){
+  {
+    for f in 1 2 ; do
+      echo "title t= $f.0" ; echo "    3"
+      echo "    1RES     CA    1   1.000   2.000   3.000"
+      echo "    1RES     CB    2  12.345  -2.000   3.000"
+      echo "    1RES     CC    3   1.000   2.000 -33.000"
+      echo "   3.00000   3.00000   3.00000"
+    done
+  } > ok.gro
+  # xtc: the two copies of the number of atoms differ (uncompressed frame, then compressed frame)
+  { be32 1995 ; be32 5 ; be32 0 ; be32 0 ; xtc_box ; be32 9 ; zeros 108 ; } > bad_xtc_natoms_small.xtc
+  xtc_frame 10 100000 20 0 1000 64 > bad_xtc_natoms.xtc
+  xtc_frame 10 10 20 0 1000 4000 > bad_xtc_datalen.xtc
+  xtc_frame 10 10 20 5 4 64 > bad_xtc_sizeint.xtc
+  xtc_frame 10 10 2000 0 1000 64 > bad_xtc_smallidx.xtc
+  xtc_frame 10 10 -9000 0 1000 64 > bad_xtc_smallidx_neg.xtc
+  { be32 1995 ; be32 10 ; be32 0 ; be32 0 ; xtc_box ; be32 10 ; be32 0x447a0000 ; for v in 0 0 0 10 10 10 10 ; do be32 $v ; done ; be32 64 ; for i in $(seq 64) ; do printf '\377' ; done ; } > bad_xtc_run.xtc
+  { be32 1995 ; be32 -5 ; zeros 100 ; } > bad_xtc_natoms_neg.xtc
+  # trr: negative size of the version string, negative number of atoms
+  { be32 1993 ; be32 1 ; be32 -1 ; for i in $(seq 200) ; do printf AAAAAAAAAAAAAAAAAAAA ; done ; } > bad_trr_title.trr
+  { trr_header 12 -3 ; zeros 100 ; } > bad_trr_natoms.trr
+  # dcd: natoms=-2 (frame size 0: division by zero), invalid index of a free atom, invalid number of fixed atoms
+  dcd_file -2 0 > bad_dcd_natoms.dcd
+  dcd_file 6 2 1 -50000 3 4 > bad_dcd_index.dcd
+  dcd_file 6 2 1 2000000 3 4 > bad_dcd_index_big.dcd
+  dcd_file 4 -2 1 2 3 4 5 6 > bad_dcd_nfixed.dcd
+  # crd: no line terminator (the reader never ended), missing coordinates
+  printf "title without newline" > bad_crd_title.crd
+  printf "title\n1.0 2.0\n" > bad_crd_partial.crd
+  # gro: the number of atoms changes, negative number of atoms
+  { for n in 3 2 ; do echo "title t= 0.0" ; echo "    $n" ; for i in $(seq $n) ; do echo "    1RES     CA    $i   1.000   2.000   3.000" ; done ; echo "   3.00000   3.00000   3.00000" ; done ; } > bad_gro_natoms_change.gro
+  { echo "title" ; echo "   -4" ; echo "    1RES     CA    1   1.000   2.000   3.000" ; echo "   3.00000   3.00000   3.00000" ; } > bad_gro_natoms_neg.gro
+  # pdb: ATOM records without coordinates or shorter than the fixed fields
+  { pdb_atom 1 1.0 2.0 3.0 ; printf "ATOM      2  CA\n" ; pdb_atom 3 4.0 5.0 6.0 | head -c 36 ; echo ; echo END ; } > pdb_short.pdb
+  echo "DUMPATOMS ATOMS=1-3 FILE=pdb.xyz PRECISION=3" > plumed_pdb.dat
+  echo "DUMPATOMS ATOMS=1 FILE=out.xyz" > plumed_bad.dat
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  # name, format, text that must be in the output
+  while read -r name fmt text ; do
+    extra=""
+    test $fmt = crd && extra="--natoms 2"
+    $plumed driver --plumed plumed_bad.dat --mf_$fmt bad_$name.$fmt $extra > bad_$name.out 2> bad_$name.err
+    rc=$?
+    if test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+xtc_natoms_small xtc Error reading timestep, file does not match format
+xtc_natoms xtc Error reading timestep, file does not match format
+xtc_datalen xtc XTC corrupted, compressed data larger than the frame
+xtc_sizeint xtc XTC corrupted, sizeint==0
+xtc_smallidx xtc XTC corrupted, smallidx out of range
+xtc_smallidx_neg xtc XTC corrupted, smallidx out of range
+xtc_run xtc XTC corrupted, run beyond the last atom
+xtc_natoms_neg xtc cannot read bad_xtc_natoms_neg.xtc with the molfile xtc plugin
+trr_title trr cannot read bad_trr_title.trr with the molfile trr plugin
+trr_natoms trr cannot read bad_trr_natoms.trr with the molfile trr plugin
+dcd_natoms dcd cannot read bad_dcd_natoms.dcd with the molfile dcd plugin
+dcd_index dcd cannot read bad_dcd_index.dcd with the molfile dcd plugin
+dcd_index_big dcd cannot read bad_dcd_index_big.dcd with the molfile dcd plugin
+dcd_nfixed dcd cannot read bad_dcd_nfixed.dcd with the molfile dcd plugin
+crd_title crd cannot read bad_crd_title.crd with the molfile crd plugin
+crd_partial crd Problem reading CRD file
+gro_natoms_change gro Timestep in file contains wrong number of atoms
+gro_natoms_neg gro cannot read bad_gro_natoms_neg.gro with the molfile gro plugin
+EOT
+  # pdb with short records: the missing coordinates are zero, no uninitialized memory is read
+  $plumed driver --plumed plumed_pdb.dat --mf_pdb pdb_short.pdb > pdb.out 2> pdb.err
+  grep -v "^ \?[0-9]*$" pdb.xyz | awk 'NF==4 {printf "%s %s %s\n", $2, $3, $4}' > pdb_short.coords
+}
