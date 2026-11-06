@@ -20,9 +20,10 @@ function plumed_regtest_before() {
 
 function plumed_regtest_after() {
   # from step 24 on, the multipliers and the biases of the restarted run must be the same as in the reference
-  # (the restarted run appends to COLVAR: its last 36 lines are steps 24 to 59)
-  tail -n 36 COLVAR > a
-  tail -n 36 restart/COLVAR > b
+  # (the restarted run appends to exact.out: its last 36 lines are steps 24 to 59)
+  # (exact.out, not COLVAR: colvar and COLVAR are the same file on case-insensitive file systems)
+  tail -n 36 exact.out > a
+  tail -n 36 restart/exact.out > b
   if cmp -s a b ; then echo "restart IDENTICAL" ; else echo "restart DIFFERENT" ; fi > restart_check
   grep "the works restart from zero" restart/out2 | sed 's/^PLUMED: *//' | sort -u >> restart_check
 }
