@@ -62,6 +62,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include "molfile_plugin.h"
 #include "readpdb.h"
 #include "periodic_table.h"
+#include "safeopen.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -202,7 +203,7 @@ static int read_pdb_structure(void *mydata, int *optflags,
         badptecount++; /* unrecognized element */
       }
  
-      strcpy(atom->type, atom->name);
+      snprintf(atom->type, sizeof(atom->type), "%s", atom->name);
       i++;
       break;
 
@@ -332,7 +333,7 @@ static void *open_file_write(const char *path, const char *filetype,
 
   FILE *fd;
   pdbdata *pdb;
-  fd = fopen(path, "w");
+  fd = molfile_fopen_write(path, "w");
   if (!fd) {
     fprintf(stderr, "Unable to open file %s for writing\n", path);
     return NULL;

@@ -84,6 +84,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #endif
 
 #include "endianswap.h"
+#include "safeopen.h"
 
 namespace PLMD{
 namespace molfile{
@@ -377,7 +378,7 @@ md_file *mdio_open(const char *fn, const int fmt, const int rw) {
     case MDFMT_GRO:
 	case MDFMT_G96: /* fallthrough */
         if (rw) 
-            mf->f = fopen(fn, "wt");
+            mf->f = molfile_fopen_write(fn, "wt");
         else
             mf->f = fopen(fn, "rt");
 
@@ -395,7 +396,7 @@ md_file *mdio_open(const char *fn, const int fmt, const int rw) {
 	case MDFMT_XTC:  /* fallthrough */
 		// Finally, open the file
         if (rw)
-            mf->f = fopen(fn, "wb");
+            mf->f = molfile_fopen_write(fn, "wb");
         else
             mf->f = fopen(fn, "rb");
 
@@ -1149,6 +1150,9 @@ static int gro_timestep(md_file *mf, md_ts *ts) {
 
   if (gro_header(mf, NULL, 0, &ts->time, &ts->natoms, 0) < 0)
     return -1;
+
+  if (ts->natoms <= 0 || ts->natoms > MDIO_MAXATOMS)
+    return mdio_seterror(MDIO_BADFORMAT);
 
   ts->pos = (float *) malloc(3 * sizeof(float) * (size_t)ts->natoms);
   if (!ts->pos)

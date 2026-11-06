@@ -425,6 +425,8 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
   *FREEINDEXES = NULL;
   *fixedcoords = NULL;
   if (*NAMNF != 0) {
+    if (*N < 0 || *N > DCD_MAXATOMS || *NAMNF < 0 || *NAMNF > *N)
+      return DCD_BADFORMAT;
     (*FREEINDEXES) = (int *) calloc((size_t)((*N)-(*NAMNF)), sizeof(int));
     if (*FREEINDEXES == NULL)
       return DCD_BADMALLOC;
@@ -1003,6 +1005,14 @@ static void *open_dcd_read(const char *path, const char *filetype,
   }
 
   dcd->first = 1;
+  if (dcd->natoms < 0 || dcd->natoms > DCD_MAXATOMS) {
+    printf("dcdplugin) Invalid number of atoms: %d.\n", dcd->natoms);
+    fio_fclose(dcd->fd);
+    free(dcd->freeind);
+    free(dcd->fixedcoords);
+    free(dcd);
+    return NULL;
+  }
   dcd->x = (float *)malloc((size_t)dcd->natoms * sizeof(float));
   dcd->y = (float *)malloc((size_t)dcd->natoms * sizeof(float));
   dcd->z = (float *)malloc((size_t)dcd->natoms * sizeof(float));

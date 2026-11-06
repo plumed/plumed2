@@ -66,6 +66,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include "molfile_plugin.h"
+#include "safeopen.h"
 
 namespace PLMD{
 namespace molfile{
@@ -180,7 +181,7 @@ static void *open_crd_write(const char *path, const char *filetype,
   crddata *crd;
   FILE *fd;
 
-  fd = fopen(path, "wb");
+  fd = molfile_fopen_write(path, "wb");
   if (!fd) {
     fprintf(stderr, "Could not open file %s for writing\n", path);
     return NULL;
