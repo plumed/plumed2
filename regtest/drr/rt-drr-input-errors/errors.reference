@@ -2,3 +2,5 @@ DRR with OUTPUTFREQ=0: exit code 1
 ERROR in input to action DRR : eABF/DRR: OUTPUTFREQ must be at least 1 
 DRR with GRID_BIN=0: exit code 1
 ERROR in input to action DRR : eABF/DRR: the number of bins of the grid must be positive 
+DRR with HISTORYFREQ=0.5: exit code 1
+ERROR in input to action DRR : eABF/DRR: HISTORYFREQ must be at least 1 (or not positive to switch off the history) 
