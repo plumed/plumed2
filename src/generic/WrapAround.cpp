@@ -166,9 +166,9 @@ class WrapAround:
   // cells of the reference atoms (orthorhombic boxes): the reference atoms of cell c are
   // cellatoms[cellstart[c]] ... cellatoms[cellstart[c+1]-1], in increasing order
   // (cells in scaled coordinates, so that the boxes need not be orthorhombic)
-  std::array<unsigned,3> ncells;
+  std::array<unsigned,3> ncells{};
   // distance between the opposite faces of a cell
-  std::array<double,3> cellwidth;
+  std::array<double,3> cellwidth{};
   std::vector<unsigned> cellstart, cellatoms, cellstamp;
   unsigned stamp=0;
   // distance vectors of the reference atoms of one cell (triclinic boxes)
