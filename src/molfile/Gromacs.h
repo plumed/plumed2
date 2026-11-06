@@ -135,6 +135,7 @@ static int mdio_errcode;	// Last error code
 #define XTC_MAGIC	1995	// Magic number for .xtc files
 #define MAX_GRO_LINE	500	// Maximum line length of .gro files
 #define MAX_G96_LINE	500	// Maximum line length of .g96 files
+#define MDIO_MAXATOMS	(1 << 28)	// More atoms than this: the file is taken as corrupted
 #define MAX_TRX_TITLE	80	// Maximum length of a title in .trX
 #define MAX_MDIO_TITLE	80	// Maximum supported title length
 #define ANGS_PER_NM	10	// Unit conversion factor
@@ -264,10 +265,6 @@ static int g96_countatoms(md_file *);
 // .xtc file functions
 static int xtc_int(md_file *, int *);
 static int xtc_float(md_file *, float *);
-/* 
-static int xtc_receivebits(int *, int);
-static void xtc_receiveints(int *, int, int, const unsigned *, int *);
-*/
 static int xtc_timestep(md_file *, md_ts *);
 static int xtc_3dfcoord(md_file *, float *, int *, float *);
 
@@ -411,7 +408,7 @@ md_file *mdio_open(const char *fn, const int fmt, const int rw) {
 
 	// Check for opening error
 	if (!mf->f) {
-		if (mf->trx) free(mf->trx);
+		free(mf->trx);
 		free(mf);
 		mdio_seterror(MDIO_CANTOPEN);
 		return NULL;
@@ -430,7 +427,7 @@ static int mdio_close(md_file *mf) {
 	if (fclose(mf->f) == EOF) return mdio_seterror(MDIO_CANTCLOSE);
 
 	// Free the dynamically allocated memory
-	if (mf->trx) free(mf->trx);
+	free(mf->trx);
 	free(mf);
 	return mdio_seterror(MDIO_SUCCESS);
 }
@@ -526,7 +523,7 @@ static int mdio_tsfree(md_ts *ts, int holderror) {
 
 	if (ts->pos && ts->natoms > 0) free(ts->pos);
 
-  if (ts->box) free(ts->box);
+  free(ts->box);
 
 	if (holderror) return -1;
 	else return mdio_seterror(MDIO_SUCCESS);
@@ -601,7 +598,7 @@ static int mdio_header(md_file *mf, md_header *mdh) {
 
 		// Get number of atoms
 		if (xtc_int(mf, &n) < 0) return -1;
-		if (n < 0) return mdio_seterror(MDIO_BADFORMAT);
+		if (n < 0 || n > MDIO_MAXATOMS) return mdio_seterror(MDIO_BADFORMAT);
 		mdh->natoms = n;
 		rewind(mf->f);
 		return 0;
@@ -786,7 +783,7 @@ static int g96_timestep(md_file *mf, md_ts *ts) {
 
   // Allocate data space for the timestep, using the number of atoms
   // determined by open_g96_read().
-	ts->pos = (float *) malloc(sizeof(float) * 3 * ts->natoms);
+	ts->pos = (float *) malloc(sizeof(float) * 3 * (size_t)ts->natoms);
 	if (!ts->pos) {
 		return mdio_seterror(MDIO_BADMALLOC);
 	}
@@ -890,13 +887,6 @@ static int g96_timestep(md_file *mf, md_ts *ts) {
 		}
 	}
 	else if (!strcasecmp(buf, "POSITION") || !strcasecmp(buf, "REFPOSITION")) {
-		/*
-		char resnum[7];
-		char resname[7];
-		char atomname[7];
-		char atomnum[7];
-		*/
-
 		// So now we read in some atoms
     i = 0;
 		while (i < ts->natoms) {
@@ -1063,7 +1053,7 @@ static int gro_header(md_file *mf, char *title, int titlelen, float *timeval,
   if (mdio_readline(mf, buf, MAX_GRO_LINE + 1) < 0) return -1;
 
   // Store the number of atoms
-  if (natoms && ((*natoms = atoi(buf)) <= 0))
+  if (natoms && ((*natoms = atoi(buf)) <= 0 || *natoms > MDIO_MAXATOMS))
     return mdio_seterror(MDIO_BADFORMAT);
 
   // Now we rewind the file so that subsequent calls to
@@ -1160,7 +1150,7 @@ static int gro_timestep(md_file *mf, md_ts *ts) {
   if (gro_header(mf, NULL, 0, &ts->time, &ts->natoms, 0) < 0)
     return -1;
 
-  ts->pos = (float *) malloc(3 * sizeof(float) * ts->natoms);
+  ts->pos = (float *) malloc(3 * sizeof(float) * (size_t)ts->natoms);
   if (!ts->pos)
     return mdio_seterror(MDIO_BADMALLOC);
 
@@ -1295,7 +1285,7 @@ static int trx_header(md_file *mf, int rewind) {
 	if (trx_int(mf, &hdr->nre) < 0) return -1;
 
 	// Make sure there are atoms...
-	if (hdr->natoms <= 0) return mdio_seterror(MDIO_BADFORMAT);
+	if (hdr->natoms <= 0 || hdr->natoms > MDIO_MAXATOMS) return mdio_seterror(MDIO_BADFORMAT);
 
 	// Try to determine precision (float? double?)
 	if (hdr->x_size) mf->prec = hdr->x_size / (hdr->natoms * 3);
@@ -1480,7 +1470,7 @@ static int trx_timestep(md_file *mf, md_ts *ts) {
   }
 
   if (hdr->x_size) {
-    ts->pos = (float *) malloc(sizeof(float) * 3 * hdr->natoms);
+    ts->pos = (float *) malloc(sizeof(float) * 3 * (size_t)hdr->natoms);
     if (!ts->pos) 
       return mdio_seterror(MDIO_BADMALLOC);
 
@@ -1660,7 +1650,7 @@ static int xtc_timestep(md_file *mf, md_ts *ts) {
 
 	// Get number of atoms
 	if (xtc_int(mf, &n) < 0) return -1;
-	if (n < 0) return mdio_seterror(MDIO_BADFORMAT);
+	if (n < 0 || n > MDIO_MAXATOMS) return mdio_seterror(MDIO_BADFORMAT);
 	ts->natoms = n;
 	size = n;
 
@@ -1691,7 +1681,7 @@ static int xtc_timestep(md_file *mf, md_ts *ts) {
     return -1;
   }
 
-	ts->pos = (float *) malloc(sizeof(float) * 3 * ts->natoms);
+	ts->pos = (float *) malloc(sizeof(float) * 3 * (size_t)ts->natoms);
 	if (!ts->pos) return mdio_seterror(MDIO_BADMALLOC);
 	n = xtc_3dfcoord(mf, ts->pos, &size, &precision);
 	if (n < 0) return -1;

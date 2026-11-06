@@ -103,6 +103,7 @@ namespace molfile{
 #define RECSCALE32BIT 1
 #define RECSCALE64BIT 2
 #define RECSCALEMAX   2
+#define DCD_MAXATOMS  (1L<<30) /* larger numbers of atoms are taken as a corrupted file */
 
 typedef struct {
   fio_fd fd;
@@ -406,16 +407,8 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
 
   /* the number of atoms and of fixed atoms are used to size buffers and */
   /* frames: reject values that cannot belong to a valid file            */
-  if (*N < 0 || *NAMNF < 0 || *NAMNF > *N) {
+  if (*N < 0 || *NAMNF < 0 || *NAMNF > *N || *N > DCD_MAXATOMS) {
     return DCD_BADFORMAT;
-  }
-
-  if (*N > (1L<<30)) {
-    hugefile=1;
-    printf("dcdplugin) ***\n");
-    printf("dcdplugin) *** Trajectory contains over 2^30 atoms.\n");
-    printf("dcdplugin) *** Huge file integer wraparound handling enabled.\n");
-    printf("dcdplugin) ***\n");
   }
 
   /* Read in an integer '4' */
@@ -432,11 +425,11 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
   *FREEINDEXES = NULL;
   *fixedcoords = NULL;
   if (*NAMNF != 0) {
-    (*FREEINDEXES) = (int *) calloc((((ptrdiff_t)(*N))-(*NAMNF)), sizeof(int));
+    (*FREEINDEXES) = (int *) calloc((size_t)((*N)-(*NAMNF)), sizeof(int));
     if (*FREEINDEXES == NULL)
       return DCD_BADMALLOC;
 
-    *fixedcoords = (float *) calloc(((ptrdiff_t)(*N))*4L - (*NAMNF), sizeof(float));
+    *fixedcoords = (float *) calloc((size_t)(*N)*4 - (size_t)(*NAMNF), sizeof(float));
     if (*fixedcoords == NULL)
       return DCD_BADMALLOC;
 
@@ -1010,17 +1003,14 @@ static void *open_dcd_read(const char *path, const char *filetype,
   }
 
   dcd->first = 1;
-  dcd->x = (float *)malloc(dcd->natoms * sizeof(float));
-  dcd->y = (float *)malloc(dcd->natoms * sizeof(float));
-  dcd->z = (float *)malloc(dcd->natoms * sizeof(float));
+  dcd->x = (float *)malloc((size_t)dcd->natoms * sizeof(float));
+  dcd->y = (float *)malloc((size_t)dcd->natoms * sizeof(float));
+  dcd->z = (float *)malloc((size_t)dcd->natoms * sizeof(float));
   if (!dcd->x || !dcd->y || !dcd->z) {
     printf("dcdplugin) Unable to allocate space for %d atoms.\n", dcd->natoms);
-    if (dcd->x)
-      free(dcd->x);
-    if (dcd->y)
-      free(dcd->y);
-    if (dcd->z)
-      free(dcd->z);
+    free(dcd->x);
+    free(dcd->y);
+    free(dcd->z);
     fio_fclose(dcd->fd);
     free(dcd);
     return NULL;
@@ -1072,13 +1062,13 @@ static int read_next_timestep(void *v, int natoms, molfile_timestep_t *ts) {
    *   187 MB/sec down to 122 MB/sec.  Clearly this extra copy has to go.
    */
   {
-    int natoms = dcd->natoms;
+    int nat = dcd->natoms;
     float *nts = ts->coords;
     const float *bufx = dcd->x;
     const float *bufy = dcd->y;
     const float *bufz = dcd->z;
 
-    for (i=0, j=0; i<natoms; i++, j+=3) {
+    for (i=0, j=0; i<nat; i++, j+=3) {
       nts[j    ] = bufx[i];
       nts[j + 1] = bufy[i];
       nts[j + 2] = bufz[i];
@@ -1173,9 +1163,9 @@ static void *open_dcd_write(const char *path, const char *filetype,
   dcd->nsavc = nsavc;
   dcd->with_unitcell = with_unitcell;
   dcd->charmm = charmm;
-  dcd->x = (float *)malloc(natoms * sizeof(float));
-  dcd->y = (float *)malloc(natoms * sizeof(float));
-  dcd->z = (float *)malloc(natoms * sizeof(float));
+  dcd->x = (float *)malloc((size_t)natoms * sizeof(float));
+  dcd->y = (float *)malloc((size_t)natoms * sizeof(float));
+  dcd->z = (float *)malloc((size_t)natoms * sizeof(float));
   return dcd;
 }
 

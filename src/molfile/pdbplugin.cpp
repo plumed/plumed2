@@ -133,10 +133,8 @@ static void *open_pdb_read(const char *filepath, const char *filetype,
   /* If no atoms were found, this is probably not a PDB file! */
   if (!*natoms) {
     fprintf(stderr, "PDB file '%s' contains no atoms.\n", filepath);
-    if (pdb->meta->remarks != NULL)
-      free(pdb->meta->remarks);
-    if (pdb->meta != NULL)
-      free(pdb->meta);
+    free(pdb->meta->remarks);
+    free(pdb->meta);
     free(pdb);
     return NULL;
   }
@@ -323,12 +321,9 @@ static void close_pdb_read(void *v) {
   pdbdata *pdb = (pdbdata *)v;
   if (pdb->fd != NULL)
     fclose(pdb->fd);
-  if (pdb->idxmap != NULL)
-    free(pdb->idxmap);
-  if (pdb->meta->remarks != NULL)
-    free(pdb->meta->remarks);
-  if (pdb->meta != NULL) 
-    free(pdb->meta);
+  free(pdb->idxmap);
+  free(pdb->meta->remarks);
+  free(pdb->meta);
   free(pdb);
 }
 

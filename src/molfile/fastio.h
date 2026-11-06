@@ -233,7 +233,6 @@ static fio_size_t fio_fseek(fio_fd fd, fio_size_t offset, int whence) {
   finalint = bigint;      /* set the high part, which will be overwritten */
   finalint.LowPart = SetFilePointer(fd, bigint.LowPart, &finalint.HighPart, whence);
   if (finalint.LowPart == -1) {
-    /* if (finalint.LowPart == INVALID_SET_FILE_POINTER) { */
     /* INVALID_SET_FILE_POINTER is a possible "ok" low order result when */
     /* working with 64-bit offsets, so we have to also check the system  */
     /* error value for this thread to be sure */
@@ -269,7 +268,6 @@ static fio_size_t fio_ftell(fio_fd fd) {
 
   finalint.LowPart = SetFilePointer(fd, bigint.LowPart, &finalint.HighPart, FILE_CURRENT);
   if (finalint.LowPart == -1) {
-    /* if (finalint.LowPart == INVALID_SET_FILE_POINTER) { */
     /* INVALID_SET_FILE_POINTER is a possible "ok" low order result when */
     /* working with 64-bit offsets, so we have to also check the system  */
     /* error value for this thread to be sure */
@@ -489,9 +487,6 @@ static fio_size_t fio_fread(void *ptr, fio_size_t size,
        if (rc == 0) {
           return cnt;  /* end of file scenario */
        }
-//      if (rc != szleft) {
-//        printf("fio_fread(): rc %ld  sz: %ld\n", rc, szleft);
-//      }
       if (rc < 0) {
         printf("fio_fread(): rc %ld  sz: %ld\n", rc, size);
         perror("  perror fio_fread(): ");
@@ -505,8 +500,6 @@ static fio_size_t fio_fread(void *ptr, fio_size_t size,
   for (i=0; i<nitems; i++) {
     fio_size_t rc = read(fd, (void*) (((char *) ptr) + (cnt * size)), size);
     if (rc != size) {
-//      printf("fio_fread(): rc %ld  sz: %ld\n", rc, size);
-//      perror("  perror fio_fread(): ");
       break;
     }
     len += rc;
