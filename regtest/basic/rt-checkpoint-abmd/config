@@ -13,7 +13,17 @@ function plumed_regtest_before() {
   cd restart
   cp ../plumed.dat .
   $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  cp plumed.cpt ../part.cpt
+  cp COLVAR ../part.COLVAR
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # C) the checkpoint of the interrupted run read by an input without LINEAR: the running minimum would be misinterpreted, so it must be an error
+  mkdir mismatch
+  cd mismatch
+  cp ../part.cpt plumed.cpt
+  cp ../part.COLVAR COLVAR
+  sed 's/ LINEAR//' ../restart/plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out 2> err
   cd ..
   # B) checkpoints every 7 steps (STRIDE), restart from step 21
   mkdir restart-stride
@@ -34,4 +44,6 @@ function plumed_regtest_after() {
     if grep -q "not stored in the checkpoint" $d/out2 $d/err2 ; then echo "$d: unported state warning" ; fi
     grep -h "Restarting from checkpoint\|Checkpoint state restored" $d/out2 | sed 's/by PLUMED.*//'
   done > restart_check
+  # the mismatch of LINEAR must be reported
+  if grep -q "was written with LINEAR" mismatch/err mismatch/out ; then echo "mismatch: LINEAR error reported" ; else echo "mismatch: LINEAR error NOT reported" ; fi >> restart_check
 }
