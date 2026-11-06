@@ -95,6 +95,10 @@ private:
 ///
   void reparameterizePart( int istart, int iend, double target );
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords( Keywords& keys );
   PathReparameterization(const ActionOptions&);
   void calculate() {}

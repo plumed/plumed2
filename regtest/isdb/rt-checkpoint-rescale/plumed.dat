@@ -1,0 +1,28 @@
+# exact restart of RESCALE: the bias, the MC state and the selector, with the file of the bias
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2 NOPBC
+d2: DISTANCE ATOMS=3,4 NOPBC
+r1: RESTRAINT ARG=d1 AT=1.0 KAPPA=50.0
+r2: RESTRAINT ARG=d2 AT=1.5 KAPPA=20.0
+
+SELECTOR NAME=gamma VALUE=0
+
+RESCALE ...
+  LABEL=res
+  TEMP=300
+  ARG=r1.bias,r2.bias
+  SELECTOR=gamma
+  MAX_RESCALE=1.4,2.0
+  NBIN=4
+  W0=1.0
+  BIASFACTOR=5.0
+  BSTRIDE=1
+  BFILE=bias.dat
+  MC_STEPS=5
+  MC_STRIDE=1
+  PACE=1
+  SEED=1234
+... RESCALE
+
+sel: SELECT ARG=d1,d2,r1.bias,r2.bias SELECTOR=gamma
+PRINT ARG=d1,d2,res.igamma,res.accgamma,res.wtbias,res.bias,sel FILE=COLVAR STRIDE=1 FMT=%.17g

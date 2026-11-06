@@ -1,0 +1,24 @@
+restart/COLVAR IDENTICAL
+restart/ov1.dat-0 IDENTICAL
+restart/ov1.dat-10 IDENTICAL
+restart/ov1.dat-20 IDENTICAL
+restart/ov1.dat-30 IDENTICAL
+restart/ov1.dat-40 IDENTICAL
+restart/ov1.dat-50 IDENTICAL
+restart/MCSTATUS1gmm IDENTICAL
+restart/MCSTATUS2gmmov IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/ov1.dat-0 IDENTICAL
+restart-stride/ov1.dat-10 IDENTICAL
+restart-stride/ov1.dat-20 IDENTICAL
+restart-stride/ov1.dat-30 IDENTICAL
+restart-stride/ov1.dat-40 IDENTICAL
+restart-stride/ov1.dat-50 IDENTICAL
+restart-stride/MCSTATUS1gmm IDENTICAL
+restart-stride/MCSTATUS2gmmov IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

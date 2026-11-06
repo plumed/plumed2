@@ -116,6 +116,10 @@ MAZE_OPTIMIZER_BIAS ...
  */
 class OptimizerBias: public bias::Bias {
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   /**
    * Standard PLUMED2 constructor.
    *

@@ -94,7 +94,8 @@ The actions that store their state in the checkpoint include [METAD](METAD.md),
 [METAINFERENCE](METAINFERENCE.md) (and the ISDB collective variables with DOSCORE),
 [EDS](EDS.md), [DRR](DRR.md), [MOVINGRESTRAINT](MOVINGRESTRAINT.md), [ABMD](ABMD.md),
 [EXTENDED_LAGRANGIAN](EXTENDED_LAGRANGIAN.md), [ACCUMULATE](ACCUMULATE.md), [COLLECT](COLLECT.md),
-[COMMITTOR](COMMITTOR.md), [MAXENT](MAXENT.md), [READ](READ.md), [RANDOM_EXCHANGES](RANDOM_EXCHANGES.md) and
+[COMMITTOR](COMMITTOR.md), [MAXENT](MAXENT.md), [READ](READ.md), [RANDOM_EXCHANGES](RANDOM_EXCHANGES.md),
+[LOGMFD](LOGMFD.md), [FISST](FISST.md), [RESCALE](RESCALE.md), [EMMI](EMMI.md), [EMMIVOX](EMMIVOX.md) and
 [EFFECTIVE_ENERGY_DRIFT](EFFECTIVE_ENERGY_DRIFT.md) (only with a single process): they
 restore their state from it, so that their hills, kernels or status files are not read
 (the growing ones are truncated).
