@@ -25,6 +25,7 @@
 
 #include <openacc.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
@@ -58,21 +59,44 @@ public:
   }
 };
 
-/// Debye sum with OpenACC: one thread per row (particle i of this rank, q value k),
-/// looping over all the other particles j. Each pair is computed twice (once for
+/// Number of q values of a thread (its accumulators stay in registers)
+#ifndef PLUMED_SAXS_ACC_QCHUNK
+#define PLUMED_SAXS_ACC_QCHUNK 8
+#endif
+constexpr std::size_t qchunk=PLUMED_SAXS_ACC_QCHUNK;
+/// When there are fewer threads than this, the loop over j is split in tiles
+/// (whose partial results are then summed in a fixed order)
+#ifndef PLUMED_SAXS_ACC_TARGET_THREADS
+#define PLUMED_SAXS_ACC_TARGET_THREADS 131072
+#endif
+constexpr std::size_t targetThreads=PLUMED_SAXS_ACC_TARGET_THREADS;
+constexpr std::size_t maxTiles=64;
+
+/// Debye sum with OpenACC: one thread per (particle i of this rank, chunk of
+/// qchunk q values, tile of particles j). Each pair is computed twice (once for
 /// row i and once for row j), but there are no atomics, the result does not depend
-/// on the scheduling, and the derivative of row i is complete in its thread.
+/// on the scheduling, and the derivative of row i is complete in its thread
+/// (or in the sum of its tiles).
+/// For every pair the distance is computed once per chunk and, as in SAXS::sincos_q,
+/// sin(q_k r) and cos(q_k r) are obtained by angle addition from the first q of the
+/// chunk on the uniform grid q0+k*dq, corrected for the deviations eps_k of the
+/// actual q values with a Taylor expansion (exact sin and cos when |eps_k r|>0.1).
 class OpenACCDebye :
   public SAXSDebyeBackend {
   CachedUpload ff_;
   CachedUpload q_;
+  CachedUpload eps_;
   OpenACC::memoryManager<double> pos_;
   /// per row (m*numq+k): partial intensity and derivative
   OpenACC::memoryManager<double> partial_;
   OpenACC::memoryManager<double> grad_;
+  /// the same per tile, when the loop over j is split
+  OpenACC::memoryManager<double> tpartial_;
+  OpenACC::memoryManager<double> tgrad_;
   OpenACC::memoryManager<double> sum_;
   OpenACC::memoryManager<double> w_;
   OpenACC::memoryManager<double> forces_;
+  std::vector<double> heps_;
   std::vector<double> hsum_;
   std::vector<double> hgrad_;
   std::vector<double> hforces_;
@@ -130,37 +154,89 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
     return;
   }
 
+  // q values as a uniform grid q0+k*dq plus deviations eps_k (as in SAXS)
+  const double q0=q[0];
+  const double dq = numq>1 ? (q[numq-1]-q[0])/static_cast<double>(numq-1) : 0.0;
+  heps_.resize(numq);
+  double maxeps=0.0;
+  for(std::size_t k=0; k<numq; ++k) {
+    heps_[k]=q[k]-(q0+k*dq);
+    maxeps=std::max(maxeps,std::fabs(heps_[k]));
+  }
+  // with fewer than 4 q values sin and cos are always computed directly
+  const double epslimit = numq<4 ? -1.0 : 0.1;
+
+  // work split: chunks of q values and, for small systems, tiles of j
+  const std::size_t nchunk=(numq+qchunk-1)/qchunk;
+  const std::size_t nthreads=nmine*nchunk;
+  std::size_t ntile=(targetThreads+nthreads-1)/nthreads;
+  ntile=std::max<std::size_t>(1,std::min(ntile,std::min(maxTiles,n)));
+  const std::size_t tilesize=(n+ntile-1)/ntile;
+
   pos_.resize(3*n);
   pos_.copyToDeviceAsync(&pos[0][0], saxsQueue);
   const double* dpos=pos_.devicePtr();
   const double* dff=ff_.update(ff);
-  const double* dq=q_.update(q);
+  const double* dq_list=q_.update(q);
+  const double* deps=eps_.update(heps_);
   partial_.resize(nrows);
   grad_.resize(3*nrows);
   sum_.resize(numq);
   double* dpartial=partial_.devicePtr();
   double* dgrad=grad_.devicePtr();
   double* dsum=sum_.devicePtr();
+  // with a single tile the threads write the rows directly
+  double* outpartial=dpartial;
+  double* outgrad=dgrad;
+  if(ntile>1) {
+    tpartial_.resize(ntile*nrows);
+    tgrad_.resize(3*ntile*nrows);
+    outpartial=tpartial_.devicePtr();
+    outgrad=tgrad_.devicePtr();
+  }
   const std::size_t f=first;
   const std::size_t s=stride;
+  const std::size_t ntot=ntile*nthreads;
 
-#pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dpos,dff,dq,dpartial,dgrad) \
-  firstprivate(n,numq,nrows,f,s) default(none)
-  for(std::size_t r=0; r<nrows; ++r) {
-    const std::size_t m=r/numq;
-    const std::size_t k=r-m*numq;
+  // consecutive threads have consecutive rows i and the same chunk and tile:
+  // they read the same particles j at the same time
+#pragma acc parallel loop gang vector async(saxsQueue) \
+  deviceptr(dpos,dff,dq_list,deps,outpartial,outgrad) \
+  firstprivate(n,numq,nmine,nchunk,nrows,tilesize,f,s,ntot,q0,dq,maxeps,epslimit) default(none)
+  for(std::size_t t=0; t<ntot; ++t) {
+    const std::size_t m=t%nmine;
+    const std::size_t ct=t/nmine;
+    const std::size_t c=ct%nchunk;
+    const std::size_t tile=ct/nchunk;
     const std::size_t i=f+m*s;
+    const std::size_t k0=c*qchunk;
+    const std::size_t nk = numq-k0<qchunk ? numq-k0 : qchunk;
+    const std::size_t jbegin=tile*tilesize;
+    const std::size_t jend = jbegin+tilesize<n ? jbegin+tilesize : n;
     const double xi=dpos[3*i];
     const double yi=dpos[3*i+1];
     const double zi=dpos[3*i+2];
-    const double fi=dff[i*numq+k];
-    const double qk=dq[k];
-    double intensity=0.;
-    double gx=0.;
-    double gy=0.;
-    double gz=0.;
+    const double qbase=q0+k0*dq;
+    double fi[qchunk];
+    double qk[qchunk];
+    double ek[qchunk];
+    double intensity[qchunk];
+    double gx[qchunk];
+    double gy[qchunk];
+    double gz[qchunk];
 #pragma acc loop seq
-    for(std::size_t j=0; j<n; ++j) {
+    for(std::size_t l=0; l<qchunk; ++l) {
+      const std::size_t k = l<nk ? k0+l : k0;
+      fi[l] = l<nk ? dff[i*numq+k] : 0.0;
+      qk[l]=dq_list[k];
+      ek[l]=deps[k];
+      intensity[l]=0.;
+      gx[l]=0.;
+      gy[l]=0.;
+      gz[l]=0.;
+    }
+#pragma acc loop seq
+    for(std::size_t j=jbegin; j<jend; ++j) {
       if(j==i) {
         continue;
       }
@@ -168,20 +244,80 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
       const double dy=dpos[3*j+1]-yi;
       const double dz=dpos[3*j+2]-zi;
       const double r2=dx*dx+dy*dy+dz*dz;
-      const double qr=qk*std::sqrt(r2);
-      const double sinc=std::sin(qr)/qr;
-      const double weight=fi*dff[j*numq+k];
-      intensity+=weight*sinc;
-      // d/dr_i of 2 f_i f_j sinc(q r_ij): the pair appears twice in the sum
-      const double scale=2.*weight*(sinc-std::cos(qr))/r2;
-      gx+=dx*scale;
-      gy+=dy*scale;
-      gz+=dz*scale;
+      const double r=std::sqrt(r2);
+      const double invr2=1./r2;
+      const bool exact = maxeps*r>epslimit;
+      // sin and cos on the grid, from the first q of the chunk by angle addition
+      double sg=std::sin(qbase*r);
+      double cg=std::cos(qbase*r);
+      const double sd=std::sin(dq*r);
+      const double cd=std::cos(dq*r);
+      const double* ffj=dff+j*numq+k0;
+#pragma acc loop seq
+      for(std::size_t l=0; l<qchunk; ++l) {
+        double sk;
+        double ck;
+        if(exact) {
+          sk=std::sin(qk[l]*r);
+          ck=std::cos(qk[l]*r);
+        } else {
+          const double x=ek[l]*r;
+          const double x2=x*x;
+          const double cx=1.-x2*(1./2-x2*(1./24-x2*(1./720-x2*(1./40320))));
+          const double sx=x*(1.-x2*(1./6-x2*(1./120-x2*(1./5040-x2*(1./362880)))));
+          sk=sg*cx+cg*sx;
+          ck=cg*cx-sg*sx;
+        }
+        const double sinc=sk/(qk[l]*r);
+        // fi is zero beyond the last q value, so these terms vanish
+        const double weight=fi[l]*ffj[l<nk ? l : 0];
+        intensity[l]+=weight*sinc;
+        // d/dr_i of 2 f_i f_j sinc(q r_ij): the pair appears twice in the sum
+        const double scale=2.*weight*(sinc-ck)*invr2;
+        gx[l]+=dx*scale;
+        gy[l]+=dy*scale;
+        gz[l]+=dz*scale;
+        const double s2=sg*cd+cg*sd;
+        cg=cg*cd-sg*sd;
+        sg=s2;
+      }
     }
-    dpartial[r]=intensity;
-    dgrad[3*r]=gx;
-    dgrad[3*r+1]=gy;
-    dgrad[3*r+2]=gz;
+    const std::size_t base=tile*nrows+m*numq+k0;
+#pragma acc loop seq
+    for(std::size_t l=0; l<qchunk; ++l) {
+      if(l<nk) {
+        outpartial[base+l]=intensity[l];
+        outgrad[3*(base+l)]=gx[l];
+        outgrad[3*(base+l)+1]=gy[l];
+        outgrad[3*(base+l)+2]=gz[l];
+      }
+    }
+  }
+
+  // sum of the tiles, in a fixed order
+  if(ntile>1) {
+    const double* dtpartial=tpartial_.devicePtr();
+    const double* dtgrad=tgrad_.devicePtr();
+#pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dtpartial,dtgrad,dpartial,dgrad) \
+  firstprivate(nrows,ntile) default(none)
+    for(std::size_t r=0; r<nrows; ++r) {
+      double p=0.;
+      double x=0.;
+      double y=0.;
+      double z=0.;
+#pragma acc loop seq
+      for(std::size_t tile=0; tile<ntile; ++tile) {
+        const std::size_t tr=tile*nrows+r;
+        p+=dtpartial[tr];
+        x+=dtgrad[3*tr];
+        y+=dtgrad[3*tr+1];
+        z+=dtgrad[3*tr+2];
+      }
+      dpartial[r]=p;
+      dgrad[3*r]=x;
+      dgrad[3*r+1]=y;
+      dgrad[3*r+2]=z;
+    }
   }
 
   // sum of the rows for each q value

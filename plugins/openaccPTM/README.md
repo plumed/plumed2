@@ -151,9 +151,14 @@ SAXS ...
 - `GPU_BACKEND=OPENACC` is needed only if another backend for SAXS/SANS (from a different plugin) is loaded too.
 
 The form factors and the q values are uploaded only when they change; the positions are uploaded at every step.
-Each GPU thread computes a row (particle i, q value k) of the sum looping over all the other particles, so each pair is
-computed twice, but there are no atomic operations and the derivative of particle i is complete in its thread.
-The rows are summed on the GPU for each q value.
+Each GPU thread computes the rows of particle i for a chunk of 8 q values, looping over all the other particles, so
+each pair is computed twice, but there are no atomic operations and the derivative of particle i is complete in its thread.
+For each pair the distance is computed once per chunk and sin(qr) and cos(qr) are obtained by angle addition along the
+q values, as on the CPU (exact sin and cos when the q values are far from a uniform grid or there are fewer than 4).
+For small systems the loop over the other particles is also split in tiles, whose results are summed in a fixed order,
+to have enough threads. The result does not depend on the scheduling, and the rows are summed on the GPU for each q value.
+The chunk size and the number of threads below which tiles are used can be changed at compile time with
+`-DPLUMED_SAXS_ACC_QCHUNK=...` (default 8) and `-DPLUMED_SAXS_ACC_TARGET_THREADS=...` (default 131072).
 
 The tests in `regtest/targetSAXS` are the SAXS/SANS tests of `regtest/isdb` run with `USEGPU`: they take their input files
 and their (CPU) references from `regtest/isdb`.
