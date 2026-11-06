@@ -1,0 +1,18 @@
+COLVAR.0 IDENTICAL
+COLVAR.1 IDENTICAL
+KERNELS_W IDENTICAL
+KERNELS_A.0 IDENTICAL
+KERNELS_A.1 IDENTICAL
+PLUMED:   file COLVAR.0 truncated
+PLUMED:   file COLVAR.1 truncated
+PLUMED:   file KERNELS_A.0 truncated
+PLUMED:   file KERNELS_A.1 truncated
+PLUMED:   file KERNELS_W truncated
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Restarting from checkpoint plumed.0.cpt written at step 20 
+PLUMED: Restarting from checkpoint plumed.1.cpt written at step 20 
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20

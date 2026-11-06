@@ -1,0 +1,33 @@
+# exact restart of ACCUMULATE and COLLECT (the values of type average) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+c: CONSTANT VALUE=1
+d1: DISTANCE ATOMS=1,2
+dv: DISTANCE ATOMS1=1,2 ATOMS2=2,3 ATOMS3=3,4
+# scalar sums, with and without clearing (the clear flag is set at step 20)
+s: ACCUMULATE ARG=d1 STRIDE=1
+n: ACCUMULATE ARG=c STRIDE=1
+sc: ACCUMULATE ARG=d1 STRIDE=2 CLEAR=10
+nc: ACCUMULATE ARG=c STRIDE=2 CLEAR=10
+sc1: ACCUMULATE ARG=d1 STRIDE=1 CLEAR=10
+a: CUSTOM ARG=s,n FUNC=x/y PERIODIC=NO
+ac: CUSTOM ARG=sc,nc FUNC=x/y PERIODIC=NO
+# a histogram: a grid accumulated over time
+kde: KDE ARG=d1 BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=3 GRID_BIN=60
+hist: ACCUMULATE ARG=kde STRIDE=1
+histn: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
+# collected data: a growing vector, a growing matrix and fixed size windows
+col: COLLECT ARG=d1 STRIDE=1
+colm: COLLECT ARG=dv TYPE=matrix STRIDE=2
+colc: COLLECT ARG=d1 STRIDE=1 CLEAR=10
+colmc: COLLECT ARG=dv TYPE=matrix STRIDE=2 CLEAR=10
+PRINT ARG=s,n,sc,nc,sc1,a,ac FILE=COLVAR STRIDE=1 FMT=%.17g
+# the final data is dumped once, at the last step (frame 59): the interrupted run (25 frames) writes nothing
+tt: TIME
+UPDATE_IF ARG=tt MORE_THAN=58.5
+DUMPGRID ARG=hist FILE=hist.grid STRIDE=1 FMT=%.17g
+DUMPGRID ARG=histn FILE=histn.grid STRIDE=1 FMT=%.17g
+DUMPVECTOR ARG=col FILE=col.dat STRIDE=1 FMT=%.17g
+DUMPVECTOR ARG=colc FILE=colc.dat STRIDE=1 FMT=%.17g
+DUMPVECTOR ARG=colm FILE=colm.dat STRIDE=1 FMT=%.17g
+DUMPVECTOR ARG=colmc FILE=colmc.dat STRIDE=1 FMT=%.17g
+UPDATE_IF ARG=tt END

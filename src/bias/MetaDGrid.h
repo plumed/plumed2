@@ -31,6 +31,8 @@
 namespace PLMD {
 
 class Action;
+class CheckpointReader;
+class CheckpointWriter;
 class IFile;
 class OFile;
 class Value;
@@ -100,6 +102,10 @@ public:
   /// in the buffer), or appending it (STORE_GRIDS: the header is repeated, the flushing is left to FLUSH);
   /// comment is written after the grid
   void write(OFile& file, bool append, const std::string& comment) const;
+  /// store the grid in a checkpoint (see CHECKPOINT)
+  void writeCheckpoint(CheckpointWriter& w) const;
+  /// restore the grid stored by writeCheckpoint (the grid has been created with the same input)
+  void readCheckpoint(CheckpointReader& r);
   /// a line of the log has been started and is not complete (e.g. while reading hills)
   void setMidline(bool midline) {
     midline_=midline;

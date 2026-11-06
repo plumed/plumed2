@@ -279,6 +279,8 @@ void legendre_compute_glr1 ( int n, double *x, double *w )
     x[k] = - x[n-1-k];
     w[k] = w[n-1-k];
   }
+  delete [] u;
+  delete [] up;
   return;
 }
 //****************************************************************************80
@@ -374,6 +376,8 @@ void legendre_compute_glr2 ( double pn0, int n, double *x1, double *d1 )
   }
   *d1 = ts_mult ( up, *x1, m-1 );
 
+  delete [] u;
+  delete [] up;
   return;
 }
 

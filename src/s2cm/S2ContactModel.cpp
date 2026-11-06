@@ -178,6 +178,9 @@ S2ContactModel::S2ContactModel(const ActionOptions&ao):
   parse("OFFSET_C",offset_c_);
   unsigned int n_i_int;
   parse("N_I",n_i_int);
+  if(n_i_int==0) {
+    error("N_I must be positive");
+  }
   n_i_ = static_cast<double>(n_i_int);
   total_prefactor_ = prefactor_a_/pow(n_i_,exp_b_);
   //

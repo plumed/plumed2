@@ -26,11 +26,13 @@
 #include "MetaDRestart.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/File.h"
 #include "tools/Communicator.h"
+#include "tools/Checkpoint.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -124,6 +126,11 @@ it (i.e. the previous run had already performed this step).  When the bias is re
 without adding their hills to the bias, to know the time of their last hill.  With WALKERS_N, the grids written by a walker
 contain also the hills it has read from the files of the other walkers (their number is written in a comment line after
 the grid), and only the hills of the other walkers that are not in the grids are added.
+
+With [CHECKPOINT](CHECKPOINT.md) the restart is exact: the bias of each family (grid or hills), the steps when the hills
+are added, the statistics of the adaptive hills and the number of hills already read from the files of the other walkers
+are restored from the checkpoint, and the hills files are truncated at the checkpointing step instead of being read
+(GRID_RFILES are then not read).
 
 With ADAPTIVE=DIFF, as in [METAD](METAD.md), when restarting the statistics of the fluctuations of each variable
 (running average and variance) are initialized from its last hills in the hills file of its family, so that the hills
@@ -321,6 +328,9 @@ private:
   };
   // general setup
   double kbt_=0.0;
+  /// restart from a checkpoint (see CHECKPOINT): the state is restored by readCheckpoint at the first step, the hills
+  /// and grid files are not read
+  bool fromCheckpoint_=false;
   int stride_=0;
   // well-tempered MetaD
   bool welltemp_=false;
@@ -386,6 +396,11 @@ public:
   void update() override;
   void beforeUpdate() override;
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   bool checkNeedsGradients()const override;
 };
 
@@ -437,6 +452,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
 
 PBMetaD::PBMetaD(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao) {
+  fromCheckpoint_=getRestart() && plumed.checkpointing.isRestartingFromCheckpoint();
 
   // parse the flexible hills
   std::string adaptiveoption;
@@ -604,9 +620,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   }
   // the hills are kept only if needed (restart with ADAPTIVE=DIFF), see MetaDHillsFiles::readHills
   for(auto & family : families_) {
-    family.diffrestart.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch);
+    family.diffrestart.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch && !fromCheckpoint_);
   }
-  if(adaptive_==FlexibleBin::diffusion && getRestart()) {
+  if(adaptive_==FlexibleBin::diffusion && getRestart() && !fromCheckpoint_) {
     if(diff_from_scratch) {
       log.printf("  The statistics for the hills width are accumulated from scratch after the restart (DIFF_FROM_SCRATCH)\n");
     } else {
@@ -886,8 +902,11 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
       std::vector<unsigned>    gbin_t(1,gbin[f]);
       families_[f].grid=Tools::make_unique<MetaDBiasGrid>(*this);
       MetaDBiasGrid& grid=*families_[f].grid;
-      // Read grid from file
-      if(gridreadfilenames.size()>0) {
+      // Read grid from file (with a checkpoint, the grid is restored from it)
+      if(gridreadfilenames.size()>0 && fromCheckpoint_) {
+        log.printf("  the grid is restored from the checkpoint, %s is not read\n",gridreadfilenames[f].c_str());
+      }
+      if(gridreadfilenames.size()>0 && !fromCheckpoint_) {
         inputs[f].gridWalkerHills=readBiasGrid(*this,mw_,grid,gridreadfilenames[f],funcl,args,gmin_t,gmax_t,gbin_t,sparsegrid,spline,gridnobounds);
         if(getRestart()) {
           restartedFromGrid=true;
@@ -926,7 +945,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     inputs[f].files=family.hillsfiles.get();
     inputs[f].name=hillsfname[f];
   }
-  readHillsAtStart(*this,mw_,inputs,restartedFromGrid,schedule_);
+  readHillsAtStart(*this,mw_,inputs,restartedFromGrid,schedule_,fromCheckpoint_);
 
   // open hills files for writing
   for(unsigned f=0; f<pf_n; ++f) {
@@ -1348,6 +1367,111 @@ void PBMetaD::update() {
     readOtherWalkersHills(*this,mw_,hillsfiles);
   }
 
+}
+
+// The state at the start of a step (see CHECKPOINT): the bias of each family (grid or hills), the steps when the
+// hills are added, the statistics of the adaptive hills, and the hills already read from the files of the other
+// walkers. The hills files are trimmed at the checkpoint and are not read at the restart.
+void PBMetaD::writeCheckpoint(CheckpointWriter& w) {
+  w.beginSection("schedule");
+  schedule_.writeCheckpoint(w);
+  w.endSection();
+  w.write("nfamilies",families_.size());
+  for(unsigned f=0; f<families_.size(); ++f) {
+    const Family& family=families_[f];
+    w.beginSection("family"+std::to_string(f));
+    if(family.grid) {
+      w.beginSection("grid");
+      family.grid->writeCheckpoint(w);
+      w.endSection();
+    } else {
+      std::vector<int> multivariate;
+      std::vector<double> height,center,sigma;
+      for(const auto & h : family.hills) {
+        multivariate.push_back(h.multivariate);
+        height.push_back(h.height);
+        center.push_back(h.center[0]);
+        sigma.push_back(h.sigma[0]);
+      }
+      w.write("hills_multivariate",multivariate);
+      w.write("hills_height",height);
+      w.write("hills_center",center);
+      w.write("hills_sigma",sigma);
+    }
+    w.beginSection("files");
+    family.hillsfiles->writeCheckpoint(w);
+    w.endSection();
+    w.endSection();
+  }
+  if(adaptive_==FlexibleBin::diffusion) {
+    w.beginSection("adaptive");
+    for(unsigned i=0; i<flexbin_.size(); ++i) {
+      w.beginSection("arg"+std::to_string(i));
+      flexbin_[i].writeCheckpoint(w);
+      w.endSection();
+    }
+    w.write("exchange_attempted",exchange_.attempted);
+    w.write("exchange_partner_cv",exchange_.partner_cv);
+    w.write("exchange_last_cv",exchange_.last_cv);
+    w.endSection();
+  }
+  writeComponentValues(w);
+}
+
+void PBMetaD::readCheckpoint(CheckpointReader& r) {
+  r.beginSection("schedule");
+  schedule_.readCheckpoint(r);
+  r.endSection();
+  if(r.get<unsigned>("nfamilies")!=families_.size()) {
+    error("the checkpoint was written with a different number of families (PF)");
+  }
+  for(unsigned f=0; f<families_.size(); ++f) {
+    Family& family=families_[f];
+    r.beginSection("family"+std::to_string(f));
+    if(static_cast<bool>(family.grid)!=r.hasSection("grid")) {
+      error("the checkpoint was written with a different setting for GRID_*");
+    }
+    if(family.grid) {
+      r.beginSection("grid");
+      family.grid->readCheckpoint(r);
+      r.endSection();
+    } else {
+      std::vector<int> multivariate;
+      std::vector<double> height,center,sigma;
+      r.read("hills_multivariate",multivariate);
+      r.read("hills_height",height);
+      r.read("hills_center",center);
+      r.read("hills_sigma",sigma);
+      if(height.size()!=multivariate.size() || center.size()!=height.size() || sigma.size()!=height.size()) {
+        error("wrong number of hills in the checkpoint");
+      }
+      family.hills.clear();
+      family.center.clear();
+      family.invsigma.clear();
+      family.height.clear();
+      family.diagonal.clear();
+      for(std::size_t h=0; h<height.size(); h++) {
+        addGaussian(f,Gaussian(multivariate[h]!=0,height[h],std::vector<double>(1,center[h]),std::vector<double>(1,sigma[h])));
+      }
+    }
+    r.beginSection("files");
+    family.hillsfiles->readCheckpoint(r,mw_.id);
+    r.endSection();
+    r.endSection();
+  }
+  if(adaptive_==FlexibleBin::diffusion) {
+    r.beginSection("adaptive");
+    for(unsigned i=0; i<flexbin_.size(); ++i) {
+      r.beginSection("arg"+std::to_string(i));
+      flexbin_[i].readCheckpoint(r);
+      r.endSection();
+    }
+    r.read("exchange_attempted",exchange_.attempted);
+    r.read("exchange_partner_cv",exchange_.partner_cv);
+    r.read("exchange_last_cv",exchange_.last_cv);
+    r.endSection();
+  }
+  readComponentValues(r);
 }
 
 bool PBMetaD::checkNeedsGradients()const {

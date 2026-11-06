@@ -1,0 +1,22 @@
+COLVAR.0 IDENTICAL
+COLVAR.1 IDENTICAL
+HILLS_W IDENTICAL
+HILLS_H.0 IDENTICAL
+HILLS_H.1 IDENTICAL
+HB1 IDENTICAL
+HB2 IDENTICAL
+PLUMED:   file COLVAR.0 truncated
+PLUMED:   file COLVAR.1 truncated
+PLUMED:   file HB1 truncated
+PLUMED:   file HB2 truncated
+PLUMED:   file HILLS_H.0 truncated
+PLUMED:   file HILLS_H.1 truncated
+PLUMED:   file HILLS_W truncated
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Restarting from checkpoint plumed.0.cpt written at step 20 
+PLUMED: Restarting from checkpoint plumed.1.cpt written at step 20 
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20

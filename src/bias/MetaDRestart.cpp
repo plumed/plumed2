@@ -160,7 +160,7 @@ std::vector<long long> readBiasGrid(Action& action, const MetaDWalkers& walkers,
 }
 
 void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<MetaDHillsInput>& inputs, bool restartedFromGrid,
-                      MetaDHillSchedule& schedule) {
+                      MetaDHillSchedule& schedule, bool fromCheckpoint) {
   Log& log=action.log;
   Communicator& comm=action.comm;
   const bool restart=action.getRestart();
@@ -216,6 +216,13 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
     for(unsigned s=0; s<inputs.size(); ++s) {
       MetaDHillsFiles& files=*inputs[s].files;
       const unsigned k=j;
+      if(fromCheckpoint) {
+        // nothing is read: the own file is closed for later writing
+        if(j==walkers.id && files.isOpen(k)) {
+          files.close(k);
+        }
+        continue;
+      }
       if(!files.isOpen(k)) {
         // in case a file does not exist and we are restarting, complain that the file was not found
         if(restart && !restartedFromGrid) {

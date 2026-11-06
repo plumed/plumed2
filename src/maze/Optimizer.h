@@ -55,6 +55,10 @@ namespace maze {
  */
 class Optimizer: public colvar::Colvar {
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   /**
    * PLMD constructor.
    *
@@ -90,12 +94,12 @@ public:
   /**
    * Calculate the optimal direction of pulling.
    */
-  void calculate();
+  void calculate() override;
 
   /**
    * Prepare the neighbor list.
    */
-  void prepare();
+  void prepare() override;
 
   /**
    * Score a ligand-protein configuration.

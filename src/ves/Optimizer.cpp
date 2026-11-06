@@ -379,6 +379,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     parse("COEFFS_OUTPUT",coeffs_wstride_tmpstr);
     if(coeffs_wstride_tmpstr!="OFF" && coeffs_wstride_tmpstr.size()>0) {
       Tools::convert(coeffs_wstride_tmpstr,coeffs_wstride_);
+      plumed_massert(coeffs_wstride_>0,"COEFFS_OUTPUT has to be positive, use OFF to switch off the output");
     }
     if(coeffs_wstride_tmpstr=="OFF") {
       coeffs_fnames.clear();
@@ -413,6 +414,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   if(keywords.exists("GRADIENT_FILE")) {
     parseFilenames("GRADIENT_FILE",gradient_fnames);
     parse("GRADIENT_OUTPUT",gradient_wstride_);
+    plumed_massert(gradient_wstride_>0,"GRADIENT_OUTPUT has to be positive");
 
     if(coeffs_fnames.size()>0) {
       for(unsigned int i=0; i<gradient_fnames.size(); i++) {
@@ -443,6 +445,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   if(keywords.exists("HESSIAN_FILE")) {
     parseFilenames("HESSIAN_FILE",hessian_fnames);
     parse("HESSIAN_OUTPUT",hessian_wstride_);
+    plumed_massert(hessian_wstride_>0,"HESSIAN_OUTPUT has to be positive");
 
     if(coeffs_fnames.size()>0) {
       for(unsigned int i=0; i<hessian_fnames.size(); i++) {
@@ -1065,9 +1068,9 @@ void Optimizer::updateOutputComponents() {
         getPntrToComponent("gradmax"+is)->set( gradient_pntrs_[i]->getMaxAbsValue(gradient_maxabs_idx) );
       }
       if(aver_gradient_pntrs_.size()>0) {
-        getPntrToComponent("avergradrms"+is)->set( aver_gradient_pntrs_[0]->getRMS() );
+        getPntrToComponent("avergradrms"+is)->set( aver_gradient_pntrs_[i]->getRMS() );
         size_t avergradient_maxabs_idx=0;
-        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[0]->getMaxAbsValue(avergradient_maxabs_idx) );
+        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[i]->getMaxAbsValue(avergradient_maxabs_idx) );
       }
     }
   }

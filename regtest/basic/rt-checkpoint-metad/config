@@ -1,0 +1,60 @@
+type=driver
+# Reference run: the whole trajectory, with the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  # a trajectory of 60 frames of 4 atoms (analytic positions)
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the first 25 frames: the interrupted run
+  head -n 150 traj.xyz > part.xyz
+  # A) checkpoints requested by the "MD engine" at steps 0, 10 and 20, restart from step 20
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoints every 7 steps (STRIDE), restart from step 21
+  mkdir restart-stride
+  cd restart-stride
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # C) multiple walkers sharing the hills through files: walker 1 runs first, then walker 0 reads its hills (at
+  # steps 0, 5, ...); after the restart, walker 0 skips the hills of walker 1 that it had read before the checkpoint
+  mkdir walkers
+  cd walkers
+  cp ../plumed-walkers.dat plumed0.dat
+  sed 's/WALKERS_ID=0/WALKERS_ID=1/; s/ATOMS=1,2/ATOMS=1,3/; s/COLVAR_W0/COLVAR_W1/' ../plumed-walkers.dat > plumed1.dat
+  $plumed driver --plumed plumed1.dat --ixyz ../traj.xyz > out-w1 2> err-w1
+  # reference: walker 0 uninterrupted
+  $plumed driver --plumed plumed0.dat --ixyz ../traj.xyz --checkpoint-stride 10 > out-ref 2> err-ref
+  mv HW.0 HW.0.reference
+  mv COLVAR_W0 COLVAR_W0.reference
+  rm -f plumed.cpt plumed_prev.cpt
+  $plumed driver --plumed plumed0.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed0.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise: the biases and their components, the hills and the grid
+  for d in restart restart-stride ; do
+    for f in COLVAR HILLS_G HILLS_H HILLS_S HILLS_N HB1 HB2 HD1 HD2 GRID_G ; do
+      if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
+    done
+    grep -h "Restarting from checkpoint\|Checkpoint state restored\|WARNING" $d/out2 | sed 's/by PLUMED.*//'
+  done > restart_check
+  # the hills of the file walkers end with the wall clock time (seconds), which differs between the runs: it is not compared
+  for f in HW.0 ; do
+    for g in $f.reference $f ; do
+      awk '/^#/{print; next} {$NF=""; print}' walkers/$g > walkers/$g.noclock
+    done
+    if cmp -s walkers/$f.reference.noclock walkers/$f.noclock ; then echo "walkers/$f IDENTICAL" ; else echo "walkers/$f DIFFERENT" ; fi
+  done >> restart_check
+  for f in COLVAR_W0 ; do
+    if cmp -s walkers/$f.reference walkers/$f ; then echo "walkers/$f IDENTICAL" ; else echo "walkers/$f DIFFERENT" ; fi
+  done >> restart_check
+  grep -h "Skipping\|Checkpoint state restored" walkers/out2 >> restart_check
+}

@@ -138,13 +138,17 @@ private:
   Matrix<double> displacements;
   PathProjectionCalculator path_projector;
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords( Keywords& keys );
   explicit PathDisplacements(const ActionOptions&);
-  unsigned getNumberOfDerivatives();
-  void clearDerivatives( const bool& force=false ) {}
-  void calculate() {}
-  void apply() {}
-  void update();
+  unsigned getNumberOfDerivatives() override;
+  void clearDerivatives( const bool& force=false ) override {}
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PathDisplacements,"AVERAGE_PATH_DISPLACEMENT")

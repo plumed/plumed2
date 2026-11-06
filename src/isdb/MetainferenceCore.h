@@ -25,6 +25,7 @@
 #include "core/Action.h"
 #include "core/ActionWithValue.h"
 #include "tools/File.h"
+#include "tools/Checkpoint.h"
 #include "tools/Random.h"
 #include "tools/OpenMP.h"
 #include <functional>
@@ -95,6 +96,25 @@ public:
   void setFirst(const double v) {
     buf_[first_]=v;
     recomputeMax();
+  }
+  /// the stored values, from the oldest
+  std::vector<double> values() const {
+    std::vector<double> v(n_);
+    for(unsigned k=0; k<n_; ++k) {
+      v[k]=get(k);
+    }
+    return v;
+  }
+  /// replace the content with the given values (at most the capacity), from the oldest
+  bool setValues(const std::vector<double>& v) {
+    if(v.size()>buf_.size()) {
+      return false;
+    }
+    clear();
+    for(const double x : v) {
+      push(x);
+    }
+    return true;
   }
 };
 
@@ -304,6 +324,10 @@ public:
   /// write the status file if this is a step at which it should be written
   void update();
   void writeStatus();
+  /// store the state of the Monte Carlo and of the averages in the checkpoint (nothing if not active)
+  void writeCheckpoint(CheckpointWriter& w) const;
+  /// restore the state stored by writeCheckpoint()
+  void readCheckpoint(CheckpointReader& r);
 };
 
 }

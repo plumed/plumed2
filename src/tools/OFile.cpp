@@ -23,11 +23,13 @@
 #include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/Value.h"
 #include "Communicator.h"
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
+#include <sstream>
 
 #include <string>
 #include <cstdlib>
@@ -148,6 +150,12 @@ int OFile::printf(const char*fmt,...) {
 OFile& OFile::addConstantField(const std::string&name) {
   Field f;
   f.name=name;
+  // after a checkpoint restart, the value it had in the last header (so that the header is not printed again)
+  for(const auto & r : restored_const_fields) {
+    if(r.name==name) {
+      f.value=r.value;
+    }
+  }
   const_fields.push_back(f);
   return *this;
 }
@@ -255,6 +263,39 @@ OFile& OFile::printField( Value* val, const double& v ) {
     printField("max_" + val->getName(), max );
   }
   return *this;
+}
+
+std::string OFile::getLastFields() const {
+  std::string str;
+  // name, constant flag, value (used only for constant fields), one field per line
+  for(const auto & f : previous_fields) {
+    str+=f.name+"\t0\t\n";
+  }
+  for(const auto & f : const_fields) {
+    str+=f.name+"\t1\t"+f.value+"\n";
+  }
+  return str;
+}
+
+void OFile::setLastFields(const std::string& str) {
+  previous_fields.clear();
+  restored_const_fields.clear();
+  std::istringstream is(str);
+  std::string line;
+  while(std::getline(is,line)) {
+    const size_t t1=line.find('\t');
+    const size_t t2=line.find('\t',t1+1);
+    plumed_massert(t1!=std::string::npos && t2!=std::string::npos,"file "+getPath()+": cannot parse the field header stored in the checkpoint");
+    Field f;
+    f.name=line.substr(0,t1);
+    f.value=line.substr(t2+1);
+    if(line.substr(t1+1,t2-t1-1)=="1") {
+      restored_const_fields.push_back(f);
+    } else {
+      previous_fields.push_back(f);
+    }
+  }
+  fieldChanged=false;
 }
 
 OFile& OFile::printField() {
@@ -383,6 +424,7 @@ OFile& OFile::open(const std::string&setpath) {
   syncOpen();
   if(plumed) {
     plumed->insertFile(*this);
+    plumed->checkpointing.registerOutputFile(*this);
   }
   return *this;
 }
@@ -507,6 +549,9 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
+  if(plumed) {
+    plumed->checkpointing.markSnapshotFile(path);
+  }
 
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;

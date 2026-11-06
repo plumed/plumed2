@@ -116,6 +116,10 @@ MAZE_OPTIMIZER_BIAS ...
  */
 class OptimizerBias: public bias::Bias {
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   /**
    * Standard PLUMED2 constructor.
    *
@@ -138,7 +142,7 @@ public:
   /**
    * Calculate the adaptive biasing potential for ligand unbinding.
    */
-  void calculate();
+  void calculate() override;
 
 private:
   /**
@@ -281,6 +285,11 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
   log.printf("\n");
 
   args_ = getArguments();
+
+  plumed_massert(
+    args_.size() >= 3,
+    "maze> ARG should be the three components of a position (e.g. p.x,p.y,p.z).\n"
+  );
   log.printf(
     "maze> Number of args %zu\n",
     args_.size()

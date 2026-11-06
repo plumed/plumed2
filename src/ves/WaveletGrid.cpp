@@ -41,7 +41,7 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
-  unsigned recursion_number = 0;
+  unsigned recursion_number = 1; // the cascade needs at least one recursion step
   while (maxsupport*(1U<<recursion_number) < gridsize) {
     recursion_number++;
   }

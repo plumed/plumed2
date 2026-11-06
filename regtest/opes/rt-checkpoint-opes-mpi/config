@@ -1,0 +1,24 @@
+mpiprocs=4
+plumed_modules=opes
+type=driver
+# Reference run: two replicas (--multi 2) with two processes each, the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 150 traj.xyz > part.xyz
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 --checkpoint-stride 10 > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the kernels file of the walkers is shared (written by the first replica, without suffix; the log has its full path)
+  for f in COLVAR.0 COLVAR.1 KERNELS_W KERNELS_A.0 KERNELS_A.1 ; do
+    if cmp -s $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
+  done > restart_check
+  grep -h "file .* truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING: the following" restart/out2 | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed "s|$(pwd)/restart/||" | sort >> restart_check
+}

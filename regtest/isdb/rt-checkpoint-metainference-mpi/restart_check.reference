@@ -1,0 +1,10 @@
+COLVAR.0 IDENTICAL
+COLVAR.1 IDENTICAL
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Checkpoint state restored at step 20
+PLUMED: Restarting from checkpoint plumed.0.cpt written at step 20 
+PLUMED: Restarting from checkpoint plumed.1.cpt written at step 20 
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.0.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20
+Restarting from checkpoint plumed.1.cpt written at step 20

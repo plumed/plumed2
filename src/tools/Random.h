@@ -60,6 +60,10 @@ public:
   void ReadStateFull (std::istream &);
   void fromString(const std::string & str);
   void toString(std::string & str)const;
+/// Complete state (including the cached Gaussian number), exact to the last bit: used by the checkpoint.
+/// Unlike toString/fromString, which keep only the uniform generator.
+  std::string stateToString()const;
+  void stateFromString(const std::string & str);
   friend std::ostream & operator<<(std::ostream & out,const Random & rng) {
     rng.WriteStateFull(out);
     return out;

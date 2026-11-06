@@ -1,0 +1,13 @@
+type=driver
+plumed_modules=opes
+# OPES_EXPANDED does not store its state in the checkpoint (it restarts from its own state file):
+# the checkpoint lists it in a warning, and its files are still trimmed
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<30;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+}
+
+function plumed_regtest_after() {
+  grep -h "WARNING: the following actions" out | sed 's/^PLUMED: //' > restart_check
+}

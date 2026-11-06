@@ -18,6 +18,17 @@ For example, grids written with [METAD](METAD.md) with `GRID_WFILE` are overwrit
 As such, when restarting, there is no point in appending the file. Internally, PLUMED opens the file in append
 mode but then rewinds it every time a new grid is dumped.
 
+## Exact restart with a checkpoint
+
+Appending leaves in the files the lines that the interrupted run wrote after the checkpoint
+of the MD engine, so that after the restart the files contain the same steps twice, and
+the actions that keep an internal state (e.g. the hills of [METAD](METAD.md)) are not
+restarted exactly. With the [CHECKPOINT](CHECKPOINT.md) directive PLUMED writes its own
+checkpoint file whenever the MD engine writes its own: at restart every file is truncated
+to the size it had at the checkpoint, the state of the actions is restored and the checkpointing
+step is computed again, so that the restarted run continues the interrupted one bitwise,
+without repeating the header of the files.
+
 ## Backup
 
 Whenever the [RESTART](RESTART.md) option is not used, PLUMED tries to write new files. If an old file

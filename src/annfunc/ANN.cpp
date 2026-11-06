@@ -96,12 +96,25 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ANN(const ActionOptions&);
+  ~ANN();
   virtual void calculate();
   void calculate_output_of_each_layer(const vector<double>& input);
   void back_prop(vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component);
 };
 
 PLUMED_REGISTER_ACTION(ANN,"ANN")
+
+ANN::~ANN() {
+  for (int ii = 0; ii < static_cast<int>(coeff.size()); ii ++) {
+    if (coeff[ii] == nullptr) {
+      continue;
+    }
+    for (int kk = 0; kk < num_nodes[ii + 1]; kk ++) {
+      delete [] coeff[ii][kk];
+    }
+    delete [] coeff[ii];
+  }
+}
 
 void ANN::registerKeywords( Keywords& keys ) {
   Function::registerKeywords(keys);

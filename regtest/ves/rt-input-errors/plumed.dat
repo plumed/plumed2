@@ -1,0 +1,20 @@
+# vim:ft=plumed
+
+arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME
+
+# a wavelet grid with fewer points than the support of the wavelet used to crash
+BF_WAVELETS ...
+ ORDER=8
+ TYPE=SYMLETS
+ MINIMUM=-4.0
+ MAXIMUM=4.0
+ MIN_GRID_SIZE=2
+ LABEL=bf
+... BF_WAVELETS
+
+VES_OUTPUT_BASISFUNCTIONS ...
+ BASIS_FUNCTIONS=bf
+ GRID_BINS=20
+ FORMAT_VALUES=%13.5f
+ FORMAT_DERIVS=%13.2f
+... VES_OUTPUT_BASISFUNCTIONS

@@ -1,0 +1,10 @@
+restart/COLVAR IDENTICAL
+restart/basin.dat IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/basin.dat IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21
