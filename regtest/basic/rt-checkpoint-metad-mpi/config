@@ -19,5 +19,5 @@ function plumed_regtest_after() {
   for f in COLVAR.0 COLVAR.1 HILLS_W HILLS_H.0 HILLS_H.1 HB1 HB2 ; do
     if cmp -s $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
   done > restart_check
-  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING" restart/out2 | sed 's/by PLUMED.*//' | sed "s|$(pwd)/restart/||" | sort >> restart_check
+  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING" restart/out2 | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed "s|$(pwd)/restart/||" | sort >> restart_check
 }

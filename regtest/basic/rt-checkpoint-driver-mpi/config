@@ -25,6 +25,6 @@ function plumed_regtest_after() {
   for f in COLVAR.0 COLVAR.1 ; do
     if cmp $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
   done > restart_check
-  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" restart/out2 | sed 's/by PLUMED.*//' | sort >> restart_check
+  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" restart/out2 | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sort >> restart_check
   grep -h "all the replicas must restart" wrong-step/err1 | head -n 1 | sed 's/^+++ *//' >> restart_check
 }

@@ -3,11 +3,11 @@ COLVAR.1 IDENTICAL
 KERNELS_W IDENTICAL
 KERNELS_A.0 IDENTICAL
 KERNELS_A.1 IDENTICAL
-PLUMED:   file COLVAR.0 truncated from 4740 to 3692 bytes
-PLUMED:   file COLVAR.1 truncated from 4600 to 3588 bytes
-PLUMED:   file KERNELS_A.0 truncated from 1416 to 1068 bytes
-PLUMED:   file KERNELS_A.1 truncated from 1416 to 1068 bytes
-PLUMED:   file KERNELS_W truncated from 2212 to 1564 bytes
+PLUMED:   file COLVAR.0 truncated
+PLUMED:   file COLVAR.1 truncated
+PLUMED:   file KERNELS_A.0 truncated
+PLUMED:   file KERNELS_A.1 truncated
+PLUMED:   file KERNELS_W truncated
 PLUMED: Checkpoint state restored at step 20
 PLUMED: Checkpoint state restored at step 20
 PLUMED: Restarting from checkpoint plumed.0.cpt written at step 20 
