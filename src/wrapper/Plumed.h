@@ -1232,6 +1232,25 @@ __PLUMED_WRAPPER_C_END
 #endif
 #endif
 
+/**
+ * Define PLUMED_MPIW_HOST_ADAPTER in one translation unit to provide
+ * plumed_mpi_implementation(), using that host's MPI declarations. Pass its
+ * result directly (not its address) to the existing command interface:
+ *
+ *     plumed_cmd(p, "injectMPIImplementation", plumed_mpi_implementation());
+ *
+ * First check getApiVersion >= 11 for older kernels. Inject after creating p,
+ * before setMPIComm/setMPIFComm or initialization. The descriptor is borrowed
+ * static storage; the host MPI code must remain loaded while PLUMED uses it.
+ * A directly MPI-linked kernel ignores injection and must already use the
+ * same MPI runtime as the host. Injection adds no kernel symbol-table entry.
+ *
+ * C++ and C11 preserve the descriptor's dedicated type tag. For communicator
+ * checks, include the local MPI declarations before this header and pass
+ * &comm. Explicit void pointers and the untyped C99 interface remain unchecked.
+ * The new tag and exclusion bit use formerly reserved safeptr flags: old
+ * kernels ignore them, and new kernels accept old communicator arguments.
+ */
 /* A forward declaration is sufficient for transporting a provider pointer. */
 #ifdef __cplusplus
 namespace PLMD {

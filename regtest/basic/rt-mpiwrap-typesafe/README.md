@@ -18,8 +18,10 @@ C99's untyped interface is unchanged; C11 and C++ callers can carry the new
 annotations. Communicators remain
 pointer-only; values are rejected if the local type distinguishes them.
 Run `bash regtest/basic/rt-mpiwrap-typesafe/check-callers.sh` from the repository
-root for C11/C++98/11/17 transport probes and native kernel instantiations without an MPI installation.
+root for C11/C++98/11/17 transport probes and native kernel exception checks without an MPI installation.
 The opaque-pointer probe deliberately leaves its implementation type incomplete.
+The native probes execute the actual `TypesafePtr` checks for integer, opaque-pointer
+and void-pointer handles, including nested-pointer rejection and legacy flags.
 The probes also check type-only wrapper inclusion and verify that TypesafePtr.h
 and Communicator.h do not pull in provider dispatch.
 To annotate communicators,

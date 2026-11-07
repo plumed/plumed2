@@ -24,7 +24,9 @@ HEADER
   "${CC:-cc}" -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
   "$task/caller"
   "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -D__PLUMED_HAS_MPI \
-    -I"$task" -fsyntax-only -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/kernel.cpp.in"
+    -I"$task" -I"$root/src" -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/kernel.cpp.in" \
+    "$root/src/tools/TypesafePtr.cpp" "$root/src/tools/Exception.cpp" -o "$task/kernel"
+  "$task/kernel"
   for standard in c++98 c++11 c++17; do
     "${CXX:-c++}" -std="$standard" -Wall -Wextra -Werror $flag -I"$task" -x c++ \
       "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-cxx"
@@ -49,4 +51,4 @@ int main() { return sizeof(MPI_Comm) == 0; }
 HEADER
 # Match normal non-OpenACC builds: the included headers contain acc pragmas.
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unknown-pragmas \
-  -D__PLUMED_MPIWRAP -fsyntax-only "$task/common.cpp"
+  -D__PLUMED_MPIWRAP -I"$root/src" -fsyntax-only "$task/common.cpp"

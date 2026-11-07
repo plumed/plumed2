@@ -55,6 +55,8 @@ void run() {
   typeError([&] { TypesafePtr(&wrong).getMPIComm(); },"pointer to MPI_Comm");
   typeError([&] { TypesafePtr(1).getMPIComm(); },"pointer to MPI_Comm");
   typeError([&] { notComm.getMPIComm(); },"pointer to MPI_Comm");
+  auto* nested=&communicator;
+  typeError([&] { TypesafePtr(&nested).getMPIComm(); },"pointer to MPI_Comm");
 
   // An older caller supplies no negative annotation. In provider mode its
   // native integer can be smaller than our wrapper object: do not dereference.
@@ -85,6 +87,8 @@ void run() {
   const auto* provider=&descriptor;
   require(TypesafePtr(provider).get<const mpiwrap::plumed_mpiw_provider_descriptor*>()==provider);
   require(((TypesafePtr(provider).getFlags()>>16)&0xffu)==6);
+  typeError([&] { TypesafePtr(&provider).get<const mpiwrap::plumed_mpiw_provider_descriptor*>(); },"pointer-to-pointer");
+  typeError([&] { TypesafePtr(provider).get<mpiwrap::plumed_mpiw_provider_descriptor*>(); },"non modifiable pointer");
   require(TypesafePtr::unchecked(provider).get<const mpiwrap::plumed_mpiw_provider_descriptor*>()==provider);
   typeError([&] { TypesafePtr(static_cast<const void*>(provider)).get<const mpiwrap::plumed_mpiw_provider_descriptor*>(); },"MPI provider descriptor pointer");
   typeError([&] { TypesafePtr(&mutableData).get<const mpiwrap::plumed_mpiw_provider_descriptor*>(); },"MPI provider descriptor pointer");

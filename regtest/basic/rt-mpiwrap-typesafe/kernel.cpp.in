@@ -1,5 +1,7 @@
 // Instantiate kernel checks with integer and opaque native communicator types.
 #include "../../../src/tools/TypesafePtr.h"
+#include <cassert>
+#include <string>
 namespace PLMD {
 namespace test_mpi_typesafe {
 void checkNative(MPI_Comm* comm) {
@@ -7,5 +9,38 @@ void checkNative(MPI_Comm* comm) {
   (void)TypesafePtr(static_cast<const void*>(comm)).get<const MPI_Comm*>();
   (void)TypesafePtr(comm).getMPIComm();
 }
+template<class Function>
+void typeError(Function function) {
+  bool caught=false;
+  try {
+    function();
+  } catch(const ExceptionTypeError& error) {
+    assert(std::string(error.what()).find("pointer to MPI_Comm")!=std::string::npos);
+    caught=true;
+  }
+  assert(caught);
 }
+void run() {
+  MPI_Comm comm{};
+  checkNative(&comm);
+  const MPI_Comm constant{};
+  assert(TypesafePtr(&constant).getMPIComm()==&constant);
+  double wrong=0;
+  typeError([&] { TypesafePtr(&wrong).getMPIComm(); });
+  typeError([&] { TypesafePtr(1).getMPIComm(); });
+  MPI_Comm* nested=&comm;
+  typeError([&] { TypesafePtr(&nested).getMPIComm(); });
+  // Old callers supply no exclusion bit. New kernels must still accept them.
+  TypesafePtr old(&comm,0,nullptr,0x10000u | 0x6000000u);
+  assert(old.getMPIComm()==&comm);
+  // Do not confuse the MPI-specific negative flag with ordinary integer types.
+  int integer=7;
+  TypesafePtr annotated(&integer,0,nullptr,sizeof(int) | 0x30000u | 0x4000000u | 0x20000000u);
+  assert(annotated.get<int*>()==&integer);
+  typeError([&] { annotated.getMPIComm(); });
+}
+}
+}
+int main() {
+  PLMD::test_mpi_typesafe::run();
 }

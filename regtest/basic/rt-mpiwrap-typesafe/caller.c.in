@@ -48,6 +48,9 @@ expected_type=_Generic((&comm),int*:3u,default:1u);
   const MPI_Comm constant=comm;
   plumed_cmd(p,"const comm",&constant);
   communicator_command=0;
+  MPI_Comm* nested=&comm;
+  expected_not_comm=1;
+  plumed_cmd(p,"nested comm",&nested);
 expected_type=_Generic((comm),int:3u,default:1u);
   expected_not_comm=1;
 #if defined(PLUMED_TEST_VOID_COMM)

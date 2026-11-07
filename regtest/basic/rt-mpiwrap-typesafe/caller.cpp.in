@@ -55,6 +55,14 @@ int main() {
   for(unsigned i=0; i<sizeof(keys)/sizeof(keys[0]); ++i) {
     PLMD::Plumed::plumed_cmd_cxx(p,keys[i],&comm);
   }
+  const MPI_Comm constant=comm;
+  PLMD::Plumed::plumed_cmd_cxx(p,"const comm",&constant);
+  // A pointer to handle storage is required, not a pointer to that pointer.
+  MPI_Comm* nested=&comm;
+  communicatorCommand=false;
+  expectedPointer=&nested;
+  expectedNotComm=1;
+  PLMD::Plumed::plumed_cmd_cxx(p,"nested comm",&nested);
 #if !defined(PLUMED_TEST_WRAPPER_COMM) && !defined(PLUMED_TEST_VOID_COMM)
   communicatorCommand=false;
   expectedNotComm=1;
