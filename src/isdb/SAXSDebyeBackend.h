@@ -65,13 +65,6 @@ public:
   /// contracted with the weights w (q.size() elements): sum_k w[k] dI_k/dr_i.
   virtual void contract(const std::vector<double>& w,
                         std::vector<Vector>& forces) = 0;
-  /// True if compute() adds to (*deriv) only the derivatives with respect to the
-  /// particles of its rows, and each of them completely (no contributions to the
-  /// other particles). Then the ranks can exchange their rows instead of summing
-  /// the derivatives of all the particles.
-  virtual bool completeRows() const {
-    return false;
-  }
 };
 
 /// Content of the register of the backends

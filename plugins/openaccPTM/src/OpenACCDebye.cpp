@@ -231,10 +231,6 @@ public:
                std::vector<Vector>* deriv) override;
   void contract(const std::vector<double>& w,
                 std::vector<Vector>& forces) override;
-  /// the derivative of row i is complete in its thread (or tiles) and only rows are written
-  bool completeRows() const override {
-    return true;
-  }
 };
 
 OpenACCDebye::OpenACCDebye(const int deviceid) {

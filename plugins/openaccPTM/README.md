@@ -147,8 +147,7 @@ SAXS ...
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.
 - With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the
-  derivatives of every intensity with respect to every particle are copied back, which costs more for many q values;
-  with MPI each rank then receives the derivatives of the rows of the others (an all-gather, not a sum).
+  derivatives of every intensity with respect to every particle are copied back, which costs more for many q values.
 - `GPU_BACKEND=OPENACC` is needed only if another backend for SAXS/SANS (from a different plugin) is loaded too.
 
 The form factors and the q values are uploaded only when they change; the positions are uploaded at every step.

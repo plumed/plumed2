@@ -367,8 +367,6 @@ private:
   bool has_rows_;
   // whether the partial results of the ranks are summed
   bool reduce_;
-  /// the backend computes complete rows (see SAXSDebyeBackend::completeRows), the same on all the ranks
-  bool backend_completeRows_=false;
   // the Debye sum is computed by backend_ (USEGPU)
   bool usegpu_;
   // accelerated Debye sum (USEGPU), provided by a plugin
@@ -524,8 +522,6 @@ private:
     };
 
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, const bool reduce_deriv);
-  /// with a backend whose rows are complete: every rank receives the derivatives of the rows of the others
-  void gather_rows(std::vector<Vector> &deriv, unsigned size, unsigned numq);
   // the partial Debye sum of the rows of this rank (without the self term), on the CPU
   void debye_cpu(const std::vector<Vector> &pos, std::vector<double> &sum, std::vector<Vector> &deriv);
   void sincos_q(const double r, double *s, double *c) const;
@@ -691,10 +687,6 @@ SAXS::SAXS(const ActionOptions&ao):
     if(failed>0) {
       error("cannot use the GPU" + (failure.empty() ? std::string(" (failure on another rank)") : ": " + failure));
     }
-    // the rows can be exchanged instead of summed only if all the backends agree
-    int incomplete = (has_rows_ && !backend_->completeRows()) ? 1 : 0;
-    comm.Sum(incomplete);
-    backend_completeRows_ = (incomplete==0);
     log.printf("  using the GPU for the Debye sum");
     if(deviceid>=0) {
       log.printf(" (device %d)",deviceid);
@@ -1801,11 +1793,7 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
 
   // with DOSCORE only the contraction with the score derivatives is summed (in calculate)
   if(reduce_ && reduce_deriv) {
-    if(usegpu_ && backend_completeRows_) {
-      gather_rows(deriv, size, numq);
-    } else {
-      comm.Sum(&deriv[0][0], 3*deriv.size());
-    }
+    comm.Sum(&deriv[0][0], 3*deriv.size());
   }
 
   for (unsigned k=0; k<numq; ++k) {
@@ -1815,56 +1803,6 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
     val->set(sum[k]);
     if(getDoScore()) {
       setCalcData(k, sum[k]);
-    }
-  }
-}
-
-void SAXS::gather_rows(std::vector<Vector> &deriv, const unsigned size, const unsigned numq) {
-  // rows of rank r: r, r+P, r+2P, ... or, with SERIAL, all of them on the first rank
-  const unsigned nranks = comm.Get_size();
-  auto rows_of = [&](unsigned r, unsigned & first, unsigned & stride) {
-    if(serial) {
-      first = (r==0) ? 0 : size;
-      stride = 1;
-    } else {
-      first = r;
-      stride = nranks;
-    }
-  };
-  auto nrows = [&](unsigned first, unsigned stride) {
-    return first<size ? (size-1-first)/stride+1 : 0;
-  };
-  std::vector<int> counts(nranks), displs(nranks);
-  int total = 0;
-  for(unsigned r=0; r<nranks; ++r) {
-    unsigned first, stride;
-    rows_of(r, first, stride);
-    counts[r] = 3*numq*nrows(first, stride);
-    displs[r] = total;
-    total += counts[r];
-  }
-  // the rows of this rank, particle by particle, q value by q value
-  unsigned first, stride;
-  rows_of(comm.Get_rank(), first, stride);
-  std::vector<double> mine(counts[comm.Get_rank()]);
-  for(unsigned i=first, m=0; i<size; i+=stride, ++m) {
-    for(unsigned k=0; k<numq; ++k) {
-      const Vector & d = deriv[k*size+i];
-      for(unsigned c=0; c<3; ++c) {
-        mine[3*(m*numq+k)+c] = d[c];
-      }
-    }
-  }
-  std::vector<double> all(total);
-  comm.Allgatherv(mine.data(), static_cast<int>(mine.size()), all.data(), counts.data(), displs.data());
-  for(unsigned r=0; r<nranks; ++r) {
-    rows_of(r, first, stride);
-    const double* p = all.data()+displs[r];
-    for(unsigned i=first, m=0; i<size; i+=stride, ++m) {
-      for(unsigned k=0; k<numq; ++k) {
-        const double* q = p+3*(m*numq+k);
-        deriv[k*size+i] = Vector(q[0], q[1], q[2]);
-      }
     }
   }
 }
