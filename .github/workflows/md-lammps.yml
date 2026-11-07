@@ -1,0 +1,114 @@
+name: LAMMPS integration
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lammps:
+    name: LAMMPS (${{ matrix.os }}, ${{ matrix.mpi }}, OpenMP)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+        mpi: [openmpi, mpich, serial]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      BACKEND: ${{ matrix.mpi }}
+      MD_ENGINE_MODE: ${{ matrix.mpi == 'serial' && 'serial' || 'mpi' }}
+      PLUMED_STACK_TRACE: yes
+      OMP_DYNAMIC: 'FALSE'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Read the pinned LAMMPS version
+        id: version
+        run: python .ci/md-integration/version.py lammps --github-output
+
+      - name: Check out LAMMPS ${{ steps.version.outputs.version }}
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.version.outputs.repository }}
+          ref: ${{ steps.version.outputs.ref }}
+          path: lammps
+
+      - name: Install build tools and the selected MPI
+        run: |
+          mkdir -p "$RUNNER_TEMP/md-logs"
+          bash .ci/md-integration/setup-mpi.sh
+
+      - name: Verify the native MPI world before building LAMMPS
+        if: matrix.mpi != 'serial'
+        run: |
+          mkdir -p "$RUNNER_TEMP/md-logs"
+          bash .ci/md-integration/check-mpi.sh \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/native-mpi.log"
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: plumed-md-${{ matrix.os }}
+          path: ${{ runner.temp }}
+
+      - name: Restore the serial PLUMED installation
+        run: |
+          tar -C "$HOME" -xzf "$RUNNER_TEMP/plumed-md.tar.gz"
+          echo "$HOME/plumed-md/bin" >> "$GITHUB_PATH"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            echo "LD_LIBRARY_PATH=$HOME/plumed-md/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install the current header and enable host MPI injection
+        run: |
+          cp "$HOME/plumed-md/include/plumed/wrapper/Plumed.h" lammps/Plumed.h
+          cmp lammps/Plumed.h src/wrapper/Plumed.h
+          # This is a test-only patch, not a distributed plumed patch entry.
+          patch -d lammps -p1 < .ci/md-integration/lammps/injection.patch
+          git -C lammps diff > "$RUNNER_TEMP/md-logs/lammps.patch"
+          patch -R -d lammps -p1 < .ci/md-integration/lammps/injection.patch
+          git -C lammps diff --exit-code
+          patch -d lammps -p1 < .ci/md-integration/lammps/injection.patch
+
+      - name: Build LAMMPS with PLUMED and the OpenMP package
+        run: |
+          bash .ci/md-integration/build-lammps.sh lammps "$RUNNER_TEMP/lammps-build" \
+            "$HOME/plumed-md" 2>&1 | tee "$RUNNER_TEMP/md-logs/lammps-build.log"
+
+      - name: Validate PLUMED and numerical results
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            kernel="$HOME/plumed-md/lib/libplumedKernel.dylib"
+          else
+            kernel="$HOME/plumed-md/lib/libplumedKernel.so"
+          fi
+          check_args=(--backend "$BACKEND" --mode "$MD_ENGINE_MODE"
+            --lmp "$RUNNER_TEMP/lammps-build/lmp" --kernel "$kernel"
+            --results "$RUNNER_TEMP/md-results")
+          if [[ "$MD_ENGINE_MODE" == mpi ]]; then
+            check_args+=(--launcher "$MD_MPIEXEC" --launcher-kind "$MD_LAUNCHER_KIND")
+          fi
+          python .ci/md-integration/lammps/check.py "${check_args[@]}" \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/validation.log"
+          cat "$RUNNER_TEMP/md-logs/validation.log" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve build logs, inputs, and numerical results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lammps-${{ matrix.os }}-${{ matrix.mpi }}
+          path: |
+            ${{ runner.temp }}/md-logs
+            ${{ runner.temp }}/md-results
+            ${{ runner.temp }}/lammps-build/CMakeCache.txt
+            ${{ runner.temp }}/lammps-build/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 7

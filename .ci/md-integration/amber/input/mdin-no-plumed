@@ -1,0 +1,8 @@
+AmberTools MPI injection baseline
+&cntrl
+  imin=0, irest=0, ntx=1, nstlim=5, dt=0.001,
+  ntpr=1, ntwx=1, ntwf=1, ntwr=5, ioutfm=0, ntxo=1,
+  ntb=0, igb=8, cut=999.0,
+  ntc=1, ntf=1, ntt=0, tempi=0.0, temp0=300.0,
+  plumed=0,
+/
