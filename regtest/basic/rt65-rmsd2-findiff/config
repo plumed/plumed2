@@ -1,0 +1,20 @@
+type=make
+# Finite-difference checks of the derivatives computed by tools/RMSD (tasks of ../rt65-rmsd2/test.cpp that rt65-rmsd2 does not run):
+# 1-4 derivative of the distance with respect to the positions and to the reference, with different and with equal align/displace weights;
+# 5, 6, 10, 11, 12 derivatives of the rotation matrix. For speed, the structures are cut to their first 60 atoms.
+# For each task, check.dat says whether all the analytical derivatives agree with the finite differences.
+extra_files="../rt65-rmsd2/test.cpp ../../trajectories/rmsd/1GB1_mdl1.pdb ../../trajectories/rmsd/1GB1_mdl2.pdb ../../trajectories/rmsd/1GB1_mdl1_rototranslated.pdb"
+arg="1 2 3 4 5 6 10 11 12"
+
+function plumed_regtest_before(){
+  for f in 1GB1_mdl1.pdb 1GB1_mdl2.pdb 1GB1_mdl1_rototranslated.pdb ; do
+    awk '/^ATOM/{n++; if(n<=60) print; next} {print}' $f > tmp.pdb && mv tmp.pdb $f
+  done
+}
+
+function plumed_regtest_after(){
+# relative error: largest |finite difference - analytical| over largest |analytical|, the values are printed with 6 digits
+  awk '/^Task/{t=$2; sub(":","",t)}
+       /COMPONENT/{d=$4-$5; if(d<0)d=-d; a=$5; if(a<0)a=-a; if(d>md[t])md[t]=d; if(a>ma[t])ma[t]=a; n[t]++}
+       END{for(t in n) printf "task %s: %s\n", t, (n[t]>0 && ma[t]>0 && md[t]<=1e-4*ma[t]) ? "agrees" : "DOES NOT AGREE"}' out | sort -n -k2 > check.dat
+}
