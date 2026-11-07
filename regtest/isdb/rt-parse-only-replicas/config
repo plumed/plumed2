@@ -1,0 +1,26 @@
+type=driver
+plumed_modules=isdb
+# The checks that need the inputs of all the replicas (exactly one SHADOW with REFERENCE, one APPLY_WEIGHTS of MAXENT
+# per replica) are skipped with --parse-only, which reads the input of each replica alone (as PLUMED-NEST does):
+# these inputs passed with v2.10 and stopped with an error on master. Without --parse-only the errors are kept.
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --igro helix.input.gro"
+extra_files="../../basic/rt63c/helix.input.gro"
+export PLUMED_STACK_TRACE=no
+
+function check(){
+# check "description" "driver options" "plumed input": write the exit code and the first error
+  printf "%b\n" "$3" > bad.dat
+  $plumed_nompi driver --plumed bad.dat $2 > bad.out 2>&1
+  echo "== $1: exit code $?" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/ *$//' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  shadow="s: SHADOW ATOMS=1-10 NOPBC UPDATE=10"
+  maxent="d: DISTANCE ATOMS=1,2\nm: MAXENT ARG=d TYPE=EQUAL AT=0.5 KAPPA=0.1 TAU=10 APPLY_WEIGHTS=1,1"
+  check "SHADOW without REFERENCE, --parse-only" "--parse-only --natoms 100" "$shadow"
+  check "SHADOW without REFERENCE" "--igro helix.input.gro" "$shadow"
+  check "MAXENT with two APPLY_WEIGHTS, --parse-only" "--parse-only --natoms 100" "$maxent"
+  check "MAXENT with two APPLY_WEIGHTS" "--igro helix.input.gro" "$maxent"
+}
