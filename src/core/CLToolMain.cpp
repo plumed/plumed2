@@ -217,7 +217,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   if(argc>0) {
     filtered_arguments.emplace_back(argv[0]);
   }
-  for(i=1; i<argc; ++i) {
+  i=1;
+  while(i<argc) {
     if(std::strcmp(argv[i],"--tmpi-threads")==0) {
       int parsed=0;
       if(thread_mpi_requested || i+1>=argc ||
@@ -243,6 +244,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       explicit_no_mpi=explicit_no_mpi || std::strcmp(argv[i],"--no-mpi")==0;
       filtered_arguments.emplace_back(argv[i]);
     }
+    ++i;
   }
   if(invalid_thread_mpi_option) {
     std::fprintf(stderr,"ERROR: --tmpi-threads requires one positive rank count and may be used once\n");

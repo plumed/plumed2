@@ -353,14 +353,33 @@ def guard_source(path):
     )
 
 
+def _extract_archive(archive, destination):
+    """Extract regular git-archive files without following archive links."""
+    destination = destination.resolve()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tf:
+        for member in tf:
+            relative = pathlib.PurePosixPath(member.name)
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError(f"unsafe archive path: {member.name}")
+            if member.isdir():
+                continue
+            if not member.isfile():
+                raise ValueError(f"unsupported archive entry: {member.name}")
+            target = destination.joinpath(*relative.parts).resolve()
+            if destination not in target.parents:
+                raise ValueError(f"unsafe archive path: {member.name}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with tf.extractfile(member) as source, target.open("wb") as output:
+                shutil.copyfileobj(source, output)
+
+
 def import_from(root, out, astyle, options, metadata):
     upstream_path = metadata["path"]
     archive = subprocess.check_output(
         ["git", "-C", str(root), "archive", metadata["commit"], upstream_path]
     )
     with tempfile.TemporaryDirectory(prefix="plumed-thread-mpi-upstream-") as tmp:
-        with tarfile.open(fileobj=io.BytesIO(archive)) as tf:
-            tf.extractall(tmp)
+        _extract_archive(archive, pathlib.Path(tmp))
         src = pathlib.Path(tmp) / upstream_path
         out.mkdir(parents=True, exist_ok=True)
         mapping = _flat_mapping(src)

@@ -16,6 +16,8 @@ When flattened basenames collide, it derives stable names from their source
 roles and directory paths. Imported translation units retain the
 `__PLUMED_HAS_THREAD_MPI` guard. The importer formats generated C++ and headers
 with the project's required `astyle` options.
+Archive extraction accepts regular files only, rejects paths outside its
+temporary directory, and never follows archive symlinks or hard links.
 
 To verify the recorded import against a local GROMACS checkout:
 

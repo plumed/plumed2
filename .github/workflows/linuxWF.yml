@@ -462,6 +462,7 @@ jobs:
         PLUMED_MPI_WRAPPER="$RUNNER_TEMP/provider-openmpi.so" \
           bash regtest/basic/rt-mpiwrap-api/check-mpi-provider-chdir.sh \
           "$RUNNER_TEMP/plumed-openmpi-host"
+        python3 regtest/basic/rt-mpiwrap-launcher/check-reimport.py
         CXX=g++ bash regtest/basic/rt-mpiwrap-launcher/check-thread-mpi-cli.sh \
           "$HOME/opt/bin/plumed"
         cmake -S regtest/basic/rt-mpiwrap-launcher -B "$RUNNER_TEMP/thread-mpi-tests"
