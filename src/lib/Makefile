@@ -288,6 +288,7 @@ endif
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/obj"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/lib"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/config"
+	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/main"
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/src/colvar"
 # rebuild libraries and main using new target dir
 	$(MAKE) install-build
@@ -297,6 +298,8 @@ endif
 	cd ../../ ; tar cf - patches scripts | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/"
 # copy Template.cpp file (we leave it in src/colvar/ for backward compatibility)
 	cp ../colvar/Template.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/colvar/"
+# mkmpi recompiles the same main used by the standard executables.
+	cp ../main/main.cpp "$(DESTDIR)$(libdir)/$(program_name)/src/main/"
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
 # we remove the link_uninstalled= and link_libs_uninstalled= options (see https://github.com/plumed/plumed2/issues/408)
 	grep -v -e "^link_uninstalled=" -e "^link_libs_uninstalled=" ../config/compile_options.sh > "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"

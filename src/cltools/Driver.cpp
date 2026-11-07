@@ -208,6 +208,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
            " currently working only for xtc/trr files read with --ixtc/--trr)"
           );
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
+  keys.add("optional","--log","write the PLUMED log to this file instead of standard output (with a replica suffix when using --multi)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.addFlag("--restart",false,"makes driver behave as if restarting");
@@ -572,7 +573,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  p.cmd("setLog",out);
+  std::string logFile;
+  parse("--log",logFile);
+  if(logFile.empty()) {
+    p.cmd("setLog",out);
+  } else {
+    if(multi) {
+      logFile=FileBase::appendSuffix(logFile,"."+std::to_string(intercomm.Get_rank()));
+    }
+    p.cmd("setLogFile",logFile.c_str());
+  }
   // the units should be passed with the same precision as the other real numbers
   p.cmd("setMDLengthUnits",real(units.getLength()));
   p.cmd("setMDChargeUnits",real(units.getCharge()));

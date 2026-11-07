@@ -1,0 +1,11 @@
+// Instantiate kernel checks with integer and opaque native communicator types.
+#include "../../../src/tools/TypesafePtr.h"
+namespace PLMD {
+namespace test_mpi_typesafe {
+void checkNative(MPI_Comm* comm) {
+  (void)TypesafePtr(comm).get<const MPI_Comm*>();
+  (void)TypesafePtr(static_cast<const void*>(comm)).get<const MPI_Comm*>();
+  (void)TypesafePtr(comm).getMPIComm();
+}
+}
+}

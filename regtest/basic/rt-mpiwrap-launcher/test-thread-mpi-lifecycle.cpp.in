@@ -1,0 +1,131 @@
+// Focused checks for pre-initialization communicator sentinels and relaunches.
+#include "core/CLToolMain.h"
+#include "core/PlumedMain.h"
+#include "tools/Communicator.h"
+#include "mpiwrap/internal.h"
+#include "mpiwrap/mpiwrap.h"
+
+#include <atomic>
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+
+namespace PLMD {
+namespace mpiwrap {
+extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_thread_mpi_provider(void);
+} // namespace mpiwrap
+}
+
+namespace {
+struct GuardContext {
+  PLMD::mpiwrap::MPI_Comm preinit_self;
+  PLMD::Communicator deferred;
+  std::atomic<int> valid_self{0};
+  std::atomic<int> rejected_stale{0};
+};
+
+int checkRank(int, const void *, std::size_t, void *opaque) {
+  GuardContext &context=*static_cast<GuardContext *>(opaque);
+  PLMD::Communicator copied(context.deferred);
+  if(copied.Get_rank()!=0 || copied.Get_size()!=1) {
+    return 13;
+  }
+  int rank=-1;
+  int size=-1;
+  const PLMD::mpiwrap::MPI_Comm self=MPI_COMM_SELF;
+  if(MPI_Comm_rank(self,&rank)!=0 || rank!=0 ||
+      MPI_Comm_size(self,&size)!=0 || size!=1) {
+    return 10;
+  }
+  ++context.valid_self;
+  try {
+    (void)MPI_Comm_rank(context.preinit_self,&rank);
+  } catch(const std::runtime_error &error) {
+    if(std::string(error.what()).find("MPI_COMM_NULL")!=std::string::npos) {
+      ++context.rejected_stale;
+      return 0;
+    }
+    return 11;
+  }
+  return 12;
+}
+
+bool rejectsNullCommunicator(const PLMD::mpiwrap::MPI_Comm &communicator) {
+  int rank=0;
+  try {
+    (void)MPI_Comm_rank(communicator,&rank);
+  } catch(const std::runtime_error &error) {
+    return std::string(error.what()).find("MPI_COMM_NULL")!=std::string::npos;
+  }
+  return false;
+}
+
+bool runThroughDispatcher(PLMD::CLToolMain &dispatcher, int ranks) {
+  const std::string line=
+    "plumed --standalone-executable --tmpi-threads " + std::to_string(ranks) +
+    " driver --plumed plumed.dat --noatoms --multi " + std::to_string(ranks) +
+    " --timestep 1 --trajectory-stride 1";
+  dispatcher.cmd("setArgvLine",line.c_str());
+  int result=-1;
+  dispatcher.cmd("run",&result);
+  return result==0;
+}
+}  // namespace
+
+int main() {
+  if(PLMD::mpiwrap::currentRegistry().installed()) {
+    return 5;
+  }
+  {
+    PLMD::Communicator original;
+    PLMD::Communicator copy(original);
+    copy=original;
+    PLMD::PlumedMain object;
+    int api=0;
+    object.cmd("getApiVersion",&api);
+    if(api!=11 || PLMD::mpiwrap::currentRegistry().installed()) {
+      return 6;
+    }
+  }
+  if(PLMD::mpiwrap::currentRegistry().installed()) {
+    return 7;
+  }
+  {
+    PLMD::PlumedMain object;
+    object.cmd("injectMPIImplementation",PLMD::mpiwrap::plumed_mpiw_thread_mpi_provider());
+    if(!PLMD::mpiwrap::currentRegistry().installed() || PLMD::Communicator::initialized()) {
+      return 8;
+    }
+  }
+  GuardContext context{};
+  if(!rejectsNullCommunicator(context.deferred.Get_comm())) {
+    return 9;
+  }
+  context.preinit_self=MPI_COMM_SELF;
+  if(!rejectsNullCommunicator(context.preinit_self)) {
+    return 1;
+  }
+
+  int launch_result=-1;
+  PLMD::mpiwrap::launchRanks(2,checkRank,&context,&launch_result,
+                             PLMD::mpiwrap::MPILifecyclePolicy::internal_thread_mpi);
+  if(launch_result!=0 || context.valid_self!=2 || context.rejected_stale!=2) {
+    return 2;
+  }
+  if(!rejectsNullCommunicator(context.preinit_self)) {
+    return 3;
+  }
+
+  // Reuse one outer command object while each launch creates fresh rank-local
+  // command and communicator state after thread-MPI initialization.
+  PLMD::CLToolMain dispatcher;
+  for(const int ranks : {
+        2,4,1,2
+      }) {
+    if(!runThroughDispatcher(dispatcher,ranks)) {
+      return 4;
+    }
+  }
+
+  return 0;
+}

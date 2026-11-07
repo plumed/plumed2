@@ -1,0 +1,13 @@
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#define PLUMED_MPIW_NATIVE_ADAPTER 1
+#define __PLUMED_WRAPPER_IMPLEMENTATION 0
+#define __PLUMED_WRAPPER_CXX 0
+#include "../../../src/wrapper/Plumed.h"
+
+int main() {
+  return PLMD::mpiwrap::plumed_mpiw_get_descriptor() == 0;
+}

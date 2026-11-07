@@ -1,0 +1,109 @@
+#include <dlfcn.h>
+#include <cstdlib>
+#include <cstddef>
+#include <fstream>
+#include <cstring>
+#include <stdexcept>
+
+struct Functions {
+  void *(*create)();
+  void (*cmd)(void *,const char *,const void *);
+  void (*finalize)(void *);
+};
+struct NothrowHandler {
+  void *ptr;
+  void (*handler)(void *,int,const char *,const void *);
+};
+struct SafePtr {
+  const void *ptr;
+  std::size_t nelem;
+  const std::size_t *shape;
+  std::size_t flags;
+  void *opt;
+};
+struct SymbolTable {
+  int version;
+  Functions functions;
+  void (*cmd_nothrow)(void *,const char *,const void *,NothrowHandler);
+  void (*cmd_safe)(void *,const char *,SafePtr);
+  void (*cmd_safe_nothrow)(void *,const char *,SafePtr,NothrowHandler);
+  unsigned (*create_reference)(void *);
+  unsigned (*delete_reference)(void *);
+  unsigned (*use_count)(void *);
+};
+
+namespace {
+bool provider_installed=false;
+
+struct TestObject {
+  unsigned references;
+};
+
+struct UnloadMarker {
+  ~UnloadMarker() {
+    const char *path=std::getenv("MPIW_TEST_KERNEL_MARKER");
+    if(path) {
+      std::ofstream output(path);
+      output << "unloaded\n";
+    }
+  }
+} unload_marker;
+}
+
+extern "C" void *plumed_test_create() {
+  const char *path=std::getenv("MPIW_TEST_CREATE_MARKER");
+  if(path) {
+    std::ofstream output(path);
+    output << "created\n";
+  }
+  TestObject *object=static_cast<TestObject *>(std::malloc(sizeof(TestObject)));
+  object->references=1;
+  return object;
+}
+extern "C" void plumed_test_cmd(void *,const char *key,const void *value) {
+  if(std::strcmp(key,"getApiVersion")==0) {
+    *static_cast<int*>(const_cast<void*>(value))=11;
+  } else if(std::strcmp(key,"injectMPIImplementation")==0) {
+#ifdef TEST_REJECT_INSTALL
+    throw std::runtime_error("injected provider rejection");
+#else
+    if(!value) {
+      throw std::runtime_error("null descriptor");
+    }
+    provider_installed=true;
+#endif
+  } else if(std::strcmp(key,"requireProvider")==0 && !provider_installed) {
+    throw std::runtime_error("provider not installed");
+  }
+}
+extern "C" void plumed_test_finalize(void *object) {
+  std::free(object);
+}
+extern "C" unsigned plumed_test_create_reference(void *object) {
+  return ++static_cast<TestObject *>(object)->references;
+}
+extern "C" unsigned plumed_test_delete_reference(void *object) {
+  return --static_cast<TestObject *>(object)->references;
+}
+extern "C" unsigned plumed_test_use_count(void *object) {
+  return static_cast<TestObject *>(object)->references;
+}
+extern "C" void plumed_test_cmd_safe(void *object,const char *key,SafePtr value) {
+  plumed_test_cmd(object,key,value.ptr);
+}
+extern "C" void plumed_test_cmd_safe_nothrow(void *object,const char *key,SafePtr value,NothrowHandler nothrow) {
+  try {
+    plumed_test_cmd(object,key,value.ptr);
+  } catch(const std::exception &error) {
+    if(!nothrow.handler) {
+      throw;
+    }
+    nothrow.handler(nothrow.ptr,20200,error.what(),nullptr);
+  }
+}
+extern "C" SymbolTable plumed_symbol_table= {
+  4,
+  {plumed_test_create,plumed_test_cmd,plumed_test_finalize},
+  nullptr,plumed_test_cmd_safe,plumed_test_cmd_safe_nothrow,plumed_test_create_reference,
+  plumed_test_delete_reference,plumed_test_use_count
+};

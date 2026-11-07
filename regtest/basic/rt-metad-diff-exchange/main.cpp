@@ -1,10 +1,13 @@
 #include "plumed/wrapper/Plumed.h"
-#include <mpi.h>
+#include "mpi-test.h"
 #include <array>
 #include <cmath>
 #include <fstream>
 #include <sstream>
 #include <string>
+
+namespace PLMD {
+namespace regtest_mpi {
 
 // distance followed by configuration c at step t
 static double distance(int c, int t) {
@@ -18,16 +21,15 @@ static std::string slurp(const std::string& name) {
   return s.str();
 }
 
-int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+int run(MPI_Comm world, int argc, char** argv) {
   int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(world,&rank);
+  MPI_Comm_size(world,&size);
   if(size!=4) {
-    MPI_Abort(MPI_COMM_WORLD,2);
+    MPI_Abort(world,2);
   }
   MPI_Comm intra=MPI_COMM_SELF;
-  MPI_Comm inter=MPI_COMM_WORLD;
+  MPI_Comm inter=world;
   int partner=rank^1;
   {
     PLMD::Plumed p;
@@ -74,12 +76,18 @@ int main(int argc, char** argv) {
       }
     }
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(world);
   if(rank==0) {
     std::ofstream out("output");
     out<<"rejected exchange has no effect on replica 0: "<<(slurp("HILLS.0")==slurp("HILLS.2") ? "yes" : "no")<<"\n";
     out<<"rejected exchange has no effect on replica 1: "<<(slurp("HILLS.1")==slurp("HILLS.3") ? "yes" : "no")<<"\n";
   }
-  MPI_Finalize();
   return 0;
+}
+
+} // namespace regtest_mpi
+} // namespace PLMD
+
+int main(int argc, char **argv) {
+  return PLMD::mpi_test::run(argc,argv,4,PLMD::regtest_mpi::run);
 }

@@ -1,0 +1,58 @@
+--- a/AmberTools/src/sander/Plumed.c
++++ b/AmberTools/src/sander/Plumed.c
+@@ -42,0 +43,15 @@
++/* Use sander's MPI implementation when this C compiler can see MPI headers. */
++#ifdef MPI
++#if !defined(PLUMED_MPIW_HOST_ADAPTER)
++#if defined(__has_include)
++#if __has_include(<mpi.h>)
++#define PLUMED_MPIW_HOST_ADAPTER 1
++#else
++#warning "C compiler cannot find mpi.h: PLUMED MPI injection is disabled; original Fortran communicator setup is retained. Use mpicc or add matching MPI include flags."
++#endif
++#else
++#warning "C compiler cannot test for mpi.h: PLUMED MPI injection is disabled; original Fortran communicator setup is retained. Use mpicc or add matching MPI include flags."
++#endif
++#endif
++#endif
++
+@@ -48,0 +64,14 @@
++
++/* Called from Fortran after creating the global PLUMED wrapper, before
++   importing sander's MPI communicator. */
++int plumed_mpiw_inject_(void) {
++#if defined(MPI) && defined(PLUMED_MPIW_HOST_ADAPTER)
++  int api = 0;
++  if(!plumed_gvalid()) return -2;
++  plumed_gcmd("getApiVersion", &api);
++  if(api<11) return -1;
++  plumed_gcmd("injectMPIImplementation", plumed_mpi_implementation());
++  return 1;
++#endif
++  return 0;
++}
+--- a/AmberTools/src/sander/Plumed_init.inc
++++ b/AmberTools/src/sander/Plumed_init.inc
+@@ -3,0 +4,16 @@
++#ifdef MPI
++    ! Status: 1=injected, 0=no C MPI adapter, -1=old API, -2=invalid object.
++    select case (plumed_mpiw_inject())
++    case (0)
++      if (master) write(6,'(a)') &
++        'WARNING: PLUMED MPI injection is unavailable. Ensure that PLUMED uses the '// &
++        'same MPI library as sander, or rebuild sander with an MPI C compiler (e.g. mpicc).'
++    case (-1)
++      if (master) write(6,'(a)') &
++        'WARNING: The loaded PLUMED kernel does not support MPI injection. Ensure that the '// &
++        'kernel uses the same MPI library as sander, or upgrade the kernel.'
++    case (-2)
++      if (master) write(6,'(a)') &
++        'WARNING: The global PLUMED object is invalid; MPI injection was not attempted.'
++    end select
++#endif
+--- a/AmberTools/src/sander/runmd.F90
++++ b/AmberTools/src/sander/runmd.F90
+@@ -418,0 +419,3 @@
++#ifdef MPI
++  integer, external :: plumed_mpiw_inject
++#endif

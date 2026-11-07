@@ -18,13 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest , macos-15, macos-latest ]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - name: Install conda
       run: |
-        curl -LO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
+        curl -fLO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
         source ./conda-ci install
         source ./conda-ci install-conda-build
     - name: Build PLUMED
@@ -36,7 +36,12 @@ jobs:
           VERSION=${VERSION//-/_}
           VERSION=${VERSION#v}
         fi
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
         make -C conda
+    - name: Test optional MPI packages
+      run: |
+        source activate base
+        make -C conda test
     - name: Deploy
       env:
         CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}

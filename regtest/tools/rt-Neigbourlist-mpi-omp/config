@@ -1,6 +1,7 @@
 mpiprocs=3
+plumed_mpi_harness=yes
 type=make
-extra_files="../rt-Neigbourlist/main.cpp"
+extra_files="../rt-Neigbourlist/main.cpp ../../scripts/mpi-test.h"
 
 export PLUMED_NUM_THREADS=3
 

@@ -39,6 +39,7 @@
 !/matrixtools
 !/maze
 !/molfile
+!/mpiwrap
 !/multicolvar
 !/opes
 !/python
@@ -51,6 +52,7 @@
 !/sprint
 !/symfunc
 !/small_vector
+!/thread_mpi
 !/tools
 !/valtools
 !/vatom

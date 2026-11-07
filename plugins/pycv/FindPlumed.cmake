@@ -88,9 +88,11 @@ if(NOT Plumed_FOUND)
           ${Plumed_INCLUDEDIR}
           CACHE INTERNAL "plumed include dir")
 
-      execute_process(COMMAND plumed --no-mpi config -q has mpi
-                      RESULT_VARIABLE Plumed_WITH_MPI)
-      if(Plumed_WITH_MPI EQUAL 0)
+      # Internal thread-MPI also satisfies `config has mpi`, but needs no
+      # external MPI headers or libraries. Use the native build definition,
+      # as in the pkg-config path, rather than a runtime capability inquiry.
+      if("__PLUMED_HAS_MPI=1" IN_LIST Plumed_CPP_FLAGS
+         OR "__PLUMED_HAS_MPI" IN_LIST Plumed_CPP_FLAGS)
         set(Plumed_HAS_MPI
             1
             CACHE INTERNAL "plumed has MPI")
