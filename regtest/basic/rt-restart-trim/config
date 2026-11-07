@@ -1,0 +1,76 @@
+type=driver
+plumed_modules=bias
+# Reference run: the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the interrupted run: frames 0-34
+  head -n 210 traj.xyz > part.xyz
+  # the restart from step 20 (as from a checkpoint of the MD engine at step 20): frames 20-59
+  tail -n +121 traj.xyz > rest.xyz
+  # a file of earlier runs whose time restarted from zero (times 0 to 50, then 0 to 3)
+  awk 'BEGIN{print "#! FIELDS time d2"; for(i=0;i<=50;i++) printf "%f 9.0\n",i; print "#! FIELDS time d2"; for(i=0;i<=3;i++) printf "%f 8.0\n",i}' > runs
+
+  # A) restart at step 20: the lines from step 20 on are removed, then the run continues
+  mkdir restart ; cd restart ; cp ../plumed.dat ../runs .
+  cp runs COLVAR_RUNS
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+
+  # B) RESTART NO_TRIM: the files are appended as they are
+  mkdir notrim ; cd notrim
+  cp ../plumed.dat .
+  # (no "sed 1a": BSD sed on macOS does not accept it)
+  { head -n 1 ../plumed.dat ; echo "RESTART NO_TRIM" ; tail -n +2 ../plumed.dat ; } > plumed-notrim.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed-notrim.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+
+  # D) METAD restarted from the grid written at the checkpoint of the "MD engine" at step 20: the grid
+  # contains the hill of step 20, which is kept in HILLS (only the later hills are removed)
+  mkdir grid ; cd grid
+  sed 's/FILE=HILLS FMT=%14.10f/& GRID_MIN=0 GRID_MAX=3 GRID_BIN=300 GRID_WFILE=grid.dat GRID_WSTRIDE=1000/' ../plumed.dat > plumed.dat
+  sed 's/GRID_WSTRIDE=1000/& GRID_RFILE=grid.dat/' plumed.dat > plumed-restart.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 20 > out1 2> err1
+  $plumed driver --plumed plumed-restart.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+
+  # C) a CHECKPOINT restart needs the checkpoint file
+  mkdir nocheckpoint ; cd nocheckpoint
+  { head -n 1 ../plumed.dat ; echo "CHECKPOINT FILE=plumed.cpt" ; tail -n +2 ../plumed.dat ; } > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out1 2> err1
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    # the restarted files have the same lines as those of the uninterrupted run
+    # (the header is printed again at a restart without CHECKPOINT)
+    for f in COLVAR HILLS BIAS ; do
+      if test "$(grep -v '^#' $f)" = "$(grep -v '^#' restart/$f)" ; then echo "restart/$f SAME LINES" ; else echo "restart/$f DIFFERENT" ; fi
+      echo "restart/$f header lines: $(grep -c '^#! FIELDS' restart/$f)"
+    done
+    # the earlier runs are kept, then the lines of this run
+    if test "$(head -n 57 restart/COLVAR_RUNS)" = "$(cat runs)" ; then echo "restart/COLVAR_RUNS earlier runs kept" ; fi
+    if test "$(grep -v '^#' COLVAR_RUNS)" = "$(tail -n +58 restart/COLVAR_RUNS | grep -v '^#')" ; then echo "restart/COLVAR_RUNS SAME LINES" ; else echo "restart/COLVAR_RUNS DIFFERENT" ; fi
+    # the removed lines are kept in bck.trimmed.0.*
+    for f in COLVAR HILLS ; do
+      echo "restart/bck.trimmed.0.$f data lines: $(grep -vc '^#' restart/bck.trimmed.0.$f)"
+    done
+    # not trimmed: the file without time, the action with NO_TRIM, and all the files with RESTART NO_TRIM
+    echo "restart/dump.xyz frames: $(grep -c '^4$' restart/dump.xyz)"
+    echo "restart/COLVAR_NOTRIM lines: $(grep -vc '^#' restart/COLVAR_NOTRIM)"
+    for f in COLVAR HILLS ; do
+      echo "notrim/$f lines: $(grep -vc '^#' notrim/$f)"
+    done
+    grep -h "restart step\|no time field\|not trimmed" restart/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "restart step" notrim/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    if test "$(grep -v '^#' HILLS)" = "$(grep -v '^#' grid/HILLS)" ; then echo "grid/HILLS SAME LINES" ; else echo "grid/HILLS DIFFERENT" ; fi
+    grep -h "HILLS.*restart step" grid/out2 | sed 's/^PLUMED: *//' 
+    # the hill of step 20 is not added again (the time of the last hill is later)
+    echo "notrim/HILLS hills at time 20: $(awk '!/^#/ && $1==20{n++} END{print n+0}' notrim/HILLS)"
+    grep -h "checkpoint file" nocheckpoint/err1 | head -n 1 | sed 's/^.*\(checkpoint file\)/\1/'
+  } > restart_check
+}

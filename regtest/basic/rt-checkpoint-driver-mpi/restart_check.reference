@@ -6,6 +6,4 @@ PLUMED: Checkpoint state restored at step 20
 PLUMED: Checkpoint state restored at step 20
 PLUMED: Restarting from checkpoint plumed.0.cpt written at step 20 
 PLUMED: Restarting from checkpoint plumed.1.cpt written at step 20 
-Restarting from checkpoint plumed.0.cpt written at step 20
-Restarting from checkpoint plumed.1.cpt written at step 20
 checkpoint plumed.1.cpt was written at step 40 but the checkpoint of replica 0 at step 50: all the replicas must restart from the same step

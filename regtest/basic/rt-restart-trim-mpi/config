@@ -1,0 +1,27 @@
+mpiprocs=2
+type=driver
+plumed_modules=bias
+# Reference run: two replicas, the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the interrupted run: frames 0-34; the restart from step 20: frames 20-59
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  mkdir restart ; cd restart ; cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --multi 2 --restart --initial-step 20 --log-file log > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the logs of the restarted runs are read from the files of the replicas (--log-file): on the
+  # standard output the logs of the replicas are mixed, and their lines can be broken
+  {
+    for f in COLVAR.0 COLVAR.1 HILLS.0 HILLS.1 HILLS_W BIAS.0 BIAS.1 ; do
+      if test "$(grep -v '^#' $f)" = "$(grep -v '^#' restart/$f)" ; then echo "restart/$f SAME LINES" ; else echo "restart/$f DIFFERENT" ; fi
+    done
+    grep -h "restart step" restart/log.* | sed 's/^PLUMED: *//' | sed 's@/[^ ]*/@@g' | LC_ALL=C sort
+  } > restart_check
+}

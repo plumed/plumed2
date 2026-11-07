@@ -59,6 +59,9 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
   if(!fp) {
     plumed_merror("writing on uninitialized File");
   }
+  if(trimPending_) {
+    applyPendingTrim();
+  }
   size_t r=0;
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
@@ -413,6 +416,8 @@ OFile& OFile::open(const std::string&setpath) {
   if(checkRestart()) {
     openOnWriter("a","a9");
     mode="a";
+    // trimmed at the first write (see trimPending_)
+    trimPending_=plumed && isWriter() && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim());
   } else {
     backupFile( backstring, path );
     if(comm) {
@@ -500,6 +505,16 @@ void OFile::checkNotOpenElsewhere()const {
   }
 }
 
+void OFile::applyPendingTrim() {
+  if(!trimPending_) {
+    return;
+  }
+  trimPending_=false;
+  // the file is open in append mode and nothing has been written yet:
+  // the next write goes to the new end of the file
+  plumed->checkpointing.trimAtRestart(path);
+}
+
 bool OFile::isWriter()const {
   return !comm || comm->Get_rank()==0;
 }
@@ -549,6 +564,8 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
+  // a snapshot: it is rewritten, not trimmed
+  trimPending_=false;
   if(plumed) {
     plumed->checkpointing.markSnapshotFile(path);
   }

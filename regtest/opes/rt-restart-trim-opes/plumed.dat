@@ -1,0 +1,5 @@
+# trimming of the KERNELS file at a restart from a step given by the MD engine (driver --restart --initial-step): see config
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+o: OPES_METAD ARG=d1,d2 PACE=5 BARRIER=5 TEMP=300 SIGMA=0.1,0.1 FILE=KERNELS FMT=%14.10f NLIST
+PRINT ARG=o.bias FILE=COLVAR FMT=%.6f

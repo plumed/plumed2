@@ -382,6 +382,10 @@ void Keywords::use(std::string_view  k ) {
   }
   plumed_massert( reserved(k), "the " + std::string(k) + " keyword is not reserved");
   keys.emplace_back(k);
+  // the actions that can be restarted can also keep their files as they are at restart
+  if( k=="RESTART" && reserved("NO_TRIM") ) {
+    use("NO_TRIM");
+  }
 }
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {

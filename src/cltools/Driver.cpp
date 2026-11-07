@@ -227,7 +227,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorhombic, 9 for generic)");
   keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
-  keys.add("optional","--initial-step","provides a number for the initial step, default is 0");
+  keys.add("optional","--initial-step","provides a number for the initial step, default is 0. With --restart, the run is a continuation from this step, as after the restart of an MD engine from its checkpoint: the lines written at or after it in the files that are appended are removed (see RESTART)");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
   keys.add("hidden","--debug-float","[yes/no] turns on the single precision version (to check float interface)");
@@ -235,6 +235,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("hidden","--debug-pd","[yes/no] use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
+  keys.add("optional","--log-file","write the PLUMED log on this file instead of the standard output (with --multi, every replica writes its own file, with the replica suffix)");
 }
 template<typename real>
 Driver<real>::Driver(const CLToolOptions& co ):
@@ -546,10 +547,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   p.cmd("setRealPrecision",(int)sizeof(real));
   int checknatoms=-1;
   long long int step=0;
-  parse("--initial-step",step);
+  const bool initialStepGiven=parse("--initial-step",step);
 
   if(restart) {
     p.cmd("setRestart",1);
+    // like an MD engine restarting from its checkpoint: the files are trimmed at the initial step
+    if(initialStepGiven && restartFromCheckpoint.length()==0) {
+      p.cmd("setRestartStep",step);
+    }
   }
   if(restartFromCheckpoint.length()>0) {
     // with --multi every replica has its own file, with the replica suffix
@@ -572,7 +577,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  p.cmd("setLog",out);
+  std::string logFile;
+  parse("--log-file",logFile);
+  if(logFile.length()>0) {
+    // with --multi the logs of the replicas would otherwise be mixed on the standard output
+    if(multi) {
+      logFile=FileBase::appendSuffix(logFile,"."+std::to_string(intercomm.Get_rank()));
+    }
+    p.cmd("setLogFile",logFile.c_str());
+  } else {
+    p.cmd("setLog",out);
+  }
   // the units should be passed with the same precision as the other real numbers
   p.cmd("setMDLengthUnits",real(units.getLength()));
   p.cmd("setMDChargeUnits",real(units.getCharge()));

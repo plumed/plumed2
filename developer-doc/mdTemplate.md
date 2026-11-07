@@ -214,6 +214,10 @@ plumed_cmd(plumedmain,"setRestart",&res);                      // Pointer to an 
 // This is valid only if API VERSION > 3
 plumed_cmd(plumedmain,"readInputLine","d: DISTANCE ATOMS=1,2");// Read a single input line directly from a string
 
+// This is valid only if API VERSION > 11
+plumed_cmd(plumedmain,"setRestartStep",&restartStep);          // Pointer to a long long int with the step from which a restarted simulation continues (the step of the checkpoint of the MD code):
+                                                               // the lines written at or after it are removed from the files PLUMED appends to (see RESTART)
+
 // This is valid only if API VERSION > 7
 plumed_cmd(plumedmain,"readInputLines","d: DISTANCE ATOMS=1,2\n"
                                        "PRINT ARG=d");         // Read a multiple lines directly from a string. Allows comments and continuation lines.
