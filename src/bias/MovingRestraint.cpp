@@ -99,6 +99,12 @@ the total bias deposited
 
     Work is not computed properly when KAPPA is time dependent.
 
+## Restart
+
+The centers and the force constants depend only on the step, so they are the same after a restart.
+With [RESTART](RESTART.md) and no checkpoint the work starts again from zero.
+With [CHECKPOINT](CHECKPOINT.md) the work and the data of the previous step are stored, and the restart is exact.
+
 */
 //+ENDPLUMEDOC
 

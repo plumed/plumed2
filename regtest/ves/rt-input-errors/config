@@ -22,5 +22,14 @@ bf: BF_CHEBYSHEV ORDER=3 MINIMUM=-4.0 MAXIMUM=4.0
 VES_LINEAR_EXPANSION ARG=arg1 BASIS_FUNCTIONS=bf TEMP=300.0 GRID_BINS=20 LABEL=ves1
 OPT_DUMMY BIAS=ves1 STRIDE=1000 LABEL=o1 COEFFS_FILE=coeffs.data GRADIENT_FILE=gradient.data HESSIAN_FILE=hessian.data ${k}_OUTPUT=0"
   done
-  rm -f bad.dat bad.out coeffs.data gradient.data hessian.data
+  expect_error "TD_VONMISES with a CENTER without its SIGMA" "td: TD_VONMISES CENTER1=1.0 CENTER2=-1.0 SIGMA1=0.5"
+  expect_error "VES_DELTA_F without FILE_F0" "arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME IGNORE_FORCES
+VES_DELTA_F ARG=arg1 TEMP=300 FILE_F1=fes1.data LABEL=vdf"
+  # a mask file written for more basis functions: the index 10 was written out of the 4 coefficients
+  printf "#! FIELDS idx_arg1 mask index\n#! SET type LinearBasisSet\n      10  1.0  10\n       0  1.0   0\n" > mask.data
+  expect_error "OPT_AVERAGED_SGD with a MASK_FILE for more basis functions" "arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME IGNORE_FORCES
+bf: BF_CHEBYSHEV ORDER=3 MINIMUM=-4.0 MAXIMUM=4.0
+VES_LINEAR_EXPANSION ARG=arg1 BASIS_FUNCTIONS=bf TEMP=300.0 GRID_BINS=20 LABEL=ves1
+OPT_AVERAGED_SGD BIAS=ves1 STRIDE=1000 STEPSIZE=0.1 LABEL=o1 COEFFS_FILE=coeffs.data MASK_FILE=mask.data"
+  rm -f bad.dat bad.out coeffs.data gradient.data hessian.data mask.data
 }

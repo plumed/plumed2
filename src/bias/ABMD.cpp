@@ -109,6 +109,8 @@ PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
 With [CHECKPOINT](CHECKPOINT.md) the running minimum, the noise intensity and the random number generators are stored in the checkpoint, so that the restart is exact.
 The checkpoint also records whether `LINEAR` was used, since the running minimum is a squared distance without it and a distance with it:
 restarting from a checkpoint written with a different setting of `LINEAR` is an error.
+With [RESTART](RESTART.md) and no checkpoint the running minimum is not restored: it starts again from `MIN`, or from the value of the argument at the first step.
+To continue a run with the same minimum, give the last value of the `_min` components with `MIN`, or use [CHECKPOINT](CHECKPOINT.md).
 
 */
 //+ENDPLUMEDOC

@@ -43,11 +43,12 @@ Adaptive moment estimation (ADAM) optimizer.
 
 class Opt_Adam: public Optimizer {
 private:
-  unsigned int time_;
+  // number of updates of each coefficient set (for the bias correction of the moments)
+  std::vector<unsigned int> time_;
   double beta_1_;
   double beta_2_;
   double epsilon_;
-  double one_minus_weight_decay_;
+  double weight_decay_;
   bool amsgrad_;
   bool adamw_;
   // 1st gradient moment uses the "AuxCoeffs", so only 2nd moment needs new CoeffVectors
@@ -93,11 +94,11 @@ void Opt_Adam::registerKeywords(Keywords& keys) {
 
 Opt_Adam::Opt_Adam(const ActionOptions&ao):
   PLUMED_VES_OPTIMIZER_INIT(ao),
-  time_(0),
+  time_(numberOfCoeffsSets(),0),
   beta_1_(0.9),
   beta_2_(0.999),
   epsilon_(0.00000001),
-  one_minus_weight_decay_(1.0),
+  weight_decay_(0.0),
   amsgrad_(false),
   adamw_(false),
   var_coeffs_pntrs_(0) {
@@ -113,7 +114,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
   if (tmp_weight_decay != 0.0) {
     adamw_ = true;
     log << "  Using the AdamW variant (Adam with weight decay), see and cite\n";
-    one_minus_weight_decay_ = 1 - tmp_weight_decay;
+    weight_decay_ = tmp_weight_decay;
     log << "    weight decay parameter: " << tmp_weight_decay << "\n";
   }
 
@@ -152,7 +153,7 @@ Opt_Adam::Opt_Adam(const ActionOptions&ao):
 
 
 void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
-  time_++;
+  time_[c_id]++;
   // AuxCoeffs is used for first moment (mean)
   AuxCoeffs(c_id) *= beta_1_;
   AuxCoeffs(c_id) += (1 - beta_1_ ) * Gradient(c_id) * CoeffsMask(c_id);
@@ -172,19 +173,22 @@ void Opt_Adam::coeffsUpdate(const unsigned int c_id) {
   std::vector<double> var_coeffs_sqrt;
   if (!amsgrad_) {
     for (size_t i = 0; i< VarCoeffs(c_id).getSize(); ++i) {
-      var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon));
+      var_coeffs_sqrt.push_back(1 / (sqrt(VarCoeffs(c_id).getValue(i)) + epsilon_));
     }
   } else { // use VarmaxCoffs instead of VarCoeffs
     for (size_t i = 0; i< VarmaxCoeffs(c_id).getSize(); ++i) {
-      var_coeffs_sqrt.push_back(1 / (sqrt(VarmaxCoeffs(c_id).getValue(i)) + epsilon));
+      var_coeffs_sqrt.push_back(1 / (sqrt(VarmaxCoeffs(c_id).getValue(i)) + epsilon_));
     }
   }
 
   // bias correction
-  double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_)) / (1 - pow(beta_1_, time_));
+  double scalefactor = StepSize(c_id) * sqrt(1 - pow(beta_2_, time_[c_id])) / (1 - pow(beta_1_, time_[c_id]));
 
   if (adamw_) { // check is not necessary but probably faster than always multiplying by 1
-    Coeffs(c_id) *= one_minus_weight_decay_ * CoeffsMask(c_id);
+    // only the coefficients that are optimized decay (multiplying by the mask set the others to zero)
+    for (size_t i = 0; i< Coeffs(c_id).getSize(); ++i) {
+      Coeffs(c_id)[i] *= 1 - weight_decay_ * CoeffsMask(c_id).getValue(i);
+    }
   }
 
   // coeff update

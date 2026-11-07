@@ -121,6 +121,18 @@ PRINT ARG=restraint.bias
 
 With [CHECKPOINT](CHECKPOINT.md) the Lagrangian multipliers, their averages and works are stored in the checkpoint, the LAGMULT file is trimmed and not read, and the restart is exact.
 
+A run with [RESTART](RESTART.md) and no CHECKPOINT is __not exact__ in general: it reads the multipliers from the LAGMULT file and rebuilds their average between TSTART and TEND,
+but the file does not hold the whole state of the action.
+- The file is written before the multipliers are updated, so the multipliers obtained at the last update of the previous run are only in the file
+  if the MD code repeats the step at which it restarts (as GROMACS does when it restarts from a checkpoint). Otherwise that update is lost.
+- The average is rebuilt exactly only if the file has the multipliers of every update (PRINT_STRIDE equal to PACE, the default).
+- The multipliers are read back with the precision of the file (set it with FMT).
+- The works are not in the file, so they restart from zero.
+
+Use CHECKPOINT when an exact restart is needed.
+
+The works are in energy units: each update of the multipliers adds $k_B T \Delta\lambda_i s_i$ to the work of argument $i$.
+
 */
 //+ENDPLUMEDOC
 
@@ -445,23 +457,50 @@ void MaxEnt::readCheckpoint(CheckpointReader& r) {
 }
 
 void MaxEnt::ReadLagrangians(IFile &inputFile) {
-  double dummy;
-  while(inputFile.scanField("time",dummy)) {
+  // The multipliers written at step s are the ones obtained by the last update before s
+  // (the file is written before the multipliers are updated). The average between TSTART
+  // and TEND is rebuilt in the same way as update_lambda() builds it, one term per update.
+  double t;
+  long long int lastupdate=-pace_;
+  bool missing=false;
+  while(inputFile.scanField("time",t)) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       inputFile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
-      if(dummy>=tstart && dummy <=tend) {
-        avglambda[j]+=lambda[j];
-      }
-      if(dummy>=tend) {
+    }
+    inputFile.scanField();
+    const long long int s=std::llround(t/getTimeStep());
+    if(s<=0) {
+      continue;
+    }
+    const long long int u=((s-1)/pace_)*pace_;
+    if(u==lastupdate) {
+      continue;
+    }
+    if(u!=lastupdate+pace_) {
+      missing=true;
+    }
+    lastupdate=u;
+    const double utime=u*getTimeStep();
+    if(tend>=0 && utime>=tend) {
+      // from TEND on the multipliers are the average
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
         avglambda[j]=lambda[j];
         done_average[j]=true;
       }
-    }
-    if(dummy>=tstart && dummy <=tend) {
+    } else if(utime>=tstart && utime<=tend) {
       avg_counter++;
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+        avglambda[j]+=convert_lambda(type,lambda[j]);
+      }
     }
-    inputFile.scanField();
   }
+  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+    oldlambda[j]=convert_lambda(type,lambda[j]);
+  }
+  if(missing && tend>=0) {
+    log.printf("  WARNING: the file does not have the multipliers of every update (PRINT_STRIDE larger than PACE?): the average between TSTART and TEND is approximate\n");
+  }
+  log.printf("  the works restart from zero\n");
 }
 void MaxEnt::WriteLagrangians(std::vector<double> &lagmult,OFile &file) {
   if(printFirstStep) {
@@ -572,7 +611,7 @@ void MaxEnt::update_lambda() {
         lambda[i]=avglambda[i];  //keep Lagrangian multipliers fixed to the previously computed average.
       }
     }
-    work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
+    work[i]+=KbT*(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda (in energy units, as the bias)
     totalWork_+=work[i];
     totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);

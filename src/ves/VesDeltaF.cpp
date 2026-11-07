@@ -238,6 +238,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     g.release();
     grid_p_.emplace_back(gg);
   }
+  plumed_massert(grid_p_.size()>0,"FILE_F0 is missing: the free energy surfaces of the basins are given with FILE_F0, FILE_F1, ...");
   plumed_massert(grid_p_.size()>1,"at least 2 basins must be defined, starting from FILE_F0");
   alpha_size_=grid_p_.size()-1;
   sym_alpha_size_=alpha_size_*(alpha_size_+1)/2; //useful for symmetric matrix [alpha_size_]x[alpha_size_]

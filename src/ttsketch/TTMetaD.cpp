@@ -47,6 +47,10 @@ i.e. those deposited after it. With multiple replicas each replica has its own T
 replica suffix), unless WALKERS_MPI is used, in which case the walkers share one TT_FILE next to
 the shared hills file. Two TTMETAD actions must use different TT_FILE.
 
+The hills that are not yet compressed into the TT are truncated as in [METAD](METAD.md): at
+$\sqrt{2\cdot 6.25}$ widths, and stretched so that they go to zero there, so that the bias and the
+forces are continuous (the environment variable `PLUMED_DP2CUTOFF_NOSTRETCH` switches the stretching off).
+
 ## Examples
 
 The following input runs TT-MetaD on two distances. Hills are deposited every
@@ -151,6 +155,9 @@ private:
   bool nonintrusive_;        // if true, uses the intrusive-free variant: accumulates Bemp directly
   // instead of re-projecting the previous vb_ through the Gram matrix
   bool deterministic_;       // if true, use a fixed RNG seed (42) in createTTCoeff() for reproducibility
+  // the hills not yet in the TT are stretched as in METAD: height*(A*exp(-dp2)+B), zero at the cutoff
+  double stretchA_=1.0;
+  double stretchB_=0.0;
   MPS B_prev_;               // accumulated tensor moment from all previous sketches (nonintrusive only)
   std::vector<ITensor> A_prev_;   // accumulated cross-gram matrices per bond (nonintrusive only)
 
@@ -205,6 +212,10 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   sketch_conv_(false),
   nonintrusive_(false),
   deterministic_(false) {
+  if(!dp2cutoffNoStretch()) {
+    stretchA_=dp2cutoffA;
+    stretchB_=dp2cutoffB;
+  }
   bool kernel;
   parseFlag("KERNEL_BASIS", kernel);
   this->d_ = getNumberOfArguments();
@@ -796,7 +807,7 @@ double TTMetaD::evaluateGaussian(const std::vector<double>& cv, const Gaussian& 
 
   double bias = 0.0;
   if(dp2 < dp2cutoff) {
-    bias = hill.height * exp(-dp2);
+    bias = hill.height * (stretchA_ * exp(-dp2) + stretchB_);
   }
 
   return bias;
@@ -811,9 +822,10 @@ double TTMetaD::evaluateGaussianAndDerivatives(const std::vector<double>& cv, co
   }
   dp2 *= 0.5;
   if(dp2 < dp2cutoff) {
-    bias = hill.height * exp(-dp2);
+    const double ee = hill.height * exp(-dp2);
+    bias = stretchA_ * ee + hill.height * stretchB_;
     for(unsigned i = 0; i < this->d_; i++) {
-      der[i] -= bias * dp[i] * hill.invsigma[i];
+      der[i] -= stretchA_ * ee * dp[i] * hill.invsigma[i];
     }
   }
 

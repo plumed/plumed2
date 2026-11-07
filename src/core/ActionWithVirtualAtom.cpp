@@ -52,10 +52,8 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   }
   addComponent("mass");
   componentIsNotPeriodic("mass");
-  getPntrToComponent("mass")->isConstant();
   addComponent("charge");
   componentIsNotPeriodic("charge");
-  getPntrToComponent("charge")->isConstant();
 }
 
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a) {

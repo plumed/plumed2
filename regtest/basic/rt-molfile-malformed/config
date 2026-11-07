@@ -74,6 +74,8 @@ function plumed_regtest_before(){
   { echo "title" ; echo "   -4" ; echo "    1RES     CA    1   1.000   2.000   3.000" ; echo "   3.00000   3.00000   3.00000" ; } > bad_gro_natoms_neg.gro
   # pdb: ATOM records without coordinates or shorter than the fixed fields
   { pdb_atom 1 1.0 2.0 3.0 ; printf "ATOM      2  CA\n" ; pdb_atom 3 4.0 5.0 6.0 | head -c 36 ; echo ; echo END ; } > pdb_short.pdb
+  # g96: a valid file, but the format is not supported by the driver
+  printf "TITLE\ntest\nEND\nPOSITION\n    1 ALA   N        1    0.100000000    0.200000000    0.300000000\nEND\nBOX\n    2.000000000    2.000000000    2.000000000\nEND\n" > bad_g96_valid.g96
   echo "DUMPATOMS ATOMS=1-3 FILE=pdb.xyz PRECISION=3" > plumed_pdb.dat
   echo "DUMPATOMS ATOMS=1 FILE=out.xyz" > plumed_bad.dat
 }
@@ -110,6 +112,7 @@ crd_title crd cannot read bad_crd_title.crd with the molfile crd plugin
 crd_partial crd Problem reading CRD file
 gro_natoms_change gro Timestep in file contains wrong number of atoms
 gro_natoms_neg gro cannot read bad_gro_natoms_neg.gro with the molfile gro plugin
+g96_valid g96 the g96 format is not supported by the driver
 EOT
   # pdb with short records: the missing coordinates are zero, no uninitialized memory is read
   $plumed driver --plumed plumed_pdb.dat --mf_pdb pdb_short.pdb > pdb.out 2> pdb.err

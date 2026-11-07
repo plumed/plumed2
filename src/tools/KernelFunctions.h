@@ -26,6 +26,7 @@
 #include "core/Value.h"
 #include <vector>
 #include <memory>
+#include <utility>
 
 namespace PLMD {
 
@@ -53,6 +54,13 @@ private:
                 const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
+/// Position of element (i,j) of the metric in width (upper triangle stored row by row)
+  static unsigned packedIndex( unsigned i, unsigned j, unsigned ncv ) {
+    if( i>j ) {
+      std::swap(i,j);
+    }
+    return i*ncv - (i*(i-1))/2 + (j-i);
+  }
 public:
   explicit KernelFunctions( const std::string& input );
   KernelFunctions( const std::vector<double>& at,
