@@ -1,0 +1,9 @@
+# restart of EFFECTIVE_ENERGY_DRIFT from a checkpoint with several processes and a (fake) domain decomposition: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,14
+d3: DISTANCE ATOMS=5,20
+d4: DISTANCE ATOMS=7,11
+r: RESTRAINT ARG=d1,d2,d3,d4 AT=1.0,2.0,3.0,1.5 KAPPA=10.0,20.0,5.0,8.0
+EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=1 FILE=eed.dat FMT=%.17g
+PRINT ARG=r.bias FILE=COLVAR STRIDE=1 FMT=%.17g
