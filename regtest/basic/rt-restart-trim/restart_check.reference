@@ -6,17 +6,19 @@ restart/BIAS SAME LINES
 restart/BIAS header lines: 2
 restart/COLVAR_RUNS earlier runs kept
 restart/COLVAR_RUNS SAME LINES
+restart/bck.trimmed.0.COLVAR data lines: 15
+restart/bck.trimmed.0.HILLS data lines: 3
 restart/dump.xyz frames: 8
 restart/COLVAR_NOTRIM lines: 75
 notrim/COLVAR lines: 75
 notrim/HILLS lines: 13
 WARNING: file dump.xyz has no time field and is not trimmed at the restart step
-file BIAS: 15 lines written at or after the restart step 20 removed
-file COLVAR: 15 lines written at or after the restart step 20 removed
-file COLVAR_RUNS: 15 lines written at or after the restart step 20 removed
-file HILLS: 3 lines written at or after the restart step 20 removed
+file BIAS: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.BIAS
+file COLVAR: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR
+file COLVAR_RUNS: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR_RUNS
+file HILLS: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS
 the files are not trimmed at the restart step
 grid/HILLS SAME LINES
-file HILLS: 2 lines written after the restart step 20 removed
+file HILLS: 2 lines written after the restart step 20 moved to bck.trimmed.0.HILLS
 notrim/HILLS hills at time 20: 1
 checkpoint file plumed.cpt not found. Use RESTART_FROM=NO to restart without a checkpoint

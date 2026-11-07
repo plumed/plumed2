@@ -184,15 +184,6 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
     }
   }
 
-  // open all the files
-  for(const auto & input : inputs) {
-    for(int j=0; j<walkers.n; ++j) {
-      // with multiple walkers the files are written without the suffix of the replica
-      const unsigned k=input.files->addInput(walkers.getFileName(input.name,j),walkers.shareFiles());
-      plumed_assert(k==static_cast<unsigned>(j));
-    }
-  }
-
   // At a restart from a step given by the MD engine, the hills files of this walker are trimmed at that step
   // before being read (see RESTART), so that the hill of that step, which is computed again, is not read.
   // When the bias is read from a grid, written at the checkpoint of the MD engine, the grid contains the hill
@@ -218,6 +209,15 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
         action.multi_sim_comm.Barrier();
       }
       comm.Barrier();
+    }
+  }
+
+  // open all the files
+  for(const auto & input : inputs) {
+    for(int j=0; j<walkers.n; ++j) {
+      // with multiple walkers the files are written without the suffix of the replica
+      const unsigned k=input.files->addInput(walkers.getFileName(input.name,j),walkers.shareFiles());
+      plumed_assert(k==static_cast<unsigned>(j));
     }
   }
 

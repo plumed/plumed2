@@ -5,10 +5,10 @@ restart/HILLS.1 SAME LINES
 restart/HILLS_W SAME LINES
 restart/BIAS.0 SAME LINES
 restart/BIAS.1 SAME LINES
-file BIAS.0: 15 lines written at or after the restart step 20 removed
-file BIAS.1: 15 lines written at or after the restart step 20 removed
-file COLVAR.0: 15 lines written at or after the restart step 20 removed
-file COLVAR.1: 15 lines written at or after the restart step 20 removed
-file HILLS.0: 3 lines written at or after the restart step 20 removed
-file HILLS.1: 3 lines written at or after the restart step 20 removed
-file HILLS_W: 8 lines written at or after the restart step 20 removed
+file BIAS.0: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.BIAS.0
+file BIAS.1: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.BIAS.1
+file COLVAR.0: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.0
+file COLVAR.1: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.1
+file HILLS.0: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS.0
+file HILLS.1: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS.1
+file HILLS_W: 8 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS_W

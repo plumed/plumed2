@@ -1,0 +1,33 @@
+type=driver
+plumed_needs=zlib
+plumed_modules=bias
+# Reference run: the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the interrupted run: frames 0-34; the restart from step 20: frames 20-59
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  mkdir restart ; cd restart ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  # the files of the interrupted run, before the restart
+  gzip -dc COLVAR.gz > COLVAR.part ; gzip -dc HILLS.gz > HILLS.part
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for f in COLVAR HILLS ; do
+      gzip -dc $f.gz > $f.txt ; gzip -dc restart/$f.gz > restart/$f.txt
+      # the restarted file has the same lines as the uninterrupted one (a gzip stream for each run)
+      if test "$(grep -v '^#' $f.txt)" = "$(grep -v '^#' restart/$f.txt)" ; then echo "restart/$f.gz SAME LINES" ; else echo "restart/$f.gz DIFFERENT" ; fi
+      # the removed lines are kept: with the lines of the restarted file before the restart, they make the interrupted file
+      gzip -dc restart/bck.trimmed.0.$f.gz > restart/$f.removed
+      n=$(grep -c . restart/$f.removed)
+      if test "$(head -n $(( $(grep -c . restart/$f.part) - n )) restart/$f.part ; cat restart/$f.removed)" = "$(cat restart/$f.part)" ; then echo "restart/bck.trimmed.0.$f.gz: the $n removed lines" ; else echo "restart/bck.trimmed.0.$f.gz WRONG" ; fi
+    done
+    grep -h "restart step" restart/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+  } > restart_check
+}

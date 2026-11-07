@@ -134,13 +134,16 @@ step S (the hill of step S is added again) and [OPES_METAD](OPES_METAD.md) only 
 The lines removed are the last lines of the file with a time equal to or later than the time of step S:
 the earlier lines are kept, including those of earlier runs whose time restarted from zero. The trimming
 applies to the files that have a `time` field (PRINT, the hills of METAD, the kernels of OPES_METAD, ...);
-the other files (e.g. those of [DUMPATOMS](DUMPATOMS.md)), compressed files, and files where the times
-after S are not increasing are appended as they are, with a line in the log. Files that are rewritten at
+the other files (e.g. those of [DUMPATOMS](DUMPATOMS.md)) and the files where the times after S are not
+increasing are appended as they are, with a line in the log. The lines removed from a file are not lost:
+they are moved to a file `bck.trimmed.N.name` in the same directory (N is the first number not used yet).
+Compressed files (`.gz`, written in append mode as a sequence of gzip streams) are trimmed too: since they
+cannot be truncated, the lines that are kept are compressed again. Files that are rewritten at
 every write (e.g. grids and state files) are not trimmed. When the bias is read from a grid
 ([METAD](METAD.md) with GRID_RFILE) or from a state file ([OPES_METAD](OPES_METAD.md) with STATE_RFILE),
 which are written at the checkpoint of the MD code and already contain the hill or kernel of step S,
 the lines of step S are kept. With the multiple walkers of METAD that share files (WALKERS_N) the hills
-files are not trimmed. The log lists the files that have been trimmed.
+files are not trimmed. The log lists the files that have been trimmed and where their removed lines are.
 
 The trimming can be switched off for all the files, which are then appended as they are, with
 

@@ -36,6 +36,10 @@
 #include <fstream>
 #include <limits>
 
+#ifdef __PLUMED_HAS_ZLIB
+#include <zlib.h>
+#endif
+
 namespace PLMD {
 
 namespace {
@@ -114,6 +118,105 @@ void Checkpointing::setEngineRestartStep(long long int step) {
   engineRestartStep=step;
 }
 
+namespace {
+
+/// The lines of a plain or gzipped file (gzipped files written in append mode are made
+/// of several gzip members, which are read as a single stream)
+class TrimLineReader {
+  std::ifstream in;
+#ifdef __PLUMED_HAS_ZLIB
+  gzFile gz=nullptr;
+#endif
+public:
+  TrimLineReader(const std::string& fname,bool compressed) {
+    if(compressed) {
+#ifdef __PLUMED_HAS_ZLIB
+      gz=gzopen(fname.c_str(),"rb");
+      if(!gz) {
+        plumed_merror("cannot open "+fname+" to trim it at the restart step");
+      }
+#endif
+    } else {
+      in.open(fname,std::ios::binary);
+      if(!in) {
+        plumed_merror("cannot open "+fname+" to trim it at the restart step");
+      }
+    }
+  }
+  ~TrimLineReader() {
+#ifdef __PLUMED_HAS_ZLIB
+    if(gz) {
+      gzclose(gz);
+    }
+#endif
+  }
+  TrimLineReader(const TrimLineReader&)=delete;
+  TrimLineReader& operator=(const TrimLineReader&)=delete;
+  /// the next line without its newline; newline tells if it had one (the last line may not)
+  bool getline(std::string& line,bool& newline) {
+#ifdef __PLUMED_HAS_ZLIB
+    if(gz) {
+      line.clear();
+      char buf[4096];
+      while(gzgets(gz,buf,sizeof(buf))) {
+        line+=buf;
+        if(!line.empty() && line.back()=='\n') {
+          line.pop_back();
+          newline=true;
+          return true;
+        }
+      }
+      newline=false;
+      return !line.empty();
+    }
+#endif
+    if(!std::getline(in,line)) {
+      return false;
+    }
+    newline=!in.eof();
+    return true;
+  }
+};
+
+/// A free name for the lines removed from a file: bck.trimmed.N.name, in the directory of the file
+std::string trimmedBackupName(const std::string& fname) {
+  const std::size_t found=fname.find_last_of("/\\");
+  const std::string directory=fname.substr(0,found+1);
+  const std::string file=fname.substr(found+1);
+  for(int i=0;; i++) {
+    const std::string b=directory+"bck.trimmed."+std::to_string(i)+"."+file;
+    std::error_code ec;
+    if(!std::filesystem::exists(b,ec)) {
+      return b;
+    }
+  }
+}
+
+#ifdef __PLUMED_HAS_ZLIB
+/// copy n uncompressed bytes (all the remaining ones if n<0) from in to out
+void gzCopy(gzFile in,gzFile out,long long n,const std::string& fname) {
+  char buf[65536];
+  while(n!=0) {
+    const unsigned want=(n<0 || n>static_cast<long long>(sizeof(buf))) ? sizeof(buf) : static_cast<unsigned>(n);
+    const int r=gzread(in,buf,want);
+    if(r<0) {
+      plumed_merror("cannot read "+fname+" to trim it at the restart step");
+    }
+    if(r==0) {
+      break;
+    }
+    if(gzwrite(out,buf,r)!=r) {
+      plumed_merror("cannot write while trimming "+fname+" at the restart step");
+    }
+    if(n>0) {
+      n-=r;
+    }
+  }
+}
+#endif
+
+}
+
 void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep) {
   if(!trimsAtRestart() || fname=="/dev/null" || !trimmedFiles.insert(fname).second) {
     return;
@@ -123,10 +226,13 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   if(!std::filesystem::exists(fname,ec)) {
     return;
   }
-  if(Tools::extension(fname)=="gz") {
-    log<<"  WARNING: file "<<fname<<" is compressed and is not trimmed at the restart step\n";
+  const bool compressed=Tools::extension(fname)=="gz";
+#ifndef __PLUMED_HAS_ZLIB
+  if(compressed) {
+    log<<"  WARNING: file "<<fname<<" is compressed and PLUMED has no zlib: it is not trimmed at the restart step\n";
     return;
   }
+#endif
   const auto ts=plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
   const double dt=ts ? ts->copyOutput(0)->get() : 0.0;
   if(!(dt>0.0)) {
@@ -136,56 +242,55 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   // the lines of the restart step are removed too, since the step is computed again
   // (unless keepRestartStep); times are printed with a few digits, hence the half timestep
   const double tcut=(engineRestartStep+(keepRestartStep?0.5:-0.5))*dt;
-  std::ifstream in(fname,std::ios::binary);
-  if(!in) {
-    plumed_merror("cannot open "+fname+" to trim it at the restart step");
-  }
   // keepEnd: end of the last line with a time before tcut (the tail starts there,
-  // including the comment lines that follow it)
-  std::streamoff offset=0,keepEnd=0;
+  // including the comment lines that follow it); offsets in uncompressed bytes
+  long long offset=0,keepEnd=0;
   long long ntail=0;
   int timeIndex=-1;
   bool hasTime=false,inTail=false,increasing=true;
   double lastTime=0.0;
-  std::string line;
-  std::vector<std::string> words;
-  while(std::getline(in,line)) {
-    const std::streamoff end=offset+line.size()+(in.eof()?0:1);
-    if(line.compare(0,9,"#! FIELDS")==0) {
-      words=Tools::getWords(line.substr(9));
-      timeIndex=-1;
-      for(unsigned i=0; i<words.size(); ++i) {
-        if(words[i]=="time") {
-          timeIndex=i;
-          hasTime=true;
-          break;
-        }
-      }
-    } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
-      words=Tools::getWords(line);
-      double t;
-      if(words.size()>static_cast<unsigned>(timeIndex) && Tools::convertNoexcept(words[timeIndex],t)) {
-        if(t<tcut) {
-          keepEnd=end;
-          inTail=false;
-          ntail=0;
-          increasing=true;
-        } else {
-          if(inTail && t<lastTime) {
-            increasing=false;
+  {
+    TrimLineReader reader(fname,compressed);
+    std::string line;
+    bool newline=false;
+    std::vector<std::string> words;
+    while(reader.getline(line,newline)) {
+      const long long end=offset+line.size()+(newline?1:0);
+      if(line.compare(0,9,"#! FIELDS")==0) {
+        words=Tools::getWords(line.substr(9));
+        timeIndex=-1;
+        for(unsigned i=0; i<words.size(); ++i) {
+          if(words[i]=="time") {
+            timeIndex=i;
+            hasTime=true;
+            break;
           }
-          inTail=true;
-          ntail++;
-          lastTime=t;
         }
-      } else if(inTail) {
-        // an incomplete line (an interrupted run) at the end of the tail
-        ntail++;
+      } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
+        words=Tools::getWords(line);
+        double t;
+        if(words.size()>static_cast<unsigned>(timeIndex) && Tools::convertNoexcept(words[timeIndex],t)) {
+          if(t<tcut) {
+            keepEnd=end;
+            inTail=false;
+            ntail=0;
+            increasing=true;
+          } else {
+            if(inTail && t<lastTime) {
+              increasing=false;
+            }
+            inTail=true;
+            ntail++;
+            lastTime=t;
+          }
+        } else if(inTail) {
+          // an incomplete line (an interrupted run) at the end of the tail
+          ntail++;
+        }
       }
+      offset=end;
     }
-    offset=end;
   }
-  in.close();
   if(!hasTime) {
     log<<"  WARNING: file "<<fname<<" has no time field and is not trimmed at the restart step\n";
     return;
@@ -197,11 +302,53 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
     return;
   }
-  std::filesystem::resize_file(fname,keepEnd,ec);
-  if(ec) {
-    plumed_merror("cannot trim "+fname+" at the restart step: "+ec.message());
+  // the removed lines are kept in a separate file
+  const std::string backup=trimmedBackupName(fname);
+  if(!compressed) {
+    {
+      std::ifstream in(fname,std::ios::binary);
+      std::ofstream out(backup,std::ios::binary);
+      in.seekg(keepEnd);
+      out<<in.rdbuf();
+      if(!out) {
+        plumed_merror("cannot write "+backup+" while trimming "+fname+" at the restart step");
+      }
+    }
+    std::filesystem::resize_file(fname,keepEnd,ec);
+    if(ec) {
+      plumed_merror("cannot trim "+fname+" at the restart step: "+ec.message());
+    }
+  } else {
+#ifdef __PLUMED_HAS_ZLIB
+    // a gzipped file cannot be truncated: the kept part is compressed again in a temporary file,
+    // which is then copied on the file (in place, so that the file is the same for whoever has it open)
+    const std::string tmp=fname+".trim.tmp";
+    {
+      gzFile in=gzopen(fname.c_str(),"rb");
+      gzFile kept=gzopen(tmp.c_str(),"wb9");
+      gzFile removed=gzopen(backup.c_str(),"wb9");
+      if(!in || !kept || !removed) {
+        plumed_merror("cannot open the files to trim "+fname+" at the restart step");
+      }
+      gzCopy(in,kept,keepEnd,fname);
+      gzCopy(in,removed,-1,fname);
+      gzclose(in);
+      if(gzclose(kept)!=Z_OK || gzclose(removed)!=Z_OK) {
+        plumed_merror("cannot write while trimming "+fname+" at the restart step");
+      }
+    }
+    {
+      std::ifstream in(tmp,std::ios::binary);
+      std::ofstream out(fname,std::ios::binary|std::ios::trunc);
+      out<<in.rdbuf();
+      if(!out) {
+        plumed_merror("cannot write "+fname+" while trimming it at the restart step");
+      }
+    }
+    std::filesystem::remove(tmp,ec);
+#endif
   }
-  log<<"  file "<<fname<<": "<<ntail<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" removed\n";
+  log<<"  file "<<fname<<": "<<ntail<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" moved to "<<backup<<"\n";
 }
 
 void Checkpointing::trimOutputFileAtRestart(Action& action,const std::string& name,bool nosuffix) {
