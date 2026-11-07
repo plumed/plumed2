@@ -29,6 +29,8 @@
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
+#include <cctype>
+#include <filesystem>
 #include <sstream>
 
 #include <string>
@@ -107,7 +109,20 @@ OFile& OFile::setLinePrefix(const std::string&l) {
 
 int OFile::printf(const char*fmt,...) {
   if(h5mode) {
-    plumed_merror("file "+getPath()+": HDF5 tables (.h5) can only be written field by field (as PRINT does): this file is written as free text, use another extension");
+    // only blank lines (e.g. those between the rows of a grid) can be printed in a table: they are ignored
+    va_list arg;
+    va_start(arg, fmt);
+    std::vector<char> text(std::vsnprintf(nullptr,0,fmt,arg)+1);
+    va_end(arg);
+    va_start(arg, fmt);
+    std::vsnprintf(text.data(),text.size(),fmt,arg);
+    va_end(arg);
+    for(const char* c=text.data(); *c; c++) {
+      if(!std::isspace(static_cast<unsigned char>(*c))) {
+        plumed_merror("file "+getPath()+": HDF5 tables (.h5) can only be written field by field (as PRINT does): this file is written as free text, use another extension");
+      }
+    }
+    return text.size()-1;
   }
   va_list arg;
   va_start(arg, fmt);
@@ -361,7 +376,8 @@ void OFile::setLastFields(const std::string& str) {
 OFile& OFile::printField() {
   if(h5mode) {
     // HDF5 table: the writer starts a new block when the fields change
-    if(h5writer) {
+    if(isWriter()) {
+      h5open();
       std::vector<h5::Field> row,constants;
       for(const auto & f : fields) {
         row.push_back(h5::Field{f.name,f.typed});
@@ -495,16 +511,14 @@ OFile& OFile::open(const std::string&setpath) {
     // HDF5 table: fp is the null device on all the processes, the table is written by h5writer
     h5mode=true;
     const bool restart=checkRestart();
+    h5append=restart;
     if(isWriter()) {
       if(restart) {
-        // trimmed at the restart step now, before the table is opened (see applyPendingTrim)
-        if(plumed && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim())) {
-          plumed->checkpointing.trimAtRestart(path);
-        }
+        // trimmed at the first row (see h5open)
+        trimPending_=plumed && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim());
       } else {
         backupFile( backstring, path );
       }
-      h5writer=std::make_unique<h5::Writer>(path,restart);
     }
 #ifdef _WIN32
     fp=std::fopen("NUL","w");
@@ -630,8 +644,27 @@ void OFile::closeBackend() {
   h5mode=false;
 }
 
+void OFile::h5open() {
+  if(h5writer) {
+    return;
+  }
+  if(trimPending_) {
+    applyPendingTrim();
+  }
+  h5writer=std::make_unique<h5::Writer>(path,h5append);
+  h5append=true;
+}
+
 std::vector<unsigned long long> OFile::getH5Rows() {
-  return h5writer ? h5writer->rows() : std::vector<unsigned long long>();
+  if(h5writer) {
+    return h5writer->rows();
+  }
+  // nothing written yet by this run: the table as it is
+  std::error_code ec;
+  if(isWriter() && h5append && std::filesystem::exists(path,ec)) {
+    return h5::rows(path);
+  }
+  return {};
 }
 
 bool OFile::isWriter()const {
@@ -682,12 +715,30 @@ OFile& OFile::rewind() {
 // the reason is that normal rewind does not work when in append mode
 // moreover, we can take a backup of the file
   plumed_assert(fp);
-  plumed_massert(!h5mode,"file "+getPath()+": files rewritten at every write cannot be HDF5 tables (.h5) yet");
   clearFields();
   // a snapshot: it is rewritten, not trimmed
   trimPending_=false;
   if(plumed) {
     plumed->checkpointing.markSnapshotFile(path);
+  }
+  if(h5mode) {
+    // HDF5 table: the previous one is kept as bck.last.name, a new one is created at the next row
+    if(isWriter()) {
+      h5writer.reset();
+      std::string fname=this->path;
+      size_t found=fname.find_last_of("/\\");
+      std::string backup=fname.substr(0,found+1)+backstring+".last."+fname.substr(found+1);
+      std::error_code ec;
+      if(std::filesystem::exists(fname,ec)) {
+        std::filesystem::rename(fname,backup,ec);
+        plumed_massert(!ec,"renaming "+fname+" into "+backup+" failed: "+ec.message());
+      }
+      h5append=false;
+    }
+    if(comm) {
+      comm->Barrier();
+    }
+    return *this;
   }
 
   if(!comm || comm->Get_rank()==0) {

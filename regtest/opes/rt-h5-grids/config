@@ -1,0 +1,54 @@
+type=driver
+plumed_needs=libhdf5
+plumed_modules=opes
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+# comparison of two text files, without the blank lines: same number of values in every line,
+# numbers equal within the tolerance $3 (relative, absolute below 1), the rest equal: prints IDENTICAL or DIFFERENT
+compare() {
+  # (a number is compared as a number, everything else as a string; spaces are not compared)
+  awk -v tol=$3 'function num(v){ return v ~ /^[-+]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$/ }
+       NF==0{next}
+       FNR==NR{a[++n]=$0;next}
+       {m++; k=split(a[m],x); if(NF!=k) bad=1;
+        for(i=1;i<=NF;i++){ if($i==x[i]) continue; if(!num($i) || !num(x[i])){ bad=1; continue }
+          d=$i-x[i]; if(d<0) d=-d; s=(x[i]<0?-x[i]:x[i]); if(s<1) s=1; if(d>tol*s) bad=1 } }
+       END{ if(m!=n) bad=1; print (bad?"DIFFERENT":"IDENTICAL") }' "$1" "$2"
+}
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  # restart at step 20 from the grids and the states written at step 20, the last ones written by the
+  # interrupted run (in text and in HDF5)
+  mkdir restart ; cd restart
+  cp ../plumed.dat .
+  sed -e 's/GRID_WFILE=grid.h5/& GRID_RFILE=grid.h5/' -e 's/GRID_WFILE=grid /&GRID_RFILE=grid /' \
+      -e 's/STATE_WFILE=STATE.h5/& STATE_RFILE=STATE.h5/' -e 's/STATE_WFILE=STATE /&STATE_RFILE=STATE /' ../plumed.dat > plumed-restart.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 20 > out1 2> err1
+  $plumed driver --plumed plumed-restart.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for f in grid STATE hist ; do
+      $plumed h5convert --input $f.h5 --output $f.h5.txt
+      # (the text grid is written by the action with label mt, the table by m)
+      sed 's/mt\.bias/m.bias/' $f > $f.cmp
+      # the text grids are written with 9 decimals, the text state and histogram with 17 digits (FMT)
+      tol=1e-12 ; test $f = grid && tol=1e-8
+      echo "$f.h5 as text: $(compare $f.cmp $f.h5.txt $tol)"
+    done
+    # the previous grid is kept, in HDF5 too
+    echo "bck.last.grid.h5: $(test -f bck.last.grid.h5 && echo present)"
+    # restarted from the HDF5 grid and state (full precision): the biases are those of the uninterrupted run
+    # (but at the restart step: the grid and the state written at step 20 contain the hill and the kernel
+    # deposited at that step, which the uninterrupted run did not have when computing its bias at step 20)
+    $plumed h5convert --input COLVAR.h5 --output COLVAR.txt
+    $plumed h5convert --input restart/COLVAR.h5 --output restart/COLVAR.txt
+    paste COLVAR.txt restart/COLVAR.txt | awk '!/^#/ && $1!=20{n++; d=$2-$7; if(d<0) d=-d; if(d>1e-12) bad=1; e=$4-$9; if(e<0) e=-e; if(e>1e-12) bad=1}
+         END{print "restart from the HDF5 grid and state: " n " steps (all but 20), m.bias and o.bias " (bad?"DIFFERENT from":"the same as") " the uninterrupted run"}'
+  } > restart_check
+}

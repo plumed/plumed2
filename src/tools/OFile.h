@@ -173,8 +173,13 @@ class OFile:
   void setField(const std::string& name,const std::string& text,const h5::Value& typed);
 /// True for an HDF5 table (extension .h5): the rows are written with h5writer
   bool h5mode=false;
-/// Writer of the HDF5 table (on the writing process only)
+/// Writer of the HDF5 table (on the writing process only), created at the first row (see h5open)
   std::unique_ptr<h5::Writer> h5writer;
+/// The HDF5 table is appended to (restart, or after its first row) rather than created
+  bool h5append=false;
+/// Create the writer of the HDF5 table, if not done yet (writing process only): after the
+/// trim at the restart step, so that files rewritten at every write are never trimmed
+  void h5open();
 /// Close the HDF5 table
   void closeBackend() override;
 /// Low-level write

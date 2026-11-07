@@ -79,11 +79,17 @@ text files can be used. Restarts (appending, trimming at the restart step, [CHEC
 text files: the removed rows are moved to an HDF5 file `bck.trimmed.X.filename.h5`.
 
 HDF5 tables require PLUMED to be compiled with libhdf5 (`./configure` uses it when it finds it, see
-`--enable-libhdf5`). Only the files written field by field can be HDF5 tables: the files written as free
-text (e.g. those of [DUMPATOMS](DUMPATOMS.md) and [PRINT_NDX](PRINT_NDX.md)) keep their text formats. The hills
-files of multiple walkers that share files (WALKERS_N of [METAD](METAD.md)) are text files too, since every walker
-reads the files of the others while they are written (with WALKERS_MPI the hills can be an HDF5 table). Files that
-are rewritten at every write (grids, state files) cannot be HDF5 tables yet. For a COLVAR file with a few columns an HDF5 table is
+`--enable-libhdf5`; the conda package of PLUMED uses the hdf5 package of conda). Only the files written field by
+field can be HDF5 tables: the files written as free text (e.g. those of [DUMPATOMS](DUMPATOMS.md) and
+[PRINT_NDX](PRINT_NDX.md)) keep their text formats. The hills files of multiple walkers that share files
+(WALKERS_N of [METAD](METAD.md)) are text files too, since every walker reads the files of the others while they are
+written (with WALKERS_MPI the hills can be an HDF5 table).
+
+Grids (e.g. GRID_WFILE of [METAD](METAD.md), [DUMPGRID](DUMPGRID.md)) and state files (STATE_WFILE of
+[OPES_METAD](OPES_METAD.md)) can be HDF5 tables too, with a row for every point of the grid as in the text files.
+With their full precision, a restart from a grid (GRID_RFILE) or from a state (STATE_RFILE) gives the same bias as
+the run that wrote them. When they are rewritten, the previous one is kept as `bck.last.filename`, as for text files.
+For a COLVAR file with a few columns an HDF5 table is
 not smaller or faster than a text file: HDF5 is useful for large files and when the full precision is needed.
 
 # Replica-Suffix Replica suffix
