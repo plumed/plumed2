@@ -590,9 +590,27 @@ PIV::PIV(const ActionOptions&ao):
     }
   } else {
     log << "WARNING: Neighbor List not activated this has not been tested!!  \n";
+    // the same blocks as with NLIST, with all the pairs
     nlall= Tools::make_unique<NeighborList>(listall,true,pbc,getPbc(),comm);
-    for (unsigned j=0; j<Nlist; j++) {
-      nl[j]= Tools::make_unique<NeighborList>(Plist[j],Plist[j],true,true,pbc,getPbc(),comm);
+    if(com) {
+      for (unsigned i=0; i<compos.size(); i++) {
+        nlcom[i] = Tools::make_unique<NeighborList>(comatm[i],true,pbc,getPbc(),comm);
+      }
+    }
+    unsigned ncnt=0;
+    if(direct) {
+      for (unsigned j=0; j<Natm; j++) {
+        nl[ncnt]= Tools::make_unique<NeighborList>(Plist[j],true,pbc,getPbc(),comm);
+        ncnt+=1;
+      }
+    }
+    if(cross) {
+      for (unsigned j=0; j<Natm; j++) {
+        for (unsigned i=j+1; i<Natm; i++) {
+          nl[ncnt]= Tools::make_unique<NeighborList>(Plist[i],Plist[j],true,false,pbc,getPbc(),comm);
+          ncnt+=1;
+        }
+      }
     }
   }
   // Output Nlist
@@ -1207,67 +1225,21 @@ void PIV::calculate() {
         double tmp = 2.*scaling[j]*coord*Fvol*Fvol*dfunc;
         Vector tmpder = tmp*distance;
         // 0.5*(x_i-x_k)*f_ik         (force on atom k due to atom i)
+        // the weights of the atoms of each center sum to one: the virial is the one of the two centers
         if(docom) {
-          Vector dist;
           for(unsigned k=0; k<nlcom[i0]->getFullAtomList().size(); k++) {
             unsigned x0=nlcom[i0]->getFullAtomList()[k].index();
             m_deriv[x0] -= tmpder*fmass[x0];
-            for(unsigned l=0; l<3; l++) {
-              dist[l]=0.;
-            }
-            Vector P0=getPosition(x0);
-            for(unsigned l=0; l<nlcom[i0]->getFullAtomList().size(); l++) {
-              unsigned x1=nlcom[i0]->getFullAtomList()[l].index();
-              Vector P1=getPosition(x1);
-              if(dopbc) {
-                dist+=pbcDistance(P0,P1);
-              } else {
-                dist+=delta(P0,P1);
-              }
-            }
-            for(unsigned l=0; l<nlcom[i1]->getFullAtomList().size(); l++) {
-              unsigned x1=nlcom[i1]->getFullAtomList()[l].index();
-              Vector P1=getPosition(x1);
-              if(dopbc) {
-                dist+=pbcDistance(P0,P1);
-              } else {
-                dist+=delta(P0,P1);
-              }
-            }
-            m_virial    -= 0.25*fmass[x0]*Tensor(dist,tmpder);
           }
           for(unsigned k=0; k<nlcom[i1]->getFullAtomList().size(); k++) {
             unsigned x1=nlcom[i1]->getFullAtomList()[k].index();
             m_deriv[x1] += tmpder*fmass[x1];
-            for(unsigned l=0; l<3; l++) {
-              dist[l]=0.;
-            }
-            Vector P1=getPosition(x1);
-            for(unsigned l=0; l<nlcom[i1]->getFullAtomList().size(); l++) {
-              unsigned x0=nlcom[i1]->getFullAtomList()[l].index();
-              Vector P0=getPosition(x0);
-              if(dopbc) {
-                dist+=pbcDistance(P1,P0);
-              } else {
-                dist+=delta(P1,P0);
-              }
-            }
-            for(unsigned l=0; l<nlcom[i0]->getFullAtomList().size(); l++) {
-              unsigned x0=nlcom[i0]->getFullAtomList()[l].index();
-              Vector P0=getPosition(x0);
-              if(dopbc) {
-                dist+=pbcDistance(P1,P0);
-              } else {
-                dist+=delta(P1,P0);
-              }
-            }
-            m_virial    += 0.25*fmass[x1]*Tensor(dist,tmpder);
           }
         } else {
           m_deriv[i0] -= tmpder;
           m_deriv[i1] += tmpder;
-          m_virial    -= tmp*Tensor(distance,distance);
         }
+        m_virial    -= tmp*Tensor(distance,distance);
         if(Scalevol) {
           m_virial+=1./3.*tmp*dm*dm*Tensor::identity();
         }
