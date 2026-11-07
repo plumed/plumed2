@@ -1,6 +1,6 @@
 name: openaccPTM
-authors: Daniele Rapetti and Gareth Tribello
-description: versions of CVs in PLUMED that can run on the GPU using OpenACC parallelism
+authors: Daniele Rapetti, Gareth Tribello and Carlo Camilloni
+description: versions of CVs in PLUMED that can run on the GPU using OpenACC parallelism, including the Debye sum of SAXS and SANS
 dois: []
 nlessons: 0
 searchterm: ""
