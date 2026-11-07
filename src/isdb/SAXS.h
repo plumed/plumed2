@@ -174,6 +174,12 @@ private:
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
+  // ONEBEAD: atoms of each bead (CSR, increasing order), 1/mass of each bead and
+  // mass of each atom / mass of its bead
+  std::vector<unsigned> bead_off_;
+  std::vector<unsigned> bead_atoms_;
+  std::vector<double> bead_inv_mass_;
+  std::vector<double> atom_weight_;
   // ONEBEAD glycans. glyc_type[i] is the bead type (GLYC_*) of atom i, or -1 when
   // atom i does not belong to a monosaccharide. glyc_bridge[i] flags the glycan
   // oxygens that carry a glycosidic bond in the TEMPLATE, so that the LCPO SASA

@@ -1156,6 +1156,33 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   setDerivatives();
   checkRead();
+
+  if(onebead) {
+    // the atoms of each bead, in increasing order, with their weights in the centre
+    // of mass of the bead (the masses are summed in the order of the atoms)
+    bead_off_.assign(nres+1,0);
+    for(unsigned a=0; a<size; ++a) {
+      bead_off_[residue_atom[a]+1]++;
+    }
+    for(unsigned r=0; r<nres; ++r) {
+      bead_off_[r+1] += bead_off_[r];
+    }
+    bead_atoms_.resize(size);
+    std::vector<unsigned> fill(bead_off_.begin(), bead_off_.end()-1);
+    std::vector<double> bead_mass(nres,0.);
+    for(unsigned a=0; a<size; ++a) {
+      bead_atoms_[fill[residue_atom[a]]++] = a;
+      bead_mass[residue_atom[a]] += atoms_masses[a];
+    }
+    bead_inv_mass_.resize(nres);
+    for(unsigned r=0; r<nres; ++r) {
+      bead_inv_mass_[r] = 1.0/bead_mass[r];
+    }
+    atom_weight_.resize(size);
+    for(unsigned a=0; a<size; ++a) {
+      atom_weight_[a] = atoms_masses[a]*bead_inv_mass_[residue_atom[a]];
+    }
+  }
 }
 
 // LCPO SASA of the atoms (ONEBEAD only).
@@ -1608,32 +1635,24 @@ void SAXS::calculate() {
 
   const size_t size = getNumberOfAtoms();
   const size_t numq = q_list.size();
+  const size_t beads_size = onebead ? nres : size;
 
-  // these are the derivatives associated to the coarse graining
-  std::vector<Vector> aa_deriv(size);
-
-  size_t beads_size = size;
-  if(onebead) {
-    beads_size = nres;
-  }
-  // these are the derivatives particle,q
-  std::vector<Vector> bd_deriv(numq*beads_size);
+  // the derivatives of the intensities with respect to the beads, [k*beads_size+i]
+  // (with USEGPU and DOSCORE they stay on the GPU)
+  std::vector<Vector> bd_deriv((usegpu_ && getDoScore()) ? 0 : numq*beads_size);
 
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
-    std::vector<double> sum_mass(nres,0.);
-    std::vector<Vector> sum_pos(nres,Vector(0,0,0));
-    for(unsigned atom_id=0; atom_id<size; atom_id++) {
-      const unsigned resid = residue_atom[atom_id];
-      aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
-      sum_pos[resid] += atoms_masses[atom_id] * getPosition(atom_id);
-      sum_mass[resid] += atoms_masses[atom_id];
-    }
-    for(unsigned resid=0; resid<nres; resid++) {
-      beads_pos[resid] = sum_pos[resid]/sum_mass[resid];
-    }
-    for(unsigned atom_id=0; atom_id<size; atom_id++) {
-      aa_deriv[atom_id] /= sum_mass[residue_atom[atom_id]];
+    // centres of mass of the beads; the derivative of a bead position with respect
+    // to one of its atoms is atom_weight_ (mass of the atom / mass of the bead)
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned r=0; r<nres; ++r) {
+      Vector sum_pos(0,0,0);
+      for(unsigned e=bead_off_[r]; e<bead_off_[r+1]; ++e) {
+        const unsigned a = bead_atoms_[e];
+        sum_pos += atoms_masses[a] * getPosition(a);
+      }
+      beads_pos[r] = sum_pos*bead_inv_mass_[r];
     }
     // SASA
     std::vector<bool> solv_res(nres, 0);
@@ -1748,7 +1767,6 @@ void SAXS::calculate() {
     for(unsigned i=0; i<size; ++i) {
       beads_pos[i] = getPosition(i);
     }
-    aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
   }
 
   // with DOSCORE the derivatives of the intensities are first contracted with the
@@ -1864,8 +1882,17 @@ void SAXS::calculate() {
   }
   Tensor chi2_box_deriv;
 
-  // derivatives of each intensity (without DOSCORE): the atoms are split over the
-  // threads, each with its own partial box derivatives (summed in thread order)
+  // the derivative with respect to an atom is the derivative with respect to its bead
+  // times atom_weight_ (1 without ONEBEAD); the box derivatives are computed from the
+  // beads, since sum_atoms x_a (x) w_a d = (sum_atoms w_a x_a) (x) d = x_bead (x) d
+  auto weight=[&](const unsigned atom_id) {
+    return onebead ? atom_weight_[atom_id] : 1.0;
+  };
+  auto bead_of=[&](const unsigned atom_id) {
+    return onebead ? residue_atom[atom_id] : atom_id;
+  };
+
+  // derivatives of each intensity (without DOSCORE), the atoms split over the threads
   if(!getDoScore()) {
     std::vector<Value*> qval(numq);
     for(unsigned k=0; k<numq; ++k) {
@@ -1873,42 +1900,35 @@ void SAXS::calculate() {
       Tools::convert(k,num);
       qval[k]=getPntrToComponent("q-"+num);
     }
-    const unsigned nt=OpenMP::getNumThreads();
-    std::vector<std::vector<Tensor> > box_t(nt, std::vector<Tensor>(numq));
-    #pragma omp parallel num_threads(nt)
-    {
-      std::vector<Tensor> & my_box = box_t[OpenMP::getThreadNum()];
-      #pragma omp for schedule(static)
-      for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-        // without ONEBEAD aa_deriv is (1,1,1) and the bead is the atom
-        const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
-        const Vector pos = getPosition(atom_id);
-        Vector chi2_d;
-        for(unsigned k=0; k<numq; ++k) {
-          const Vector & bd = bd_deriv[k*beads_size+bead_id];
-          const Vector qderiv(aa_deriv[atom_id][0]*bd[0],
-                              aa_deriv[atom_id][1]*bd[1],
-                              aa_deriv[atom_id][2]*bd[2]);
-          setAtomsDerivatives(qval[k], atom_id, qderiv);
-          my_box[k] += Tensor(pos,qderiv);
-          if(chi2) {
-            chi2_d += chi2_dq[k]*qderiv;
-          }
-        }
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+      const unsigned bead_id = bead_of(atom_id);
+      const double w = weight(atom_id);
+      Vector chi2_d;
+      for(unsigned k=0; k<numq; ++k) {
+        const Vector & bd = bd_deriv[k*beads_size+bead_id];
+        const Vector qderiv(w*bd[0], w*bd[1], w*bd[2]);
+        setAtomsDerivatives(qval[k], atom_id, qderiv);
         if(chi2) {
-          chi2_atom_deriv[atom_id] = chi2_d;
+          chi2_d += chi2_dq[k]*qderiv;
         }
+      }
+      if(chi2) {
+        chi2_atom_deriv[atom_id] = chi2_d;
+      }
+    }
+    std::vector<Tensor> deriv_box(numq);
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned k=0; k<numq; ++k) {
+      for(unsigned b=0; b<beads_size; ++b) {
+        deriv_box[k] += Tensor(beads_pos[b], bd_deriv[k*beads_size+b]);
       }
     }
     for(unsigned k=0; k<numq; ++k) {
-      Tensor deriv_box;
-      for(unsigned t=0; t<nt; ++t) {
-        deriv_box += box_t[t][k];
-      }
       if(chi2) {
-        chi2_box_deriv += chi2_dq[k]*deriv_box;
+        chi2_box_deriv += chi2_dq[k]*deriv_box[k];
       }
-      setBoxDerivatives(qval[k], -deriv_box);
+      setBoxDerivatives(qval[k], -deriv_box[k]);
     }
   }
 
@@ -1948,14 +1968,15 @@ void SAXS::calculate() {
       comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
     }
     Value* val=getPntrToComponent("score");
-    Tensor deriv_box;
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
     for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-      const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
-      const Vector der(aa_deriv[atom_id][0]*score_deriv[bead_id][0],
-                       aa_deriv[atom_id][1]*score_deriv[bead_id][1],
-                       aa_deriv[atom_id][2]*score_deriv[bead_id][2]);
-      setAtomsDerivatives(val, atom_id, der);
-      deriv_box += Tensor(getPosition(atom_id),der);
+      const Vector & sd = score_deriv[bead_of(atom_id)];
+      const double w = weight(atom_id);
+      setAtomsDerivatives(val, atom_id, Vector(w*sd[0], w*sd[1], w*sd[2]));
+    }
+    Tensor deriv_box;
+    for(unsigned b=0; b<beads_size; ++b) {
+      deriv_box += Tensor(beads_pos[b], score_deriv[b]);
     }
     setBoxDerivatives(val, -deriv_box);
   }
