@@ -1,0 +1,5 @@
+mpiprocs=4
+type=driver
+arg="--plumed plumed.dat --timestep 0.005 --mf_xtc traj.xtc --multi 2"
+# input files and CPU references are those of regtest/isdb/rt-saxs-mi
+extra_files="../../../../../regtest/isdb/rt-saxs-mi/colv_va.0.reference ../../../../../regtest/isdb/rt-saxs-mi/colv_va.1.reference ../../../../../regtest/isdb/rt-saxs-mi/colvar.0.reference ../../../../../regtest/isdb/rt-saxs-mi/colvar.1.reference ../../../../../regtest/isdb/rt-saxs-mi/forces.0.reference ../../../../../regtest/isdb/rt-saxs-mi/forces.1.reference ../../../../../regtest/isdb/rt-saxs-mi/forces_va.0.reference ../../../../../regtest/isdb/rt-saxs-mi/forces_va.1.reference ../../../../../regtest/isdb/rt-saxs-mi/template.pdb ../../../../../regtest/isdb/rt-saxs-mi/traj.0.xtc ../../../../../regtest/isdb/rt-saxs-mi/traj.1.xtc"
