@@ -102,6 +102,8 @@ The next section contains a list of the actions that can take the USEGPU command
 - matrixtools
    - [MATRIX_PRODUCT](MATRIX_PRODUCT.md)
    - [MATRIX_VECTOR_PRODUCT](MATRIX_VECTOR_PRODUCT.md)
+- isdb
+   - [SAXS](SAXS.md) and [SANS](SANS.md), see below
 - symfunc
    - [Q1](Q1.md)
    - [Q3](Q3.md)
@@ -117,3 +119,67 @@ The next section contains a list of the actions that can take the USEGPU command
    - [LOCAL_Q3](LOCAL_Q3.md)
    - [LOCAL_Q4](LOCAL_Q4.md)
    - [LOCAL_Q6](LOCAL_Q6.md)
+
+## SAXS and SANS
+
+[SAXS](SAXS.md) and [SANS](SANS.md) do not use the task manager: the plugin provides the `OPENACC` backend for their Debye
+sum, which is the expensive part of the calculation (it scales with the square of the number of atoms or beads). Form
+factors, solvent accessible surface (ONEBEAD), deuteration (SANS), resolution function and metainference are computed by
+PLUMED as usual.
+
+````
+LOAD FILE=/path/to/plumedOpenACC.so
+
+MOLINFO STRUCTURE=template.pdb
+SAXS ...
+  LABEL=saxs
+  ATOMS=1-3708
+  ATOMISTIC
+  USEGPU
+  QVALUE1=0.03 QVALUE2=0.06 QVALUE3=0.09
+... SAXS
+````
+
+(This example is not highlighted only because the manual is built without the plugin.)
+
+- `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any) or the default OpenACC device.
+- Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
+  GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
+  are shared with the others.
+- With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the
+  derivatives of every intensity with respect to every particle are copied back, which costs more for many q values.
+- `GPU_BACKEND=OPENACC` is needed only if another backend for SAXS/SANS (from a different plugin) is loaded too.
+
+The form factors and the q values are uploaded only when they change; the positions are uploaded at every step.
+Each GPU thread computes the rows of particle i for a chunk of 8 q values, looping over all the other particles, so
+each pair is computed twice, but there are no atomic operations and the derivative of particle i is complete in its thread.
+For each pair the distance is computed once per chunk and sin(qr) and cos(qr) are obtained by angle addition along the
+q values, as on the CPU (exact sin and cos when the q values are far from a uniform grid or there are fewer than 4).
+For small systems the loop over the other particles is also split in tiles, whose results are summed in a fixed order,
+to have enough threads. The result does not depend on the scheduling, and the rows are summed on the GPU for each q value.
+The chunk size and the number of threads below which tiles are used can be changed at compile time with
+`-DPLUMED_SAXS_ACC_QCHUNK=...` (default 8) and `-DPLUMED_SAXS_ACC_TARGET_THREADS=...` (default 131072).
+
+### Performance
+
+Time per step of SAXS (ms) on a Leonardo Booster node (Xeon 8358 with 32 cores, 4 A100), 50 q values, double precision.
+The CPU reference uses the 32 cores (OpenMP); "score" is with `DOSCORE`, "comp" without it (the intensities are used by
+another action, e.g. a bias):
+
+| system | particles | CPU 32 cores | 1 GPU score | 1 GPU comp | 4 GPUs score | 4 GPUs comp |
+|---|---|---|---|---|---|---|
+| protein, `ATOMISTIC` | 3439 | 179 | 6.2 | 7.6 | 2.3 | 9.2 |
+| 16 copies, `ATOMISTIC` | 55024 | 38400 | 1360 | 1390 | 383 | 508 |
+| 48 lysozymes, `MARTINI` | 14592 | 2810 | 98 | 105 | 33 | 68 |
+| 48 copies, `ONEBEAD` | 9888 beads, 165072 atoms | 1190 | 52 | 75 | 20 | 56 |
+
+The results agree with the CPU to 1e-12 (relative).
+
+- One GPU is 20-40 times faster than the 32 cores, more for small numbers of q values.
+- Several ranks, each with its own GPU, pay off with `DOSCORE` for large systems (more than about 10000 particles).
+  Without `DOSCORE` every rank needs the derivatives of all the intensities with respect to all the particles, which
+  are summed over the ranks: in this case a single GPU per simulation (or per replica) is the best choice.
+- `ONEBEAD` without `DOSCORE` also stores the derivatives with respect to all the atoms, which is done on the CPU.
+
+The tests in `regtest/targetSAXS` are the SAXS/SANS tests of `regtest/isdb` run with `USEGPU`: they take their input files
+and their (CPU) references from `regtest/isdb`.

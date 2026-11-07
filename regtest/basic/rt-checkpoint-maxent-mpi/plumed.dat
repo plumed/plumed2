@@ -1,0 +1,9 @@
+# exact restart of MAXENT with several replicas from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=@replicas:{{1,2} {1,3} {2,3} {1,4}}
+d2: DISTANCE ATOMS=@replicas:{{2,3} {2,4} {3,4} {1,3}}
+# the multipliers learnt by replica 1 are sent to the replicas with weight 1
+m1: MAXENT ARG=d1,d2 TYPE=EQUAL AT=1.0,1.0 KAPPA=1.0,2.0 TAU=10,20 PACE=3 PRINT_STRIDE=2 FILE=m1.LAGMULT FMT=%.17g TEMP=300 LEARN_REPLICA=1 APPLY_WEIGHTS=1,1,0,1
+# every replica learns its own multipliers, average between 10 and 30
+m2: MAXENT ARG=d1 TYPE=INEQUAL< AT=0.9 KAPPA=3.0 TAU=15 PACE=2 FILE=m2.LAGMULT FMT=%.17g TEMP=300 ERROR_TYPE=LAPLACE SIGMA=0.2 TSTART=10 TEND=30 NO_BROADCAST
+PRINT ARG=m1.*,m2.* FILE=COLVAR STRIDE=1 FMT=%.17g

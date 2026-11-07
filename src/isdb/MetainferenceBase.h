@@ -28,6 +28,7 @@
 #include "MetainferenceCore.h"
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
+#include "tools/OpenMP.h"
 #include <memory>
 
 #define PLUMED_METAINF_INIT(ao) Action(ao),MetainferenceBase(ao)
@@ -225,22 +226,37 @@ void MetainferenceBase::calculateNumericalDerivatives( ActionWithValue* a=NULL )
 
 inline
 void MetainferenceBase::apply() {
-  bool wasforced=false;
-  forcesToApply.assign(forcesToApply.size(),0.0);
+  // the components with a force (e.g. the many intensities of SAXS used by a bias):
+  // the forces are summed over the components for each derivative, the derivatives
+  // are split over the threads
+  std::vector<const Value*> forced;
+  std::vector<double> f;
+  forced.reserve(getNumberOfComponents());
+  f.reserve(getNumberOfComponents());
   for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-    if( getPntrToComponent(i)->applyForce( forces ) ) {
-      wasforced=true;
-      for(unsigned ii=0; ii<forces.size(); ++ii) {
-        forcesToApply[ii]+=forces[ii];
-      }
+    const Value* v=getPntrToComponent(i);
+    if(v->getForce()!=0.) {
+      forced.push_back(v);
+      f.push_back(v->getForce());
     }
   }
-  if( wasforced ) {
-    unsigned ind=0;
-    addForcesOnArguments( 0, forcesToApply, ind );
-    if( getNumberOfAtoms()>0 ) {
-      setForcesOnAtoms( forcesToApply, ind );
+  forcesToApply.assign(forcesToApply.size(),0.0);
+  if(forced.empty()) {
+    return;
+  }
+  const unsigned nder=forces.size();
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forcesToApply))
+  for(unsigned ii=0; ii<nder; ++ii) {
+    double sum=0.;
+    for(unsigned c=0; c<forced.size(); ++c) {
+      sum+=f[c]*forced[c]->getDerivative(ii);
     }
+    forcesToApply[ii]=sum;
+  }
+  unsigned ind=0;
+  addForcesOnArguments( 0, forcesToApply, ind );
+  if( getNumberOfAtoms()>0 ) {
+    setForcesOnAtoms( forcesToApply, ind );
   }
 }
 
