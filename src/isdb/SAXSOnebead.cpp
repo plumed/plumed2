@@ -4679,11 +4679,6 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   }
 }
 
-// Fill, for every ION_* bead type, the SAXS vac/solv/mix terms across q, and the q=0 Iq0 values
-// for the corresponding beads. For a one-atom bead vac=(f^a)^2, solv=(f^s)^2, mix=2 f^a f^s, so
-// the existing runtime combination sqrt(|vac + rho^2 solv - rho mix|) reproduces |f^a - rho f^s|
-// exactly, keeping rho a live SOLVDENS knob. q_list is in A^-1. This runs before the A^-1 ->
-// nm^-1 conversion in the constructor).
 // Maps a monosaccharide residue name onto one of the eight ONEBEAD glycan bead
 // types. Both the PDB chemical-component codes and the usual force-field spellings
 // are accepted. hasN tells whether the residue carries an amide nitrogen in the
@@ -4768,6 +4763,11 @@ bool SAXS::isUnsupportedGlycan(const std::string &r) const {
           r=="GLP" || r=="PA1" || r=="GCS");                // glucosamine
 }
 
+// Fill, for every ION_* bead type, the SAXS vac/solv/mix terms across q, and the q=0 Iq0 values
+// for the corresponding beads. For a one-atom bead vac=(f^a)^2, solv=(f^s)^2, mix=2 f^a f^s, so
+// the existing runtime combination sqrt(|vac + rho^2 solv - rho mix|) reproduces |f^a - rho f^s|
+// exactly, keeping rho a live SOLVDENS knob. q_list is in A^-1. This runs before the A^-1 ->
+// nm^-1 conversion in the constructor.
 void SAXS::getOnebeadIonparam_saxs(std::vector<std::vector<long double> > &FF_tmp_vac, std::vector<std::vector<long double> > &FF_tmp_mix, std::vector<std::vector<long double> > &FF_tmp_solv, std::vector<double> &iq0_vac, std::vector<double> &iq0_mix, std::vector<double> &iq0_solv) const {
   const unsigned numq = q_list.size();
   for(unsigned t=0; t<NIONS; ++t) {
