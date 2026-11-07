@@ -11,6 +11,9 @@ export OMPI_MCA_rmaps_base_oversubscribe=1
 # Keep MPI smoke tests on software transports in CI containers. MPICH's UCX
 # netmod otherwise probes host RDMA devices (including Azure MANA interfaces).
 export UCX_TLS=${UCX_TLS:-tcp,self}
+# Keep Open MPI on software transports too, independently of its PML default.
+export OMPI_MCA_pml=${OMPI_MCA_pml:-ob1}
+export OMPI_MCA_btl=${OMPI_MCA_btl:-self,tcp}
 
 export MPICH_CC="$CC" OMPI_CC="$CC"
 "$PREFIX/bin/mpicc" ${CPPFLAGS:-} ${CFLAGS:-} native-host.c -I"$PREFIX/include" \

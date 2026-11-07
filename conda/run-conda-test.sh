@@ -11,6 +11,10 @@ export OMPI_MCA_rmaps_base_oversubscribe=1
 # Keep MPI smoke tests on software transports in CI containers. MPICH's UCX
 # netmod otherwise probes host RDMA devices (including Azure MANA interfaces).
 export UCX_TLS=${UCX_TLS:-tcp,self}
+# UCX settings do not constrain Open MPI's other PML/BTL choices. Use a
+# portable software transport for these packaging checks on hosted runners.
+export OMPI_MCA_pml=${OMPI_MCA_pml:-ob1}
+export OMPI_MCA_btl=${OMPI_MCA_btl:-self,tcp}
 unset PLUMED_KERNEL PLUMED_LIB PLUMED_ROOT PLUMED_INCLUDEDIR PLUMED_PROGRAM_NAME
 unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
 
@@ -31,6 +35,14 @@ for mpi in mpich openmpi; do
   cp "$kernel" "$task/kernel-before"
 
   # Installing a runtime chooses the matching variant of the single add-on name.
+  if [[ $(uname) == Darwin && "$mpi" == openmpi ]]; then
+    # A hardlinked prte can make dyld resolve @rpath from conda's package
+    # cache instead of this environment, where libevent lives. Copy the MPI
+    # dependency first; install our add-on normally so its no_link check below
+    # still verifies the package metadata rather than a global --copy option.
+    conda install --yes --copy --prefix "$prefix" --override-channels -c local -c conda-forge \
+      "$mpi"
+  fi
   conda install --yes --prefix "$prefix" --override-channels -c local -c conda-forge \
     "$mpi" "plumed-mpi=$VERSION"
   if [[ $(uname) == Darwin ]]; then
@@ -41,6 +53,7 @@ for mpi in mpich openmpi; do
     [[ "$record" == *"-mpi_${mpi}_"*.json ]]
   done
   "$prefix/bin/plumed" --has-thread-mpi
+  "$prefix/bin/mpiexec" --version
   "$prefix/bin/mpiexec" -n 2 "$prefix/bin/plumed-mpi" --has-real-mpi
   "$prefix/bin/plumed-mpi" --no-mpi info --root
 
