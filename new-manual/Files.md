@@ -79,7 +79,8 @@ text files can be used. Restarts (appending, trimming at the restart step, [CHEC
 text files: the removed rows are moved to an HDF5 file `bck.trimmed.X.filename.h5`.
 
 HDF5 tables require PLUMED to be compiled with libhdf5 (`./configure` uses it when it finds it, see
-`--enable-libhdf5`). Files that are written as free text (e.g. those of [DUMPATOMS](DUMPATOMS.md)), files that
+`--enable-libhdf5`). Only the files written field by field can be HDF5 tables: the files written as free
+text (e.g. those of [DUMPATOMS](DUMPATOMS.md) and [PRINT_NDX](PRINT_NDX.md)) keep their text formats. Files that
 are rewritten at every write (grids, state files) and the hills files of multiple walkers that share files
 (WALKERS_N of [METAD](METAD.md)) cannot be HDF5 tables yet. For a COLVAR file with a few columns an HDF5 table is
 not smaller or faster than a text file: HDF5 is useful for large files and when the full precision is needed.
