@@ -1,5 +1,5 @@
 #include "plumed/mpiwrap/mpiwrap.h"
-#include "plumed/mpiwrap/thread-mpi-launcher.h"
+#include "plumed/mpiwrap/mpi.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -12,7 +12,7 @@
 #include <vector>
 
 namespace PLMD {
-namespace mpiwrap_api_regtest {
+namespace mpiwrap::api_regtest {
 
 void require(bool condition, const char *expression, int line) {
   if(!condition) {
@@ -26,7 +26,7 @@ void require(bool condition, const char *expression, int line) {
 #define HAS(name) true
 #define NATIVE_ENTRY(name) true
 #else
-#define HAS(name) mpiwrap_has_ ## name()
+#define HAS(name) mpiwrap::has_ ## name()
 #define NATIVE_ENTRY(name) (pointers::name!=nullptr)
 #endif
 
@@ -701,7 +701,7 @@ void inquiries(MPI_Comm world) {
 
 int body(int rank, const void *native_world, std::size_t native_size, void *context) {
   CHECK(native_world!=nullptr && native_size>0);
-  MPI_Comm world=mpiwrap_Comm_from_native(native_world);
+  MPI_Comm world=mpiwrap::Comm_from_native(native_world);
   int actual=-1, size=0;
   CALL(Comm_rank,world,&actual);
   CALL(Comm_size,world,&size);
@@ -768,11 +768,11 @@ int run(int argc, char **argv) {
   }
   int result=-1;
 #if defined(__PLUMED_HAS_MPI)
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::standalone_owned;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::standalone_owned;
 #else
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::internal_thread_mpi;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::internal_thread_mpi;
 #endif
-  const int status=mpiwrap_provider::launchRanks(4,body,&abort_mode,&result,lifecycle);
+  const int status=mpiwrap::launchRanks(4,body,&abort_mode,&result,lifecycle);
   int finalized=0;
   CALL(Finalized,&finalized);
   CHECK(finalized==1);
@@ -783,5 +783,5 @@ int run(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-  return PLMD::mpiwrap_api_regtest::run(argc,argv);
+  return PLMD::mpiwrap::api_regtest::run(argc,argv);
 }

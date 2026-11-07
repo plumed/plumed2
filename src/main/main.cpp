@@ -19,12 +19,25 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "wrapper/Plumed.h"
-#include <cstring>
-
+// PLUMED_C_COMPATIBLE
 #ifdef __PLUMED_HAS_MPI
+#define PLUMED_MPIW_HOST_ADAPTER 1
 #include <mpi.h>
 #endif
+#define __PLUMED_WRAPPER_CXX 0
+#include "wrapper/Plumed.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Use the C error interface so this same source can be compiled with mpicc.
+// Keep each command's failure path identical, including object cleanup.
+#define PLUMED_MAIN_CMD(key,value) do { \
+    plumed_cmd_nothrow(p,key,value,nothrow); \
+    if(error.code) { \
+      goto failure; \
+    } \
+  } while(0)
 
 /**
   This main uses only the interface published in
@@ -34,14 +47,18 @@
   to avoid linker error.
 */
 int main(int argc,char**argv) {
+  int ret=0;
+  plumed p;
+  plumed_error error;
+  plumed_nothrow_handler nothrow= {&error,plumed_error_set};
 #ifdef __PLUMED_HAS_MPI
-  bool nompi=false;
+  int nompi=0;
   for(int iarg=1; iarg<argc; iarg++) {
-    if(!std::strcmp(argv[iarg],"--no-mpi")) {
-      nompi=true;
+    if(!strcmp(argv[iarg],"--no-mpi")) {
+      nompi=1;
     }
-    if(!std::strcmp(argv[iarg],"--mpi")) {
-      nompi=false;
+    if(!strcmp(argv[iarg],"--mpi")) {
+      nompi=0;
     }
 // stop at first non-option
     if(argv[iarg] && argv[iarg][0]!='-') {
@@ -52,25 +69,29 @@ int main(int argc,char**argv) {
     MPI_Init(&argc,&argv);
   }
 #endif
-  int ret=0;
-
-  try {
-    PLMD::Plumed p;
-    p.cmd("CLTool setArgc",&argc);
-    p.cmd("CLTool setArgv",argv, {static_cast<std::size_t>(argc)});
+  p=plumed_create();
+  plumed_error_init(&error);
 #ifdef __PLUMED_HAS_MPI
-    if(!nompi) {
-      MPI_Comm comm;
-      MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-      p.cmd("CLTool setMPIComm",&comm);
+  {
+    // Older kernels predate injection; they retain the native-MPI path.
+    int api=0;
+    PLUMED_MAIN_CMD("getApiVersion",&api);
+    if(api>=11) {
+      PLUMED_MAIN_CMD("injectMPIImplementation",plumed_mpi_implementation());
     }
-#endif
-    p.cmd("CLTool run",&ret);
-// end block deletes p also in case an exception occurs
-  } catch(...) {
-// exception is rethrown and results in a call to terminate
-    throw;
   }
+#endif
+  PLUMED_MAIN_CMD("CLTool setArgc",&argc);
+  PLUMED_MAIN_CMD("CLTool setArgv",argv);
+#ifdef __PLUMED_HAS_MPI
+  if(!nompi) {
+    MPI_Comm comm;
+    MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+    PLUMED_MAIN_CMD("CLTool setMPIComm",&comm);
+  }
+#endif
+  PLUMED_MAIN_CMD("CLTool run",&ret);
+  plumed_finalize(p);
 
 #ifdef __PLUMED_HAS_MPI
   if(!nompi) {
@@ -78,4 +99,15 @@ int main(int argc,char**argv) {
   }
 #endif
   return ret;
+
+failure:
+  plumed_error_merge_with_nested(&error);
+  fprintf(stderr,"%s\n",plumed_error_what(error));
+  plumed_error_finalize(error);
+  plumed_finalize(p);
+  // As with an uncaught exception, terminate instead of entering collective
+  // finalization while another MPI rank might still be blocked.
+  abort();
 }
+
+#undef PLUMED_MAIN_CMD

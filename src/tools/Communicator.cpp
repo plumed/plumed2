@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Communicator.h"
+#include "../mpiwrap/mpi.h"
 #include "Exception.h"
 #include "AtomNumber.h"
 #include <cstdlib>
@@ -32,7 +33,7 @@ bool Communicator::plumedHasMPI() {
 #if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_HAS_THREAD_MPI)
   return true;
 #elif defined(__PLUMED_MPIWRAP)
-  return mpiwrap_provider_installed();
+  return mpiwrap::provider_installed();
 #else
   return false;
 #endif
@@ -75,7 +76,7 @@ void Communicator::resolveCommunicator()const {
 #if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
   // Construction must leave time for injection through the ordinary cmd API.
   // Zero bytes are not a sentinel: zero may itself be a valid native handle.
-  mpiwrap_ensure_provider_selected();
+  mpiwrap::ensure_provider_selected();
 #endif
   if(!communicatorResolved && initialized()) {
     communicator=MPI_COMM_SELF;
@@ -149,14 +150,22 @@ Communicator::~Communicator() {
 }
 
 void Communicator::Set_comm(const TypesafePtr & val) {
+  // Validate before provider discovery can compile/load an adapter.
+  const auto native=val.getMPIComm();
+  if(val) {
+    mpiwrap::ensure_provider_for_communicator();
+  }
   resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
-    Set_comm(mpiwrap_Comm_from_native(val.get<const void*>()));
+    Set_comm(mpiwrap::Comm_from_native(native));
   }
 }
 
 void Communicator::Set_fcomm(const TypesafePtr & val) {
+  if(val) {
+    mpiwrap::ensure_provider_for_communicator();
+  }
   resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val) {
@@ -324,7 +333,7 @@ MPI_Comm & Communicator::Get_comm() {
   // before MPI initialization. Keep it unresolved so actual MPI use cannot
   // mistake it for a valid native handle; the provider rejects MPI_COMM_NULL.
 #if defined(__PLUMED_MPIWRAP)
-  if(!communicatorResolved && mpiwrap_provider_installed() && !initialized()) {
+  if(!communicatorResolved && mpiwrap::provider_installed() && !initialized()) {
     communicator=MPI_COMM_NULL;
   }
 #endif
@@ -332,7 +341,7 @@ MPI_Comm & Communicator::Get_comm() {
 }
 
 bool Communicator::initialized() {
-  if(!mpiwrap_provider_installed()) {
+  if(!mpiwrap::provider_installed()) {
     return false;
   }
   int flag=0;
@@ -352,62 +361,62 @@ void Communicator::Request::wait(Status&s) {
 namespace {
 void resolveDatatypeProvider() {
 #if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
-  mpiwrap_ensure_provider_selected();
+  mpiwrap::ensure_provider_selected();
 #endif
 }
 }
 
 template<> MPI_Datatype Communicator::getMPIType<float>() {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_FLOAT;
 }
 template<> MPI_Datatype Communicator::getMPIType<double>() {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_DOUBLE;
 }
 template<> MPI_Datatype Communicator::getMPIType<int>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_INT;
 }
 template<> MPI_Datatype Communicator::getMPIType<char>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_CHAR;
 }
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_UNSIGNED;
 }
 template<> MPI_Datatype Communicator::getMPIType<AtomNumber>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_UNSIGNED;
 }
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_UNSIGNED_LONG;
 }
 template<> MPI_Datatype Communicator::getMPIType<long long unsigned>() {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_UNSIGNED_LONG_LONG;
 }
 template<> MPI_Datatype Communicator::getMPIType<long double>()   {
   resolveDatatypeProvider();
-  if(!mpiwrap_provider_installed())
+  if(!mpiwrap::provider_installed())
     return MPI_Datatype {};
   return MPI_LONG_DOUBLE;
 }

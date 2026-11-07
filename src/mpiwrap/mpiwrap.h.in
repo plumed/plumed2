@@ -1,0 +1,110 @@
+// PLUMED_HEADER_ONLY
+// PLUMED_C_COMPATIBLE
+// Generated from mpiwrap.h.in by generate.py; do not edit the output.
+#ifndef __PLUMED_mpiwrap_mpiwrap_h
+#define __PLUMED_mpiwrap_mpiwrap_h
+#include "types.h"
+
+@PROVIDER_ABI@
+@CALLBACK_TYPES@
+#if defined(__cplusplus) && !defined(PLUMED_MPIW_ABI_ONLY)
+/* FALLBACK_DECLARATIONS_BEGIN */
+#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+namespace PLMD {
+namespace mpiwrap {
+struct MPI_Request;
+struct MPI_Status;
+struct MPI_Datatype;
+struct MPI_Comm;
+
+bool can_fallback_Wait();
+bool can_fallback_Waitsome();
+bool can_fallback_Testsome();
+bool can_fallback_Allgather();
+bool can_fallback_Allgatherv();
+int fallback_Wait(MPI_Request *, MPI_Status *);
+int fallback_Waitsome(int, MPI_Request [], int *, int [], MPI_Status []);
+int fallback_Testsome(int, MPI_Request [], int *, int [], MPI_Status []);
+int fallback_Allgather(const void *, int, MPI_Datatype,
+                       void *, int, MPI_Datatype, MPI_Comm);
+int fallback_Allgatherv(const void *, int, MPI_Datatype,
+                        void *, const int [], const int [],
+                        MPI_Datatype, MPI_Comm);
+bool is_empty_status(const MPI_Status *);
+void set_empty_status(MPI_Status *);
+bool requests_all_null(int, const MPI_Request []);
+bool try_singleton_reduce(const void *, void *, int, MPI_Datatype,
+                          int, MPI_Comm, int *);
+} // namespace mpiwrap
+}
+
+#endif
+/* FALLBACK_DECLARATIONS_END */
+@FRONTEND@
+#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+@CALLBACK_BRIDGES@
+#endif
+namespace PLMD {
+namespace mpiwrap {
+
+#if defined(__PLUMED_HAS_MPI)
+inline bool provider_installed() {
+  return true;
+}
+inline bool provider_ranks_are_threads() {
+  return false;
+}
+inline bool is_thread_mpi_active() {
+  return false;
+}
+#elif !defined(__PLUMED_MPIWRAP)
+inline bool provider_installed() {
+  return false;
+}
+inline bool provider_ranks_are_threads() {
+  return false;
+}
+inline bool is_thread_mpi_active() {
+  return false;
+}
+#else
+bool provider_installed();
+// Describes the selected provider without requiring MPI initialization.
+bool provider_ranks_are_threads();
+bool is_thread_mpi_active();
+#endif
+
+} // namespace mpiwrap
+}  // namespace PLMD
+
+namespace PLMD {
+namespace mpiwrap {
+
+enum class MPILifecyclePolicy {
+  // The library/CLTools caller owns MPI initialization and finalization.
+  host_owned,
+  // A standalone program owns real MPI lifecycle, with mpiexec creating processes.
+  standalone_owned,
+  // Use the embedded launcher to create ranks inside one process.
+  internal_thread_mpi
+};
+
+int launchInternalThreadMPI(int ranks,
+                            int (*callback)(int, const void *, std::size_t, void *),
+                            void *callback_context, int *result);
+
+// Common C++ callback entry used by CLTools and standalone test programs.
+// Native communicator bytes are borrowed for the duration of the callback.
+// Construct rank-local objects inside the callback, after initialization.
+// A standalone-owned callback failure aborts the job to release blocked peers;
+// a host-owned failure propagates to the host without finalizing its MPI.
+int launchRanks(int ranks,
+                int (*callback)(int, const void *, std::size_t, void *),
+                void *callback_context, int *result,
+                MPILifecyclePolicy lifecycle);
+
+}  // namespace mpiwrap
+}  // namespace PLMD
+
+#endif // C++ package interface
+#endif // header guard

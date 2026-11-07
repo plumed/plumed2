@@ -1,4 +1,5 @@
 type=make
+plumed_src=main.cpp
 mpiprocs=4
 plumed_mpi_harness=yes
 

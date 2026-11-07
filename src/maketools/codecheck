@@ -195,18 +195,6 @@ gawk '{
   # Imported upstream C runtime: use its own checks, like the other vendored modules.
   if(match($0,"[[](.*/|)thread_mpi/")) next;
   if(match($0,":plmd_")){
-    # The generated adapter has C-compatible ABI headers, one shared implementation
-    # and stable public guards, rather than a C++ class/source pair per header.
-    # Retain formatting and semantic diagnostics, including all cppcheck findings.
-    if(match($0,"[[](.*/|)mpiwrap/") &&
-       match($0,":plmd_(deprecated_header|missing_namespace_module|missing_guard|non_existing_cpp|non_included_h):")) next;
-    # These files contain C ABI types/macros, or a body included inside PLMD.
-    if(match($0,"[[](.*/|)mpiwrap/(provider-abi(-proposal)?[.]h|provider-callbacks[.]h|mpiwrap-capacity[.]h|thread-mpi-availability[.]h|mpiwrap_implementation[.]cpp([.]inc[.]in)?):") &&
-       match($0,":plmd_missing_namespace_plmd:")) next;
-    # This opt-in native adapter includes declarations and adapter code only;
-    # it neither defines nor links PLUMED wrapper entry points into the kernel.
-    if(match($0,"[[](.*/|)mpiwrap/mpiwrap_implementation[.]cpp:") &&
-       match($0,":plmd_include_dots:")) next;
 # with plumed we only exclude specific warnings from lapack and blas
     if(match($0,"[[](.*/|)lapack/")) next;
     if(match($0,"[[](.*/|)blas/")) next;

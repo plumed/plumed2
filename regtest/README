@@ -28,7 +28,7 @@ No provider environment variable or kernel rebuild is needed.
 The ordinary serial executable does not initialize a dynamically loaded real
 MPI runtime. Leave `PLUMED_MPI_WRAPPER` unset for normal internal-thread-MPI
 suite runs. Host injection is tested separately by
-`regtest/mpiwrap/check-mpi-host-injection.sh`: an MPI-compiled host initializes
+`regtest/basic/rt-mpiwrap-api/check-mpi-host-injection.sh`: an MPI-compiled host initializes
 MPI, creates an ordinary object, injects with `injectMPIImplementation`, runs
 representative input, destroys its PLUMED object, and finalizes MPI.
 See `src/mpiwrap/README.md`

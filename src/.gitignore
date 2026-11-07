@@ -39,6 +39,7 @@
 !/matrixtools
 !/maze
 !/molfile
+!/mpiwrap
 !/multicolvar
 !/opes
 !/python
@@ -51,6 +52,7 @@
 !/sprint
 !/symfunc
 !/small_vector
+!/thread_mpi
 !/tools
 !/valtools
 !/vatom
@@ -73,10 +75,6 @@
 !/sizeshape
 !/ttsketch
 !/xsprint
-!/thread_mpi/
-/thread_mpi/*
-!/thread_mpi/*.cpp
-!/thread_mpi/UPSTREAM.json
 
 # And just ignore these files
 *.xxd

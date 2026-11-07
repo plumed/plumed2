@@ -37,8 +37,7 @@
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
 #if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
-#include "../mpiwrap/provider-registry.hpp"
-#include "../mpiwrap/provider-selection.h"
+#include "../mpiwrap/internal.h"
 #endif
 #include "tools/DLLoader.h"
 #include "tools/Exception.h"
@@ -845,20 +844,23 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         plumedDat=val.getCString();
         break;
       case cmd_injectMPIImplementation:
+#if defined(__PLUMED_HAS_MPI)
+        // Native MPI already owns the implementation. Ignore injection without
+        // inspecting the descriptor, including tables supplied by MD engines.
+#else
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
-#if defined(__PLUMED_HAS_MPI)
-        plumed_merror("MPI provider injection is disabled in native-MPI kernels");
-#elif !defined(__PLUMED_MPIWRAP)
+#if !defined(__PLUMED_MPIWRAP)
         plumed_merror("MPI provider injection is unavailable in a fully serial kernel");
 #else
-        if(!mpiwrap_provider::forceEnvironmentProvider()) {
+        if(!mpiwrap::forceEnvironmentProvider()) {
           std::string error;
-          if(!mpiwrap_provider::currentRegistry().install(
-                static_cast<const plumed_mpiw_provider_descriptor*>(val.get<const void*>()),error)) {
+          if(!mpiwrap::currentRegistry().install(
+                val.get<const mpiwrap::plumed_mpiw_provider_descriptor*>(),error)) {
             plumed_merror(error);
           }
         }
+#endif
 #endif
         break;
       case cmd_setMPIComm:

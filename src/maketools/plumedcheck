@@ -164,6 +164,11 @@ BEGINFILE{
   found_namespace_module=0
   found_guard_ifdef=0
   found_non_preprocessor_lines=0
+  header_only=0
+  c_compatible=0
+  in_block_comment=0
+  wrapper_declaration_only=0
+  wrapper_cxx_disabled=0
 
 ## not used, see below
 #  found_include_system_header=0
@@ -302,6 +307,10 @@ BEGINFILE{
 # line by line analysis
 {
   if(filetype=="source" || filetype=="header"){
+# Explicit file properties, independent of module name. Namespace and guard
+# checks still apply to header-only and C-compatible files.
+    if(match($0,"^// PLUMED_HEADER_ONLY([[:space:]]|$)")) header_only=1;
+    if(match($0,"^// PLUMED_C_COMPATIBLE([[:space:]]|$)")) c_compatible=1;
 # detect plumed manual
     if(match($0,"^//[+]PLUMEDOC ")) in_plumed_doc=$NF
 # detect doxygen manual - at least with /** and */ on separate lines
@@ -309,6 +318,10 @@ BEGINFILE{
 # detect copyright lines
     if($0=="/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++") in_copyright=1;
 # detect special wrapper options
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION ")) wrapper_declaration_only=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION  *0 *$")) wrapper_declaration_only=1;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX ")) wrapper_cxx_disabled=0;
+   if(match($0,"^# *define  *__PLUMED_WRAPPER_CXX  *0 *$")) wrapper_cxx_disabled=1;
    if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION ")) defined_wrapper_implementation=0;
    if(match($0,"^# *define  *__PLUMED_WRAPPER_IMPLEMENTATION  *1 *$")) defined_wrapper_implementation=1;
    if(match($0,"^# *define  *__PLUMED_WRAPPER_EXTERN ")) defined_wrapper_extern_zero=0;
@@ -329,10 +342,13 @@ BEGINFILE{
 # DOC: by enabling some set of modules one would result in a non-linkable library.
 # DOC: As an exception, one can include files such as `../dir` where `dir` is the current module
 # DOC: since this would obviously create no problem.
+# DOC: A declaration-only `Plumed.h` include with both `__PLUMED_WRAPPER_IMPLEMENTATION` and
+# DOC: `__PLUMED_WRAPPER_CXX` explicitly set to zero also avoids a wrapper-library dependency.
 # DOC: This would simplify life when moving files from a directory to another.
       if(module != included_module_name) # ignore case where module is the same
       if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0) {
-        if((included_module_name=="wrapper" && defined_wrapper_implementation && defined_wrapper_extern_zero && defined_wrapper_implementation)) {
+        if(included_module_name=="wrapper" && ((defined_wrapper_implementation && defined_wrapper_extern_zero) ||
+            (wrapper_declaration_only && wrapper_cxx_disabled))) {
           information("include_anonymous_wrapper")
         } else {
           error("include_dots","wrong include. Module '" included_module_name "' is not used.");
@@ -341,7 +357,26 @@ BEGINFILE{
     }
 
 # check if there is anything behind copyright and preprocessor commands
-    if(!in_copyright && !match($0,"^# *include") && !match($0,"^# *ifndef") && !match($0,"^# *endif") && !match($0,"^# *define") && !match($0,"^ *$")) found_non_preprocessor_lines=1
+    # Comments and preprocessor directives do not define C++ symbols. In
+    # particular a comment must not make a macro-only header need a namespace.
+    # A fully qualified using-declaration only re-exports an existing entity;
+    # an interface containing only these and macros defines no new symbols.
+    code_line=$0;
+    if(in_block_comment){
+      if(match(code_line,"\\*/")){
+        code_line=substr(code_line,RSTART+RLENGTH);
+        in_block_comment=0;
+      } else code_line="";
+    }
+    while(match(code_line,"/\\*")){
+      prefix=substr(code_line,1,RSTART-1);
+      tail=substr(code_line,RSTART+RLENGTH);
+      if(match(tail,"\\*/")) code_line=prefix substr(tail,RSTART+RLENGTH);
+      else { code_line=prefix; in_block_comment=1; break; }
+    }
+    sub("//.*$","",code_line);
+    if(!in_copyright && !match(code_line,"^[[:space:]]*(#|$)") &&
+       !match(code_line,"^[[:space:]]*using[[:space:]]+::[A-Za-z_][A-Za-z_0-9:]*[[:space:]]*;[[:space:]]*$")) found_non_preprocessor_lines=1;
 
 ## check if system headers are included after local headers.
 ## I am not sure it is a good idea, so I let it commented for now.
@@ -368,8 +403,10 @@ BEGINFILE{
 # DOC: included. These headers should be replaced with their equivalent from the stdlib.
 # DOC: E.g., use `#include <cstdlib>` instead of `#include <stdlib.h>`. Notice that
 # DOC: using the modern header all the functions are declared inside the `std` namespace.
+# DOC: Headers shared with C may declare `// PLUMED_C_COMPATIBLE` to retain C standard includes.
+# DOC: This changes only the deprecated-header rule, not namespace or guard checks.
 # DOC: Also notice that we have a special exception to allow them in Plumed.h.
-      if(h in deprecated_headers && !(module in outer_modules)) error("deprecated_header","including deprecated header " h);
+      if(h in deprecated_headers && !(module in outer_modules) && !c_compatible) error("deprecated_header","including deprecated header " h);
 # DOC: :external_header: (style)
 # DOC: Included external headers.
 # DOC: Header files should possibly not include other header files from external libraries.
@@ -518,7 +555,9 @@ BEGINFILE{
     }
 
 # check if guard is present
-    guard="^#ifndef __PLUMED_" module "_" filebase "_h"
+    guard_filebase=filebase;
+    gsub("[^[:alnum:]_]","_",guard_filebase);
+    guard="^#ifndef __PLUMED_" module "_" guard_filebase "_h"
     if(match($0,guard)) found_guard_ifdef=1
 
 # check that "using namespace" statements are not used in header files
@@ -575,6 +614,10 @@ BEGINFILE{
   }
 
   if(filetype=="source" || filetype=="header"){
+# Explicit file properties, independent of module name. Namespace and guard
+# checks still apply to header-only and C-compatible files.
+    if(match($0,"^// PLUMED_HEADER_ONLY([[:space:]]|$)")) header_only=1;
+    if(match($0,"^// PLUMED_C_COMPATIBLE([[:space:]]|$)")) c_compatible=1;
 # detect plumed manual
     if(match($0,"^//[+]ENDPLUMEDOC")) in_plumed_doc=0
 # detect doxygen manual - at least with /** and */ on separate lines
@@ -612,13 +655,15 @@ ENDFILE{
 # DOC: Every header file should contain a proper guard to avoid double inclusion.
 # DOC: The format of the guard is fixed and should be `__PLUMED_modulename_filename_h`, where
 # DOC: `modulename` is the name of the module and `filename` is the name of the file, without suffix.
+# DOC: Characters outside letters, digits and underscores in `filename` are replaced with underscores
+# DOC: so that the resulting guard is a valid C/C++ identifier.
 # DOC: This choice makes guards unique within the whole codebase.
     if(module && !found_guard_ifdef) error("missing_guard","missing ifndef guard");
   }
 
 # check if every header has a corresponding cpp
 # this is done only for non-trivial headers (i.e. we skip headers that just include another header)
-   if(filetype=="header" && found_non_preprocessor_lines){
+   if(filetype=="header" && found_non_preprocessor_lines && !header_only){
      notfound=0
      cppfile=FILENAME
      sub("\\.h$",".cpp",cppfile);
@@ -632,10 +677,13 @@ ENDFILE{
 # DOC: Header file lacks compantion source file.
 # DOC: For every header file there should exist a corresponding source file with the same name.
 # DOC: Notice that dummy headers that only include another header or which only define preprocessor
-# DOC: macros are exempted from this rule.
+# DOC: macros are exempted from this rule. Declaration-only or inline-only headers may explicitly
+# DOC: opt out of the source-pair rule with `// PLUMED_HEADER_ONLY`. Namespace and guard rules still apply.
        error("non_existing_cpp","file " file " is a header but there is no corresponding source");
      }
      noIncludes=1;
+     # The existence check consumed one line. Inspect the first include too.
+     close(cppfile);
      while((getline < cppfile)>0){
        if(match($0,"^# *include")){
         noIncludes=0;

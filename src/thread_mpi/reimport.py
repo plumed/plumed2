@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Reimport the pinned GROMACS thread-MPI sources with PLUMED namespace isolation."""
+
 import argparse
 import pathlib
 import re
@@ -10,7 +11,6 @@ import tempfile
 import hashlib
 import io
 import posixpath
-import shlex
 import json
 
 PROVENANCE = pathlib.Path(__file__).resolve().with_name("UPSTREAM.json")
@@ -94,8 +94,17 @@ def _provenance():
 
 def _resolve_ref(root, ref):
     return subprocess.check_output(
-        ["git", "-C", str(root), "rev-parse", "--verify", "--end-of-options",
-         f"{ref}^{{commit}}"], text=True).strip()
+        [
+            "git",
+            "-C",
+            str(root),
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            f"{ref}^{{commit}}",
+        ],
+        text=True,
+    ).strip()
 
 
 def _resolve_metadata(root, ref):
@@ -106,7 +115,8 @@ def _resolve_metadata(root, ref):
         existing = False
         if not ref:
             raise SystemExit(
-                f"missing {PROVENANCE}; specify --ref TAG_OR_COMMIT to bootstrap the import")
+                f"missing {PROVENANCE}; specify --ref TAG_OR_COMMIT to bootstrap the import"
+            )
         metadata = {
             "source": DEFAULT_SOURCE,
             "ref": ref,
@@ -125,7 +135,8 @@ def _resolve_metadata(root, ref):
         resolved = _resolve_ref(root, metadata["commit"])
         if resolved != metadata["commit"]:
             raise SystemExit(
-                f"pinned commit {metadata['commit']} resolves to unexpected commit {resolved}")
+                f"pinned commit {metadata['commit']} resolves to unexpected commit {resolved}"
+            )
     return metadata
 
 
@@ -144,21 +155,34 @@ def _rewrite_include(text, relative, mapping):
         path = match.group(3)
         candidates = []
         if path.startswith("../include/"):
-            candidates.append(posixpath.normpath(posixpath.join(posixpath.dirname(relative), path)))
+            candidates.append(
+                posixpath.normpath(posixpath.join(posixpath.dirname(relative), path))
+            )
         elif path.startswith("thread_mpi/"):
             candidates.append("include/" + path)
         elif path.startswith("atomic/"):
             candidates.append("include/thread_mpi/" + path)
         else:
-            candidates.append(posixpath.normpath(posixpath.join(posixpath.dirname(relative), path)))
+            candidates.append(
+                posixpath.normpath(posixpath.join(posixpath.dirname(relative), path))
+            )
             candidates.append("include/" + path)
             candidates.append("include/thread_mpi/" + path)
         for candidate in candidates:
             if candidate in mapping:
-                return match.group(1) + match.group(2) + mapping[candidate] + match.group(4)
-        if path.startswith(("../", "thread_mpi/", "atomic/")) or \
-                pathlib.PurePosixPath(path).name in internal_names:
-            raise ValueError(f"cannot resolve upstream include {path!r} from {relative}")
+                return (
+                    match.group(1)
+                    + match.group(2)
+                    + mapping[candidate]
+                    + match.group(4)
+                )
+        if (
+            path.startswith(("../", "thread_mpi/", "atomic/"))
+            or pathlib.PurePosixPath(path).name in internal_names
+        ):
+            raise ValueError(
+                f"cannot resolve upstream include {path!r} from {relative}"
+            )
         return match.group(0)
 
     return pattern.sub(rewrite, text)
@@ -297,8 +321,15 @@ def namespace_file(path, is_header):
     transformed = original[:start] + opening
     for i, line in enumerate(original[start:], start):
         if i > start and re.match(r"\s*#\s*include\b", line):
-            transformed.extend(["} // namespace thread_mpi", "} // namespace PLMD", line,
-                                "namespace PLMD {", "namespace thread_mpi {"])
+            transformed.extend(
+                [
+                    "} // namespace thread_mpi",
+                    "} // namespace PLMD",
+                    line,
+                    "namespace PLMD {",
+                    "namespace thread_mpi {",
+                ]
+            )
         else:
             transformed.append(line)
     lines = transformed
@@ -316,14 +347,17 @@ def guard_source(path):
     if text.startswith("#ifdef __PLUMED_HAS_THREAD_MPI\n"):
         return
     path.write_text(
-        "#ifdef __PLUMED_HAS_THREAD_MPI\n" + text.rstrip() +
-        "\n#endif // __PLUMED_HAS_THREAD_MPI\n")
+        "#ifdef __PLUMED_HAS_THREAD_MPI\n"
+        + text.rstrip()
+        + "\n#endif // __PLUMED_HAS_THREAD_MPI\n"
+    )
 
 
 def import_from(root, out, astyle, options, metadata):
     upstream_path = metadata["path"]
-    archive = subprocess.check_output(["git", "-C", str(root), "archive",
-                                       metadata["commit"], upstream_path])
+    archive = subprocess.check_output(
+        ["git", "-C", str(root), "archive", metadata["commit"], upstream_path]
+    )
     with tempfile.TemporaryDirectory(prefix="plumed-thread-mpi-upstream-") as tmp:
         with tarfile.open(fileobj=io.BytesIO(archive)) as tf:
             tf.extractall(tmp)
@@ -337,10 +371,13 @@ def import_from(root, out, astyle, options, metadata):
                 previous_files = json.load(stream).get("imported_files", [])
         elif out.resolve() == PROVENANCE.parent:
             # Migrate the original import layout, which predates the file list.
-            previous_files = [p.name for p in list(out.glob("*.cpp")) + list(out.glob("*.h"))]
+            previous_files = [
+                p.name for p in list(out.glob("*.cpp")) + list(out.glob("*.h"))
+            ]
         elif list(out.glob("*.cpp")) or list(out.glob("*.h")):
             raise SystemExit(
-                f"refusing to replace C++ files in {out} without an import manifest")
+                f"refusing to replace C++ files in {out} without an import manifest"
+            )
         for name in previous_files:
             target = out / name
             if target.parent == out and target.is_file():
@@ -370,23 +407,42 @@ def import_from(root, out, astyle, options, metadata):
 def import_digest(path):
     files = [path / "LICENSE", path / "UPSTREAM.json"]
     files.extend(list(path.glob("*.cpp")) + list(path.glob("*.h")))
-    return {p.relative_to(path).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in files if p.exists()}
+    return {
+        p.relative_to(path).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in files
+        if p.exists()
+    }
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("gromacs", type=pathlib.Path, help="read-only pinned GROMACS checkout")
-    ap.add_argument("--output", type=pathlib.Path,
-                    default=pathlib.Path(__file__).resolve().parent)
+    ap.add_argument(
+        "gromacs", type=pathlib.Path, help="read-only pinned GROMACS checkout"
+    )
+    ap.add_argument(
+        "--output", type=pathlib.Path, default=pathlib.Path(__file__).resolve().parent
+    )
     project_root = _project_root()
-    ap.add_argument("--astyle", type=pathlib.Path, default=project_root / "astyle/astyle",
-                    help="required formatter executable (default: this checkout's astyle)")
-    ap.add_argument("--options", type=pathlib.Path, default=project_root / ".astyle.options",
-                    help="required project formatting options")
-    ap.add_argument("--ref", metavar="TAG_OR_COMMIT",
-                    help="import this local GROMACS tag or commit and refresh provenance")
-    ap.add_argument("--check", action="store_true", help="verify current import is reproducible")
+    ap.add_argument(
+        "--astyle",
+        type=pathlib.Path,
+        default=project_root / "astyle/astyle",
+        help="required formatter executable (default: this checkout's astyle)",
+    )
+    ap.add_argument(
+        "--options",
+        type=pathlib.Path,
+        default=project_root / ".astyle.options",
+        help="required project formatting options",
+    )
+    ap.add_argument(
+        "--ref",
+        metavar="TAG_OR_COMMIT",
+        help="import this local GROMACS tag or commit and refresh provenance",
+    )
+    ap.add_argument(
+        "--check", action="store_true", help="verify current import is reproducible"
+    )
     args = ap.parse_args()
     root = args.gromacs.resolve()
     metadata = _resolve_metadata(root, args.ref)
@@ -400,12 +456,16 @@ def main():
             generated = pathlib.Path(tmp) / "tree"
             import_from(root, generated, astyle, options, metadata)
             if import_digest(generated) != import_digest(out):
-                raise SystemExit("reimport check failed: generated tree differs from checked-in import")
+                raise SystemExit(
+                    "reimport check failed: generated tree differs from checked-in import"
+                )
         print(f"reimport check passed for {metadata['commit']}")
     else:
         import_from(root, out, astyle, options, metadata)
-        print(f"imported {len(list(out.glob('*.cpp')))} C++ files and "
-              f"{len(list(out.glob('*.h')))} headers from {metadata['commit']}")
+        print(
+            f"imported {len(list(out.glob('*.cpp')))} C++ files and "
+            f"{len(list(out.glob('*.h')))} headers from {metadata['commit']}"
+        )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #include "plumed/mpiwrap/mpiwrap.h"
-#include "plumed/mpiwrap/thread-mpi-launcher.h"
+#include "plumed/mpiwrap/mpi.h"
 
 #include <cstdio>
 #include <cstring>
@@ -12,7 +12,7 @@ int body(int rank, const void *native_world, std::size_t native_size, void *) {
     return 1;
   }
   // Every callback owns its communicator and communication buffers.
-  const MPI_Comm world=mpiwrap_Comm_from_native(native_world);
+  const MPI_Comm world=mpiwrap::Comm_from_native(native_world);
   int actual_rank=-1, size=0;
   if(MPI_Comm_rank(world,&actual_rank)!=MPI_SUCCESS || actual_rank!=rank ||
       MPI_Comm_size(world,&size)!=MPI_SUCCESS || size!=4) {
@@ -46,11 +46,11 @@ int run(int argc, char **argv) {
   }
   int result=-1;
 #if defined(__PLUMED_HAS_MPI)
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::standalone_owned;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::standalone_owned;
 #else
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::internal_thread_mpi;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::internal_thread_mpi;
 #endif
-  const int status=mpiwrap_provider::launchRanks(4,body,nullptr,&result,lifecycle);
+  const int status=mpiwrap::launchRanks(4,body,nullptr,&result,lifecycle);
   return status==0 ? result : 1;
 }
 

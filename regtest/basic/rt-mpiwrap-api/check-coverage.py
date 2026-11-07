@@ -41,7 +41,7 @@ def generated_unavailable(functions):
                 args.append(kind + "{}")
             else:
                 args.append("0")
-        lines += ["  if(!mpiwrap_has_" + name[4:] + "()) {",
+        lines += ["  if(!mpiwrap::has_" + name[4:] + "()) {",
                   "    bool threw=false;", "    try {"] + declarations + [
                   "      (void)" + name + "(" + ",".join(args) + ");",
                   "    } catch(const std::runtime_error &error) {",
@@ -79,7 +79,7 @@ def main():
                       "void check_thread_mpi_contract() {",
                       "#if !defined(__PLUMED_HAS_MPI)"]
     for name in sorted(names):
-        contract_lines.append("  CHECK(mpiwrap_has_" + name[4:] + "()==" +
+        contract_lines.append("  CHECK(mpiwrap::has_" + name[4:] + "()==" +
                               ("true" if name in contract else "false") + ");")
     contract_lines += ["#endif", "}", ""]
     contract_expected = "\n".join(contract_lines)

@@ -88,7 +88,8 @@ checking a future upstream fix. It is not part of the normal executable build
 and does not link PLUMED's wrapper. It polls for a bounded number of attempts,
 then completes outstanding requests before leaving the rank callback. Its exit
 status is **nonzero when the defect is reproduced**; it is not an expected-fail
-CI test. Compile it against a standalone `src/thread_mpi` CMake build:
+CI test. Compile it against the standalone runtime library built by
+`regtest/basic/rt-mpiwrap-launcher/CMakeLists.txt`:
 
 ```
 c++ -std=c++17 -DSIZEOF_LONG_LONG_INT -D__PLUMED_HAS_THREAD_MPI \
@@ -104,3 +105,46 @@ a naive single `Waitany` call does not establish that property. The tMPI
 capability contract therefore also excludes `Waitsome` until a standard-safe
 implementation is available; its unavailable exception is checked. Native MPI
 retains the full `Waitsome` scenario.
+
+## Manual MPI wrapper checks
+
+Focused wrapper checks and their fixtures live beside this regression. They
+are run explicitly because some need a configured kernel, an MPI compiler, or a
+provider library. From the repository root, the basic checks include:
+
+```sh
+python3 src/mpiwrap/generate.py --check
+bash regtest/basic/rt-mpiwrap-api/check-provider-registry.sh
+bash regtest/basic/rt-mpiwrap-api/check-provider-discovery.sh
+bash regtest/basic/rt-mpiwrap-api/check-kernel-lifecycle.sh
+bash regtest/basic/rt-mpiwrap-api/check-mkmpi.sh
+bash regtest/basic/rt-mpiwrap-api/check-mpi-wide-native-handle.sh
+bash regtest/basic/rt-mpiwrap-api/check-wrapper-header-compatibility.sh
+```
+
+`check-generated.sh MPICH_MPICXX OPENMPI_MPICXX THREAD_MPI_INCLUDE` checks the
+generated package and native interfaces. `check-native-adapter.sh` needs
+absolute compiler paths in `MPICH_CC_WRAPPER`, `MPICH_CXX_WRAPPER`,
+`OMPI_CC_WRAPPER`, and `OMPI_CXX_WRAPPER`; it compiles the public `Plumed.h`
+adapter in C99 and C++98. `check-capacity-install.sh MPICH_MPICXX OPENMPI_MPICXX`
+requires a configured checkout. `check-provider-registry.sh` covers installation
+rejection when native handles exceed the kernel's configured storage, with
+default, 16-byte and 24-byte capacities. The thin native adapter uses pointers
+to native storage; it does not need to share the kernel's capacity. Host
+injection, provider selection, provider force, nested kernel, CHDIR, and
+pure-serial Communicator checks take inputs shown by their usage messages.
+`check-provider-discovery.sh` also checks lazy discovery of a sibling
+`libplumed-mpi-provider` adapter, relocated/symlinked kernel paths, rejection of invalid
+installed providers, and precedence over automatic compilation.
+
+Launcher and runtime selection checks live with the launcher regression:
+`regtest/basic/rt-mpiwrap-launcher/check-thread-mpi-cli.sh`,
+`check-thread-mpi-lifecycle.sh`, `check-regtest-runner.sh`,
+`check-thread-mpi-benchmark.sh`, and `check-mpi-capabilities.sh`.
+`check-mpi-host-injection.sh` builds shared and runtime executables through
+`mkmpi --executable`, using the installed standard main. Environment-provider
+cases use `PLUMED_MPI_WRAPPER_FORCE=1`. The standalone `mpi-native-probe.cpp`
+preflight lives in this test directory and is compiled separately by that
+script; the normal regression builds only `main.cpp`. The shared `mpi-test.h`
+harness remains in `regtest/scripts` for use by tests across several modules.
+There is no separate CLI host source.

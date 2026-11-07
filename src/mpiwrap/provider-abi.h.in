@@ -1,9 +1,16 @@
-#ifndef PLUMED_MPIWRAP_PROVIDER_ABI_PROPOSAL_H
-#define PLUMED_MPIWRAP_PROVIDER_ABI_PROPOSAL_H
+// PLUMED_HEADER_ONLY
+// PLUMED_C_COMPATIBLE
+#ifndef __PLUMED_mpiwrap_provider_abi_h
+#define __PLUMED_mpiwrap_provider_abi_h
 
 /* Provider ABI source template; generate.py emits the public header. */
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+namespace PLMD {
+namespace mpiwrap {
+#endif
 
 /* Provider library factory used by the environment-selected provider loader. */
 #ifndef PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL
@@ -70,5 +77,10 @@ typedef struct plumed_mpiw_provider_descriptor {
 } plumed_mpiw_provider_descriptor;
 
 typedef const plumed_mpiw_provider_descriptor *(*plumed_mpiw_factory_fn)(void);
+
+#ifdef __cplusplus
+} // namespace mpiwrap
+} // namespace PLMD
+#endif
 
 #endif

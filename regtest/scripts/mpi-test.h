@@ -3,7 +3,7 @@
 
 #if defined(__PLUMED_MPIWRAP)
 #include "plumed/mpiwrap/mpiwrap.h"
-#include "plumed/mpiwrap/thread-mpi-launcher.h"
+#include "plumed/mpiwrap/mpi.h"
 #else
 // Keep these tests usable with older native-MPI PLUMED installations.
 #include <mpi.h>
@@ -27,7 +27,7 @@ struct Context {
 
 inline int enterRank(int, const void *native_world, std::size_t, void *opaque) {
   const auto &context=*static_cast<const Context *>(opaque);
-  return context.body(mpiwrap_Comm_from_native(native_world),context.argc,context.argv);
+  return context.body(mpiwrap::Comm_from_native(native_world),context.argc,context.argv);
 }
 #endif
 
@@ -54,11 +54,11 @@ inline int run(int argc, char **argv, int ranks, RankBody body) {
   Context context {body,argc,argv};
   int result=1;
 #if defined(__PLUMED_HAS_MPI)
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::standalone_owned;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::standalone_owned;
 #else
-  const auto lifecycle=mpiwrap_provider::MPILifecyclePolicy::internal_thread_mpi;
+  const auto lifecycle=mpiwrap::MPILifecyclePolicy::internal_thread_mpi;
 #endif
-  const int status=mpiwrap_provider::launchRanks(ranks,enterRank,&context,&result,lifecycle);
+  const int status=mpiwrap::launchRanks(ranks,enterRank,&context,&result,lifecycle);
   return status==0 ? result : 1;
 #else
   if(MPI_Init(&argc,&argv)!=MPI_SUCCESS) {

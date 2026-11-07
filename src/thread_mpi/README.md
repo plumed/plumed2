@@ -5,7 +5,9 @@ is the single provenance record: it pins the resolved source commit and records
 SHA256 checksums for each original upstream file before import transformations.
 The license is copied from the pinned upstream tree. Like other vendored
 libraries, this module is excluded from the PLUMED-owned compiler-warning
-gate and coverage metrics. The `mpiwrap` adapter remains subject to both.
+gate and coverage metrics. The `mpiwrap` adapter remains subject to both. The imported runtime has no
+PLUMED module dependencies (`USE=`); `mpiwrap` depends on it, rather than
+the runtime depending on `core`.
 
 `reimport.py` discovers implementation sources and headers from the pinned
 upstream directory, flattens them into this directory, rewrites internal
@@ -39,13 +41,15 @@ python3 src/thread_mpi/reimport.py /path/to/gromacs --ref v2026.4 --check
 
 Review any build or source-layout changes in the upstream release.
 
-The standalone runtime tests can be built with:
+The standalone runtime tests live in
+[`regtest/basic/rt-mpiwrap-launcher`](../../regtest/basic/rt-mpiwrap-launcher/README.md).
+Build them from the repository root with:
 
 ```sh
-cmake -S src/thread_mpi -B /tmp/thread-mpi-build
+cmake -S regtest/basic/rt-mpiwrap-launcher -B /tmp/thread-mpi-build
 cmake --build /tmp/thread-mpi-build
 ctest --test-dir /tmp/thread-mpi-build --output-on-failure
-python3 src/thread_mpi/check-symbol-isolation.py /path/to/gromacs
+python3 regtest/basic/rt-mpiwrap-launcher/check-symbol-isolation.py /path/to/gromacs
 ```
 
 MPI provider design, wrapper behavior, and validation limits are documented in

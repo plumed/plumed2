@@ -1,0 +1,33 @@
+// The guest feature inquiry must precede injection: old kernels retain the
+// historical assumption that their native MPI is compatible with the host.
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_WRAPPER_EXTERN 0
+#define __PLUMED_HAS_DLOPEN 1
+#include "../../../src/wrapper/Plumed.h"
+#include <exception>
+
+int main(int argc,char **argv) {
+  if(argc!=4) {
+    return 2;
+  }
+  const int descriptor=1;
+  for(int i=1; i<4; ++i) {
+    bool threw=false;
+    try {
+      PLMD::Plumed object=PLMD::Plumed::dlopen(argv[i]);
+      if(!object.valid()) {
+        return 3;
+      }
+      int api=0;
+      object.cmd("getApiVersion",&api);
+      if(api>=11) {
+        object.cmd("injectMPIImplementation",&descriptor);
+      }
+    } catch(const std::exception &) {
+      threw=true;
+    }
+    if(threw!=(i==3)) {
+      return 4;
+    }
+  }
+}

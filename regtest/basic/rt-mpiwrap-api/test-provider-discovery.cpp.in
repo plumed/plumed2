@@ -1,0 +1,141 @@
+// A mock provider tests compiler discovery without starting an MPI runtime.
+#include "mpiwrap.h"
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
+#include <string>
+
+namespace PLMD {
+namespace mpiwrap {
+#ifdef MPIW_TEST_PROVIDER
+namespace {
+void initialized(void *flag, void *result) {
+  *static_cast<int *>(flag)=1;
+  *static_cast<int *>(result)=0;
+}
+void rank(void *comm, void *output, void *result) {
+  *static_cast<int *>(output)=*static_cast<int *>(comm)+1;
+  *static_cast<int *>(result)=0;
+}
+void f2c(void *comm, void *output) {
+  std::memcpy(output,comm,sizeof(int));
+}
+}
+extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_provider_factory() {
+  static const plumed_mpiw_function_entry functions[] = {
+    {
+      sizeof(plumed_mpiw_function_entry),"MPI_Initialized",0xd4498369u,1,1,
+      reinterpret_cast<plumed_mpiw_generic_fn>(&initialized)
+    },
+    {
+      sizeof(plumed_mpiw_function_entry),"MPI_Comm_rank",0x4e7672aau,1,2,
+      reinterpret_cast<plumed_mpiw_generic_fn>(&rank)
+    },
+    {
+      sizeof(plumed_mpiw_function_entry),"MPI_Comm_f2c",0x9a9e7fcdu,1,1,
+      reinterpret_cast<plumed_mpiw_generic_fn>(&f2c)
+    }
+  };
+  static const plumed_mpiw_provider_descriptor descriptor = {
+    sizeof(plumed_mpiw_provider_descriptor),PLUMED_MPIW_PROVIDER_ABI_MAJOR,0,0,
+    "discovery test provider",sizeof(int),sizeof(int),sizeof(int),sizeof(int),
+    sizeof(int),sizeof(int),3*sizeof(int),0,sizeof(int),2*sizeof(int),
+    sizeof(int),1,3,functions,0,nullptr
+  };
+  return std::getenv("MPIW_TEST_REJECT_DESCRIPTOR") ? nullptr : &descriptor;
+}
+#else
+} // namespace mpiwrap
+namespace config {
+// The isolated loader test uses a disposable configured tree.
+std::string getPlumedRoot() {
+  return std::getenv("MPIW_TEST_ROOT");
+}
+std::string getPlumedIncludedir() {
+  return getPlumedRoot()+"/include";
+}
+std::string getPlumedProgramName() {
+  const char *name=std::getenv("MPIW_TEST_PROGRAM_NAME");
+  return name ? name : "plumed";
+}
+std::string getLibraryPath() {
+  const char *path=std::getenv("MPIW_TEST_KERNEL_PATH");
+  return path ? path : "";
+}
+std::string getSoExt() {
+#ifdef __APPLE__
+  return "dylib";
+#else
+  return "so";
+#endif
+}
+}
+namespace mpiwrap {
+#endif
+} // namespace mpiwrap
+} // namespace PLMD
+
+#ifndef MPIW_TEST_PROVIDER
+#include <mpiwrap/mpi.h>
+#include "internal.h"
+#include <stdexcept>
+#include <dlfcn.h>
+int main(int argc, char **argv) {
+  using namespace PLMD::mpiwrap;
+  assert(argc==2);
+  assert(!provider_installed());
+  ensure_provider_selected();
+  (void)COMM_SELF();
+  assert(!provider_installed());
+  int flag=-1;
+  assert(Initialized(&flag)==0 && flag==0);
+  const std::string mode(argv[1]);
+  if(mode=="installed-invalid") {
+    try {
+      ensure_provider_for_communicator();
+    } catch(const std::runtime_error &error) {
+      assert(std::string(error.what()).find("installed MPI provider")!=std::string::npos);
+      assert(!provider_installed());
+      return 0;
+    }
+    throw std::runtime_error("invalid installed provider was accepted");
+  }
+  if(std::string(argv[1])=="failure") {
+    bool failed=false;
+    try {
+      ensure_provider_for_communicator();
+    } catch(const std::runtime_error &) {
+      failed=true;
+    }
+    assert(failed && !provider_installed());
+    const std::string compiler=std::string(std::getenv("MPIW_TEST_ROOT"))+"/mock-mpicc";
+    assert(setenv("MPICC",compiler.c_str(),1)==0);
+  }
+  if(mode=="environment") {
+    const std::string library=std::string(std::getenv("MPIW_TEST_ROOT"))+"/provider.so";
+    assert(setenv("PLUMED_MPI_WRAPPER",library.c_str(),1)==0);
+  } else if(mode=="injection") {
+    const std::string library=std::string(std::getenv("MPIW_TEST_ROOT"))+"/provider.so";
+    void *handle=dlopen(library.c_str(),RTLD_NOW|RTLD_LOCAL);
+    assert(handle);
+    void *symbol=dlsym(handle,PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL);
+    plumed_mpiw_factory_fn factory=nullptr;
+    static_assert(sizeof(factory)==sizeof(symbol),"dlopen function pointer representation");
+    std::memcpy(&factory,&symbol,sizeof(factory));
+    assert(factory);
+    std::string error;
+    assert(currentRegistry().install(factory(),error,handle));
+  }
+  ensure_provider_for_communicator();
+  assert(provider_installed() && !provider_ranks_are_threads());
+  assert(Initialized(&flag)==0 && flag==1);
+  const int native=37;
+  MPI_Comm comm=Comm_from_native(&native);
+  int rank=-1;
+  assert(Comm_rank(comm,&rank)==0 && rank==38);
+  comm=Comm_f2c(static_cast<MPI_Fint>(native));
+  assert(Comm_rank(comm,&rank)==0 && rank==38);
+  ensure_provider_for_communicator(); // Never compile twice after installation.
+}
+#endif

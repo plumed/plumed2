@@ -78,21 +78,21 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
       break;
     case cmd_setMPIIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_comm(val.get<const void*>());
+      intracomm.Set_comm(val);
       break;
     case cmd_setMPIIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_comm(val.get<const void*>());
-      plumedMain.multi_sim_comm.Set_comm(val.get<const void*>());
+      intercomm.Set_comm(val);
+      plumedMain.multi_sim_comm.Set_comm(val);
       break;
     case cmd_setMPIFIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_fcomm(val.get<const void*>());
+      intracomm.Set_fcomm(val);
       break;
     case cmd_setMPIFIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_fcomm(val.get<const void*>());
-      plumedMain.multi_sim_comm.Set_fcomm(val.get<const void*>());
+      intercomm.Set_fcomm(val);
+      plumedMain.multi_sim_comm.Set_fcomm(val);
       break;
     case cmd_init:
       CHECK_NOTINIT(initialized,key);

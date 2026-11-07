@@ -1,0 +1,53 @@
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_WRAPPER_EXTERN 0
+#define __PLUMED_HAS_DLOPEN 1
+#include "../../../src/wrapper/Plumed.h"
+#define PLUMED_MPIW_ABI_ONLY 1
+#include "../../../src/mpiwrap/mpiwrap.h"
+#include <cstdio>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+
+namespace PLMD {
+namespace mpiwrap {
+int checkForcedProvider(int argc, char **argv) {
+  if(argc != 3) {
+    return 2;
+  }
+  try {
+    // Incoming callbacks are host-owned. Keep their DSO alive until the
+    // PLUMED object and its loaded kernel have been destroyed.
+    std::unique_ptr<void,int(*)(void*)> library(dlopen(argv[2],RTLD_NOW|RTLD_LOCAL),dlclose);
+    if(!library) {
+      throw std::runtime_error("could not open MPI provider");
+    }
+    using Factory=const plumed_mpiw_provider_descriptor*(*)();
+    void* symbol=dlsym(library.get(),PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL);
+    if(!symbol) {
+      throw std::runtime_error("MPI provider has no factory");
+    }
+    Factory factory=nullptr;
+    static_assert(sizeof(factory)==sizeof(symbol),"loader function pointer representation");
+    std::memcpy(&factory,&symbol,sizeof(factory));
+    plumed_mpiw_provider_descriptor invalid{};
+    const auto* descriptor=factory();
+    if(!descriptor) {
+      descriptor=&invalid;
+    }
+    Plumed object=Plumed::dlopen(argv[1]);
+    // Repeat to exercise idempotence; force must also ignore invalid input.
+    object.cmd("injectMPIImplementation",descriptor);
+    object.cmd("injectMPIImplementation",descriptor);
+    return object.valid() ? 0 : 3;
+  } catch(const std::exception &error) {
+    std::fprintf(stderr,"%s\n",error.what());
+    return 1;
+  }
+}
+} // namespace mpiwrap
+}
+
+int main(int argc, char **argv) {
+  return PLMD::mpiwrap::checkForcedProvider(argc,argv);
+}
