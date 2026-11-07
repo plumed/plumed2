@@ -42,6 +42,7 @@
 #include "plumedforceprovider.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 
 #include "gromacs/domdec/domdec.h"
@@ -95,6 +96,14 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     {
         // Inject before the first command that can use MPI.
         plumed_->cmd("injectMPIImplementation", plumed_mpi_implementation());
+    }
+    else if (options.mpiComm_->isMainRank())
+    {
+        std::fprintf(stderr,
+                     "WARNING: This PLUMED kernel (API %d) does not support MPI injection. "
+                     "For multi-rank runs, use a PLUMED kernel built with the same MPI library "
+                     "as GROMACS, or upgrade PLUMED.\n",
+                     plumedAPIversion_);
     }
 #endif
 #if GMX_THREAD_MPI
