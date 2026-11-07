@@ -26,6 +26,7 @@ function plumed_regtest_before(){
   printf "pp: PAIRENTROPY GROUP=1-5 MAXR=2.0 GRID_BIN=20 BANDWIDTH=0.13 DENSITY=0\n" > bad_pairentropy_density.dat
   printf "pp: PAIRENTROPY GROUP=1-5 MAXR=2.0 GRID_BIN=20 CUTOFF=1.5 BANDWIDTH=0.13\n" > bad_pairentropy_cutoff.dat
   printf "r: RDF GROUP=1-5 MAXR=2.0 GRID_BIN=20 CUTOFF=6.25 BANDWIDTH=0.13\n" > bad_rdf_cutoff.dat
+  printf "$d\nk: KDE ARG=d GRID_MIN=0 GRID_MAX=1 GRID_BIN=10 BANDWIDTH=0.1 KERNEL=GAUSIAN\n" > bad_kde_kernel.dat
 }
 function plumed_regtest_after(){
   rm -f errors
@@ -46,6 +47,7 @@ kde_bins GRID_BIN should be at least 1
 pairentropy_density DENSITY should be positive
 pairentropy_cutoff use KERNEL={GAUSSIAN D_MAX=1.73205}
 rdf_cutoff use KERNEL={GAUSSIAN D_MAX=3.53553}
+kde_kernel cannot understand switching function type 'GAUSIAN'
 kde_max GRID_MAX should be larger than GRID_MIN
 histogram_bandwidth BANDWIDTH should not be negative
 contour_positions no atoms were specified with POSITIONS

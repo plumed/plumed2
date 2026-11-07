@@ -183,6 +183,9 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
   }
   p.canusevol = (kerneltype.find("GAUSSIAN")!=std::string::npos );
   p.switchingFunction.set( kerneltype + " R_0=1.0", errors );
+  if( errors.length()!=0 ) {
+    action->error("problem reading switching function description " + errors);
+  }
   if( p.switchingFunction.get_dmax()<std::numeric_limits<double>::max() ) {
     p.cutoff = p.switchingFunction.get_dmax();
     action->log<<"  using switching function for kernel with r0="<<p.switchingFunction.description()<<" and cutoff "<<p.cutoff<<"\n";
@@ -192,9 +195,6 @@ void RegularKernel<K>::read( RegularKernel& p, ActionWithArguments* action, cons
                     "when D_MAX is unset the cutoff is set equal to sqrt(2*6.25). However, density from any given kernel "
                     "will be accumulated at points that are more than this D_MAX from the center of the kernel. The reason why "
                     "is explained on the manual pages for KDE in the section on selecting kernels.");
-  }
-  if( errors.length()!=0 ) {
-    action->error("problem reading switching function description " + errors);
   }
   p.periodic_v.resize( args.size(), 0 );
   p.max_minus_min_v.resize( args.size() );

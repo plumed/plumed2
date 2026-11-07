@@ -7,6 +7,7 @@ kde_bins: rejected
 pairentropy_density: rejected
 pairentropy_cutoff: rejected
 rdf_cutoff: rejected
+kde_kernel: rejected
 kde_max: rejected
 histogram_bandwidth: rejected
 contour_positions: rejected
