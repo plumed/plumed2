@@ -22,7 +22,8 @@ function plumed_regtest_before() {
   # B) RESTART NO_TRIM: the files are appended as they are
   mkdir notrim ; cd notrim
   cp ../plumed.dat .
-  sed '1a RESTART NO_TRIM' ../plumed.dat > plumed-notrim.dat
+  # (no "sed 1a": BSD sed on macOS does not accept it)
+  { head -n 1 ../plumed.dat ; echo "RESTART NO_TRIM" ; tail -n +2 ../plumed.dat ; } > plumed-notrim.dat
   $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
   $plumed driver --plumed plumed-notrim.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
   cd ..
@@ -38,7 +39,7 @@ function plumed_regtest_before() {
 
   # C) a CHECKPOINT restart needs the checkpoint file
   mkdir nocheckpoint ; cd nocheckpoint
-  sed '1a CHECKPOINT FILE=plumed.cpt' ../plumed.dat > plumed.dat
+  { head -n 1 ../plumed.dat ; echo "CHECKPOINT FILE=plumed.cpt" ; tail -n +2 ../plumed.dat ; } > plumed.dat
   $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out1 2> err1
   cd ..
 }
@@ -60,12 +61,12 @@ function plumed_regtest_after() {
     for f in COLVAR HILLS ; do
       echo "notrim/$f lines: $(grep -vc '^#' notrim/$f)"
     done
-    grep -h "restart step\|no time field\|not trimmed" restart/out2 | sed 's/^PLUMED: *//' | sort
-    grep -h "restart step" notrim/out2 | sed 's/^PLUMED: *//' | sort
+    grep -h "restart step\|no time field\|not trimmed" restart/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "restart step" notrim/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
     if test "$(grep -v '^#' HILLS)" = "$(grep -v '^#' grid/HILLS)" ; then echo "grid/HILLS SAME LINES" ; else echo "grid/HILLS DIFFERENT" ; fi
     grep -h "HILLS.*restart step" grid/out2 | sed 's/^PLUMED: *//' 
     # the hill of step 20 is not added again (the time of the last hill is later)
-    echo "notrim/HILLS hills at time 20: $(awk '!/^#/ && $1==20' notrim/HILLS | wc -l)"
+    echo "notrim/HILLS hills at time 20: $(awk '!/^#/ && $1==20{n++} END{print n+0}' notrim/HILLS)"
     grep -h "checkpoint file" nocheckpoint/err1 | head -n 1 | sed 's/^.*\(checkpoint file\)/\1/'
   } > restart_check
 }
