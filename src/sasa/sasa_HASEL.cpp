@@ -139,6 +139,8 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
+  double kbt;
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
@@ -191,6 +193,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
+  kbt=getkBT();
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
     error("no atoms specified");
@@ -629,7 +632,7 @@ void SASA_HASEL::computeDeltaG() {
   }
 
   double T;
-  T = getkBT()/getKBoltzmann();
+  T = kbt/getKBoltzmann();
 
   if (T != Ti) {
     for(unsigned i=0; i<natoms; i++) {
