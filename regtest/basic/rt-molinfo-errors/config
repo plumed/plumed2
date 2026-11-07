@@ -3,6 +3,8 @@ type=driver
 # selections and wrong reference files (plumed_regtest_after, file errors)
 arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --igro helix.input.gro"
 extra_files="../rt63c/helix.pdb ../rt63c/helix.input.gro"
+# the messages of errors raised outside an action are compared: no stack trace (as on CI)
+export PLUMED_STACK_TRACE=no
 
 function check(){
 # check "description" "plumed input": write the exit code, the first error and the MOLINFO warnings
