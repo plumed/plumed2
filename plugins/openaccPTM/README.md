@@ -160,5 +160,26 @@ to have enough threads. The result does not depend on the scheduling, and the ro
 The chunk size and the number of threads below which tiles are used can be changed at compile time with
 `-DPLUMED_SAXS_ACC_QCHUNK=...` (default 8) and `-DPLUMED_SAXS_ACC_TARGET_THREADS=...` (default 131072).
 
+### Performance
+
+Time per step of SAXS (ms) on a Leonardo Booster node (Xeon 8358 with 32 cores, 4 A100), 50 q values, double precision.
+The CPU reference uses the 32 cores (OpenMP); "score" is with `DOSCORE`, "comp" without it (the intensities are used by
+another action, e.g. a bias):
+
+| system | particles | CPU 32 cores | 1 GPU score | 1 GPU comp | 4 GPUs score | 4 GPUs comp |
+|---|---|---|---|---|---|---|
+| protein, `ATOMISTIC` | 3439 | 179 | 6.2 | 7.6 | 2.3 | 9.2 |
+| 16 copies, `ATOMISTIC` | 55024 | 38400 | 1360 | 1390 | 383 | 508 |
+| 48 lysozymes, `MARTINI` | 14592 | 2810 | 98 | 105 | 33 | 68 |
+| 48 copies, `ONEBEAD` | 9888 beads, 165072 atoms | 1190 | 52 | 75 | 20 | 56 |
+
+The results agree with the CPU to 1e-12 (relative).
+
+- One GPU is 20-40 times faster than the 32 cores, more for small numbers of q values.
+- Several ranks, each with its own GPU, pay off with `DOSCORE` for large systems (more than about 10000 particles).
+  Without `DOSCORE` every rank needs the derivatives of all the intensities with respect to all the particles, which
+  are summed over the ranks: in this case a single GPU per simulation (or per replica) is the best choice.
+- `ONEBEAD` without `DOSCORE` also stores the derivatives with respect to all the atoms, which is done on the CPU.
+
 The tests in `regtest/targetSAXS` are the SAXS/SANS tests of `regtest/isdb` run with `USEGPU`: they take their input files
 and their (CPU) references from `regtest/isdb`.
