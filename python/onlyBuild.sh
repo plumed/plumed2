@@ -31,7 +31,7 @@ echo "plumed_version=${plumed_version}"
 echo "plumed_default_kernel=${plumed_default_kernel}"
 echo "python_bin=${python_bin}"
 ${python_bin} -m build --wheel .
-#getting the shared object out of the wheel
-unzip ./dist/plumed-*.whl -x "*/*"
+# Extract the Python package together with its private compiled extension.
+unzip -o ./dist/plumed-*.whl "plumed/*"
 #some cleaning
 rm -rf dist build

@@ -38,6 +38,27 @@ This allows you to mix different PLUMED versions in the same Python script.
 
 Source builds bundle a kernel by default. Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
 
+Package layout
+--------------
+
+The public API remains available through ``import plumed``. Its compiled
+native interface is the private ``plumed._plumed`` extension. InputBuilder,
+metadata parsing, data-file IO and HILLS averaging are implemented in ordinary
+Python modules, with their existing names reexported from ``plumed``. The native
+command path, including argument marshalling and GIL release, remains compiled.
+Bundled executables, libraries and resources live under ``plumed/runtime``. No separate top-level
+``plumed_runtime`` package is installed. Wrapper-only installations use the same
+Python package layout without bundled runtime resources.
+
+Data-file ownership
+-------------------
+
+``read_as_pandas`` and ``write_pandas`` close files they open, including gzip
+streams and error paths. Streams supplied by the caller, including stdout,
+remain open. A chunked reader keeps its internally opened file alive until
+exhaustion, an error, or ``close()``. Use ``with plumed.read_as_pandas(...,
+chunksize=...) as reader:`` when stopping iteration early.
+
 InputBuilder metadata
 ---------------------
 

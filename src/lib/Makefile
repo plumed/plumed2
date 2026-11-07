@@ -346,7 +346,7 @@ endif
 ifdef python_bin
 	$(MAKE) install-python
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
-	cp install/python/*.so "$(DESTDIR)$(libdir)/$(program_name)/python/" 
+	cp -R install/python/plumed "$(DESTDIR)$(libdir)/$(program_name)/python/"
 endif
 ifdef BASH_COMPLETION_DIR
 	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
@@ -446,6 +446,7 @@ install/python.config: FORCE
 install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python/cplumed.pxd ../../python/setup.py \
                       ../../python/build_backend.py ../../python/pyproject.toml \
                       ../../python/onlyBuild.sh ../../python/README.rst ../../python/MANIFEST.in \
+                      $(wildcard ../../python/plumed/*.py) ../../python/plumed/runtime/__init__.py ../../python/plumed/runtime/cli.py \
                       ../wrapper/Plumed.h ../../VERSION.txt ../../Makefile.conf install/python.config
 	$(MAKE) -C ../../python plumed.c
 	rm -fr install/python

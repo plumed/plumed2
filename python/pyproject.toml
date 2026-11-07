@@ -16,6 +16,7 @@ test-command = [
     "python {package}/test/test_action_description_generators.py",
     "python {package}/test/test_vim_make.py",
     "python {package}/test/test_input_builder.py",
+    "python {package}/test/test_io.py",
     "python {package}/test/test_bundled_wheel.py {package}/plumed_source",
 ]
 manylinux-x86_64-image = "manylinux2014"

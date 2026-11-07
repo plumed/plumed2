@@ -134,7 +134,7 @@ if not USE_CYTHON:
 
 ext_modules = [
     Extension(
-        name=plumedname,
+        name=plumedname + "._plumed",
         # without cython, compile the pregenerated plumed.c explicitly
         # (so that it is not regenerated even if cython is installed)
         sources=["plumed.pyx"] if USE_CYTHON else ["plumed.c"],
@@ -166,12 +166,16 @@ setup(
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
-    # the directories of the runtime (bin, lib, share/...) are declared as
+    # the directories of the private runtime (bin, lib, share/...) are declared as
     # namespace packages, otherwise setuptools warns for each of them;
     # their files are selected by MANIFEST.in (include_package_data)
-    packages=find_namespace_packages(include=["plumed_runtime", "plumed_runtime.*"]),
+    packages=[
+        plumedname + name[len("plumed") :]
+        for name in find_namespace_packages(include=["plumed", "plumed.*"])
+    ],
+    package_dir={plumedname: "plumed"},
     include_package_data=True,
-    entry_points={"console_scripts": ["plumed=plumed_runtime.cli:main"]}
+    entry_points={"console_scripts": ["plumed=" + plumedname + ".runtime.cli:main"]}
     if bundle_kernel
     else {},
     license_files=["LICENSE"],
