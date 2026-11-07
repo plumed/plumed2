@@ -1,0 +1,14 @@
+restart/COLVAR.0 SAME LINES
+restart/COLVAR.1 SAME LINES
+restart/HILLS.0 SAME LINES
+restart/HILLS.1 SAME LINES
+restart/HILLS_W SAME LINES
+restart/BIAS.0 SAME LINES
+restart/BIAS.1 SAME LINES
+file BIAS.0: 15 lines written at or after the restart step 20 removed
+file BIAS.1: 15 lines written at or after the restart step 20 removed
+file COLVAR.0: 15 lines written at or after the restart step 20 removed
+file COLVAR.1: 15 lines written at or after the restart step 20 removed
+file HILLS.0: 3 lines written at or after the restart step 20 removed
+file HILLS.1: 3 lines written at or after the restart step 20 removed
+file HILLS_W: 8 lines written at or after the restart step 20 removed

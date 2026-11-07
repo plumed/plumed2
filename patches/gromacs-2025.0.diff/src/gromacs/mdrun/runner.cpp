@@ -1164,6 +1164,7 @@ int Mdrunner::mdrunner()
         if (opt2bSet(plumedOptionName, filenames.size(), filenames.data()))
         {
             plumedFilename.replex_ = replExParams.exchangeInterval > 0;
+            plumedFilename.inputrec_ = inputrec.get();
             plumedFilename.plumedFilename_ =
                     std::string(opt2fn(plumedOptionName, filenames.size(), filenames.data()));
         }

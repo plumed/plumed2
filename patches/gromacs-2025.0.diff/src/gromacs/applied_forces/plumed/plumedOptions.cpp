@@ -87,6 +87,11 @@ void PlumedOptionProvider::setReplex(bool replex)
 {
     opts_.replex_     = replex;
 }
+
+void PlumedOptionProvider::setInputrec(const t_inputrec* inputrec)
+{
+    opts_.inputrec_ = inputrec;
+}
 const PlumedOptions& PlumedOptionProvider::options() const
 {
     return opts_;

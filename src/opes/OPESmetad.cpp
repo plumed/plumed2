@@ -724,6 +724,25 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
       stateRestart=false;
       restartFileName=kernelsFileName;
     }
+    // At a restart from a step given by the MD engine the KERNELS file is trimmed at that step before
+    // being read (see RESTART). The kernel of that step is computed again, so it is removed and the first
+    // update is not skipped; the STATE file written at the checkpoint of the MD engine already contains
+    // it, so with STATE_RFILE it is kept (and the first update is skipped as usual).
+    if(plumed.checkpointing.trimsAtRestart() && !getNoTrim()) {
+      if(comm.Get_rank()==0 && walker_rank_==0) {
+        plumed.checkpointing.trimAtRestart(NumWalkers_>1 ? kernelsFileName : FileBase::appendSuffix(kernelsFileName,plumed.getSuffix()),stateRestart);
+      }
+      comm.Barrier();
+      if(walkers_mpi) {
+        if(comm.Get_rank()==0) {
+          multi_sim_comm.Barrier();
+        }
+        comm.Barrier();
+      }
+      if(!stateRestart) {
+        isFirstStep_=false;
+      }
+    }
     IFile ifile;
     ifile.link(*this);
     if(ifile.FileExist(restartFileName)) {

@@ -1,0 +1,6 @@
+kernels/KERNELS SAME TIMES
+file KERNELS: 3 lines written at or after the restart step 20 removed
+file COLVAR: 15 lines written at or after the restart step 20 removed
+state/KERNELS SAME TIMES
+file KERNELS: 2 lines written after the restart step 20 removed
+file COLVAR: 15 lines written at or after the restart step 20 removed

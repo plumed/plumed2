@@ -385,6 +385,10 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   std::string fname;
   fname=lagmultfname;
   ifile.link(*this);
+  if(getRestart()) {
+    // at a restart from a step given by the MD engine the lines from that step on are removed first (see RESTART)
+    plumed.checkpointing.trimOutputFileAtRestart(*this,fname);
+  }
   if(ifile.FileExist(fname)) {
     ifile.open(fname);
     if(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {

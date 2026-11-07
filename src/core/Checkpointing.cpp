@@ -23,10 +23,12 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "Action.h"
+#include "ActionWithValue.h"
 #include "tools/Checkpoint.h"
 #include "tools/Communicator.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
+#include "tools/FileBase.h"
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include <algorithm>
@@ -105,6 +107,114 @@ void Checkpointing::markSnapshotFile(const std::string& fileName) {
   snapshotFiles.insert(fileName);
 }
 
+void Checkpointing::setEngineRestartStep(long long int step) {
+  if(step<0) {
+    plumed_merror("the restart step should not be negative");
+  }
+  engineRestartStep=step;
+}
+
+void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep) {
+  if(!trimsAtRestart() || fname=="/dev/null" || !trimmedFiles.insert(fname).second) {
+    return;
+  }
+  auto& log=plumed.getLog();
+  std::error_code ec;
+  if(!std::filesystem::exists(fname,ec)) {
+    return;
+  }
+  if(Tools::extension(fname)=="gz") {
+    log<<"  WARNING: file "<<fname<<" is compressed and is not trimmed at the restart step\n";
+    return;
+  }
+  const auto ts=plumed.getActionSet().selectWithLabel<ActionWithValue*>("timestep");
+  const double dt=ts ? ts->copyOutput(0)->get() : 0.0;
+  if(!(dt>0.0)) {
+    log<<"  WARNING: the timestep is not known, file "<<fname<<" is not trimmed at the restart step\n";
+    return;
+  }
+  // the lines of the restart step are removed too, since the step is computed again
+  // (unless keepRestartStep); times are printed with a few digits, hence the half timestep
+  const double tcut=(engineRestartStep+(keepRestartStep?0.5:-0.5))*dt;
+  std::ifstream in(fname,std::ios::binary);
+  if(!in) {
+    plumed_merror("cannot open "+fname+" to trim it at the restart step");
+  }
+  // keepEnd: end of the last line with a time before tcut (the tail starts there,
+  // including the comment lines that follow it)
+  std::streamoff offset=0,keepEnd=0;
+  long long ntail=0;
+  int timeIndex=-1;
+  bool hasTime=false,inTail=false,increasing=true;
+  double lastTime=0.0;
+  std::string line;
+  std::vector<std::string> words;
+  while(std::getline(in,line)) {
+    const std::streamoff end=offset+line.size()+(in.eof()?0:1);
+    if(line.compare(0,9,"#! FIELDS")==0) {
+      words=Tools::getWords(line.substr(9));
+      timeIndex=-1;
+      for(unsigned i=0; i<words.size(); ++i) {
+        if(words[i]=="time") {
+          timeIndex=i;
+          hasTime=true;
+          break;
+        }
+      }
+    } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
+      words=Tools::getWords(line);
+      double t;
+      if(words.size()>static_cast<unsigned>(timeIndex) && Tools::convertNoexcept(words[timeIndex],t)) {
+        if(t<tcut) {
+          keepEnd=end;
+          inTail=false;
+          ntail=0;
+          increasing=true;
+        } else {
+          if(inTail && t<lastTime) {
+            increasing=false;
+          }
+          inTail=true;
+          ntail++;
+          lastTime=t;
+        }
+      } else if(inTail) {
+        // an incomplete line (an interrupted run) at the end of the tail
+        ntail++;
+      }
+    }
+    offset=end;
+  }
+  in.close();
+  if(!hasTime) {
+    log<<"  WARNING: file "<<fname<<" has no time field and is not trimmed at the restart step\n";
+    return;
+  }
+  if(!inTail) {
+    return;
+  }
+  if(!increasing) {
+    log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
+    return;
+  }
+  std::filesystem::resize_file(fname,keepEnd,ec);
+  if(ec) {
+    plumed_merror("cannot trim "+fname+" at the restart step: "+ec.message());
+  }
+  log<<"  file "<<fname<<": "<<ntail<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" removed\n";
+}
+
+void Checkpointing::trimOutputFileAtRestart(Action& action,const std::string& name,bool nosuffix) {
+  if(action.getNoTrim() || !trimsAtRestart()) {
+    return;
+  }
+  const std::string fname=nosuffix ? name : FileBase::appendSuffix(name,plumed.getSuffix());
+  if(action.comm.Get_rank()==0) {
+    trimAtRestart(fname);
+  }
+  action.comm.Barrier();
+}
+
 std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long size) {
   std::ifstream in(fname,std::ios::binary);
   if(!in) {
@@ -124,6 +234,12 @@ void Checkpointing::write() {
   plumed_assert(enabled());
   auto& log=plumed.getLog();
   auto& comm=plumed.comm;
+  // the files still to be trimmed at the restart step are trimmed before their sizes are measured
+  for(const auto & fb : plumed.getFiles()) {
+    if(auto of=dynamic_cast<OFile*>(fb)) {
+      of->applyPendingTrim();
+    }
+  }
   // everything written so far by step-1 must be on disk before the sizes are measured
   plumed.fflush();
   log.flush();
@@ -341,10 +457,16 @@ void Checkpointing::atStepStart(bool signal) {
   if(pending) {
     restore();
   }
+  const long long int step=plumed.getStep();
+  if(!engineRestartStepChecked && trimsAtRestart()) {
+    engineRestartStepChecked=true;
+    if(step!=engineRestartStep) {
+      plumed_merror("the MD engine said that it restarts from step "+std::to_string(engineRestartStep)+", and the files were trimmed at that step, but the first step is "+std::to_string(step));
+    }
+  }
   if(!enabled()) {
     return;
   }
-  const long long int step=plumed.getStep();
   if(step==lastWrittenStep || step==restartStep) {
     return;
   }

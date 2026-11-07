@@ -59,6 +59,7 @@ void Action::registerKeywords( Keywords& keys ) {
   keys.reserve("optional","UPDATE_FROM","Only update this action from this time");
   keys.reserve("optional","UPDATE_UNTIL","Only update this action until this time");
   keys.reserve("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
+  keys.reserveFlag("NO_TRIM",false,"at a restart from a step given by the MD engine, append to the files of this action as they are, without removing the lines written at or after that step (see RESTART)");
 }
 
 Action::Action(const ActionOptions&ao):
@@ -144,6 +145,9 @@ Action::Action(const ActionOptions&ao):
     } else {
       error("RESTART should be either YES, NO, or AUTO");
     }
+  }
+  if ( keywords.exists("NO_TRIM") ) {
+    parseFlag("NO_TRIM",noTrim);
   }
 }
 
