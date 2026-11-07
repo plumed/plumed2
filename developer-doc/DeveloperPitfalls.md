@@ -11,6 +11,8 @@ Read it before changing an action or a tool that other actions use.
   and the exit code and the first `ERROR in input` line are appended to a file `errors`, which is compared with `errors.reference`
   (see e.g. `regtest/multicolvar/rt-multicolvar-errors` or `regtest/basic/rt-molinfo-errors`).
   Check the text of the message, not whether it comes from `error()` or from an assertion.
+  Set `export PLUMED_STACK_TRACE=no` in such a `config`: the CI runs with the stack trace on, and for an error raised
+  outside an action the stack dump is printed where the test expects the message.
 - **Do not print full precision** in the reference files (use `FMT=%8.4f` or similar): the last digits change with the compiler,
   the optimization flags and the number of threads. Results that depend on `std::shuffle`, on the distributions of `<random>`
   or on cancellations that change with fused multiply-add are not portable either.
