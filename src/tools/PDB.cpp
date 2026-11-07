@@ -387,8 +387,19 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
                         + line.substr(0,line.find_last_not_of(' ')+1));
         }
       };
-      readField(occ,o,"occupancy (columns 55-60)");
-      readField(bet,b,"beta (columns 61-66)");
+      // occupancy and beta can be missing (a line that ends after the coordinates): they are then 1
+      // (v2.10 accepted these lines and left the values undefined)
+      auto blank=[](const std::string& field) {
+        return field.find_first_not_of(" \t")==std::string::npos;
+      };
+      o=1.0;
+      b=1.0;
+      if(!blank(occ)) {
+        readField(occ,o,"occupancy (columns 55-60)");
+      }
+      if(!blank(bet)) {
+        readField(bet,b,"beta (columns 61-66)");
+      }
       readField(x,p[0],"x coordinate (columns 31-38)");
       readField(y,p[1],"y coordinate (columns 39-46)");
       readField(z,p[2],"z coordinate (columns 47-54)");
