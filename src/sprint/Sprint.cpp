@@ -131,6 +131,9 @@ Sprint::Sprint(const ActionOptions& ao):
   }
   if( nin_group.size()==0 ) {
     ActionWithValue* av = plumed.getActionSet().selectWithLabel<ActionWithValue*>( matinp );
+    if( !av ) {
+      error("found no action with label " + matinp + " to use for MATRIX");
+    }
     unsigned natoms = (av->copyOutput(0))->getShape()[0];
     nin_group.push_back( natoms );
     ntot_atoms = natoms;

@@ -842,58 +842,7 @@ void PINES::calculate() {
   }
 
 
-  if (comm.initialized()) {
-    // Flatten PIV
-    std::vector<double> flat_PIV;
-    std::vector<int> piv_sizes;
-    for (const auto& vec : PIV) {
-      piv_sizes.push_back(vec.size());
-      flat_PIV.insert(flat_PIV.end(), vec.begin(), vec.end());
-    }
-
-    // Flatten ann_deriv
-    std::vector<double> flat_deriv;
-    std::vector<std::pair<int, int>> deriv_shapes;
-    for (const auto& atom_deriv : ann_deriv) {
-      deriv_shapes.emplace_back(atom_deriv.size(), 3);
-      for (const auto& val : atom_deriv) {
-        flat_deriv.insert(flat_deriv.end(), val[0]);
-        flat_deriv.insert(flat_deriv.end(), val[1]);
-        flat_deriv.insert(flat_deriv.end(), val[2]);
-      }
-    }
-
-    // Perform global summation ONCE per array
-    comm.Sum(flat_PIV);
-    comm.Sum(flat_deriv);
-
-    // Unflatten PIV
-    {
-      size_t idx = 0;
-      for (int j = 0; j < N_Blocks; ++j) {
-        for (int i = 0; i < piv_sizes[j]; ++i) {
-          PIV[j][i] = flat_PIV[idx++];
-        }
-      }
-    }
-
-    // Unflatten ann_deriv
-    {
-      size_t idx = 0;
-      for (size_t i = 0; i < ann_deriv.size(); ++i) {
-        int ncols = deriv_shapes[i].first;
-        for (int j = 0; j < ncols; ++j) {
-          ann_deriv[i][j][0] = flat_deriv[idx++];
-          ann_deriv[i][j][1] = flat_deriv[idx++];
-          ann_deriv[i][j][2] = flat_deriv[idx++];
-        }
-      }
-    }
-  }
-
-
-
-
+  // every process computes all the elements (the work is not divided among the processes): no sum over processes
 
   //timer.start("valuePass");
   // Pass values and derivates to next stage

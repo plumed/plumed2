@@ -139,6 +139,8 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
+  double kbt;
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
@@ -190,6 +192,7 @@ SASA_LCPO::SASA_LCPO(const ActionOptions&ao):
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
+  kbt=getkBT();
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
     error("no atoms specified");
@@ -591,14 +594,15 @@ void SASA_LCPO::readDeltaG() {
 
 void SASA_LCPO::computeDeltaG() {
 
-  for(unsigned i=0; i<natoms; i++) {
-    DeltaG[i].clear();
-  }
-
   double T;
-  T = getkBT()/getKBoltzmann();
+  T = kbt/getKBoltzmann();
 
+  // recomputed only when the temperature changes: the values were cleared at every step and not
+  // computed again (they were then read from empty vectors), and the backbone value was appended
   if (T != Ti) {
+    for(unsigned i=0; i<=natoms; i++) {
+      DeltaG[i].clear();
+    }
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {
@@ -801,6 +805,13 @@ void SASA_LCPO::calculate() {
   vector <double> dSASA_2_neigh_dc(3);
   vector <double> ddij_di(3);
   vector <double> ddik_di(3);
+  // the term of an atom is clipped at zero in the value: its derivatives
+  // (also those with respect to its neighbors) are added only if it is positive
+  vector<double> term(natoms,0.0);
+  vector<vector<Vector>> neighd(natoms);
+  for(unsigned i = 0; i < natoms; i++) {
+    neighd[i].assign(Nlist[i].size(),Vector(0.0,0.0,0.0));
+  }
 
   if( sasa_type==TOTAL ) {
     for(unsigned i = 0; i < natoms; i++) {
@@ -900,9 +911,9 @@ void SASA_LCPO::calculate() {
             dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
 
-            derivatives[i][0] += (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
-            derivatives[i][1] += (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
-            derivatives[i][2] += (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][0] = (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][1] = (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][2] = (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
 
 
             Aijk += (Aijt * Ajkt);
@@ -921,15 +932,15 @@ void SASA_LCPO::calculate() {
 
           }
           double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+          term[i] = sasai;
           if (sasai > 0 ) {
             sasa += sasai/100;
+            derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
+            derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
+            derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;
           }
-          derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
-          derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
-          derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;
         }
       }
-      virial -= Tensor(getPosition(i),derivatives[i]);
     }
   }
 
@@ -1049,15 +1060,15 @@ void SASA_LCPO::calculate() {
             dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
             if (AtomResidueName[0][Nlist[i][j]] == "N" || AtomResidueName[0][Nlist[i][j]] == "CA"  || AtomResidueName[0][Nlist[i][j]] == "C" || AtomResidueName[0][Nlist[i][j]] == "O") {
-              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][0] = ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][1] = ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][2] = ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
             }
 
             if (AtomResidueName[0][Nlist[i][j]] != "N" && AtomResidueName[0][Nlist[i][j]] != "CA"  && AtomResidueName[0][Nlist[i][j]] != "C" && AtomResidueName[0][Nlist[i][j]] != "O") {
-              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][0] = ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][1] = ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][2] = ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
             }
 
             Aijk += (Aijt * Ajkt);
@@ -1074,32 +1085,38 @@ void SASA_LCPO::calculate() {
 
           }
           double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+          term[i] = sasai;
 
           if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O") {
-            if (sasai > 0 ) {
+            if (sasai > 0) {
               sasa += (sasai/MaxSurf[i][0]*DeltaG[natoms][0]);
+              derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+              derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+              derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
             }
-            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
           }
 
           if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O") {
-            if (sasai > 0. ) {
+            if (sasai > 0) {
               sasa += (sasai/MaxSurf[i][1]*DeltaG[i][0]);
+              derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+              derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+              derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
             }
-            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
           }
         }
       }
-      virial -= Tensor(getPosition(i),derivatives[i]);
     }
   }
 
 
   for(unsigned i=0; i<natoms; i++) {
+    for (unsigned j = 0; j < Nlist[i].size(); j++) {
+      if (term[Nlist[i][j]] > 0) {
+        derivatives[i] += neighd[i][j];
+      }
+    }
+    virial -= Tensor(getPosition(i),derivatives[i]);
     setAtomsDerivatives(i,derivatives[i]);
   }
   setBoxDerivatives(virial);

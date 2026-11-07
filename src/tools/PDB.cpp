@@ -25,7 +25,6 @@
 #include "h36.h"
 #include <cstdio>
 #include <set>
-#include "core/GenericMolInfo.h"
 #include "Tensor.h"
 
 //+PLUMEDOC INTERNAL pdbreader
@@ -130,27 +129,6 @@ In addition, as of PLUMED 2.5, we provide a \ref pdbrenumber "command line tool"
 
 namespace PLMD {
 
-void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ) {
-  positions.resize( atoms.size() );
-  occupancy.resize( atoms.size() );
-  beta.resize( atoms.size() );
-  numbers.resize( atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    numbers[i]=atoms[i];
-    beta[i]=1.0;
-    occupancy[i]=1.0;
-  }
-}
-
-void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
-  argnames.resize( argument_names.size() );
-  std::vector<double> tmp(1,0);
-  for(unsigned i=0; i<argument_names.size(); ++i) {
-    argnames[i]=argument_names[i];
-    arg_data.insert( std::pair<std::string,std::vector<double> >( argnames[i], tmp ) );
-  }
-}
-
 bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value ) const {
   std::map<std::string,std::vector<double> >::const_iterator it = arg_data.find(name);
   if( it!=arg_data.end() ) {
@@ -163,19 +141,6 @@ bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value 
     return true;
   }
   return false;
-}
-
-void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
-  plumed_assert( pos.size()==positions.size() );
-  for(unsigned i=0; i<positions.size(); ++i) {
-    positions[i]=pos[i];
-  }
-}
-
-void PDB::setArgumentValue( const std::string& argname, const double& val ) {
-  // First set the value of the value of the argument in the map
-  arg_data.find(argname)->second.resize(1);
-  arg_data.find(argname)->second[0] = val;
 }
 
 // bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
@@ -198,10 +163,6 @@ void PDB::setArgumentValue( const std::string& argname, const double& val ) {
 //   }
 //   return true;
 // }
-
-void PDB::addBlockEnd( const unsigned& end ) {
-  block_ends.push_back( end );
-}
 
 unsigned PDB::getNumberOfAtomBlocks()const {
   return block_ends.size();
@@ -246,15 +207,6 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       flags.push_back(v1[i]);
     }
   }
-}
-
-bool PDB::hasFlag( const std::string& fname ) const {
-  for(unsigned i=0; i<flags.size(); ++i) {
-    if( flags[i]==fname ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 
@@ -435,8 +387,19 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
                         + line.substr(0,line.find_last_not_of(' ')+1));
         }
       };
-      readField(occ,o,"occupancy (columns 55-60)");
-      readField(bet,b,"beta (columns 61-66)");
+      // occupancy and beta can be missing (a line that ends after the coordinates): they are then 1
+      // (v2.10 accepted these lines and left the values undefined)
+      auto blank=[](const std::string& field) {
+        return field.find_first_not_of(" \t")==std::string::npos;
+      };
+      o=1.0;
+      b=1.0;
+      if(!blank(occ)) {
+        readField(occ,o,"occupancy (columns 55-60)");
+      }
+      if(!blank(bet)) {
+        readField(bet,b,"beta (columns 61-66)");
+      }
       readField(x,p[0],"x coordinate (columns 31-38)");
       readField(y,p[1],"y coordinate (columns 39-46)");
       readField(z,p[2],"z coordinate (columns 47-54)");
@@ -543,17 +506,6 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
   }
 }
 
-std::string PDB::getResidueName( int resnum ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum ) {
-      return residuenames[i];
-    }
-  }
-  std::string num;
-  Tools::convert( resnum, num );
-  plumed_merror("residue " + num + " not found" );
-}
-
 std::string PDB::getResidueName(int resnum,const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
@@ -565,17 +517,6 @@ std::string PDB::getResidueName(int resnum,const std::string& chainid ) const {
   plumed_merror("residue " + num + " not found in chain " + chainid );
 }
 
-
-AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, int resnum ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && atomsymb[i]==aname ) {
-      return numbers[i];
-    }
-  }
-  std::string num;
-  Tools::convert( resnum, num );
-  plumed_merror("residue " + num + " does not contain an atom named " + aname );
-}
 
 AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chainid ) const {
   for(unsigned i=0; i<size(); ++i) {
@@ -603,28 +544,6 @@ std::vector<AtomNumber> PDB::getAtomsInResidue(int resnum,const std::string& cha
   return tmp;
 }
 
-std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
-  std::vector<AtomNumber> tmp;
-  for(unsigned i=0; i<size(); ++i) {
-    if( chainid=="*" || chain[i]==chainid ) {
-      tmp.push_back(numbers[i]);
-    }
-  }
-  if(tmp.size()==0) {
-    plumed_merror("Cannot find atoms from chain " + chainid  );
-  }
-  return tmp;
-}
-
-std::string PDB::getChainID(int resnumber) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if(resnumber==residue[i]) {
-      return chain[i];
-    }
-  }
-  plumed_merror("Not enough residues in pdb input file");
-}
-
 std::string PDB::getChainID(AtomNumber a) const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
@@ -635,37 +554,9 @@ std::string PDB::getChainID(AtomNumber a) const {
   return chain[p->second];
 }
 
-bool PDB::checkForResidue( const std::string& name ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residuenames[i]==name ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool PDB::checkForAtom( const std::string& name ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( atomsymb[i]==name ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool PDB::checkForAtom( AtomNumber a ) const {
   const auto p=number2index.find(a);
   return (p!=number2index.end());
-}
-
-Log& operator<<(Log& ostr, const PDB&  pdb) {
-  const std::size_t bufferlen=1000;
-  char buffer[bufferlen];
-  for(unsigned i=0; i<pdb.positions.size(); i++) {
-    std::snprintf(buffer,bufferlen,"ATOM %3u %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
-    ostr<<buffer;
-  }
-  return ostr;
 }
 
 Vector PDB::getPosition(AtomNumber a)const {
@@ -679,77 +570,6 @@ Vector PDB::getPosition(AtomNumber a)const {
 
 std::vector<std::string> PDB::getArgumentNames()const {
   return argnames;
-}
-
-std::string PDB::getMtype() const {
-  return mtype;
-}
-
-void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
-  if( argnames.size()>0 ) {
-    ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
-    for(unsigned i=1; i<argnames.size(); ++i) {
-      ofile.printf(",%s",argnames[i].c_str() );
-    }
-    ofile.printf("\n");
-    ofile.printf("REMARK ");
-  }
-  std::string descr2;
-  if(fmt.find("-")!=std::string::npos) {
-    descr2="%s=" + fmt + " ";
-  } else {
-    // This ensures numbers are left justified (i.e. next to the equals sign
-    std::size_t psign=fmt.find("%");
-    plumed_assert( psign!=std::string::npos );
-    descr2="%s=%-" + fmt.substr(psign+1) + " ";
-  }
-  for(std::map<std::string,std::vector<double> >::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) {
-    ofile.printf( descr2.c_str(),it->first.c_str(), it->second[0] );
-  }
-  if( argnames.size()>0 ) {
-    ofile.printf("\n");
-  }
-  if( !mymoldat ) {
-    for(unsigned i=0; i<positions.size(); ++i) {
-      std::array<char,6> at;
-      {
-        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-        plumed_assert(msg==nullptr) << msg;
-        at[5]=0;
-      }
-      std::array<char,5> res;
-      {
-        const char* msg = h36::hy36encode(4,i,&res[0]);
-        plumed_assert(msg==nullptr) << msg;
-        res[4]=0;
-      }
-      ofile.printf("ATOM  %s  X   RES  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   &at[0], &res[0],
-                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
-                   occupancy[i], beta[i] );
-    }
-  } else {
-    for(unsigned i=0; i<positions.size(); ++i) {
-      std::array<char,6> at;
-      {
-        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-        plumed_assert(msg==nullptr) << msg;
-        at[5]=0;
-      }
-      std::array<char,5> res;
-      {
-        const char* msg = h36::hy36encode(4,mymoldat->getResidueNumber(numbers[i]),&res[0]);
-        plumed_assert(msg==nullptr) << msg;
-        res[4]=0;
-      }
-      ofile.printf("ATOM  %s %-4s %3s  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   &at[0], mymoldat->getAtomName(numbers[i]).c_str(),
-                   mymoldat->getResidueName(numbers[i]).c_str(), &res[0],
-                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
-                   occupancy[i], beta[i] );
-    }
-  }
-  ofile.printf("END\n");
 }
 
 bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) const {

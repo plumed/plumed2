@@ -22,7 +22,6 @@
 #include "HistogramBead.h"
 #include <vector>
 #include "Tools.h"
-#include "Keywords.h"
 
 #pragma GCC diagnostic error "-Wswitch"
 
@@ -59,12 +58,6 @@ HistogramBead::HistogramBead(HistogramBead&&)=default;
 HistogramBead& HistogramBead::operator=(const HistogramBead&)=default;
 HistogramBead& HistogramBead::operator=(HistogramBead&&)=default;
 
-void HistogramBead::registerKeywords( Keywords& keys ) {
-  keys.add("compulsory","LOWER","the lower boundary for this particular bin");
-  keys.add("compulsory","UPPER","the upper boundary for this particular bin");
-  keys.add("compulsory","SMEAR","0.5","the amount to smear the Gaussian for each value in the distribution");
-}
-
 std::string HistogramBead::description() const {
   std::ostringstream ostr;
   switch (type) {
@@ -78,37 +71,6 @@ std::string HistogramBead::description() const {
     break;
   }
   return ostr.str();
-}
-
-void HistogramBead::generateBins( const std::string& params, std::vector<std::string>& bins ) {
-  std::vector<std::string> data=Tools::getWords(params);
-  plumed_massert(data.size()>=1,"There is no input for this keyword");
-
-  std::string name=data[0];
-
-  unsigned nbins;
-  std::vector<double> range(2);
-  std::string smear;
-  bool found_nb=Tools::parse(data,"NBINS",nbins);
-  plumed_massert(found_nb,"Number of bins in histogram not found");
-  bool found_r=Tools::parse(data,"LOWER",range[0]);
-  plumed_massert(found_r,"Lower bound for histogram not specified");
-  found_r=Tools::parse(data,"UPPER",range[1]);
-  plumed_massert(found_r,"Upper bound for histogram not specified");
-  plumed_massert(range[0]<range[1],"Range specification is dubious");
-  bool found_b=Tools::parse(data,"SMEAR",smear);
-  if(!found_b) {
-    Tools::convert(0.5,smear);
-  }
-
-  std::string lb,ub;
-  double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
-  for(unsigned i=0; i<nbins; ++i) {
-    Tools::convert( range[0]+i*delr, lb );
-    Tools::convert( range[0]+(i+1)*delr, ub );
-    bins.push_back( name + " " +  "LOWER=" + lb + " " + "UPPER=" + ub + " " + "SMEAR=" + smear );
-  }
-  plumed_assert(bins.size()==nbins);
 }
 
 void HistogramBead::set( const std::string& params, std::string& errormsg ) {
@@ -171,20 +133,6 @@ HistogramBead::KernelType HistogramBead::getKernelType( const std::string& ktype
   } else {
     plumed_merror("cannot understand kernel type " + ktype );
   }
-}
-
-void HistogramBead::setKernelType( const std::string& ktype ) {
-  if(ktype=="gaussian") {
-    type=KernelType::gaussian;
-  } else if(ktype=="triangular") {
-    type=KernelType::triangular;
-  } else {
-    plumed_merror("cannot understand kernel type " + ktype );
-  }
-}
-
-void HistogramBead::setKernelType( KernelType ktype ) {
-  type=ktype;
 }
 
 double HistogramBead::calculate(const double x, double& df ) const {

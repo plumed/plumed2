@@ -140,6 +140,13 @@ If a file that you wrote for an older version does not compile, the following ch
 - The classes of the old multicolvar module (`multicolvar/MultiColvarBase.h`) were removed in PLUMED 2.10.
   A collective variable that is computed for many groups of atoms is now written for one group of atoms and then
   used with the `MultiColvarTemplate` class: see how `src/colvar/Distance.cpp` defines DISTANCE_SCALAR and DISTANCE_VECTOR.
+- Some helper functions of the tools that PLUMED itself did not use were removed in PLUMED 2.11:
+  in `PDB` the setters (`setAtomNumbers`, `setAtomPositions`, `setArgumentNames`, `setArgumentValue`, `addBlockEnd`), `print`, `hasFlag`, `getMtype`,
+  `getAtomsInChain`, `checkForResidue`, `getChainID` of a residue number (use the one of an atom), and the versions without a chain
+  of `getResidueName` and `getNamedAtomFromResidue` (use the ones that take a chain, with `"*"` for any chain);
+  in `Grid` `addKernel`, `writeCubeFile`, `integrate`, `findSetOfPointsOnContour`, `logAllValuesAndDerivatives` and `mpiSumValuesAndDerivatives`;
+  in `RMSD` `calc_SOMA`, `getAlign` and `getDisplace`; in `HistogramBead` `generateBins` and `setKernelType`
+  (give the kernel type to the constructor); in `KernelFunctions` the constructors from a string and from a pointer, and `normalize`.
 
 !!! note ""
 

@@ -1,0 +1,10 @@
+type=driver
+plumed_modules=pines
+# FREEZE_SELECTION keeps the selected pairs fixed during the derivative checks: analytical (pa) and
+# numerical (pn) derivatives of the same elements must agree
+arg="--plumed plumed.dat --mf_xtc rt_traj.xtc"
+extra_files="../rt-pines/md.pdb ../rt-pines/rt_traj.xtc"
+function plumed_regtest_after(){
+  awk '!/^#/{k=(NF-2)/2; for(i=3;i<3+k;i++){d=$i-$(i+k); if(d<0)d=-d; if(d>md)md=d; a=$i<0?-$i:$i; if(a>ma)ma=a}}
+       END{print (ma>0 && md<=1e-3*ma) ? "analytical and numerical derivatives agree" : "analytical and numerical derivatives DO NOT AGREE"}' derivs > check.dat
+}

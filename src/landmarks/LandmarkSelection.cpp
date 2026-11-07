@@ -309,6 +309,9 @@ LandmarkSelection::LandmarkSelection( const ActionOptions& ao ):
   }
   if( dissims.length()>0 ) {
     ActionWithValue* ds = plumed.getActionSet().selectWithLabel<ActionWithValue*>( dissims );
+    if( !ds ) {
+      error("found no action with label " + dissims + " to use for DISSIMILARITIES");
+    }
     if( (ds->copyOutput(0))->getRank()!=2 ) {
       error("input for dissimilarities shoudl be a matrix");
     }

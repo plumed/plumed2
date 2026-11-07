@@ -151,7 +151,7 @@ public:
 
 /// Get the value of kBT by either reading the TEMP keyword
 /// and multiplying the temperature by Boltzmann's constant
-/// or get it fro the MD code
+/// or get it fro the MD code. It can only be called in the constructor.
   double getkBT();
 
 /// Return the present timestep
@@ -266,6 +266,12 @@ public:
   int getReplicaIndex() const;
 
   const Keywords& keywords;
+/// false after the constructor: keywords refers to an object that exists only while the action is constructed
+  bool keywordsAvailable=true;
+/// Called by ActionRegister when the constructor has returned
+  void releaseKeywords() {
+    keywordsAvailable=false;
+  }
 /// Prepare an Action for calculation
 /// This can be used by Action if they need some special preparation
 /// before calculation. Typical case is for collective variables
