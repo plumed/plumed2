@@ -276,6 +276,12 @@ jobs:
           cd plugins/openaccPTM/
           ./configure
           NVCXX=$NVCXX make ACCTARGET=host -j 4
+          # The SAXS/SANS tests run with MPI. PLUMED is linked to the system OpenMPI, so they must be
+          # launched with the system mpirun, not the one of the NVHPC SDK (first in the PATH): mixing the two
+          # fails in MPI_Init ("Failed to create UCP worker"). UCX is not needed on a single node either.
+          PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/comm_libs/' | paste -sd: -)
+          export PATH
+          export OMPI_MCA_pml=ob1 OMPI_MCA_btl=self,vader OMPI_MCA_osc=^ucx
           make ACCTARGET=host -C regtest
           make -C regtest checkfail
 
