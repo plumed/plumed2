@@ -18,7 +18,15 @@ function plumed_regtest_before() {
 function plumed_regtest_after() {
   # the kernels file of the walkers is shared (written by the first replica, without suffix; the log has its full path)
   for f in COLVAR.0 COLVAR.1 KERNELS_W KERNELS_A.0 KERNELS_A.1 ; do
-    if cmp -s $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
+    if cmp -s $f restart/$f ; then
+      echo "$f IDENTICAL"
+    else
+      echo "$f DIFFERENT"
+      # testclean removes the output files: preserve the actual mismatch in CI logs.
+      echo "rt-checkpoint-opes-mpi: $f differs after restart" >&2
+      head -n 1 "$f" >&2
+      diff -u "$f" "restart/$f" >&2 || true
+    fi
   done > restart_check
   # Compare complete replica logs, not stdout merged by threads or an MPI launcher.
   grep -h "file .* truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING: the following" restart/driver.0.log restart/driver.1.log | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed "s|$(pwd)/restart/||" | sort >> restart_check
