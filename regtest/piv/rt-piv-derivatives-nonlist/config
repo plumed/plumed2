@@ -2,3 +2,9 @@ type=driver
 plumed_modules=piv
 arg="--plumed plumed.dat --mf_pdb Ice8.pdb"
 
+# the analytical derivatives (c2) are compared with the numerical ones (c1) with a tolerance, not digit by digit:
+# printed with a few digits, values close to a rounding boundary differ between machines
+function plumed_regtest_after(){
+  awk '!/^#/{d=$3-$4; if(d<0)d=-d; if(d>md)md=d; a=$3<0?-$3:$3; if(a>ma)ma=a}
+       END{print ((ma>0 && md<=1e-3*ma) ? "analytical and numerical derivatives agree" : "analytical and numerical derivatives DO NOT AGREE")}' colvar > check.dat
+}
