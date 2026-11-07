@@ -795,6 +795,10 @@ else
 fi
 
 if test "$thread_mpi_found" = ok; then
+  # OpenMP may be disabled, and older libc implementations require a separate
+  # pthread library for the embedded runtime even when C++ links successfully.
+  PLUMED_SEARCH_LIBS([pthread_create],[pthread],[],
+    [AC_MSG_ERROR([internal thread-MPI requires POSIX threads; use --disable-thread-mpi to omit it])])
   AC_DEFINE([__PLUMED_HAS_THREAD_MPI])
 fi
 # The provider frontend also supplies runtime-selected serial fallbacks.
