@@ -370,7 +370,7 @@ PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
-PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
+PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, files with extension .h5)],[yes])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
@@ -1277,6 +1277,22 @@ if test $libitensor = true ; then
 fi
 
 if test $libhdf5 = true ; then
+  # distributions may install hdf5.h in a subdirectory (e.g. Debian/Ubuntu: /usr/include/hdf5/serial):
+  # if it is not found as it is, the flags given by pkg-config are used
+  AC_MSG_CHECKING([whether hdf5.h needs the flags of pkg-config])
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+#include <hdf5.h>
+int main() { return 0; }
+  ])],
+  [hdf5_pkgconfig=no],
+  [hdf5_pkgconfig=yes])
+  if test "$hdf5_pkgconfig" = yes && pkg-config --exists hdf5 2>/dev/null ; then
+    AC_MSG_RESULT([yes])
+    CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I hdf5`"
+    LDFLAGS="$LDFLAGS `pkg-config --libs-only-L hdf5`"
+  else
+    AC_MSG_RESULT([no])
+  fi
   PLUMED_CHECK_CXX_PACKAGE([libhdf5],[
     #include <hdf5.h>
     int main() {

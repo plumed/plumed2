@@ -1460,7 +1460,8 @@ Optional Features:
   --enable-libtorch       enable search for libtorch, default: no
   --enable-libmetatomic   enable search for libmetatomic, default: no
   --enable-libitensor     enable search for libitensor, default: no
-  --enable-libhdf5        enable search for libhdf5, default: no
+  --enable-libhdf5        enable search for libhdf5 (needed for the HDF5
+                          tables, files with extension .h5), default: yes
   --enable-linuxperf      enable activate the compile options for a more
                           accurate report with perf on linux, default: no
   --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
@@ -3202,7 +3203,7 @@ if test "${enable_libhdf5+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-libhdf5" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) libhdf5=true ;;
              (no)  libhdf5=false ;;
   esac
@@ -9682,6 +9683,32 @@ if test $libitensor = true ; then
 fi
 
 if test $libhdf5 = true ; then
+  # distributions may install hdf5.h in a subdirectory (e.g. Debian/Ubuntu: /usr/include/hdf5/serial):
+  # if it is not found as it is, the flags given by pkg-config are used
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether hdf5.h needs the flags of pkg-config" >&5
+$as_echo_n "checking whether hdf5.h needs the flags of pkg-config... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <hdf5.h>
+int main() { return 0; }
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  hdf5_pkgconfig=no
+else
+  hdf5_pkgconfig=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$hdf5_pkgconfig" = yes && pkg-config --exists hdf5 2>/dev/null ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I hdf5`"
+    LDFLAGS="$LDFLAGS `pkg-config --libs-only-L hdf5`"
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+  fi
 
     found=ko
     __PLUMED_HAS_LIBHDF5=no

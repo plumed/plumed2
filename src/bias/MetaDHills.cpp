@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetaDHills.h"
+#include "tools/H5Table.h"
 #include "tools/Checkpoint.h"
 #include "MetaDGrid.h"
 #include "core/ActionWithValue.h"
@@ -64,6 +65,10 @@ void bcastString(Communicator& c, std::string& s) {
 }
 
 std::string removeIncompleteLastLine(const std::string& path) {
+  // an HDF5 table has no lines
+  if(h5::isH5(path)) {
+    return "";
+  }
   // compressed files cannot be fixed in place
   if(path.length()>3 && path.substr(path.length()-3)==".gz") {
     return "";

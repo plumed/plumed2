@@ -105,6 +105,7 @@ bool FileBase::isOpen() {
 
 void FileBase::close() {
   plumed_assert(!cloned);
+  closeBackend();
   eof=false;
   err=false;
   if(fp) {

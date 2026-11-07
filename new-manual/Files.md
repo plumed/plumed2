@@ -48,6 +48,42 @@ This behavior can be changed by setting the environment variable `PLUMED_MAXBACK
 of copies. E.g. export `PLUMED_MAXBACKUP=10` will fail after 10 copies. `PLUMED_MAXBACKUP=-1` will never fail - be careful
 since your disk might fill up quickly with this setting.
 
+## HDF5 tables
+
+The files that PLUMED writes field by field, i.e. those with a `#! FIELDS` header such as the ones of
+[PRINT](PRINT.md), the hills of [METAD](METAD.md) or the kernels of [OPES_METAD](OPES_METAD.md), are written in
+[HDF5](https://www.hdfgroup.org/solutions/hdf5/) format when their name ends with `.h5`:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=COLVAR.h5
+METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.h5
+```
+
+The values are stored with full precision (FMT is ignored), so that a restart from an HDF5 file of hills or
+kernels gives the same bias as the run that wrote it. The files can be read with any HDF5 tool, e.g. in Python:
+
+```python
+import h5py
+with h5py.File("COLVAR.h5") as f:
+    time = f["block_0/time"][:]
+    d = f["block_0/d"][:]
+```
+
+Every field is a dataset of the group `block_0`. A new group (`block_1`, ...) starts when the fields change (where
+a text file would have a new `#! FIELDS` line), e.g. at a restart with a different input; the constant fields
+(`#! SET` in text files) are attributes of the group, and the attributes `plumed_columns` and `plumed_constants` list
+the fields in order. PLUMED reads the HDF5 tables it writes wherever it reads text files (restarts, [READ](READ.md),
+...), and the [h5convert](h5convert.md) tool converts them to text files and back, so that every tool that reads
+text files can be used. Restarts (appending, trimming at the restart step, [CHECKPOINT](CHECKPOINT.md)) work as with
+text files: the removed rows are moved to an HDF5 file `bck.trimmed.X.filename.h5`.
+
+HDF5 tables require PLUMED to be compiled with libhdf5 (`./configure` uses it when it finds it, see
+`--enable-libhdf5`). Files that are written as free text (e.g. those of [DUMPATOMS](DUMPATOMS.md)), files that
+are rewritten at every write (grids, state files) and the hills files of multiple walkers that share files
+(WALKERS_N of [METAD](METAD.md)) cannot be HDF5 tables yet. For a COLVAR file with a few columns an HDF5 table is
+not smaller or faster than a text file: HDF5 is useful for large files and when the full precision is needed.
+
 # Replica-Suffix Replica suffix
 
 When running with multiple replicas (e.g., with GROMACS, -multi option) PLUMED adds the replica index as a suffix to

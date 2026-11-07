@@ -25,6 +25,7 @@
 #include "core/PlumedMain.h"
 #include "core/Value.h"
 #include "Tools.h"
+#include "H5Table.h"
 #include <cstdarg>
 #include <cstring>
 #include <cmath>
@@ -99,7 +100,10 @@ IFile& IFile::open(const std::string&mypath) {
     plumed_error() << "file " << mypath << " cannot be found";
   }
   fp=std::fopen(const_cast<char*>(path.c_str()),"r");
-  if(Tools::extension(path)=="gz") {
+  if(h5::isH5(path)) {
+    // an HDF5 table, read as the lines of the equivalent text file
+    h5reader=std::make_unique<h5::Reader>(path);
+  } else if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"r");
 #else
@@ -253,13 +257,25 @@ IFile::IFile():
 }
 
 IFile::~IFile() {
+  h5reader.reset();
   if(inMiddleOfField) {
     std::cerr<<"WARNING: IFile closed in the middle of reading. seems strange!\n";
   }
 }
 
+void IFile::closeBackend() {
+  h5reader.reset();
+}
+
 IFile& IFile::getline(std::string &str) {
   str.clear();
+  if(h5reader) {
+    if(!h5reader->getline(str)) {
+      eof=true;
+      str.clear();
+    }
+    return *this;
+  }
   // Lines are read in chunks with fgets/gzgets: reading one character at a time
   // (as done until v2.10) was about 30 times slower on large files.
   constexpr int chunk=4096;

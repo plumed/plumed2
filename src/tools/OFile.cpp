@@ -106,6 +106,9 @@ OFile& OFile::setLinePrefix(const std::string&l) {
 }
 
 int OFile::printf(const char*fmt,...) {
+  if(h5mode) {
+    plumed_merror("file "+getPath()+": HDF5 tables (.h5) can only be written field by field (as PRINT does): this file is written as free text, use another extension");
+  }
   va_list arg;
   va_start(arg, fmt);
   int r=std::vsnprintf(&buffer[actual_buffer_length],buflen-actual_buffer_length,fmt,arg);
@@ -189,47 +192,76 @@ OFile& OFile::printField(const std::string&name,double v) {
     v=std::numeric_limits<double>::quiet_NaN();
   }
   std::snprintf(buffer_string.data(),buffer_string.size(),fieldFmt.c_str(),v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Double;
+  t.d=v;
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %d",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %ld",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long long int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %lld",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %u",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %lu",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,long long unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %llu",v);
-  printField(name,buffer_string.data());
+  h5::Value t;
+  t.type=h5::Value::Int;
+  t.i=static_cast<long long>(v);
+  setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,const std::string & v) {
+  h5::Value t;
+  t.type=h5::Value::String;
+  t.s=v;
+  setField(name,v,t);
+  return *this;
+}
+
+void OFile::setField(const std::string&name,const std::string& v,const h5::Value& typed) {
   unsigned i;
   for(i=0; i<const_fields.size(); i++)
     if(const_fields[i].name==name) {
@@ -239,14 +271,15 @@ OFile& OFile::printField(const std::string&name,const std::string & v) {
     Field field;
     field.name=name;
     field.value=v;
+    field.typed=typed;
     fields.push_back(field);
   } else {
     if(const_fields[i].value!=v) {
       fieldChanged=true;
     }
     const_fields[i].value=v;
+    const_fields[i].typed=typed;
   }
-  return *this;
 }
 
 OFile& OFile::setupPrintValue( Value *val ) {
@@ -326,6 +359,23 @@ void OFile::setLastFields(const std::string& str) {
 }
 
 OFile& OFile::printField() {
+  if(h5mode) {
+    // HDF5 table: the writer starts a new block when the fields change
+    if(h5writer) {
+      std::vector<h5::Field> row,constants;
+      for(const auto & f : fields) {
+        row.push_back(h5::Field{f.name,f.typed});
+      }
+      for(const auto & f : const_fields) {
+        constants.push_back(h5::Field{f.name,f.typed});
+      }
+      h5writer->addRow(row,constants);
+    }
+    previous_fields=fields;
+    fields.clear();
+    fieldChanged=false;
+    return *this;
+  }
   // before deciding whether the header is printed (see applyPendingTrim)
   if(trimPending_) {
     applyPendingTrim();
@@ -441,7 +491,31 @@ OFile& OFile::open(const std::string&setpath) {
   // Only the writer opens the file (the other processes open /dev/null):
   // with many processes on a parallel file system, opening (and truncating)
   // the same file from all of them is slow.
-  if(checkRestart()) {
+  if(h5::isH5(path)) {
+    // HDF5 table: fp is the null device on all the processes, the table is written by h5writer
+    h5mode=true;
+    const bool restart=checkRestart();
+    if(isWriter()) {
+      if(restart) {
+        // trimmed at the restart step now, before the table is opened (see applyPendingTrim)
+        if(plumed && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim())) {
+          plumed->checkpointing.trimAtRestart(path);
+        }
+      } else {
+        backupFile( backstring, path );
+      }
+      h5writer=std::make_unique<h5::Writer>(path,restart);
+    }
+#ifdef _WIN32
+    fp=std::fopen("NUL","w");
+#else
+    fp=std::fopen("/dev/null","w");
+#endif
+    mode=restart ? "a" : "w";
+    if(comm) {
+      comm->Barrier();
+    }
+  } else if(checkRestart()) {
     openOnWriter("a","a9");
     mode="a";
     // trimmed at the first write (see trimPending_)
@@ -454,7 +528,9 @@ OFile& OFile::open(const std::string&setpath) {
     openOnWriter("w","w9");
     mode="w";
   }
-  syncOpen();
+  if(!h5mode) {
+    syncOpen();
+  }
   if(plumed) {
     plumed->insertFile(*this);
     plumed->checkpointing.registerOutputFile(*this);
@@ -545,6 +621,19 @@ void OFile::applyPendingTrim() {
   plumed->checkpointing.restoreLastFields(*this);
 }
 
+OFile::~OFile() {
+  h5writer.reset();
+}
+
+void OFile::closeBackend() {
+  h5writer.reset();
+  h5mode=false;
+}
+
+std::vector<unsigned long long> OFile::getH5Rows() {
+  return h5writer ? h5writer->rows() : std::vector<unsigned long long>();
+}
+
 bool OFile::isWriter()const {
   return !comm || comm->Get_rank()==0;
 }
@@ -593,6 +682,7 @@ OFile& OFile::rewind() {
 // the reason is that normal rewind does not work when in append mode
 // moreover, we can take a backup of the file
   plumed_assert(fp);
+  plumed_massert(!h5mode,"file "+getPath()+": files rewritten at every write cannot be HDF5 tables (.h5) yet");
   clearFields();
   // a snapshot: it is rewritten, not trimmed
   trimPending_=false;
@@ -631,6 +721,12 @@ OFile& OFile::rewind() {
 }
 
 FileBase& OFile::flush() {
+  if(h5mode) {
+    if(h5writer) {
+      h5writer->flush();
+    }
+    return *this;
+  }
   if(heavyFlush) {
     if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
