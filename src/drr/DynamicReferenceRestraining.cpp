@@ -425,6 +425,9 @@ DynamicReferenceRestraining::DynamicReferenceRestraining(
     error("eABF/DRR: OUTPUTFREQ must be at least 1");
   }
   parse("HISTORYFREQ", historyfreq);
+  if (historyfreq > 0 && int(historyfreq) < 1) {
+    error("eABF/DRR: HISTORYFREQ must be at least 1 (or not positive to switch off the history)");
+  }
   parse("OUTPUTPREFIX", outputprefix);
   string restart_prefix;
   parse("DRR_RFILE", restart_prefix);

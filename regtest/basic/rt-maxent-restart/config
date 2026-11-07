@@ -1,0 +1,29 @@
+type=driver
+plumed_modules=bias
+# Reference run: the whole trajectory
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  # a trajectory of 60 frames of 4 atoms (analytic positions)
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # an interrupted run (steps 0 to 24), then a RESTART that repeats step 24, as an MD code that restarts from a checkpoint does
+  head -n 150 traj.xyz > part1.xyz
+  tail -n +145 traj.xyz > part2.xyz
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part1.xyz > out1 2> err1
+  { echo RESTART ; cat plumed.dat ; } > plumed2.dat
+  $plumed driver --plumed plumed2.dat --ixyz ../part2.xyz --initial-step 24 > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # from step 24 on, the multipliers and the biases of the restarted run must be the same as in the reference
+  # (the restarted run appends to exact.out: its last 36 lines are steps 24 to 59)
+  # (exact.out, not COLVAR: colvar and COLVAR are the same file on case-insensitive file systems)
+  tail -n 36 exact.out > a
+  tail -n 36 restart/exact.out > b
+  if cmp -s a b ; then echo "restart IDENTICAL" ; else echo "restart DIFFERENT" ; fi > restart_check
+  grep "the works restart from zero" restart/out2 | sed 's/^PLUMED: *//' | sort -u >> restart_check
+}

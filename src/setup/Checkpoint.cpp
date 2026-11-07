@@ -96,7 +96,7 @@ The actions that store their state in the checkpoint include [METAD](METAD.md),
 [EXTENDED_LAGRANGIAN](EXTENDED_LAGRANGIAN.md), [ACCUMULATE](ACCUMULATE.md), [COLLECT](COLLECT.md),
 [COMMITTOR](COMMITTOR.md), [MAXENT](MAXENT.md), [READ](READ.md), [RANDOM_EXCHANGES](RANDOM_EXCHANGES.md),
 [LOGMFD](LOGMFD.md), [FISST](FISST.md), [RESCALE](RESCALE.md), [EMMI](EMMI.md), [EMMIVOX](EMMIVOX.md) and
-[EFFECTIVE_ENERGY_DRIFT](EFFECTIVE_ENERGY_DRIFT.md) (only with a single process): they
+[EFFECTIVE_ENERGY_DRIFT](EFFECTIVE_ENERGY_DRIFT.md) (exact with a single process, up to rounding with more): they
 restore their state from it, so that their hills, kernels or status files are not read
 (the growing ones are truncated).
 Actions that keep an internal state but do not store it in the checkpoint

@@ -16,3 +16,4 @@ crd_title: rejected
 crd_partial: rejected
 gro_natoms_change: rejected
 gro_natoms_neg: rejected
+g96_valid: rejected

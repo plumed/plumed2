@@ -27,6 +27,7 @@
 #include "ActionSet.h"
 #include "Checkpointing.h"
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
 #include "ActionToPutData.h"
@@ -78,6 +79,26 @@
 #include <limits>
 
 namespace PLMD {
+
+namespace {
+// An action that is calculated on update (e.g. one that analyses the frames stored by
+// COLLECT_FRAMES) can be asked for its output before there is any data: at the first step
+// when the frames are collected without CLEAR, if something is output at that step.
+// Such an action has an argument with no values, and it is not calculated.
+bool hasArgumentWithNoValues(Action* p) {
+  const auto* aa=dynamic_cast<const ActionWithArguments*>(p);
+  if(!aa) {
+    return false;
+  }
+  for(const auto* arg : aa->getArguments()) {
+    if(arg->getRank()>0 && arg->getNumberOfValues()==0) {
+      return true;
+    }
+  }
+  return false;
+}
+}
+
 
 namespace {
 
@@ -1660,7 +1681,9 @@ void PlumedMain::update() {
       ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
       if( av && av->calculateOnUpdate() ) {
         p->prepare();
-        p->calculate();
+        if(!hasArgumentWithNoValues(p.get())) {
+          p->calculate();
+        }
       } else {
         p->update();
       }
@@ -1832,7 +1855,9 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
     if( av && av->calculateOnUpdate() ) {
       p->prepare();
-      p->calculate();
+      if(!hasArgumentWithNoValues(p.get())) {
+        p->calculate();
+      }
     } else if( ap && !av && ap->getStride()==0 ) {
       p->update();
     } else {

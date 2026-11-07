@@ -426,20 +426,22 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos,
       derivatives[i] /= width[i];
     }
   } else if(dtype==matrixType::multi) {
-    Matrix<double> mymatrix( getMatrix() );
-    for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+    // width holds the upper triangle of the symmetric metric, row by row (see getMatrix()):
+    // it is read in place, since building a Matrix here allocated memory at every grid point
+    const unsigned ncv=ndim();
+    for(unsigned i=0; i<ncv; ++i) {
       double dp_i, dp_j;
       derivatives[i]=0;
       dp_i=-pos[i]->difference( center[i] );
-      for(unsigned j=0; j<mymatrix.ncols(); ++j) {
+      for(unsigned j=0; j<ncv; ++j) {
         if(i==j) {
           dp_j=dp_i;
         } else {
           dp_j=-pos[j]->difference( center[j] );
         }
-
-        derivatives[i]+=mymatrix(i,j)*dp_j;
-        r2+=dp_i*dp_j*mymatrix(i,j);
+        const double mij=width[packedIndex(i,j,ncv)];
+        derivatives[i]+=mij*dp_j;
+        r2+=dp_i*dp_j*mij;
       }
     }
   } else if(dtype==matrixType::vonmises) {
@@ -454,20 +456,21 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos,
       }
     }
 
-    Matrix<double> mymatrix( getMatrix() );
-    for(unsigned i=0; i<mymatrix.nrows(); ++i) {
+    const unsigned ncv=ndim();
+    for(unsigned i=0; i<ncv; ++i) {
       derivatives[i]=0;
+      const double mii=width[packedIndex(i,i,ncv)];
       if( pos[i]->isPeriodic() ) {
-        r2+=2*( 1 - costmp[i] )*mymatrix(i,i);
+        r2+=2*( 1 - costmp[i] )*mii;
       } else {
-        r2+=sintmp[i]*sintmp[i]*mymatrix(i,i);
+        r2+=sintmp[i]*sintmp[i]*mii;
       }
-      for(unsigned j=0; j<mymatrix.ncols(); ++j) {
+      for(unsigned j=0; j<ncv; ++j) {
         if( i!=j ) {
-          sinout[i]+=mymatrix(i,j)*sintmp[j];
+          sinout[i]+=width[packedIndex(i,j,ncv)]*sintmp[j];
         }
       }
-      derivatives[i] = mymatrix(i,i)*sintmp[i] + sinout[i]*costmp[i];
+      derivatives[i] = mii*sintmp[i] + sinout[i]*costmp[i];
       if( pos[i]->isPeriodic() ) {
         derivatives[i] *= (2*pi/pos[i]->getMaxMinusMin());
       }

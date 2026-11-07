@@ -356,9 +356,10 @@ API([&]() {
 
 void Plumed::prepare() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  int step=getStep();
+  // long, not int: steps above 2^31 overflowed (setStepLong is available in every kernel with API>3)
+  long int step=getStep();
   if(root) {
-    p.cmd("setStep",&step);
+    p.cmd("setStepLong",&step);
   }
   if(root) {
     p.cmd("prepareDependencies");

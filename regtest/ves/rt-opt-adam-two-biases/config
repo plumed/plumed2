@@ -1,0 +1,15 @@
+plumed_modules=ves
+type=driver
+# One OPT_ADAM for two biases on different arguments: the bias correction of the moments of each
+# coefficient set must count the updates of that set (on master it counted the updates of both
+# sets, so with two biases the coefficients of ves1 were not the ones of a single-bias run).
+# The coefficients of ves1 are compared with those of an optimizer of ves1 alone; the driver runs
+# on a fixed trajectory, so the two biases do not affect each other.
+arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro"
+extra_files="../rt-opt-adam/traj.gro"
+
+function plumed_regtest_after(){
+  $plumed driver --plumed plumed_single.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro > out_single 2> err_single
+  # coefficients of ves1 at all the iterations in the two runs (the header lines are not compared)
+  if cmp -s <(grep -v "^#" coeffs.ves1.data) <(grep -v "^#" coeffs.single.data) ; then echo "ves1 coefficients: same as with a single bias" ; else echo "ves1 coefficients: DIFFERENT from a single bias" ; fi > compare
+}

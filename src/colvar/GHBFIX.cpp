@@ -39,6 +39,12 @@ using a potential that is defined in the paper cited in the bibliography below. 
 essentially a switching function that is -1 for small distances and 0 for large distances with a smooth interpolation in the middle.
 This function can be scaled as desired by specifying interaction scaling parameters and energy units.
 
+The scaling parameter of a pair of atoms is read from the line of the PARAMS file whose first type is the type of the atom in GROUPA
+and whose second type is the type of the atom in GROUPB. The parameters are not symmetrised: the line `type1 type2` is not used for a pair
+in which the atom of GROUPA has `type2` and the atom of GROUPB has `type1`, and a pair of types without a line has a scaling parameter of zero.
+If the same two types can appear in both orders (for example when GROUPA and GROUPB contain atoms of the same types, or when only GROUPA is given,
+in which case the order of the two atoms of a pair is not specified) the file should contain both lines.
+
 This collective variable can be used to analyze hydrogen bond interactions, or to generate bias potentials.
 Notice that the value of the GHBFIX is returned in plumed units (see [UNITS](UNITS.md)), unless the ENERGY_UNITS keyword is employed.
 

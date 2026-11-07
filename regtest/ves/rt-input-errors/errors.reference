@@ -13,3 +13,12 @@ GRADIENT_OUTPUT has to be positive
 OPT_DUMMY with HESSIAN_OUTPUT=0: exit code 1
 +++ assertion failed: hessian_wstride_>0
 HESSIAN_OUTPUT has to be positive
+TD_VONMISES with a CENTER without its SIGMA: exit code 1
++++ assertion failed: centers_.size()==sigmas_.size()
+there has to be an equal amount of CENTER and SIGMA keywords: found 2 CENTER and 1 SIGMA (numbered from CENTER1 and SIGMA1)
+VES_DELTA_F without FILE_F0: exit code 1
++++ assertion failed: grid_p_.size()>0
+FILE_F0 is missing: the free energy surfaces of the basins are given with FILE_F0, FILE_F1, ...
+OPT_AVERAGED_SGD with a MASK_FILE for more basis functions: exit code 1
++++ assertion failed: idx_tmp>=0 && static_cast<unsigned int>(idx_tmp)<shapeOfIndices(k)
+the index idx_arg1=10 read from file mask.data is out of range: the file does not match the basis functions

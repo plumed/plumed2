@@ -75,7 +75,7 @@ EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
 
 ## Restart
 
-With [CHECKPOINT](CHECKPOINT.md) the drift and the positions and forces of the previous step are stored in the checkpoint, so that the restart is exact. This works with a single process; with more processes each one holds only its atoms and the state is not stored (the action is listed in a warning).
+With [CHECKPOINT](CHECKPOINT.md) the drift and the positions and forces of the previous step are stored in the checkpoint. With a single process the restart is exact. With more processes the data of all the processes is gathered in the checkpoint and redistributed at the restart, which may also use a different number of processes or a different domain decomposition: the drift is the same up to the rounding of the sum over the processes.
 
 */
 //+ENDPLUMEDOC
@@ -250,16 +250,47 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 }
 
 // The state is the drift accumulated by the local atoms and their data at the
-// previous step. With more than one process each process holds only its own
-// atoms and no collective operation is done when writing a checkpoint, so the
-// state is stored only for a single process (otherwise nothing is written and
-// the action is listed in the warning about the state not stored).
+// previous step. With more than one process the data of all the processes is
+// gathered (every process calls writeCheckpoint, rank 0 writes the file) and the
+// drift is summed. At the restart process 0 takes all the atoms and the whole
+// drift, the other processes none: the atoms are redistributed at the first step
+// by the code that follows the changes of the domain decomposition. With a single
+// process the stored data is the local one, and the restart is exact.
 void EffectiveEnergyDrift::writeCheckpoint(CheckpointWriter& w) {
+  plumed_assert(pGatindex.size()==pPositions.size() && pForces.size()==pPositions.size());
+  std::vector<int> gat(pGatindex);
+  std::vector<double> data;
+  for(unsigned i=0; i<pPositions.size(); ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      data.push_back(pPositions[i][k]);
+    }
+    for(unsigned k=0; k<3; ++k) {
+      data.push_back(pForces[i][k]);
+    }
+  }
+  double eedTot=eed;
   if(nProc>1) {
-    return;
+    plumed.comm.Sum(eedTot);
+    int n=gat.size();
+    std::vector<int> cnt(nProc),dsp(nProc,0),dcnt(nProc),ddsp(nProc,0);
+    plumed.comm.Allgather(&n,1,cnt.data(),1);
+    for(int i=0; i<nProc; i++) {
+      dcnt[i]=6*cnt[i];
+      if(i>0) {
+        dsp[i]=dsp[i-1]+cnt[i-1];
+        ddsp[i]=6*dsp[i];
+      }
+    }
+    const unsigned ntot=dsp[nProc-1]+cnt[nProc-1];
+    std::vector<int> gatAll(ntot);
+    std::vector<double> dataAll(6*ntot);
+    plumed.comm.Allgatherv((!gat.empty()?gat.data():NULL),n,(ntot>0?gatAll.data():NULL),cnt.data(),dsp.data());
+    plumed.comm.Allgatherv((!data.empty()?data.data():NULL),6*n,(ntot>0?dataAll.data():NULL),dcnt.data(),ddsp.data());
+    gat.swap(gatAll);
+    data.swap(dataAll);
   }
   w.write("isFirstStep",(long long) isFirstStep);
-  w.write("eed",eed);
+  w.write("eed",eedTot);
   w.write("initialBias",initialBias);
   std::vector<double> boxes;
   for(const Tensor* t : {
@@ -271,29 +302,23 @@ void EffectiveEnergyDrift::writeCheckpoint(CheckpointWriter& w) {
       }
   }
   w.write("boxes",boxes);
-  std::vector<long long> gat(pGatindex.begin(),pGatindex.end());
-  w.write("pGatindex",gat);
-  std::vector<double> data;
-  for(unsigned i=0; i<pPositions.size(); ++i) {
-    for(unsigned k=0; k<3; ++k) {
-      data.push_back(pPositions[i][k]);
-    }
-    for(unsigned k=0; k<3; ++k) {
-      data.push_back(pForces[i][k]);
-    }
-  }
+  w.write("pGatindex",std::vector<long long>(gat.begin(),gat.end()));
   w.write("pdata",data);
 }
 
 void EffectiveEnergyDrift::readCheckpoint(CheckpointReader& r) {
-  if(nProc>1 || !r.has("eed")) {
-    log<<"  WARNING: the state of "<<getLabel()<<" is not in the checkpoint (it needs a single process): the drift restarts from zero\n";
+  if(!r.has("eed")) {
+    log<<"  WARNING: the state of "<<getLabel()<<" is not in the checkpoint: the drift restarts from zero\n";
     return;
   }
+  const bool master=plumed.comm.Get_rank()==0;
   long long b;
   r.read("isFirstStep",b);
   isFirstStep=b!=0;
   r.read("eed",eed);
+  if(!master) {
+    eed=0.0;
+  }
   r.read("initialBias",initialBias);
   std::vector<double> boxes;
   r.read("boxes",boxes);
@@ -309,11 +334,17 @@ void EffectiveEnergyDrift::readCheckpoint(CheckpointReader& r) {
   }
   std::vector<long long> gat;
   r.read("pGatindex",gat);
-  pGatindex.assign(gat.begin(),gat.end());
-  pNLocalAtoms=pGatindex.size();
   std::vector<double> data;
   r.read("pdata",data);
-  plumed_massert(data.size()==6*pGatindex.size(),"checkpoint: wrong data for "+getLabel());
+  plumed_massert(data.size()==6*gat.size(),"checkpoint: wrong data for "+getLabel());
+  for(const auto g : gat) {
+    plumed_massert(g>=0 && static_cast<std::size_t>(g)<backmap.size(),"checkpoint: wrong atom index for "+getLabel());
+  }
+  if(!master) {
+    gat.clear();
+  }
+  pGatindex.assign(gat.begin(),gat.end());
+  pNLocalAtoms=pGatindex.size();
   pPositions.resize(pNLocalAtoms);
   pForces.resize(pNLocalAtoms);
   for(unsigned i=0; i<pNLocalAtoms; ++i) {

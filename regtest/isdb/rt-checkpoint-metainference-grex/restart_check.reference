@@ -1,0 +1,18 @@
+restart/COLVAR.0 IDENTICAL
+restart/grex.0 IDENTICAL
+restart/COLVAR.1 IDENTICAL
+restart/grex.1 IDENTICAL
+restart/COLVAR.2 IDENTICAL
+restart/grex.2 IDENTICAL
+restart/COLVAR.3 IDENTICAL
+restart/grex.3 IDENTICAL
+      4 PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR.0 IDENTICAL
+restart-stride/grex.0 IDENTICAL
+restart-stride/COLVAR.1 IDENTICAL
+restart-stride/grex.1 IDENTICAL
+restart-stride/COLVAR.2 IDENTICAL
+restart-stride/grex.2 IDENTICAL
+restart-stride/COLVAR.3 IDENTICAL
+restart-stride/grex.3 IDENTICAL
+      4 PLUMED: Checkpoint state restored at step 21

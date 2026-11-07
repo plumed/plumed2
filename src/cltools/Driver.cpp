@@ -162,6 +162,7 @@ plumed driver --plumed plumed.dat --mf_crd trajectory.crd --natoms 128
 ```
 
 Check the available molfile plugins and limitations at [this link](http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/).
+The g96 format (`--mf_g96`) is not supported by the driver.
 
 You can also use the xdrfile implementation of xtc and trr with plumed driver. If you want to do so you just
 download and install properly the xdrfile library (see [this link](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)).
@@ -454,6 +455,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         std::string traj_molfile;
         parse(molfile_key,traj_molfile);
         if(traj_molfile.length()>0) {
+          // the g96 plugin reads the header of the file when the file is opened, and expects it to be
+          // read again by read_structure, which the driver does not call: the frames are not read correctly
+          if(plugins_names[i]=="g96") {
+            error("the g96 format is not supported by the driver (--mf_g96): convert the trajectory to another format, e.g. gro or xtc");
+          }
           ++nn;
           std::fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins_names[i].c_str(),traj_molfile.c_str());
           trajectoryFile=traj_molfile;
