@@ -274,10 +274,11 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
           }
           header+=words[i]+"\t0\t\n";
         }
-      } else if(line.compare(0,6,"#! SET")==0) {
-        words=Tools::getWords(line.substr(6));
-        if(words.size()>=2) {
-          header+=words[0]+"\t1\t"+words[1]+"\n";
+      } else if(line.compare(0,7,"#! SET ")==0) {
+        // "#! SET name value": the value is kept as it is printed (it may have leading spaces, from FMT)
+        const std::size_t sp=line.find(' ',7);
+        if(sp!=std::string::npos) {
+          header+=line.substr(7,sp-7)+"\t1\t"+line.substr(sp+1)+"\n";
         }
       } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
         words=Tools::getWords(line);

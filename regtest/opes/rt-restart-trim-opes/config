@@ -28,6 +28,8 @@ function plumed_regtest_after() {
     for d in kernels state ; do
       # the kernels are deposited at the same times as in the uninterrupted run, once
       if test "$(awk '!/^#/{print $1}' KERNELS)" = "$(awk '!/^#/{print $1}' $d/KERNELS)" ; then echo "$d/KERNELS SAME TIMES" ; else echo "$d/KERNELS DIFFERENT TIMES" ; fi
+      # the header (with constant fields printed with FMT) is not printed again
+      echo "$d/KERNELS header lines: $(grep -c '^#! FIELDS' $d/KERNELS)"
       grep -h "restart step" $d/out2 | sed 's/^PLUMED: *//'
     done
   } > restart_check
