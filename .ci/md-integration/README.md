@@ -56,7 +56,7 @@ with one and two OpenMP threads.
 
 The reusable `md-gromacs.yml`, `md-lammps.yml` and `md-amber.yml` are called by the parent after
 the PLUMED artifacts are ready. Further engines can have separate reusable
-workflows sharing those artifacts. LAMMPS and future AMBER injection/header
+workflows sharing those artifacts. LAMMPS and AmberTools injection/header
 edits stay local to these tests, rather than adding entries to the distributed
 `plumed patch` collection.
 
