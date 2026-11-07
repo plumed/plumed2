@@ -3,6 +3,11 @@
   "minimum_gromacs_version": 20260000,
   "minimum_gromacs_release": "2026.0",
   "embedded_snapshot": "2026.4",
+  "gromacs_thread_mpi_constant_requirements": {
+    "MPI_LONG_LONG": ["SIZEOF_LONG_LONG_INT"],
+    "MPI_LONG_LONG_INT": ["SIZEOF_LONG_LONG_INT"],
+    "MPI_UNSIGNED_LONG_LONG": ["SIZEOF_LONG_LONG_INT"]
+  },
   "native_functions": [
     "MPI_Abort",
     "MPI_Allgather",

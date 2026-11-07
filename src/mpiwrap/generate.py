@@ -1410,6 +1410,22 @@ def validate_availability_metadata(metadata, functions, constants):
             raise ValueError(
                 f"availability metadata {key} contains invalid or duplicate names"
             )
+    requirements = metadata.get("gromacs_thread_mpi_constant_requirements", {})
+    if not isinstance(requirements, dict) or not set(requirements) <= set(
+        metadata["gromacs_thread_mpi_constants"]
+    ):
+        raise ValueError("invalid GROMACS tMPI constant requirements")
+    for name, macros in requirements.items():
+        if (
+            not isinstance(macros, list)
+            or not macros
+            or any(
+                not isinstance(macro, str)
+                or not re.fullmatch(r"[A-Z_][A-Z0-9_]*", macro)
+                for macro in macros
+            )
+        ):
+            raise ValueError(f"{name}: invalid GROMACS tMPI compile requirements")
     function_catalog = {f["name"] for f in functions}
     for key, allowed in (
         ("mpi_standard_functions", function_catalog),
@@ -1470,6 +1486,10 @@ def _native_availability_guard(name, metadata, kind):
         "defined(GMX_THREAD_MPI) && (GMX_THREAD_MPI) && "
         f"PLUMED_MPIW_GROMACS_VERSION >= {gromacs_version}"
     )
+    if kind == "constant":
+        requirements = metadata.get("gromacs_thread_mpi_constant_requirements", {})
+        for macro in requirements.get(name, []):
+            gromacs_clause += f" && defined({macro})"
     return f"#if ({native_clause}) || ({gromacs_clause})"
 
 

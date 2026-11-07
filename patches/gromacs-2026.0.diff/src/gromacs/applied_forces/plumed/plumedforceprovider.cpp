@@ -53,8 +53,10 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/vec.h"
+#include "gromacs/version.h"
 
 #include "plumedOptions.h"
 
@@ -69,7 +71,11 @@
 #define __PLUMED_WRAPPER_IMPLEMENTATION 1 // NOLINT(bugprone-reserved-identifier)
 #define __PLUMED_HAS_DLOPEN               // NOLINT(bugprone-reserved-identifier)
 
-#include "external/plumed/Plumed.h"
+// Embed the adapter using this host build's MPI types and functions.
+#if GMX_LIB_MPI || GMX_THREAD_MPI
+#define PLUMED_MPIW_HOST_ADAPTER 1
+#endif
+#include "../../../../Plumed.h"
 
 namespace gmx
 {
@@ -83,8 +89,16 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
+    plumed_->cmd("getApiVersion", &plumedAPIversion_);
+#if GMX_LIB_MPI || GMX_THREAD_MPI
+    if (plumedAPIversion_ >= 11)
+    {
+        // Inject before the first command that can use MPI.
+        plumed_->cmd("injectMPIImplementation", plumed_mpi_implementation());
+    }
+#endif
 #if GMX_THREAD_MPI
-    if (options.mpiComm_->isParallel())
+    if (plumedAPIversion_ < 11 && options.mpiComm_->isParallel())
     {
         GMX_THROW(InvalidInputError(
                 "plumed MPI interface is not compatible with THREAD_MPI when uses more than one "
@@ -102,7 +116,6 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
 
     plumed_->cmd("setPlumedDat", options.plumedFile_.c_str());
 
-    plumed_->cmd("getApiVersion", &plumedAPIversion_);
     if (plumedAPIversion_ > 1)
     {
         /* setting kbT is only implemented with api>1) */

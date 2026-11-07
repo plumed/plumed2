@@ -775,6 +775,45 @@ compile-time guard to those three constants, so a normal build without
 long-long tMPI support remains valid. `check-native-adapter.sh` compiles the
 host header in C99 and C++98 modes with this macro both present and absent.
 
+### GROMACS 2026 runtime injection
+
+The `gromacs-2026.0` patch uses the usual top-level `Plumed.h` link (or forwarding
+header with `--include`). The integration and its test helper include that header;
+GROMACS's bundled copy stays unchanged. Reverting removes the top-level patch
+files through the standard patch machinery. Use a PLUMED 2.11 kernel with API
+version 11 or newer. The PLUMED kernel can remain serial;
+GROMACS supplies its initialized MPI implementation to PLUMED before setup.
+The embedded PLUMED tMPI runtime is not involved. Earlier PLUMED kernels retain
+the legacy native-MPI path and must be built against the matching MPI library;
+multi-rank GROMACS thread-MPI runs are rejected with those older kernels.
+
+For a runtime-linked PLUMED build, apply the patch before configuring GROMACS:
+
+    plumed patch -p --runtime -e gromacs-2026.0
+    export PLUMED_KERNEL=/path/to/libplumedKernel.so
+    gmx mdrun -ntmpi 4 -ntomp 2 -plumed plumed.dat
+
+On macOS the kernel library has the `.dylib` extension.
+
+For native MPI, configure GROMACS with `-DGMX_THREAD_MPI=OFF -DGMX_MPI=ON` and
+launch the MPI executable with its matching process manager:
+
+    mpiexec -n 4 gmx_mpi mdrun -ntomp 2 -plumed plumed.dat
+
+The integration smoke matrix was checked on 2026-11-07 using GROMACS tag
+`v2026.4`, its own thread-MPI, MPICH 5.0.1 and Open MPI 5.0.10, all loading
+the same serial PLUMED kernel. All three passed at 1, 2 and 4 ranks, plus
+4 ranks with 2 OpenMP threads each. It
+checked an analytic distance restraint, PLUMED generalized forces, atom force
+increments against a no-PLUMED baseline, and rank-count consistency. This is a
+focused integration check, not the full GROMACS upstream test suite.
+
+Patch/revert checks also passed for tags `v2026.0` through `v2026.4`, both with
+the default links and with `--include`, restoring every original source file
+byte for byte. Fresh patched and unpatched `v2026.4` thread-MPI builds passed:
+after reverting, single-rank PLUMED use still worked and the original
+multi-rank thread-MPI rejection returned, confirming that injection was removed.
+
 The capacity-override installation check uses a configured checkout:
 
     ./configure --disable-mpi

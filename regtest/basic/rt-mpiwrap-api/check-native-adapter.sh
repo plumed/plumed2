@@ -77,18 +77,24 @@ PYTHON
 done
 
 if [ -n "${GMX_THREAD_MPI_INCLUDE:-}" ]; then
-  for host_language in c cxx98; do
-    case $host_language in
-      c) host_compiler=$clang_c; host_standard=c99; host_input_language=c ;;
-      cxx98) host_compiler=$clang_cxx; host_standard=c++98; host_input_language=c++ ;;
-    esac
-    "$host_compiler" -std="$host_standard" -Wall -Wextra -Werror \
-      -DGMX_THREAD_MPI=1 -DPLUMED_MPIW_GROMACS_VERSION=20260000 \
-      -DPLUMED_MPIW_TEST_THREAD_MPI=1 \
-      -DSIZEOF_LONG_LONG_INT=8 -D__PLUMED_WRAPPER_IMPLEMENTATION=1 \
-      -DPLUMED_MPIW_HOST_ADAPTER=1 -D__PLUMED_HAS_DLOPEN=1 \
-      -I"$GMX_THREAD_MPI_INCLUDE" -iquote "$module_dir" -x "$host_input_language" -c \
-      "$fixture_dir/test-host-header-adapter.c.in" \
-      -o "$tmp/host-thread-mpi-$host_language.o"
+  for long_long_support in enabled disabled; do
+    for host_language in c cxx98; do
+      case $host_language in
+        c) host_compiler=$clang_c; host_standard=c99; host_input_language=c ;;
+        cxx98) host_compiler=$clang_cxx; host_standard=c++98; host_input_language=c++ ;;
+      esac
+      long_long_flag=
+      if [ "$long_long_support" = enabled ]; then
+        long_long_flag=-DSIZEOF_LONG_LONG_INT=8
+      fi
+      "$host_compiler" -std="$host_standard" -Wall -Wextra -Werror \
+        -DGMX_THREAD_MPI=1 -DPLUMED_MPIW_GROMACS_VERSION=20260000 \
+        -DPLUMED_MPIW_TEST_THREAD_MPI=1 \
+        $long_long_flag -D__PLUMED_WRAPPER_IMPLEMENTATION=1 \
+        -DPLUMED_MPIW_HOST_ADAPTER=1 -D__PLUMED_HAS_DLOPEN=1 \
+        -I"$GMX_THREAD_MPI_INCLUDE" -iquote "$module_dir" -x "$host_input_language" -c \
+        "$fixture_dir/test-host-header-adapter.c.in" \
+        -o "$tmp/host-thread-mpi-$long_long_support-$host_language.o"
+    done
   done
 fi
