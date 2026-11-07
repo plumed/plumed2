@@ -643,7 +643,8 @@ CS2Backbone::CS2Backbone(const ActionOptions&ao):
   {
     const std::vector<AtomNumber> & tatoms = pdb.getAtomNumbers();
     if(tatoms.size()!=used_atoms.size()) {
-      plumed_merror("ATOMS and the TEMPLATE " + stringapdb + " must contain the same atoms");
+      plumed_merror("ATOMS and the TEMPLATE " + stringapdb + " must contain the same atoms (ATOMS has " + std::to_string(used_atoms.size())
+                    + " atoms, the TEMPLATE " + std::to_string(tatoms.size()) + "): write a TEMPLATE with only the atoms in ATOMS");
     }
     unsigned maxindex=0;
     for(const auto & a : used_atoms) {

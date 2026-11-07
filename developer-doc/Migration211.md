@@ -39,6 +39,8 @@ These keywords are still read, as the keyword that replaces them, with a warning
   with `D_MAX`) stops with an error: the elements that the matrix does not store were silently taken as zero.
   Give the function a `MASK` (e.g. the matrix itself) to compute it only on the stored elements, or remove `D_MAX`.
 - JCOUPLING with `TYPE=CUSTOM` needs `A`, `B` and `C`, and `SHIFT` is zero by default.
+- CS2BACKBONE stops with an error when `ATOMS` and the `TEMPLATE` do not contain the same atoms: v2.10 then took the atoms of the template
+  by their position in `ATOMS`, i.e. it used the wrong atoms. Write a template with only the atoms in `ATOMS`.
 - A negative number where a positive integer is expected (e.g. `STRIDE=-1`) is an error; it was read as a very large number.
 - Many inputs that crashed or gave `nan` now stop with an error that names the keyword to change: see the file CHANGES/v2.11.md.
 
