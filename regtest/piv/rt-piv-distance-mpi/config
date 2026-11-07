@@ -1,0 +1,5 @@
+mpiprocs=2
+type=driver
+plumed_modules=piv
+arg="--plumed plumed.dat --mf_pdb Ice.pdb"
+

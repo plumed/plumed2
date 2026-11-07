@@ -153,7 +153,8 @@ Shadow::Shadow(const ActionOptions&ao):
     multi_sim_comm.Sum(nref);
   }
   comm.Sum(nref);
-  if(nref!=1) {
+  // with --parse-only the inputs of the replicas are read one at a time
+  if(nref!=1 && !plumed.parseOnlyMode()) {
     error("exactly one replica must use the REFERENCE flag");
   }
   // check number of replicas

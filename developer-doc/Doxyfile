@@ -796,6 +796,8 @@ INPUT                  = ./Intro.md \
                          ./InstallationLayout.md \
                          ./AddingRegressionTests.md \
                          ./HowToContributeToPlumed.md \
+                         ./DeveloperPitfalls.md \
+                         ./Migration211.md \
                          ./intro-git.md \
                          ./plumedcheck.md \
                          ./CodeFormatting.md

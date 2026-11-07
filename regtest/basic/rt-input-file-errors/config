@@ -19,5 +19,18 @@ function plumed_regtest_after(){
   expect_error "PDB file with a misaligned line" "r: RMSD REFERENCE=bad.pdb TYPE=OPTIMAL"
   expect_error "grid file written by an action with another label" "d1: DISTANCE ATOMS=1,2
 m2: METAD ARG=d1 PACE=10 HEIGHT=1 SIGMA=0.1 GRID_MIN=0 GRID_MAX=1 GRID_RFILE=grid.dat"
+  # lines that end after the coordinates (no occupancy and beta, as in an input of PLUMED-NEST): occupancy and beta are 1
+  printf "ATOM      1  CA  ALA A   1       1.000   2.000   3.000\nATOM      2  CA  ALA A   2       2.000   2.000   3.000\nATOM      3  CA  ALA A   3       2.000   3.000   3.000\nEND\n" > short.pdb
+  awk '$1=="ATOM"{printf "%s  1.00  1.00\n",$0; next}{print}' short.pdb > full.pdb
+  for f in short full ; do
+    echo "r: RMSD REFERENCE=$f.pdb TYPE=OPTIMAL
+PRINT ARG=r FILE=rmsd-$f FMT=%8.4f" > pdb.dat
+    $plumed_nompi driver --plumed pdb.dat --ixyz traj.xyz > /dev/null 2>&1
+  done
+  if test -s rmsd-short && cmp -s rmsd-short rmsd-full ; then
+    echo "PDB file without occupancy and beta: same as with occupancy and beta 1" >> errors
+  else
+    echo "PDB file without occupancy and beta: NOT the same as with occupancy and beta 1" >> errors
+  fi
   rm -f bad.dat bad.out
 }

@@ -139,6 +139,8 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
+  double kbt;
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
@@ -191,6 +193,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
+  kbt=getkBT();
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
     error("no atoms specified");
@@ -624,14 +627,15 @@ void SASA_HASEL::readDeltaG() {
 
 void SASA_HASEL::computeDeltaG() {
 
-  for(unsigned i=0; i<natoms; i++) {
-    DeltaG[i].clear();
-  }
-
   double T;
-  T = getkBT()/getKBoltzmann();
+  T = kbt/getKBoltzmann();
 
+  // recomputed only when the temperature changes: the values were cleared at every step and not
+  // computed again (they were then read from empty vectors), and the backbone value was appended
   if (T != Ti) {
+    for(unsigned i=0; i<=natoms; i++) {
+      DeltaG[i].clear();
+    }
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {

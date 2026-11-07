@@ -344,6 +344,7 @@ double Action::getTimeStep()const {
 }
 
 double Action::getkBT() {
+  plumed_massert(keywordsAvailable,"getkBT() can only be called in the constructor of an action: store its result (action " + getLabel() + ")");
   double temp=-1.0;
   if( keywords.exists("TEMP") ) {
     parse("TEMP",temp);

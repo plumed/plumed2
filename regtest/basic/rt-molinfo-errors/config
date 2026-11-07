@@ -1,0 +1,47 @@
+type=driver
+# MOLINFO: the backbone given with CHAIN/CHAINn (plumed.dat), and the messages for wrong residue
+# selections and wrong reference files (plumed_regtest_after, file errors)
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --igro helix.input.gro"
+extra_files="../rt63c/helix.pdb ../rt63c/helix.input.gro"
+# the messages of errors raised outside an action are compared: no stack trace (as on CI)
+export PLUMED_STACK_TRACE=no
+
+function check(){
+# check "description" "plumed input": write the exit code, the first error and the MOLINFO warnings
+  local what="$1"
+  printf "%b\n" "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --igro helix.input.gro --trajectory-stride 10 > bad.out 2>&1
+  local rc=$?
+  echo "== $what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/ *$//' >> errors
+  grep "^PLUMED: WARNING for action MOLINFO" bad.out | sed -e 's/^PLUMED: //' -e 's/ *$//' >> errors
+  # errors raised outside an action (plumed_merror)
+  if test $rc -ne 0 && ! grep -q "^PLUMED: ERROR in input" bad.out ; then
+    grep -A2 "^ERROR : in input for command line tool driver" bad.out | tail -1 >> errors
+  fi
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  awk '{ if($1=="ATOM" && $5==5) sub(/ALA/,"XXX"); print }' helix.pdb > unknown.pdb
+  awk '!($1=="ATOM" && $5==5 && $3=="CA")' helix.pdb > noca.pdb
+  awk '$1=="ATOM" && ($4=="ACE"||$4=="NME")' helix.pdb > termini.pdb
+  # residue 4 as a glycine, with HA2 in place of CB
+  awk '{ if($1=="ATOM" && $5==4) { sub(/ALA/,"GLY"); sub(/ CB /," HA2") }; print }' helix.pdb > gly.pdb
+  # two chains with the same residue numbers
+  awk '$1=="ATOM"{print substr($0,1,21) "A" substr($0,23)}' helix.pdb > two.pdb
+  echo TER >> two.pdb
+  awk '$1=="ATOM"{print sprintf("ATOM  %5d",$2+132) substr($0,12,10) "B" substr($0,23)}' helix.pdb >> two.pdb
+  check "missing reference file" "MOLINFO STRUCTURE=nofile.pdb"
+  check "residue that is not a number" "MOLINFO STRUCTURE=helix.pdb\na: ALPHARMSD RESIDUES=a,b"
+  check "residue not in the pdb file" "MOLINFO STRUCTURE=helix.pdb\na: ALPHARMSD RESIDUES=20-25"
+  check "terminal group" "MOLINFO STRUCTURE=helix.pdb\na: ALPHARMSD RESIDUES=1-6"
+  check "unknown residue name" "MOLINFO STRUCTURE=unknown.pdb\na: ALPHARMSD RESIDUES=2-7"
+  check "missing backbone atom" "MOLINFO STRUCTURE=noca.pdb\na: ALPHARMSD RESIDUES=2-7"
+  check "variable for another molecule type" "MOLINFO STRUCTURE=helix.pdb MOLTYPE=rna\na: ALPHARMSD RESIDUES=2-7"
+  check "only terminal groups" "MOLINFO STRUCTURE=termini.pdb\na: ALPHARMSD RESIDUES=all"
+  check "CHAIN with a residue list" "MOLINFO CHAIN=7,9,11,15,16\na: ALPHARMSD RESIDUES=2-7"
+  check "glycine (runs, with a warning)" "MOLINFO STRUCTURE=gly.pdb\na: ALPHARMSD RESIDUES=2-7"
+  check "residues in two chains (runs, with a warning)" "MOLINFO STRUCTURE=two.pdb\na: ALPHARMSD RESIDUES=2-7"
+  rm -f bad.dat bad.out unknown.pdb noca.pdb termini.pdb gly.pdb two.pdb
+}

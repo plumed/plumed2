@@ -49,7 +49,10 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
   ActionOptions nao( ao,keys );
   auto fullPath=getFullPath(images,ao.line[0]);
   nao.setFullPath(fullPath);
-  return content.create(nao);
+  auto action=content.create(nao);
+  // keys is destroyed when this function returns
+  action->releaseKeywords();
+  return action;
 } catch (PLMD::ExceptionRegisterError &e ) {
   auto& actionName = e.getMissingKey();
   e <<"Action \"" << actionName << "\" is not known.";

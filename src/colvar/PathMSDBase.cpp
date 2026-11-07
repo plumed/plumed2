@@ -60,8 +60,13 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
   }
   parse("NEIGH_SIZE",neigh_size);
   parse("NEIGH_STRIDE",neigh_stride);
+  if( neigh_size>0 && neigh_stride==-1 ) {
+    // as in v2.10, where NEIGH_STRIDE was not required: the list is rebuilt at every step
+    neigh_stride=1;
+    warning("NEIGH_SIZE is used without NEIGH_STRIDE: the neighbor list is rebuilt at every step (NEIGH_STRIDE=1)");
+  }
   if( neigh_size>0 && neigh_stride<=0 ) {
-    error("NEIGH_STRIDE should be specified and positive when NEIGH_SIZE is used");
+    error("NEIGH_STRIDE should be positive when NEIGH_SIZE is used");
   }
   if( neigh_stride>0 && neigh_size<=0 ) {
     error("NEIGH_SIZE should be specified and positive when NEIGH_STRIDE is used");
