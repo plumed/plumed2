@@ -1,11 +1,16 @@
 # MPI provider wrapper
 
 This module lets one PLUMED kernel use MPI through an explicitly selected
-runtime while preserving the existing Communicator source interface. It has
-three mutually exclusive configure modes: native MPI, internal thread-MPI,
-and fully serial. The native build keeps PLUMED's existing direct MPI path.
-Embedded thread-MPI uses the pinned GROMACS implementation and starts only
-when the explicit internal launcher is used.
+runtime while preserving the existing Communicator source interface. Native
+MPI builds keep PLUMED's existing direct MPI path. Serial-built kernels can
+load an external MPI provider at runtime and optionally include embedded
+thread-MPI. The embedded runtime uses the pinned GROMACS implementation and
+starts only when the explicit internal launcher is used.
+
+This separation also enables smaller package build matrices: one `plumed`
+package can serve MPI-independent users and users of either external MPI
+implementation, with small optional `plumed-mpi` provider packages. See
+[Packaging and conda extensions](#packaging-and-conda-extensions).
 
 ## Configuration and capability reporting
 
@@ -14,14 +19,17 @@ thread-MPI defaults on when native MPI is unavailable; use
 --disable-thread-mpi to turn it off. Explicitly requesting both available
 providers is an error. Building embedded thread-MPI does not make it an
 implicit serial fallback: launch it explicitly with --tmpi-threads N.
---disable-mpi --disable-thread-mpi configures a fully serial build.
+--disable-mpi --disable-thread-mpi builds a kernel with neither MPI runtime
+linked in; injection and runtime provider loading remain available.
 
 __PLUMED_HAS_MPI means native MPI only. __PLUMED_HAS_THREAD_MPI means the
 internal runtime is built. __PLUMED_MPIWRAP is always defined by configure:
 availability of the wrapper frontend is separate from selecting a provider.
-Native MPI still uses its actual handle types and direct calls. Config reports
-has mpi when either MPI provider exists, and also reports real_mpi and
-thread_mpi separately. The CLI provides --has-mpi for combined capability,
+Native MPI still uses its actual handle types and direct calls.
+`plumed config has mpi` reports whether native or internal thread-MPI was enabled
+at build time; `real_mpi` and `thread_mpi` report those build choices separately. Loading
+a provider does not change this configuration record. The CLI provides
+--has-mpi for combined runtime capability,
 --has-real-mpi for a native build or a selected real-MPI provider, and
 --has-thread-mpi for available internal thread-MPI (or a selected thread
 provider). Both capabilities may be true. --mpi-ranks-are-threads describes
@@ -38,8 +46,8 @@ Provider-mode Communicator construction does not evaluate MPI_COMM_SELF or
 select a provider. Its default handle is explicitly unresolved until an MPI
 operation; SELF is resolved after the selected provider is initialized.
 Provider selection and initialization are separate; serial operations still
-use local fallbacks until MPI is initialized. A fully disabled build retains
-its inert serial surrogate. Importing a native communicator without an
+use local fallbacks until MPI is initialized, including in builds without
+embedded thread-MPI. Importing a native communicator without an
 injected or environment-selected provider first looks beside the loaded
 kernel for `libplumed-mpi-provider.so` (`libplumed-mpi-provider.dylib` on macOS).
 If absent, it triggers `mkmpi` without a `--compiler` option to build the
@@ -341,6 +349,54 @@ still requested by the main; the kernel's existing force mechanism overrides it.
 Provider-only `mkmpi` builds retain their existing compiler discovery and
 C++98-compatible implementation; executable mode does not change them.
 
+## Packaging and conda extensions
+
+Runtime providers allow packaging MPI support separately from the main PLUMED
+library. A distributor can build one serial kernel and reuse it with MPICH or
+Open MPI, rather than recompiling the full kernel for every MPI variant.
+Python wrappers still need their usual Python/platform builds, but do not
+need an additional build matrix dimension for the MPI implementation. A
+prebuilt provider also removes the end user's need for an MPI compiler or
+PLUMED sources when a host passes a native communicator without injection.
+
+PLUMED's own conda recipes prototype this arrangement:
+
+| Package | Role |
+| --- | --- |
+| `plumed` | One MPI-independent kernel, ordinary CLI, headers and wrappers, with embedded thread-MPI. Uses non-MPI FFTW and has no external MPI runtime dependency. |
+| `plumed-mpi`, MPICH variant | Small provider library and MPI-enabled executable, depending on the matching `plumed` version and MPICH. |
+| `plumed-mpi`, Open MPI variant | The same two files built against Open MPI, depending on the matching `plumed` version and Open MPI. |
+| `py-plumed` | Python wrapper depending on the same base `plumed`, independent of the MPI variant. |
+
+The base keeps the name `plumed`; there is no `plumed-kernel` or `nompi`
+add-on. Both MPI implementations are variants of the package `plumed-mpi`, so
+only one provider package can be installed at a time. Each installs
+`lib/libplumed-mpi-provider.so` (`.dylib` on macOS) next to the kernel and
+`bin/plumed-mpi`, built with `plumed mkmpi` against the already installed base.
+Installing, changing or removing this add-on does not require replacing the
+kernel. The package name also leaves room for future, separately designed
+extensions such as `plumed-cuda-extensions`; no CUDA extension is implemented
+by this work.
+
+The executable `plumed-mpi` owns external MPI startup and injects its provider.
+An existing MD host using an older wrapper can instead supply its native
+communicator, triggering discovery of the adjacent provider without an
+environment variable or runtime compilation. Both paths must use the same
+compatible MPI implementation as the host. The ordinary `plumed` executable
+keeps its serial behavior and explicit `--tmpi-threads N` launcher; installing
+the add-on does not make that executable call `MPI_Init`. Merely installing
+the provider also need not make `plumed --has-real-mpi` succeed before provider
+selection. Use the MPI executable or a communicating host to exercise it.
+
+This is a prototype in PLUMED's own conda CI/channel recipes, not a claim that
+conda-forge already distributes this layout. See
+[`conda/README.md`](../../conda/README.md) for installation examples, the package
+matrix and build commands. The package tests cover relocated installations,
+injection, adjacent-provider discovery with runtime compilation disabled,
+and explicit internal thread-MPI. Fresh-environment checks add and remove
+each variant and compare the base kernel bytes. This tests the intended
+benefit directly: optional MPI support around one unchanged PLUMED build.
+
 ## Source layout and generation
 
 All files live directly in `src/mpiwrap`. The normal PLUMED rules determine
@@ -458,12 +514,14 @@ from `mpiw_old_draft`, with a review of callback ABI assumptions and operation
 lifetime before publishing callback-capable injection entries. The draft's
 callback-reference conversions are useful precedent, not a substitute for that
 review. No callback registration or retained-handler allocation occurs for these
-unavailable APIs. The mock-native probes compile against real
-provider headers and exercise call-through without initializing MPI; they are
-not real MPI runtime communication tests. Native MPI startup and multi-process
-communication were blocked in the development sandbox by process-manager and
-socket permissions, so those semantics still need verification outside that
-environment. The pinned thread-MPI source has a one-rank
+unavailable APIs. The mock-native probes compile against real provider headers and exercise call-through without initializing MPI; they are
+not real MPI runtime communication tests. Separate host tests and CI exercise
+real MPI startup, multi-process communication, injection and environment-provider
+loading. The conda package tests also exercise discovery of an installed
+provider after relocation. These runtime tests require permission to start MPI
+process managers and create their communication sockets; passing a compile or
+mock-provider probe alone does not establish runtime correctness.
+The pinned thread-MPI source has a one-rank
 out-of-place Allreduce defect; the wrapper handles its size-one identity case
 without relying on that defective operation.
 
@@ -711,6 +769,12 @@ published conservatively from MPI-2.1, when required by the standard. The same
 guards protect implementations and table rows. Synthetic MPI-1.1 probes verify
 that older headers need not declare omitted functions or constants.
 
+GROMACS 2026's tMPI build exposes the long-long datatype constants only when
+`SIZEOF_LONG_LONG_INT` is defined. The injected adapter applies that same
+compile-time guard to those three constants, so a normal build without
+long-long tMPI support remains valid. `check-native-adapter.sh` compiles the
+host header in C99 and C++98 modes with this macro both present and absent.
+
 The capacity-override installation check uses a configured checkout:
 
     ./configure --disable-mpi
@@ -802,3 +866,4 @@ symbol-table entry or public object type.
 | New API/launcher/provider regtests | Check the mapped API, unavailable calls, transport, lifecycle, nested kernels without compiling GROMACS. |
 | `.ci/check-warnings`, `.codecov.yml` | Treat the imported thread-MPI runtime like other vendored libraries for warning ownership and coverage metrics; the PLUMED MPI adapter remains checked. |
 | Linux/Windows workflows | Keep master's existing jobs, including sanitizer/no-OpenMP/no-dlopen checks. Add one serial-build/full-injection job, posterior OpenMPI passes for debug and Intel, focused provider tests and explicit Windows smoke checks. |
+| `conda/` recipes and conda workflow | Build one MPI-independent `plumed`, optional `plumed-mpi` provider/executable variants, and the existing Python variants. Test relocation, automatic discovery, injection and add-on removal without changing the kernel. |
