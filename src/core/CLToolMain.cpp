@@ -115,7 +115,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
         }
         std::vector<char> args(n);
         std::vector<char*> vvv(argc);
-        char* ptr=&args[0];
+        char* ptr=args.data();
         for(int i=0; i<argc; ++i) {
           vvv[i]=ptr;
           for(unsigned c=0; c<argv[i].length(); ++c) {
@@ -125,7 +125,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
           *ptr=0;
           ptr++;
         }
-        val.set(int(run(argc,&vvv[0],in,out,comm)));
+        val.set(int(run(argc,vvv.data(),in,out,comm)));
       }
       break;
     default:
