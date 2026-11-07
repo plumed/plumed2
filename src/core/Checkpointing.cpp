@@ -84,14 +84,18 @@ void Checkpointing::setup(const std::string& fileName,long long int checkpointSt
   }
 }
 
-void Checkpointing::registerOutputFile(OFile& f) {
-  const std::string fileName=f.getPath();
+void Checkpointing::restoreLastFields(OFile& f) const {
   if(f.getMode()=="a") {
-    const auto it=lastFields.find(fileName);
+    const auto it=lastFields.find(f.getPath());
     if(it!=lastFields.end()) {
       f.setLastFields(it->second);
     }
   }
+}
+
+void Checkpointing::registerOutputFile(OFile& f) {
+  const std::string fileName=f.getPath();
+  restoreLastFields(f);
   if(std::find(outputFiles.begin(),outputFiles.end(),fileName)!=outputFiles.end()) {
     return;
   }
@@ -249,6 +253,9 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   int timeIndex=-1;
   bool hasTime=false,inTail=false,increasing=true;
   double lastTime=0.0;
+  // the field header (FIELDS and SET lines) of the current section, and the one of the last line kept,
+  // in the format of OFile::getLastFields: the restarted run does not print it again if it is the same
+  std::string header,keptHeader;
   {
     TrimLineReader reader(fname,compressed);
     std::string line;
@@ -259,12 +266,18 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
       if(line.compare(0,9,"#! FIELDS")==0) {
         words=Tools::getWords(line.substr(9));
         timeIndex=-1;
+        header.clear();
         for(unsigned i=0; i<words.size(); ++i) {
-          if(words[i]=="time") {
+          if(words[i]=="time" && timeIndex<0) {
             timeIndex=i;
             hasTime=true;
-            break;
           }
+          header+=words[i]+"\t0\t\n";
+        }
+      } else if(line.compare(0,6,"#! SET")==0) {
+        words=Tools::getWords(line.substr(6));
+        if(words.size()>=2) {
+          header+=words[0]+"\t1\t"+words[1]+"\n";
         }
       } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
         words=Tools::getWords(line);
@@ -272,6 +285,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
         if(words.size()>static_cast<unsigned>(timeIndex) && Tools::convertNoexcept(words[timeIndex],t)) {
           if(t<tcut) {
             keepEnd=end;
+            keptHeader=header;
             inTail=false;
             ntail=0;
             increasing=true;
@@ -295,11 +309,15 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     log<<"  WARNING: file "<<fname<<" has no time field and is not trimmed at the restart step\n";
     return;
   }
-  if(!inTail) {
+  if(inTail && !increasing) {
+    log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
     return;
   }
-  if(!increasing) {
-    log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
+  // the file ends with the header of its last line: it is not printed again if the fields are the same
+  if(keptHeader.length()>0) {
+    lastFields[fname]=keptHeader;
+  }
+  if(!inTail) {
     return;
   }
   // the removed lines are kept in a separate file

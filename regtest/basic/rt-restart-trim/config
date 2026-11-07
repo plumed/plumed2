@@ -37,6 +37,13 @@ function plumed_regtest_before() {
   $plumed driver --plumed plumed-restart.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
   cd ..
 
+  # E) the restarted run prints other fields in COLVAR: the header is printed again
+  mkdir fields ; cd fields ; cp ../plumed.dat .
+  sed 's/^PRINT ARG=d1,d2 FILE=COLVAR /PRINT ARG=d2,d1 FILE=COLVAR /' ../plumed.dat > plumed-restart.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed-restart.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+
   # C) a CHECKPOINT restart needs the checkpoint file
   mkdir nocheckpoint ; cd nocheckpoint
   { head -n 1 ../plumed.dat ; echo "CHECKPOINT FILE=plumed.cpt" ; tail -n +2 ../plumed.dat ; } > plumed.dat
@@ -46,12 +53,13 @@ function plumed_regtest_before() {
 
 function plumed_regtest_after() {
   {
-    # the restarted files have the same lines as those of the uninterrupted run
-    # (the header is printed again at a restart without CHECKPOINT)
+    # the restarted files are the same as those of the uninterrupted run
+    # (the header is not printed again, since the trimmed file ends with the same header)
     for f in COLVAR HILLS BIAS ; do
-      if test "$(grep -v '^#' $f)" = "$(grep -v '^#' restart/$f)" ; then echo "restart/$f SAME LINES" ; else echo "restart/$f DIFFERENT" ; fi
-      echo "restart/$f header lines: $(grep -c '^#! FIELDS' restart/$f)"
+      if cmp -s $f restart/$f ; then echo "restart/$f IDENTICAL" ; else echo "restart/$f DIFFERENT" ; fi
     done
+    # other fields: the header is printed again
+    echo "fields/COLVAR header lines: $(grep -c '^#! FIELDS' fields/COLVAR)"
     # the earlier runs are kept, then the lines of this run
     if test "$(head -n 57 restart/COLVAR_RUNS)" = "$(cat runs)" ; then echo "restart/COLVAR_RUNS earlier runs kept" ; fi
     if test "$(grep -v '^#' COLVAR_RUNS)" = "$(tail -n +58 restart/COLVAR_RUNS | grep -v '^#')" ; then echo "restart/COLVAR_RUNS SAME LINES" ; else echo "restart/COLVAR_RUNS DIFFERENT" ; fi

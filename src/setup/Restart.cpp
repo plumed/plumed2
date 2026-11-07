@@ -143,7 +143,7 @@ every write (e.g. grids and state files) are not trimmed. When the bias is read 
 ([METAD](METAD.md) with GRID_RFILE) or from a state file ([OPES_METAD](OPES_METAD.md) with STATE_RFILE),
 which are written at the checkpoint of the MD code and already contain the hill or kernel of step S,
 the lines of step S are kept. With the multiple walkers of METAD that share files (WALKERS_N) the hills
-files are not trimmed. The log lists the files that have been trimmed and where their removed lines are.
+files are not trimmed. The log lists the files that have been trimmed and where their removed lines are. When a trimmed file ends with the same field header that the restarted run prints, the header is not printed again, so that the file is the same as the one of an uninterrupted run.
 
 The trimming can be switched off for all the files, which are then appended as they are, with
 

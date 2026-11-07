@@ -62,7 +62,8 @@ class Checkpointing {
 /// Files rewritten from scratch at every write (OFile::rewind): they are not
 /// trimmed at restart, since the next write replaces them anyway
   std::set<std::string> snapshotFiles;
-/// Field headers recorded in the checkpoint being restored, by path
+/// Field headers recorded in the checkpoint being restored, or found when
+/// trimming a file at the restart step, by path
   std::map<std::string,std::string> lastFields;
 /// Checkpoint being restored, consumed at the first step
   std::unique_ptr<CheckpointReader> pending;
@@ -96,6 +97,9 @@ public:
 /// Record a file opened for writing (called by OFile::open) and, after a
 /// restart, restore the header of its last line so that it is not printed again.
   void registerOutputFile(OFile& file);
+/// After a restart, restore the field header of the last line of a file appended
+/// to (from the checkpoint, or found when trimming it), so that it is not printed again.
+  void restoreLastFields(OFile& file) const;
 /// Mark a file as rewritten from scratch at every write (called by OFile::rewind).
   void markSnapshotFile(const std::string& fileName);
 /// To be called before any computation of the current step, possibly more

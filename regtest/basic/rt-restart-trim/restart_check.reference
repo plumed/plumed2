@@ -1,9 +1,7 @@
-restart/COLVAR SAME LINES
-restart/COLVAR header lines: 2
-restart/HILLS SAME LINES
-restart/HILLS header lines: 2
-restart/BIAS SAME LINES
-restart/BIAS header lines: 2
+restart/COLVAR IDENTICAL
+restart/HILLS IDENTICAL
+restart/BIAS IDENTICAL
+fields/COLVAR header lines: 2
 restart/COLVAR_RUNS earlier runs kept
 restart/COLVAR_RUNS SAME LINES
 restart/bck.trimmed.0.COLVAR data lines: 15
