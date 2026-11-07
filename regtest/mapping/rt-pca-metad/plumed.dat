@@ -1,0 +1,3 @@
+PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca
+m: METAD ARG=pca_eig-1,pca_residual SIGMA=0.05,0.05 HEIGHT=1 PACE=1 BIASFACTOR=10 TEMP=300 FILE=HILLS FMT=%8.4f
+PRINT ARG=pca_eig-1,pca_residual,m.bias FILE=colvar FMT=%8.4f

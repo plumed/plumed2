@@ -1,0 +1,6 @@
+plumed_modules=mapping
+type=driver
+# METAD acting on a component of PCAVARS, which is a vector with one element (as in the PLUMED-NEST egg 22.040).
+# v2.10 accepted it; on master it stopped with "argument pca_eig-1 is a vector, which is not accepted by METAD".
+arg="--plumed plumed.dat --length-units A --ixyz ../../rt-pca/pca-test.xyz --box 100.,100.,100. --dump-forces forces --dump-forces-fmt %8.4f"
+extra_files="../rt-pca/reference.pdb"
