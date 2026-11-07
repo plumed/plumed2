@@ -27,6 +27,20 @@
 namespace PLMD {
 namespace isdb {
 
+// Populate Martini coarse-grained force-field form-factor coefficients used by SAXS.
+//
+// This routine appends the tabulated coefficient set for each Martini bead/residue
+// type into `parameter`, indexed by the corresponding enum value (e.g. ALA_BB, ARG_SC1).
+// Each entry is stored as an ordered list of long double constants and must preserve
+// the exact ordering expected by the SAXS model evaluation code.
+//
+// Notes for maintainers:
+// - `atoms` is part of the common interface for form-factor initialization and is not
+//   directly used while inserting this static parameter table.
+// - The values below are reference parameters; do not reorder or modify them unless
+//   updating from a validated Martini parameter source.
+// - `parameter` is appended-to (push_back), so callers must ensure the container is
+//   initialized with enough slots for all enum indices used here.
 void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter) {
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
