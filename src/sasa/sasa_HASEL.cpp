@@ -627,15 +627,25 @@ void SASA_HASEL::readDeltaG() {
 
 void SASA_HASEL::computeDeltaG() {
 
+  // Convert simulation thermal energy (kbt) to absolute temperature [K].
+  // All transfer free-energy parameters below are evaluated as functions of T.
   double T;
   T = kbt/getKBoltzmann();
 
-  // recomputed only when the temperature changes: the values were cleared at every step and not
-  // computed again (they were then read from empty vectors), and the backbone value was appended
+  // Recompute DeltaG tables only when temperature changes.
+  // DeltaG[0..natoms-1] stores per-atom sidechain values according to residue identity,
+  // while DeltaG[natoms] stores the backbone contribution.
+  // Keeping this guard avoids clearing/repopulating these vectors every step at fixed T.
+  // NOTE: this also preserves the intended fix for a previous issue where vectors were
+  // cleared every step but not repopulated, and backbone values were repeatedly appended.
   if (T != Ti) {
+    // Reset all cached transfer free energies (including backbone slot at index natoms)
+    // before filling with values for the current temperature.
     for(unsigned i=0; i<=natoms; i++) {
       DeltaG[i].clear();
     }
+    // Populate per-atom transfer free energies using each atom residue type.
+    // The detailed formulas/branches below implement the selected temperature model.
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {
