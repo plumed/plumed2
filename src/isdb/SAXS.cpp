@@ -2070,42 +2070,52 @@ void SAXS::calculate() {
   }
   Tensor chi2_box_deriv;
 
-  // derivatives of each intensity (without DOSCORE)
-  for (unsigned k=0; k<numq && !getDoScore(); ++k) {
-    const unsigned kdx=k*beads_size;
-    Tensor deriv_box;
-    std::string num;
-    Tools::convert(k,num);
-    Value* val=getPntrToComponent("q-"+num);
-
-    if(onebead) {
+  // derivatives of each intensity (without DOSCORE): the atoms are split over the
+  // threads, each with its own partial box derivatives (summed in thread order)
+  if(!getDoScore()) {
+    std::vector<Value*> qval(numq);
+    for(unsigned k=0; k<numq; ++k) {
+      std::string num;
+      Tools::convert(k,num);
+      qval[k]=getPntrToComponent("q-"+num);
+    }
+    const unsigned nt=OpenMP::getNumThreads();
+    std::vector<std::vector<Tensor> > box_t(nt, std::vector<Tensor>(numq));
+    #pragma omp parallel num_threads(nt)
+    {
+      std::vector<Tensor> & my_box = box_t[OpenMP::getThreadNum()];
+      #pragma omp for schedule(static)
       for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-        const unsigned bead_id = residue_atom[atom_id];
-        const Vector qderiv(aa_deriv[atom_id][0]*bd_deriv[kdx+bead_id][0],
-                            aa_deriv[atom_id][1]*bd_deriv[kdx+bead_id][1],
-                            aa_deriv[atom_id][2]*bd_deriv[kdx+bead_id][2]);
-        setAtomsDerivatives(val, atom_id, qderiv);
-        deriv_box += Tensor(getPosition(atom_id),qderiv);
-        if(chi2) {
-          chi2_atom_deriv[atom_id] += chi2_dq[k]*qderiv;
+        // without ONEBEAD aa_deriv is (1,1,1) and the bead is the atom
+        const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
+        const Vector pos = getPosition(atom_id);
+        Vector chi2_d;
+        for(unsigned k=0; k<numq; ++k) {
+          const Vector & bd = bd_deriv[k*beads_size+bead_id];
+          const Vector qderiv(aa_deriv[atom_id][0]*bd[0],
+                              aa_deriv[atom_id][1]*bd[1],
+                              aa_deriv[atom_id][2]*bd[2]);
+          setAtomsDerivatives(qval[k], atom_id, qderiv);
+          my_box[k] += Tensor(pos,qderiv);
+          if(chi2) {
+            chi2_d += chi2_dq[k]*qderiv;
+          }
         }
-      }
-    } else {
-      for(unsigned i=0; i<beads_size; ++i) {
-        const Vector qderiv(bd_deriv[kdx+i][0],
-                            bd_deriv[kdx+i][1],
-                            bd_deriv[kdx+i][2]);
-        setAtomsDerivatives(val, i, qderiv);
-        deriv_box += Tensor(getPosition(i),qderiv);
         if(chi2) {
-          chi2_atom_deriv[i] += chi2_dq[k]*qderiv;
+          chi2_atom_deriv[atom_id] = chi2_d;
         }
       }
     }
-    if(chi2) {
-      chi2_box_deriv += chi2_dq[k]*deriv_box;
+    for(unsigned k=0; k<numq; ++k) {
+      Tensor deriv_box;
+      for(unsigned t=0; t<nt; ++t) {
+        deriv_box += box_t[t][k];
+      }
+      if(chi2) {
+        chi2_box_deriv += chi2_dq[k]*deriv_box;
+      }
+      setBoxDerivatives(qval[k], -deriv_box);
     }
-    setBoxDerivatives(val, -deriv_box);
   }
 
   if(getDoScore()) {
