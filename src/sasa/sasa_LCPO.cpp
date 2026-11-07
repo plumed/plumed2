@@ -594,14 +594,15 @@ void SASA_LCPO::readDeltaG() {
 
 void SASA_LCPO::computeDeltaG() {
 
-  for(unsigned i=0; i<natoms; i++) {
-    DeltaG[i].clear();
-  }
-
   double T;
   T = kbt/getKBoltzmann();
 
+  // recomputed only when the temperature changes: the values were cleared at every step and not
+  // computed again (they were then read from empty vectors), and the backbone value was appended
   if (T != Ti) {
+    for(unsigned i=0; i<=natoms; i++) {
+      DeltaG[i].clear();
+    }
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {
