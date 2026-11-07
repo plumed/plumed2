@@ -235,6 +235,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("hidden","--debug-pd","[yes/no] use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
+  keys.add("optional","--log-file","write the PLUMED log on this file instead of the standard output (with --multi, every replica writes its own file, with the replica suffix)");
 }
 template<typename real>
 Driver<real>::Driver(const CLToolOptions& co ):
@@ -576,7 +577,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     }
     p.cmd("setMPIComm",&intracomm.Get_comm());
   }
-  p.cmd("setLog",out);
+  std::string logFile;
+  parse("--log-file",logFile);
+  if(logFile.length()>0) {
+    // with --multi the logs of the replicas would otherwise be mixed on the standard output
+    if(multi) {
+      logFile=FileBase::appendSuffix(logFile,"."+std::to_string(intercomm.Get_rank()));
+    }
+    p.cmd("setLogFile",logFile.c_str());
+  } else {
+    p.cmd("setLog",out);
+  }
   // the units should be passed with the same precision as the other real numbers
   p.cmd("setMDLengthUnits",real(units.getLength()));
   p.cmd("setMDChargeUnits",real(units.getCharge()));

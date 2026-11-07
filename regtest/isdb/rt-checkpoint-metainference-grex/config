@@ -11,17 +11,19 @@ function plumed_regtest_before() {
   # A) checkpoints at steps 0, 10 and 20, restart from step 20 (the step after it is an exchange step)
   mkdir restart ; cd restart ; cp ../plumed.dat .
   $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --debug-grex 3 --checkpoint-stride 10 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
   cd ..
   # B) checkpoints every 7 steps (STRIDE), restart from step 21, an exchange step
   mkdir restart-stride ; cd restart-stride
   sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
   $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --debug-grex 3 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --restart-from-checkpoint plumed.cpt > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
   cd ..
 }
 
 function plumed_regtest_after() {
+  # the logs of the restarted runs are read from the files of the replicas (--log-file): on the
+  # standard output the logs of the replicas are mixed, and their lines can be broken
   {
     for d in restart restart-stride ; do
       for r in 0 1 2 3 ; do
@@ -29,8 +31,8 @@ function plumed_regtest_after() {
         # the exchange attempts after the restart (steps 21, 24, ..., 57: 13 lines) must give the same delta biases
         if test "$(tail -n 13 grex.$r)" = "$(cat $d/grex.$r)" ; then echo "$d/grex.$r IDENTICAL" ; else echo "$d/grex.$r DIFFERENT" ; fi
       done
-      if grep -q "not stored in the checkpoint" $d/out2 $d/err2 ; then echo "$d: unported state warning" ; fi
-      grep -h "Checkpoint state restored" $d/out2 | sed 's/by PLUMED.*//' | sort | uniq -c
+      if grep -q "not stored in the checkpoint" $d/log.* $d/err2 ; then echo "$d: unported state warning" ; fi
+      grep -h "Checkpoint state restored" $d/log.* | sed 's/by PLUMED.*//' | LC_ALL=C sort | uniq -c
     done
   } > restart_check
 }
