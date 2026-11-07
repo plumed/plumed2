@@ -35,6 +35,9 @@ These keywords are still read, as the keyword that replaces them, with a warning
 - UPPER_WALLS and LOWER_WALLS acting on a periodic argument do not apply the periodic boundary conditions to the difference
   between the argument and `AT` any more.
 - `ARG=*` leaves out the values that the action cannot use (e.g. in PRINT).
+- A function of a sparse matrix that is not zero for zero arguments (e.g. CUSTOM with `FUNC=1-x` on a CONTACT_MATRIX
+  with `D_MAX`) stops with an error: the elements that the matrix does not store were silently taken as zero.
+  Give the function a `MASK` (e.g. the matrix itself) to compute it only on the stored elements, or remove `D_MAX`.
 - JCOUPLING with `TYPE=CUSTOM` needs `A`, `B` and `C`, and `SHIFT` is zero by default.
 - A negative number where a positive integer is expected (e.g. `STRIDE=-1`) is an error; it was read as a very large number.
 - Many inputs that crashed or gave `nan` now stop with an error that names the keyword to change: see the file CHANGES/v2.11.md.
