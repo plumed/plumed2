@@ -12,7 +12,7 @@ function plumed_regtest_before() {
   # A) four replicas, checkpoints at steps 0, 10 and 20, restart from step 20
   mkdir restart ; cd restart ; cp ../plumed.dat .
   $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --checkpoint-stride 10 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
   cd ..
   # B) two replicas with two processes each, checkpoints every 7 steps (STRIDE), restart from step 21
   sed -e 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' \
@@ -23,11 +23,13 @@ function plumed_regtest_before() {
   $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 > out 2> err
   cd ../restart2
   $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
   cd ..
 }
 
 function plumed_regtest_after() {
+  # the logs of the restarted runs are read from the files of the replicas (--log-file): on the
+  # standard output the logs of the replicas are mixed, and their lines can be broken
   # the restarted runs must reproduce the reference bitwise (no wall-clock data in these files)
   {
     for r in 0 1 2 3 ; do
@@ -41,8 +43,8 @@ function plumed_regtest_after() {
       done
     done
     for d in restart restart2 ; do
-      if grep -q "not stored in the checkpoint" $d/out2 $d/err2 ; then echo "$d: unported state warning" ; fi
-      grep -h "Checkpoint state restored" $d/out2 | sed 's/by PLUMED.*//' | sort | uniq -c
+      if grep -q "not stored in the checkpoint" $d/log.* $d/err2 ; then echo "$d: unported state warning" ; fi
+      grep -h "Checkpoint state restored" $d/log.* | sed 's/by PLUMED.*//' | LC_ALL=C sort | uniq -c
     done
   } > restart_check
 }

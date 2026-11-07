@@ -196,6 +196,12 @@ class OFile:
   bool enforceRestart_;
 /// True if backup behavior (i.e. non restart) should be forced
   bool enforceBackup_;
+/// True if the file, opened for appending at a restart, is still to be trimmed at the
+/// restart step (see Checkpointing::trimAtRestart): it is done just before the first
+/// write, so that files rewritten at every write (rewind) are never trimmed
+  bool trimPending_=false;
+/// True if the file is never trimmed at the restart step (see enforceNoTrim)
+  bool enforceNoTrim_=false;
 /// Check that no other OFile linked to the same PlumedMain object
 /// is currently writing on the file this->path.
 /// Throws an exception if this is the case.
@@ -212,6 +218,13 @@ class OFile:
 /// only after the writer has opened (and created) the file.
   void syncOpen();
 public:
+/// Trim the file at the restart step, if still to be done (see trimPending_)
+  void applyPendingTrim();
+/// Never trim this file at the restart step (to be called before open)
+  OFile& enforceNoTrim() {
+    enforceNoTrim_=true;
+    return *this;
+  }
 /// Constructor
   OFile();
 /// Allows overloading of link

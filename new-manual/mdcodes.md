@@ -36,6 +36,7 @@ PLUMED interface that GROMACS includes since version 2025, and the patch for GRO
 | [ENERGY](ENERGY.md) collective variable and biases on the energy | no | yes (2,3) | yes (3) |
 | multiple simulations that communicate through MPI (e.g. `WALKERS_MPI`) | no | yes | yes |
 | PLUMED checkpoint data written at the steps of the GROMACS checkpoints | no | yes (2) | yes |
+| PLUMED files trimmed at the step of the GROMACS checkpoint at `mdrun -cpi` (see below) | no | yes | yes |
 | PLUMED stopping the simulation (e.g. [COMMITTOR](COMMITTOR.md)) | no | yes | yes |
 | polarizable models with shells | no | yes (4) | no |
 | replica exchange with a PLUMED bias (`-replex`, `-hrex`) | no | no | yes |
@@ -47,6 +48,29 @@ Notes on the table:
 2. Not with the modular simulator of GROMACS, the default for md-vv: set `GMX_DISABLE_MODULAR_SIMULATOR=1`.
 3. With multiple time stepping, only on the steps when the slow forces are computed.
 4. With [ENERGY](ENERGY.md), PLUMED updates (e.g. deposits its bias) with the energy before the shells are relaxed.
+
+### Restarting GROMACS with PLUMED
+
+With the patches, when GROMACS is restarted from its checkpoint (`gmx mdrun -cpi state.cpt -plumed plumed.dat`),
+PLUMED is told the step S of the GROMACS checkpoint, from which the simulation continues. The same PLUMED input can be
+used for the first run and for the restarts, without [RESTART](RESTART.md): GROMACS tells PLUMED that the run is restarted.
+
+- Without [CHECKPOINT](CHECKPOINT.md), PLUMED appends to its files, as with RESTART, after removing from them the lines
+  written at or after step S by the interrupted run (they are moved to `bck.trimmed.X.filename`), as GROMACS does with its
+  own files. In this way COLVAR, HILLS, KERNELS, etc. contain every step once, and [METAD](METAD.md) and
+  [OPES_METAD](OPES_METAD.md) restart from the hills and kernels deposited before step S (step S is computed again).
+  The restart is not exact: the bias is rebuilt from the files, written with a finite precision. Files without a
+  time field are appended as they are; `RESTART NO_TRIM` switches the trimming off (see [RESTART](RESTART.md)).
+- With [CHECKPOINT](CHECKPOINT.md) at the top of the PLUMED input, PLUMED writes its own checkpoint file whenever GROMACS
+  writes its own; at the restart the files are truncated to the sizes they had at the checkpoint, the state of the actions
+  is restored, and the restarted run continues the interrupted one exactly (with `-reprod`, the files are identical to those
+  of an uninterrupted run). The checkpoint file of PLUMED must be there: if it is missing (e.g. CHECKPOINT was added to the
+  input of a run that did not have it), PLUMED stops with an error, and `RESTART_FROM=NO` restarts without it.
+- `-noappend` does not change what PLUMED does: GROMACS writes new part files, PLUMED trims and appends to its own files.
+- With `-multidir` every simulation trims or restores its own files (they have the replica suffix); the simulations must
+  restart from checkpoints written at the same step.
+
+Without the patches, GROMACS 2025 and later do not tell PLUMED the step of the checkpoint: the files are appended as they are.
 
 If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
 

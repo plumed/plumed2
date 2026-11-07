@@ -59,6 +59,9 @@ size_t OFile::llwrite(const char*ptr,size_t s) {
   if(!fp) {
     plumed_merror("writing on uninitialized File");
   }
+  if(trimPending_) {
+    applyPendingTrim();
+  }
   size_t r=0;
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
@@ -295,10 +298,38 @@ void OFile::setLastFields(const std::string& str) {
       previous_fields.push_back(f);
     }
   }
-  fieldChanged=false;
+  // constant fields already added (when the header is restored at the first write, after
+  // a trim at restart): they take the restored value if they have none yet, and the header
+  // is printed again if a value differs or a field was not in the restored header
+  bool changed=false;
+  for(auto & c : const_fields) {
+    bool found=false;
+    for(const auto & r : restored_const_fields) {
+      if(r.name==c.name) {
+        found=true;
+        if(c.value.empty()) {
+          c.value=r.value;
+        } else if(c.value!=r.value) {
+          changed=true;
+        }
+      }
+    }
+    if(!found) {
+      changed=true;
+    }
+  }
+  // (with no constant field yet, at a checkpoint restart, they are added later by addConstantField)
+  if(!const_fields.empty() && const_fields.size()!=restored_const_fields.size()) {
+    changed=true;
+  }
+  fieldChanged=changed;
 }
 
 OFile& OFile::printField() {
+  // before deciding whether the header is printed (see applyPendingTrim)
+  if(trimPending_) {
+    applyPendingTrim();
+  }
   bool reprint=false;
   if(fieldChanged || fields.size()!=previous_fields.size()) {
     reprint=true;
@@ -413,6 +444,8 @@ OFile& OFile::open(const std::string&setpath) {
   if(checkRestart()) {
     openOnWriter("a","a9");
     mode="a";
+    // trimmed at the first write (see trimPending_)
+    trimPending_=plumed && isWriter() && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim());
   } else {
     backupFile( backstring, path );
     if(comm) {
@@ -500,6 +533,18 @@ void OFile::checkNotOpenElsewhere()const {
   }
 }
 
+void OFile::applyPendingTrim() {
+  if(!trimPending_) {
+    return;
+  }
+  trimPending_=false;
+  // the file is open in append mode and nothing has been written yet:
+  // the next write goes to the new end of the file
+  plumed->checkpointing.trimAtRestart(path);
+  // the header of the last line kept is not printed again if the fields are the same
+  plumed->checkpointing.restoreLastFields(*this);
+}
+
 bool OFile::isWriter()const {
   return !comm || comm->Get_rank()==0;
 }
@@ -549,6 +594,8 @@ OFile& OFile::rewind() {
 // moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
+  // a snapshot: it is rewritten, not trimmed
+  trimPending_=false;
   if(plumed) {
     plumed->checkpointing.markSnapshotFile(path);
   }

@@ -123,6 +123,8 @@ private:
   std::set<std::string> actionOptions;
 
   bool restart;
+/// NO_TRIM: the files of this action are not trimmed at the restart step
+  bool noTrim=false;
 
   bool doCheckPoint;
 
@@ -163,6 +165,10 @@ public:
 
 /// Return true if we are doing a restart
   bool getRestart()const;
+/// True if the files of this action are not trimmed at the restart step (NO_TRIM)
+  bool getNoTrim()const {
+    return noTrim;
+  }
 
 /// Return true if we are doing at a checkpoint step
   bool getCPT()const;

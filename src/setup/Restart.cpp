@@ -119,6 +119,50 @@ The `RESTART NO` command in this input tells PLUMED that no actions are to be re
 code has told PLUMED that the initial configuration came from a checkpoint file and that the trajectory
 is being restarted.
 
+## Trimming the files at the restart step
+
+When an MD code restarts from its checkpoint, the simulation continues from the step S at which the
+checkpoint was written, while the files written by PLUMED may contain lines written after it, by a run
+that was interrupted (or that went on) after writing its checkpoint. If the MD code tells PLUMED the step
+S from which it restarts (the GROMACS patches do this after `-cpi`, and [driver](driver.md) does it with
+`--restart --initial-step S`), PLUMED removes these lines from the files it appends to, before reading or
+writing them, so that they continue exactly where the restarted simulation starts, as GROMACS does with its
+own files. The lines of step S are removed too, since step S is computed again. In this way the COLVAR
+files contain every time once and, for instance, [METAD](METAD.md) reads only the hills deposited before
+step S (the hill of step S is added again) and [OPES_METAD](OPES_METAD.md) only the kernels deposited before it.
+
+The lines removed are the last lines of the file with a time equal to or later than the time of step S:
+the earlier lines are kept, including those of earlier runs whose time restarted from zero. The trimming
+applies to the files that have a `time` field (PRINT, the hills of METAD, the kernels of OPES_METAD, ...);
+the other files (e.g. those of [DUMPATOMS](DUMPATOMS.md)) and the files where the times after S are not
+increasing are appended as they are, with a line in the log. The lines removed from a file are not lost:
+they are moved to a file `bck.trimmed.N.name` in the same directory (N is the first number not used yet).
+Compressed files (`.gz`, written in append mode as a sequence of gzip streams) are trimmed too: since they
+cannot be truncated, the lines that are kept are compressed again. Files that are rewritten at
+every write (e.g. grids and state files) are not trimmed. When the bias is read from a grid
+([METAD](METAD.md) with GRID_RFILE) or from a state file ([OPES_METAD](OPES_METAD.md) with STATE_RFILE),
+which are written at the checkpoint of the MD code and already contain the hill or kernel of step S,
+the lines of step S are kept. With the multiple walkers of METAD that share files (WALKERS_N) the hills
+files are not trimmed. The log lists the files that have been trimmed and where their removed lines are. When a trimmed file ends with the same field header that the restarted run prints, the header is not printed again, so that the file is the same as the one of an uninterrupted run.
+
+The trimming can be switched off for all the files, which are then appended as they are, with
+
+```plumed
+RESTART NO_TRIM
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1
+```
+
+or for the files of a single action with the NO_TRIM flag:
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1 NO_TRIM
+```
+
+Notice that `RESTART NO_TRIM`, as RESTART, also switches restart on. With [CHECKPOINT](CHECKPOINT.md) the files
+are instead truncated to the sizes they had when the checkpoint was written, and the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -134,6 +178,9 @@ PLUMED_REGISTER_ACTION(Restart,"RESTART")
 void Restart::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.addFlag("NO",false,"switch off restart - can be used to override the behavior of the MD engine");
+  // the flag reserved for all the actions, with the meaning it has here (read by Action, see getNoTrim)
+  keys.remove("NO_TRIM");
+  keys.addFlag("NO_TRIM",false,"append to the files as they are, without removing the lines written at or after the step from which the MD engine restarts");
 }
 
 Restart::Restart(const ActionOptions&ao):
@@ -141,6 +188,10 @@ Restart::Restart(const ActionOptions&ao):
   ActionSetup(ao) {
   bool no=false;
   parseFlag("NO",no);
+  if(getNoTrim()) {
+    plumed.checkpointing.disableTrimming();
+    log<<"  the files are not trimmed at the restart step\n";
+  }
   bool md=plumed.getRestart();
   log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
   if(no) {

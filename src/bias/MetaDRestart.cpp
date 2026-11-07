@@ -23,6 +23,8 @@
 #include "MetaDGrid.h"
 #include "MetaDHills.h"
 #include "core/Action.h"
+#include "core/Checkpointing.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/Keywords.h"
@@ -126,6 +128,10 @@ void MetaDWalkers::openOutput(Action& action, OFile& file, const std::string& na
   if(shareFiles()) {
     file.enforceSuffix("");
   }
+  if(n>1) {
+    // WALKERS_N: not trimmed at the restart step (see readHillsAtStart)
+    file.enforceNoTrim();
+  }
   file.open(writesFiles() ? name : "/dev/null");
 }
 
@@ -175,6 +181,34 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
     }
     if(relative) {
       walkers.dir=walkers.firstReplicaDirectory(action);
+    }
+  }
+
+  // At a restart from a step given by the MD engine, the hills files of this walker are trimmed at that step
+  // before being read (see RESTART), so that the hill of that step, which is computed again, is not read.
+  // When the bias is read from a grid, written at the checkpoint of the MD engine, the grid contains the hill
+  // of that step: it is kept (and the time of the last hill avoids adding it again).
+  // With WALKERS_N the walkers would read the files of the others before these are trimmed: the files are
+  // not trimmed (the time of the last hill avoids adding twice the hill of the repeated step).
+  Checkpointing& cpt=action.plumed.checkpointing;
+  const bool trimmed=restart && !fromCheckpoint && cpt.trimsAtRestart() && !action.getNoTrim() && walkers.n==1;
+  if(restart && !fromCheckpoint && cpt.trimsAtRestart() && !action.getNoTrim() && walkers.n>1) {
+    log.printf("  WARNING: with WALKERS_N the hills files are not trimmed at the restart step\n");
+  }
+  if(trimmed) {
+    if(comm.Get_rank()==0 && walkers.writesFiles()) {
+      for(const auto & input : inputs) {
+        const std::string name=walkers.getFileName(input.name,walkers.id);
+        cpt.trimAtRestart(walkers.shareFiles() ? name : FileBase::appendSuffix(name,action.plumed.getSuffix()),restartedFromGrid);
+      }
+    }
+    // with WALKERS_MPI the other walkers read the files after the first one has trimmed them
+    comm.Barrier();
+    if(walkers.mpi) {
+      if(comm.Get_rank()==0) {
+        action.multi_sim_comm.Barrier();
+      }
+      comm.Barrier();
     }
   }
 
@@ -302,6 +336,9 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
   }
   if(lastHillTimeKnown) {
     schedule.setLastHillTime(lastHillTime);
+  } else if(trimmed && !restartedFromGrid) {
+    // the hills files hold no hill before the restart step: the hill of that step is added
+    schedule.setLastHillTime(-std::numeric_limits<double>::infinity());
   }
 
   comm.Barrier();
