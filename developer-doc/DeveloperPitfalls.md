@@ -43,7 +43,8 @@ Read it before changing an action or a tool that other actions use.
   keep it as a hidden keyword that stops with a message giving the replacement (see `CUTOFF` in RDF).
 - After changing an example in the manual, check every keyword it uses with `plumed manual --action NAME`.
 - `Action::keywords` refers to the keywords of the options the action was created with: use it only in the constructor
-  (e.g. not in `checkRead()` or later), where those options may not exist any more.
+  (e.g. not in `checkRead()` or later), where those options may not exist any more. The same holds for the functions
+  that use it, e.g. `getkBT()`, which stops with an assertion when it is called after the constructor: store its result.
 - `.ci/audit-keywords.py` adds each registered keyword to an example of the manual that uses the action, and reports
   the keywords that are refused as not understood, and the crashes; `--static-only` lists the keywords read with `parse`
   that no action of the file registers. `.ci/audit-inputs.py` changes the values of the keywords of the examples.
