@@ -25,6 +25,7 @@
 #include "ActionForInterface.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include "Checkpointing.h"
 #include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
@@ -49,6 +50,7 @@
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
+#include "InputBuilderMetadata.h"
 #include "small_vector/small_vector.h"
 #include <cmath>
 #include <cstdlib>
@@ -73,6 +75,7 @@
 #include <optional>
 #include <variant>
 #include <filesystem>
+#include <limits>
 
 namespace PLMD {
 
@@ -437,6 +440,7 @@ PlumedMain::PlumedMain():
   datoms_fwd(*this),
 // automatically write on log in destructor
   stopwatch_fwd(log),
+  checkpointing_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
   OpenMP::retainRuntime();
@@ -782,6 +786,33 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         val.set(int(11));
         break;
+      case cmd_getInputBuilderJSONLength: {
+        CHECK_NOTNULL(val,word);
+        std::ostringstream output;
+        writeInputBuilderJSON(output,nullptr,dlloader.getHandles());
+        std::string metadata=output.str();
+        if(metadata.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+          plumed_merror("InputBuilder metadata exceeds the supported transfer size");
+        }
+        inputBuilderMetadataJSON=std::move(metadata);
+        val.set(static_cast<int>(inputBuilderMetadataJSON.size()));
+      }
+      break;
+      case cmd_getInputBuilderJSON: {
+        CHECK_NOTNULL(val,word);
+        const std::size_t size=inputBuilderMetadataJSON.size();
+        if(size==0) {
+          plumed_merror("call getInputBuilderJSONLength before getInputBuilderJSON");
+        }
+        if(val.getNelem()<size) {
+          plumed_merror("buffer passed to getInputBuilderJSON is too small");
+        }
+        int* buffer=val.get<int*>(static_cast<int>(size));
+        for(std::size_t i=0; i<size; ++i) {
+          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSON[i]);
+        }
+      }
+      break;
       // commands which can be used only before initialization:
       case cmd_init:
         CHECK_NOTINIT(initialized,word);
@@ -1362,6 +1393,10 @@ void PlumedMain::prepareDependencies() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("1 Prepare dependencies");
 
+// Restore the checkpoint at the first step after a restart and write one when
+// requested: before anything of this step is computed, see Checkpointing.
+  checkpointing.atStepStart(doCheckPoint);
+
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
 // before doing that, the prepare() method is called to see if there is some
@@ -1438,6 +1473,9 @@ void PlumedMain::performCalcNoForces() {
 }
 
 void PlumedMain::performCalc() {
+// In case the checkpointing signal arrived after prepareCalc() (2024 GROMACS patch);
+// does nothing if the checkpoint of this step was already written
+  checkpointing.atStepStart(doCheckPoint);
   waitData();
   justCalculate();
   backwardPropagate();
@@ -1793,6 +1831,7 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
     if( av && av->calculateOnUpdate() ) {
+      p->prepare();
       p->calculate();
     } else if( ap && !av && ap->getStride()==0 ) {
       p->update();

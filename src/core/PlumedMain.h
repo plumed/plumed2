@@ -59,6 +59,7 @@ class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
+class Checkpointing;
 class DLLoader;
 class Communicator;
 class Stopwatch;
@@ -148,6 +149,12 @@ private:
   std::unique_ptr<WithCmd> cltool;
 
   std::unique_ptr<WithCmd> grex;
+/// UTF-8 JSON snapshot for the two-call metadata transfer (API version 11).
+/// The length query refreshes this from the live registry; the copy command
+/// transfers exactly that many bytes, one unsigned byte per int, without a
+/// terminator. Keeping the snapshot on this object makes intervening registry
+/// changes harmless. The caller owns its destination buffer.
+  std::string inputBuilderMetadataJSON;
 /// Flag to avoid double initialization
   bool  initialized=false;
 /// Name of MD engine
@@ -167,6 +174,13 @@ private:
   ForwardDecl<Citations> citations_fwd;
 /// tools/Citations.holder
   Citations& citations=*citations_fwd;
+
+/// Forward declaration.
+  ForwardDecl<Checkpointing> checkpointing_fwd;
+public:
+/// Exact-restart checkpoint, see CHECKPOINT.
+  Checkpointing& checkpointing=*checkpointing_fwd;
+private:
 
 /// Present step number.
   long long int step=0;

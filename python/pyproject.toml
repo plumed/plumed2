@@ -1,0 +1,30 @@
+[build-system]
+requires = [
+    "setuptools>=68",
+    "wheel",
+    "Cython==3.2.4; python_version < '3.15'",
+    "Cython==3.3.1; python_version >= '3.15'",
+]
+build-backend = "build_backend"
+backend-path = ["."]
+
+[tool.cibuildwheel]
+build = ["cp311-*", "cp312-*", "cp313-*", "cp314-*", "cp315-*"]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux*"]
+# {package} is the extracted sdist; {project} is the directory where cibuildwheel runs
+test-command = [
+    "python {package}/test/test_action_description_generators.py",
+    "python {package}/test/test_vim_make.py",
+    "python {package}/test/test_input_builder.py",
+    "python {package}/test/test_bundled_wheel.py {package}/plumed_source",
+]
+manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+# The PLUMED kernel does not depend on the Python version: build it once per
+# platform and reuse it for all the wheels (see build_backend.py).
+# Set PLUMED_BUILD_VERBOSE=1 to see the full output of the build.
+environment = { PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache" }
+
+[tool.cibuildwheel.macos]
+# the macos environment replaces the global one, so the cache is set again here
+environment = { MACOSX_DEPLOYMENT_TARGET = "10.15", PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache" }

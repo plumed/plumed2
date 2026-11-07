@@ -5,7 +5,7 @@ To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and met
 
 **plumed.dat**
 ```
-LOAD GLOBAL FILE=path/to/PythonCVInterface.so
+LOAD FILE=path/to/PythonCVInterface.so
 PYFUNCTION IMPORT=pycv
 ```
 

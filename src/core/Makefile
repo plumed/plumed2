@@ -7,7 +7,7 @@ include ../maketools/make.module
 # -Werror makes fixing warnings mandatory
 CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror
 
-CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc
+CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc ActionDescriptions.inc
 
 PlumedMain.o: PlumedMainMap.inc PlumedMainEnum.inc
 
@@ -37,3 +37,14 @@ ModuleMap.o: ModuleMap.inc
 
 ModuleMap.inc: ../*/*.cpp
 	../maketools/makeModuleMap $@
+
+ActionDescriptions.o: ActionDescriptions.inc
+
+# FORCE makes the script rescan the directory so additions and removals are
+# noticed as well as edits. The generator preserves the include's mtime when
+# the extracted summaries have not changed.
+ActionDescriptions.inc: FORCE $(wildcard ../*/*.cpp) ../maketools/makeActionDescriptions
+	../maketools/makeActionDescriptions $@ ../..
+
+.PHONY: FORCE
+FORCE:

@@ -51,6 +51,9 @@ RMSDVector::RMSDVector(const ActionOptions&ao):
   firststep(true),
   input(ParallelActionsInput::create(getPbc())),
   taskmanager(this) {
+  if( getNumberOfArguments()!=2 ) {
+    error("there should be two arguments: a vector of positions and a vector or matrix of reference positions");
+  }
   if( getPntrToArgument(0)->getRank()!=1 ) {
     error("first argument should be vector");
   }

@@ -66,6 +66,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include "molfile_plugin.h"
+#include "safeopen.h"
 
 namespace PLMD{
 namespace molfile{
@@ -86,7 +87,13 @@ static void *open_crd_read(const char *filename, const char *filetype,
   if (!fd) return NULL;
   
   /* first line is title, so skip past it */
-  while (getc(fd) != '\n');
+  int c;
+  while ((c = getc(fd)) != '\n') {
+    if (c == EOF) {
+      fclose(fd);
+      return NULL;
+    }
+  }
 
   /* 
    * CRD's don't store the number of atoms in the timestep, so we assume that
@@ -116,8 +123,9 @@ static int read_crd_timestep(void *mydata, int natoms, molfile_timestep_t *ts) {
   for (i=0; i<natoms; i++) {
     j = fscanf(crd->file, "%f %f %f", &x, &y, &z);
     if (j == EOF) {
-      return MOLFILE_ERROR;
-    } else if (j <= 0) {
+      /* end of the trajectory, or a frame that is cut */
+      return (i == 0) ? MOLFILE_EOF : MOLFILE_ERROR;
+    } else if (j != 3) {
       fprintf(stderr, "Problem reading CRD file\n");
       return MOLFILE_ERROR;
     }
@@ -138,7 +146,7 @@ static int read_crd_timestep(void *mydata, int natoms, molfile_timestep_t *ts) {
     if (j == EOF) {
       printf("EOF in box\n");
       return MOLFILE_ERROR;
-    } else if (j <= 0) {
+    } else if (j != 3) {
       printf("Problem reading box part of CRD file, scanf returned %d\n",j);
       return MOLFILE_ERROR;
     }
@@ -173,7 +181,7 @@ static void *open_crd_write(const char *path, const char *filetype,
   crddata *crd;
   FILE *fd;
 
-  fd = fopen(path, "wb");
+  fd = molfile_fopen_write(path, "wb");
   if (!fd) {
     fprintf(stderr, "Could not open file %s for writing\n", path);
     return NULL;

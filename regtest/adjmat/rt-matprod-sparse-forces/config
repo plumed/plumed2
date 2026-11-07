@@ -1,0 +1,6 @@
+type=driver
+plumed_modules="adjmat matrixtools"
+# MATRIX_PRODUCT with a sparse first matrix (CONTACT_MATRIX with D_MAX): the forces were wrong,
+# with and without AVOID_THREAD_GATHER, and depended on the threads (race)
+arg="--plumed plumed.dat --ixyz atoms.xyz --length-units nm --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces debug (checked when the test was written)
+PLUMED_NUM_THREADS=2

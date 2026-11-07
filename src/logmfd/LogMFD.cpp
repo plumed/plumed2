@@ -357,12 +357,19 @@ The output file replica.out.1 records all collective variables and the Jarzynski
 ...
 ````
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the fictitious variables, velocities, forces, thermostat variables, averages and works are stored in the checkpoint, and the `logmfd.out` and `replica.out` files are cut to the size they had at the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
+#include "tools/Checkpoint.h"
+
+#include <filesystem>
 
 #include <iostream>
 
@@ -428,8 +435,13 @@ public:
   static void registerKeywords(Keywords& keys);
 
   explicit LogMFD(const ActionOptions&);
-  void calculate();
-  void update();
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
+  void calculate() override;
+  void update() override;
   void updateNVE();
   void updateNVT();
   void updateVS();
@@ -591,6 +603,9 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   backup.weight = 0.0;
 
   parse("INTERVAL",interval);
+  if( interval<=0 ) {
+    error("INTERVAL must be positive");
+  }
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
   kbt = getkBT(); // read as temperature
@@ -762,6 +777,85 @@ LogMFD::LogMFD( const ActionOptions& ao ):
     componentIsNotPeriodic(comp);
     vfictValue[i] = getPntrToComponent(comp);
   }
+}
+
+namespace {
+// size of a plain output file (the log files of LogMFD are not OFile, so they are
+// not trimmed by the checkpoint): 0 if it does not exist
+long long fileSizeOrZero(const std::string& name) {
+  std::error_code ec;
+  const auto size=std::filesystem::file_size(name,ec);
+  return ec ? 0 : static_cast<long long>(size);
+}
+// cut a plain output file at the size recorded in the checkpoint
+void cutFile(const std::string& name,long long size) {
+  if(fileSizeOrZero(name)>size) {
+    std::error_code ec;
+    std::filesystem::resize_file(name,static_cast<std::uintmax_t>(size),ec);
+  }
+}
+}
+
+// Fictitious variables, velocities, thermostat, work and weight, free energy and
+// invariant, and the forces and averages accumulated since the last MFD update.
+// The backup is set again at every update. logmfd.out and replica.out are written
+// with plain C files: their sizes are stored and they are cut at restart, so that
+// the MFD step that is replayed does not write its line twice.
+void LogMFD::writeCheckpoint(CheckpointWriter& w) {
+  w.write("firsttime",(long long) firsttime);
+  w.write("step_initial",(long long) step_initial);
+  w.write("fict",fict);
+  w.write("vfict",vfict);
+  w.write("ffict",ffict);
+  w.write("fict_ave",fict_ave);
+  w.write("xeta",xeta);
+  w.write("veta",veta);
+  w.write("phivs",phivs);
+  w.write("work",work);
+  w.write("weight",weight);
+  w.write("flog",flog);
+  w.write("hlog",hlog);
+  w.write("size_logmfd_out",fileSizeOrZero("logmfd.out"));
+  w.write("size_replica_out",fileSizeOrZero("replica.out"));
+  writeComponentValues(w);
+}
+
+void LogMFD::readCheckpoint(CheckpointReader& r) {
+  const unsigned n=getNumberOfArguments();
+  long long b;
+  r.read("firsttime",b);
+  firsttime=b!=0;
+  r.read("step_initial",b);
+  step_initial=static_cast<int>(b);
+  std::vector<double> f,v,ff,fa;
+  r.read("fict",f);
+  r.read("vfict",v);
+  r.read("ffict",ff);
+  r.read("fict_ave",fa);
+  if(f.size()!=n || v.size()!=n || ff.size()!=n || fa.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  fict=f;
+  vfict=v;
+  ffict=ff;
+  fict_ave=fa;
+  r.read("xeta",xeta);
+  r.read("veta",veta);
+  r.read("phivs",phivs);
+  r.read("work",work);
+  r.read("weight",weight);
+  r.read("flog",flog);
+  r.read("hlog",hlog);
+  long long size;
+  if( comm.Get_rank()==0 ) {
+    if( getReplicaIndex()==0 ) {
+      r.read("size_logmfd_out",size);
+      cutFile("logmfd.out",size);
+    }
+    r.read("size_replica_out",size);
+    cutFile("replica.out",size);
+  }
+  readComponentValues(r);
 }
 
 /**

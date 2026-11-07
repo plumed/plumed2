@@ -1,0 +1,21 @@
+plumed_modules=s2cm
+type=driver
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --mf_pdb Ching2.pdb --box 100.0,100.0,100.0"
+driver_args="--mf_pdb Ching2.pdb --box 100.0,100.0,100.0"
+
+# inputs found by .ci/audit-inputs.py: they crashed (segmentation fault or floating point exception)
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail; the message is recorded
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver $driver_args --plumed bad.dat > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -e "^PLUMED: ERROR in input" -e "maze>" bad.out | sed -e "s/^PLUMED: //" -e "s/with label [^ ]* //" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "S2CM with N_I=0" "S2CM NH_ATOMS=87,85 HEAVY_ATOMS=1,5,7,10 R_EFF=0.10 PREFACTOR_A=0.80 EXPONENT_B=1.0 OFFSET_C=0.10 N_I=0 R_SHIFT=0.12 NOPBC"
+}

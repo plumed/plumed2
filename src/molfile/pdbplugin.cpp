@@ -62,6 +62,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include "molfile_plugin.h"
 #include "readpdb.h"
 #include "periodic_table.h"
+#include "safeopen.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -133,10 +134,8 @@ static void *open_pdb_read(const char *filepath, const char *filetype,
   /* If no atoms were found, this is probably not a PDB file! */
   if (!*natoms) {
     fprintf(stderr, "PDB file '%s' contains no atoms.\n", filepath);
-    if (pdb->meta->remarks != NULL)
-      free(pdb->meta->remarks);
-    if (pdb->meta != NULL)
-      free(pdb->meta);
+    free(pdb->meta->remarks);
+    free(pdb->meta);
     free(pdb);
     return NULL;
   }
@@ -188,7 +187,7 @@ static int read_pdb_structure(void *mydata, int *optflags,
           ridstr, atom->insertion, atom->altloc, elementsymbol,
           NULL, NULL, NULL, &atom->occupancy, &atom->bfactor);
 
-      if (pdb->idxmap != NULL && atomserial < 100000) {
+      if (pdb->idxmap != NULL && atomserial >= 0 && atomserial < 100000) {
         pdb->idxmap[atomserial] = i; /* record new serial number translation */ 
       }
  
@@ -204,7 +203,7 @@ static int read_pdb_structure(void *mydata, int *optflags,
         badptecount++; /* unrecognized element */
       }
  
-      strcpy(atom->type, atom->name);
+      snprintf(atom->type, sizeof(atom->type), "%s", atom->name);
       i++;
       break;
 
@@ -283,7 +282,7 @@ static int read_next_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   float *x, *y, *z;
   float occup, bfac;
   if (pdb->natoms == 0) 
-    return MOLFILE_ERROR; /* EOF */
+    return MOLFILE_EOF;
   if (ts) {
     x = ts->coords;
     y = x+1;
@@ -295,7 +294,8 @@ static int read_next_timestep(void *v, int natoms, molfile_timestep_t *ts) {
   do {
     indx = read_pdb_record(pdb->fd, pdbstr);
     if((indx == PDB_END || indx == PDB_EOF) && (i < pdb->natoms)) {
-      return MOLFILE_ERROR;
+      /* no more frames, or a frame with too few atoms */
+      return (i == 0) ? MOLFILE_EOF : MOLFILE_ERROR;
     } else if(indx == PDB_ATOM) {
       if(i++ >= pdb->natoms) {
         break;      
@@ -322,12 +322,9 @@ static void close_pdb_read(void *v) {
   pdbdata *pdb = (pdbdata *)v;
   if (pdb->fd != NULL)
     fclose(pdb->fd);
-  if (pdb->idxmap != NULL)
-    free(pdb->idxmap);
-  if (pdb->meta->remarks != NULL)
-    free(pdb->meta->remarks);
-  if (pdb->meta != NULL) 
-    free(pdb->meta);
+  free(pdb->idxmap);
+  free(pdb->meta->remarks);
+  free(pdb->meta);
   free(pdb);
 }
 
@@ -336,7 +333,7 @@ static void *open_file_write(const char *path, const char *filetype,
 
   FILE *fd;
   pdbdata *pdb;
-  fd = fopen(path, "w");
+  fd = molfile_fopen_write(path, "w");
   if (!fd) {
     fprintf(stderr, "Unable to open file %s for writing\n", path);
     return NULL;

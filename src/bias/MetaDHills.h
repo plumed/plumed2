@@ -34,6 +34,8 @@
 namespace PLMD {
 
 class ActionWithValue;
+class CheckpointReader;
+class CheckpointWriter;
 class IFile;
 class OFile;
 class Value;
@@ -119,9 +121,9 @@ public:
   std::string getPath(unsigned i) const;
   /// open the file if it exists now; returns true if it has been opened
   bool openIfExists(unsigned i);
-  /// read the hills that are in the file (an open file) up to now and call f for each one; returns their number.
-  /// An error while reading (e.g. a wrong field) is thrown by all the processes.
-  unsigned read(unsigned i, const Callback& f);
+  /// read the hills that are in the file (an open file) up to now, at most maxhills, and call f for each one; returns
+  /// their number. An error while reading (e.g. a wrong field) is thrown by all the processes.
+  unsigned read(unsigned i, const Callback& f, unsigned long long maxhills=std::numeric_limits<unsigned long long>::max());
   /// With WALKERS_N, the grid written by a walker contains the hills it has read from the files of the other walkers:
   /// their numbers are written in a comment line after the grid, so that when restarting from the grid only the
   /// hills that are not in it are added. The comment line (own is the index of this walker)
@@ -145,6 +147,12 @@ public:
                      double skipupto=-std::numeric_limits<double>::infinity(), unsigned long long skipcount=0);
   /// prepare an open file for the next read (the hills read up to now are not read again)
   void reset(unsigned i);
+  /// store the numbers of hills read from each file in a checkpoint (see CHECKPOINT)
+  void writeCheckpoint(CheckpointWriter& w) const;
+  /// restore the numbers of hills read from the files of the other walkers (own is the index of this walker, whose
+  /// file is not read): the hills that had been read when the checkpoint was written are skipped, the next ones will be
+  /// read at the next reading step. To be called by all the processes.
+  void readCheckpoint(CheckpointReader& r, unsigned own);
   void close(unsigned i);
   /// write a hill; height is the one written in the file
   void write(OFile& file, double time, const MetaDGaussian& hill, double height, double biasf, bool clock) const;
@@ -212,6 +220,10 @@ public:
   bool isRunFirstStep(long long int step) const {
     return !runStarted_ || step==runStartStep_;
   }
+  /// store the state in a checkpoint (see CHECKPOINT): after the restart, the first step of the run is the one of
+  /// the run that wrote the checkpoint, so that the hills are added at the same steps
+  void writeCheckpoint(CheckpointWriter& w) const;
+  void readCheckpoint(CheckpointReader& r);
   /// tolerance: times are written with a finite precision (FMT), so that a hill within tolerance (half a PACE)
   /// is considered to be the hill of this step; a later hill means that the previous run went beyond this step
   bool isHillStep(long long int step, long long int stride, double time, double tolerance) const {

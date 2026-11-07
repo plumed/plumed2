@@ -47,7 +47,8 @@ set(GEN_MODULE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedGenerate.cmake)
 set(PPM_INC ${PLUMED_GEN}/PlumedMainEnum.inc ${PLUMED_GEN}/PlumedMainMap.inc
             ${PLUMED_GEN}/GREXEnum.inc ${PLUMED_GEN}/GREXMap.inc
             ${PLUMED_GEN}/CLToolMainEnum.inc ${PLUMED_GEN}/CLToolMainMap.inc
-            ${PLUMED_GEN}/ModuleMap.inc)
+            ${PLUMED_GEN}/ModuleMap.inc
+            ${PLUMED_GEN}/ActionDescriptions.inc)
 set(CONFIG_OUT ${PLUMED_GEN}/Config.inc ${PLUMED_GEN}/version.h
                ${PLUMED_GEN}/Makefile.conf.xxd)
 set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd)
@@ -63,7 +64,10 @@ add_custom_command(
             ${PLUMED_SRC}/src/config/Config.inc.in
             ${PLUMED_SRC}/VERSION.txt
             ${PLUMED_SRC}/src/cltools/completion.sh
+            ${PLUMED_SRC}/src/maketools/makeActionDescriptions.cmake
             ${_generator_inputs}
+    COMMAND ${CMAKE_COMMAND} "-DSRC=${PLUMED_SRC}" "-DOUT=${PLUMED_GEN}"
+            -P ${PLUMED_SRC}/src/maketools/makeActionDescriptions.cmake
     COMMENT "Generating PLUMED enum/map/config files (CMake)"
     VERBATIM)
 

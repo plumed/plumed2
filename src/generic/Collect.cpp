@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/Checkpoint.h"
 
 //+PLUMEDOC ANALYSIS COLLECT
 /*
@@ -127,6 +128,10 @@ A $100 \times 6$ matrix is stored.  Each row of this matrix contains a vectorize
 There is currently no way to store the collected data in a way that recognises that each of the input PLUMED Value
 was a matrix. You also cannot use this action to store functions evaluated on a grid.
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the collected data is stored in the checkpoint, so that the time series continues exactly after a restart.
+
 */
 //+ENDPLUMEDOC
 
@@ -142,6 +147,11 @@ private:
   unsigned clearstride;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   Collect( const ActionOptions& );
   unsigned getNumberOfDerivatives() override;
   bool calculateOnUpdate() override {
@@ -210,6 +220,9 @@ Collect::Collect( const ActionOptions& ao ):
     nvals=1;
     usefirstconf=(getStride()==0);
   } else if( clearstride>0 ) {
+    if( getStride()==0 ) {
+      error("CLEAR cannot be used with STRIDE=0");
+    }
     if( clearstride%getStride()!=0 ) {
       error("CLEAR parameter must be a multiple of STRIDE");
     }
@@ -241,6 +254,51 @@ Collect::Collect( const ActionOptions& ao ):
 
 unsigned Collect::getNumberOfDerivatives() {
   return 0;
+}
+
+// The collected data (value of type "average"), with its shape because it grows
+// when CLEAR is not used, and the flag of the first configuration
+void Collect::writeCheckpoint(CheckpointWriter& w) {
+  w.write("usefirstconf",(long long) usefirstconf);
+  const Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  for(const auto& d : myout->getShape()) {
+    shape.push_back(d);
+  }
+  w.write("shape",shape);
+  std::vector<double> data;
+  const std::size_t nvals = myout->getNumberOfValues();
+  for(std::size_t i=0; i<nvals; ++i) {
+    data.push_back( myout->get(i) );
+  }
+  w.write("data",data);
+}
+
+void Collect::readCheckpoint(CheckpointReader& r) {
+  long long uf;
+  r.read("usefirstconf",uf);
+  usefirstconf = uf!=0;
+  Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  r.read("shape",shape);
+  std::vector<std::size_t> ss(shape.begin(),shape.end());
+  if( ss.size()!=myout->getRank() ) {
+    error("the checkpoint was written with a different type of output");
+  }
+  std::vector<double> data;
+  r.read("data",data);
+  if( myout->getShape()!=ss ) {
+    myout->setShape(ss);
+    if( ss.size()==2 ) {
+      myout->reshapeMatrixStore( ss[1] );
+    }
+  }
+  if( data.size()!=myout->getNumberOfValues() ) {
+    error("the checkpoint was written with a different number of values");
+  }
+  for(std::size_t i=0; i<data.size(); ++i) {
+    myout->set( i, data[i] );
+  }
 }
 
 void Collect::update() {

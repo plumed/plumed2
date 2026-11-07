@@ -420,6 +420,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
     auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));
     plumed_assert(cl);
+    cl->setDLHandles(dlloader.getHandles());
     int ret=0;
     // NOTE: catch PLUMED exceptions from CLTool readInput() and main() so that user-input
     // errors terminate cleanly with a message and nonzero exit status

@@ -37,6 +37,7 @@
 #include "core/PlumedMain.h"
 
 #include "tools/File.h"
+#include "tools/Checkpoint.h"
 #include "tools/Pbc.h"
 #include "tools/OpenMP.h"
 
@@ -71,6 +72,10 @@ d: DISTANCE ATOMS=10,20
 RESTRAINT ARG=d KAPPA=100000 AT=0.6
 EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
 ```
+
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the drift and the positions and forces of the previous step are stored in the checkpoint, so that the restart is exact. This works with a single process; with more processes each one holds only its atoms and the state is not stored (the action is listed in a warning).
 
 */
 //+ENDPLUMEDOC
@@ -124,6 +129,11 @@ public:
   ~EffectiveEnergyDrift();
 
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 
   void calculate() override {};
   void apply() override {};
@@ -237,6 +247,81 @@ EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift() {
 
+}
+
+// The state is the drift accumulated by the local atoms and their data at the
+// previous step. With more than one process each process holds only its own
+// atoms and no collective operation is done when writing a checkpoint, so the
+// state is stored only for a single process (otherwise nothing is written and
+// the action is listed in the warning about the state not stored).
+void EffectiveEnergyDrift::writeCheckpoint(CheckpointWriter& w) {
+  if(nProc>1) {
+    return;
+  }
+  w.write("isFirstStep",(long long) isFirstStep);
+  w.write("eed",eed);
+  w.write("initialBias",initialBias);
+  std::vector<double> boxes;
+  for(const Tensor* t : {
+        &box,&pbox,&fbox,&pfbox
+      }) {
+    for(unsigned i=0; i<3; ++i)
+      for(unsigned j=0; j<3; ++j) {
+        boxes.push_back((*t)(i,j));
+      }
+  }
+  w.write("boxes",boxes);
+  std::vector<long long> gat(pGatindex.begin(),pGatindex.end());
+  w.write("pGatindex",gat);
+  std::vector<double> data;
+  for(unsigned i=0; i<pPositions.size(); ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      data.push_back(pPositions[i][k]);
+    }
+    for(unsigned k=0; k<3; ++k) {
+      data.push_back(pForces[i][k]);
+    }
+  }
+  w.write("pdata",data);
+}
+
+void EffectiveEnergyDrift::readCheckpoint(CheckpointReader& r) {
+  if(nProc>1 || !r.has("eed")) {
+    log<<"  WARNING: the state of "<<getLabel()<<" is not in the checkpoint (it needs a single process): the drift restarts from zero\n";
+    return;
+  }
+  long long b;
+  r.read("isFirstStep",b);
+  isFirstStep=b!=0;
+  r.read("eed",eed);
+  r.read("initialBias",initialBias);
+  std::vector<double> boxes;
+  r.read("boxes",boxes);
+  plumed_massert(boxes.size()==36,"checkpoint: wrong data for "+getLabel());
+  unsigned n=0;
+  for(Tensor* t : {
+        &box,&pbox,&fbox,&pfbox
+      }) {
+    for(unsigned i=0; i<3; ++i)
+      for(unsigned j=0; j<3; ++j) {
+        (*t)(i,j)=boxes[n++];
+      }
+  }
+  std::vector<long long> gat;
+  r.read("pGatindex",gat);
+  pGatindex.assign(gat.begin(),gat.end());
+  pNLocalAtoms=pGatindex.size();
+  std::vector<double> data;
+  r.read("pdata",data);
+  plumed_massert(data.size()==6*pGatindex.size(),"checkpoint: wrong data for "+getLabel());
+  pPositions.resize(pNLocalAtoms);
+  pForces.resize(pNLocalAtoms);
+  for(unsigned i=0; i<pNLocalAtoms; ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      pPositions[i][k]=data[6*i+k];
+      pForces[i][k]=data[6*i+3+k];
+    }
+  }
 }
 
 void EffectiveEnergyDrift::update() {

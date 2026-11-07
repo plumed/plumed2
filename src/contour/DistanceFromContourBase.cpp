@@ -57,6 +57,9 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   // Read in the multicolvar/atoms
   std::vector<AtomNumber> atoms;
   parseAtomList("POSITIONS",atoms);
+  if( atoms.empty() ) {
+    error("no atoms were specified with POSITIONS");
+  }
   std::vector<AtomNumber> origin;
   parseAtomList("ATOM",origin);
   if( origin.size()!=1 ) {

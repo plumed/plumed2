@@ -1,0 +1,18 @@
+# exact restart of METAD and PBMETAD from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=1,3
+d4: DISTANCE ATOMS=2,4
+# grid, well-tempered, a hill at the restart step, c(t), maximum bias, grid written at stride
+mg: METAD ARG=d1,d2 PACE=4 HEIGHT=1 SIGMA=0.1,0.1 BIASFACTOR=10 TEMP=300 GRID_MIN=0,0 GRID_MAX=3,3 GRID_BIN=60,60 CALC_RCT CALC_MAX_BIAS FILE=HILLS_G GRID_WFILE=GRID_G GRID_WSTRIDE=8
+# no grid, adaptive hills (statistics of the fluctuations), work
+mh: METAD ARG=d3 PACE=2 HEIGHT=0.5 SIGMA=5 ADAPTIVE=DIFF SIGMA_MIN=0.02 SIGMA_MAX=1 CALC_WORK FILE=HILLS_H
+# grid placed around the first hill and extended, acceleration factor
+ms: METAD ARG=d4 PACE=3 HEIGHT=1 SIGMA=0.05 GRID_SPACING=0.01 BIASFACTOR=5 TEMP=300 ACCELERATION FILE=HILLS_S
+# no grid, neighbor list of the hills
+mn: METAD ARG=d1,d3 PACE=5 HEIGHT=0.3 SIGMA=0.2,0.2 NLIST FILE=HILLS_N
+# PBMETAD with grids, and without grids with adaptive hills
+pb: PBMETAD ARG=d1,d2 PACE=3 HEIGHT=0.5 SIGMA=0.1,0.1 BIASFACTOR=8 TEMP=300 GRID_MIN=0,0 GRID_MAX=3,3 FILE=HB1,HB2
+pd: PBMETAD ARG=d3,d4 PACE=2 HEIGHT=0.5 SIGMA=4 ADAPTIVE=DIFF SIGMA_MIN=0.01,0.01 SIGMA_MAX=1,1 TEMP=300 FILE=HD1,HD2
+PRINT ARG=*.* FILE=COLVAR STRIDE=1 FMT=%.17g

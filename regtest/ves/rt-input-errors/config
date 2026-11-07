@@ -1,0 +1,26 @@
+plumed_modules=ves
+type=driver
+arg="--plumed plumed.dat --noatoms"
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --noatoms > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -A1 "^PLUMED: +++ assertion failed" bad.out | sed -e 's/^PLUMED: //' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "BF_WAVELETS with a negative FUNCTION_LENGTH" "BF_WAVELETS ORDER=8 TYPE=SYMLETS MINIMUM=-4.0 MAXIMUM=4.0 FUNCTION_LENGTH=-1 LABEL=bf"
+  expect_error "BF_WAVELETS with a zero FUNCTION_LENGTH" "BF_WAVELETS ORDER=8 TYPE=SYMLETS MINIMUM=-4.0 MAXIMUM=4.0 FUNCTION_LENGTH=0 LABEL=bf"
+  for k in COEFFS GRADIENT HESSIAN; do
+    expect_error "OPT_DUMMY with ${k}_OUTPUT=0" "arg1: READ FILE=arg.in VALUES=arg IGNORE_TIME IGNORE_FORCES
+bf: BF_CHEBYSHEV ORDER=3 MINIMUM=-4.0 MAXIMUM=4.0
+VES_LINEAR_EXPANSION ARG=arg1 BASIS_FUNCTIONS=bf TEMP=300.0 GRID_BINS=20 LABEL=ves1
+OPT_DUMMY BIAS=ves1 STRIDE=1000 LABEL=o1 COEFFS_FILE=coeffs.data GRADIENT_FILE=gradient.data HESSIAN_FILE=hessian.data ${k}_OUTPUT=0"
+  done
+  rm -f bad.dat bad.out coeffs.data gradient.data hessian.data
+}

@@ -29,6 +29,8 @@
 #include "core/ActionShortcut.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
+#include <filesystem>
 #include "tools/Pbc.h"
 #include <cstdio>
 #include <cstring>
@@ -208,6 +210,8 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.addFlag("--parse-only",false,"read the plumed input file and stop");
   keys.addFlag("--restart",false,"makes driver behave as if restarting");
+  keys.add("optional","--checkpoint-stride","send the checkpointing signal to PLUMED every this many steps, as an MD engine writing its checkpoint would do (see CHECKPOINT)");
+  keys.add("optional","--restart-from-checkpoint","restart from this PLUMED checkpoint file (see CHECKPOINT): the trajectory frames before the checkpointing step are skipped and that step is presented again, as GROMACS does after -cpi; implies --restart");
   TrajectoryParser::registerKeywords(keys);
   keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
   keys.add("optional","--valuedict-ofile","output a dictionary giving information about each value in the input file");
@@ -270,6 +274,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   parse("--valuedict-ofile",valuedict_file);
   bool restart;
   parseFlag("--restart",restart);
+  long long int checkpointStride=0;
+  parse("--checkpoint-stride",checkpointStride);
+  std::string restartFromCheckpoint;
+  parse("--restart-from-checkpoint",restartFromCheckpoint);
+  // step stored in the checkpoint, -1 when not restarting from one
+  long long int restartStep=-1;
+  if(restartFromCheckpoint.length()>0) {
+    restart=true;
+  }
 
   std::string fakein;
   bool debug_float=false;
@@ -531,6 +544,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
   if(restart) {
     p.cmd("setRestart",1);
+  }
+  if(restartFromCheckpoint.length()>0) {
+    // with --multi every replica has its own file, with the replica suffix
+    std::string fname=restartFromCheckpoint;
+    if(multi && !std::filesystem::exists(fname)) {
+      fname=FileBase::appendSuffix(fname,"."+std::to_string(intercomm.Get_rank()));
+    }
+    CheckpointReader reader(CheckpointReader::readFile(fname));
+    restartStep=reader.get<long long int>("step");
+    std::fprintf(out,"Restarting from checkpoint %s written at step %lld\n",fname.c_str(),restartStep);
   }
 
   if(Communicator::initialized()) {
@@ -1020,6 +1043,23 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           cell[i]=real(pbc_cli_box[i]);
         }
       }
+    }
+    // after a restart from a checkpoint, the first step presented is the one stored in it
+    if(restartStep>=0) {
+      if(step<restartStep) {
+        step+=stride;
+        continue;
+      }
+      if(step>restartStep) {
+        error("the checkpoint was written at step "+std::to_string(restartStep)+", which is not in the trajectory (check --initial-step and --trajectory-stride)");
+      }
+      restartStep=-1;
+    }
+    if(checkpointStride>0) {
+      int checkp=(step%checkpointStride==0) ? 1 : 0;
+      p.cmd("doCheckPoint",checkp);
+    }
+    if(!noatoms) {
       p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
 

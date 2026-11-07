@@ -1,5 +1,14 @@
 include PLUMED_VERSION
 include include/Plumed.h
 include plumed.c
+include plumed.pyx
+include cplumed.pxd
+include LICENSE
+include build_backend.py
 #this should be refined
 include test/*
+recursive-include plumed_runtime *
+recursive-include plumed_source *
+# a link to ../ (see build_backend.py)
+prune plumed_source/src/include
+global-exclude __pycache__/* *.py[cod]

@@ -1,0 +1,13 @@
+# the outputs of these models are not contiguous tensors:
+# strided returns [sin(a), cos(a)], expand returns three copies of a^2+b^2
+a: DISTANCE ATOMS=1,2
+b: DISTANCE ATOMS=1,3
+s: PYTORCH_MODEL FILE=strided.ptc ARG=a,b
+e: PYTORCH_MODEL FILE=expand.ptc ARG=a,b
+# with constant arguments the model is calculated in the constructor
+c1: CONSTANT VALUE=0.3
+c2: CONSTANT VALUE=0.7
+c: PYTORCH_MODEL FILE=strided.ptc ARG=c1,c2
+ref: CUSTOM ARG=a,b VAR=x,y FUNC=x*x+y*y PERIODIC=NO
+DUMPDERIVATIVES ARG=s.*,e.* FMT=%8.4f FILE=DERIVATIVES
+PRINT FMT=%8.4f FILE=COLVAR ARG=a,s.*,e.*,ref,c.*

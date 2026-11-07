@@ -365,7 +365,9 @@ double Action::getkBT() {
       warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
     }
     kbt = kB*temp;
-    plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    if(!(kbt>0)) {
+      error("TEMP must be greater than zero");
+    }
     return kbt;
   }
   return kbt;

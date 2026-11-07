@@ -1,4 +1,5 @@
 import unittest
+import os
 import plumed
 
 try:
@@ -26,8 +27,59 @@ class TestInputBuilder(unittest.TestCase):
     def check(self, s1, s2):
         self.assertEqual(s1, s2)
 
+    def test_generated_docstring_safely_quotes_backslashes_and_triple_quotes(self):
+        doc = 'quotes "here", backslash \\ and triple """'
+        generated = plumed._create_functions(
+            {"EDGE": {"VALUE": "(option)"}}, doc={"EDGE": doc}
+        )["EDGE"]
+        namespace = {}
+        exec(generated, plumed._format_tools, namespace)
+        self.assertEqual(namespace["EDGE"].__doc__, "\n" + doc)
+
+    def test_attached_builder_borrows_uninitialized_instance(self):
+        """Reading metadata must neither initialize nor finalize the supplied object."""
+        with plumed.Plumed() as instance:
+            instance.cmd("setLogFile", os.devnull)
+            builder = plumed.InputBuilder(toplumed=instance)
+            instance.cmd("setNatoms", 2)
+            instance.cmd("init")
+            self.check(builder.DISTANCE("d", ATOMS="1,2"), "d: DISTANCE ATOMS=1,2\n")
+
+    def test_attached_metadata_does_not_reopen_kernel(self):
+        with plumed.Plumed() as instance:
+            if plumed._readkernelmetadata(instance=instance) is None:
+                self.skipTest("Selected legacy kernel uses Vim metadata")
+            builder = plumed.InputBuilder(
+                toplumed=instance, kernel="/missing/kernel-must-not-be-opened"
+            )
+            self.assertIn("DISTANCE", builder._vimdict)
+            self.assertTrue(builder.refresh())
+
+    def test_refresh_without_live_dictionary(self):
+        self.assertFalse(ib.refresh())
+        with plumed.Plumed() as instance:
+            builder = plumed.InputBuilder(toplumed=instance, load_dict=False)
+            self.assertFalse(builder.refresh())
+            self.assertFalse(builder._has_dict)
+
     def test_cv_label(self):
         self.check(ib.TORSION("phi", ATOMS="5,7,9,15"), "phi: TORSION ATOMS=5,7,9,15\n")
+
+    def test_kernel_metadata_keyword_classification(self):
+        """Numbered atom parsing permission must not imply numbered input."""
+        metadata = plumed._readkernelmetadata()
+        if metadata is None:
+            self.skipTest("Selected legacy kernel uses Vim metadata")
+        dictionary, _ = metadata
+        self.assertEqual(dictionary["ANGLE_SCALAR"]["ATOMS"], "(option)")
+        self.assertEqual(dictionary["ANGLE_VECTOR"]["ATOMS"], "(numbered)")
+        self.assertEqual(dictionary["DUMPPDB"]["FMT"], "(option)")
+        # STRIDE is hidden from normal help but remains accepted by InputBuilder.
+        self.assertIn("STRIDE", dictionary["DUMPMASSCHARGE"])
+
+    def test_hidden_keyword_is_available_to_builder(self):
+        self.assertIn("STRIDE", ib._vimdict["DUMPMASSCHARGE"])
+        self.assertEqual(ib.DUMPMASSCHARGE(STRIDE=10), "DUMPMASSCHARGE STRIDE=10\n")
 
     def test_cv_special_access(self):
         self.check(

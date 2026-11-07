@@ -27,12 +27,14 @@
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
 #include "tools/OpenMP.h"
 #include "tools/File.h"
 #include "tools/Communicator.h"
+#include "tools/Checkpoint.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -190,6 +192,11 @@ No Gaussian is added at the first step of a simulation.  When a simulation is co
 at the first step unless the hills file already contains it, i.e. unless the previous run had already performed this step
 (some MD codes compute again the last step of the previous run when restarting, others do not).  When the bias is read
 from a grid, the hills file (FILE) is still read, without adding its hills to the bias, to know the time of its last hill.
+
+With [CHECKPOINT](CHECKPOINT.md) the restart is exact: the bias (the grid or the list of hills), the steps when the hills
+are added, the statistics of the adaptive hills, the accumulated work, acceleration factor and c(t), and the number of
+hills already read from the files of the other walkers (WALKERS_N) are restored from the checkpoint, and the hills file is
+truncated at the checkpointing step instead of being read.  GRID_RFILE and ACCELERATION_RFILE are then not read.
 
 Notice, also that in the first input above the
 [RESTART](RESTART.md) action was used, while the second input used METAD's RESTART keyword.  If you use the first input
@@ -560,6 +567,9 @@ private:
   };
   // general setup
   double kbt_=0.0;
+  /// restart from a checkpoint (see CHECKPOINT): the state is restored by readCheckpoint at the first step, the hills
+  /// and grid files are not read
+  bool fromCheckpoint_=false;
   int stride_=0;
   /// current hill deposition pace (equal to stride_ unless FREQUENCY_ADAPTIVE is used)
   int current_stride_=0;
@@ -786,6 +796,11 @@ public:
   void update() override;
   void beforeUpdate() override;
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   bool checkNeedsGradients()const override;
 };
 
@@ -882,6 +897,7 @@ void MetaD::registerTemperingKeywords(const std::string &name_stem, const std::s
 
 MetaD::MetaD(const ActionOptions& ao):
   PLUMED_BIAS_INIT(ao) {
+  fromCheckpoint_=getRestart() && plumed.checkpointing.isRestartingFromCheckpoint();
   kernel_.setArguments(getArguments());
   if(!dp2cutoffNoStretch()) {
     kernel_.setStretch(dp2cutoffA,dp2cutoffB);
@@ -946,8 +962,8 @@ void MetaD::parseGaussianWidth() {
     error("DIFF_FROM_SCRATCH can only be used with ADAPTIVE=DIFF");
   }
   // the hills are kept only if needed (restart with ADAPTIVE=DIFF), see MetaDHillsFiles::readHills
-  diffrestart_.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch);
-  if(adaptive_==FlexibleBin::diffusion && getRestart()) {
+  diffrestart_.pending=(adaptive_==FlexibleBin::diffusion && getRestart() && !diff_from_scratch && !fromCheckpoint_);
+  if(adaptive_==FlexibleBin::diffusion && getRestart() && !fromCheckpoint_) {
     if(diff_from_scratch) {
       log.printf("  The statistics for the hills width are accumulated from scratch after the restart (DIFF_FROM_SCRATCH)\n");
     } else {
@@ -1481,7 +1497,9 @@ void MetaD::setupComponents(const SetupInput& in) {
     componentIsNotPeriodic("acc");
     // Set the initial value of the acceleration.
     // If this is not a restart, set to 1.0.
-    if (in.acc_rfilename.length() == 0) {
+    if(fromCheckpoint_) {
+      log.printf("  the acceleration factor is restored from the checkpoint\n");
+    } else if (in.acc_rfilename.length() == 0) {
       getPntrToComponent("acc")->set(1.0);
       if(getRestart()) {
         log.printf("  WARNING: calculating the acceleration factor in a restarted run without reading in the previous value will most likely lead to incorrect results.\n");
@@ -1595,7 +1613,10 @@ void MetaD::setupBiasGrid(SetupInput& in) {
     BiasGrid_=Tools::make_unique<MetaDBiasGrid>(*this);
     // check for mesh and sigma size (for a grid read from file, on the lattice of the grid in input)
     MetaDBiasGrid::checkSpacing(*this,in.gmin,in.gmax,in.gbin,adaptive_!=FlexibleBin::none,sigma0_,sigma0min_);
-    if(!(in.gridreadfilename.length()>0)) {
+    if(fromCheckpoint_ && in.gridreadfilename.length()>0) {
+      log.printf("  the grid is restored from the checkpoint, %s is not read\n",in.gridreadfilename.c_str());
+    }
+    if(!(in.gridreadfilename.length()>0) || fromCheckpoint_) {
       BiasGrid_->create(funcl,getArguments(),in.gmin,in.gmax,in.gbin,in.sparsegrid,in.spline,in.gridnobounds);
     } else {
       // read the grid in input
@@ -1654,7 +1675,7 @@ void MetaD::readHillsFiles(const SetupInput& in) {
   input.files=hillsfiles_.get();
   input.name=in.hillsfname;
   input.gridWalkerHills=in.gridWalkerHills;
-  readHillsAtStart(*this,mw_,std::vector<MetaDHillsInput>(1,input),in.restartedFromGrid,schedule_);
+  readHillsAtStart(*this,mw_,std::vector<MetaDHillsInput>(1,input),in.restartedFromGrid,schedule_,fromCheckpoint_);
 }
 
 void MetaD::setupTargetGrid() {
@@ -1675,8 +1696,8 @@ void MetaD::setupTargetGrid() {
 }
 
 void MetaD::initializeRestartQuantities(const SetupInput& in) {
-  // (a grid can be read also without RESTART)
-  if(getRestart() || in.gridreadfilename.length()>0) {
+  // (a grid can be read also without RESTART; with a checkpoint these quantities are restored from it)
+  if(!fromCheckpoint_ && (getRestart() || in.gridreadfilename.length()>0)) {
     // if this is a restart the neighbor list should be immediately updated
     if(nlist_.enabled) {
       nlist_.update=true;
@@ -2393,6 +2414,130 @@ void MetaD::updateFrequencyAdaptiveStride() {
     current_stride_=fa_.max_stride;
   }
   getPntrToComponent("pace")->set(current_stride_);
+}
+
+// The state at the start of a step (see CHECKPOINT): the bias (grid or hills), the steps when the hills are added,
+// the statistics of the adaptive hills, the accumulators, and the hills already read from the files of the other
+// walkers. The hills file is trimmed at the checkpoint and is not read at the restart.
+void MetaD::writeCheckpoint(CheckpointWriter& w) {
+  w.beginSection("schedule");
+  schedule_.writeCheckpoint(w);
+  w.endSection();
+  w.write("current_stride",current_stride_);
+  if(grid_) {
+    w.beginSection("grid");
+    BiasGrid_->writeCheckpoint(w);
+    w.endSection();
+  } else {
+    // the hills, as created by the constructor of Gaussian
+    std::vector<int> multivariate;
+    std::vector<double> height,center,sigma;
+    for(const auto & h : hills_) {
+      multivariate.push_back(h.multivariate);
+      height.push_back(h.height);
+      center.insert(center.end(),h.center.begin(),h.center.end());
+      sigma.insert(sigma.end(),h.sigma.begin(),h.sigma.end());
+    }
+    w.write("hills_multivariate",multivariate);
+    w.write("hills_height",height);
+    w.write("hills_center",center);
+    w.write("hills_sigma",sigma);
+  }
+  if(adaptive_==FlexibleBin::diffusion) {
+    w.beginSection("adaptive");
+    flexbin_->writeCheckpoint(w);
+    w.write("exchange_attempted",exchange_.attempted);
+    w.write("exchange_partner_cv",exchange_.partner_cv);
+    w.write("exchange_last_cv",exchange_.last_cv);
+    w.endSection();
+  }
+  w.write("acc",acc_);
+  w.write("max_bias",max_bias_);
+  w.write("transition_bias",transition_bias_);
+  w.write("reweight_factor",reweight_factor_);
+  w.write("work",work_);
+  if(nlist_.enabled) {
+    w.beginSection("nlist");
+    w.write("update",nlist_.update);
+    w.write("steps",nlist_.steps);
+    w.write("index",nlist_.index);
+    w.write("center",nlist_.center);
+    w.write("dev2",nlist_.dev2);
+    w.endSection();
+  }
+  w.beginSection("files");
+  hillsfiles_->writeCheckpoint(w);
+  w.endSection();
+  writeComponentValues(w);
+}
+
+void MetaD::readCheckpoint(CheckpointReader& r) {
+  const unsigned ncv=getNumberOfArguments();
+  r.beginSection("schedule");
+  schedule_.readCheckpoint(r);
+  r.endSection();
+  r.read("current_stride",current_stride_);
+  if(grid_!=r.hasSection("grid")) {
+    error("the checkpoint was written with a different setting for GRID_*");
+  }
+  if(grid_) {
+    r.beginSection("grid");
+    BiasGrid_->readCheckpoint(r);
+    r.endSection();
+  } else {
+    std::vector<int> multivariate;
+    std::vector<double> height,center,sigma;
+    r.read("hills_multivariate",multivariate);
+    r.read("hills_height",height);
+    r.read("hills_center",center);
+    r.read("hills_sigma",sigma);
+    if(height.size()!=multivariate.size() || center.size()!=ncv*height.size()) {
+      error("the hills in the checkpoint have a different number of variables");
+    }
+    hills_.clear();
+    hillarrays_.clear();
+    std::size_t ks=0;
+    for(std::size_t h=0; h<height.size(); h++) {
+      const unsigned n=(multivariate[h] ? ncv*(ncv+1)/2 : ncv);
+      if(ks+n>sigma.size()) {
+        error("the hills in the checkpoint have a different number of variables");
+      }
+      std::vector<double> c(center.begin()+h*ncv,center.begin()+(h+1)*ncv);
+      std::vector<double> sg(sigma.begin()+ks,sigma.begin()+ks+n);
+      ks+=n;
+      addGaussian(Gaussian(multivariate[h]!=0,height[h],c,sg));
+    }
+  }
+  if(adaptive_==FlexibleBin::diffusion) {
+    r.beginSection("adaptive");
+    flexbin_->readCheckpoint(r);
+    r.read("exchange_attempted",exchange_.attempted);
+    r.read("exchange_partner_cv",exchange_.partner_cv);
+    r.read("exchange_last_cv",exchange_.last_cv);
+    r.endSection();
+  }
+  r.read("acc",acc_);
+  r.read("max_bias",max_bias_);
+  r.read("transition_bias",transition_bias_);
+  r.read("reweight_factor",reweight_factor_);
+  r.read("work",work_);
+  if(nlist_.enabled) {
+    if(r.hasSection("nlist")) {
+      r.beginSection("nlist");
+      r.read("update",nlist_.update);
+      r.read("steps",nlist_.steps);
+      r.read("index",nlist_.index);
+      r.read("center",nlist_.center);
+      r.read("dev2",nlist_.dev2);
+      r.endSection();
+    } else {
+      nlist_.update=true;
+    }
+  }
+  r.beginSection("files");
+  hillsfiles_->readCheckpoint(r,mw_.id);
+  r.endSection();
+  readComponentValues(r);
 }
 
 bool MetaD::checkNeedsGradients()const {

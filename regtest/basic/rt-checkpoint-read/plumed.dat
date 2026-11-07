@@ -1,0 +1,9 @@
+# exact restart of READ (position in the file, shared file, EVERY) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+# two actions reading the same file (the second one shares the file of the first)
+r1: READ FILE=input1.dat VALUES=x
+r2: READ FILE=input1.dat VALUES=y
+# one line of every two (the times of the file do not match the steps)
+r3: READ FILE=input2.dat VALUES=z EVERY=2 IGNORE_TIME
+s: ACCUMULATE ARG=r1
+PRINT ARG=r1,r2,r3,s FILE=COLVAR STRIDE=1 FMT=%.17g

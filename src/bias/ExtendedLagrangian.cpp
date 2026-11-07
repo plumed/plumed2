@@ -22,6 +22,7 @@
 #include "Bias.h"
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {
@@ -107,6 +108,10 @@ ex: EXTENDED_LAGRANGIAN ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1 FRICTION=10,10 TEM
 PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
 ```
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the positions and velocities of the fictitious particles and the random number generator of the thermostat are stored in the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -128,6 +133,11 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 };
 
 PLUMED_REGISTER_ACTION(ExtendedLagrangian,"EXTENDED_LAGRANGIAN")
@@ -237,6 +247,41 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   log<<"\n";
 }
 
+
+// Positions and velocities of the fictitious particles, the velocity printed at
+// the next step and the generator of the thermostat; the components are written by Bias
+void ExtendedLagrangian::writeCheckpoint(CheckpointWriter& w) {
+  w.write("firsttime",(long long) firsttime);
+  w.write("fict",fict);
+  w.write("vfict",vfict);
+  w.write("vfict_laststep",vfict_laststep);
+  w.write("ffict",ffict);
+  w.write("random",rand.stateToString());
+  writeComponentValues(w);
+}
+
+void ExtendedLagrangian::readCheckpoint(CheckpointReader& r) {
+  long long ft;
+  r.read("firsttime",ft);
+  firsttime=ft!=0;
+  std::vector<double> f,v,vl,ff;
+  r.read("fict",f);
+  r.read("vfict",v);
+  r.read("vfict_laststep",vl);
+  r.read("ffict",ff);
+  const unsigned n=getNumberOfArguments();
+  if(f.size()!=n || v.size()!=n || vl.size()!=n || ff.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  fict=f;
+  vfict=v;
+  vfict_laststep=vl;
+  ffict=ff;
+  std::string state;
+  r.read("random",state);
+  rand.stateFromString(state);
+  readComponentValues(r);
+}
 
 void ExtendedLagrangian::calculate() {
 

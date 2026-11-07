@@ -1,0 +1,5 @@
+plumed_needs=libtorch
+plumed_modules=pytorch
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+# note: the models have been created with create-pytorch-model.py

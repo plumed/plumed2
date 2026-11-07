@@ -4,12 +4,12 @@ name: "PLUMED CodeQL configuration"
 #
 # Third-party code that is kept as close as possible to the upstream version
 # (it is updated by re-importing it, so local style fixes would be lost):
-#   molfile (VMD molfile plugins), lepton, asmjit, xdrfile, small_vector, vesin
+#   lepton, asmjit, xdrfile, small_vector, vesin
+# (molfile, the VMD plugins, is analysed again since the readers were hardened: the fixes are marked in the code)
 #
 # Test and tutorial scripts (regression tests, python tests, tutorial scripts):
 # short-lived scripts for which resource handling or unreachable-code notes are not relevant.
 paths-ignore:
-  - src/molfile
   - src/lepton
   - src/asmjit
   - src/xdrfile

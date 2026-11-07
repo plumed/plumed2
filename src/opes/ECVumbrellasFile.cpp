@@ -154,9 +154,13 @@ ECVumbrellasFile::ECVumbrellasFile(const ActionOptions&ao):
 
 //extra consistency checks
   const unsigned sizeUmbrellas=centers_[0].size();
+  plumed_massert(sizeUmbrellas>0,"no umbrellas found in FILE");
   for(unsigned j=0; j<ncv; j++) {
     plumed_massert(centers_[j].size()==sizeUmbrellas,"mismatch in the number of centers read from file");
     plumed_massert(sigmas_[j].size()==sizeUmbrellas,"mismatch in the number of sigmas read from file");
+    for(double sigma : sigmas_[j]) {
+      plumed_massert(sigma>0,"the sigmas read from file must be greater than zero");
+    }
   }
 
 //set ECVs stuff

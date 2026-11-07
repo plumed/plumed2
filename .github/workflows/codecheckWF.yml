@@ -28,7 +28,7 @@ jobs:
     - name: Set up Python for Cython
       uses: actions/setup-python@v6
       with:
-        python-version: "3.12"
+        python-version: "3.14"
         cache: "pip"
         pip-install: -r .ci/requirements-codecheck.txt
         cache-dependency-path: .ci/requirements-codecheck.txt

@@ -1,0 +1,35 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
+export PLUMED_STACK_TRACE=no
+# wrong values of NN, MM and R_0 must be errors with a message (SwitchingFunction::set does not check them,
+# so before they could end in a division by zero or an infinite D_MAX)
+
+plumed_regtest_before() {
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=6 MM=6" > bad_nn_eq_mm.dat
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=-6" > bad_nn_neg.dat
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 MM=-12" > bad_mm_neg.dat
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=0 MM=0" > bad_nn_zero.dat
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=-1.1" > bad_r0_neg.dat
+  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "NN=6" > bad_r0_missing.dat
+}
+
+plumed_regtest_after() {
+  rm -f errors
+  while read -r name text ; do
+    rc=0
+    $plumed driver --plumed bad_$name.dat --ixyz traj-nopbc.xyz > bad_$name.out 2> bad_$name.err || rc=$?
+    if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+nn_eq_mm NN and MM should be different
+nn_neg NN and MM should be positive
+mm_neg NN and MM should be positive
+nn_zero NN and MM should be positive
+r0_neg R_0 should be explicitly specified and positive
+r0_missing keyword R_0 is compulsory for this action
+EOT
+}
+extra_files="../../trajectories/traj-nopbc.xyz"

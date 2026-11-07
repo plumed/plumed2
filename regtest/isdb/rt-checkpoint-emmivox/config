@@ -1,0 +1,37 @@
+type=driver
+plumed_needs=libtorch
+# Reference run: the whole trajectory (6 frames), with the checkpointing signal every 2 steps
+arg="--plumed plumed.dat --mf_pdb traj.pdb --checkpoint-stride 2"
+export PLUMED_NUM_THREADS=2
+
+function plumed_regtest_before() {
+  # the interrupted runs: 4 frames for A (last checkpoint at step 2), 5 frames for B (last checkpoint at step 4)
+  head -n 940 traj.pdb > part-a.pdb
+  head -n 1175 traj.pdb > part-b.pdb
+  # A) checkpoints requested by the "MD engine" at steps 0 and 2, restart from step 2
+  mkdir restart
+  cd restart
+  cp ../plumed.dat ../map.dat ../structure.pdb .
+  $plumed driver --plumed plumed.dat --mf_pdb ../part-a.pdb --checkpoint-stride 2 > out1 2> err1
+  $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --checkpoint-stride 2 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoints every 4 steps (STRIDE), restart from step 4: the neighbor list (NL_STRIDE=2) is rebuilt at the first step after a restart, so the restart step must be one where it is updated
+  mkdir restart-stride
+  cd restart-stride
+  cp ../map.dat ../structure.pdb .
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=4/' ../plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --mf_pdb ../part-b.pdb > out1 2> err1
+  $plumed driver --plumed plumed.dat --mf_pdb ../traj.pdb --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise (CPU libtorch is deterministic here), status and model files included
+  for d in restart restart-stride ; do
+    for f in COLVAR emvstatus emvbstatus model.dat-0 model.dat-4 ; do
+      if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
+    done
+    grep -h "Restarting from checkpoint\|Checkpoint state restored\|WARNING: the following" $d/out2 | sed 's/by PLUMED.*//'
+  done > restart_check
+}
+include ../../scripts/test.make

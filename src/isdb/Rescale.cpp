@@ -28,6 +28,8 @@
 #include "core/Value.h"
 #include "tools/File.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
+#include "core/Checkpointing.h"
 #include "tools/Communicator.h"
 #include <ctime>
 
@@ -112,6 +114,10 @@ PRINT FILE=COLVAR ARG=* STRIDE=100
 ```
 
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the bias, the Monte Carlo state (generator and acceptance) and the current value of the selector are stored in the checkpoint, the `BFILE` is trimmed and not read, and the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -157,7 +163,12 @@ class Rescale : public bias::Bias {
 public:
   explicit Rescale(const ActionOptions&);
   ~Rescale();
-  void calculate();
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
+  void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
 
@@ -313,9 +324,44 @@ Rescale::Rescale(const ActionOptions&ao):
   random_.setSeed(-static_cast<int>(iseed));
 
   // read bias if restarting
-  if(getRestart()) {
+  if(getRestart() && !plumed.checkpointing.isRestartingFromCheckpoint()) {
     read_bias();
   }
+}
+
+// The bias, the MC counters and generator, and the current value of the selector
+// (set by the Monte Carlo at the previous step); the components are written by Bias.
+// With a checkpoint the bias file is trimmed and not read.
+void Rescale::writeCheckpoint(CheckpointWriter& w) {
+  w.write("bias",bias_);
+  w.write("MCfirst",(long long) MCfirst_);
+  w.write("MCaccgamma",(long long) MCaccgamma_);
+  w.write("random",random_.stateToString());
+  w.write("selector",plumed.passMap.count(selector_)>0 ? plumed.passMap[selector_] : -1.0);
+  writeComponentValues(w);
+}
+
+void Rescale::readCheckpoint(CheckpointReader& r) {
+  std::vector<double> b;
+  r.read("bias",b);
+  if(b.size()!=bias_.size()) {
+    error("the checkpoint was written with a different NBIN");
+  }
+  bias_=b;
+  long long v;
+  r.read("MCfirst",v);
+  MCfirst_=v;
+  r.read("MCaccgamma",v);
+  MCaccgamma_=static_cast<long long unsigned>(v);
+  std::string state;
+  r.read("random",state);
+  random_.stateFromString(state);
+  double sel;
+  r.read("selector",sel);
+  if(sel>=0.0) {
+    plumed.passMap[selector_]=sel;
+  }
+  readComponentValues(r);
 }
 
 Rescale::~Rescale() {

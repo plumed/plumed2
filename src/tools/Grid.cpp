@@ -28,6 +28,7 @@
 #include "KernelFunctions.h"
 #include "RootFindingBase.h"
 #include "Communicator.h"
+#include "Checkpoint.h"
 #include "small_vector/small_vector.h"
 
 #include <vector>
@@ -1088,6 +1089,119 @@ void SparseGrid::resizeData(const std::vector<unsigned> & oldnbin, const std::ve
   }
   map_.swap(newmap);
   der_.swap(newder);
+}
+
+void GridBase::writeCheckpoint(CheckpointWriter& w) const {
+  w.write("dimension",dimension_);
+  w.write("usederiv",usederiv_);
+  w.write("nbin",nbin_);
+  w.write("min",min_);
+  w.write("max",max_);
+  w.write("dx",dx_);
+  for(unsigned i=0; i<dimension_; ++i) {
+    w.write("strmin"+std::to_string(i),str_min_[i]);
+    w.write("strmax"+std::to_string(i),str_max_[i]);
+  }
+  writeCheckpointData(w);
+}
+
+void GridBase::readCheckpoint(CheckpointReader& r) {
+  plumed_massert(r.get<unsigned>("dimension")==dimension_,"checkpoint: the grid "+funcname+" has a different dimension");
+  plumed_massert(r.get<bool>("usederiv")==usederiv_,"checkpoint: the grid "+funcname+" has a different setting for derivatives");
+  std::vector<unsigned> nbin;
+  std::vector<double> min,max,dx;
+  r.read("nbin",nbin);
+  r.read("min",min);
+  r.read("max",max);
+  r.read("dx",dx);
+  plumed_massert(nbin.size()==dimension_ && min.size()==dimension_ && max.size()==dimension_ && dx.size()==dimension_,
+                 "checkpoint: wrong size of the range of grid "+funcname);
+  index_t size=1;
+  for(unsigned i=0; i<dimension_; ++i) {
+    // the periodic directions cannot change
+    plumed_massert(!pbc_[i] || nbin[i]==nbin_[i],"checkpoint: the grid "+funcname+" has a different number of points along a periodic direction");
+    size*=nbin[i];
+  }
+  nbin_=nbin;
+  min_=min;
+  max_=max;
+  dx_=dx;
+  maxsize_=size;
+  for(unsigned i=0; i<dimension_; ++i) {
+    r.read("strmin"+std::to_string(i),str_min_[i]);
+    r.read("strmax"+std::to_string(i),str_max_[i]);
+  }
+  readCheckpointData(r);
+}
+
+void GridBase::writeCheckpointData(CheckpointWriter& w) const {
+  plumed_merror("this kind of grid cannot be stored in a checkpoint");
+}
+
+void GridBase::readCheckpointData(CheckpointReader& r) {
+  plumed_merror("this kind of grid cannot be read from a checkpoint");
+}
+
+void Grid::writeCheckpointData(CheckpointWriter& w) const {
+  w.write("values",grid_);
+  if(usederiv_) {
+    w.write("derivatives",der_);
+  }
+}
+
+void Grid::readCheckpointData(CheckpointReader& r) {
+  r.read("values",grid_);
+  plumed_massert(grid_.size()==maxsize_,"checkpoint: wrong number of values in grid "+funcname);
+  der_.clear();
+  if(usederiv_) {
+    r.read("derivatives",der_);
+    plumed_massert(der_.size()==maxsize_*dimension_,"checkpoint: wrong number of derivatives in grid "+funcname);
+  }
+}
+
+void SparseGrid::writeCheckpointData(CheckpointWriter& w) const {
+  // the points with a value, and those with derivatives (in principle a different set)
+  std::vector<index_t> index;
+  std::vector<double> value;
+  for(const auto & it : map_) {
+    index.push_back(it.first);
+    value.push_back(it.second);
+  }
+  w.write("index",index);
+  w.write("values",value);
+  if(usederiv_) {
+    index.clear();
+    value.clear();
+    for(const auto & it : der_) {
+      index.push_back(it.first);
+      value.insert(value.end(),it.second.begin(),it.second.end());
+    }
+    w.write("derindex",index);
+    w.write("derivatives",value);
+  }
+}
+
+void SparseGrid::readCheckpointData(CheckpointReader& r) {
+  std::vector<index_t> index;
+  std::vector<double> value;
+  r.read("index",index);
+  r.read("values",value);
+  plumed_massert(index.size()==value.size(),"checkpoint: wrong number of values in grid "+funcname);
+  map_.clear();
+  for(std::size_t k=0; k<index.size(); ++k) {
+    plumed_massert(index[k]<maxsize_,"checkpoint: point out of grid "+funcname);
+    map_[index[k]]=value[k];
+  }
+  der_.clear();
+  if(usederiv_) {
+    r.read("derindex",index);
+    r.read("derivatives",value);
+    plumed_massert(value.size()==index.size()*dimension_,"checkpoint: wrong number of derivatives in grid "+funcname);
+    for(std::size_t k=0; k<index.size(); ++k) {
+      plumed_massert(index[k]<maxsize_,"checkpoint: point out of grid "+funcname);
+      der_[index[k]].assign(value.begin()+k*dimension_,value.begin()+(k+1)*dimension_);
+    }
+  }
 }
 
 Grid::index_t SparseGrid::getSize() const {

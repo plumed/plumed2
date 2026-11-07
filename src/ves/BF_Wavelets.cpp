@@ -301,6 +301,7 @@ BF_Wavelets::BF_Wavelets(const ActionOptions& ao):
 
   double function_length = bias_length;
   parse("FUNCTION_LENGTH",function_length);
+  plumed_massert(function_length>0,"FUNCTION_LENGTH has to be positive");
   if(function_length != bias_length) {
     if (periodic) {  // shifted functions need to fit into interval exactly -> reduce size if not
       unsigned num_shifts = ceil(bias_length * intrinsic_length / function_length);

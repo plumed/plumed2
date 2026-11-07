@@ -283,11 +283,17 @@ BEGINFILE{
 # check if python/plumed.pyx and python/plumed.c are consistent
   if(filetype=="cython"){
     tempfile = tmpdir "/plumed_tmp.c"
-    python
     plumed_c = FILENAME
-    sub("\\.pyx","\\.c",plumed_c)
-    system("cython " FILENAME " -o " tempfile)
-    s=system("diff -q " plumed_c " " tempfile ">/dev/null 2>/dev/null")
+    sub("\\.pyx$","\\.c",plumed_c)
+    pyx_dir = FILENAME
+    if(!sub("/[^/]*$","",pyx_dir)) pyx_dir = "."
+    pyx_name = FILENAME
+    sub(".*/","",pyx_name)
+# cython stores the path of the source relative to the current directory:
+# run it from the directory of plumed.pyx, as done when plumed.c is generated
+    system("cd " pyx_dir " && cython " pyx_name " -o " tempfile)
+# the compressed copies of the strings depend on the python running cython, see compare_plumed_c.sh
+    s=system(pyx_dir "/compare_plumed_c.sh " plumed_c " " tempfile ">/dev/null 2>/dev/null")
 # check if cython has been applied correctly
 # DOC: :python_module:
 # DOC: `python/plumed.c` is not updated.

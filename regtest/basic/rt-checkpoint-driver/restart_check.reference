@@ -1,0 +1,28 @@
+restart/COLVAR IDENTICAL
+restart/COLVAR2 IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED:   file COLVAR truncated
+PLUMED:   file COLVAR2 truncated
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/COLVAR2 IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED:   file COLVAR truncated
+PLUMED:   file COLVAR2 truncated
+PLUMED: Checkpoint state restored at step 21
+PLUMED:   file GRID is rewritten at every write and is not truncated
+PLUMED:   file HILLS truncated
+PLUMED:   file COLVAR_METAD truncated
+PLUMED: Checkpoint state restored at step 20
+PLUMED:   file GRID is rewritten at every write and is not truncated
+PLUMED:   action m: RESTART=NO, state not restored from the checkpoint, files backed up
+PLUMED: Checkpoint state restored at step 50
+metad/bck.0.HILLS
+last hill of the backup at time 45
+first hill of the new file at time 55
+ERROR in input to action RESTART with label @1 : RESTART NO cannot be used when restarting from a checkpoint (see CHECKPOINT)
+the checkpoint was written at step 50 but the MD engine restarted at step 0: the PLUMED checkpoint and the restart file of the MD engine do not refer to the same step
+the checkpoint was written at step 50, which is not in the trajectory (check --initial-step and --trajectory-stride)
+checkpoint: the content of COLVAR differs from the one recorded in the checkpoint

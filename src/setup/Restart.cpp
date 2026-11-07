@@ -22,6 +22,7 @@
 #include "core/ActionSetup.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "tools/Exception.h"
 
 namespace PLMD {
@@ -143,6 +144,9 @@ Restart::Restart(const ActionOptions&ao):
   bool md=plumed.getRestart();
   log<<"  MD code "<<(md?"did":"didn't")<<" require restart\n";
   if(no) {
+    if(plumed.checkpointing.isRestartingFromCheckpoint()) {
+      error("RESTART NO cannot be used when restarting from a checkpoint (see CHECKPOINT)");
+    }
     if(md) {
       log<<"  Switching off restart\n";
     }

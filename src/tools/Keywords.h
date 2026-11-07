@@ -183,6 +183,13 @@ public:
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
   bool numbered( const std::string & k ) const;
+  /// Check whether this keyword explicitly accepts numbered input variants.
+  /// Unlike numbered(), this reports the allowmultiple registration used by
+  /// print_vim(); atom-list parsing permission alone does not enable it.
+  /// \param k Name of a registered keyword.
+  /// \return True if the keyword was explicitly registered as numbered.
+  /// \throws Exception If the keyword is not registered.
+  bool explicitlyNumbered( const std::string & k ) const;
   /// Get the ordered list of active keywords (not the reserved ones)
   const std::vector<std::string>& getKeys() const {
     return keys;

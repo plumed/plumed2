@@ -254,6 +254,14 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
   // And generate the multidimensional scaling projection
   unsigned ndim;
   parse("NLOW_DIM",ndim);
+  if( ndim==0 ) {
+    error("NLOW_DIM should be greater than zero");
+  }
+  // the number of rows is zero if the frames are collected without CLEAR
+  ActionWithValue* mydata = plumed.getActionSet().selectWithLabel<ActionWithValue*>( argn + "_data" );
+  if( mydata && (mydata->copyOutput(0))->getShape()[0]>0 && ndim>(mydata->copyOutput(0))->getShape()[0] ) {
+    error("NLOW_DIM is larger than the number of stored frames");
+  }
   std::string vecstr="1";
   for(unsigned i=1; i<ndim; ++i) {
     std::string num;

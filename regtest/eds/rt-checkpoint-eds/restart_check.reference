@@ -1,0 +1,16 @@
+restart/COLVAR IDENTICAL
+restart/eds1_restart IDENTICAL
+restart/eds2_restart IDENTICAL
+restart/eds3_restart IDENTICAL
+restart/eds4_restart IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/eds1_restart IDENTICAL
+restart-stride/eds2_restart IDENTICAL
+restart-stride/eds3_restart IDENTICAL
+restart-stride/eds4_restart IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

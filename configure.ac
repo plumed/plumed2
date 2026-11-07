@@ -1451,9 +1451,22 @@ then
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
-        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
-        AC_MSG_NOTICE([Enabling RPATH])
+        # RPATH takes precedence over LD_LIBRARY_PATH: the executables of the build tree would then
+        # load the kernel installed in $libdir (e.g. an older version) instead of their own one,
+        # even after sourcing sourceme.sh. Ask the linker for RUNPATH instead, if it can.
+        rm -f conftest.$SOEXT
+        test_LDSHARED="$LDSHARED -Wl,--enable-new-dtags -Wl,-R -Wl,/some/random/dir/"
+        $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+        if test -f conftest.$SOEXT && readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
+          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+          AC_MSG_NOTICE([Enabling RUNPATH (with --enable-new-dtags)])
+        else
+          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+          AC_MSG_NOTICE([Enabling RPATH])
+          AC_MSG_WARN([with RPATH the executables of the build tree load the kernel installed in $libdir, if there is one, also after sourcing sourceme.sh])
+        fi
       elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
         LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
         LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"

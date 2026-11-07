@@ -25,6 +25,8 @@
 #include "core/ActionWithValue.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/Checkpoint.h"
+#include "core/Checkpointing.h"
 
 // The original implementation of this method was contributed
 // by Andrea Cesari (andreacesari90@gmail.com).
@@ -115,6 +117,10 @@ PRINT ARG=restraint.bias
 
 (See also [DISTANCE](DISTANCE.md) and [PRINT](PRINT.md)).
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the Lagrangian multipliers, their averages and works are stored in the checkpoint, the LAGMULT file is trimmed and not read, and the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -166,6 +172,11 @@ public:
   void update() override;
   void update_lambda();
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   void ReadLagrangians(IFile &ifile);
   void WriteLagrangians(std::vector<double> &lagmult,OFile &file);
   double compute_error(const std::string &err_type,double l);
@@ -220,8 +231,14 @@ void MaxEnt::registerKeywords(Keywords& keys) {
 /// The constructor intentionally centralizes initialization so that subsequent
 /// `calculate()`, `update()`, and `update_lambda()` calls can assume consistent
 /// dimensions, defaults, and I/O state.
+// Constructor layout:
+//   1) member defaults (initializer list),
+//   2) keyword parsing and consistency checks,
+//   3) restart/readback handling for multipliers,
+//   4) output component and file configuration.
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
+  // Per-argument state vectors are sized once from ARG and reused during the run.
   at(getNumberOfArguments()),
   kappa(getNumberOfArguments(),0.0),
   lambda(getNumberOfArguments(),0.0),
@@ -230,6 +247,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   tau(getNumberOfArguments(),getTimeStep()),
   avglambda(getNumberOfArguments(),0.0),
   avglambda_restart(getNumberOfArguments(),0.0),
+  // Global control defaults; user keywords may override these values.
   sigma(0.0),
   pace_(100),
   stride_(100),
@@ -357,7 +375,9 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   ifile.link(*this);
   if(ifile.FileExist(fname)) {
     ifile.open(fname);
-    if(getRestart()) {
+    if(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {
+      log.printf("  Restarting from the checkpoint: %s is not read\n",fname.c_str());
+    } else if(getRestart()) {
       log.printf("  Restarting from: %s\n",fname.c_str());
       ReadLagrangians(ifile);
       printFirstStep=false;
@@ -373,6 +393,57 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   }
 }
 ////MEMBER FUNCTIONS
+// The multipliers, their running averages and works, the counters and the flags of
+// the first step; the components are written by Bias. With a checkpoint the
+// LAGMULT file is trimmed and not read.
+void MaxEnt::writeCheckpoint(CheckpointWriter& w) {
+  w.write("lambda",lambda);
+  w.write("oldlambda",oldlambda);
+  w.write("avglambda",avglambda);
+  w.write("work",work);
+  std::vector<long long> done;
+  for(unsigned i=0; i<done_average.size(); ++i) {
+    done.push_back(done_average[i]);
+  }
+  w.write("done_average",done);
+  w.write("avg_counter",avg_counter);
+  w.write("totalWork",totalWork);
+  w.write("BetaReweightBias",BetaReweightBias);
+  w.write("isFirstStep",(long long) isFirstStep);
+  w.write("printFirstStep",(long long) printFirstStep);
+  writeComponentValues(w);
+}
+
+void MaxEnt::readCheckpoint(CheckpointReader& r) {
+  const unsigned n=getNumberOfArguments();
+  std::vector<double> l,ol,al,wk;
+  std::vector<long long> done;
+  r.read("lambda",l);
+  r.read("oldlambda",ol);
+  r.read("avglambda",al);
+  r.read("work",wk);
+  r.read("done_average",done);
+  if(l.size()!=n || ol.size()!=n || al.size()!=n || wk.size()!=n || done.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  lambda=l;
+  oldlambda=ol;
+  avglambda=al;
+  work=wk;
+  for(unsigned i=0; i<n; ++i) {
+    done_average[i]=done[i]!=0;
+  }
+  r.read("avg_counter",avg_counter);
+  r.read("totalWork",totalWork);
+  r.read("BetaReweightBias",BetaReweightBias);
+  long long b;
+  r.read("isFirstStep",b);
+  isFirstStep=b!=0;
+  r.read("printFirstStep",b);
+  printFirstStep=b!=0;
+  readComponentValues(r);
+}
+
 void MaxEnt::ReadLagrangians(IFile &inputFile) {
   double dummy;
   while(inputFile.scanField("time",dummy)) {

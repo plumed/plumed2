@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MetainferenceCore.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/Value.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
@@ -98,7 +99,7 @@ void MetainferenceCore::registerKeywords( Keywords& keys ) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","SEED","seed of the random number generators used by the Monte Carlo sampling (by default a different seed is taken from the clock at every run)");
-  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
+  keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference. With a CHECKPOINT the state is restored from the checkpoint and this file is not read");
   keys.add("optional","FMT","specify format for STATUS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
@@ -562,7 +563,12 @@ void MetainferenceCore::setup(const std::vector<double>& params, ActionWithValue
   restart_sfile.link(action_);
   bool restart_found=false;
   double dummy=0.;
-  if(action_.getRestart()&&restart_sfile.FileExist(status_file_name_)) {
+  // with a checkpoint the state comes from the checkpoint (readCheckpoint), not from the status file
+  const bool from_checkpoint=action_.getRestart() && action_.plumed.checkpointing.isRestartingFromCheckpoint();
+  if(from_checkpoint&&active_) {
+    log.printf("  Restarting from the checkpoint: the status file %s is not read\n", status_file_name_.c_str());
+  }
+  if(action_.getRestart()&&!from_checkpoint&&restart_sfile.FileExist(status_file_name_)) {
     restart_sfile.open(status_file_name_);
     restart_found=restart_sfile.scanField("time",dummy);
     if(restart_found) {
@@ -2034,6 +2040,108 @@ void MetainferenceCore::writeStatus() {
   }
   sfile_.printField();
   sfile_.flush();
+}
+
+}
+}
+
+namespace PLMD {
+namespace isdb {
+
+void MetainferenceCore::writeCheckpoint(CheckpointWriter& w) const {
+  if(!active_) {
+    return;
+  }
+  w.write("narg",narg);
+  w.write("nsel",nsel_);
+  w.write("nrep",nrep_);
+  w.write("scale",scale_);
+  w.write("offset",offset_);
+  w.write("sigma",sigma_);
+  w.write("sigma_min",sigma_min_);
+  w.write("sigma_max",sigma_max_);
+  w.write("dsigma",Dsigma_);
+  w.write("sigma_mean2",sigma_mean2_);
+  w.write("ftilde",ftilde_);
+  w.write("first_time",firstTime?1:0);
+  std::vector<int> ftw(firstTimeW.begin(),firstTimeW.end());
+  w.write("first_time_w",ftw);
+  for(unsigned i=0; i<random.size(); ++i) {
+    w.write("random"+std::to_string(i),random[i].stateToString());
+  }
+  w.write("mc_accept",MCaccept_);
+  w.write("mc_accept_scale",MCacceptScale_);
+  w.write("mc_accept_ft",MCacceptFT_);
+  w.write("mc_trial",MCtrial_);
+  w.write("optimized_step",optimized_step_);
+  w.write("sigmamax_opt_done",sigmamax_opt_done_?1:0);
+  w.write("sigma_max_est",sigma_max_est_);
+  w.write("warned_sigma_max",warned_sigma_max_?1:0);
+  for(unsigned i=0; i<nsel_; ++i) {
+    w.write("average_weights"+std::to_string(i),average_weights_[i]);
+    for(unsigned j=0; j<sigma_mean2_last_[i].size(); ++j) {
+      w.write("sigma_mean2_history"+std::to_string(i)+"_"+std::to_string(j),sigma_mean2_last_[i][j].values());
+    }
+  }
+}
+
+void MetainferenceCore::readCheckpoint(CheckpointReader& r) {
+  if(!active_) {
+    return;
+  }
+  if(r.get<unsigned>("narg")!=narg||r.get<unsigned>("nsel")!=nsel_||r.get<unsigned>("nrep")!=nrep_) {
+    action_.error("the checkpoint was written with a different number of data, selectors or replicas");
+  }
+  auto readVector=[&](const std::string& name,std::vector<double>& v) {
+    std::vector<double> tmp;
+    r.read(name,tmp);
+    if(tmp.size()!=v.size()) {
+      action_.error("the checkpoint was written with a different size of "+name);
+    }
+    v=tmp;
+  };
+  r.read("scale",scale_);
+  r.read("offset",offset_);
+  readVector("sigma",sigma_);
+  readVector("sigma_min",sigma_min_);
+  readVector("sigma_max",sigma_max_);
+  readVector("dsigma",Dsigma_);
+  readVector("sigma_mean2",sigma_mean2_);
+  // ftilde is set at the first step only (GENERIC), so it can be empty before it
+  r.read("ftilde",ftilde_);
+  if(!ftilde_.empty()&&ftilde_.size()!=narg) {
+    action_.error("the checkpoint was written with a different size of ftilde");
+  }
+  firstTime=r.get<int>("first_time")!=0;
+  std::vector<int> ftw;
+  r.read("first_time_w",ftw);
+  if(ftw.size()!=firstTimeW.size()) {
+    action_.error("the checkpoint was written with a different number of selectors");
+  }
+  for(unsigned i=0; i<ftw.size(); ++i) {
+    firstTimeW[i]=(ftw[i]!=0);
+  }
+  for(unsigned i=0; i<random.size(); ++i) {
+    random[i].stateFromString(r.get<std::string>("random"+std::to_string(i)));
+  }
+  MCaccept_=r.get<long long>("mc_accept");
+  MCacceptScale_=r.get<long long>("mc_accept_scale");
+  MCacceptFT_=r.get<long long>("mc_accept_ft");
+  MCtrial_=r.get<long long>("mc_trial");
+  optimized_step_=r.get<unsigned>("optimized_step");
+  sigmamax_opt_done_=r.get<int>("sigmamax_opt_done")!=0;
+  readVector("sigma_max_est",sigma_max_est_);
+  warned_sigma_max_=r.get<int>("warned_sigma_max")!=0;
+  for(unsigned i=0; i<nsel_; ++i) {
+    readVector("average_weights"+std::to_string(i),average_weights_[i]);
+    for(unsigned j=0; j<sigma_mean2_last_[i].size(); ++j) {
+      std::vector<double> h;
+      r.read("sigma_mean2_history"+std::to_string(i)+"_"+std::to_string(j),h);
+      if(!sigma_mean2_last_[i][j].setValues(h)) {
+        action_.error("the sigma mean history in the checkpoint is longer than AVERAGING");
+      }
+    }
+  }
 }
 
 }
