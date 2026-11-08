@@ -2,3 +2,6 @@ mpiprocs=2
 type=make
 # this is needed because we are explicitly checking some exception message
 export PLUMED_STACK_TRACE=no
+
+plumed_mpi_harness=yes
+extra_files="${extra_files} ../../scripts/mpi-test.h"

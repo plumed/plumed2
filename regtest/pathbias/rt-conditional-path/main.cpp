@@ -1,10 +1,13 @@
 #include "plumed/wrapper/Plumed.h"
-#include <mpi.h>
+#include "mpi-test.h"
 #include <array>
 #include <cmath>
 #include <fstream>
 #include <string>
 #include <vector>
+
+namespace PLMD {
+namespace regtest_mpi {
 
 struct Harness {
   PLMD::Plumed p;
@@ -68,13 +71,12 @@ double oracle(const std::vector<double>& x,double coupling) {
   return 0.7*c*c-2.3*std::log(1-coupling+coupling*score/normalizer);
 }
 
-int main(int argc,char** argv) {
-  MPI_Init(&argc,&argv);
+int run(MPI_Comm world, int argc,char** argv) {
   int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(world,&rank);
+  MPI_Comm_size(world,&size);
   if(size!=4) {
-    MPI_Abort(MPI_COMM_WORLD,2);
+    MPI_Abort(world,2);
   }
   std::ofstream output;
   if(rank==0) {
@@ -83,7 +85,7 @@ int main(int argc,char** argv) {
   bool passed=true;
   auto record=[&](const std::string& name,bool local) {
     int value=local?1:0, all=0;
-    MPI_Allreduce(&value,&all,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+    MPI_Allreduce(&value,&all,1,MPI_INT,MPI_MIN,world);
     passed=passed && all;
     if(rank==0) {
       output << name << " " << (all?"PASS":"FAIL") << "\n";
@@ -94,8 +96,8 @@ int main(int argc,char** argv) {
       }) {
     const int local=rank%(size/beads), bead=rank/(size/beads);
     MPI_Comm intra,inter;
-    MPI_Comm_split(MPI_COMM_WORLD,bead,local,&intra);
-    MPI_Comm_split(MPI_COMM_WORLD,local,bead,&inter);
+    MPI_Comm_split(world,bead,local,&intra);
+    MPI_Comm_split(world,local,bead,&inter);
     std::vector<double> values;
     for(int b=0; b<beads; ++b) {
       values.push_back(-0.4+0.45*b);
@@ -165,6 +167,12 @@ int main(int argc,char** argv) {
     MPI_Comm_free(&intra);
     MPI_Comm_free(&inter);
   }
-  MPI_Finalize();
   return passed?0:1;
+}
+
+} // namespace regtest_mpi
+} // namespace PLMD
+
+int main(int argc, char **argv) {
+  return PLMD::mpi_test::run(argc,argv,4,PLMD::regtest_mpi::run);
 }

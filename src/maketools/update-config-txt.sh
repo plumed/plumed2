@@ -42,6 +42,7 @@ list="$(
   } |
   grep -o "__PLUMED_HAS_[A-Z_]*" |
   sed "s/__PLUMED_HAS_//" | sort | uniq | tr A-Z a-z)"
+list="$(printf '%s\n' $list mpi real_mpi thread_mpi | sort -u)"
 
 # now get list of -D__PLUMED_HAS flags in Makefile.conf
 has="$(
@@ -49,12 +50,20 @@ for flag
 do
   case "$flag" in
   (-D__PLUMED_HAS_*=0) ;;
+  (-D__PLUMED_HAS_MPI=*) echo real_mpi ;;
+  (-D__PLUMED_HAS_THREAD_MPI=*) echo thread_mpi ;;
+  (-D__PLUMED_HAS_MPI) echo real_mpi ;;
+  (-D__PLUMED_HAS_THREAD_MPI) echo thread_mpi ;;
   (-D__PLUMED_HAS_*=*) echo ${flag#-D} | sed "s/=.*//" ;;
   (-D__PLUMED_HAS_*)   echo ${flag#-D} ;;
   (*) ;;
   esac
 done | sed "s/__PLUMED_HAS_//" | sort | uniq | tr A-Z a-z
 )"
+
+case "$has" in
+  (*real_mpi*|*thread_mpi*) has="$has mpi" ;;
+esac
 
 # now get a list of other defines in Makefile.conf
 def="$(
@@ -113,7 +122,7 @@ echo "mpiexec $mpiexec"
 echo
 echo "# list of 'has' options"
 echo "# syntax: has name on/of"
-echo "# if option xx is on then plumed has beeen compiled with -D__PLUMED_HAS_XX"
+echo "# most options map to -D__PLUMED_HAS_XX; has mpi is on for real MPI or thread-MPI"
 {
   for d in $has
   do

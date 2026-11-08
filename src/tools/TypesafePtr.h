@@ -23,6 +23,9 @@
 #define __PLUMED_tools_TypesafePtr_h
 
 #include "Exception.h"
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+#include "../mpiwrap/mpi-types.h"
+#endif
 
 #include <memory>
 #include <iosfwd>
@@ -39,6 +42,9 @@
 #include <algorithm>
 
 namespace PLMD {
+namespace mpiwrap {
+struct plumed_mpi_provider;
+}
 
 static inline bool typesafePtrSkipCheck() {
   static const bool ret=std::getenv("PLUMED_TYPESAFE_IGNORE");
@@ -59,6 +65,14 @@ std::size_t typesafePtrSizeof<void>() {
 template<>
 inline
 std::size_t typesafePtrSizeof<const void>() {
+  return 0;
+}
+
+// Provider descriptors are opaque here; their own ABI validates the layout.
+template<> inline std::size_t typesafePtrSizeof<mpiwrap::plumed_mpi_provider>() {
+  return 0;
+}
+template<> inline std::size_t typesafePtrSizeof<const mpiwrap::plumed_mpi_provider>() {
   return 0;
 }
 
@@ -104,6 +118,21 @@ class TypesafePtr {
 
   static std::string extra_msg();
 
+  template<typename T>
+  static std::size_t mpiCommExclusionFlag(T) {
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+    return std::is_convertible<T,const MPI_Comm*>::value ? 0 : 0x20000000u;
+#else
+    return 0;
+#endif
+  }
+  static std::size_t mpiCommExclusionFlag(void*) {
+    return 0;
+  }
+  static std::size_t mpiCommExclusionFlag(const void*) {
+    return 0;
+  }
+
 public:
 
   TypesafePtr(void* ptr, std::size_t nelem, const std::size_t* shape, std::size_t flags):
@@ -141,7 +170,7 @@ public:
   TypesafePtr(type_*ptr, std::size_t nelem=0, const std::size_t* shape=nullptr) : \
     myptr((void*)const_cast<type*>(ptr)), \
     mynelem(nelem), \
-    myflags(flags_) \
+    myflags((flags_) | mpiCommExclusionFlag(ptr)) \
   { \
     init_shape(shape); \
     buffer[0]='\0'; \
@@ -167,11 +196,11 @@ public:
   __PLUMED_WRAPPER_TYPESAFEPTR(type,code,sizeof(type)) \
   TypesafePtr(type val, std::size_t nelem=0, const std::size_t* shape=nullptr): \
       mynelem(1), \
-      myflags(sizeof(type) | (0x10000*(code)) | (0x2000000*1)) \
+      myflags(sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommExclusionFlag(val)) \
     { \
     plumed_assert(sizeof(type)<=32); \
     myptr=&buffer[0]; \
-    myflags=sizeof(type) | (0x10000*(code)) | (0x2000000*1); \
+    myflags=sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommExclusionFlag(val); \
     std::memcpy(&buffer[0],&val,sizeof(type)); \
     init_shape(shape); \
   }
@@ -198,6 +227,13 @@ public:
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(double,4)
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(long double,4)
   __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(FILE,5)
+  __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(mpiwrap::plumed_mpi_provider,6)
+
+  template<typename T>
+  TypesafePtr(T* ptr, std::size_t nelem=0, const std::size_t* shape=nullptr):
+    TypesafePtr(static_cast<const void*>(ptr),nelem,shape) {
+    myflags=0x10000u | (0x2000000u*(std::is_const<T>::value ? 3 : 2)) | mpiCommExclusionFlag(ptr);
+  }
 
   ~TypesafePtr() {
   }
@@ -248,6 +284,9 @@ public:
     if(type==5) {
       return "FILE";
     }
+    if(type==6) {
+      return "MPI provider descriptor";
+    }
     return "unknown";
   }
 
@@ -260,6 +299,15 @@ private:
       return (T*) myptr;
     }
     typedef typename std::remove_pointer<T>::type T_noptr;
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+    // A native MPI_Comm can point to an incomplete implementation type.
+    // Check the handle size, without dereferencing that opaque type.
+    typedef typename std::conditional<
+    std::is_same<typename std::remove_cv<T>::type,MPI_Comm>::value,
+        T,T_noptr>::type T_size;
+#else
+    typedef T_noptr T_size;
+#endif
     if(myflags==0) {
       return (T*) myptr;  // no check
     }
@@ -268,9 +316,26 @@ private:
     // auto unsi=(flags>>24)&0x1; // ignored
     auto cons=(myflags>>25)&0x7;
 
-    // type=0: ignore check
-    // type>5: undefined yet
-    if(type!=0 && type<=5) {
+    // A communicator request consumes negative information supplied by the
+    // caller, whose native MPI_Comm may differ from this kernel's wrapper.
+    bool communicator=false;
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+    communicator=!byvalue && std::is_same<typename std::remove_cv<T>::type,MPI_Comm>::value;
+#endif
+#if !defined(__PLUMED_HAS_MPI)
+    if(communicator && ((myflags & 0x20000000u) || type==6)) {
+      throw ExceptionTypeError()<<"This command expects a pointer to MPI_Comm"<<extra_msg();
+    }
+#endif
+    const bool provider=std::is_same<typename std::remove_cv<T>::type,mpiwrap::plumed_mpi_provider>::value;
+    // This new API requires its dedicated type tag. Calls without any type
+    // metadata (the untyped C interface) already returned above.
+    if(provider && type!=6) {
+      throw ExceptionTypeError()<<"This command expects an MPI provider descriptor pointer. Received a "<<type_str()<<" instead"<<extra_msg();
+    }
+    const bool untypedCommunicator=communicator && (type==0 || type==1);
+    // type=0: ignore check; type>6: reserved for future extensions.
+    if(type!=0 && type<=6 && !untypedCommunicator) {
       if(std::is_integral<T_noptr>::value && (type!=is_integral)) {
         throw ExceptionTypeError() <<"This command expects an integer type. Received a " << type_str() << " instead"<<extra_msg();
       }
@@ -282,8 +347,12 @@ private:
       }
     }
 
-    if(size>0 && typesafePtrSizeof<T_noptr>() >0 && typesafePtrSizeof<T_noptr>()!=size) {
-      throw ExceptionTypeError() << "This command expects a type with size " << typesafePtrSizeof<T_noptr>() << ". Received type has size " << size << " instead"<<extra_msg();
+    bool nativeSize=true;
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+    nativeSize=!communicator; // native bytes, not sizeof(the wrapper class)
+#endif
+    if(nativeSize && size>0 && typesafePtrSizeof<T_size>() >0 && typesafePtrSizeof<T_size>()!=size) {
+      throw ExceptionTypeError() << "This command expects a type with size " << typesafePtrSizeof<T_size>() << ". Received type has size " << size << " instead"<<extra_msg();
     }
 
     if(!byvalue)
@@ -292,7 +361,7 @@ private:
       }
 
     // cons==1 (by value) is here treated as cons==3 (const type*)
-    if(cons>0) {
+    if(cons>0 && !untypedCommunicator) {
       if(!std::is_pointer<T>::value) {
         if(std::is_void<T>::value) {
           if(cons==1) {
@@ -374,6 +443,19 @@ private:
   }
 
 public:
+
+#if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
+  const MPI_Comm* getMPIComm() const {
+#if defined(__PLUMED_HAS_MPI)
+    // A native MPI_Comm can alias int or void*. Only an explicit communicator
+    // request may consume this flag; ordinary get<int*>() must ignore it.
+    if(!typesafePtrSkipCheck() && ((myflags & 0x20000000u) || ((myflags>>16)&0xffu)==6)) {
+      throw ExceptionTypeError()<<"This command expects a pointer to MPI_Comm"<<extra_msg();
+    }
+#endif
+    return get<const MPI_Comm*>();
+  }
+#endif
 
   template<typename T>
   void set(T val) const {
