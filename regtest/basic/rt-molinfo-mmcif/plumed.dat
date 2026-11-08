@@ -38,7 +38,28 @@ MOLINFO STRUCTURE=alt.pdb
 DUMPATOMS ATOMS=@CB-A_5,@HB1-A_5,@CB-A_8,@HB3-A_8,@sidechain-A_8,@phi-A_9 FILE=altpdb.gro
 MOLINFO STRUCTURE=alt.cif
 DUMPATOMS ATOMS=@CB-A_5,@HB1-A_5,@CB-A_8,@HB3-A_8,@sidechain-A_8,@phi-A_9 FILE=altcif.gro
-MOLINFO STRUCTURE=alt.cif CIF_ATOM_ID=order
+MOLINFO STRUCTURE=alt.cif ATOM_ID=order
 DUMPATOMS ATOMS=@CB-A_5,@HB1-A_5,@CB-A_8,@HB3-A_8,@sidechain-A_8,@phi-A_9 FILE=altorder.gro
+MOLINFO STRUCTURE=alt.pdb ATOM_ID=order
+DUMPATOMS ATOMS=@CB-A_5,@HB1-A_5,@CB-A_8,@HB3-A_8,@sidechain-A_8,@phi-A_9 FILE=altpdborder.gro
 
-PRINT ARG=pdb_alpha,pdb_phi,pdb_psi,cif_alpha,cif_phi,cif_psi,gmx_alpha,gmx_phi,gmx_psi,long_alpha,long_phi,long_psi,af_alpha,af_phi,af_psi FILE=colvar FMT=%8.4f
+
+# residue names of four characters written by GROMACS (LYSH, HISE, CYS2, ASPH): read in full (gmx4.gro),
+# recognized as LYS, HIS, CYS and ASP (same atoms and backbone as ref.pdb)
+MOLINFO STRUCTURE=gmx4.pdb
+DUMPATOMS ATOMS=@phi-A_3,@psi-A_3,@omega-A_3,@sidechain-A_5,@back-A_7,@CA-A_9,@phi-A3,@psi-5,@phi-B_0,@psi-B_0,@phi-B_1,@psi-B_2,@phi-B_2A,@psi-B_2A,@phi-B_2B,@psi-B_2B,@phi-B_3,@omega-B_3,@CB-B_2A,@back-B_2B,@phi-B-0,@C-B_-1 FILE=gmx4.gro
+gmx4_alpha: ALPHARMSD RESIDUES=all
+gmx4_phi: TORSION ATOMS=@phi-B_2A
+gmx4_psi: TORSION ATOMS=@psi-B_2A
+
+# files of the wwPDB: numbered REMARKs that contain '=', TER records that take a serial number (the PDB and the
+# mmCIF ids then differ after the first chain), waters of chain A after chain B (chain A in two blocks).
+# With ATOM_ID=order the PDB and the mmCIF file give the same atoms; the mmCIF ids are 1..N in the order of the file.
+MOLINFO STRUCTURE=wwpdb.pdb ATOM_ID=order
+DUMPATOMS ATOMS=@phi-A_3,@psi-B_2A,@O-A_201,@O-A_202,@O-B_301,@water FILE=wwpdb.gro
+MOLINFO STRUCTURE=wwpdb.cif ATOM_ID=order
+DUMPATOMS ATOMS=@phi-A_3,@psi-B_2A,@O-A_201,@O-A_202,@O-B_301,@water FILE=wwcif.gro
+MOLINFO STRUCTURE=wwpdb.cif
+DUMPATOMS ATOMS=@phi-A_3,@psi-B_2A,@O-A_201,@O-A_202,@O-B_301,@water FILE=wwcifid.gro
+
+PRINT ARG=pdb_alpha,pdb_phi,pdb_psi,cif_alpha,cif_phi,cif_psi,gmx_alpha,gmx_phi,gmx_psi,long_alpha,long_phi,long_psi,af_alpha,af_phi,af_psi,gmx4_alpha,gmx4_phi,gmx4_psi FILE=colvar FMT=%8.4f

@@ -27,17 +27,17 @@ in the _atom_site table of the mmCIF file test.cif at line 16: the y coordinate 
 == residue number that is not a number: exit code 1
 in the _atom_site table of the mmCIF file test.cif at line 16: cannot read the residue number from x
 == id that is not a number: exit code 1
-in the _atom_site table of the mmCIF file test.cif at line 15: the atom id N1 is not a positive integer: use CIF_ATOM_ID=order in MOLINFO to number the atoms in the order of the file
-== id that is not a number, CIF_ATOM_ID=order (runs): exit code 0
+in the _atom_site table of the mmCIF file test.cif at line 15: the atom id N1 is not a positive integer: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+== id that is not a number, ATOM_ID=order (runs): exit code 0
 == id zero: exit code 1
-in the _atom_site table of the mmCIF file test.cif at line 15: the atom id 0 is not a positive integer: use CIF_ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+in the _atom_site table of the mmCIF file test.cif at line 15: the atom id 0 is not a positive integer: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
 == id used twice: exit code 1
-in the _atom_site table of the mmCIF file test.cif at line 16: the atom id 1 is used twice: use CIF_ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+in the _atom_site table of the mmCIF file test.cif at line 16: the atom id 1 is used twice: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
 == two _atom_site tables: exit code 1
 the mmCIF file test.cif has more than one _atom_site table
 == atoms in a second data block (runs, ignored): exit code 0
-== wrong CIF_ATOM_ID: exit code 1
-ERROR in input to action MOLINFO with label @0 : CIF_ATOM_ID should be id or order, not serial
+== wrong ATOM_ID: exit code 1
+ERROR in input to action MOLINFO with label @0 : ATOM_ID should be serial or order, not id
 == cell length that is not a number: exit code 1
 the unit cell of the mmCIF file test.cif cannot be read: _cell.length_a is abc
 == cell without angles: exit code 1
@@ -49,3 +49,6 @@ the unit cell of the mmCIF file test.cif is not valid: _cell.angle_alpha must be
 == cell with angles that do not make a cell: exit code 1
 the unit cell of the mmCIF file test.cif is not valid: the angles do not define a cell
 == cell with unknown values (runs, no cell): exit code 0
+== pdb serial that cannot be read: exit code 1
+invalid number literal.
+== pdb serial that cannot be read, ATOM_ID=order (runs): exit code 0

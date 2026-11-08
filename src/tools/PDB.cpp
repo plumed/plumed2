@@ -44,7 +44,7 @@ columns | content
 7-11    | serial number of the atom (starting from 1)
 13-16   | atom name
 17      | alternate location
-18-20   | residue name
+18-20   | residue name (and column 21, if not blank, for residue names of four characters, as written by GROMACS)
 22      | chain id
 23-26   | residue number
 27      | insertion code
@@ -55,6 +55,12 @@ columns | content
 61-66   | beta factor
 77-78   | element symbol
 \endverbatim
+
+REMARK records are read only when they are not numbered: the numbered remarks of the wwPDB (`REMARK 465 ...`) are free text.
+
+The serial numbers of a PDB file written by the wwPDB count the TER records, so that they skip a number at the end of each chain.
+\ref MOLINFO has the keyword ATOM_ID: with ATOM_ID=order the atoms are numbered 1,2,3... in the order in which they are read,
+and the serial numbers in the file are not used.
 
 When atoms have alternate locations (column 17), only the first location found in each residue is read,
 together with the atoms of the residue that have no alternate location; the other atoms are skipped
@@ -94,9 +100,9 @@ The unit cell is read from `_cell.length_a`, `_cell.length_b`, `_cell.length_c`,
 The PLUMED-specific REMARK lines of PDB files (arguments, TYPE, ...) cannot be given in an mmCIF file.
 
 By default the serial number of an atom is the value of `_atom_site.id`, which must then be a positive integer.
-\ref MOLINFO has the keyword CIF_ATOM_ID: with CIF_ATOM_ID=order the atoms are numbered 1,2,3... in the order
-in which they are read (after skipping the other models and the alternate locations), for files where the ids
-do not match the numbering of the atoms in the simulation.
+With ATOM_ID=order in \ref MOLINFO the atoms are numbered 1,2,3... in the order in which they are read (after skipping
+the other models and the alternate locations), for files where the ids do not match the numbering of the atoms in the simulation.
+The same numbering is then obtained from the PDB and the mmCIF file of a wwPDB entry (whose ids do not count the TER records).
 PLUMED parser is slightly more permissive than the official PDB format
 in the fact that the format of real numbers is not fixed. In other words,
 any real number that can be parsed is OK and the dot can be placed anywhere. However,
@@ -341,7 +347,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     std::string serial=line.substr(6,5);
     std::string atomname=line.substr(12,4);
     std::string altloc=line.substr(16,1);
-    std::string residuename=line.substr(17,3);
+    // residue names of four characters (as written by GROMACS) use column 21;
+    // shorter names keep the three columns 18-20 as they are, with their blanks
+    std::string residuename=line.substr(17,3) + (line[20]!=' ' ? line.substr(20,1) : "");
     std::string chainID=line.substr(21,1);
     std::string resnum=line.substr(22,4);
     std::string icode=line.substr(26,1);
@@ -373,7 +381,11 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     if(record=="REMARK") {
       std::vector<std::string> v1;
       v1=Tools::getWords(line.substr(6));
-      addRemark( v1 );
+      // numbered remarks ("REMARK 465 ...") are those of the wwPDB, with free text: only the remarks of PLUMED are read
+      int remarkNumber;
+      if( v1.empty() || !Tools::convertNoexcept(v1[0],remarkNumber) ) {
+        addRemark( v1 );
+      }
     }
     if(record=="CRYST1") {
       Tools::convert(BoxX,BoxXYZ[0]);
@@ -393,7 +405,8 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       int resno=0; // GB: when resnum string is not present, we set res number to zero
       double o,b;
       Vector p;
-      {
+      // with AtomNumbering::order the serial is not read (it is set below, when the atom is kept)
+      if(numbering==AtomNumbering::serial) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
@@ -456,6 +469,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         skippedAltLocs++;
         continue;
       }
+      if(numbering==AtomNumbering::order) {
+        a.setIndex(size());
+      }
       addAtom(a,withoutBlanks(atomname),residuename,resno,chainID,icode,withoutBlanks(elem),p,o,b);
     }
   }
@@ -477,14 +493,15 @@ bool PDB::isCifFile(const std::string& file) {
   return ext=="cif" || ext=="mmcif";
 }
 
-bool PDB::read(const std::string&file,bool naturalUnits,double scale,CifAtomId cifAtomId) {
+bool PDB::read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering) {
+  numbering=atomNumbering;
   FILE* fp=std::fopen(file.c_str(),"r");
   if(!fp) {
     return false;
   }
   if(isCifFile(file)) {
     std::fclose(fp);
-    readCif(file,(naturalUnits ? 1.0 : scale),cifAtomId);
+    readCif(file,(naturalUnits ? 1.0 : scale));
     return true;
   }
 // call fclose when exiting this function

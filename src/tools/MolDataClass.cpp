@@ -39,7 +39,21 @@ unsigned MolDataClass::numberOfAtomsPerResidueInBackbone( const std::string& typ
   }
 }
 
+std::string MolDataClass::baseResidueName( const std::string& residuename ) {
+  if( residuename.length()==4 && residuename.find(' ')==std::string::npos ) {
+    const std::string base=residuename.substr(0,3);
+    if( allowedResidue("protein",base) ) {
+      return base;
+    }
+  }
+  return residuename;
+}
+
 bool MolDataClass::allowedResidue( const std::string& type, const std::string& residuename ) {
+  // the four-character variants of the amino acids written by GROMACS (HISE, LYSH, ASPH, CYS2...)
+  if( type=="protein" && residuename.length()==4 && baseResidueName(residuename)!=residuename ) {
+    return true;
+  }
   if( type=="protein" ) {
     if(residuename=="ALA") {
       return true;
@@ -259,6 +273,9 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
     if(residuename=="WAT") {
       return true;
     }
+    if(residuename=="HOH") {
+      return true;  // wwPDB
+    }
     return false;
   } else if( type=="ion" ) {
     if(residuename=="IB+") {
@@ -301,7 +318,7 @@ void MolDataClass::getBackboneForResidue( const std::string& type, int residuenu
 }
 
 void MolDataClass::getBackboneForResidue( const std::string& type, int residuenum, const std::string& chain, const std::string& icode, const PDB& mypdb, std::vector<AtomNumber>& atoms ) {
-  std::string residuename=mypdb.getResidueName( residuenum, chain, icode );
+  std::string residuename=baseResidueName( mypdb.getResidueName( residuenum, chain, icode ) );
   plumed_massert( MolDataClass::allowedResidue( type, residuename ), "residue " + residuename + " unrecognized for molecule type " + type );
   if( type=="protein" ) {
     if( residuename=="GLY") {
@@ -339,12 +356,13 @@ void MolDataClass::getBackboneForResidue( const std::string& type, int residuenu
 }
 
 bool MolDataClass::isTerminalGroup( const std::string& type, const std::string& residuename ) {
+  const std::string name=baseResidueName(residuename);
   if( type=="protein" ) {
-    if( residuename=="ACE" ) {
+    if( name=="ACE" ) {
       return true;
-    } else if( residuename=="NME" ) {
+    } else if( name=="NME" ) {
       return true;
-    } else if( residuename=="NH2" ) {
+    } else if( name=="NH2" ) {
       return true;
     } else {
       return false;
@@ -488,6 +506,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
     std::string resname;
     resname= mypdb.getResidueName(resnum,chainid,icode);
     Tools::stripLeadingAndTrailingBlanks(resname);
+    resname=baseResidueName(resname);
     if(allowedResidue("protein",resname)) {
       if( name=="phi" && !isTerminalGroup("protein",resname) ) {
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",prevnum,chainid,previcode));

@@ -242,7 +242,7 @@ template<> struct Action<rules::loop> {
 
 }
 
-void PDB::readCif(const std::string& file,double scale,CifAtomId cifAtomId) {
+void PDB::readCif(const std::string& file,double scale) {
   CifReader r;
   r.file=file;
 
@@ -281,8 +281,8 @@ void PDB::readCif(const std::string& file,double scale,CifAtomId cifAtomId) {
       if(!p[X] || !p[Y] || !p[Z]) {
         plumed_merror("the _atom_site table of the mmCIF file " + file + " has no Cartn_x, Cartn_y or Cartn_z column");
       }
-      if(cifAtomId==CifAtomId::id && !p[ID]) {
-        plumed_merror("the _atom_site table of the mmCIF file " + file + " has no id column: use CIF_ATOM_ID=order in MOLINFO");
+      if(numbering==AtomNumbering::serial && !p[ID]) {
+        plumed_merror("the _atom_site table of the mmCIF file " + file + " has no id column: use ATOM_ID=order in MOLINFO");
       }
       firstModel=get(MODEL);
       firstRow=false;
@@ -308,16 +308,16 @@ void PDB::readCif(const std::string& file,double scale,CifAtomId cifAtomId) {
       return;
     }
     AtomNumber a;
-    if(cifAtomId==CifAtomId::id) {
+    if(numbering==AtomNumbering::serial) {
       const std::string s=get(ID);
       long long id=0;
       if(!Tools::convertNoexcept(s,id) || id<1 || id>std::numeric_limits<int>::max()) {
         fail(line,"the atom id " + (s.empty() ? std::string("is missing") : s + " is not a positive integer")
-             + ": use CIF_ATOM_ID=order in MOLINFO to number the atoms in the order of the file");
+             + ": use ATOM_ID=order in MOLINFO to number the atoms in the order of the file");
       }
       a.setSerial(static_cast<unsigned>(id));
       if(checkForAtom(a)) {
-        fail(line,"the atom id " + s + " is used twice: use CIF_ATOM_ID=order in MOLINFO to number the atoms in the order of the file");
+        fail(line,"the atom id " + s + " is used twice: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file");
       }
     } else {
       a.setIndex(nread);

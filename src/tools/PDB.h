@@ -43,10 +43,10 @@ class Log;
 /// see PDBCif.cpp.
 class PDB {
 public:
-/// How the atoms of an mmCIF file are numbered
-  enum class CifAtomId {
-    id,   ///< with the _atom_site.id column (the default)
-    order ///< 1,2,3... in the order of the file (after removing other models and alternate locations)
+/// How the atoms are numbered
+  enum class AtomNumbering {
+    serial, ///< with the serial number of the ATOM record (PDB) or the _atom_site.id column (mmCIF), the default
+    order   ///< 1,2,3... in the order of the file (after removing other models and alternate locations)
   };
 private:
   std::vector<unsigned> block_ends;
@@ -58,6 +58,8 @@ private:
   std::vector<std::string> element;
 /// number of atoms of alternate locations that were skipped
   unsigned skippedAltLocs=0;
+/// how the atoms are numbered (set by read)
+  AtomNumbering numbering=AtomNumbering::serial;
   std::vector<Vector> positions;
   std::vector<double> occupancy;
   std::vector<double> beta;
@@ -84,11 +86,11 @@ private:
 /// index of the first atom of residue (resnum,icode) of chain, -1 if there is none; "*" matches any chain or code
   long findResidue(int resnum,const std::string& chainid,const std::string& icode) const;
 /// read an mmCIF file
-  void readCif(const std::string& file,double scale,CifAtomId cifAtomId);
+  void readCif(const std::string& file,double scale);
 public:
 /// Read the pdb from a file, scaling positions by a factor scale.
-/// Files named *.cif or *.mmcif (any case) are read as mmCIF, with atoms numbered as said by cifAtomId.
-  bool read(const std::string&file,bool naturalUnits,double scale,CifAtomId cifAtomId=CifAtomId::id);
+/// Files named *.cif or *.mmcif (any case) are read as mmCIF. The atoms are numbered as said by atomNumbering.
+  bool read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering=AtomNumbering::serial);
 /// True if the file would be read as mmCIF by read()
   static bool isCifFile(const std::string& file);
 /// Read from a file pointer
