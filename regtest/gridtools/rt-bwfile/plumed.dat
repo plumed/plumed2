@@ -25,6 +25,6 @@ hh_collect_inst: KDE ...
    GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 
 ...
 
-hh_collect_bias: ACCUMULATE ARG=hh_collect_inst STRIDE=30 
+hh_collect_bias: ACCUMULATE ARG=hh_collect_inst STRIDE=30 DO_AFTER_FINAL_STEP
 hh_final: CUSTOM ARG=hh_collect_bias FUNC=-x PERIODIC=NO
-DUMPGRID ARG=hh_final FILE=fes_stride.dat FMT=%8.4f STRIDE=30 
+DUMPGRID ARG=hh_final FILE=fes_stride.dat FMT=%8.4f STRIDE=30 DO_AFTER_FINAL_STEP
