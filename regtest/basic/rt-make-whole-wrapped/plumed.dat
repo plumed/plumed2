@@ -1,0 +1,14 @@
+# a protein fragment wrapped in orthorhombic and triclinic boxes (one frame each)
+
+# chain: each atom is moved to the image closest to the previous one
+WHOLEMOLECULES ENTITY0=1-412
+DUMPATOMS ATOMS=1-412 FILE=chain.xyz PRECISION=5
+g: GYRATION ATOMS=1-412
+# made whole by the action itself (positions already whole here)
+c: CENTER ATOMS=1-412
+
+# tree from the reference structure
+MOLINFO STRUCTURE=ref.pdb WHOLE
+WHOLEMOLECULES ENTITY0=1-412
+DUMPATOMS ATOMS=1-412 FILE=tree.xyz PRECISION=5
+PRINT ARG=g,c.x,c.y,c.z FILE=colvar FMT=%10.6f

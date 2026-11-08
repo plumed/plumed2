@@ -23,6 +23,8 @@
 #include "Tools.h"
 #include "Exception.h"
 #include "LatticeReduction.h"
+#include "OpenMP.h"
+#include <array>
 #include <cmath>
 
 namespace PLMD {
@@ -510,6 +512,81 @@ const Tensor& Pbc::getBox()const {
 
 const Tensor& Pbc::getInvBox()const {
   return invBox;
+}
+
+void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
+                    const unsigned* parent, const unsigned* child)const {
+  if(type==unset || nlinks==0) {
+    return;
+  }
+  auto par=[&](std::size_t l) -> std::size_t {
+    return parent ? parent[l] : l;
+  };
+  auto chi=[&](std::size_t l) -> std::size_t {
+    return child ? child[l] : l+1;
+  };
+  // A vector shorter than half the smallest distance between lattice planes is the
+  // unique minimum image (any other image is longer than that distance minus it).
+  // The length of d-n*box, with s=d*invBox and n=round(s), is at most
+  // sum_k |s_k-n_k| |box row k|.
+  double hmin=std::numeric_limits<double>::max();
+  double rowlen[3];
+  for(unsigned k=0; k<3; ++k) {
+    hmin=std::min(hmin,1.0/std::sqrt(invBox(0,k)*invBox(0,k)+invBox(1,k)*invBox(1,k)+invBox(2,k)*invBox(2,k)));
+    rowlen[k]=std::sqrt(box(k,0)*box(k,0)+box(k,1)*box(k,1)+box(k,2)*box(k,2));
+  }
+  const double safe=0.5*hmin;
+  // the scalar code avoids temporaries in memory, which are slow here
+  const double i00=invBox(0,0), i01=invBox(0,1), i02=invBox(0,2);
+  const double i10=invBox(1,0), i11=invBox(1,1), i12=invBox(1,2);
+  const double i20=invBox(2,0), i21=invBox(2,1), i22=invBox(2,2);
+  // round to nearest without branches or calls (|x| < 2^51)
+  auto rnd=[](const double x) {
+    constexpr double c=6755399441055744.0;
+    return (x+c)-c;
+  };
+  // shift of each link, in lattice vectors, from the original positions (a shift of the
+  // parent does not change the minimum image); it is stored in the child
+  std::vector<std::array<int,3> > shift(pos.size(), std::array<int,3> {0,0,0});
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pos))
+  for(std::size_t l=0; l<nlinks; ++l) {
+    const Vector & a = pos[par(l)];
+    const Vector & b = pos[chi(l)];
+    const double d0=b[0]-a[0], d1=b[1]-a[1], d2=b[2]-a[2];
+    const double s0=d0*i00+d1*i10+d2*i20;
+    const double s1=d0*i01+d1*i11+d2*i21;
+    const double s2=d0*i02+d1*i12+d2*i22;
+    double n0=rnd(s0), n1=rnd(s1), n2=rnd(s2);
+    const double bound=std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2];
+    if(!(bound<safe && std::fabs(s0)<1e9 && std::fabs(s1)<1e9 && std::fabs(s2)<1e9)) {
+      // far from the parent (or not finite): minimum image from distance()
+      const Vector t=matmul(b-(a+distance(a,b)),invBox);
+      n0=std::nearbyint(t[0]);
+      n1=std::nearbyint(t[1]);
+      n2=std::nearbyint(t[2]);
+    }
+    auto & sh = shift[chi(l)];
+    sh[0]=-static_cast<int>(n0);
+    sh[1]=-static_cast<int>(n1);
+    sh[2]=-static_cast<int>(n2);
+  }
+  // total shift of each atom: exact integer sums, parents before children
+  for(std::size_t l=0; l<nlinks; ++l) {
+    const auto & sp = shift[par(l)];
+    auto & sc = shift[chi(l)];
+    sc[0]+=sp[0];
+    sc[1]+=sp[1];
+    sc[2]+=sp[2];
+  }
+  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pos))
+  for(std::size_t i=0; i<pos.size(); ++i) {
+    const auto & t = shift[i];
+    if(t[0]!=0 || t[1]!=0 || t[2]!=0) {
+      for(unsigned k=0; k<3; ++k) {
+        pos[i][k]+=t[0]*box(0,k)+t[1]*box(1,k)+t[2]*box(2,k);
+      }
+    }
+  }
 }
 
 }
