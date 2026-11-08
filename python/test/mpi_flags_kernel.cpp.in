@@ -1,0 +1,60 @@
+// Minimal ABI4 kernel: capture Python annotations and emulate old/new checks.
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+struct SafePtr {
+  const void* ptr;
+  std::size_t nelem;
+  const std::size_t* shape;
+  std::size_t flags;
+  void* opt;
+};
+struct NothrowHandler {
+  void* ptr;
+  void (*handler)(void*, int, const char*, const void*);
+};
+struct Functions {
+  void* (*create)();
+  void (*cmd)(void*, const char*, const void*);
+  void (*finalize)(void*);
+};
+struct SymbolTable {
+  int version;
+  Functions functions;
+  void (*cmd_nothrow)(void*, const char*, const void*, NothrowHandler);
+  void (*cmd_safe)(void*, const char*, SafePtr);
+  void (*cmd_safe_nothrow)(void*, const char*, SafePtr, NothrowHandler);
+  unsigned (*create_reference)(void*);
+  unsigned (*delete_reference)(void*);
+  unsigned (*use_count)(void*);
+};
+namespace {
+std::size_t last_flags = 0;
+void* create() { return new unsigned(1); }
+void finalize(void* object) { delete static_cast<unsigned*>(object); }
+unsigned create_reference(void* object) { return ++*static_cast<unsigned*>(object); }
+unsigned delete_reference(void* object) { return --*static_cast<unsigned*>(object); }
+unsigned use_count(void* object) { return *static_cast<unsigned*>(object); }
+void cmd(void*, const char* key, const void* ptr) {
+  if (std::strcmp(key, "getApiVersion") == 0) {
+    *static_cast<int*>(const_cast<void*>(ptr)) = LEGACY_KERNEL ? 10 : 11;
+  }
+}
+void safe(void* object, const char* key, SafePtr value) {
+  last_flags = value.flags;
+  cmd(object, key, value.ptr);
+}
+void safe_nothrow(void* object, const char* key, SafePtr value, NothrowHandler handler) {
+  safe(object, key, value);
+  if (!LEGACY_KERNEL && std::strcmp(key, "setMPIComm") == 0 &&
+      (value.flags & 0x20000000u)) {
+    handler.handler(handler.ptr, 20300, "expected pointer to MPI_Comm", nullptr);
+  }
+}
+}
+extern "C" {
+std::size_t mpi_test_last_flags() { return last_flags; }
+SymbolTable plumed_symbol_table = {
+  4, {create, cmd, finalize}, nullptr, safe, safe_nothrow, create_reference, delete_reference, use_count
+};
+}
