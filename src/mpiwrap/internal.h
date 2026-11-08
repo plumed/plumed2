@@ -100,7 +100,6 @@ private:
   std::uint32_t native_status_size_;
   std::uint32_t native_status_offsets_[3];
   std::uint32_t native_fint_size_;
-  std::uint64_t compatibility_fingerprint_;
   std::vector<void *> provider_libraries_;
   std::unique_ptr<DescriptorSnapshot> descriptor_snapshot_;
   bool installed_;

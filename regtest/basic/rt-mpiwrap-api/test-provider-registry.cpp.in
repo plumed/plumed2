@@ -232,8 +232,9 @@ int run() {
   };
   plumed_mpi_provider conflict = makeDescriptor(
         conflicting_functions, 3, metadata, 2, "conflict");
-  assert(!registry.install(&conflict, error));
-  assert(error.find("conflicting") != std::string::npos);
+  assert(registry.install(&conflict, error));
+  assert(registry.dispatch("MPI_Comm_rank", UINT32_C(0x4e7672aa), 1, 2) ==
+         reinterpret_cast<plumed_mpi_generic_pointer>(&fakeRank));
 
   // Independent header instantiations share a native runtime but have their
   // own transport/accessor addresses. Keep the first installed table alive.
@@ -256,10 +257,62 @@ int run() {
   assert(independent_headers.dispatch("MPI_Comm_rank", UINT32_C(0x4e7672aa), 1, 2) ==
          reinterpret_cast<plumed_mpi_generic_pointer>(&fakeRank));
   identified_metadata[0].native_value_size = sizeof(std::int64_t);
-  assert(!independent_headers.install(&identified, error));
+  assert(independent_headers.install(&identified, error));
   identified_metadata[0].native_value_size = sizeof(std::int32_t);
   runtime_identity = reinterpret_cast<plumed_mpi_generic_pointer>(&fakeRank);
-  assert(!independent_headers.install(&identified, error));
+  assert(independent_headers.install(&identified, error));
+
+  // Additive minors, optional metadata and function sets are independently
+  // valid. They neither replace the original table nor fill missing entries.
+  auto additional = identified;
+  additional.abi_minor = 17;
+  additional.function_count = 1;
+  additional.functions = &conflicting_functions[0];
+  additional.metadata_count = 0;
+  additional.metadata = nullptr;
+  assert(independent_headers.install(&additional, error));
+  assert(independent_headers.descriptorSnapshot()->abi_minor == 0);
+  assert(independent_headers.descriptorSnapshot()->metadata_count == 2);
+  assert(independent_headers.has("MPI_Comm_dup"));
+  Registry minimal;
+  assert(minimal.install(&additional, error));
+  assert(minimal.install(&identified, error));
+  assert(!minimal.has("MPI_Comm_dup"));
+  assert(!minimal.dispatch("MPI_Comm_dup", UINT32_C(0xf0dc6608), 1, 2));
+
+  // Every representation field matters even when both descriptors are valid.
+  std::uint32_t plumed_mpi_provider::*const layout_fields[] = {
+    &plumed_mpi_provider::native_comm_size,
+    &plumed_mpi_provider::native_group_size,
+    &plumed_mpi_provider::native_datatype_size,
+    &plumed_mpi_provider::native_request_size,
+    &plumed_mpi_provider::native_op_size,
+    &plumed_mpi_provider::native_errhandler_size,
+    &plumed_mpi_provider::native_status_size,
+    &plumed_mpi_provider::native_status_source_offset,
+    &plumed_mpi_provider::native_status_tag_offset,
+    &plumed_mpi_provider::native_status_error_offset,
+    &plumed_mpi_provider::native_fint_size,
+  };
+  for (auto field : layout_fields) {
+    auto incompatible = additional;
+    incompatible.*field -= 1;
+    if (additional.*field == 0) {
+      incompatible.*field = 1;
+    }
+    assert(!minimal.install(&incompatible, error));
+  }
+  auto incompatible = additional;
+  incompatible.ranks_are_threads = 1;
+  assert(!minimal.install(&incompatible, error));
+  incompatible = additional;
+  incompatible.native_fint_signed = 0;
+  assert(!minimal.install(&incompatible, error));
+  auto malformed = additional;
+  conflicting_functions[0].signature_version += 1;
+  assert(!minimal.install(&malformed, error));
+  assert(error.find("signature mismatch") != std::string::npos);
+  conflicting_functions[0].signature_version -= 1;
 
   Registry null_description_registry;
   plumed_mpi_provider no_description = makeDescriptor(

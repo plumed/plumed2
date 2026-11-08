@@ -4209,25 +4209,24 @@ bool validString(const char *text) {
   return false;
 }
 
-std::uint64_t compatibilityFingerprint(
-  const plumed_mpi_provider &descriptor) {
-  std::uint64_t hash = UINT64_C(14695981039346656037);
-  const std::uint64_t values[] = {
-    descriptor.abi_major, descriptor.abi_minor, descriptor.ranks_are_threads,
-    descriptor.native_comm_size, descriptor.native_group_size,
-    descriptor.native_datatype_size, descriptor.native_request_size,
-    descriptor.native_op_size, descriptor.native_errhandler_size,
-    descriptor.native_status_size, descriptor.native_status_source_offset,
-    descriptor.native_status_tag_offset, descriptor.native_status_error_offset,
-    descriptor.native_fint_size, descriptor.native_fint_signed,
-  };
-  for (std::uint64_t value : values) {
-    for (unsigned int byte = 0; byte < sizeof(value); ++byte) {
-      hash ^= static_cast<unsigned char>(value >> (byte * 8));
-      hash *= UINT64_C(1099511628211);
-    }
-  }
-  return hash;
+// Compare the representation contract directly. Accepted ABI minor extensions
+// and optional capabilities do not change the first installed provider.
+bool sameRepresentation(const plumed_mpi_provider &left,
+                        const plumed_mpi_provider &right) {
+  return left.abi_major == right.abi_major &&
+         left.ranks_are_threads == right.ranks_are_threads &&
+         left.native_comm_size == right.native_comm_size &&
+         left.native_group_size == right.native_group_size &&
+         left.native_datatype_size == right.native_datatype_size &&
+         left.native_request_size == right.native_request_size &&
+         left.native_op_size == right.native_op_size &&
+         left.native_errhandler_size == right.native_errhandler_size &&
+         left.native_status_size == right.native_status_size &&
+         left.native_status_source_offset == right.native_status_source_offset &&
+         left.native_status_tag_offset == right.native_status_tag_offset &&
+         left.native_status_error_offset == right.native_status_error_offset &&
+         left.native_fint_size == right.native_fint_size &&
+         left.native_fint_signed == right.native_fint_signed;
 }
 
 bool sameFunctions(
@@ -4270,7 +4269,6 @@ bool validateDescriptor(const plumed_mpi_provider *descriptor,
                         std::uint32_t &native_status_size,
                         std::uint32_t *native_status_offsets,
                         std::uint32_t &native_fint_size,
-                        std::uint64_t &compatibility_fingerprint,
                         std::string &error) {
   if (!descriptor) {
     return setError(error, "null MPI provider descriptor");
@@ -4674,7 +4672,6 @@ bool validateDescriptor(const plumed_mpi_provider *descriptor,
   native_status_offsets[1] = descriptor->native_status_tag_offset;
   native_status_offsets[2] = descriptor->native_status_error_offset;
   native_fint_size = descriptor->native_fint_size;
-  compatibility_fingerprint = ::PLMD::mpiwrap::compatibilityFingerprint(*descriptor);
   return true;
 }
 }  // namespace
@@ -4771,7 +4768,7 @@ Registry::Registry() : descriptor_function_comm_rank_(nullptr),
   descriptor_function_initialized_(nullptr), runtime_kind_(0), native_comm_size_(0),
   native_handle_sizes_{0, 0, 0, 0, 0, 0}, native_status_size_(0),
   native_status_offsets_{0, 0, 0}, native_fint_size_(0),
-  compatibility_fingerprint_(0), installed_(false), provider_value_used_(false),
+  installed_(false), provider_value_used_(false),
   internal_launch_started_(false), internal_launch_active_(false), ready_(false) {}
 
 Registry::~Registry() {
@@ -4800,14 +4797,12 @@ bool Registry::install(const plumed_mpi_provider *descriptor,
   std::uint32_t next_status_size = 0;
   std::uint32_t next_status_offsets[3] = {};
   std::uint32_t next_fint_size = 0;
-  std::uint64_t next_fingerprint = 0;
   if (!validateDescriptor(descriptor, next_functions, next_metadata, next_values,
                           next_bindings,
                           next_name, next_identity, next_comm_rank,
                           next_initialized, next_runtime_kind,
                           next_native_comm_size, next_handle_sizes,
                           next_status_size, next_status_offsets, next_fint_size,
-                          next_fingerprint,
                           error)) {
     return false;
   }
@@ -4815,19 +4810,11 @@ bool Registry::install(const plumed_mpi_provider *descriptor,
 
   std::lock_guard<std::mutex> lock(mutex_);
   if (installed_) {
-    // Header-local transport wrappers and constant accessors have distinct
-    // addresses in independent callers. Native runtime identity permits those
-    // differences; without it retain the conservative exact-address check.
-    const bool same_runtime = !runtime_identity_.empty() &&
-                              runtime_identity_ == next_identity;
-    if (runtime_kind_ == next_runtime_kind &&
-        (same_runtime || (descriptor_function_comm_rank_ == next_comm_rank &&
-                          descriptor_function_initialized_ == next_initialized)) &&
-        runtime_identity_ == next_identity &&
-        compatibility_fingerprint_ == next_fingerprint &&
-        sameFunctions(functions_, next_functions, !same_runtime) &&
-        metadata_ == next_metadata &&
-        descriptor_snapshot_->sameMetadata(*next_snapshot, !same_runtime)) {
+    // Independently validated callers may wrap the same MPI runtime with
+    // different shims. Layout compatibility cannot prove runtime identity:
+    // callers remain responsible for using mutually compatible communicators.
+    // Keep the first function/constant table and its metadata unchanged.
+    if (sameRepresentation(descriptor_snapshot_->descriptor, *descriptor)) {
       if (provider_library) {
         provider_libraries_.push_back(provider_library);
       }
@@ -4856,7 +4843,6 @@ bool Registry::install(const plumed_mpi_provider *descriptor,
   native_status_size_ = next_status_size;
   std::copy(next_status_offsets, next_status_offsets + 3, native_status_offsets_);
   native_fint_size_ = next_fint_size;
-  compatibility_fingerprint_ = next_fingerprint;
   descriptor_snapshot_.swap(next_snapshot);
   installed_ = true;
   if (this == &currentRegistry()) {
@@ -5120,16 +5106,17 @@ bool Registry::beginInternalLaunch(
   std::uint32_t descriptor_status_size = 0;
   std::uint32_t descriptor_status_offsets[3] = {};
   std::uint32_t descriptor_fint_size = 0;
-  std::uint64_t descriptor_fingerprint = 0;
   if (!validateDescriptor(descriptor, descriptor_functions, descriptor_metadata,
                           descriptor_values, ignored_bindings, ignored_name,
                           descriptor_identity, descriptor_rank,
                           descriptor_initialized, descriptor_runtime_kind,
                           descriptor_comm_size, descriptor_handle_sizes,
                           descriptor_status_size, descriptor_status_offsets,
-                          descriptor_fint_size, descriptor_fingerprint, error)) {
+                          descriptor_fint_size, error)) {
     return false;
   }
+  // Unlike repeated public injection, launch must prove ownership of this
+  // exact embedded runtime, including its functions and optional metadata.
   DescriptorSnapshot descriptor_snapshot(*descriptor);
   std::lock_guard<std::mutex> lock(mutex_);
   if (!installed_ || descriptor_runtime_kind != PLUMED_MPIW_RUNTIME_THREAD_MPI ||
@@ -5137,10 +5124,11 @@ bool Registry::beginInternalLaunch(
       descriptor_function_comm_rank_ != descriptor_rank ||
       descriptor_function_initialized_ != descriptor_initialized ||
       runtime_identity_.empty() || runtime_identity_ != descriptor_identity ||
-      compatibility_fingerprint_ != descriptor_fingerprint ||
+      !descriptor_snapshot_ ||
+      descriptor_snapshot_->descriptor.abi_minor != descriptor->abi_minor ||
+      !sameRepresentation(descriptor_snapshot_->descriptor, *descriptor) ||
       !sameFunctions(functions_, descriptor_functions) ||
       metadata_ != descriptor_metadata || values_ != descriptor_values ||
-      !descriptor_snapshot_ ||
       !descriptor_snapshot_->sameMetadata(descriptor_snapshot)) {
     return setError(error, "internal launch requires the embedded thread-MPI provider");
   }
