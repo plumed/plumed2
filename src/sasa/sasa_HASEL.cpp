@@ -638,7 +638,7 @@ void SASA_HASEL::computeDeltaG() {
   // Keeping this guard avoids clearing/repopulating these vectors every step at fixed T.
   // NOTE: this also preserves the intended fix for a previous issue where vectors were
   // cleared every step but not repopulated, and backbone values were repeatedly appended.
-  if (T != Ti) {
+  if (std::fabs(T - Ti) > 1e-12) {
     // Reset all cached transfer free energies (including backbone slot at index natoms)
     // before filling with values for the current temperature.
     for(unsigned i=0; i<=natoms; i++) {
