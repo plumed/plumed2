@@ -100,9 +100,9 @@ IFile& IFile::open(const std::string&mypath) {
     plumed_error() << "file " << mypath << " cannot be found";
   }
   fp=std::fopen(const_cast<char*>(path.c_str()),"r");
-  if(h5::isH5(path)) {
+  if(h5table::isH5(path)) {
     // an HDF5 table, read as the lines of the equivalent text file
-    h5reader=std::make_unique<h5::Reader>(path);
+    h5reader=std::make_unique<h5table::Reader>(path);
   } else if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"r");

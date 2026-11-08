@@ -41,7 +41,7 @@ but only for sequential input. See OFile for sequential output.
 */
 
 //TODO: the `fields` component may be made a map or a ordered/unordered set, since Field objects can be ordered (hence findable in Log(N)/log(1)!
-namespace h5 {
+namespace h5table {
 class Reader;
 }
 
@@ -63,7 +63,7 @@ class IFile:
 /// Advance to next field (= read one line)
   IFile& advanceField();
 /// Reader of an HDF5 table (files with extension .h5), which gives the lines of the equivalent text file
-  std::unique_ptr<h5::Reader> h5reader;
+  std::unique_ptr<h5table::Reader> h5reader;
 /// Close the HDF5 table
   void closeBackend() override;
 /// Find field index by name

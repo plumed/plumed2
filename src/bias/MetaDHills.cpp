@@ -66,7 +66,7 @@ void bcastString(Communicator& c, std::string& s) {
 
 std::string removeIncompleteLastLine(const std::string& path) {
   // an HDF5 table has no lines
-  if(h5::isH5(path)) {
+  if(h5table::isH5(path)) {
     return "";
   }
   // compressed files cannot be fixed in place

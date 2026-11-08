@@ -27,7 +27,8 @@
 #include <vector>
 
 namespace PLMD {
-namespace h5 {
+/// (not "h5": libraries such as ITensor use a global namespace h5)
+namespace h5table {
 
 /**
 \ingroup TOOLBOX

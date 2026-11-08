@@ -32,7 +32,7 @@
 #endif
 
 namespace PLMD {
-namespace h5 {
+namespace h5table {
 
 bool isH5(const std::string& path) {
   return Tools::extension(path)=="h5";

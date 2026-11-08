@@ -129,14 +129,14 @@ namespace {
 /// of several gzip members, which are read as a single stream)
 class TrimLineReader {
   std::ifstream in;
-  std::unique_ptr<h5::Reader> h5reader;
+  std::unique_ptr<h5table::Reader> h5reader;
 #ifdef __PLUMED_HAS_ZLIB
   gzFile gz=nullptr;
 #endif
 public:
   TrimLineReader(const std::string& fname,bool compressed) {
-    if(h5::isH5(fname)) {
-      h5reader=std::make_unique<h5::Reader>(fname);
+    if(h5table::isH5(fname)) {
+      h5reader=std::make_unique<h5table::Reader>(fname);
     } else if(compressed) {
 #ifdef __PLUMED_HAS_ZLIB
       gz=gzopen(fname.c_str(),"rb");
@@ -266,7 +266,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   std::string header,keptHeader;
   // for HDF5 tables: the block (a FIELDS line starts one) and the row of the last line kept
   long long block=-1,row=0,keepBlock=-1,keepRow=0;
-  const bool table=h5::isH5(fname);
+  const bool table=h5table::isH5(fname);
   {
     TrimLineReader reader(fname,compressed);
     std::string line;
@@ -342,7 +342,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   const std::string backup=trimmedBackupName(fname);
   if(table) {
     // the blocks before the one of the last line kept, and its rows up to that line
-    const auto rows=h5::rows(fname);
+    const auto rows=h5table::rows(fname);
     std::vector<unsigned long long> keep;
     for(long long b=0; b<keepBlock; b++) {
       keep.push_back(rows[b]);
@@ -350,7 +350,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     if(keepBlock>=0) {
       keep.push_back(keepRow);
     }
-    h5::truncate(fname,keep,backup);
+    h5table::truncate(fname,keep,backup);
   } else if(!compressed) {
     {
       std::ifstream in(fname,std::ios::binary);
@@ -460,7 +460,7 @@ void Checkpointing::write() {
         }
       }
       w.write("path"+num,f);
-      if(h5::isH5(f)) {
+      if(h5table::isH5(f)) {
         // an HDF5 table: the rows of its blocks, its size in bytes is meaningless
         std::vector<long long> rows;
         for(const auto & fb : plumed.getFiles()) {
@@ -590,7 +590,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
           }
           plumed_merror("checkpoint: file "+f+" is missing, but it had rows when the checkpoint was written");
         }
-        const auto current=h5::rows(f);
+        const auto current=h5table::rows(f);
         if(current.size()<rows.size()) {
           plumed_merror("checkpoint: file "+f+" has fewer blocks than when the checkpoint was written");
         }
@@ -604,7 +604,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
           keep.push_back(rows[b]);
         }
         if(longer) {
-          h5::truncate(f,keep,"");
+          h5table::truncate(f,keep,"");
           log<<"  file "<<f<<" truncated to the rows it had at the checkpoint\n";
         }
         continue;

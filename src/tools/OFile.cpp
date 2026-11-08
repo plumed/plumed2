@@ -207,8 +207,8 @@ OFile& OFile::printField(const std::string&name,double v) {
     v=std::numeric_limits<double>::quiet_NaN();
   }
   std::snprintf(buffer_string.data(),buffer_string.size(),fieldFmt.c_str(),v);
-  h5::Value t;
-  t.type=h5::Value::Double;
+  h5table::Value t;
+  t.type=h5table::Value::Double;
   t.d=v;
   setField(name,buffer_string.data(),t);
   return *this;
@@ -216,8 +216,8 @@ OFile& OFile::printField(const std::string&name,double v) {
 
 OFile& OFile::printField(const std::string&name,int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %d",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
@@ -225,8 +225,8 @@ OFile& OFile::printField(const std::string&name,int v) {
 
 OFile& OFile::printField(const std::string&name,long int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %ld",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
@@ -234,8 +234,8 @@ OFile& OFile::printField(const std::string&name,long int v) {
 
 OFile& OFile::printField(const std::string&name,long long int v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %lld",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
@@ -243,8 +243,8 @@ OFile& OFile::printField(const std::string&name,long long int v) {
 
 OFile& OFile::printField(const std::string&name,unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %u",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
@@ -252,8 +252,8 @@ OFile& OFile::printField(const std::string&name,unsigned v) {
 
 OFile& OFile::printField(const std::string&name,long unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %lu",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
@@ -261,22 +261,22 @@ OFile& OFile::printField(const std::string&name,long unsigned v) {
 
 OFile& OFile::printField(const std::string&name,long long unsigned v) {
   std::snprintf(buffer_string.data(),buffer_string.size()," %llu",v);
-  h5::Value t;
-  t.type=h5::Value::Int;
+  h5table::Value t;
+  t.type=h5table::Value::Int;
   t.i=static_cast<long long>(v);
   setField(name,buffer_string.data(),t);
   return *this;
 }
 
 OFile& OFile::printField(const std::string&name,const std::string & v) {
-  h5::Value t;
-  t.type=h5::Value::String;
+  h5table::Value t;
+  t.type=h5table::Value::String;
   t.s=v;
   setField(name,v,t);
   return *this;
 }
 
-void OFile::setField(const std::string&name,const std::string& v,const h5::Value& typed) {
+void OFile::setField(const std::string&name,const std::string& v,const h5table::Value& typed) {
   unsigned i;
   for(i=0; i<const_fields.size(); i++)
     if(const_fields[i].name==name) {
@@ -378,12 +378,12 @@ OFile& OFile::printField() {
     // HDF5 table: the writer starts a new block when the fields change
     if(isWriter()) {
       h5open();
-      std::vector<h5::Field> row,constants;
+      std::vector<h5table::Field> row,constants;
       for(const auto & f : fields) {
-        row.push_back(h5::Field{f.name,f.typed});
+        row.push_back(h5table::Field{f.name,f.typed});
       }
       for(const auto & f : const_fields) {
-        constants.push_back(h5::Field{f.name,f.typed});
+        constants.push_back(h5table::Field{f.name,f.typed});
       }
       h5writer->addRow(row,constants);
     }
@@ -507,7 +507,7 @@ OFile& OFile::open(const std::string&setpath) {
   // Only the writer opens the file (the other processes open /dev/null):
   // with many processes on a parallel file system, opening (and truncating)
   // the same file from all of them is slow.
-  if(h5::isH5(path)) {
+  if(h5table::isH5(path)) {
     // HDF5 table: fp is the null device on all the processes, the table is written by h5writer
     h5mode=true;
     const bool restart=checkRestart();
@@ -651,7 +651,7 @@ void OFile::h5open() {
   if(trimPending_) {
     applyPendingTrim();
   }
-  h5writer=std::make_unique<h5::Writer>(path,h5append);
+  h5writer=std::make_unique<h5table::Writer>(path,h5append);
   h5append=true;
 }
 
@@ -662,7 +662,7 @@ std::vector<unsigned long long> OFile::getH5Rows() {
   // nothing written yet by this run: the table as it is
   std::error_code ec;
   if(isWriter() && h5append && std::filesystem::exists(path,ec)) {
-    return h5::rows(path);
+    return h5table::rows(path);
   }
   return {};
 }

@@ -81,16 +81,16 @@ H5Convert::H5Convert(const CLToolOptions& co ):
 
 namespace {
 /// a value read from a text file: a number if it is one (without evaluating expressions such as pi)
-h5::Value textValue(const std::string& s) {
-  h5::Value v;
+h5table::Value textValue(const std::string& s) {
+  h5table::Value v;
   const char* c=s.c_str();
   char* end=nullptr;
   const double d=std::strtod(c,&end);
   if(!s.empty() && end && *end=='\0') {
-    v.type=h5::Value::Double;
+    v.type=h5table::Value::Double;
     v.d=d;
   } else {
-    v.type=h5::Value::String;
+    v.type=h5table::Value::String;
     v.s=s;
   }
   return v;
@@ -101,8 +101,8 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   std::string input,output;
   parse("--input",input);
   parse("--output",output);
-  const bool fromH5=h5::isH5(input);
-  const bool toH5=h5::isH5(output);
+  const bool fromH5=h5table::isH5(input);
+  const bool toH5=h5table::isH5(output);
   if(fromH5==toH5) {
     error("one of the two files (and only one) must be an HDF5 file (extension .h5)");
   }
@@ -121,10 +121,10 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
     }
     return 0;
   }
-  h5::Writer writer(output,false);
+  h5table::Writer writer(output,false);
   std::vector<std::string> names;
-  std::vector<h5::Field> constants;
-  std::vector<h5::Field> row;
+  std::vector<h5table::Field> constants;
+  std::vector<h5table::Field> row;
   while(ifile.getline(line)) {
     const std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS") {
@@ -134,7 +134,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
     } else if(words.size()>=4 && words[0]=="#!" && words[1]=="SET") {
       // the value as it is written (with its spaces)
       const std::size_t p=line.find(words[2],line.find("SET")+3)+words[2].size()+1;
-      constants.push_back(h5::Field{words[2],textValue(line.substr(p))});
+      constants.push_back(h5table::Field{words[2],textValue(line.substr(p))});
     } else if(!words.empty() && words[0][0]!='#') {
       if(words.size()!=names.size()) {
         error("file "+input+": the number of values does not match the number of fields in line:\n"+line);
