@@ -13,6 +13,9 @@ import plumed
 from plumed.runtime import kernel_path, package_root, resource_root
 
 
+# Normal make installs a wrapper using an external kernel. The wheel smoke
+# test separately requires a bundle, so a broken wheel cannot silently skip it.
+@unittest.skipIf(kernel_path() is None, "requires a bundled runtime")
 class TestRuntimeResources(unittest.TestCase):
     """Run unchanged both in site-packages and against a relocated package."""
 
@@ -43,6 +46,9 @@ class TestRuntimeResources(unittest.TestCase):
             command = [*command, "--no-mpi", "info", option]
         result = subprocess.run(
             command,
+            # CI also runs this suite from python/, whose unbuilt source
+            # package would shadow the installed extension in a -c command.
+            cwd=self.prefix,
             env={**self.env, **(overrides or {})},
             check=False,
             capture_output=True,
