@@ -9,7 +9,7 @@
 #include "if_then_else.hpp"
 #include "must.hpp"
 
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -22,6 +22,6 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 
 #endif

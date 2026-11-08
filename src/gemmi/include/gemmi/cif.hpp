@@ -25,7 +25,7 @@
 #pragma warning(disable: 4267)
 #endif
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 namespace cif {
 using std::size_t;
 namespace pegtl = tao::pegtl;
@@ -381,5 +381,5 @@ size_t read_one_block(Document& d, T&& input, size_t limit) {
 #endif
 
 } // namespace cif
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

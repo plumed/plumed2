@@ -18,7 +18,7 @@
 #include "utf.hpp"
 #endif
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 
 // strip directory and suffixes from filename
 inline std::string path_basename(const std::string& path,
@@ -169,5 +169,5 @@ inline CharArray read_into_buffer(T&& input) {
   return read_file_into_buffer(input.path());
 }
 
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

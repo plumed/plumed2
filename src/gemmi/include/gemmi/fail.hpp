@@ -53,7 +53,7 @@
 # define GEMMI_DLL __attribute__((visibility("default")))
 #endif
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 
 [[noreturn]]
 inline void fail(const std::string& msg) { throw std::runtime_error(msg); }
@@ -89,5 +89,5 @@ inline GEMMI_COLD void sys_fail(const char* msg) {
 # pragma GCC diagnostic pop
 #endif
 
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

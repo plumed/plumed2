@@ -20,7 +20,7 @@
 #include "internal/if_missing.hpp"
 #include "internal/skip_control.hpp"
 
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -66,6 +66,6 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 
 #endif
