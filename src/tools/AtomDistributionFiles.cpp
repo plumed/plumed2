@@ -86,9 +86,11 @@ void fileTraj::frame(View<Vector> posToUpdate,
 }
 
 fileTraj::fileTraj(std::string_view fmt,
-                   std::string_view fname) {
+                   std::string_view fname,
+                   std::string_view format) {
   auto errormessage=parser.init(fmt,
-                                fname);
+                                fname,
+                                format);
   if(errormessage) {
     plumed_error()<<*errormessage;
   }

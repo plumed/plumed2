@@ -33,6 +33,11 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
+
+#ifdef __PLUMED_HAS_LIBCHEMFILES
+#include <chemfiles.hpp>
+#endif
 
 namespace PLMD {
 
@@ -957,7 +962,151 @@ public:
     return std::nullopt;
   }
 };
-std::unique_ptr<fileParser> parserFromFMT(TrajectoryParser::trajfmt fmt) {
+
+#ifdef __PLUMED_HAS_LIBCHEMFILES
+/// Any trajectory format read by chemfiles (--itraj). chemfiles guesses the format from the extension
+/// of the file (including the compression: .gz, .xz, .bz2), unless it is given (--traj-format).
+/// The step, when the file stores it, and the time are passed as for xtc and trr files.
+/// Masses and charges are passed only for the formats that store both of them (TPR, LAMMPS Data):
+/// for the other formats chemfiles guesses the masses from the atom names and sets the charges to zero
+class chemfilesParser final : public fileParser {
+  std::string trajectoryFile;
+  /// the format given by the user, empty to let chemfiles guess it
+  std::string format;
+  std::unique_ptr<chemfiles::Trajectory> trajectory;
+  /// the frame whose header was read last
+  chemfiles::Frame frame;
+  long long frameNumber{0};
+  bool massesAndCharges{false};
+  std::string where() const {
+    return "frame "+std::to_string(frameNumber)+" of the trajectory file "+trajectoryFile;
+  }
+  /// the name of the format (e.g. "XTC"), from the format given by the user or from the extension of the file
+  std::string formatName() const {
+    if(!format.empty()) {
+      // the name is before the compression, as in "XYZ / GZ"
+      std::string name=format.substr(0,format.find('/'));
+      Tools::trim(name);
+      return name;
+    }
+    std::string fname=trajectoryFile;
+    const std::array<std::string,3> compressions{".gz",".xz",".bz2"};
+    for(const auto & compression : compressions) {
+      if(fname.size()>compression.size() && fname.compare(fname.size()-compression.size(),compression.size(),compression)==0) {
+        fname.resize(fname.size()-compression.size());
+        break;
+      }
+    }
+    const auto dot=fname.rfind('.');
+    if(dot==std::string::npos) {
+      return "";
+    }
+    const std::string extension=fname.substr(dot);
+    for(const auto & metadata : chemfiles::formats_list()) {
+      if(metadata.get().extension && *metadata.get().extension==extension) {
+        return metadata.get().name;
+      }
+    }
+    return "";
+  }
+public:
+  explicit chemfilesParser(std::string_view fmt):
+    format(fmt) {
+  }
+  std::optional<std::string> init(std::string_view /*fmt*/,
+                                  std::string_view fname) override {
+    trajectoryFile=std::string(fname);
+    frameNumber=0;
+    natoms=-1;
+    try {
+      trajectory=std::make_unique<chemfiles::Trajectory>(trajectoryFile,'r',format);
+    } catch(const std::exception & e) {
+      return "cannot open the trajectory file "+trajectoryFile+" with chemfiles: "+e.what();
+    }
+    const std::string name=formatName();
+    massesAndCharges=(name=="TPR" || name=="LAMMPS Data");
+    return std::nullopt;
+  }
+  std::optional<std::string> rewind() override {
+    const int nat=natoms;
+    auto error=init("",trajectoryFile);
+    natoms=nat;
+    return error;
+  }
+  std::optional<std::string> readHeader(RawFrame& /*raw*/) override {
+    // chemfiles reads the whole frame: it is kept until readAtoms()
+    try {
+      if(trajectory->done()) {
+        return "EOF";
+      }
+      ++frameNumber;
+      frame=trajectory->read();
+    } catch(const std::exception & e) {
+      return "cannot read "+where()+" with chemfiles: "+e.what();
+    }
+    const auto n=frame.size();
+    if(n==0) {
+      return where()+" has no atoms";
+    }
+    if(natoms>=0 && n!=std::size_t(natoms)) {
+      return where()+" has "+std::to_string(n)+" atoms, the first frame has "+std::to_string(natoms);
+    }
+    if(n>std::size_t(std::numeric_limits<int>::max())) {
+      return where()+" has too many atoms";
+    }
+    natoms=int(n);
+    return std::nullopt;
+  }
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
+    // chemfiles works in A, ps and degrees
+    const auto & pos=frame.positions();
+    for(int i=0; i<natoms; i++) {
+      for(unsigned j=0; j<3; j++) {
+        raw.positions[3*i+j]=pos[i][j]/10.;
+      }
+    }
+    if(raw.readBox) {
+      const auto matrix=frame.cell().matrix();
+      for(unsigned i=0; i<3; i++) {
+        for(unsigned j=0; j<3; j++) {
+#if CHEMFILES_VERSION_MAJOR==0 && CHEMFILES_VERSION_MINOR<11
+          // chemfiles 0.10: the cell vectors are the columns of the matrix
+          raw.box[3*i+j]=matrix[j][i]/10.;
+#else
+          raw.box[3*i+j]=matrix[i][j]/10.;
+#endif
+        }
+      }
+    }
+#if CHEMFILES_VERSION_MAJOR==0 && CHEMFILES_VERSION_MINOR<11
+    // chemfiles 0.10: the step of the simulation for the formats that store it, the index of the frame otherwise
+    raw.step=static_cast<long long>(frame.step());
+#else
+    if(const auto step=frame.get("simulation_step")) {
+      if(step->kind()==chemfiles::Property::DOUBLE) {
+        raw.step=std::llround(step->as_double());
+      }
+    }
+#endif
+    if(const auto time=frame.get("time")) {
+      if(time->kind()==chemfiles::Property::DOUBLE) {
+        raw.time=time->as_double();
+      }
+    }
+    if(massesAndCharges) {
+      raw.masses.resize(natoms);
+      raw.charges.resize(natoms);
+      for(int i=0; i<natoms; i++) {
+        raw.masses[i]=frame[i].mass();
+        raw.charges[i]=frame[i].charge();
+      }
+    }
+    return std::nullopt;
+  }
+};
+#endif
+
+std::unique_ptr<fileParser> parserFromFMT(TrajectoryParser::trajfmt fmt,[[maybe_unused]] std::string_view format) {
   using trajfmt = TrajectoryParser::trajfmt;
   switch (fmt) {
   case trajfmt::xdr_xtc: {
@@ -981,6 +1130,11 @@ std::unique_ptr<fileParser> parserFromFMT(TrajectoryParser::trajfmt fmt) {
   case trajfmt::dcd: {
     return std::make_unique<dcdParser>();
   }
+#ifdef __PLUMED_HAS_LIBCHEMFILES
+  case trajfmt::chemfiles: {
+    return std::make_unique<chemfilesParser>(format);
+  }
+#endif
   default: {
     plumed_assert(false) <<"you should not be here" ;
   }
@@ -996,6 +1150,11 @@ void TrajectoryParser::registerKeywords(Keywords& keys) {
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
   keys.add("atoms","--ipdb","the trajectory in pdb format (frames separated by END or ENDMDL records)");
   keys.add("atoms","--idcd","the trajectory in dcd format (CHARMM, NAMD, X-PLOR)");
+  // without chemfiles the options are hidden (not in the help and in the manual), and --itraj stops with a message (see init())
+  keys.add(hasChemfiles() ? "atoms" : "hidden","--itraj","the trajectory in any format read by chemfiles (needs PLUMED configured with --enable-libchemfiles): "
+           "the format is guessed from the extension of the file, unless it is given with --traj-format");
+  keys.add(hasChemfiles() ? "optional" : "hidden","--traj-format","with --itraj, the format of the trajectory as named by chemfiles (e.g. \"Amber NetCDF\", \"LAMMPS\", \"XYZ / GZ\"), "
+           "when it cannot be guessed from the extension of the file");
   for(const auto & opt : deprecatedOptions()) {
     keys.addDeprecatedKeyword(opt.first,"--i"+opt.second);
   }
@@ -1009,7 +1168,7 @@ TrajectoryParser::TrajectoryParser():
 }
 TrajectoryParser::~TrajectoryParser()=default;
 std::vector<std::string> TrajectoryParser::trajectoryOptions() {
-  return {"xyz","gro","dlp4","xtc","trr","pdb","dcd"};
+  return {"xyz","gro","dlp4","xtc","trr","pdb","dcd","traj"};
 }
 
 const std::vector<std::pair<std::string,std::string>> & TrajectoryParser::deprecatedOptions() {
@@ -1062,6 +1221,9 @@ TrajectoryParser::trajfmt TrajectoryParser::FMTfromString(std::string_view fmt) 
   if(fmt=="dcd") {
     return trajfmt::dcd;
   }
+  if(fmt=="traj") {
+    return trajfmt::chemfiles;
+  }
   return trajfmt::error;
 }
 std::string TrajectoryParser::toString(trajfmt fmt) {
@@ -1087,6 +1249,9 @@ std::string TrajectoryParser::toString(trajfmt fmt) {
   case trajfmt::dcd: {
     return "dcd";
   }
+  case trajfmt::chemfiles: {
+    return "traj";
+  }
   case trajfmt::error: {
     return "error";
   }
@@ -1095,23 +1260,41 @@ std::string TrajectoryParser::toString(trajfmt fmt) {
   return "unknown";
 }
 
+bool TrajectoryParser::hasChemfiles() {
+#ifdef __PLUMED_HAS_LIBCHEMFILES
+  return true;
+#else
+  return false;
+#endif
+}
+
 std::optional<std::string> TrajectoryParser::init(std::string_view fmt, FILE* in) {
   auto trajectory_fmt =FMTfromString(fmt);
   if (trajectory_fmt==trajfmt::error) {
     return "Error: wrong input format specified";
   }
-  parser = parserFromFMT(trajectory_fmt);
+  if (trajectory_fmt==trajfmt::chemfiles) {
+    return "a trajectory read with chemfiles (--itraj) cannot be read from standard input";
+  }
+  parser = parserFromFMT(trajectory_fmt,"");
   //not owning, will not be deleted on destruction
   return parser->init(in);
 }
 std::optional<std::string> TrajectoryParser::init(std::string_view fmt,
-    std::string_view fname) {
+    std::string_view fname,
+    std::string_view format) {
   auto trajectory_fmt =FMTfromString(fmt);
   if (trajectory_fmt==trajfmt::error) {
     return "Error: wrong input format specified";
   }
+  if (trajectory_fmt==trajfmt::chemfiles && !hasChemfiles()) {
+    return "cannot read the trajectory "+std::string(fname)+" with --itraj: PLUMED was compiled without chemfiles (configure it with --enable-libchemfiles)";
+  }
+  if (trajectory_fmt!=trajfmt::chemfiles && !format.empty()) {
+    return "the format of the trajectory (--traj-format) can only be given with --itraj";
+  }
 
-  parser = parserFromFMT(trajectory_fmt);
+  parser = parserFromFMT(trajectory_fmt,format);
   return parser->init(fmt,fname);
 }
 

@@ -751,6 +751,7 @@ enable_libtorch
 enable_libmetatomic
 enable_libitensor
 enable_libhdf5
+enable_libchemfiles
 enable_linuxperf
 enable_openacc
 enable_kenref
@@ -1454,6 +1455,8 @@ Optional Features:
   --enable-libmetatomic   enable search for libmetatomic, default: no
   --enable-libitensor     enable search for libitensor, default: no
   --enable-libhdf5        enable search for libhdf5, default: no
+  --enable-libchemfiles   enable search for chemfiles, to read more trajectory
+                          formats in driver and benchmark, default: no
   --enable-linuxperf      enable activate the compile options for a more
                           accurate report with perf on linux, default: no
   --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
@@ -3162,6 +3165,24 @@ else
   case "no" in
              (yes) libhdf5=true ;;
              (no)  libhdf5=false ;;
+  esac
+
+fi
+
+
+
+libchemfiles=
+# Check whether --enable-libchemfiles was given.
+if test "${enable_libchemfiles+set}" = set; then :
+  enableval=$enable_libchemfiles; case "${enableval}" in
+             (yes) libchemfiles=true ;;
+             (no)  libchemfiles=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-libchemfiles" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) libchemfiles=true ;;
+             (no)  libchemfiles=false ;;
   esac
 
 fi
@@ -9593,6 +9614,136 @@ rm -f core conftest.err conftest.$ac_objext \
     else
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBHDF5" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBHDF5" >&2;}
+      LIBS="$save_LIBS"
+    fi
+
+fi
+
+if test $libchemfiles = true ; then
+
+    found=ko
+    __PLUMED_HAS_LIBCHEMFILES=no
+    if test "${libsearch}" = true ; then
+      testlibs="chemfiles"
+    else
+      testlibs=""
+    fi
+    save_LIBS="$LIBS"
+
+    # check if multiple libraries are required simultaneously
+    multiple="no"
+    if test "" = "true"; then
+      multiple="yes"
+      all_LIBS=""
+      for testlib in $testlibs;
+      do
+        all_LIBS="$all_LIBS -l$testlib"
+      done
+      testlibs=" " # to check only without libraries, and later with all together
+    fi
+
+    # check without libraries
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking libchemfiles without extra libs" >&5
+$as_echo_n "checking libchemfiles without extra libs... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    if test "$found" = "ko" ; then
+      if test "$multiple" = "yes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking libchemfiles with $all_LIBS" >&5
+$as_echo_n "checking libchemfiles with $all_LIBS... " >&6; }
+        LIBS="$all_LIBS $LIBS"
+        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      else
+        for testlib in $testlibs
+        do
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking libchemfiles with -l$testlib" >&5
+$as_echo_n "checking libchemfiles with -l$testlib... " >&6; }
+          LIBS="-l$testlib $LIBS"
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  found=ok
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+          if test $found = ok ; then
+            break
+          fi
+          LIBS="$save_LIBS"
+        done
+      fi
+    fi
+
+    if test $found = ok ; then
+      $as_echo "#define __PLUMED_HAS_LIBCHEMFILES 1" >>confdefs.h
+
+      __PLUMED_HAS_LIBCHEMFILES=yes
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_LIBCHEMFILES" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_LIBCHEMFILES" >&2;}
       LIBS="$save_LIBS"
     fi
 
