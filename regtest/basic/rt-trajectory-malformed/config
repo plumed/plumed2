@@ -11,7 +11,8 @@ export PLUMED_STACK_TRACE=no
 # big endian (xdr) and little endian (dcd) 32 bit integers, written as raw bytes
 function be32(){ printf "$(printf '\\%03o\\%03o\\%03o\\%03o' $(( ($1>>24)&255 )) $(( ($1>>16)&255 )) $(( ($1>>8)&255 )) $(( $1&255 )))" ; }
 function le32(){ printf "$(printf '\\%03o\\%03o\\%03o\\%03o' $(( $1&255 )) $(( ($1>>8)&255 )) $(( ($1>>16)&255 )) $(( ($1>>24)&255 )))" ; }
-function zeros(){ head -c $1 /dev/zero ; }
+# (BSD head, e.g. on macOS, rejects a count of 0 and negative counts)
+function zeros(){ if test $1 -gt 0 ; then head -c $1 /dev/zero ; fi ; }
 function xtc_box(){ for v in 0x40400000 0 0 0 0x40400000 0 0 0 0x40400000 ; do be32 $v ; done ; }
 # xtc_frame natoms natoms2 smallidx minint maxint datalen
 function xtc_frame(){
@@ -92,7 +93,8 @@ function plumed_regtest_before(){
   # g96: a valid file, but the format is not read anymore
   printf "TITLE\ntest\nEND\nPOSITION\n    1 ALA   N        1    0.100000000    0.200000000    0.300000000\nEND\nBOX\n    2.000000000    2.000000000    2.000000000\nEND\n" > bad_g96_valid.g96
   # dcd with two frames, the second one cut: the first frame is read, with a warning
-  { dcd_file 3 0 ; dcd_frame 3 ; } | head -c -5 > truncated.dcd
+  { dcd_file 3 0 ; dcd_frame 3 ; } > full.dcd
+  head -c $(( $(wc -c < full.dcd) - 5 )) full.dcd > truncated.dcd
   echo "DUMPATOMS ATOMS=1 FILE=out.xyz" > plumed_bad.dat
 }
 

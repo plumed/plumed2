@@ -815,7 +815,7 @@ class dcdParser final : public fileParser {
     }
     headerEnd=std::ftell(fp.get());
     // a file with a huge (corrupted) number of atoms is rejected before the buffers are allocated
-    const long long rec=2*markerSize;
+    const long long rec=2LL*markerSize;
     const long long firstFrameSize=(hasUnitCell ? rec+48 : 0)+(hasFourDims ? 4 : 3)*(rec+4LL*natoms);
     if(headerEnd>=0 && std::fseek(fp.get(),0,SEEK_END)==0) {
       const long fileEnd=std::ftell(fp.get());
@@ -858,19 +858,20 @@ public:
     // (NAMD 2.5 wrote the angles in degrees)
     float unitcell[6]= {0.0f,90.0f,0.0f,90.0f,90.0f,0.0f};
     if(hasUnitCell) {
-      double cell[6];
-      if(auto error=readFrameRecord(cell,12,"unit cell",raw)) {
+      // six doubles, read as twelve 4-byte values
+      unsigned char bytes[48];
+      if(auto error=readFrameRecord(bytes,12,"unit cell",raw)) {
         return error;
       }
-      if(swap) {
-        // swapped as 4 byte values by readFrameRecord: swap the two halves of each double
-        auto c=reinterpret_cast<std::uint32_t*>(cell);
-        for(unsigned i=0; i<6; i++) {
-          std::swap(c[2*i],c[2*i+1]);
-        }
-      }
       for(unsigned i=0; i<6; i++) {
-        unitcell[i]=cell[i];
+        unsigned char* b=bytes+8*i;
+        if(swap) {
+          // each 4-byte half was swapped by readFrameRecord: swap the two halves too
+          std::swap_ranges(b,b+4,b+4);
+        }
+        double cell;
+        std::memcpy(&cell,b,8);
+        unitcell[i]=cell;
       }
     }
     const bool readAll=(nfixed==0 || firstFrame);
