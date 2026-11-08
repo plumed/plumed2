@@ -52,7 +52,7 @@ void GenericMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
-  keys.add("compulsory","CIF_ATOM_ID","id","for a STRUCTURE file in mmCIF format, how the atoms are numbered: id (with the _atom_site.id column) or order (1,2,3... in the order of the file)");
+  keys.add("compulsory","ATOM_ID","serial","how the atoms of the STRUCTURE file are numbered: serial (the serial number of the PDB file, the _atom_site.id column of the mmCIF file) or order (1,2,3... in the order of the file)");
   keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC. If the pdb file has a CRYST1 record with space group P 1, this is checked along each chain, and a warning is written to the log if consecutive atoms of a residue, or of two consecutive protein or nucleic-acid residues, are on opposite sides of the periodic boundary");
 }
 
@@ -153,20 +153,20 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   }
   if( read_backbone.size()==0 ) {
     parse("STRUCTURE",reference);
-    std::string cifAtomId;
-    parse("CIF_ATOM_ID",cifAtomId);
-    PDB::CifAtomId cifid=PDB::CifAtomId::id;
-    if(cifAtomId=="order") {
-      cifid=PDB::CifAtomId::order;
-    } else if(cifAtomId!="id") {
-      error("CIF_ATOM_ID should be id or order, not " + cifAtomId);
+    std::string atomId;
+    parse("ATOM_ID",atomId);
+    PDB::AtomNumbering numbering=PDB::AtomNumbering::serial;
+    if(atomId=="order") {
+      numbering=PDB::AtomNumbering::order;
+    } else if(atomId!="serial") {
+      error("ATOM_ID should be serial or order, not " + atomId);
     }
 
-    if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength(),cifid)) {
+    if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength(),numbering)) {
       plumed_merror("missing input file " + reference );
     }
-    if( PDB::isCifFile(reference) ) {
-      log<<"  mmCIF file: atoms numbered "<<(cifid==PDB::CifAtomId::id ? "with _atom_site.id" : "in the order of the file")<<"\n";
+    if( numbering==PDB::AtomNumbering::order ) {
+      log<<"  atoms numbered in the order of the file (ATOM_ID=order)\n";
     }
     if( pdb.getNumberOfSkippedAlternateLocations()>0 ) {
       log<<"  "<<pdb.getNumberOfSkippedAlternateLocations()<<" atoms of alternate locations were skipped (only the first location of each residue is read)\n";
@@ -178,22 +178,27 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
       }
     }
 
-    std::vector<std::string> chains;
-    pdb.getChainNames( chains );
-    log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
-    for(unsigned i=0; i<chains.size(); ++i) {
-      int start,end;
-      std::string errmsg;
-      pdb.getResidueRange( chains[i], start, end, errmsg );
-      if( errmsg.length()!=0 ) {
-        error( errmsg );
+    // the chains, block by block: a chain can appear in more than one block of the file
+    // (e.g. the ligands and the waters of a chain written after the other chains, as in wwPDB files)
+    {
+      std::vector<std::string> blocks;
+      pdb.getChainNames( blocks );
+      std::vector<std::string> chains;
+      for(const auto & c : blocks) {
+        if( std::find(chains.begin(),chains.end(),c)==chains.end() ) {
+          chains.push_back(c);
+        }
       }
-      AtomNumber astart,aend;
-      pdb.getAtomRange( chains[i], astart, aend, errmsg );
-      if( errmsg.length()!=0 ) {
-        error( errmsg );
+      log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
+      const auto & at=pdb.getAtomNumbers();
+      std::size_t first=0;
+      for(std::size_t i=1; i<=at.size(); ++i) {
+        if( i==at.size() || pdb.getChainID(at[i])!=pdb.getChainID(at[first]) ) {
+          log.printf("  chain named %s contains residues %d to %d and atoms %u to %u \n",pdb.getChainID(at[first]).c_str(),
+                     pdb.getResidueNumber(at[first]),pdb.getResidueNumber(at[i-1]),at[first].serial(),at[i-1].serial());
+          first=i;
+        }
       }
-      log.printf("  chain named %s contains residues %d to %d and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
 
     std::string python_bin;

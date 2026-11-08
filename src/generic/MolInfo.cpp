@@ -83,17 +83,23 @@ The STRUCTURE file can also be an mmCIF (PDBx/mmCIF) file: files with extension 
 The atoms are read from the `_atom_site` table (first model only), using the author (`auth_`) chain ids, residue numbers,
 residue names and atom names when they are present, and the `label_` ones otherwise. Chain ids and residue names are read in full,
 so that chains with more than one character can be selected (see below).
-By default the atoms are numbered with the `_atom_site.id` column. If these ids do not match the numbering of the atoms in your
-simulation, `CIF_ATOM_ID=order` numbers the atoms 1,2,3... in the order in which they appear in the file:
+By default the atoms are numbered with the serial number of the PDB file, or with the `_atom_site.id` column of the mmCIF file.
+If these numbers do not match the numbering of the atoms in your simulation, `ATOM_ID=order` numbers the atoms 1,2,3... in the order
+in which they appear in the file. This is also useful for the PDB files of the wwPDB, whose serial numbers count the TER records
+(the PDB and the mmCIF file of the same entry are then numbered in the same way):
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt-molinfo-mmcif/ref-gmx.cif
-MOLINFO STRUCTURE=regtest/basic/rt-molinfo-mmcif/ref-gmx.cif CIF_ATOM_ID=order
+MOLINFO STRUCTURE=regtest/basic/rt-molinfo-mmcif/ref-gmx.cif ATOM_ID=order
 t1: TORSION ATOMS=@phi-A_3
 ```
 
 When the structure has alternate locations for some atoms (in a PDB or in an mmCIF file), only the first location found in each residue
 is read, and the number of atoms that were skipped is written in the log.
+
+Residue names of four characters, as written by GROMACS in the columns 18-21 of a PDB file, are read in full.
+The variants of the amino acids with four characters (e.g. `HISE`, `LYSH`, `ASPH`, `CYS2` of the GROMOS force fields)
+are recognized as the amino acid given by their first three characters.
 
 If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e. not broken by PBC.
 **This will impact PBC calculations in all the actions following the MOLINFO action!**.
@@ -120,7 +126,7 @@ In the table above you will find the following shortcuts that allow you to selec
 ````
 @nucleic : all atoms that are part of a DNA or RNA molecule
 @protein : all atoms that are part of a protein
-@water : all water molecules
+@water : all water molecules (residues named SOL, WAT or HOH)
 @ions : all the ions
 @hydrogens : all hydrogen atoms (those for which the first non-number in the name is a H)
 @nonhydrogens : all non hydrogen atoms (those for which the first non-number in the name is not a H)

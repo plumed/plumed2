@@ -43,13 +43,13 @@ function plumed_regtest_after(){
   cif "missing coordinate" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 ? 3.0 1\n"
   cif "residue number that is not a number" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A x 2.0 2.0 3.0 1\n"
   cif "id that is not a number" "${h}ATOM N1 N N ALA A 1 1.0 2.0 3.0 1\nATOM C2 C CA ALA A 1 2.0 2.0 3.0 1\n"
-  cif "id that is not a number, CIF_ATOM_ID=order (runs)" "${h}ATOM N1 N N ALA A 1 1.0 2.0 3.0 1\nATOM C2 C CA ALA A 1 2.0 2.0 3.0 1\n" "CIF_ATOM_ID=order"
+  cif "id that is not a number, ATOM_ID=order (runs)" "${h}ATOM N1 N N ALA A 1 1.0 2.0 3.0 1\nATOM C2 C CA ALA A 1 2.0 2.0 3.0 1\n" "ATOM_ID=order"
   cif "id zero" "${h}ATOM 0 N N ALA A 1 1.0 2.0 3.0 1\nATOM 1 C CA ALA A 1 2.0 2.0 3.0 1\n"
   cif "id used twice" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 1 C CA ALA A 1 2.0 2.0 3.0 1\n"
   local table="$(tail -n +2 header.cif)\n"
   cif "two _atom_site tables" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\n#\n${table}ATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n"
   cif "atoms in a second data block (runs, ignored)" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n#\n${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\n"
-  cif "wrong CIF_ATOM_ID" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n" "CIF_ATOM_ID=serial"
+  cif "wrong ATOM_ID" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n" "ATOM_ID=id"
   local atoms="${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n"
   local cell="_cell.length_a 10\n_cell.length_b 10\n_cell.length_c 10\n"
   cif "cell length that is not a number" "${atoms}_cell.length_a abc\n_cell.length_b 10\n_cell.length_c 10\n_cell.angle_alpha 90\n_cell.angle_beta 90\n_cell.angle_gamma 90\n"
@@ -58,5 +58,10 @@ function plumed_regtest_after(){
   cif "cell with a zero angle" "${atoms}${cell}_cell.angle_alpha 0\n_cell.angle_beta 90\n_cell.angle_gamma 90\n"
   cif "cell with angles that do not make a cell" "${atoms}${cell}_cell.angle_alpha 10\n_cell.angle_beta 10\n_cell.angle_gamma 170\n"
   cif "cell with unknown values (runs, no cell)" "${atoms}_cell.length_a ?\n_cell.length_b ?\n_cell.length_c ?\n_cell.angle_alpha ?\n_cell.angle_beta ?\n_cell.angle_gamma ?\n"
-  rm -f bad.dat bad.out test.cif
+  # PDB files: serial numbers that cannot be read (as written by VMD above 99999 atoms), read or not with ATOM_ID=order
+  local pdbatoms="ATOM  ***** N    ALA A   1       1.000   2.000   3.000  1.00  0.00           N\nATOM  ***** CA   ALA A   1       2.000   2.000   3.000  1.00  0.00           C\n"
+  printf "%b" "$pdbatoms" > test.pdb
+  check "pdb serial that cannot be read" "MOLINFO STRUCTURE=test.pdb\nd: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=/dev/null"
+  check "pdb serial that cannot be read, ATOM_ID=order (runs)" "MOLINFO STRUCTURE=test.pdb ATOM_ID=order\nd: DISTANCE ATOMS=@N-A_1,@CA-A_1\nPRINT ARG=d FILE=/dev/null"
+  rm -f bad.dat bad.out test.cif test.pdb
 }
