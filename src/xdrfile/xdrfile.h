@@ -167,6 +167,14 @@ namespace xdrfile
 	int
 	xdrfile_close   (XDRFILE *       xfp);
 
+	/*! \brief PLUMED: true if a read reached the end of the file
+	 *
+	 *  After a failed read, it tells a truncated file (the read went past the
+	 *  end) from data that are corrupted.
+	 */
+	int
+	xdrfile_eof     (XDRFILE *       xfp);
+
 
 
 

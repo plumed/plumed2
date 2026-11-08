@@ -71,6 +71,9 @@ struct TrajectoryFrame {
   std::optional<double> time;
   /// output of readAtoms(): true if masses and charges were read from the file (dlp4)
   bool hasMassesAndCharges=false;
+  /// output of readAtoms(): set together with "EOF" when the last frame of the file is incomplete
+  /// (a truncated xtc or trr file, as written by a simulation that stopped while writing)
+  std::optional<std::string> warning;
 };
 
 /// Reads trajectories for the driver and the benchmark.
