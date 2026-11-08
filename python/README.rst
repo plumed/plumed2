@@ -50,6 +50,15 @@ Bundled executables, libraries and resources live under ``plumed/runtime``. No s
 ``plumed_runtime`` package is installed. Wrapper-only installations use the same
 Python package layout without bundled runtime resources.
 
+``runtime`` is a private installation prefix: executables are in ``bin``,
+shared libraries in ``lib``, headers in ``include/plumed``, and PLUMED resources
+in ``lib/plumed``. This follows a normal PLUMED installation, entirely inside
+the Python package. The bundled shared kernel discovers its resources and
+headers relative to its library location, including when loaded directly from
+Python or a native host. ``PLUMED_ROOT``, ``PLUMED_INCLUDEDIR`` and
+``PLUMED_HTMLDIR`` retain their normal installed meanings. HTML manuals are not
+bundled; ``plumed info --user-doc`` falls back to the online manual.
+
 Data-file ownership
 -------------------
 

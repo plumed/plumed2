@@ -82,7 +82,8 @@ std::string getPlumedRoot() {
 #ifdef __PLUMED_PIP_BUNDLE
     const std::string library=getLibraryPath();
     if(!library.empty()) {
-      const std::filesystem::path candidate=std::filesystem::path(library).parent_path().parent_path()/"share"/"plumed";
+      // Wheels use a private installation prefix: <prefix>/lib/plumed.
+      const std::filesystem::path candidate=std::filesystem::path(library).parent_path()/"plumed";
       if(std::filesystem::exists(candidate/"scripts")) {
         return candidate.string();
       }
@@ -116,6 +117,16 @@ std::string getPlumedIncludedir() {
   char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
   if( env == NULL) {
+#ifdef __PLUMED_PIP_BUNDLE
+    // Resolve headers independently of PLUMED_ROOT, as in a normal install.
+    const std::string library=getLibraryPath();
+    if(!library.empty()) {
+      const std::filesystem::path candidate=std::filesystem::path(library).parent_path().parent_path()/"include";
+      if(std::filesystem::exists(candidate/"plumed"/"wrapper"/"Plumed.h")) {
+        return candidate.string();
+      }
+    }
+#endif
     ss=plumed_includedir();
   } else {
     ss=std::string( env );

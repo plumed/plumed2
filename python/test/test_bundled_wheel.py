@@ -114,7 +114,18 @@ def check_package_relocation():
         )
         assert (
             Path(command.stdout.strip()).resolve()
-            == (root / "plumed" / "runtime" / "share" / "plumed").resolve()
+            == (root / "plumed" / "runtime" / "lib" / "plumed").resolve()
+        )
+        # Repeat resource discovery and native-client compilation after moving
+        # the complete package, with no PLUMED or loader environment overrides.
+        subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("test_runtime_resources.py")),
+            ],
+            cwd=root,
+            env=env,
+            check=True,
         )
 
 

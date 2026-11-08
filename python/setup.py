@@ -25,6 +25,9 @@
 from setuptools import setup
 from setuptools import Extension
 from setuptools import find_namespace_packages
+from setuptools.command.build_py import build_py
+from pathlib import Path
+import shutil
 import subprocess
 import os
 import os.path
@@ -143,6 +146,17 @@ ext_modules = [
     )
 ]
 
+
+class BuildPy(build_py):
+    """Replace staged runtime files, including resources from older layouts."""
+
+    def run(self):
+        # setuptools otherwise keeps removed package data across builds. Clear
+        # only its output copy, also when switching to a wrapper-only wheel.
+        shutil.rmtree(Path(self.build_lib) / plumedname / "runtime", ignore_errors=True)
+        super().run()
+
+
 setup(
     name=plumedname,
     version=plumedversion,
@@ -166,7 +180,8 @@ setup(
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
-    # the directories of the private runtime (bin, lib, share/...) are declared as
+    cmdclass={"build_py": BuildPy},
+    # the directories of the private runtime (bin, lib, include/...) are declared as
     # namespace packages, otherwise setuptools warns for each of them;
     # their files are selected by MANIFEST.in (include_package_data)
     packages=[
