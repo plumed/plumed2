@@ -1,0 +1,30 @@
+#! /usr/bin/env bash
+
+# Builds the chemfiles library (https://github.com/chemfiles/chemfiles), used by the driver to read
+# more trajectory formats (--itraj, configure option --enable-libchemfiles), in $HOME/opt/chemfiles.
+# Argument: the tag or branch to build (default: the 0.10.4 release; "master" for the development version).
+# Shared library, with the zlib, lzma and bzip2 copies that chemfiles includes.
+
+set -e
+set -x
+
+CHEMFILES_VERSION="${1:-0.10.4}"
+CHEMFILES_INSTALL_DIR="$HOME/opt/chemfiles"
+
+# On CI the prefix is restored by actions/cache (keyed on the commit and on this file)
+if test -f "$CHEMFILES_INSTALL_DIR/include/chemfiles.hpp" ; then
+  echo "chemfiles already installed in $CHEMFILES_INSTALL_DIR"
+  exit 0
+fi
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+git clone --depth 1 --branch "$CHEMFILES_VERSION" https://github.com/chemfiles/chemfiles
+cmake -S chemfiles -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=ON \
+  -DCHFL_BUILD_TESTS=OFF \
+  -DCMAKE_INSTALL_PREFIX="$CHEMFILES_INSTALL_DIR" \
+  -DCMAKE_INSTALL_LIBDIR=lib
+cmake --build build --parallel 4
+cmake --install build

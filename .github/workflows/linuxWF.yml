@@ -134,6 +134,39 @@ jobs:
         echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
+    # chemfiles (--itraj of the driver, configure option --enable-libchemfiles): the 0.10.4 release in the -mpi- and
+    # -coverage-mpi- jobs, the development version (master) in the -intel- job. Built with g++ before the compiler steps below.
+    # Not in the debug jobs (_GLIBCXX_DEBUG changes the STL ABI of the std::string and std::vector of its API).
+    # As for KEnRef, the cache key names the commit, so that a new commit on master is built again.
+    - name: Resolve the chemfiles version
+      id: chemfiles
+      run: |
+        case "${{ matrix.variant }}" in
+        (-mpi-|-coverage-mpi-) ref=0.10.4 ;;
+        (-intel-) ref=master ;;
+        (*) ref= ;;
+        esac
+        sha=
+        if test -n "$ref" ; then
+          url=https://github.com/chemfiles/chemfiles
+          sha="$(git ls-remote "$url" "refs/tags/$ref^{}" | cut -f1)"
+          test -n "$sha" || sha="$(git ls-remote "$url" "refs/tags/$ref" "refs/heads/$ref" | head -n1 | cut -f1)"
+          test -n "$sha" || { echo "cannot resolve chemfiles ref '$ref' at $url" >&2 ; exit 1 ; }
+        fi
+        echo "ref=$ref" >> "$GITHUB_OUTPUT"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      if: steps.chemfiles.outputs.ref != ''
+      with:
+        path: ~/opt/chemfiles
+        key: chemfiles-${{ steps.image.outputs.os }}-${{ steps.chemfiles.outputs.sha }}-${{ hashFiles('.ci/install.chemfiles') }}
+    - name: Install chemfiles
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        .ci/install.chemfiles "${{ steps.chemfiles.outputs.ref }}"
+        echo "CPPFLAGS=$CPPFLAGS -I$HOME/opt/chemfiles/include" >> $GITHUB_ENV
+        echo "LDFLAGS=$LDFLAGS -L$HOME/opt/chemfiles/lib -Wl,-rpath,$HOME/opt/chemfiles/lib" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libchemfiles" >> $GITHUB_ENV
     # doxygen is built from source in its own prefix, so that it can be cached;
     # .ci/install.doxygen skips the build when the right version is already there
     - uses: actions/cache@v5
@@ -241,6 +274,11 @@ jobs:
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
         ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Check that chemfiles is enabled
+      # configure only warns when it cannot link chemfiles: the regtests that need it would then be skipped
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        ./src/lib/plumed --no-mpi config has libchemfiles
 
     - name: Install NVHPC compiler
       if: contains( matrix.variant, '-nvhpc-' )
