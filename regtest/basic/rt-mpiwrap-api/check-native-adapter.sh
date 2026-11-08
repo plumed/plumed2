@@ -22,6 +22,7 @@ for provider in mpich openmpi; do
     mpich) cc=$mpich_cc; cxx=$mpich_cxx; export MPICH_CC=$clang_c MPICH_CXX=$clang_cxx ;;
     openmpi) cc=$ompi_cc; cxx=$ompi_cxx; export OMPI_CC=$clang_c OMPI_CXX=$clang_cxx ;;
   esac
+  MPICC="$cc" MPICXX="$cxx" bash "$fixture_dir/check-host-header-linkage.sh"
   extra_cflags=
   if [ "$provider" = mpich ]; then extra_cflags=-DPLUMED_MPIW_EXPECT_NONNULL_STATUS_IGNORE=1; fi
   for capacity in default 16; do
@@ -46,36 +47,36 @@ for provider in mpich openmpi; do
     done
   done
   for anonymous in 0 1; do
-  for language in c99 cxx98; do
-    # The public wrapper embeds a C-only adapter body in both language modes.
-    linker=$cc
-    library="$tmp/provider-$provider-$language.dylib"
-    case $language in
-      c99) std=c99; input_language=c ;;
-      cxx98) std=c++98; input_language=c++ ;;
-    esac
-    "$linker" "$shared_flag" -fPIC -std="$std" -iquote "$module_dir" \
-      -D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=$anonymous \
-      -x "$input_language" "$fixture_dir/test-native-adapter.c.in" -o "$library"
-    python3 - "$library" <<'PYTHON'
+    for language in c99 cxx98; do
+      # The public wrapper embeds a C-only adapter body in both language modes.
+      linker=$cc
+      library="$tmp/provider-$provider-$language.dylib"
+      case $language in
+        c99) std=c99; input_language=c ;;
+        cxx98) std=c++98; input_language=c++ ;;
+      esac
+      "$linker" "$shared_flag" -fPIC -std="$std" -iquote "$module_dir" \
+        -D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=$anonymous \
+        -x "$input_language" "$fixture_dir/test-native-adapter.c.in" -o "$library"
+      python3 - "$library" <<'PYTHON'
 import ctypes
 import os
 import sys
 ctypes.CDLL(sys.argv[1], mode=os.RTLD_NOW)
 PYTHON
-    if ! nm -g "$library" | grep -E '[[:space:]]_?plumed_mpiw_provider_factory$' >/dev/null; then
-      echo "$provider $language provider is missing its unmangled factory" >&2
-      exit 1
-    fi
-    if nm -u "$library" | grep -E '[[:space:]]_?plumed([[:alnum:]_]*)([[:space:]]|$)' >/dev/null; then
-      echo "$provider $language provider has an unresolved PLUMED dependency" >&2
-      exit 1
-    fi
-    if command -v otool >/dev/null 2>&1 && otool -L "$library" | grep -i plumed >/dev/null; then
-      echo "$provider $language provider links a PLUMED library" >&2
-      exit 1
-    fi
-  done
+      if ! nm -g "$library" | grep -E '[[:space:]]_?plumed_mpiw_provider_factory$' >/dev/null; then
+        echo "$provider $language provider is missing its unmangled factory" >&2
+        exit 1
+      fi
+      if nm -u "$library" | grep -E '[[:space:]]_?plumed([[:alnum:]_]*)([[:space:]]|$)' >/dev/null; then
+        echo "$provider $language provider has an unresolved PLUMED dependency" >&2
+        exit 1
+      fi
+      if command -v otool >/dev/null 2>&1 && otool -L "$library" | grep -i plumed >/dev/null; then
+        echo "$provider $language provider links a PLUMED library" >&2
+        exit 1
+      fi
+    done
   done
 done
 

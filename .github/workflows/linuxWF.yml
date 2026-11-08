@@ -455,7 +455,12 @@ jobs:
         bash regtest/basic/rt-mpiwrap-api/check-mkmpi.sh
         bash regtest/basic/rt-mpiwrap-api/check-provider-discovery.sh
         bash regtest/basic/rt-mpiwrap-typesafe/check-callers.sh
+        bash regtest/basic/rt-mpiwrap-api/check-provider-registry.sh
         export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
+        MPICC=/usr/bin/mpicc.openmpi MPICXX=/usr/bin/mpic++.openmpi \
+          bash regtest/basic/rt-mpiwrap-api/check-host-header-linkage.sh
+        PLUMED_TEST_MPIW_KERNEL="$PLUMED_KERNEL" \
+          python3 -m unittest -v python/test/test_mpi_flags.py
         export OMPI_MCA_rmaps_base_oversubscribe=1
         plumed mkmpi --compiler /usr/bin/mpicc.openmpi \
           --out "$RUNNER_TEMP/provider-openmpi.so"

@@ -22,8 +22,8 @@ typedef int MPI_Request;
 #endif
 HEADER
   for ccheck in 0 1; do
-  "${CC:-cc}" -D__PLUMED_WRAPPER_C_MPI_COMM_CHECK=$ccheck -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
-  "$task/caller"
+    "${CC:-cc}" -D__PLUMED_WRAPPER_C_MPI_COMM_CHECK=$ccheck -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
+    "$task/caller"
   done
   "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -D__PLUMED_HAS_MPI \
     -I"$task" -I"$root/src" -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/kernel.cpp.in" \
@@ -31,9 +31,9 @@ HEADER
   "$task/kernel"
   for standard in c++98 c++11 c++17; do
     for options in "" "-D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1" "-D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=1" "-D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1 -D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=0"; do
-    "${CXX:-c++}" $options -std="$standard" -Wall -Wextra -Werror $flag -I"$task" -x c++ \
-      "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-cxx"
-    "$task/caller-cxx"
+      "${CXX:-c++}" $options -std="$standard" -Wall -Wextra -Werror $flag -I"$task" -x c++ \
+        "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-cxx"
+      "$task/caller-cxx"
     done
   done
 done
@@ -56,3 +56,5 @@ HEADER
 # Match normal non-OpenACC builds: the included headers contain acc pragmas.
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unknown-pragmas \
   -D__PLUMED_MPIWRAP -I"$root/src" -fsyntax-only "$task/common.cpp"
+
+bash "$root/regtest/basic/rt-mpiwrap-typesafe/check-header-odr.sh"
