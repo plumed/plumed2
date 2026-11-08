@@ -9,7 +9,7 @@
 # hand: import a new release instead.
 #
 # usage: ./import.sh /path/to/gemmi-X.Y.Z
-# The path is an extracted release (GitHub tarball or the PyPI sdist).
+# The path is an extracted release (GitHub tarball or the PyPI sdist). Needs python3.
 # To change the pinned release, edit "version" below and re-run.
 set -euo pipefail
 
@@ -28,12 +28,31 @@ if ! grep -q "#define GEMMI_VERSION \"$version\"" "$src/include/gemmi/version.hp
   exit 1
 fi
 
-# the closure of cif.hpp, as seen by the compiler
+# the closure of cif.hpp: every header included with #include "...", also inside #if
+# blocks, so that the copy works on every platform (e.g. utf.hpp and demangle_nop.hpp
+# are used only on Windows/MSVC). The PEGTL headers that gemmi does not ship
+# (see third_party/tao/NOTES, e.g. file_mapper_win32.hpp: no mmap on Windows) are skipped.
 files=$(
   cd "$src/include"
-  echo '#include "gemmi/cif.hpp"' |
-    ${CXX:-c++} -std=c++17 -MM -I. -x c++ - |
-    tr ' \\' '\n\n' | grep '^gemmi/' | sort -u
+  python3 - <<'PYEOF'
+import os, re, sys
+todo, seen = ["gemmi/cif.hpp"], set()
+inc = re.compile(r'^\s*#\s*include\s*"([^"]+)"')
+while todo:
+    f = todo.pop()
+    if f in seen:
+        continue
+    seen.add(f)
+    for line in open(f, encoding="utf-8"):
+        m = inc.match(line)
+        if m:
+            g = os.path.normpath(os.path.join(os.path.dirname(f), m.group(1)))
+            if os.path.exists(g):
+                todo.append(g)
+            else:
+                print("not in the release, skipped: " + g + " (included by " + f + ")", file=sys.stderr)
+print("\n".join(sorted(seen)))
+PYEOF
 )
 files="$files gemmi/version.hpp"
 
