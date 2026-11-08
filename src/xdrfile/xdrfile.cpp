@@ -216,6 +216,12 @@ struct XDRFILE
 
 
 
+int
+xdrfile_eof(XDRFILE *xfp)
+{
+	return (xfp!=NULL && xfp->fp!=NULL && feof(xfp->fp)) ? 1 : 0;
+}
+
 /*************************************************************
  * Implementation of higher-level routines to read/write     * 
  * portable data based on the XDR standard. These should be  *

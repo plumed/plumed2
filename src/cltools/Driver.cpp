@@ -1053,6 +1053,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
       if (errormessage) {
         if (*errormessage =="EOF") {
+          if(trajFrame.warning && intracomm.Get_rank()==0) {
+            std::fprintf(stderr,"WARNING: %s\n",trajFrame.warning->c_str());
+          }
           break;
         } else {
           error(*errormessage);

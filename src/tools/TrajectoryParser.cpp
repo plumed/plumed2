@@ -100,6 +100,8 @@ struct RawFrame {
   std::vector<double> positions;
   /// output of readAtoms(): the cell vectors, one per row (zero if the file has no box)
   std::array<double,9> box{};
+  /// output of readAtoms(): set with "EOF" when the last frame is incomplete
+  std::optional<std::string> warning;
   /// output of readAtoms(): natoms values if the file stores masses and charges, empty otherwise
   std::vector<double> masses;
   /// output of readAtoms(): as masses
@@ -472,6 +474,12 @@ public:
       return "EOF";
     }
     if(ret!=xdrfile::exdrOK) {
+      // a frame that ends with the file is incomplete (the simulation stopped while writing it):
+      // as gmx, it is the end of the trajectory, with a warning. Other errors are corrupted data
+      if(xdrfile::xdrfile_eof(xd.get())) {
+        raw.warning="the last frame of the "+std::string(name)+" file "+trajectoryFile+" is incomplete, it is ignored";
+        return "EOF";
+      }
       return errorMessage(ret);
     }
     raw.step=localstep;
@@ -775,7 +783,9 @@ std::optional<std::string> TrajectoryParser::readAtoms(TrajectoryFrame<real>& fr
   raw->box.fill(0.0);
   raw->masses.clear();
   raw->charges.clear();
+  raw->warning.reset();
   auto error=parser->readAtoms(*raw);
+  frame.warning=raw->warning;
   if(error) {
     return error;
   }

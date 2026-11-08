@@ -7,12 +7,12 @@ xtc_smallidx_neg: rejected
 xtc_run: rejected
 xtc_natoms_neg: rejected
 xtc_grow: rejected
-xtc_truncated: rejected
 trr_title: rejected
 trr_natoms: rejected
 trr_magic: rejected
 trr_grow: rejected
-trr_truncated: rejected
+xtc_truncated: one frame and a warning
+trr_truncated: one frame and a warning
 ok20.xtc: read back
 ok20.trr: read back
 xtc with magic 2023: same frame
