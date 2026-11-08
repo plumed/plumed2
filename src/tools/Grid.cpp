@@ -120,7 +120,17 @@ public:
     return index;
   }
 
+  // The points are computed as min+i*dx with two roundings, also when the compiler
+  // would contract the expression into a fused multiply-add (clang does by default on arm64,
+  // gcc on any architecture with FMA). With a single rounding the last point of a grid
+  // from -4 to 4 with 300 bins is 4.000000000000001, i.e. outside the grid boundary.
+#if defined(__GNUC__) && !defined(__clang__)
+  __attribute__((optimize("fp-contract=off")))
+#endif
   void getPoint(const std::vector<double> & min_,const std::vector<double> & dx_, const unsigned* indices,std::size_t indices_size,double* point,std::size_t point_size) const override {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
     for(unsigned int i=0; i<dimension_; ++i) {
       point[i]=min_[i]+(double)(indices[i])*dx_[i];
     }
