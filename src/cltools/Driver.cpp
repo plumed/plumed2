@@ -435,6 +435,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int command_line_natoms=-1;
 
   TrajectoryParser parser;
+  TrajectoryFrame<real> trajFrame;
   if(!noatoms) {
     int nn=0;
     trajectory_fmt="";
@@ -688,9 +689,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     bool first_step=false;
     if(!noatoms&&!parseOnly) {
 
-      real timeStep=-1.0;
-
-      auto errormessage=parser.readHeader(step,timeStep);
+      trajFrame.step=step;
+      auto errormessage=parser.readHeader(trajFrame);
+      step=trajFrame.step;
 
       if (errormessage) {
         if (*errormessage =="EOF") {
@@ -699,8 +700,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           error(*errormessage);
         }
       }
-      if (lstep && timeStep>0.0) {
-        p.cmd("setTimestep",real(timeStep));
+      if (lstep && trajFrame.timestep && *trajFrame.timestep>0.0) {
+        p.cmd("setTimestep",real(*trajFrame.timestep));
         lstep = false;
       }
       natoms=parser.nOfAtoms();
@@ -1038,18 +1039,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     int plumedStopCondition=0;
     if(!noatoms) {
-      auto errormessage=parser.readAtoms(
-                          stride,
-                          pbc_cli_given,
-                          debug_pd,
-                          pd_start,
-                          pd_nlocal,
-                          step,
-                          masses.data(),
-                          charges.data(),
-                          coordinates.data(),
-                          cell.data()
-                        );
+      trajFrame.stride=stride;
+      trajFrame.readBox=!pbc_cli_given;
+      trajFrame.first=pd_start;
+      trajFrame.count=debug_pd ? pd_nlocal : -1;
+      trajFrame.positions=coordinates.data();
+      trajFrame.box=cell.data();
+      trajFrame.masses=masses.data();
+      trajFrame.charges=charges.data();
+      trajFrame.step=step;
+      auto errormessage=parser.readAtoms(trajFrame);
+      step=trajFrame.step;
 
       if (errormessage) {
         if (*errormessage =="EOF") {
