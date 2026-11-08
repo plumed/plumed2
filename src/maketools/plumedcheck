@@ -169,6 +169,9 @@ BEGINFILE{
   in_block_comment=0
   wrapper_declaration_only=0
   wrapper_cxx_disabled=0
+  defined_wrapper_implementation=0
+  defined_wrapper_extern_zero=0
+  defined_wrapper_cxx_anonymous_namespace=0
 
 ## not used, see below
 #  found_include_system_header=0
@@ -350,10 +353,14 @@ BEGINFILE{
 # DOC: since this would obviously create no problem.
 # DOC: A declaration-only `Plumed.h` include with both `__PLUMED_WRAPPER_IMPLEMENTATION` and
 # DOC: `__PLUMED_WRAPPER_CXX` explicitly set to zero also avoids a wrapper-library dependency.
+# DOC: An internal C++ implementation requires `__PLUMED_WRAPPER_IMPLEMENTATION=1`,
+# DOC: `__PLUMED_WRAPPER_EXTERN=0` and `__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1`
+# DOC: explicitly, so shared public wrapper definitions cannot depend on local MPI declarations.
 # DOC: This would simplify life when moving files from a directory to another.
       if(module != included_module_name) # ignore case where module is the same
       if(!isarray(used_modules[module]) || (included_module_name in used_modules[module])==0) {
-        if(included_module_name=="wrapper" && ((defined_wrapper_implementation && defined_wrapper_extern_zero) ||
+        if(included_module_name=="wrapper" && ((defined_wrapper_implementation && defined_wrapper_extern_zero &&
+            defined_wrapper_cxx_anonymous_namespace) ||
             (wrapper_declaration_only && wrapper_cxx_disabled))) {
           information("include_anonymous_wrapper")
         } else {
