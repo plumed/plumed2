@@ -119,6 +119,8 @@ enum VesinDeviceKind {
 /// ```
 struct VesinDevice {
     /// Type of the device
+    // Callers initialize this aggregate; neighbor-list defaults use VesinUnknownDevice.
+    // cppcheck-suppress uninitMemberVarNoCtor
     VesinDeviceKind type;
     /// Device index (0 for CPU, GPU index for CUDA)
     int device_id = 0;

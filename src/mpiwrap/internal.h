@@ -33,7 +33,10 @@ public:
     plumed_mpi_generic_pointer function;
   };
   struct ValueEntry {
+    // validateDescriptor value-initializes this aggregate before inserting it.
+    // cppcheck-suppress uninitMemberVarNoCtor
     std::uint32_t value_type;
+    // cppcheck-suppress uninitMemberVarNoCtor
     std::uint32_t native_size;
     plumed_mpi_constant_accessor_pointer accessor;
     bool operator==(const ValueEntry &other) const {

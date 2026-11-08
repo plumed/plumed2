@@ -212,6 +212,8 @@ public:
   static vector<DRRAxis> merge(const vector<DRRAxis> &dA,
                                const vector<DRRAxis> &dB);
   /// Get suffix
+  // Preserve the established by-value accessor contract.
+  // cppcheck-suppress returnByReference
   string getSuffix() const {
     return suffix;
   }

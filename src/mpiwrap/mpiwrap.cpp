@@ -384,6 +384,8 @@ class NativeBuffer {
   std::vector<NativeScratchAlignment> storage_;
   std::size_t size_;
 public:
+  // The memset through data() below initializes all used inline or heap bytes.
+  // cppcheck-suppress uninitMemberVar
   explicit NativeBuffer(std::size_t size) :
     storage_(size > sizeof(local_) ?
              size / sizeof(NativeScratchAlignment) +

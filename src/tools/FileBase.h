@@ -122,8 +122,11 @@ public:
 /// Check if a file is open
   bool isOpen();
 /// Retrieve the path
+  // Preserve these established by-value accessor contracts.
+  // cppcheck-suppress returnByReference
   std::string getPath()const;
 /// Retrieve the mode
+  // cppcheck-suppress returnByReference
   std::string getMode()const;
 /// Get the file suffix
   std::string getSuffix()const;

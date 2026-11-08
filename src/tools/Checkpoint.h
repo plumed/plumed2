@@ -110,6 +110,8 @@ class CheckpointReader {
 public:
   enum class Type { Int, Double, String };
   struct Entry {
+    // parseEntry assigns the type for every successfully parsed entry.
+    // cppcheck-suppress uninitMemberVarNoCtor
     Type type;
     std::vector<unsigned long long> dims;
     std::vector<long long> ints;
