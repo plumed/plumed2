@@ -2,6 +2,7 @@
 
 if [ "$1" = --description ] ; then
   echo "compile one or more *.cpp files into a shared library"
+  exit 0
 fi
 
 MANUAL='Compile one or more *.cpp files into a shared library.
@@ -17,10 +18,10 @@ Options:
                          Name of the output library. If missing, the name
                          of the first input file will me used, with its
                          suffix properly adjusted.
-  -n                     No-clobber mode, similar to `mv -n`.
-                         Does not overwrite an existing library.
-                         If the library exists when the command is started,
-                         skip also the compilation phase.
+  -n                     Reuse a library newer than all input files.
+                         Otherwise build a replacement, keeping the old library
+                         available until linking succeeds. If another builder
+                         publishes an up-to-date library, keep that result.
 
 Environment variables:
   PLUMED_MKLIB_CFLAGS    Extra compile time flags to be used
@@ -35,8 +36,6 @@ then
   echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
   exit 1
 fi
-
-source "$PLUMED_ROOT"/src/config/compile_options.sh
 
 prefix=""
 lib=""
@@ -66,6 +65,10 @@ if [ ${#files[@]} = 0 ] ; then
   exit 1
 fi
 
+# Completion generation queries this script before compiler settings exist.
+# Only an actual library build needs the configured flags and suffix.
+source "$PLUMED_ROOT"/src/config/compile_options.sh || exit 1
+
 if [ -z "$lib" ]
 then
   firstfile="${files[0]}"
@@ -75,7 +78,7 @@ fi
 recompile=no
 for file in "${files[@]}"
 do
-  if ! test $lib -nt $file ;
+  if ! test "$lib" -nt "$file" ;
   then
     recompile=yes
   fi
@@ -90,8 +93,6 @@ if test $recompile = no ; then
   exit 0
 fi
 
-rm -f "$lib"
-
 toRemove=""
 remover() {
   #if compilation fails or crashes the trap will delete the temporary files
@@ -103,7 +104,8 @@ trap "remover" EXIT
 objs=""
 nobj=0
 
-tmpdir=$(mktemp -d "plumed_mklib.XXXXXX")
+tmpdir=$(mktemp -d "$(dirname "$lib")/plumed_mklib.XXXXXX") || exit 1
+tmp_lib="$tmpdir/$(basename "$lib")"
 
 toRemove="${toRemove} $tmpdir"
 
@@ -170,19 +172,27 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   link_libs="$link_libs_installed"
 fi
 
-# as for the objects, $lib can contain a directory: link in $tmpdir under its file name only
-tmplib="$tmpdir/$(basename "$lib")"
-
 # The libraries (PLUMED_MKLIB_LDFLAGS, the kernel and its dependencies) follow the objects:
 # linkers using --as-needed (the default on some distributions, e.g. Ubuntu) drop the
 # libraries listed before the objects using them. The kernel would then not be recorded
 # as a dependency, and LOAD would fail with undefined symbols when the kernel was loaded
 # with RTLD_LOCAL (as done by the python interface).
-eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmplib"
+eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmp_lib" || exit 1
 
 if test -n "$no_clobber" ; then
-  # || true is necessary with recent coreutils
-  mv -n "$tmplib" "$lib" || true
-else
-  mv "$tmplib" "$lib"
+  # Another caller may have finished compiling these inputs while we linked.
+  recompile=no
+  for file in "${files[@]}" ; do
+    if ! test "$lib" -nt "$file" ; then
+      recompile=yes
+    fi
+  done
+  if test "$recompile" = no ; then
+    exit 0
+  fi
 fi
+
+# Keep the previous library available until its replacement is complete.
+# The temporary directory is on the destination filesystem, so rename publishes
+# the complete library atomically even when another rank is loading it.
+mv "$tmp_lib" "$lib"

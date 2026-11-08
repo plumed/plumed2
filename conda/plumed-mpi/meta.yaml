@@ -1,0 +1,55 @@
+{% set version = environ['VERSION'] %}
+
+package:
+  name: plumed-mpi
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  string: mpi_{{ mpi }}_h{{ PKG_HASH }}_0
+  skip: True  # [win]
+  # Give the executable its own inode so dyld uses this environment's libraries.
+  no_link:  # [osx]
+    - bin/plumed-mpi  # [osx]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - plumed {{ version }}
+    - {{ mpi }}
+  run:
+    - plumed {{ version }}
+    - {{ mpi }}
+
+test:
+  requires:
+    - {{ compiler('c') }}
+  files:
+    - native-host.c
+  commands:
+    - test -f "$PREFIX/lib/libplumed-mpi-provider$SHLIB_EXT"
+    - test -x "$PREFIX/bin/plumed-mpi"
+    - conda inspect linkages -p $PREFIX $PKG_NAME
+    - conda inspect objects -p $PREFIX $PKG_NAME  # [osx]
+
+about:
+  home: https://www.plumed.org/
+  license: LGPL-3.0
+  license_family: GPL
+  license_file: COPYING.LESSER
+  summary: 'Optional MPI provider and executable for the serial PLUMED package'
+  description: |
+    Adds an MPICH or Open MPI provider to the same MPI-independent PLUMED
+    installation, without rebuilding its kernel. The plumed-mpi executable
+    initializes the chosen MPI runtime and injects it into PLUMED. Older hosts
+    can use the provider installed alongside libplumedKernel automatically.
+  doc_url: https://www.plumed.org/doc
+  dev_url: https://github.com/plumed/plumed2
+
+extra:
+  recipe-maintainers:
+    - GiovanniBussi

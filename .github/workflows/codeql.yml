@@ -64,3 +64,19 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
+          # Keep debug uploads on analysis failure. Successful reports are
+          # filtered narrowly below before uploading, including empty reports.
+          upload: failure-only
+          output: ${{ runner.temp }}/codeql-results
+
+      - name: Filter documented imported-code notes and opaque-output false positive
+        if: matrix.language == 'cpp'
+        run: |
+          python3 .github/codeql/test-filter-sarif.py
+          python3 .github/codeql/filter-sarif.py "$RUNNER_TEMP/codeql-results"
+
+      - name: Upload CodeQL results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/codeql-results
+          category: "/language:${{ matrix.language }}"

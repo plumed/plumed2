@@ -38,6 +38,9 @@
 #include "config/Config.h"
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+#include "../mpiwrap/internal.h"
+#endif
 #include "tools/DLLoader.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
@@ -461,6 +464,7 @@ PlumedMain::PlumedMain():
   checkpointing_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
+  OpenMP::retainRuntime();
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
   log.link(comm);
@@ -801,7 +805,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(12));
+        val.set(int(13));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -890,6 +894,27 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         plumedDat=val.getCString();
+        break;
+      /* ADDED WITH API==13 */
+      case cmd_injectMPIImplementation:
+#if defined(__PLUMED_HAS_MPI)
+        // Native MPI already owns the implementation. Ignore injection without
+        // inspecting the descriptor, including tables supplied by MD engines.
+#else
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+#if !defined(__PLUMED_MPIWRAP)
+        plumed_merror("MPI provider injection is unavailable in a fully serial kernel");
+#else
+        if(!mpiwrap::forceEnvironmentProvider()) {
+          std::string error;
+          if(!mpiwrap::currentRegistry().install(
+                val.get<const mpiwrap::plumed_mpi_provider*>(),error)) {
+            plumed_merror(error);
+          }
+        }
+#endif
+#endif
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);

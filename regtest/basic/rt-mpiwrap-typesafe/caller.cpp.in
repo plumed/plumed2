@@ -1,0 +1,86 @@
+/* Public wrapper transport, independent of MPI initialization and a kernel. */
+#if defined(PLUMED_TEST_WRAPPER_COMM)
+#if defined(PLUMED_TEST_TYPES_ONLY)
+#include "../../../src/mpiwrap/mpi-types.h"
+#else
+#include "../../../src/mpiwrap/mpi.h"
+#endif
+#else
+#include <mpi.h>
+#endif
+#define __PLUMED_WRAPPER_IMPLEMENTATION 0
+#include "../../../src/wrapper/Plumed.h"
+#include <cassert>
+#include <cstring>
+#include <cstdlib>
+
+static MPI_Comm expectedComm;
+static const void* expectedPointer;
+static unsigned expectedType;
+static int expectedNotComm;
+static bool communicatorCommand;
+extern "C" void* plumed_malloc(size_t n) {
+  return std::malloc(n);
+}
+extern "C" void plumed_free(void* p) {
+  std::free(p);
+}
+extern "C" void plumed_cmd_safe_nothrow(plumed,const char*,plumed_safeptr safe,plumed_nothrow_handler) {
+  assert(((safe.flags>>16)&0xffu)==expectedType);
+  assert(!!(safe.flags&0x20000000u)==(__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK ? expectedNotComm : 0));
+  assert(!(safe.flags&0x40000000u));
+  if(communicatorCommand) {
+    assert(std::memcmp(safe.ptr,&expectedComm,sizeof(expectedComm))==0);
+  } else {
+    if(expectedPointer) {
+      assert(safe.ptr==expectedPointer);
+    }
+  }
+}
+int main() {
+  plumed p= {0};
+  MPI_Comm comm;
+  std::memset(&comm,0x5a,sizeof(comm));
+  expectedComm=comm;
+#if defined(PLUMED_TEST_INT_COMM)
+  expectedType=3;
+#else
+  expectedType=1;
+#endif
+  expectedNotComm=0;
+  communicatorCommand=true;
+  const char* keys[]= {"setMPIComm","setMPImultiSimComm","CLTool setMPIComm",
+                       "GREX setMPIIntracomm","GREX setMPIIntercomm"
+                      };
+  for(unsigned i=0; i<sizeof(keys)/sizeof(keys[0]); ++i) {
+    PLMD::Plumed::plumed_cmd_cxx(p,keys[i],&comm);
+  }
+  const MPI_Comm constant=comm;
+  PLMD::Plumed::plumed_cmd_cxx(p,"const comm",&constant);
+  // A pointer to handle storage is required, not a pointer to that pointer.
+  MPI_Comm* nested=&comm;
+  communicatorCommand=false;
+  expectedPointer=&nested;
+  expectedNotComm=1;
+  PLMD::Plumed::plumed_cmd_cxx(p,"nested comm",&nested);
+#if !defined(PLUMED_TEST_WRAPPER_COMM) && !defined(PLUMED_TEST_VOID_COMM)
+  communicatorCommand=false;
+  expectedNotComm=1;
+  expectedPointer=0;
+  PLMD::Plumed::plumed_cmd_cxx(p,"setMPIComm",comm);
+#endif
+  expectedType=1;
+  expectedNotComm=0;
+  // Ordinary erased pointers retain their payload, even if MPI_Comm=void*.
+  communicatorCommand=false;
+  expectedPointer=&comm;
+  PLMD::Plumed::plumed_cmd_cxx(p,"ordinary",static_cast<const void*>(&comm));
+  // Explicit old-style pointers remain unannotated.
+  communicatorCommand=true;
+  PLMD::Plumed::plumed_cmd_cxx(p,"setMPIComm",static_cast<const void*>(&comm));
+  communicatorCommand=false;
+  expectedType=6;
+  expectedNotComm=1;
+  expectedPointer=&comm;
+  PLMD::Plumed::plumed_cmd_cxx(p,"provider",reinterpret_cast<const PLMD::mpiwrap::plumed_mpi_provider*>(&comm));
+}

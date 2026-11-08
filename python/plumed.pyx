@@ -60,6 +60,9 @@ DEF type_pointer       = 0x2000000*2
 DEF type_const_pointer = 0x2000000*3
 
 DEF type_nocopy        = 0x10000000
+# Ordinary Python values cannot hold native MPI communicator storage. Keep
+# recognized mpi4py communicators and the legacy null path unannotated.
+DEF type_not_mpi_comm  = 0x20000000
 
 class PlumedError(RuntimeError):
   pass
@@ -225,7 +228,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_real +  type_pointer + type_not_mpi_comm)
      cdef cmd_ndarray_int(self, ckey, val):
          cdef int [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -234,7 +237,7 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer + type_not_mpi_comm)
      cdef cmd_ndarray_long(self, ckey, val):
          cdef long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
@@ -243,20 +246,20 @@ cdef class Plumed:
          for i in range(len(shape)):
             ashape[i]=shape[i]
          ashape[len(shape)]=0
-         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer + type_not_mpi_comm)
      cdef cmd_array_double(self, ckey, val):
          cdef double [:] abuffer = val
-         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_real +  type_pointer + type_not_mpi_comm)
      cdef cmd_array_int(self, ckey, val):
          cdef int [:] abuffer = val
-         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer + type_not_mpi_comm)
      cdef cmd_array_long(self, ckey, val):
          cdef long [:] abuffer = val
-         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer)
+         self.cmd_low_level(ckey,&abuffer[0], len(abuffer), NULL, sizeof(abuffer[0]) + type_integral +  type_pointer + type_not_mpi_comm)
      cdef cmd_float(self, ckey, double val ):
-         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_real +  type_value)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_real +  type_value + type_not_mpi_comm)
      cdef cmd_int(self, ckey, int val):
-         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value)
+         self.cmd_low_level(ckey,&val, 1, NULL, sizeof(val) + type_integral +  type_value + type_not_mpi_comm)
      cdef cmd_mpi(self, ckey, val):
          import mpi4py.MPI as MPI
          cdef size_t comm_addr = MPI._addressof(val)
@@ -299,7 +302,7 @@ cdef class Plumed:
             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
             cval = py_bytes
             # assume sizeof(char)=1
-            self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy)
+            self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
             return
          if 'mpi4py' in sys.modules:
             import mpi4py.MPI as MPI

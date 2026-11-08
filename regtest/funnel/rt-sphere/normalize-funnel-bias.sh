@@ -2,8 +2,8 @@
 # Test-only normalization for funnel/rt-sphere, whose default parameters are
 # z_cc=1.8, R_cyl=0.1, and slope=1. The branch boundary is z=s-1.7; the
 # potential and radial derivative are continuous there, while the longitudinal
-# derivative is undefined. Mask only its five exact grid samples. Round that
-# whole derivative column to five decimal places to absorb smooth-point
+# derivative is undefined. Mask only its five exact grid samples. Round
+# both derivative columns to five decimal places to absorb smooth-point
 # last-digit differences without choosing an individual coordinate.
 set -euo pipefail
 
@@ -40,7 +40,8 @@ awk '
   }
   !/^#/ && NF {
     rows++
-    if(NF!=5 || $4 !~ /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/) {
+    if(NF!=5 || $4 !~ /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/ ||
+       $5 !~ /^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/) {
       print "unexpected funnel BIAS row " rows > "/dev/stderr"
       exit 1
     }
@@ -54,6 +55,7 @@ awk '
     } else {
       $0=replace_field($0,4,sprintf("%.5f",$4))
     }
+    $0=replace_field($0,5,sprintf("%.5f",$5))
   }
   {print}
   END {

@@ -1,10 +1,13 @@
 #include "plumed/wrapper/Plumed.h"
-#include <mpi.h>
+#include "mpi-test.h"
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <string>
+
+namespace PLMD {
+namespace regtest_mpi {
 
 struct Harness {
   PLMD::Plumed p;
@@ -56,19 +59,18 @@ struct Harness {
   }
 };
 
-int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+int run(MPI_Comm world, int argc, char** argv) {
   int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(world,&rank);
+  MPI_Comm_size(world,&size);
   const int beads=argc>1 ? std::atoi(argv[1]) : 2;
   if(beads<2 || size%beads!=0) {
-    MPI_Abort(MPI_COMM_WORLD,2);
+    MPI_Abort(world,2);
   }
   const int bead=rank/(size/beads), local_rank=rank%(size/beads);
   MPI_Comm intra,inter;
-  MPI_Comm_split(MPI_COMM_WORLD,bead,local_rank,&intra);
-  MPI_Comm_split(MPI_COMM_WORLD,local_rank,bead,&inter);
+  MPI_Comm_split(world,bead,local_rank,&intra);
+  MPI_Comm_split(world,local_rank,bead,&inter);
   std::ofstream output,details;
   if(rank==0) {
     output.open("output");
@@ -111,7 +113,7 @@ int main(int argc, char** argv) {
               }
             }
             int local=passed ? 1 : 0, global=0;
-            MPI_Allreduce(&local,&global,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+            MPI_Allreduce(&local,&global,1,MPI_INT,MPI_MIN,world);
             all_pass=all_pass && global;
             if(rank==0) {
               output << (weighted ? "weighted" : "uniform") << " "
@@ -127,6 +129,12 @@ int main(int argc, char** argv) {
   }
   MPI_Comm_free(&intra);
   MPI_Comm_free(&inter);
-  MPI_Finalize();
   return all_pass ? 0 : 1;
+}
+
+} // namespace regtest_mpi
+} // namespace PLMD
+
+int main(int argc, char **argv) {
+  return PLMD::mpi_test::run(argc,argv,4,PLMD::regtest_mpi::run);
 }

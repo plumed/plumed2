@@ -40,6 +40,8 @@ jobs:
     - name: Build astyle
       run: |
         make -j 4 -C astyle
+    - name: Check internal wrapper include rules
+      run: bash regtest/basic/rt-mpiwrap-typesafe/check-wrapper-lint.sh
     # cppcheck keeps the results of each file in PLMD_CPPCHECK_BUILD_DIR and re-analyses only the files
     # whose code (or the code of the headers they include) changed, see src/maketools/codecheck.
     # Each run restores the directory saved by the most recent run and saves its own one.

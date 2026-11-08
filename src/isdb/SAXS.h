@@ -174,6 +174,12 @@ private:
 
   std::vector<std::vector<double> > LCPOparam;
   std::vector<unsigned> residue_atom;
+  // ONEBEAD: atoms of each bead (CSR, increasing order), 1/mass of each bead and
+  // mass of each atom / mass of its bead
+  std::vector<unsigned> bead_off_;
+  std::vector<unsigned> bead_atoms_;
+  std::vector<double> bead_inv_mass_;
+  std::vector<double> atom_weight_;
   // ONEBEAD glycans. glyc_type[i] is the bead type (GLYC_*) of atom i, or -1 when
   // atom i does not belong to a monosaccharide. glyc_bridge[i] flags the glycan
   // oxygens that carry a glycosidic bond in the TEMPLATE, so that the LCPO SASA
@@ -306,7 +312,20 @@ private:
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
   void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
-  void calcNlist(std::vector<std::vector<int> > &Nlist);
+  // LCPO: atoms with LCPO parameters, those with an area, Verlet list of the
+  // candidate neighbours (CSR) with the positions at which it was built, and the
+  // neighbours (CSR) with the overlap term A(i,j) of each directed pair
+  std::vector<unsigned> lcpo_atoms_;
+  std::vector<unsigned> lcpo_area_atoms_;
+  std::vector<Vector> lcpo_ref_pos_;
+  std::vector<std::size_t> lcpo_cand_off_;
+  std::vector<unsigned> lcpo_cand_idx_;
+  std::vector<double> lcpo_cand_d_;
+  std::vector<std::size_t> lcpo_off_;
+  std::vector<unsigned> lcpo_idx_;
+  std::vector<double> lcpo_term_;
+  void lcpoBuildCandidates();
+  void lcpoUpdateList();
   void sasa_calculate(std::vector<bool> &solv_res);
   // SANS:
   void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);

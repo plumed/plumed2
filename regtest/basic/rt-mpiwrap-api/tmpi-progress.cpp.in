@@ -1,0 +1,53 @@
+// Standalone upstream diagnostic; intentionally not built by the regtest.
+#include "thread_mpi_tmpi.h"
+#include <atomic>
+#include <cstdio>
+
+namespace PLMD {
+namespace test_progress_reproducer {
+std::atomic<int> incomplete{0};
+void body(const void *opaque) {
+  using namespace thread_mpi;
+  const int mode=*static_cast<const int *>(opaque);
+  int rank=-1, size=0;
+  tMPI_Comm_rank(TMPI_COMM_WORLD,&rank);
+  tMPI_Comm_size(TMPI_COMM_WORLD,&size);
+  int sent=100+rank, received=-1;
+  tMPI_Request requests[2]= {TMPI_REQUEST_NULL,TMPI_REQUEST_NULL};
+  tMPI_Irecv(&received,1,TMPI_INT,(rank+size-1)%size,93,TMPI_COMM_WORLD,&requests[0]);
+  tMPI_Isend(&sent,1,TMPI_INT,(rank+1)%size,93,TMPI_COMM_WORLD,&requests[1]);
+  tMPI_Barrier(TMPI_COMM_WORLD);
+  int flag=0, index=-1;
+  for(int attempt=0; attempt<1000000 && flag==0; ++attempt) {
+    if(mode==0) {
+      tMPI_Test(&requests[0],&flag,nullptr);
+    } else {
+      tMPI_Testany(1,&requests[0],&index,&flag,nullptr);
+    }
+  }
+  if(!flag) {
+    incomplete.fetch_add(1);
+  }
+  std::fprintf(stderr,"native tMPI %s rank=%d after 1000000 attempts: flag=%d received=%d\n",
+               mode==0 ? "Test" : "Testany",rank,flag,received);
+  // Prevent an early cleanup Wait from providing progress to ranks still polling.
+  tMPI_Barrier(TMPI_COMM_WORLD);
+  tMPI_Waitall(2,requests,nullptr);
+  std::fprintf(stderr,"native tMPI cleanup rank=%d received=%d expected=%d\n",
+               rank,received,100+(rank+size-1)%size);
+}
+int run() {
+  for(int mode=0; mode<2; ++mode) {
+    int status=thread_mpi::tMPI_Init_fn(0,4,thread_mpi::TMPI_AFFINITY_NONE,body,&mode);
+    if(status!=thread_mpi::TMPI_SUCCESS) {
+      return 2;
+    }
+  }
+  // Exit with failure when the known standards violation is reproduced.
+  return incomplete.load()==0 ? 0 : 1;
+}
+}
+}
+int main() {
+  return PLMD::test_progress_reproducer::run();
+}

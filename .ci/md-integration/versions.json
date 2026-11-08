@@ -1,0 +1,20 @@
+{
+  "gromacs": {
+    "version": "2026.4",
+    "repository": "gromacs/gromacs",
+    "tag": "v2026.4",
+    "ref": "6c69f720aa7378fddfee67f99d51aff21ccfb0a2",
+    "patch": "gromacs-2026.0"
+  },
+  "lammps": {
+    "version": "30Sep2026 update 1",
+    "repository": "lammps/lammps",
+    "tag": "stable_30Sep2026_update1",
+    "ref": "098ffdefa525cabc82272925de02e9884f58c657"
+  },
+  "amber": {
+    "version": "AmberTools 26 rc7",
+    "url": "https://ambermd.org/downloads/ambertools26_rc7.tar.bz2",
+    "sha256": "5d46eef3c2bb7d5bf9e8c0c38add34406ea67e3f0e4097ac9d11d8a544538c9c"
+  }
+}

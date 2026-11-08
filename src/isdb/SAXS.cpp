@@ -46,6 +46,8 @@
 #include <cctype>
 #include <cmath>
 #include <memory>
+#include <cstring>
+#include <cstdint>
 
 namespace PLMD {
 namespace isdb {
@@ -1154,28 +1156,57 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   setDerivatives();
   checkRead();
-}
 
-// calculates SASA neighbor list
-void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
-  // pairs of atoms with LCPO parameters closer than the sum of their radii,
-  // found with a cell list; each list is sorted (as with the all-pairs loop)
-  const unsigned natoms = getNumberOfAtoms();
-  std::vector<unsigned> lcpo_atoms;
-  double maxr = 0.0;
-  for(unsigned i = 0; i < natoms; ++i) {
-    if (LCPOparam[i].size()>0) {
-      lcpo_atoms.push_back(i);
-      maxr = std::max(maxr, LCPOparam[i][0]);
+  if(onebead) {
+    // the atoms of each bead, in increasing order, with their weights in the centre
+    // of mass of the bead (the masses are summed in the order of the atoms)
+    bead_off_.assign(nres+1,0);
+    for(unsigned a=0; a<size; ++a) {
+      bead_off_[residue_atom[a]+1]++;
+    }
+    for(unsigned r=0; r<nres; ++r) {
+      bead_off_[r+1] += bead_off_[r];
+    }
+    bead_atoms_.resize(size);
+    std::vector<unsigned> fill(bead_off_.begin(), bead_off_.end()-1);
+    std::vector<double> bead_mass(nres,0.);
+    for(unsigned a=0; a<size; ++a) {
+      bead_atoms_[fill[residue_atom[a]]++] = a;
+      bead_mass[residue_atom[a]] += atoms_masses[a];
+    }
+    bead_inv_mass_.resize(nres);
+    for(unsigned r=0; r<nres; ++r) {
+      bead_inv_mass_[r] = 1.0/bead_mass[r];
+    }
+    atom_weight_.resize(size);
+    for(unsigned a=0; a<size; ++a) {
+      atom_weight_[a] = atoms_masses[a]*bead_inv_mass_[residue_atom[a]];
     }
   }
-  if(lcpo_atoms.empty()) {
-    return;
+}
+
+// LCPO SASA of the atoms (ONEBEAD only).
+// Two atoms with LCPO parameters are neighbours if d_ij < r_i + r_j (Angstrom).
+// A Verlet list of candidates (d_ij < r_i + r_j + skin) is kept between the calls
+// and rebuilt only when an atom has moved by more than about skin/2 since it was
+// built; at every call the exact test is applied to the candidates, so the
+// neighbours are the same as with a new search. The rows are sorted, so all the
+// sums are done in the same order as with an all-pairs search.
+namespace {
+// skin of the candidate list (Angstrom)
+constexpr double lcpo_skin = 2.0;
+}
+
+void SAXS::lcpoBuildCandidates() {
+  const unsigned natoms = getNumberOfAtoms();
+  double maxr = 0.0;
+  for(const auto i : lcpo_atoms_) {
+    maxr = std::max(maxr, LCPOparam[i][0]);
   }
-  // cell size (nm) not smaller than the largest cutoff (radii are in Angstrom)
-  const double rc = std::max(2.0*maxr/10., 1.e-6);
-  Vector lo = getPosition(lcpo_atoms[0]), hi = lo;
-  for(const auto i : lcpo_atoms) {
+  // cell size (nm) not smaller than the largest cutoff
+  const double rc = (2.0*maxr+lcpo_skin)/10.;
+  Vector lo = getPosition(lcpo_atoms_[0]), hi = lo;
+  for(const auto i : lcpo_atoms_) {
     for(unsigned k=0; k<3; ++k) {
       lo[k] = std::min(lo[k], getPosition(i)[k]);
       hi[k] = std::max(hi[k], getPosition(i)[k]);
@@ -1194,10 +1225,11 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
     }
   };
   const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
-  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(lcpo_atoms.size()), atom_cell(lcpo_atoms.size());
-  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
+  const unsigned nlcpo = lcpo_atoms_.size();
+  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(nlcpo), atom_cell(nlcpo);
+  for(unsigned a=0; a<nlcpo; ++a) {
     int c[3];
-    cell(lcpo_atoms[a],c);
+    cell(lcpo_atoms_[a],c);
     atom_cell[a] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
     cell_start[atom_cell[a]+1]++;
   }
@@ -1206,13 +1238,14 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
   }
   {
     std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
-    for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
-      cell_atoms[fill[atom_cell[a]]++] = lcpo_atoms[a];
+    for(unsigned a=0; a<nlcpo; ++a) {
+      cell_atoms[fill[atom_cell[a]]++] = lcpo_atoms_[a];
     }
   }
+  std::vector<std::vector<unsigned> > rows(natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
-  for(unsigned a=0; a<lcpo_atoms.size(); ++a) {
-    const unsigned i = lcpo_atoms[a];
+  for(unsigned a=0; a<nlcpo; ++a) {
+    const unsigned i = lcpo_atoms_[a];
     int c[3];
     cell(i,c);
     for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
@@ -1224,76 +1257,177 @@ void SAXS::calcNlist(std::vector<std::vector<int> > &Nlist) {
             if(j==i) {
               continue;
             }
-            // same expression as in the all-pairs loop (j<i), so that the result is the same
-            const double Delta_ij_mod = (j<i) ? modulo(delta(getPosition(i), getPosition(j)))*10. : modulo(delta(getPosition(j), getPosition(i)))*10.;
-            const double overlapD = (j<i) ? LCPOparam[i][0]+LCPOparam[j][0] : LCPOparam[j][0]+LCPOparam[i][0];
-            if(Delta_ij_mod < overlapD) {
-              Nlist[i].push_back(j);
+            const double cut = (LCPOparam[i][0]+LCPOparam[j][0]+lcpo_skin)/10.;
+            if(modulo2(delta(getPosition(i), getPosition(j))) < cut*cut) {
+              rows[i].push_back(j);
             }
           }
         }
       }
     }
-    std::sort(Nlist[i].begin(), Nlist[i].end());
+    std::sort(rows[i].begin(), rows[i].end());
+  }
+  lcpo_cand_off_.assign(natoms+1,0);
+  for(unsigned i=0; i<natoms; ++i) {
+    lcpo_cand_off_[i+1] = lcpo_cand_off_[i]+rows[i].size();
+  }
+  lcpo_cand_idx_.resize(lcpo_cand_off_[natoms]);
+  for(unsigned i=0; i<natoms; ++i) {
+    std::copy(rows[i].begin(), rows[i].end(), lcpo_cand_idx_.begin()+lcpo_cand_off_[i]);
+  }
+  lcpo_ref_pos_.resize(nlcpo);
+  for(unsigned a=0; a<nlcpo; ++a) {
+    lcpo_ref_pos_[a] = getPosition(lcpo_atoms_[a]);
+  }
+}
+
+void SAXS::lcpoUpdateList() {
+  const unsigned natoms = getNumberOfAtoms();
+  if(lcpo_ref_pos_.empty()) {
+    for(unsigned i = 0; i < natoms; ++i) {
+      if(LCPOparam[i].size()>0) {
+        lcpo_atoms_.push_back(i);
+        if(LCPOparam[i].size()>1 && LCPOparam[i][1]>0.0) {
+          lcpo_area_atoms_.push_back(i);
+        }
+      }
+    }
+    if(lcpo_atoms_.empty()) {
+      lcpo_off_.assign(natoms+1,0);
+      return;
+    }
+    lcpoBuildCandidates();
+  } else {
+    // rebuild when an atom has moved by more than 0.45*skin (0.05*skin of margin
+    // for the rounding of the candidate test)
+    const double maxd = 0.45*lcpo_skin/10.;
+    const unsigned nlcpo = lcpo_atoms_.size();
+    bool moved = false;
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(||:moved)
+    for(unsigned a=0; a<nlcpo; ++a) {
+      if(modulo2(delta(lcpo_ref_pos_[a], getPosition(lcpo_atoms_[a]))) >= maxd*maxd) {
+        moved = true;
+      }
+    }
+    if(moved) {
+      lcpoBuildCandidates();
+    }
+  }
+  // the neighbours among the candidates, and the overlap term A(i,j) of each
+  // directed pair, with the same expressions as in the original LCPO loop
+  lcpo_cand_d_.resize(lcpo_cand_idx_.size());
+  lcpo_off_.assign(natoms+1,0);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned i=0; i<natoms; ++i) {
+    std::size_t n = 0;
+    for(std::size_t e=lcpo_cand_off_[i]; e<lcpo_cand_off_[i+1]; ++e) {
+      const unsigned j = lcpo_cand_idx_[e];
+      const double d_ij = modulo(delta(getPosition(i), getPosition(j)))*10.;
+      lcpo_cand_d_[e] = d_ij;
+      if(d_ij < LCPOparam[i][0]+LCPOparam[j][0]) {
+        n++;
+      }
+    }
+    lcpo_off_[i+1] = n;
+  }
+  for(unsigned i=0; i<natoms; ++i) {
+    lcpo_off_[i+1] += lcpo_off_[i];
+  }
+  lcpo_idx_.resize(lcpo_off_[natoms]);
+  lcpo_term_.resize(lcpo_off_[natoms]);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned i=0; i<natoms; ++i) {
+    std::size_t n = lcpo_off_[i];
+    for(std::size_t e=lcpo_cand_off_[i]; e<lcpo_cand_off_[i+1]; ++e) {
+      const unsigned j = lcpo_cand_idx_[e];
+      const double d_ij = lcpo_cand_d_[e];
+      if(d_ij < LCPOparam[i][0]+LCPOparam[j][0]) {
+        const double ri = LCPOparam[i][0];
+        const double rj = LCPOparam[j][0];
+        lcpo_idx_[n] = j;
+        lcpo_term_[n] = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
+        n++;
+      }
+    }
   }
 }
 
 // calculates SASA according to LCPO algorithm
 void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
-  unsigned natoms = getNumberOfAtoms();
-  std::vector<std::vector<int> > Nlist(natoms);
-  calcNlist(Nlist);
-  std::vector<double> sasares(nres, 0.);
+  const unsigned natoms = getNumberOfAtoms();
+  lcpoUpdateList();
+  // the area of each atom; with MPI the atoms are split over the ranks
+  std::vector<double> atom_area(natoms, 0.);
   const unsigned nt = OpenMP::getNumThreads();
+  const bool split = !serial && comm.Get_size()>1;
+  const unsigned first = split ? comm.Get_rank() : 0;
+  const unsigned stride = split ? comm.Get_size() : 1;
+  const unsigned narea = lcpo_area_atoms_.size();
+  #pragma omp parallel num_threads(nt)
+  {
+    // all bits set for the neighbours of atom i, 0 otherwise
+    std::vector<std::uint64_t> is_neighbor(natoms, 0);
+    #pragma omp for schedule(dynamic,64)
+    for (unsigned a = first; a < narea; a += stride) {
+      const unsigned i = lcpo_area_atoms_[a];
+      double Aij = 0.0;
+      double Aijk = 0.0;
+      double Ajk = 0.0;
+      const double ri = LCPOparam[i][0];
+      const double S1 = 4.*M_PI*ri*ri;
+      for (std::size_t e = lcpo_off_[i]; e < lcpo_off_[i+1]; ++e) {
+        is_neighbor[lcpo_idx_[e]] = ~std::uint64_t(0);
+      }
+      for (std::size_t e = lcpo_off_[i]; e < lcpo_off_[i+1]; ++e) {
+        const unsigned j = lcpo_idx_[e];
+        const double Aijt = lcpo_term_[e];
+        // sum of A(j,k) over the neighbours k of j that are also neighbours of i,
+        // in the order of the list of j. The mask selects A(j,k) or +0 without a
+        // branch (about half of the k are neighbours of i, so a branch is
+        // mispredicted often); adding +0 does not change the sum.
+        double Ajkt = 0.0;
+        for (std::size_t f = lcpo_off_[j]; f < lcpo_off_[j+1]; ++f) {
+          std::uint64_t bits;
+          std::memcpy(&bits, &lcpo_term_[f], sizeof(bits));
+          bits &= is_neighbor[lcpo_idx_[f]];
+          double term;
+          std::memcpy(&term, &bits, sizeof(term));
+          Ajkt += term;
+        }
+        Aijk += (Aijt * Ajkt);
+        Aij += Aijt;
+        Ajk += Ajkt;
+      }
+      for (std::size_t e = lcpo_off_[i]; e < lcpo_off_[i+1]; ++e) {
+        is_neighbor[lcpo_idx_[e]] = 0;
+      }
+      atom_area[i] = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+    }
+  }
+  if(split) {
+    // the other ranks contribute zeros: the sum is exact
+    comm.Sum(atom_area);
+  }
+  // residue areas: per-thread sums over a static partition of the atoms, combined
+  // in thread order (reproducible results); the buffers of the threads that did
+  // not run (e.g. without OpenMP, or when the runtime gives fewer threads than
+  // requested) are empty and are skipped
+  std::vector<double> sasares(nres, 0.);
   std::vector< std::vector<double> > sasares_t(nt);
-
   #pragma omp parallel num_threads(nt)
   {
     std::vector<double> & private_sasares = sasares_t[OpenMP::getThreadNum()];
     private_sasares.assign(nres, 0.);
-    // marks the neighbours of atom i (replaces a linear search in Nlist[i])
-    std::vector<char> is_neighbor(natoms, 0);
     #pragma omp for schedule(static)
     for (unsigned i = 0; i < natoms; ++i) {
       if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
-        double Aij = 0.0;
-        double Aijk = 0.0;
-        double Ajk = 0.0;
-        double ri = LCPOparam[i][0];
-        double S1 = 4.*M_PI*ri*ri;
-        for (const auto j : Nlist[i]) {
-          is_neighbor[j] = 1;
-        }
-        for (unsigned j = 0; j < Nlist[i].size(); ++j) {
-          double d_ij = modulo(delta( getPosition(i), getPosition(Nlist[i][j]) ))*10.;
-          double rj = LCPOparam[Nlist[i][j]][0];
-          double Aijt = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
-          double Ajkt = 0.0;
-          for (unsigned k = 0; k < Nlist[Nlist[i][j]].size(); ++k) {
-            if (is_neighbor[Nlist[Nlist[i][j]][k]]) {
-              double d_jk = modulo(delta( getPosition(Nlist[i][j]), getPosition(Nlist[Nlist[i][j]][k]) ))*10.;
-              double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-              double sjk =  (2.*M_PI*rj*(rj-d_jk/2.-((rj*rj-rk*rk)/(2.*d_jk))));
-              Ajkt += sjk;
-            }
-          }
-          Aijk += (Aijt * Ajkt);
-          Aij += Aijt;
-          Ajk += Ajkt;
-        }
-        for (const auto j : Nlist[i]) {
-          is_neighbor[j] = 0;
-        }
-        double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+        const double sasai = atom_area[i];
         if (sasai > 0) {
           private_sasares[residue_atom[i]] += sasai / 100.0;
         }
       }
     }
   }
-  // combining private_sasares into sasares, in thread order (reproducible results);
-  // the buffers of the threads that did not run (e.g. without OpenMP, or when the
-  // runtime gives fewer threads than requested) are empty and are skipped
   for (unsigned t = 0; t < nt; ++t) {
     if(sasares_t[t].empty()) {
       continue;
@@ -1501,32 +1635,24 @@ void SAXS::calculate() {
 
   const size_t size = getNumberOfAtoms();
   const size_t numq = q_list.size();
+  const size_t beads_size = onebead ? nres : size;
 
-  // these are the derivatives associated to the coarse graining
-  std::vector<Vector> aa_deriv(size);
-
-  size_t beads_size = size;
-  if(onebead) {
-    beads_size = nres;
-  }
-  // these are the derivatives particle,q
-  std::vector<Vector> bd_deriv(numq*beads_size);
+  // the derivatives of the intensities with respect to the beads, [k*beads_size+i]
+  // (with USEGPU and DOSCORE they stay on the GPU)
+  std::vector<Vector> bd_deriv((usegpu_ && getDoScore()) ? 0 : numq*beads_size);
 
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
-    std::vector<double> sum_mass(nres,0.);
-    std::vector<Vector> sum_pos(nres,Vector(0,0,0));
-    for(unsigned atom_id=0; atom_id<size; atom_id++) {
-      const unsigned resid = residue_atom[atom_id];
-      aa_deriv[atom_id] = Vector(atoms_masses[atom_id],atoms_masses[atom_id],atoms_masses[atom_id]);
-      sum_pos[resid] += atoms_masses[atom_id] * getPosition(atom_id);
-      sum_mass[resid] += atoms_masses[atom_id];
-    }
-    for(unsigned resid=0; resid<nres; resid++) {
-      beads_pos[resid] = sum_pos[resid]/sum_mass[resid];
-    }
-    for(unsigned atom_id=0; atom_id<size; atom_id++) {
-      aa_deriv[atom_id] /= sum_mass[residue_atom[atom_id]];
+    // centres of mass of the beads; the derivative of a bead position with respect
+    // to one of its atoms is atom_weight_ (mass of the atom / mass of the bead)
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned r=0; r<nres; ++r) {
+      Vector sum_pos(0,0,0);
+      for(unsigned e=bead_off_[r]; e<bead_off_[r+1]; ++e) {
+        const unsigned a = bead_atoms_[e];
+        sum_pos += atoms_masses[a] * getPosition(a);
+      }
+      beads_pos[r] = sum_pos*bead_inv_mass_[r];
     }
     // SASA
     std::vector<bool> solv_res(nres, 0);
@@ -1641,7 +1767,6 @@ void SAXS::calculate() {
     for(unsigned i=0; i<size; ++i) {
       beads_pos[i] = getPosition(i);
     }
-    aa_deriv = std::vector<Vector>(size,(Vector(1,1,1)));
   }
 
   // with DOSCORE the derivatives of the intensities are first contracted with the
@@ -1757,8 +1882,17 @@ void SAXS::calculate() {
   }
   Tensor chi2_box_deriv;
 
-  // derivatives of each intensity (without DOSCORE): the atoms are split over the
-  // threads, each with its own partial box derivatives (summed in thread order)
+  // the derivative with respect to an atom is the derivative with respect to its bead
+  // times atom_weight_ (1 without ONEBEAD); the box derivatives are computed from the
+  // beads, since sum_atoms x_a (x) w_a d = (sum_atoms w_a x_a) (x) d = x_bead (x) d
+  auto weight=[&](const unsigned atom_id) {
+    return onebead ? atom_weight_[atom_id] : 1.0;
+  };
+  auto bead_of=[&](const unsigned atom_id) {
+    return onebead ? residue_atom[atom_id] : atom_id;
+  };
+
+  // derivatives of each intensity (without DOSCORE), the atoms split over the threads
   if(!getDoScore()) {
     std::vector<Value*> qval(numq);
     for(unsigned k=0; k<numq; ++k) {
@@ -1766,42 +1900,35 @@ void SAXS::calculate() {
       Tools::convert(k,num);
       qval[k]=getPntrToComponent("q-"+num);
     }
-    const unsigned nt=OpenMP::getNumThreads();
-    std::vector<std::vector<Tensor> > box_t(nt, std::vector<Tensor>(numq));
-    #pragma omp parallel num_threads(nt)
-    {
-      std::vector<Tensor> & my_box = box_t[OpenMP::getThreadNum()];
-      #pragma omp for schedule(static)
-      for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-        // without ONEBEAD aa_deriv is (1,1,1) and the bead is the atom
-        const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
-        const Vector pos = getPosition(atom_id);
-        Vector chi2_d;
-        for(unsigned k=0; k<numq; ++k) {
-          const Vector & bd = bd_deriv[k*beads_size+bead_id];
-          const Vector qderiv(aa_deriv[atom_id][0]*bd[0],
-                              aa_deriv[atom_id][1]*bd[1],
-                              aa_deriv[atom_id][2]*bd[2]);
-          setAtomsDerivatives(qval[k], atom_id, qderiv);
-          my_box[k] += Tensor(pos,qderiv);
-          if(chi2) {
-            chi2_d += chi2_dq[k]*qderiv;
-          }
-        }
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned atom_id=0; atom_id<size; ++atom_id) {
+      const unsigned bead_id = bead_of(atom_id);
+      const double w = weight(atom_id);
+      Vector chi2_d;
+      for(unsigned k=0; k<numq; ++k) {
+        const Vector & bd = bd_deriv[k*beads_size+bead_id];
+        const Vector qderiv(w*bd[0], w*bd[1], w*bd[2]);
+        setAtomsDerivatives(qval[k], atom_id, qderiv);
         if(chi2) {
-          chi2_atom_deriv[atom_id] = chi2_d;
+          chi2_d += chi2_dq[k]*qderiv;
         }
+      }
+      if(chi2) {
+        chi2_atom_deriv[atom_id] = chi2_d;
+      }
+    }
+    std::vector<Tensor> deriv_box(numq);
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
+    for(unsigned k=0; k<numq; ++k) {
+      for(unsigned b=0; b<beads_size; ++b) {
+        deriv_box[k] += Tensor(beads_pos[b], bd_deriv[k*beads_size+b]);
       }
     }
     for(unsigned k=0; k<numq; ++k) {
-      Tensor deriv_box;
-      for(unsigned t=0; t<nt; ++t) {
-        deriv_box += box_t[t][k];
-      }
       if(chi2) {
-        chi2_box_deriv += chi2_dq[k]*deriv_box;
+        chi2_box_deriv += chi2_dq[k]*deriv_box[k];
       }
-      setBoxDerivatives(qval[k], -deriv_box);
+      setBoxDerivatives(qval[k], -deriv_box[k]);
     }
   }
 
@@ -1841,14 +1968,15 @@ void SAXS::calculate() {
       comm.Sum(&score_deriv[0][0], 3*score_deriv.size());
     }
     Value* val=getPntrToComponent("score");
-    Tensor deriv_box;
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
     for(unsigned atom_id=0; atom_id<size; ++atom_id) {
-      const unsigned bead_id = onebead ? residue_atom[atom_id] : atom_id;
-      const Vector der(aa_deriv[atom_id][0]*score_deriv[bead_id][0],
-                       aa_deriv[atom_id][1]*score_deriv[bead_id][1],
-                       aa_deriv[atom_id][2]*score_deriv[bead_id][2]);
-      setAtomsDerivatives(val, atom_id, der);
-      deriv_box += Tensor(getPosition(atom_id),der);
+      const Vector & sd = score_deriv[bead_of(atom_id)];
+      const double w = weight(atom_id);
+      setAtomsDerivatives(val, atom_id, Vector(w*sd[0], w*sd[1], w*sd[2]));
+    }
+    Tensor deriv_box;
+    for(unsigned b=0; b<beads_size; ++b) {
+      deriv_box += Tensor(beads_pos[b], score_deriv[b]);
     }
     setBoxDerivatives(val, -deriv_box);
   }

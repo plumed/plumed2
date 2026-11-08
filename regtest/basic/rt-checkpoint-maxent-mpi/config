@@ -2,7 +2,7 @@ mpiprocs=4
 type=driver
 plumed_modules=bias
 # Reference run: four replicas (--multi 4) with one process each, the checkpointing signal every 10 steps
-arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --checkpoint-stride 10"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --checkpoint-stride 10 --log-file driver.log"
 
 function plumed_regtest_before() {
   # 60 frames of 4 atoms (analytic positions)
@@ -11,8 +11,8 @@ function plumed_regtest_before() {
   head -n 150 traj.xyz > part.xyz
   # A) four replicas, checkpoints at steps 0, 10 and 20, restart from step 20
   mkdir restart ; cd restart ; cp ../plumed.dat .
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --checkpoint-stride 10 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --checkpoint-stride 10 --log-file driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file driver.log > out2 2> err2
   cd ..
   # B) two replicas with two processes each, checkpoints every 7 steps (STRIDE), restart from step 21
   sed -e 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' \
@@ -20,10 +20,10 @@ function plumed_regtest_before() {
       -e 's/APPLY_WEIGHTS=1,1,0,1/APPLY_WEIGHTS=0,1/' plumed.dat > plumed2.dat
   for d in reference2 restart2 ; do mkdir $d ; cp plumed2.dat $d/plumed.dat ; done
   cd reference2
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 > out 2> err
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --log-file driver.log > out 2> err
   cd ../restart2
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 --log-file driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --restart-from-checkpoint plumed.cpt --log-file driver.log > out2 2> err2
   cd ..
 }
 
@@ -43,8 +43,11 @@ function plumed_regtest_after() {
       done
     done
     for d in restart restart2 ; do
-      if grep -q "not stored in the checkpoint" $d/log.* $d/err2 ; then echo "$d: unported state warning" ; fi
-      grep -h "Checkpoint state restored" $d/log.* | sed 's/by PLUMED.*//' | LC_ALL=C sort | uniq -c
+      # Replicas have independent logs; merged stdout can interleave prefixes and messages.
+      if grep -q "not stored in the checkpoint" $d/driver.*.log $d/err2 ; then echo "$d: unported state warning" ; fi
+      # BSD and GNU uniq use different padding for counts; keep the reference format.
+      grep -h "Checkpoint state restored" $d/driver.*.log | sed 's/by PLUMED.*//' | LC_ALL=C sort | uniq -c |
+        awk '{count=$1; sub(/^[[:space:]]*[0-9]+[[:space:]]+/, ""); printf "%7d %s\n", count, $0}'
     done
   } > restart_check
 }

@@ -590,19 +590,29 @@ void SASA_LCPO::readDeltaG() {
 
 }
 
-//computes free energy values for the sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER, and if no DELTAGFILE is provided. In this case, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, JPCB, 2021) needs to be used to compute them.
-
+// Computes transfer free-energy parameters (DeltaG) when no DELTAGFILE is provided.
+// This routine is used only for TYPE=TRANSFER and evaluates temperature-dependent
+// parameters according to approach 2 or 3 from:
+// Arsiccio and Shea, JPCB (2021).
+//
+// Data layout notes:
+// - DeltaG[i] for i in [0, natoms-1] stores residue-specific sidechain values.
+// - DeltaG[natoms] stores the single BACKBONE value used globally.
+// - Values are cached and recomputed only when temperature changes.
 void SASA_LCPO::computeDeltaG() {
 
+  // Convert kBT to absolute temperature (K) using Boltzmann constant from PLUMED utilities.
   double T;
   T = kbt/getKBoltzmann();
 
-  // recomputed only when the temperature changes: the values were cleared at every step and not
-  // computed again (they were then read from empty vectors), and the backbone value was appended
-  if (T != Ti) {
+  // Recompute only when temperature changes.
+  // This prevents using stale values and avoids repeatedly appending backbone entries.
+  if (std::fabs(T - Ti) > 1e-12) {
+    // Clear all per-atom entries plus the extra backbone slot at index natoms.
     for(unsigned i=0; i<=natoms; i++) {
       DeltaG[i].clear();
     }
+    // Populate per-atom DeltaG according to the selected approach and residue identity.
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {

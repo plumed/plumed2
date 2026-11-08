@@ -1,0 +1,156 @@
+name: AmberTools integration
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  amber:
+    name: AmberTools sander (${{ matrix.os }}, ${{ matrix.mpi }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+        mpi: [openmpi, mpich, serial]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      BACKEND: ${{ matrix.mpi }}
+      MD_ENGINE_MODE: ${{ matrix.mpi == 'serial' && 'serial' || 'mpi' }}
+      PLUMED_STACK_TRACE: yes
+      OMP_NUM_THREADS: '1'
+      PLUMED_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Read the pinned AmberTools version
+        id: version
+        run: python .ci/md-integration/version.py amber --github-output
+
+      - name: Install build tools and the selected MPI
+        run: |
+          mkdir -p "$RUNNER_TEMP/md-logs"
+          bash .ci/md-integration/setup-mpi.sh
+          # AmberTools' bundled dependencies still use CMake 3 policies.
+          python -m pip install 'cmake>=3.31,<4'
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            sudo apt-get install -y gfortran bison flex tcsh libopenblas-dev zlib1g-dev libbz2-dev
+            echo 'FC=gfortran' >> "$GITHUB_ENV"
+            if [[ "$MD_ENGINE_MODE" == mpi ]]; then
+              echo "MD_MPIFC=/usr/bin/mpifort.$BACKEND" >> "$GITHUB_ENV"
+            fi
+          else
+            brew install gcc bison flex
+            echo "FC=$(brew --prefix gcc)/bin/gfortran" >> "$GITHUB_ENV"
+            if [[ "$MD_ENGINE_MODE" == mpi ]]; then
+              formula=open-mpi
+              if [[ "$BACKEND" == mpich ]]; then formula=mpich; fi
+              echo "MD_MPIFC=$(brew --prefix "$formula")/bin/mpifort" >> "$GITHUB_ENV"
+            fi
+          fi
+
+      - name: Verify the native MPI world before building sander
+        if: matrix.mpi != 'serial'
+        run: |
+          mkdir -p "$RUNNER_TEMP/md-logs"
+          bash .ci/md-integration/check-mpi.sh \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/native-mpi.log"
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: plumed-md-${{ matrix.os }}
+          path: ${{ runner.temp }}
+
+      - name: Restore the serial PLUMED installation
+        run: |
+          tar -C "$HOME" -xzf "$RUNNER_TEMP/plumed-md.tar.gz"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            echo "LD_LIBRARY_PATH=$HOME/plumed-md/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Download and verify AmberTools ${{ steps.version.outputs.version }}
+        env:
+          AMBER_URL: ${{ steps.version.outputs.url }}
+          AMBER_SHA256: ${{ steps.version.outputs.sha256 }}
+        run: |
+          curl --fail --location --retry 3 "$AMBER_URL" -o "$RUNNER_TEMP/ambertools.tar.bz2"
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ['RUNNER_TEMP']) / 'ambertools.tar.bz2'
+          digest = hashlib.sha256()
+          with path.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  digest.update(block)
+          if digest.hexdigest() != os.environ['AMBER_SHA256']:
+              raise SystemExit('AmberTools archive checksum mismatch')
+          print('AmberTools archive SHA256:', digest.hexdigest())
+          PY
+          mkdir ambertools
+          tar -xjf "$RUNNER_TEMP/ambertools.tar.bz2" --strip-components=1 -C ambertools
+
+      - name: Install the current header and enable host MPI injection
+        run: |
+          # Keep the large header replacement separate from the minimal hook.
+          for name in Plumed.c Plumed_init.inc runmd.F90; do
+            cp "ambertools/AmberTools/src/sander/$name" "$RUNNER_TEMP/$name.original"
+          done
+          cp "$HOME/plumed-md/include/plumed/wrapper/Plumed.h" ambertools/AmberTools/src/sander/Plumed.h
+          cmp ambertools/AmberTools/src/sander/Plumed.h src/wrapper/Plumed.h
+          patch -d ambertools -p1 < .ci/md-integration/amber/injection.patch
+          patch -R -d ambertools -p1 < .ci/md-integration/amber/injection.patch
+          for name in Plumed.c Plumed_init.inc runmd.F90; do
+            cmp "ambertools/AmberTools/src/sander/$name" "$RUNNER_TEMP/$name.original"
+          done
+          patch -d ambertools -p1 < .ci/md-integration/amber/injection.patch
+          cp .ci/md-integration/amber/injection.patch "$RUNNER_TEMP/md-logs/amber.patch"
+
+      - name: Build AmberTools sander
+        run: |
+          bash .ci/md-integration/build-amber.sh ambertools "$RUNNER_TEMP/amber-build" \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/amber-build.log"
+
+      - name: Validate PLUMED and numerical results
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            kernel="$HOME/plumed-md/lib/libplumedKernel.dylib"
+          else
+            kernel="$HOME/plumed-md/lib/libplumedKernel.so"
+          fi
+          if [[ "$MD_ENGINE_MODE" == serial ]]; then
+            sander="$RUNNER_TEMP/amber-build/AmberTools/src/sander/sander"
+            mode_args=(--mode serial)
+          else
+            sander="$RUNNER_TEMP/amber-build/AmberTools/src/sander/sander.MPI"
+            mode_args=(--mode mpi --launcher "$MD_MPIEXEC" --launcher-kind "$MD_LAUNCHER_KIND")
+          fi
+          python .ci/md-integration/amber/check.py \
+            --amber-source "$GITHUB_WORKSPACE/ambertools" \
+            --sander "$sander" "${mode_args[@]}" \
+            --kernel "$kernel" --results "$RUNNER_TEMP/md-results" \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/validation.log"
+          cat "$RUNNER_TEMP/md-logs/validation.log" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve build logs, inputs, and numerical results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: amber-${{ matrix.os }}-${{ matrix.mpi }}
+          path: |
+            ${{ runner.temp }}/md-logs
+            ${{ runner.temp }}/md-results
+            ${{ runner.temp }}/amber-build/CMakeCache.txt
+            ${{ runner.temp }}/amber-build/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 7

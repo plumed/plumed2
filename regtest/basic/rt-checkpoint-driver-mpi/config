@@ -1,7 +1,7 @@
 mpiprocs=2
 type=driver
 # Same as rt-checkpoint-driver, with two replicas (--multi 2): one checkpoint per replica
-arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --checkpoint-stride 10"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --checkpoint-stride 10 --log-file driver.log"
 
 function plumed_regtest_before() {
   awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
@@ -9,8 +9,8 @@ function plumed_regtest_before() {
   mkdir restart
   cd restart
   cp ../plumed.0.dat ../plumed.1.dat .
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 --checkpoint-stride 10 > out1 2> err1
-  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 --checkpoint-stride 10 --log-file driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file driver.log > out2 2> err2
   cd ..
   # replicas with checkpoints at different steps
   mkdir wrong-step
@@ -27,6 +27,7 @@ function plumed_regtest_after() {
   for f in COLVAR.0 COLVAR.1 ; do
     if cmp $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
   done > restart_check
-  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" restart/log.* | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | LC_ALL=C sort >> restart_check
+  # Compare complete replica logs, not stdout merged by threads or an MPI launcher.
+  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" restart/driver.0.log restart/driver.1.log | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | LC_ALL=C sort >> restart_check
   grep -h "all the replicas must restart" wrong-step/err1 | head -n 1 | sed 's/^+++ *//' >> restart_check
 }
