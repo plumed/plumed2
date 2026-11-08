@@ -33,7 +33,49 @@
 
 namespace PLMD {
 class fileParser;
+struct RawFrame;
 
+/// A frame of a trajectory, as read by TrajectoryParser.
+/// Lengths are in nm and times in ps (the readers convert from the units of the file);
+/// masses and charges are in the units of the file.
+/// The caller sets the inputs and provides the buffers, sized for
+/// TrajectoryParser::nOfAtoms() atoms (known after readHeader()).
+template <typename real>
+struct TrajectoryFrame {
+  /// input: the trajectory stride of the caller.
+  /// With 0, the step stored in xtc and trr frames replaces `step`
+  int stride=1;
+  /// input: false when the box is given in another way (the driver's --box).
+  /// The dlp4 reader then expects no cell vectors in the file
+  bool readBox=true;
+  /// input: only the positions of the atoms from `first` to `first+count-1` are copied
+  /// (the driver uses it to test particle decomposition); with count<0 all the atoms are copied
+  int first=0;
+  /// input: see `first`
+  int count=-1;
+  /// output buffer: 3*natoms values, x y z of each atom
+  real* positions=nullptr;
+  /// output buffer: 9 values, the cell vectors a, b and c, one per row
+  real* box=nullptr;
+  /// output buffer: natoms values, written only if the file stores the masses (see hasMassesAndCharges)
+  real* masses=nullptr;
+  /// output buffer: natoms values, written only if the file stores the charges (see hasMassesAndCharges)
+  real* charges=nullptr;
+  /// input and output: the step counter of the caller.
+  /// The step stored in the file replaces it for dlp4 (always, in readHeader())
+  /// and for xtc and trr (only with stride 0, in readAtoms())
+  long long step=0;
+  /// output of readHeader(): the time step of the simulation, for the formats that store it (dlp4)
+  std::optional<double> timestep;
+  /// output of readAtoms(): the time of the frame, for the formats that store it (xtc, trr)
+  std::optional<double> time;
+  /// output of readAtoms(): true if masses and charges were read from the file (dlp4)
+  bool hasMassesAndCharges=false;
+};
+
+/// Reads trajectories for the driver and the benchmark.
+/// The functions that read return std::nullopt on success, "EOF" at the end of the file,
+/// and an error message otherwise.
 class TrajectoryParser {
 public:
   enum class trajfmt {
@@ -49,6 +91,8 @@ public:
   static std::string toString(trajfmt fmt);
 private:
   std::unique_ptr<fileParser> parser;
+  /// the frame as read by the parser, before the copy to the buffers of the caller
+  std::unique_ptr<RawFrame> raw;
 public:
   TrajectoryParser();
   ~TrajectoryParser();
@@ -63,52 +107,15 @@ public:
   //Driver with filename ="-"
   std::optional<std::string> init(std::string_view fmt,FILE* fileHandle);
 
-  std::optional<std::string> readHeader(long long int &step,
-                                        double &timeStep);
-  std::optional<std::string> readHeader(long long int &step,
-                                        float &timeStep);
-  std::optional<std::string> readAtoms(int stride,
-                                       bool dont_read_pbc,
-                                       bool debug_pd,
-                                       int pd_start,
-                                       int pd_nlocal,
-                                       long long int &step,
-                                       double* masses,
-                                       double* charges,
-                                       double* coordinates,
-                                       double* cell );
-  std::optional<std::string> readAtoms(int stride,
-                                       bool dont_read_pbc,
-                                       bool debug_pd,
-                                       int pd_start,
-                                       int pd_nlocal,
-                                       long long int &step,
-                                       float* masses,
-                                       float* charges,
-                                       float* coordinates,
-                                       float* cell );
-  std::optional<std::string> readFrame(int stride,
-                                       bool dont_read_pbc,
-                                       bool debug_pd,
-                                       int pd_start,
-                                       int pd_nlocal,
-                                       long long int &step,
-                                       double&timeStep,
-                                       double* masses,
-                                       double* charges,
-                                       double* coordinates,
-                                       double* cell );
-  std::optional<std::string> readFrame(int stride,
-                                       bool dont_read_pbc,
-                                       bool debug_pd,
-                                       int pd_start,
-                                       int pd_nlocal,
-                                       long long int &step,
-                                       float&timeStep,
-                                       float* masses,
-                                       float* charges,
-                                       float* coordinates,
-                                       float* cell );
+  /// Read the header of the next frame: after it nOfAtoms() is the number of atoms of the frame
+  template <typename real>
+  std::optional<std::string> readHeader(TrajectoryFrame<real>& frame);
+  /// Read the atoms of the frame whose header was read last
+  template <typename real>
+  std::optional<std::string> readAtoms(TrajectoryFrame<real>& frame);
+  /// readHeader() followed by readAtoms(), when the buffers are already sized
+  template <typename real>
+  std::optional<std::string> readFrame(TrajectoryFrame<real>& frame);
   /// Return the number of atoms
   int nOfAtoms() const;
   /// Return the file pointer to the initial position (use at your own risk)

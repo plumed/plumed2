@@ -28,6 +28,10 @@
 #include "xdrfile/xdrfile_trr.h"
 #include "xdrfile/xdrfile_xtc.h"
 
+#include <algorithm>
+#include <array>
+#include <cstring>
+
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
 #ifndef __PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS
@@ -81,6 +85,27 @@ static int register_cb(void *v, vmdplugin_t *p) {
 
 namespace PLMD {
 
+/// A frame as read by a fileParser, in double precision and in nm and ps.
+/// TrajectoryParser copies it to the buffers of the caller.
+struct RawFrame {
+  /// input of readAtoms(): see TrajectoryFrame::readBox
+  bool readBox=true;
+  /// output: the step stored in the file. Set by readHeader() (dlp4) or by readAtoms() (xtc, trr)
+  std::optional<long long> step;
+  /// output of readHeader(): the time step stored in the file (dlp4)
+  std::optional<double> timestep;
+  /// output of readAtoms(): the time of the frame stored in the file (xtc, trr)
+  std::optional<double> time;
+  /// output of readAtoms(): 3*natoms values, set to the size before the call
+  std::vector<double> positions;
+  /// output of readAtoms(): the cell vectors, one per row (zero if the file has no box)
+  std::array<double,9> box{};
+  /// output of readAtoms(): natoms values if the file stores masses and charges, empty otherwise
+  std::vector<double> masses;
+  /// output of readAtoms(): as masses
+  std::vector<double> charges;
+};
+
 class fileParser {
 protected:
   int natoms {-1};
@@ -95,59 +120,17 @@ public:
   virtual std::optional<std::string> init(FILE* /*fileHandle*/) {
     return "this trajectory format cannot be read from standard input";
   };
-
-  virtual std::optional<std::string> readHeader(
-    long long int &step,
-    double &timeStep
-  )=0;
-
-  virtual std::optional<std::string> readAtoms(    int stride,
-      bool dont_read_pbc,
-      bool debug_pd,
-      int pd_start,
-      int pd_nlocal,
-      long long int &step,
-      double* masses,
-      double* charges,
-      double* coordinates,
-      double* cell )=0;
-
-  virtual std::optional<std::string> readHeader(
-    long long int &step,
-    float &timeStep
-  ) =0;
-  virtual std::optional<std::string> readAtoms(int stride,
-      bool dont_read_pbc,
-      bool debug_pd,
-      int pd_start,
-      int pd_nlocal,
-      long long int &step,
-      float* masses,
-      float* charges,
-      float* coordinates,
-      float* cell ) =0;
-
+  /// Read the header of the next frame and set natoms
+  virtual std::optional<std::string> readHeader(RawFrame& raw)=0;
+  /// Read the atoms of the frame whose header was read last
+  virtual std::optional<std::string> readAtoms(RawFrame& raw)=0;
   virtual std::optional<std::string> rewind() {
     return "rewind not (yet) implemented for this kind of trajectory file";
   }
-
 };
+
 namespace {
 
-#define READATOMS  \
-  std::optional<std::string> readAtoms(int stride,bool dont_read_pbc, \
-    bool debug_pd,int pd_start,int pd_nlocal,long long int &step, \
-    double* masses,double* charges,double* coordinates,double* cell ) override { \
-    return readAtoms_t<double>(stride,dont_read_pbc,debug_pd,pd_start,pd_nlocal, \
-        step,masses,charges,coordinates,cell ); \
-  } \
- \
-  std::optional<std::string> readAtoms(int stride,bool dont_read_pbc, \
-    bool debug_pd,int pd_start,int pd_nlocal,long long int &step, \
-    float* masses,float* charges,float* coordinates,float* cell ) override { \
-    return readAtoms_t<float>(stride,dont_read_pbc,debug_pd,pd_start,pd_nlocal, \
-        step,masses,charges,coordinates,cell ); \
-  }
 struct file_deleter {
   void operator()(FILE* fp) {
     std::fclose(fp);
@@ -155,75 +138,18 @@ struct file_deleter {
 };
 
 using safeFile=std::unique_ptr<std::FILE, file_deleter>;
-class xyzParser final :public fileParser  {
+
+/// The common part of the parsers of text files, which can also be read from standard input
+class textParser : public fileParser {
+protected:
   // not owning pointer for "-"mode
   std::FILE* fp{nullptr};
   // owning pointer otherwise
   safeFile fp_owned{nullptr,{}};
-
-  template <typename real>
-  std::optional<std::string> readAtoms_t(int stride,
-                                         bool dont_read_pbc,
-                                         bool debug_pd,
-                                         int pd_start,
-                                         int pd_nlocal,
-                                         long long int &step,
-                                         real* masses,
-                                         real* charges,
-                                         real* coordinates,
-                                         real* cell )  {
-    std::string line;
-    //cell
-    if(!Tools::getline(fp,line)) {
-      return "premature end of trajectory file";
-    }
-    std::vector<double> celld(9,0.0);
-    if(!dont_read_pbc) {
-      std::vector<std::string> words=Tools::getWords(line);
-      if(words.size()==3) {
-        Tools::convert(words[0],celld[0]);
-        Tools::convert(words[1],celld[4]);
-        Tools::convert(words[2],celld[8]);
-      } else if(words.size()==9) {
-        Tools::convert(words[0],celld[0]);
-        Tools::convert(words[1],celld[1]);
-        Tools::convert(words[2],celld[2]);
-        Tools::convert(words[3],celld[3]);
-        Tools::convert(words[4],celld[4]);
-        Tools::convert(words[5],celld[5]);
-        Tools::convert(words[6],celld[6]);
-        Tools::convert(words[7],celld[7]);
-        Tools::convert(words[8],celld[8]);
-      } else {
-        return "needed box in second line of xyz file";
-      }
-
-    }
-    std::copy(celld.begin(),celld.end(),cell);
-    //atoms, finally
-    for(int i=0; i<natoms; i++) {
-      double cc[3];
-      if(!Tools::getline(fp,line)) {
-        return "premature end of trajectory file";
-      }
-      char dummy[1000];
-      int ret=std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",
-                          dummy,&cc[0],&cc[1],&cc[2]);
-      if(ret!=4) {
-        return "cannot read line"+line;
-      }
-      if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ) {
-        coordinates[3*i]=real(cc[0]);
-        coordinates[3*i+1]=real(cc[1]);
-        coordinates[3*i+2]=real(cc[2]);
-      }
-    }
-    return std::nullopt;
-  }
 public:
-  std::optional<std::string> init(std::string_view fmt,
+  std::optional<std::string> init(std::string_view /*fmt*/,
                                   std::string_view fname,
-                                  int command_line_natoms=-1) override {
+                                  int /*command_line_natoms*/=-1) override {
     std::string trajectoryFile=std::string(fname);
     fp_owned.reset(std::fopen(trajectoryFile.c_str(),"r"));
     fp = fp_owned.get();
@@ -236,29 +162,6 @@ public:
     fp = fileHandle;
     return std::nullopt;
   }
-  std::optional<std::string> readHeader(
-    long long int &/*step*/,
-    double &/*timeStep*/
-  ) override {
-    std::string line;
-    if(!Tools::getline(fp,line)) {
-      return "EOF";
-    }
-    std::sscanf(line.c_str(),"%100d",&natoms);
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader(
-    long long int &step,
-    float &/*timeStep*/
-  ) override {
-    double ts;
-    //ignore this -Wmaybe-uninitialized
-    auto msg=readHeader(step,ts);
-    return msg;
-  }
-  //see the template readAtoms_t for the implementation
-  READATOMS;
   std::optional<std::string> rewind() override {
     int error = std::fseek(fp,0,SEEK_SET);
     if (error) {
@@ -268,47 +171,138 @@ public:
   }
 };
 
-class dlp4Parser final:public fileParser {
-  // not owning pointer for "-"mode
-  std::FILE* fp{nullptr};
-  // owning pointer otherwise
-  safeFile fp_owned{nullptr,{}};
-  int lvl{0};
-  template <typename real>
-  std::optional<std::string> readAtoms_t(int stride,
-                                         bool dont_read_pbc,
-                                         bool debug_pd,
-                                         int pd_start,
-                                         int pd_nlocal,
-                                         long long int &step,
-                                         real* masses,
-                                         real* charges,
-                                         real* coordinates,
-                                         real* cell ) {
+class xyzParser final : public textParser {
+public:
+  std::optional<std::string> readHeader(RawFrame& /*raw*/) override {
     std::string line;
+    if(!Tools::getline(fp,line)) {
+      return "EOF";
+    }
+    std::sscanf(line.c_str(),"%100d",&natoms);
+    if(natoms<0) {
+      return "cannot read the number of atoms of the xyz file from the line "+line;
+    }
+    return std::nullopt;
+  }
 
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
+    std::string line;
     //cell
-    std::vector<double> celld(9,0.0);
-    if(!dont_read_pbc) {
+    if(!Tools::getline(fp,line)) {
+      return "premature end of trajectory file";
+    }
+    if(raw.readBox) {
+      std::vector<std::string> words=Tools::getWords(line);
+      if(words.size()==3) {
+        Tools::convert(words[0],raw.box[0]);
+        Tools::convert(words[1],raw.box[4]);
+        Tools::convert(words[2],raw.box[8]);
+      } else if(words.size()==9) {
+        for(unsigned i=0; i<9; i++) {
+          Tools::convert(words[i],raw.box[i]);
+        }
+      } else {
+        return "needed box in second line of xyz file";
+      }
+    }
+    //atoms, finally
+    for(int i=0; i<natoms; i++) {
+      if(!Tools::getline(fp,line)) {
+        return "premature end of trajectory file";
+      }
+      char dummy[1000];
+      double* cc=&raw.positions[3*i];
+      int ret=std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",
+                          dummy,&cc[0],&cc[1],&cc[2]);
+      if(ret!=4) {
+        return "cannot read line"+line;
+      }
+    }
+    return std::nullopt;
+  }
+};
+
+class dlp4Parser final : public textParser {
+  int lvl{0};
+  std::optional<std::string> readFileHeader() {
+    // dlp4 header
+    std::string line;
+    if(!Tools::getline(fp,line)) {
+      return "error reading title";
+    }
+    if(!Tools::getline(fp,line)) {
+      return "error reading atoms";
+    }
+    // in the original driver this pb is only read here, and then not used anymore
+    int pb=1;
+    std::sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
+    return std::nullopt;
+  }
+public:
+  std::optional<std::string> init(std::string_view fmt,
+                                  std::string_view fname,
+                                  int command_line_natoms=-1) override {
+    auto error=textParser::init(fmt,fname,command_line_natoms);
+    if(error) {
+      return error;
+    }
+    return readFileHeader();
+  }
+  std::optional<std::string> init(FILE* fileHandle) override {
+    // the header of the file was not read when reading from standard input
+    textParser::init(fileHandle);
+    return readFileHeader();
+  }
+  std::optional<std::string> rewind() override {
+    // the header of the file is not a frame
+    auto error=textParser::rewind();
+    if(error) {
+      return error;
+    }
+    return readFileHeader();
+  }
+
+  std::optional<std::string> readHeader(RawFrame& raw) override {
+    std::string line;
+    if(!Tools::getline(fp,line)) {
+      return "EOF";
+    }
+    char xa[9];
+    int xb,xc,xd;
+    long long step;
+    double t;
+    auto res = std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
+    if (res!=6) {
+      return "error reading header";
+    }
+    raw.step=step;
+    raw.timestep=t;
+    return std::nullopt;
+  }
+
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
+    std::string line;
+    //cell
+    if(raw.readBox) {
       if(!Tools::getline(fp,line)) {
         return "error reading vector a of cell";
       }
-      std::sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[1],&celld[2]);
+      std::sscanf(line.c_str(),"%lf %lf %lf",&raw.box[0],&raw.box[1],&raw.box[2]);
       if(!Tools::getline(fp,line)) {
         return "error reading vector b of cell";
       }
-      std::sscanf(line.c_str(),"%lf %lf %lf",&celld[3],&celld[4],&celld[5]);
+      std::sscanf(line.c_str(),"%lf %lf %lf",&raw.box[3],&raw.box[4],&raw.box[5]);
       if(!Tools::getline(fp,line)) {
         return "error reading vector c of cell";
       }
-      std::sscanf(line.c_str(),"%lf %lf %lf",&celld[6],&celld[7],&celld[8]);
-      std::transform(celld.begin(),celld.end(),celld.begin(),
-      [](double x) {
+      std::sscanf(line.c_str(),"%lf %lf %lf",&raw.box[6],&raw.box[7],&raw.box[8]);
+      for(auto & b : raw.box) {
         //converting to nm
-        return x/10.0;
-      });
-      std::copy(celld.begin(),celld.end(),cell);
+        b/=10.0;
+      }
     }
+    raw.masses.resize(natoms);
+    raw.charges.resize(natoms);
     // reading the frame
     for(int i=0; i<natoms; i++) {
       double cc[3];
@@ -324,15 +318,15 @@ class dlp4Parser final:public fileParser {
       if (res != 4) {
         return "cannot read line"+line;
       }
-      masses[i]=real(m);
-      charges[i]=real(c);
+      raw.masses[i]=m;
+      raw.charges[i]=c;
       if(!Tools::getline(fp,line)) {
         return "error reading coordinates";
       }
       std::sscanf(line.c_str(),"%lf %lf %lf",&cc[0],&cc[1],&cc[2]);
-      cc[0]*=0.1;
-      cc[1]*=0.1;
-      cc[2]*=0.1;
+      raw.positions[3*i]=cc[0]*0.1;
+      raw.positions[3*i+1]=cc[1]*0.1;
+      raw.positions[3*i+2]=cc[2]*0.1;
       if(lvl>0) {
         if(!Tools::getline(fp,line)) {
           return "error skipping velocities";
@@ -343,106 +337,35 @@ class dlp4Parser final:public fileParser {
           return "error skipping forces";
         }
       }
-      if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ) {
-        coordinates[3*i]=real(cc[0]);
-        coordinates[3*i+1]=real(cc[1]);
-        coordinates[3*i+2]=real(cc[2]);
-      }
-    }
-
-    return std::nullopt;
-  }
-
-public:
-  std::optional<std::string> init(std::string_view fmt,
-                                  std::string_view fname,
-                                  int command_line_natoms=-1) override {
-    std::string trajectoryFile=std::string(fname);
-    fp_owned.reset(std::fopen(trajectoryFile.c_str(),"r"));
-    fp = fp_owned.get();
-    if(!fp) {
-      return "ERROR: Error opening trajectory file "+trajectoryFile;
-    }
-    // dlp4 header
-    std::string line;
-    if(!Tools::getline(fp,line)) {
-      return "error reading title";
-    }
-    if(!Tools::getline(fp,line)) {
-      return "error reading atoms";
-    }
-    // in the original driver this pb is only read here, and then not used anymore
-    int pb=1;
-    std::sscanf(line.c_str(),"%d %d %d",&lvl,&pb,&natoms);
-    return std::nullopt;
-  }
-  std::optional<std::string> init(FILE* fileHandle) override {
-    fp = fileHandle;
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader (
-    long long int &step,
-    double &timeStep
-  ) override {
-    std::string line;
-    if(!Tools::getline(fp,line)) {
-      return "EOF";
-    }
-    char xa[9];
-    int xb,xc,xd;
-    double t;
-    auto res = std::sscanf(line.c_str(),"%8s %lld %d %d %d %lf",xa,&step,&xb,&xc,&xd,&t);
-    if (res!=6) {
-      return "error reading header";
-    }
-    timeStep=t;
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader(
-    long long int &step,
-    float &timeStep
-  ) override {
-    double ts=timeStep;
-    auto msg=readHeader(step,ts);
-    timeStep = float(ts);
-    return msg;
-  }
-  //see the template readAtoms_t for the implementation
-  READATOMS;
-  std::optional<std::string> rewind() override {
-    int error = std::fseek(fp,0,SEEK_SET);
-    if (error) {
-      return "ERROR: Error rewinding trajectory file";
     }
     return std::nullopt;
   }
 };
 
-class groParser final:public fileParser {
-  // not owning pointer for "-"mode
-  std::FILE* fp{nullptr};
-  // owning pointer otherwise
-  safeFile fp_owned{nullptr,{}};
-  template <typename real>
-  std::optional<std::string> readAtoms_t(int stride,
-                                         bool dont_read_pbc,
-                                         bool debug_pd,
-                                         int pd_start,
-                                         int pd_nlocal,
-                                         long long int &step,
-                                         real* masses,
-                                         real* charges,
-                                         real* coordinates,
-                                         real* cell ) {
+class groParser final : public textParser {
+public:
+  std::optional<std::string> readHeader(RawFrame& /*raw*/) override {
+    std::string line;
+    if(!Tools::getline(fp,line)) {
+      return "EOF";
+    }
+    if(!Tools::getline(fp,line)) {
+      return "premature end of trajectory file";
+    }
+    std::sscanf(line.c_str(),"%100d",&natoms);
+    if(natoms<0) {
+      return "cannot read the number of atoms of the gro file from the line "+line;
+    }
+    return std::nullopt;
+  }
+
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
     std::string line;
     int ddist=0;
     for(int i=0; i<natoms; i++) {
       if(!Tools::getline(fp,line)) {
         return "premature end of trajectory file";
       }
-      double cc[3];
       // do the gromacs way
       if(!i) {
         //
@@ -466,15 +389,9 @@ class groParser final:public fileParser {
           return "not uniform spacing in fields in the gro file";
         }
       }
-      Tools::convert(line.substr(20,ddist),cc[0]);
-      Tools::convert(line.substr(20+ddist,ddist),cc[1]);
-      Tools::convert(line.substr(20+ddist+ddist,ddist),cc[2]);
-      if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ) {
-        coordinates[3*i]=real(cc[0]);
-        coordinates[3*i+1]=real(cc[1]);
-        coordinates[3*i+2]=real(cc[2]);
-      }
-
+      Tools::convert(line.substr(20,ddist),raw.positions[3*i]);
+      Tools::convert(line.substr(20+ddist,ddist),raw.positions[3*i+1]);
+      Tools::convert(line.substr(20+ddist+ddist,ddist),raw.positions[3*i+2]);
     }
     if(!Tools::getline(fp,line)) {
       return "premature end of trajectory file";
@@ -483,82 +400,14 @@ class groParser final:public fileParser {
     if(words.size()<3) {
       return "cannot understand box format";
     }
-    Tools::convert(words[0],cell[0]);
-    Tools::convert(words[1],cell[4]);
-    Tools::convert(words[2],cell[8]);
-    if(words.size()>3) {
-      Tools::convert(words[3],cell[1]);
-    }
-    if(words.size()>4) {
-      Tools::convert(words[4],cell[2]);
-    }
-    if(words.size()>5) {
-      Tools::convert(words[5],cell[3]);
-    }
-    if(words.size()>6) {
-      Tools::convert(words[6],cell[5]);
-    }
-    if(words.size()>7) {
-      Tools::convert(words[7],cell[6]);
-    }
-    if(words.size()>8) {
-      Tools::convert(words[8],cell[7]);
-    }
-    return std::nullopt;
-  }
-
-public:
-  std::optional<std::string> init(std::string_view fmt,
-                                  std::string_view fname,
-                                  int command_line_natoms=-1) override {
-    std::string trajectoryFile=std::string(fname);
-    fp_owned.reset(std::fopen(trajectoryFile.c_str(),"r"));
-    fp = fp_owned.get();
-    if(!fp) {
-      return "ERROR: Error opening trajectory file "+trajectoryFile;
-    }
-    return std::nullopt;
-  }
-  std::optional<std::string> init(FILE* fileHandle) override {
-    fp = fileHandle;
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader (
-    long long int &/**/,
-    double &/**/
-  ) override {
-    std::string line;
-    if(!Tools::getline(fp,line)) {
-      return "EOF";
-    }
-    if(!Tools::getline(fp,line)) {
-      return "premature end of trajectory file";
-    }
-    std::sscanf(line.c_str(),"%100d",&natoms);
-
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader(
-    long long int &step,
-    float &/**/
-  ) override {
-    double ts;
-    auto msg=readHeader(step,ts);
-    return msg;
-  }
-  //see the template readAtoms_t for the implementation
-  READATOMS;
-  std::optional<std::string> rewind() override {
-    int error = std::fseek(fp,0,SEEK_SET);
-    if (error) {
-      return "ERROR: Error rewinding trajectory file";
+    // the order of the gro file: v1(x) v2(y) v3(z) v1(y) v1(z) v2(x) v2(z) v3(x) v3(y)
+    const unsigned order[9]= {0,4,8,1,2,3,5,6,7};
+    for(unsigned i=0; i<words.size() && i<9; i++) {
+      Tools::convert(words[i],raw.box[order[i]]);
     }
     return std::nullopt;
   }
 };
-
 
 struct xd_deleter {
   void operator()(PLMD::xdrfile::XDRFILE* xd) {
@@ -571,24 +420,45 @@ template <xdType is>
 class xdParser final: public fileParser {
   // owning pointer
   std::unique_ptr<PLMD::xdrfile::XDRFILE, xd_deleter> xd{nullptr,{}};
-
-  template <typename real>
-  std::optional<std::string> readAtoms_t(int stride,
-                                         bool dont_read_pbc,
-                                         bool debug_pd,
-                                         int pd_start,
-                                         int pd_nlocal,
-                                         long long int &step,
-                                         real* masses,
-                                         real* charges,
-                                         real* coordinates,
-                                         real* cell ) {
+  std::string trajectoryFile;
+  // the positions of the last frame, sized at init
+  // (a std::vector<rvec> does not compile, hence std::unique_ptr<rvec[]>)
+  std::unique_ptr<xdrfile::rvec[]> pos;
+  static constexpr const char* name = (is == xdType::xtc) ? "xtc" : "trr";
+  std::string errorMessage(int ret) const {
+    std::string msg = (ret>=0 && ret<xdrfile::exdrNR) ? xdrfile::exdr_message[ret] : "unknown error";
+    return "cannot read a frame of the "+std::string(name)+" file "+trajectoryFile+" (xdrfile: "+msg+")";
+  }
+public:
+  std::optional<std::string> init(std::string_view /*fmt*/,
+                                  std::string_view fname,
+                                  int /*command_line_natoms*/=-1) override {
+    trajectoryFile=std::string(fname);
+    xd.reset(xdrfile::xdrfile_open(trajectoryFile.c_str(),"r"));
+    if(!xd) {
+      return "ERROR: Error opening trajectory file "+trajectoryFile;
+    }
+    int ret=xdrfile::exdrOK;
+    if constexpr(is == xdType::xtc) {
+      ret=xdrfile::read_xtc_natoms(&trajectoryFile[0],&natoms);
+    }
+    if constexpr(is == xdType::trr) {
+      ret=xdrfile::read_trr_natoms(&trajectoryFile[0],&natoms);
+    }
+    if(ret!=xdrfile::exdrOK || natoms<=0) {
+      return "cannot read the number of atoms of the "+std::string(name)+" file "+trajectoryFile;
+    }
+    pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
+    return std::nullopt;
+  }
+  std::optional<std::string> readHeader(RawFrame& /*raw*/) override {
+    // the header is read by readAtoms, together with the coordinates
+    return std::nullopt;
+  }
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
     int localstep;
     float time;
     xdrfile::matrix box;
-    // here we cannot use a std::vector<rvec> since it does not compile.
-    // we thus use a std::unique_ptr<rvec[]>
-    auto pos=Tools::make_unique<xdrfile::rvec[]>(natoms);
     int ret=xdrfile::exdrOK;
     if constexpr(is == xdType::xtc) {
       float prec;
@@ -598,72 +468,31 @@ class xdParser final: public fileParser {
       float lambda;
       ret=xdrfile::read_trr(xd.get(),natoms,&localstep,&time,&lambda,box,pos.get(),NULL,NULL);
     }
-    if(stride==0) {
-      step=localstep;
-    }
     if(ret==xdrfile::exdrENDOFFILE) {
       return "EOF";
     }
     if(ret!=xdrfile::exdrOK) {
-      return "EOF";
+      return errorMessage(ret);
     }
+    raw.step=localstep;
+    raw.time=time;
     for(unsigned i=0; i<3; i++) {
       for(unsigned j=0; j<3; j++) {
-        cell[3*i+j]=box[i][j];
+        raw.box[3*i+j]=box[i][j];
       }
     }
-    //xdrfiles are not used with dd ?
     for(int i=0; i<natoms; i++) {
       for(unsigned j=0; j<3; j++) {
-        coordinates[3*i+j]=real(pos[i][j]);
+        raw.positions[3*i+j]=pos[i][j];
       }
     }
     return std::nullopt;
   }
-
-public:
-  std::optional<std::string> init(std::string_view fmt,
-                                  std::string_view fname,
-                                  int command_line_natoms=-1) override {
-    using trajfmt=TrajectoryParser::trajfmt;
-    std::string trajectoryFile=std::string(fname);
-    auto trajectory_fmt =TrajectoryParser::FMTfromString(fmt);
-    xd.reset(xdrfile::xdrfile_open(trajectoryFile.c_str(),"r"));
-    if(!xd) {
-      return "ERROR: Error opening trajectory file "+trajectoryFile;
-    }
-    if constexpr(is == xdType::xtc) {
-      plumed_assert(trajectory_fmt==trajfmt::xdr_xtc) << "trajectory type should be xtc";
-      xdrfile::read_xtc_natoms(&trajectoryFile[0],&natoms);
-    }
-    if constexpr(is == xdType::trr) {
-      plumed_assert(trajectory_fmt==trajfmt::xdr_trr) << "trajectory type should be trr";
-      xdrfile::read_trr_natoms(&trajectoryFile[0],&natoms);
-    }
-    return std::nullopt;
-  }
-
-  std::optional<std::string> init(FILE* /*fileHandle*/) override {
-    plumed_assert(false) << "xd readers are not compatible with reading from stdin";
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader (long long int &/*step*/,double &/*timeStep*/) override {
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader(long long int &/*step*/,float &/*timeStep*/) override {
-    return std::nullopt;
-  }
-  //see the template readAtoms_t for the implementation
-  READATOMS;
 };
 
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
 class molfileParser final:  public fileParser {
-
   molfile::molfile_plugin_t *api=NULL;
-
   molfile_timestep_t ts_in;
   std::string trajectoryFile;
   std::string trajectory_fmt_str;
@@ -682,63 +511,6 @@ class molfileParser final:  public fileParser {
     }
   };
   std::unique_ptr<void, molfile_deleter> h_in{nullptr,{nullptr}};
-
-
-  template <typename real>
-  std::optional<std::string> readAtoms_t(int stride,
-                                         bool dont_read_pbc,
-                                         bool debug_pd,
-                                         int pd_start,
-                                         int pd_nlocal,
-                                         long long int &step,
-                                         real* masses,
-                                         real* charges,
-                                         real* coordinates,
-                                         real* cell ) {
-    if(!dont_read_pbc) {
-      //ts_in has been read in the previous step
-      if(ts_in.A>0.0) { // this is negative if molfile does not provide box
-        // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
-        constexpr real r180=real(180.);
-        real cosBC=cos(real(ts_in.alpha)*pi/r180);
-        real cosAC=std::cos(real(ts_in.beta)*pi/r180);
-        real cosAB=std::cos(real(ts_in.gamma)*pi/r180);
-        real sinAB=std::sin(real(ts_in.gamma)*pi/r180);
-        real Ax=real(ts_in.A);
-        real Bx=real(ts_in.B)*cosAB;
-        real By=real(ts_in.B)*sinAB;
-        real Cx=real(ts_in.C)*cosAC;
-        real Cy=(real(ts_in.C)*real(ts_in.B)*cosBC-Cx*Bx)/By;
-        real Cz=std::sqrt(real(ts_in.C)*real(ts_in.C)-Cx*Cx-Cy*Cy);
-        cell[0]=Ax/10.;
-        cell[1]=0.;
-        cell[2]=0.;
-        cell[3]=Bx/10.;
-        cell[4]=By/10.;
-        cell[5]=0.;
-        cell[6]=Cx/10.;
-        cell[7]=Cy/10.;
-        cell[8]=Cz/10.;
-      } else {
-        cell[0]=0.0;
-        cell[1]=0.0;
-        cell[2]=0.0;
-        cell[3]=0.0;
-        cell[4]=0.0;
-        cell[5]=0.0;
-        cell[6]=0.0;
-        cell[7]=0.0;
-        cell[8]=0.0;
-      }
-    }
-    // info on coords
-    // the order is xyzxyz...
-    for(int i=0; i<3*natoms; i++) {
-      coordinates[i]=real(ts_in.coords[i])/real(10.); //convert to nm
-      //cerr<<"COOR "<<coordinates[i]<<endl;
-    }
-    return std::nullopt;
-  }
 
 public:
   molfileParser() {
@@ -784,16 +556,11 @@ public:
     }
     ts_in_coords.resize(3*natoms);
     ts_in.coords = ts_in_coords.data();
-
     return std::nullopt;
   }
 
-  std::optional<std::string> init(FILE* /*fileHandle*/) override {
-    plumed_assert(false) << "molfile readers are not compatible with reading from stdin";
-    return std::nullopt;
-  }
-
-  std::optional<std::string> readHeader (long long int &/*step*/,double &/*timeStep*/) override {
+  std::optional<std::string> readHeader(RawFrame& /*raw*/) override {
+    // the whole frame is read here; readAtoms converts it
     std::unique_ptr<std::lock_guard<std::mutex>> lck;
     if(api->is_reentrant==VMDPLUGIN_THREADUNSAFE) {
       lck=Tools::molfile_lock();
@@ -809,22 +576,49 @@ public:
     return std::nullopt;
   }
 
-  std::optional<std::string> readHeader(long long int &/*step*/,float &/*timeStep*/) override {
+  std::optional<std::string> readAtoms(RawFrame& raw) override {
+    if(raw.readBox) {
+      //ts_in has been read in the previous step
+      if(ts_in.A>0.0) { // this is negative if molfile does not provide box
+        // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
+        constexpr double r180=180.;
+        double cosBC=cos(double(ts_in.alpha)*pi/r180);
+        double cosAC=std::cos(double(ts_in.beta)*pi/r180);
+        double cosAB=std::cos(double(ts_in.gamma)*pi/r180);
+        double sinAB=std::sin(double(ts_in.gamma)*pi/r180);
+        double Ax=double(ts_in.A);
+        double Bx=double(ts_in.B)*cosAB;
+        double By=double(ts_in.B)*sinAB;
+        double Cx=double(ts_in.C)*cosAC;
+        double Cy=(double(ts_in.C)*double(ts_in.B)*cosBC-Cx*Bx)/By;
+        double Cz=std::sqrt(double(ts_in.C)*double(ts_in.C)-Cx*Cx-Cy*Cy);
+        raw.box[0]=Ax/10.;
+        raw.box[1]=0.;
+        raw.box[2]=0.;
+        raw.box[3]=Bx/10.;
+        raw.box[4]=By/10.;
+        raw.box[5]=0.;
+        raw.box[6]=Cx/10.;
+        raw.box[7]=Cy/10.;
+        raw.box[8]=Cz/10.;
+      }
+    }
+    // info on coords
+    // the order is xyzxyz...
+    for(int i=0; i<3*natoms; i++) {
+      raw.positions[i]=double(ts_in.coords[i])/double(10.); //convert to nm
+    }
     return std::nullopt;
   }
-//see the template readAtoms_t for the implementation
-  READATOMS;
 };
 #endif
-
-#undef READATOMS
 
 std::unique_ptr<fileParser> parserFromFMT(TrajectoryParser::trajfmt fmt) {
   using trajfmt = TrajectoryParser::trajfmt;
   switch (fmt) {
   case trajfmt::molfile: {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    return std::make_unique<molfileParser>(molfileParser {});
+    return std::make_unique<molfileParser>();
 #else
     plumed_assert(false) <<"Plumed has not been compiled with molfile,\n"
                          "it is impossible to read a file with the molfile plugin";
@@ -869,7 +663,9 @@ void TrajectoryParser::registerKeywords(Keywords& keys) {
 #endif
 }
 
-TrajectoryParser::TrajectoryParser()=default;
+TrajectoryParser::TrajectoryParser():
+  raw(std::make_unique<RawFrame>()) {
+}
 TrajectoryParser::~TrajectoryParser()=default;
 std::vector<std::string> TrajectoryParser::getMolfilePluginsnames() {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
@@ -954,142 +750,74 @@ std::optional<std::string> TrajectoryParser::init(std::string_view fmt,
   return parser->init(fmt,fname,command_line_natoms);
 }
 
-std::optional<std::string> TrajectoryParser::readHeader(
-  long long int &step,
-  double &timeStep
-) {
-  return  parser->readHeader(step,timeStep);
+template <typename real>
+std::optional<std::string> TrajectoryParser::readHeader(TrajectoryFrame<real>& frame) {
+  raw->step.reset();
+  raw->timestep.reset();
+  auto error=parser->readHeader(*raw);
+  if(error) {
+    return error;
+  }
+  if(raw->step) {
+    frame.step=*raw->step;
+  }
+  frame.timestep=raw->timestep;
+  return std::nullopt;
 }
 
-std::optional<std::string> TrajectoryParser::readAtoms(
-  int stride,
-  bool dont_read_pbc,
-  bool debug_pd,
-  int pd_start,
-  int pd_nlocal,
-  long long int &step,
-  double* masses,
-  double* charges,
-  double* coordinates,
-  double* cell
-) {
-  return parser->readAtoms(
-           stride,
-           dont_read_pbc,
-           debug_pd,
-           pd_start,
-           pd_nlocal,
-           step,
-           masses,
-           charges,
-           coordinates,
-           cell
-         );
+template <typename real>
+std::optional<std::string> TrajectoryParser::readAtoms(TrajectoryFrame<real>& frame) {
+  const int natoms=parser->nOfAtoms();
+  raw->readBox=frame.readBox;
+  raw->step.reset();
+  raw->time.reset();
+  raw->positions.resize(3*natoms);
+  raw->box.fill(0.0);
+  raw->masses.clear();
+  raw->charges.clear();
+  auto error=parser->readAtoms(*raw);
+  if(error) {
+    return error;
+  }
+  if(raw->step && frame.stride==0) {
+    frame.step=*raw->step;
+  }
+  frame.time=raw->time;
+  const int first=(frame.count<0) ? 0 : std::max(frame.first,0);
+  const int last=(frame.count<0) ? natoms : std::min(natoms,frame.first+frame.count);
+  for(int i=3*first; i<3*last; i++) {
+    frame.positions[i]=real(raw->positions[i]);
+  }
+  if(frame.box) {
+    for(unsigned i=0; i<9; i++) {
+      frame.box[i]=real(raw->box[i]);
+    }
+  }
+  frame.hasMassesAndCharges=!raw->masses.empty();
+  if(frame.hasMassesAndCharges) {
+    for(int i=0; i<natoms; i++) {
+      frame.masses[i]=real(raw->masses[i]);
+      frame.charges[i]=real(raw->charges[i]);
+    }
+  }
+  return std::nullopt;
 }
 
-std::optional<std::string> TrajectoryParser::readFrame(
-  int stride,
-  bool dont_read_pbc,
-  bool debug_pd,
-  int pd_start,
-  int pd_nlocal,
-  long long int &step,
-  double &timeStep,
-  double * masses,
-  double * charges,
-  double * coordinates,
-  double * cell
-) {
-  auto error = readHeader(step,timeStep);
+template <typename real>
+std::optional<std::string> TrajectoryParser::readFrame(TrajectoryFrame<real>& frame) {
+  auto error = readHeader(frame);
   if (error) {
     return error;
   }
-  ////////////////////////////////////////////////////////////////////////////
-  // here the first step settings
-  ////////////////////////////////////////////////////////////////////////////
-  //now the actual reading of the trajectory
-  return readAtoms(
-           stride,
-           dont_read_pbc,
-           debug_pd,
-           pd_start,
-           pd_nlocal,
-           step,
-           masses,
-           charges,
-           coordinates,
-           cell
-         );
-
+  return readAtoms(frame);
 }
 
-
-std::optional<std::string> TrajectoryParser::readFrame(
-  int stride,
-  bool dont_read_pbc,
-  bool debug_pd,
-  int pd_start,
-  int pd_nlocal,
-  long long int &step,
-  float &timeStep,
-  float * masses,
-  float * charges,
-  float * coordinates,
-  float * cell
-) {
-  auto error = readHeader(step,timeStep);
-  if (error) {
-    return error;
-  }
-  ////////////////////////////////////////////////////////////////////////////
-  // here the first step settings
-  ////////////////////////////////////////////////////////////////////////////
-  //now the actual reading of the trajectory
-  return readAtoms(
-           stride,
-           dont_read_pbc,
-           debug_pd,
-           pd_start,
-           pd_nlocal,
-           step,
-           masses,
-           charges,
-           coordinates,
-           cell
-         );
-}
-
-std::optional<std::string> TrajectoryParser::readHeader(
-  long long int &step,
-  float &timeStep
-) {
-  return parser->readHeader(step,timeStep);
-}
-
-std::optional<std::string> TrajectoryParser::readAtoms(
-  int stride,
-  bool dont_read_pbc,
-  bool debug_pd,
-  int pd_start,
-  int pd_nlocal,
-  long long int &step,
-  float* masses,
-  float* charges,
-  float* coordinates,
-  float* cell
-) {
-  return parser->readAtoms(stride,
-                           dont_read_pbc,
-                           debug_pd,
-                           pd_start,
-                           pd_nlocal,
-                           step,
-                           masses,
-                           charges,
-                           coordinates,
-                           cell);
-}
-
+template std::optional<std::string> TrajectoryParser::readHeader<double>(TrajectoryFrame<double>&);
+template std::optional<std::string> TrajectoryParser::readHeader<float>(TrajectoryFrame<float>&);
+template std::optional<std::string> TrajectoryParser::readAtoms<double>(TrajectoryFrame<double>&);
+template std::optional<std::string> TrajectoryParser::readAtoms<float>(TrajectoryFrame<float>&);
+template std::optional<std::string> TrajectoryParser::readFrame<double>(TrajectoryFrame<double>&);
+template std::optional<std::string> TrajectoryParser::readFrame<float>(TrajectoryFrame<float>&);
 
 //some getters
 int TrajectoryParser::nOfAtoms() const {

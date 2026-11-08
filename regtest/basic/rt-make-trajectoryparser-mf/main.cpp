@@ -113,9 +113,8 @@ std::optional<std::string> reader_molfile(const std::string& type, const std::st
   of.open(type+".xyz");
 
   std::vector<double> box(9);
-  long long int step;
-  double timeStep;
-  error = parser.readHeader(step, timeStep);
+  TrajectoryFrame<double> frame;
+  error = parser.readHeader(frame);
   if (error) {
     return error;
   }
@@ -125,15 +124,15 @@ std::optional<std::string> reader_molfile(const std::string& type, const std::st
   std::vector<double> coords(natoms*3);
   std::vector<double> masses(natoms);
   std::vector<double> charges(natoms);
-  error = parser.readAtoms(1, false, false, 0, 0, step,
-                           masses.data(), charges.data(),
-                           coords.data(), box.data());
+  frame.positions = coords.data();
+  frame.box = box.data();
+  frame.masses = masses.data();
+  frame.charges = charges.data();
+  error = parser.readAtoms(frame);
   while (!error) {
     //print previous step
     FunctionStolenFromDUMPATOMS(natoms, of, coords, box);
-    error = parser.readFrame(1, false, false, 0, 0, step, timeStep,
-                             masses.data(), charges.data(),
-                             coords.data(), box.data());
+    error = parser.readFrame(frame);
   }
   of.close();
   return std::nullopt;
