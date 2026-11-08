@@ -574,6 +574,31 @@ namespace xdrfile
 								   float *     precision,
 								   XDRFILE *   xfp);
 
+	/*! \brief Decompress coordinates, with the size of the data as a 64 bit integer if long_format is not 0
+	 *
+	 *  PLUMED: XTC files with magic number 2023 (GROMACS 2023 and later, for frames with more
+	 *  than XTC_1995_MAX_NATOMS atoms) store the size of the compressed data as a 64 bit integer.
+	 *  Otherwise the same as xdrfile_decompress_coord_float, which calls this with long_format=0.
+	 *  The number of atoms in the file must be equal to *ncoord.
+	 */
+	int
+	xdrfile_decompress_coord_float_long(float *     ptr,
+										int *	    ncoord,
+										float *     precision,
+										XDRFILE *   xfp,
+										int         long_format);
+
+	/*! \brief Compress coordinates, with the size of the data as a 64 bit integer if long_format is not 0
+	 *
+	 *  PLUMED: see xdrfile_decompress_coord_float_long.
+	 */
+	int
+	xdrfile_compress_coord_float_long(float *     ptr,
+									  int         ncoord,
+									  float       precision,
+									  XDRFILE *   xfp,
+									  int         long_format);
+
 
 
 
