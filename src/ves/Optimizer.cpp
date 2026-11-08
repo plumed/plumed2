@@ -507,7 +507,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
           size_t nread = coeffs_mask_pntrs_[i]->readFromFile(mask_fnames_in[i],true,true);
           log.printf("  mask for coefficient set %u:\n",i);
           log.printf("   read %zu values from file %s\n",nread,mask_fnames_in[i].c_str());
-          size_t ndeactived = coeffs_mask_pntrs_[0]->countValues(0.0);
+          size_t ndeactived = coeffs_mask_pntrs_[i]->countValues(0.0);
           log.printf("   deactived optimization of %zu coefficients\n",ndeactived);
         }
       }

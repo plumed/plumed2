@@ -276,12 +276,12 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
   for(unsigned i=0; i<weights_measure.size(); ++i) {
     n+=weights_measure[i];
   }
-  if(n==0.0 && type!="SIMPLE") {
-    error("PDB file " + reference + " has zero weights for the RMSD. Please check the beta column.");
-  }
-  n=1.0/n;
-  for(unsigned i=0; i<weights_measure.size(); ++i) {
-    weights_measure[i]*=n;
+  // the beta column only enters the value (the RMSD), not the fit: with all zeros the value is zero
+  if(n>0.0) {
+    n=1.0/n;
+    for(unsigned i=0; i<weights_measure.size(); ++i) {
+      weights_measure[i]*=n;
+    }
   }
 
   // subtract the center

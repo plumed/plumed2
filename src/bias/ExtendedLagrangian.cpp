@@ -79,7 +79,7 @@ a Gaussian thermostat.
     of the real variable, and its velocity is set to zero.
     This is not expected to introduce big errors, but certainly is
     introducing a small inconsistency between a single long run
-    and many shorter runs.
+    and many shorter runs. Use [CHECKPOINT](CHECKPOINT.md) for an exact restart.
 
 ## Examples
 

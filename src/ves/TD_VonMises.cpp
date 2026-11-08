@@ -149,7 +149,7 @@ TD_VonMises::TD_VonMises(const ActionOptions& ao):
     sigmas_.push_back(tmp_sigma);
   }
   //
-  plumed_massert(centers_.size()==sigmas_.size(),"there has to be an equal amount of CENTER and SIGMA keywords");
+  plumed_massert(centers_.size()==sigmas_.size(),"there has to be an equal amount of CENTER and SIGMA keywords: found "+std::to_string(centers_.size())+" CENTER and "+std::to_string(sigmas_.size())+" SIGMA (numbered from CENTER1 and SIGMA1)");
   if(centers_.size()==0) {
     plumed_merror(getName()+": CENTER and SIGMA keywords seem to be missing. Note that numbered keywords start at CENTER1 and SIGMA1.");
   }

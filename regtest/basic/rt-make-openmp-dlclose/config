@@ -1,0 +1,8 @@
+type=make
+plumed_link=runtime
+plumed_needs="dlopen"
+plumed_modules="colvar bias"
+export PLUMED_NUM_THREADS=4
+export OMP_NUM_THREADS=4
+export PLUMED_USE_ASMJIT=no
+unset PLUMED_OPENMP_RETAIN_RUNTIME

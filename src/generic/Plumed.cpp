@@ -26,6 +26,7 @@
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
 #include "tools/Communicator.h"
+#include "../mpiwrap/mpiwrap.h"
 #include "core/PlumedMain.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN
@@ -201,6 +202,9 @@ Plumed::Plumed(const ActionOptions&ao):
   std::string dir;
   parse("CHDIR",dir);
   if(dir.length()>0) {
+    if(mpiwrap::is_thread_mpi_active()) {
+      plumed_error() << "CHDIR is not supported while a thread-MPI runtime is active";
+    }
     log<<"  running on separate directory "<<dir<<"\n";
   }
   return dir;
@@ -352,9 +356,10 @@ API([&]() {
 
 void Plumed::prepare() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  int step=getStep();
+  // long, not int: steps above 2^31 overflowed (setStepLong is available in every kernel with API>3)
+  long int step=getStep();
   if(root) {
-    p.cmd("setStep",&step);
+    p.cmd("setStepLong",&step);
   }
   if(root) {
     p.cmd("prepareDependencies");

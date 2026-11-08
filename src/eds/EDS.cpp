@@ -983,7 +983,13 @@ void EDS::calc_covar_step_size() {
 void EDS::calc_ssd_step_size() {
   double tmp;
   for (unsigned int i = 0; i < ncvs_; ++i) {
-    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1, update_calls_ - 1);
+    // with a single sample the variance is not defined: ssds_ is zero up to
+    // rounding, which with LOGWEIGHTS could otherwise give a full-size step
+    if (update_calls_ < 2) {
+      step_size_[i] = 0;
+      continue;
+    }
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / (update_calls_ - 1);
     step_size_[i] = tmp / kbt_ / scale_[i];
   }
 }

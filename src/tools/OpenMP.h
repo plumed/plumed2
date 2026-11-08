@@ -28,6 +28,12 @@ namespace PLMD {
 
 namespace OpenMP {
 
+/// Keep a dynamically linked OpenMP runtime resident when the kernel is unloaded.
+/// Currently needed on Linux, where runtime worker threads can outlive dlclose().
+/// Set PLUMED_OPENMP_RETAIN_RUNTIME=no before constructing any PLUMED instance
+/// to disable retention. Once retained, a runtime cannot be made unloadable again.
+void retainRuntime();
+
 /// Set number of threads that can be used by openMP
 void setNumThreads(const unsigned nt);
 

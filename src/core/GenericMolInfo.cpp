@@ -376,7 +376,7 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
           error("residue " + num + " appears to be a terminal group");
         }
         if( resname=="GLY" ) {
-          warning("GLY residues are achiral - assuming HA1 atom is in CB position");
+          warning("GLY residues are achiral - assuming HA2 atom is in CB position");
         }
         MolDataClass::getBackboneForResidue( mytype, resnum, chain, pdb, atomnumbers );
         if( atomnumbers.size()==0 ) {

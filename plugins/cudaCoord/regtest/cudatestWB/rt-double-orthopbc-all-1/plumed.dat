@@ -23,7 +23,6 @@ diff256: CUSTOM ARG=gpu256,cpu FUNC=y-x PERIODIC=NO
 diff128: CUSTOM ARG=gpu128,cpu FUNC=y-x PERIODIC=NO
 diff64: CUSTOM ARG=gpu64,cpu FUNC=y-x PERIODIC=NO
 
-PRINT ARG=gpu,cpu FILE=colvars FMT=%8.4f STRIDE=1
 PRINT ARG=diff FILE=colvar FMT=%8.4f STRIDE=1
 PRINT ARG=diff512,diff256,diff128,diff64 FILE=threadsDifferences FMT=%8.4f STRIDE=1
 

@@ -210,6 +210,9 @@ struct PlumedInputFilename
     //! The name of plumed input file, empty by default
     std::optional<std::string> plumedFilename_{};
     bool replex_{};
+    //! The input record: after a restart from a checkpoint its init_step is the step from which
+    //! the simulation continues, which PLUMED needs (it is read when the module is set up)
+    const t_inputrec* inputrec_{};
 };
 
 /*! \libinternal \brief Provides the constant ensemble temperature

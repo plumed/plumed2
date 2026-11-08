@@ -9,7 +9,7 @@ the conventions discussed below.
 Whenever the [RESTART](RESTART.md) option is used, all the files written by PLUMED are appended.
 This makes it easy to analyze results of simulations performed as a chain of several sub-runs.
 Notice that most of the PLUMED textual files have a header. The header is repeated at every
-restart. Additionally, several files have time in the first column. PLUMED just takes the value
+restart, unless the file was trimmed (see below) and ends with the same header. Additionally, several files have time in the first column. PLUMED just takes the value
 of the physical time from the MD engine. As such, you could have that time starts again from zero
 upon restart or not.
 
@@ -18,9 +18,19 @@ For example, grids written with [METAD](METAD.md) with `GRID_WFILE` are overwrit
 As such, when restarting, there is no point in appending the file. Internally, PLUMED opens the file in append
 mode but then rewinds it every time a new grid is dumped.
 
+## Trimming the files at the restart step
+
+When the MD engine tells PLUMED the step from which it restarts (the GROMACS patches do it after `mdrun -cpi`),
+PLUMED removes from the files it appends to the lines written at or after that step by the interrupted run,
+so that the files continue exactly where the restarted simulation starts, without steps written twice. The
+removed lines are moved to `bck.trimmed.X.filename`. Only the last lines with a time not earlier than the one
+of the restart step are removed, so the earlier sub-runs whose time restarted from zero are kept. Files
+without a time field are appended as they are. The trimming can be switched off with `RESTART NO_TRIM`, or
+for the files of a single action with the `NO_TRIM` flag. See [RESTART](RESTART.md) for the details.
+
 ## Exact restart with a checkpoint
 
-Appending leaves in the files the lines that the interrupted run wrote after the checkpoint
+Appending (also after trimming) leaves in the files the lines that the interrupted run wrote after the checkpoint
 of the MD engine, so that after the restart the files contain the same steps twice, and
 the actions that keep an internal state (e.g. the hills of [METAD](METAD.md)) are not
 restarted exactly. With the [CHECKPOINT](CHECKPOINT.md) directive PLUMED writes its own

@@ -67,7 +67,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
-compile_options.sh: ../../Makefile.conf
+compile_options.sh: ../../Makefile.conf Makefile
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS)"'" > $@
 # on osx, in order to use two-level namespace, we should back link the Kernel library
@@ -92,6 +92,8 @@ compile_options.sh: ../../Makefile.conf
 	@echo "link_installed='"$(LDSHARED) $(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
 # this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_uninstalled='"$(LDSHARED) $(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT)"'" >> $@
+	@echo "mpi_provider_compile_flags='"$(CFLAGS)"'" >> $@
+	@echo "mpi_provider_link_flags='"$(filter-out $(CXX),$(LDSHARED)) $(LDFLAGS)"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
 .PHONY: clean

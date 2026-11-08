@@ -1,6 +1,7 @@
 type=make
+plumed_mpi_harness=yes
 mpiprocs=3
-extra_files="../rt-Neigbourlist-batch/main.cpp"
+extra_files="../rt-Neigbourlist-batch/main.cpp ../../scripts/mpi-test.h"
 export PLUMED_NUM_THREADS=4
 
 function plumed_regtest_before() {

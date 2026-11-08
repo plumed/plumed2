@@ -3,7 +3,7 @@
 // we notify the Plumed wrapper that those exceptions are recognized by the compiler.
 #define __PLUMED_WRAPPER_LIBCXX11 1
 #endif
-#include "mpi.h"
+#include "mpi-test.h"
 #include "plumed/wrapper/Plumed.h"
 #include <fstream>
 #include <string>
@@ -15,7 +15,8 @@
 // all the processes, also when the same file is reached through a different path,
 // otherwise the processes that did not stop would hang in the next collective operation.
 
-using namespace PLMD;
+namespace PLMD {
+namespace duplicate_files_regtest {
 
 void test_line(std::ostream & ofs,Plumed & p,const std::string & arg,bool shouldFail,const std::string & shown="") {
   ofs<<"readInputLine "<<(shown.empty()?arg:shown)<<std::endl;
@@ -31,10 +32,9 @@ void test_line(std::ostream & ofs,Plumed & p,const std::string & arg,bool should
   }
 }
 
-int main(int argc,char**argv) {
-  MPI_Init(&argc,&argv);
+int runRank(MPI_Comm world,int,char**) {
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(world,&rank);
   std::ofstream ofs("output"+std::to_string(rank));
 
   std::vector<char> cwd(4096);
@@ -44,7 +44,7 @@ int main(int argc,char**argv) {
   const std::string abspath=std::string(cwd.data())+"/COLVAR";
   {
     Plumed plumed;
-    MPI_Comm comm=MPI_COMM_WORLD;
+    MPI_Comm comm=world;
     plumed.cmd("setMPIComm",&comm);
     int natoms=10;
     plumed.cmd("setNatoms",&natoms);
@@ -75,6 +75,12 @@ int main(int argc,char**argv) {
     plumed.cmd("calc");
   }
   ofs<<"done"<<std::endl;
-  MPI_Finalize();
   return 0;
+}
+
+} // namespace duplicate_files_regtest
+} // namespace PLMD
+
+int main(int argc,char** argv) {
+  return PLMD::mpi_test::run(argc,argv,2,PLMD::duplicate_files_regtest::runRank);
 }

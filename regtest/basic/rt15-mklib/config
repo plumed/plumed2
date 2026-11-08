@@ -10,6 +10,15 @@ function plumed_regtest_before(){
   root=$(eval $plumed info --root)
   source "$root"/src/config/compile_options.sh
 
+  # Completion/help queries must work before compile_options.sh is generated.
+  for option in --description --options -h --help; do
+    if ! PLUMED_ROOT=/dev/null "$root/scripts/mklib.sh" "$option" > mklib-query.out 2> mklib-query.err || test -s mklib-query.err; then
+      echo "FAILURE: mklib $option depends on compiler configuration"
+      cat mklib-query.err
+      return 1
+    fi
+  done
+
   # replace soext in the plumed.dat file
   sed "s/__SOEXT__/$soext/g" plumed.dat.template > plumed.dat
 

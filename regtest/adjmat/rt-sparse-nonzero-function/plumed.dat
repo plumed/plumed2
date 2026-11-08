@@ -1,0 +1,13 @@
+# sparse matrix: only the pairs at distance 1 are stored
+cm: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}
+# zero for zero arguments: allowed
+a: CUSTOM ARG=cm FUNC=2*x PERIODIC=NO
+sa: SUM ARG=a PERIODIC=NO
+# not zero for zero arguments, with MASK: computed only for the stored elements
+b: CUSTOM ARG=cm FUNC=1-x PERIODIC=NO MASK=cm
+sb: SUM ARG=b PERIODIC=NO
+# matrix built from one GROUP without cutoff: only the diagonal is not stored, allowed
+cd: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0}
+c: CUSTOM ARG=cd FUNC=1-x PERIODIC=NO
+sc: SUM ARG=c PERIODIC=NO
+PRINT ARG=sa,sb,sc FILE=colvar FMT=%8.4f

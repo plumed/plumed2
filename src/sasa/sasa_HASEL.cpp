@@ -139,6 +139,8 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
+  double kbt;
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
@@ -191,6 +193,7 @@ SASA_HASEL::SASA_HASEL(const ActionOptions&ao):
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
+  kbt=getkBT();
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
     error("no atoms specified");
@@ -624,14 +627,25 @@ void SASA_HASEL::readDeltaG() {
 
 void SASA_HASEL::computeDeltaG() {
 
-  for(unsigned i=0; i<natoms; i++) {
-    DeltaG[i].clear();
-  }
-
+  // Convert simulation thermal energy (kbt) to absolute temperature [K].
+  // All transfer free-energy parameters below are evaluated as functions of T.
   double T;
-  T = getkBT()/getKBoltzmann();
+  T = kbt/getKBoltzmann();
 
-  if (T != Ti) {
+  // Recompute DeltaG tables only when temperature changes.
+  // DeltaG[0..natoms-1] stores per-atom sidechain values according to residue identity,
+  // while DeltaG[natoms] stores the backbone contribution.
+  // Keeping this guard avoids clearing/repopulating these vectors every step at fixed T.
+  // NOTE: this also preserves the intended fix for a previous issue where vectors were
+  // cleared every step but not repopulated, and backbone values were repeatedly appended.
+  if (std::fabs(T - Ti) > 1e-12) {
+    // Reset all cached transfer free energies (including backbone slot at index natoms)
+    // before filling with values for the current temperature.
+    for(unsigned i=0; i<=natoms; i++) {
+      DeltaG[i].clear();
+    }
+    // Populate per-atom transfer free energies using each atom residue type.
+    // The detailed formulas/branches below implement the selected temperature model.
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {

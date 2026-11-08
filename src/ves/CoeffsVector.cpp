@@ -867,6 +867,9 @@ size_t CoeffsVector::readDataFromFile(IFile& ifile, const bool ignore_missing_co
     int idx_tmp;
     for(unsigned int k=0; k<numberOfDimensions(); k++) {
       ifile.scanField(ilabels[k],idx_tmp);
+      // e.g. a file written for more basis functions (it was written out of the data)
+      plumed_massert(idx_tmp>=0 && static_cast<unsigned int>(idx_tmp)<shapeOfIndices(k),
+                     "the index "+ilabels[k]+"="+std::to_string(idx_tmp)+" read from file "+ifile.getPath()+" is out of range: the file does not match the basis functions");
       indices[k] = static_cast<unsigned int>(idx_tmp);
     }
     data[getIndex(indices)] = coeff_tmp;

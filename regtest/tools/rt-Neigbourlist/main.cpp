@@ -11,7 +11,7 @@
 
 //#define USE_MPI
 #ifdef USE_MPI
-#include "mpi.h"
+#include "mpi-test.h"
 #endif //USE_MPI
 
 #define check(arg) (((arg)) ? "pass\n" : "not pass\n")
@@ -43,39 +43,43 @@ void testResult(std::string name,
   }
 }
 
-int main(int argc, char **argv) {
-
-#ifdef USE_MPI
-  MPI_Init(&argc,&argv);
-#endif //USE_MPI
-  {
-    PLMD::Communicator comm;
-#ifdef USE_MPI
-    MPI_Comm c;
-    MPI_Comm_dup(MPI_COMM_WORLD,&c);
-    comm.Set_comm(&c);
-#endif //USE_MPI
-    std::string rank="";
-    if(auto myrank = comm.Get_rank(); myrank!=0) {
-      rank=std::to_string(myrank);
-    }
-    std::ofstream ofs("unitTest"+rank);
-    std::ofstream initfile("initCheck"+rank);
-    testSingleList(false,ofs,initfile,comm);
-    testSingleList(true, ofs,initfile,comm);
-    testDoubleList(false,ofs,initfile,comm);
-    testDoubleList(true, ofs,initfile,comm);
-    testPairList(false,ofs,initfile,comm);
-    testPairList(true, ofs,initfile,comm);
-    // an extra test to check for the NL with no NL
-    std::ofstream ofsnl("testNoNL"+rank);
-    testNoNL(false,ofsnl,initfile,comm);
-    testNoNL(true, ofsnl,initfile,comm);
+namespace PLMD {
+int runTests(Communicator& comm) {
+  std::string rank="";
+  if(auto myrank = comm.Get_rank(); myrank!=0) {
+    rank=std::to_string(myrank);
   }
-#ifdef USE_MPI
-  MPI_Finalize();
-#endif //USE_MPI
+  std::ofstream ofs("unitTest"+rank);
+  std::ofstream initfile("initCheck"+rank);
+  testSingleList(false,ofs,initfile,comm);
+  testSingleList(true, ofs,initfile,comm);
+  testDoubleList(false,ofs,initfile,comm);
+  testDoubleList(true, ofs,initfile,comm);
+  testPairList(false,ofs,initfile,comm);
+  testPairList(true, ofs,initfile,comm);
+  // an extra test to check for the NL with no NL
+  std::ofstream ofsnl("testNoNL"+rank);
+  testNoNL(false,ofsnl,initfile,comm);
+  testNoNL(true, ofsnl,initfile,comm);
+  return 0;
 }
+#ifdef USE_MPI
+int runRank(MPI_Comm c, int, char**) {
+  Communicator comm;
+  comm.Set_comm(&c);
+  return runTests(comm);
+}
+}
+int main(int argc, char **argv) {
+  return PLMD::mpi_test::run(argc,argv,3,PLMD::runRank);
+}
+#else
+}
+int main() {
+  PLMD::Communicator comm;
+  return PLMD::runTests(comm);
+}
+#endif
 
 void testSingleList(const bool do_pbc, std::ostream& ofs, std::ostream& initfile, PLMD::Communicator& cm) {
   using namespace PLMD;

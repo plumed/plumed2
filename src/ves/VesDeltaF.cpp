@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "bias/Bias.h"
+#include "core/Checkpointing.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
@@ -238,6 +239,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     g.release();
     grid_p_.emplace_back(gg);
   }
+  plumed_massert(grid_p_.size()>0,"FILE_F0 is missing: the free energy surfaces of the basins are given with FILE_F0, FILE_F1, ...");
   plumed_massert(grid_p_.size()>1,"at least 2 basins must be defined, starting from FILE_F0");
   alpha_size_=grid_p_.size()-1;
   sym_alpha_size_=alpha_size_*(alpha_size_+1)/2; //useful for symmetric matrix [alpha_size_]x[alpha_size_]
@@ -365,6 +367,19 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 
 //restart if needed
   if(getRestart()) {
+    // at a restart from a step given by the MD engine the lines from that step on are removed first (see RESTART)
+    if(plumed.checkpointing.trimsAtRestart() && !getNoTrim()) {
+      if(comm.Get_rank()==0 && (NumWalkers_==1 || multi_sim_comm.Get_rank()==0)) {
+        plumed.checkpointing.trimAtRestart(NumWalkers_>1 ? alphaFileName : FileBase::appendSuffix(alphaFileName,plumed.getSuffix()));
+      }
+      comm.Barrier();
+      if(NumWalkers_>1) {
+        if(comm.Get_rank()==0) {
+          multi_sim_comm.Barrier();
+        }
+        comm.Barrier();
+      }
+    }
     IFile ifile;
     ifile.link(*this);
     if(NumWalkers_>1) {
