@@ -131,6 +131,16 @@ public:
 /// Returns true if the box vectors are orthogonal
 #pragma acc routine seq
   bool isOrthorombic()const;
+/// Moves atoms by lattice vectors so that, for each link l in order, atom child[l]
+/// is at its minimum image distance from atom parent[l] (already placed: the parent
+/// of a link is the first atom or the child of an earlier link). The images are the
+/// same as with pos[child]=pos[parent]+distance(pos[parent],pos[child]) done link by
+/// link, but the shifts are computed independently for each link and summed as
+/// integers, so most of the work is done with OpenMP threads, and the atoms that do
+/// not move keep their positions exactly. With parent and child null the links are
+/// (l,l+1). Nothing is done without a box.
+  void makeWhole(std::vector<Vector>& pos, std::size_t nlinks,
+                 const unsigned* parent=nullptr, const unsigned* child=nullptr)const;
 /// Full search (for testing).
 /// Perform a full search on vector
   void fullSearch(Vector&)const;

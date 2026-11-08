@@ -634,19 +634,15 @@ void ActionAtomistic::makeWhole() {
       tree=std::make_unique<Tree>(actionMoldat);
       tree->buildTree(getAbsoluteIndexes());
     }
+    // link j: from atom root_indexes[j] to atom tree_indexes[j+1]
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
-    for(unsigned j=0; j<root_indexes.size(); j++) {
-      const Vector & first (actionPositions[root_indexes[j]]);
-      Vector & second (actionPositions[tree_indexes[j+1]]);
-      second=first+pbcDistance(first,second);
+    if(root_indexes.size()>0) {
+      actionPbc.makeWhole(actionPositions, root_indexes.size(), root_indexes.data(), tree_indexes.data()+1);
     }
   } else if(actionPositions.size()>1) {
-    for(unsigned j=0; j<actionPositions.size()-1; ++j) {
-      const Vector & first (actionPositions[j]);
-      Vector & second (actionPositions[j+1]);
-      second=first+pbcDistance(first,second);
-    }
+    // link j: from atom j to atom j+1
+    actionPbc.makeWhole(actionPositions, actionPositions.size()-1);
   }
 }
 

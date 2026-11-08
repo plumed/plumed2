@@ -370,6 +370,11 @@ With [CHECKPOINT](CHECKPOINT.md) the fictitious variables, velocities, forces, t
 #include "tools/Checkpoint.h"
 
 #include <filesystem>
+#ifndef _WIN32
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 #include <iostream>
 
@@ -787,6 +792,23 @@ long long fileSizeOrZero(const std::string& name) {
   const auto size=std::filesystem::file_size(name,ec);
   return ec ? 0 : static_cast<long long>(size);
 }
+// open a plain output file for writing (append=false) or appending (append=true)
+// with the permissions rw-r--r-- (further restricted by the umask): fopen would ask for rw-rw-rw-
+FILE* openLogFile(const char* name,bool append) {
+#ifndef _WIN32
+  const int fd=open(name,O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC),S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+  if(fd<0) {
+    return nullptr;
+  }
+  FILE* fp=fdopen(fd,append?"a":"w");
+  if(!fp) {
+    close(fd);
+  }
+  return fp;
+#else
+  return std::fopen(name,append?"a":"w");
+#endif
+}
 // cut a plain output file at the size recorded in the checkpoint
 void cutFile(const std::string& name,long long size) {
   if(fileSizeOrZero(name)>size) {
@@ -941,7 +963,7 @@ void LogMFD::calculate() {
 
     // open LogMFD's log file
     if( comm.Get_rank()==0 && getReplicaIndex()==0 ) {
-      FILE *outlog = std::fopen("logmfd.out", "w");
+      FILE *outlog = openLogFile("logmfd.out",false);
       if (!outlog) {
         error("cannot open logmfd.out for writing");
       }
@@ -982,7 +1004,7 @@ void LogMFD::calculate() {
 
     if( comm.Get_rank()==0 ) {
       // the number of replica is added to file name to distingwish replica.
-      FILE *outlog2 = fopen("replica.out", "w");
+      FILE *outlog2 = openLogFile("replica.out",false);
       if (!outlog2) {
         error("cannot open replica.out for writing");
       }
@@ -1063,7 +1085,7 @@ void LogMFD::update() {
     const double ekin = calcEkin();
     const double temp = 2.0*ekin/getNumberOfArguments()/getKBoltzmann();
 
-    FILE *outlog = std::fopen("logmfd.out", "a");
+    FILE *outlog = openLogFile("logmfd.out",true);
     if (!outlog) {
       error("cannot open logmfd.out for appending");
     }
@@ -1084,7 +1106,7 @@ void LogMFD::update() {
   // record log for collective variables
   if( comm.Get_rank()==0 ) {
     // the number of replica is added to file name to distingwish replica.
-    FILE *outlog2 = fopen("replica.out", "a");
+    FILE *outlog2 = openLogFile("replica.out",true);
     if (!outlog2) {
       error("cannot open replica.out for appending");
     }
