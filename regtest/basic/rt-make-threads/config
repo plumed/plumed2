@@ -1,2 +1,1 @@
 type=make
-plumed_needs=molfile_plugins

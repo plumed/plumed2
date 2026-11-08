@@ -365,8 +365,6 @@ AC_ARG_ENABLE([thread-mpi],
   [])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
-PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
@@ -733,32 +731,6 @@ fi
 
 #### Optional libraries ####
 AC_MSG_NOTICE([Now we will check for optional headers and libraries])
-
-#############################################################
-# I add the possibility to completely remove molfile_plugins
-# I would like to be 100% that the molfile module compiles
-# correctly on all machines
-# In case of problem, it is sufficient to configure with
-# ./configure --disable-molfile-plugins
-# GB
-#############################################################
-
-if test $molfile_plugins = true ; then
-
-# Check for molfile_plugins and use internal fallback if not found. TG
-
-# We always have molfile, now
-AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
-
-  if test "$external_molfile_plugins" = true ; then
-    PLUMED_CHECK_PACKAGE([libmolfile_plugin.h],[molfile_dcdplugin_init],[__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS],molfile_plugin)
-    if test "$__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS" != yes ; then
-      AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
-    else
-      AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
-    fi
-  fi
-fi
 
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed

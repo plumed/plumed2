@@ -9,7 +9,7 @@ import os
 import re
 import sys
 
-THIRDPARTY = ("asmjit", "blas", "lapack", "lepton", "molfile", "xdrfile", "thread_mpi")
+THIRDPARTY = ("asmjit", "blas", "lapack", "lepton", "xdrfile", "thread_mpi")
 # files generated from other projects inside PLUMED modules
 THIRDPARTY_FILES = ("vesin.cpp", "vesin.h")
 

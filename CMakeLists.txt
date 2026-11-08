@@ -21,7 +21,7 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 # ---------------------------------------------------------------- modules
 set(ALWAYS_MODULES asmjit blas core lapack lepton mpiwrap small_vector tools valtools)
 set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
-    liquid_crystal matrixtools molfile multicolvar refdist secondarystructure
+    liquid_crystal matrixtools multicolvar refdist secondarystructure
     setup vatom xdrfile)
 set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
 # The Windows CMake build uses the imported Win32 thread backend by default.
@@ -102,7 +102,7 @@ target_compile_definitions(plumedKernel PRIVATE
     LEPTON_BUILDING_STATIC_LIBRARY
     # optional features off for this build:
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
-    #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL, __PLUMED_HAS_MOLFILE_PLUGINS)
+    #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
 if(PLUMED_ENABLE_THREAD_MPI)
     target_compile_definitions(plumedKernel PRIVATE
