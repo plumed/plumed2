@@ -23,12 +23,16 @@ requirements:
     - llvm-openmp  # [osx]
     - make
   host:
+    # chemfiles: more trajectory formats in the driver (--itraj). The library has no run_exports and its
+    # soname changes with the minor version, hence the pin in run
+    - chemfiles-lib 0.10.*
     - fftw
     - libblas
     - liblapack
     - llvm-openmp  # [osx]
     - zlib
   run:
+    - chemfiles-lib >=0.10.4,<0.11
     - gawk
     - llvm-openmp  # [osx]
 
@@ -37,7 +41,7 @@ test:
     - plumed info --root
     - plumed info --long-version
     - plumed-patch -h
-    - plumed config has external_blas external_lapack fftw zlib
+    - plumed config has external_blas external_lapack fftw zlib libchemfiles
     - $PREFIX/lib/plumed/plumed-runtime -h
     - test -f $PREFIX/lib/libplumed$SHLIB_EXT
     - test -f $PREFIX/lib/libplumedWrapper.a

@@ -27,14 +27,15 @@ if [[ $(uname) == "Darwin" ]]; then
 fi
 
 # libraries are explicitly listed here due to --disable-libsearch
-export LIBS="-lfftw3 -llapack -lblas -lz $LIBS"
+export LIBS="-lchemfiles -lfftw3 -llapack -lblas -lz $LIBS"
 
 # python is disabled since it should be provided as a separate package
 # --disable-libsearch forces to link only explicitely requested libraries
 # --disable-static-patch avoid tests that are only required for static patches
 # --disable-static-archive makes package smaller
 # --disable-basic-warnings deactive the warning, compiling with the current compiler version (today is 28/10/2025) shows some false positives in ActionPilot
-./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings
+# --enable-libchemfiles reads more trajectory formats in the driver (--itraj)
+./configure --prefix=$PREFIX --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings --enable-libchemfiles
 
 make -j${CPU_COUNT}
 make install
