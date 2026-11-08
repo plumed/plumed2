@@ -1,0 +1,41 @@
+mpiprocs=4
+plumed_modules="opes setup"
+# Exercise hybrid execution; OpenMP reductions may differ in their last bits.
+export PLUMED_NUM_THREADS=2
+type=driver
+# Reference run: two OpenMP threads per rank, two replicas (--multi 2) with two processes each, the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --checkpoint-stride 10 --log driver.log"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 150 traj.xyz > part.xyz
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 2 --checkpoint-stride 10 --log driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 2 --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log driver.log > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the kernels file of the walkers is shared (written by the first replica, without suffix; the log has its full path)
+  for f in COLVAR.0 COLVAR.1 KERNELS_W KERNELS_A.0 KERNELS_A.1 ; do
+    if [[ $f = COLVAR.* ]]; then
+      if python3 compare-colvar.py "$f" "restart/$f"; then
+        echo "$f NUMERICALLY_EQUAL"
+      else
+        echo "$f DIFFERENT"
+      fi
+    elif cmp -s $f restart/$f ; then
+      echo "$f IDENTICAL"
+    else
+      echo "$f DIFFERENT"
+      # testclean removes the output files: preserve the actual mismatch in CI logs.
+      echo "rt-checkpoint-opes-mpi-omp: $f differs after restart" >&2
+      head -n 1 "$f" >&2
+      diff -u "$f" "restart/$f" >&2 || true
+    fi
+  done > restart_check
+  # Compare complete replica logs, not stdout merged by threads or an MPI launcher.
+  grep -h "file .* truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING: the following" restart/driver.0.log restart/driver.1.log | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed "s|$(pwd)/restart/||" | sort | sed 's/[[:space:]]*$//' >> restart_check
+}

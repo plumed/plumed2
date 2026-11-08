@@ -1,5 +1,7 @@
 mpiprocs=4
-plumed_modules=opes
+plumed_modules="opes setup"
+# Exact restart comparisons require a deterministic OpenMP reduction order.
+export PLUMED_NUM_THREADS=1
 type=driver
 # Reference run: two replicas (--multi 2) with two processes each, the checkpointing signal every 10 steps
 arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --checkpoint-stride 10 --log driver.log"
