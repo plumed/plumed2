@@ -73,7 +73,7 @@
 #define __PLUMED_HAS_DLOPEN               // NOLINT(bugprone-reserved-identifier)
 
 // Embed the adapter using this host build's MPI types and functions.
-#if GMX_LIB_MPI || GMX_THREAD_MPI
+#if (GMX_LIB_MPI || GMX_THREAD_MPI) && !defined(__PLUMED_WRAPPER_MPI_HOST_ADAPTER)
 #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 #endif
 #include "../../../../Plumed.h"
@@ -91,7 +91,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
-#if GMX_LIB_MPI || GMX_THREAD_MPI
+#if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
     if (plumedAPIversion_ >= 11)
     {
         // Inject before the first command that can use MPI.

@@ -21,7 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // PLUMED_C_COMPATIBLE
 #ifdef __PLUMED_HAS_MPI
+#ifndef __PLUMED_WRAPPER_MPI_HOST_ADAPTER
 #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
+#endif
 #include <mpi.h>
 #endif
 #define __PLUMED_WRAPPER_CXX 0
@@ -71,7 +73,7 @@ int main(int argc,char**argv) {
 #endif
   p=plumed_create();
   plumed_error_init(&error);
-#ifdef __PLUMED_HAS_MPI
+#if defined(__PLUMED_HAS_MPI) && __PLUMED_WRAPPER_MPI_HOST_ADAPTER
   {
     // Older kernels predate injection; they retain the native-MPI path.
     int api=0;

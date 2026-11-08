@@ -3,7 +3,7 @@
 @@ -42,0 +43,15 @@
 +/* Use sander's MPI implementation when this C compiler can see MPI headers. */
 +#ifdef MPI
-+#if !__PLUMED_WRAPPER_MPI_HOST_ADAPTER
++#if !defined(__PLUMED_WRAPPER_MPI_HOST_ADAPTER)
 +#if defined(__has_include)
 +#if __has_include(<mpi.h>)
 +#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
