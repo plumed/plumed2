@@ -276,7 +276,9 @@ Read::Read(const ActionOptions&ao):
     }
   } else {
     if( valread.size()!=1 ) {
-      error("if only one value is being transferred then only one value can be read");
+      error("multiple VALUES can only be read if they are components of the same action");
+    } else if( valread[0].find(".*")!=std::string::npos && ignore_component ) {
+      error("IGNORE_COMPONENT flag is not compatible with wildcards");
     }
     readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) );
     addValueWithDerivatives();
