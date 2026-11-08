@@ -55,7 +55,7 @@ DUMPGRID ARG=fes FILE=fes.dat
 The script above must be run with multiple replicas using the following command:
 
 ````
-mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
+mpirun -np 4 plumed driver --ixtc alltraj.xtc --multi 4
 ````
 
 Notice that if you use the BANDWIDTH keyword, as in the example below, PLUMED will estimate the histogram

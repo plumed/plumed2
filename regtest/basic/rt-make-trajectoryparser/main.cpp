@@ -28,6 +28,8 @@ int main() {
   reader("trr", "test_traj.trr");
   reader("xtc", "traj.xtc");
   reader("dlp4", "HISTORY");
+  reader("pdb", "test0.pdb");
+  reader("dcd", "traj.dcd");
 
   return 0;
 }

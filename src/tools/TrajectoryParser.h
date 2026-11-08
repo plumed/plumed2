@@ -28,6 +28,8 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 
 
@@ -72,7 +74,7 @@ struct TrajectoryFrame {
   /// output of readAtoms(): true if masses and charges were read from the file (dlp4)
   bool hasMassesAndCharges=false;
   /// output of readAtoms(): set together with "EOF" when the last frame of the file is incomplete
-  /// (a truncated xtc or trr file, as written by a simulation that stopped while writing)
+  /// (a truncated xtc, trr or dcd file, as written by a simulation that stopped while writing)
   std::optional<std::string> warning;
 };
 
@@ -82,12 +84,13 @@ struct TrajectoryFrame {
 class TrajectoryParser {
 public:
   enum class trajfmt {
-    molfile,
     xdr_xtc,
     xdr_trr,
     xyz,
     gro,
     dlp4,
+    pdb,
+    dcd,
     error
   };
   static trajfmt FMTfromString(std::string_view fmt);
@@ -100,13 +103,19 @@ public:
   TrajectoryParser();
   ~TrajectoryParser();
   static void registerKeywords(Keywords& keys);
+  /// The formats, each read with the option --i<format>
   static std::vector<std::string> trajectoryOptions();
-  static std::vector<std::string> getMolfilePluginsnames();
+  /// The options of the molfile plugins, removed in v2.11, that are still accepted for one release:
+  /// pairs {option, format}, e.g. {"--mf_xtc","xtc"} (the same as --ixtc)
+  static const std::vector<std::pair<std::string,std::string>> & deprecatedOptions();
+  /// The options of the molfile plugins, removed in v2.11, whose formats are not read anymore
+  /// (e.g. "--mf_crd"). registerKeywords() registers them as hidden options: the driver and the benchmark
+  /// stop with removedOptionMessage() instead of reporting an unknown option
+  static const std::vector<std::string> & removedOptions();
+  static std::string removedOptionMessage(std::string_view option);
 
   std::optional<std::string> init(std::string_view fmt,
-                                  std::string_view fname,
-                                  bool useMolfile=false,
-                                  int command_line_natoms=-1);
+                                  std::string_view fname);
   //Driver with filename ="-"
   std::optional<std::string> init(std::string_view fmt,FILE* fileHandle);
 

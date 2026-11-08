@@ -1,0 +1,5 @@
+stdin: exit code 0
+stdin: same frames
+alias: exit code 0
+WARNING: --mf_pdb is deprecated (the molfile plugins were removed in v2.11) and will be removed in a future version: use --ipdb
+alias: same frames

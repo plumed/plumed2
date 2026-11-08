@@ -1,0 +1,23 @@
+REMARK a pdb trajectory: three models with MODEL and ENDMDL, and END at the end of the file
+REMARK the first model has a triclinic cell, the second one no CRYST1 record (the cell of the first model is kept),
+REMARK the third one an orthorhombic cell
+CRYST1   30.000   32.500   35.250  88.00  95.50  80.00 P 1           1
+MODEL        1
+ATOM      1  N   ALA A   1       1.000   2.000   3.000  1.00  0.00           N
+ATOM      2  CA  ALA A   1       2.457   2.000   3.000  1.00  0.00           C
+HETATM    3  O   HOH B   2      -4.125  12.500 -13.375  1.00  0.00           O
+TER
+ENDMDL
+MODEL        2
+ATOM      1  N   ALA A   1       1.100   2.100   3.100  1.00  0.00           N
+ATOM      2  CA  ALA A   1       2.557   2.100   3.100  1.00  0.00           C
+HETATM    3  O   HOH B   2      -4.025  12.600 -13.275  1.00  0.00           O
+TER
+ENDMDL
+MODEL        3
+CRYST1   40.000   41.000   42.000  90.00  90.00  90.00 P 1           1
+ATOM      1  N   ALA A   1       1.200   2.200   3.200
+ATOM      2  CA  ALA A   1       2.657   2.200   3.200
+HETATM    3  O   HOH B   2      -3.925  12.700 -13.175
+ENDMDL
+END

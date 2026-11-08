@@ -49,7 +49,7 @@ WHAM_WEIGHTS BIAS=rp.bias TEMP=300 FILE=wham-weights
 The script above must be run with multiple replicas using the following command:
 
 ````
-mpirun -np 4 plumed driver --mf_xtc alltraj.xtc --multi 4
+mpirun -np 4 plumed driver --ixtc alltraj.xtc --multi 4
 ````
 
 For more details on how the weights for configurations are determined using the wham method see the documentation
