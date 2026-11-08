@@ -183,7 +183,7 @@ void KDEHelper<K,P,G>::readKernelParameters( std::string& value, ActionWithArgum
         Tools::convert( (action->getPntrToArgument(0))->getNumberOfValues(), nvals );
       }
       action->plumed.readInputWords( Tools::getWords(action->getLabel() + outlab + "_ones: ONES SIZE=" + nvals ), false );
-      action->plumed.readInputWords( Tools::getWords(action->getLabel() + outlab + ": CUSTOM ARG=" + action->getLabel() + outlab + "_ones," + value ), false );
+      action->plumed.readInputWords( Tools::getWords(action->getLabel() + outlab + ": CUSTOM ARG=" + action->getLabel() + outlab + "_ones," + value + " FUNC=x*y PERIODIC=NO" ), false );
       value = action->getLabel() + outlab;
     }
   }
