@@ -6,7 +6,7 @@ name: "PLUMED CodeQL configuration"
 #
 # Third-party code that is kept as close as possible to the upstream version
 # (it is updated by re-importing it, so local style fixes would be lost):
-#   lepton, asmjit, xdrfile, small_vector, vesin
+#   lepton, asmjit, xdrfile, small_vector, vesin, gemmi
 #
 # Test and tutorial scripts (regression tests, python tests, tutorial scripts):
 # short-lived scripts for which resource handling or unreachable-code notes are not relevant.
@@ -15,6 +15,7 @@ paths-ignore:
   - src/asmjit
   - src/xdrfile
   - src/small_vector
+  - src/gemmi
   - src/metatomic/vesin.cpp
   - regtest
   - python/test

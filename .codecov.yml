@@ -6,6 +6,7 @@ ignore:
   - src/asmjit
   - src/xdrfile
   - src/thread_mpi
+  - src/gemmi
   
 coverage:
   status:
