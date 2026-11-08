@@ -680,7 +680,13 @@ void OFile::openOnWriter(const char* fmode,const char* gzmode,bool reopenFp) {
 #endif
   const char* p=isWriter() ? path.c_str() : nullDevice;
   if(reopenFp) {
+#ifdef _WIN32
+    // binary mode: write LF line endings as on the other platforms
+    // (text mode would turn every \n into \r\n)
+    fp=std::fopen(p,(std::string(fmode)+"b").c_str());
+#else
     fp=std::fopen(p,fmode);
+#endif
   }
   if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB

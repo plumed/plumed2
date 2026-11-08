@@ -139,7 +139,8 @@ if(MSVC)
         /EHsc
         /utf-8
         /Zc:__cplusplus   # MSVC reports real __cplusplus; Plumed.h relies on it
-        /W1)
+        /W1
+        /wd4068)          # unknown pragma (#pragma acc); same as -Wno-unknown-pragmas in configure
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         target_compile_options(plumedKernel PRIVATE /O2 /MD)
     endif()
@@ -162,7 +163,7 @@ target_link_libraries(plumed PRIVATE plumedKernel)
 target_include_directories(plumed PRIVATE
     ${PLUMED_SRC}/src ${PLUMED_GEN} ${PLUMED_SRC}/src/config)
 if(MSVC)
-    target_compile_options(plumed PRIVATE /permissive- /EHsc /utf-8 /Zc:__cplusplus /W1)
+    target_compile_options(plumed PRIVATE /permissive- /EHsc /utf-8 /Zc:__cplusplus /W1 /wd4068)
 endif()
 
 set(_compilable ${PLUMED_SOURCES})
