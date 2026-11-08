@@ -64,8 +64,8 @@ PlumedHandle::PlumedHandle(const char* kernel)
       int api=0;
       cmd("getApiVersion",&api);
       // Older guests retain the historical compatible-native-MPI assumption.
-      // API 11 introduces injection through cmd, without changing the table.
-      if(api>=11) {
+      // API 13 introduces injection through cmd, without changing the table.
+      if(api>=13) {
         cmd("injectMPIImplementation",provider);
       }
     }

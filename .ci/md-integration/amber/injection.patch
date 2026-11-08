@@ -25,7 +25,7 @@
 +  int api = 0;
 +  if(!plumed_gvalid()) return -2;
 +  plumed_gcmd("getApiVersion", &api);
-+  if(api<11) return -1;
++  if(api<13) return -1;
 +  plumed_gcmd("injectMPIImplementation", plumed_mpi_implementation());
 +  return 1;
 +#endif

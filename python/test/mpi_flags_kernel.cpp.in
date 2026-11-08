@@ -37,7 +37,7 @@ unsigned delete_reference(void* object) { return --*static_cast<unsigned*>(objec
 unsigned use_count(void* object) { return *static_cast<unsigned*>(object); }
 void cmd(void*, const char* key, const void* ptr) {
   if (std::strcmp(key, "getApiVersion") == 0) {
-    *static_cast<int*>(const_cast<void*>(ptr)) = LEGACY_KERNEL ? 10 : 11;
+    *static_cast<int*>(const_cast<void*>(ptr)) = LEGACY_KERNEL ? 10 : 13;
   }
 }
 void safe(void* object, const char* key, SafePtr value) {

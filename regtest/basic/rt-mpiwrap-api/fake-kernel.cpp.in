@@ -62,7 +62,7 @@ extern "C" void *plumed_test_create() {
 }
 extern "C" void plumed_test_cmd(void *,const char *key,const void *value) {
   if(std::strcmp(key,"getApiVersion")==0) {
-    *static_cast<int*>(const_cast<void*>(value))=11;
+    *static_cast<int*>(const_cast<void*>(value))=13;
   } else if(std::strcmp(key,"injectMPIImplementation")==0) {
 #ifdef TEST_REJECT_INSTALL
     throw std::runtime_error("injected provider rejection");

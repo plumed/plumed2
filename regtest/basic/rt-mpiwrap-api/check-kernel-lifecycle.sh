@@ -12,18 +12,25 @@ case "$(uname -s)" in
 esac
 
 "$CXX" -std=c++17 -fPIC "${SHARED_FLAGS[@]}" \
-  -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-kernel.cpp.in" -o "$TMP/libkernel-api11.so"
+  -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-kernel.cpp.in" -o "$TMP/libkernel-api13.so"
 "$CXX" -std=c++17 -fPIC "${SHARED_FLAGS[@]}" \
   -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-old-kernel.cpp.in" -o "$TMP/libkernel-api10.so"
 "$CXX" -std=c++17 -fPIC -DTEST_REJECT_INSTALL "${SHARED_FLAGS[@]}" \
   -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-kernel.cpp.in" -o "$TMP/libkernel-reject.so"
 "$CXX" -std=c++17 -D__PLUMED_HAS_DLOPEN -I"$ROOT/src" \
   -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/test-kernel-lifecycle.cpp.in" -ldl -o "$TMP/test-kernel-lifecycle"
-"$TMP/test-kernel-lifecycle" "$TMP/libkernel-api11.so" \
+"$TMP/test-kernel-lifecycle" "$TMP/libkernel-api13.so" \
   "$TMP/libkernel-api10.so" "$TMP/libkernel-reject.so" \
   "$TMP/kernel-unloaded" "$TMP/object-created"
 "$CXX" -std=c++17 -D__PLUMED_HAS_DLOPEN -I"$ROOT/src" \
   -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/test-forward-provider.cpp.in" -ldl -o "$TMP/test-forward-provider"
-"$TMP/test-forward-provider" "$TMP/libkernel-api11.so" "$TMP/libkernel-api10.so" \
+"$TMP/test-forward-provider" "$TMP/libkernel-api13.so" "$TMP/libkernel-api10.so" \
   "$TMP/libkernel-reject.so"
-echo "kernel create/inject/release lifecycle passed"
+# Upstream APIs 11 and 12 add unrelated commands, not MPI injection.
+for api in 11 12; do
+  "$CXX" -std=c++17 -fPIC -DTEST_API_VERSION="$api" "${SHARED_FLAGS[@]}" \
+    -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-old-kernel.cpp.in" -o "$TMP/libkernel-api$api.so"
+  "$TMP/test-forward-provider" "$TMP/libkernel-api13.so" "$TMP/libkernel-api$api.so" \
+    "$TMP/libkernel-reject.so"
+done
+echo "kernel create/inject/release lifecycle and API 10/11/12 compatibility passed"

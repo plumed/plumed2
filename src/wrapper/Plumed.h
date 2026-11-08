@@ -349,7 +349,7 @@
 
   A kernel built without a direct MPI dependency can use the MPI implementation
   supplied by its host. The host adapter is opt-in and uses the existing command
-  interface: command API version 11 adds `injectMPIImplementation`, while the
+  interface: command API version 13 adds `injectMPIImplementation`, while the
   kernel symbol table remains version 4. Query `getApiVersion` before sending
   this command to an older kernel.
 
@@ -362,7 +362,7 @@
   plumed p = plumed_create();
   int api = 0;
   plumed_cmd(p, "getApiVersion", &api);
-  if (api >= 11) {
+  if (api >= 13) {
     plumed_cmd(p, "injectMPIImplementation", plumed_mpi_implementation());
   }
   MPI_Comm comm = MPI_COMM_WORLD;

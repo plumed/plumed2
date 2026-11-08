@@ -90,7 +90,7 @@ unrelated MPI runtimes.
 
 The wrapper and native adapter communicate through a versioned C-compatible
 provider descriptor. Injection uses the existing command interface, advertised
-by getApiVersion >= 11; the kernel symbol table remains version 4. The provider
+by getApiVersion >= 13; the kernel symbol table remains version 4. The provider
 descriptor has its own ABI version. Fixed entry layouts are frozen within a provider ABI major; new optional
 capabilities use named metadata entries. Each injected implementation takes
 one pointer per argument plus a result-storage pointer, following the draft;
@@ -220,8 +220,10 @@ needed; `0x40000000` and higher bits remain reserved.
 metadata. Its `check-callers.sh` checks C11 and C++98/11/17 transport against
 synthetic integer, opaque-pointer and void-pointer MPI types, plus the actual
 wrapper class, without MPI initialization.
-The command is available with kernel API version 11 (`getApiVersion`);
-the symbol table remains version 4. Its descriptor argument is the descriptor
+The command is available with kernel API version 13 (`getApiVersion`);
+the symbol table remains version 4. Upstream APIs 11 and 12 add input-builder
+metadata and restart-step support, respectively, and do not imply injection
+support. Its descriptor argument is the descriptor
 address itself, not the address of a pointer. Errors use the existing command
 exception/nothrow translation machinery. Object creation retains its historical
 invalid-object failure convention.
@@ -352,7 +354,7 @@ nodes. The selected kernel must support injection for this serial-kernel use.
 
 The ordinary main owns MPI initialization/finalization, destroys PLUMED before
 finalizing MPI, and passes the native communicator to CLTools. It injects MPI
-before other setup when the kernel advertises command API 11 or newer. Older
+before other setup when the kernel advertises command API 13 or newer. Older
 kernels retain the historical native-MPI path. `--no-mpi` skips MPI initialization,
 communicator setup and finalization; `--mpi` restores them if it follows
 `--no-mpi`. Neither option changes injection. No additional launcher options are
@@ -812,7 +814,7 @@ The `gromacs-2026.0` patch uses the usual top-level `Plumed.h` link (or forwardi
 header with `--include`). The integration and its test helper include that header;
 GROMACS's bundled copy stays unchanged. Reverting removes the top-level patch
 files through the standard patch machinery. Use a PLUMED 2.11 kernel with API
-version 11 or newer. The PLUMED kernel can remain serial;
+version 13 or newer. The PLUMED kernel can remain serial;
 GROMACS supplies its initialized MPI implementation to PLUMED before setup.
 The embedded PLUMED tMPI runtime is not involved. Earlier PLUMED kernels retain
 the legacy native-MPI path and must be built against the matching MPI library;
@@ -901,6 +903,8 @@ bash regtest/basic/rt-mpiwrap-api/check-mpi-host-injection.sh /absolute/path/to/
 The optional fourth argument enables environment-provider cases in addition to
 injection cases. Omitting it retains the injection-only test. Both paths use
 unmodified standard-main behavior; `--no-mpi` queries avoid MPI lifecycle calls.
+Mock upstream kernels with APIs 10, 11 and 12 verify that the standard main
+skips injection for kernels that predate this feature.
 
 
 ## Integration with existing PLUMED code
@@ -921,7 +925,7 @@ symbol-table entry or public object type.
 | `src/maketools/update-config-txt.sh` | Separate configured real-MPI and internal-tMPI capabilities while retaining combined `has mpi`. |
 | `src/core/CLToolMain.cpp` | Parse internal rank counts, invoke the shared launcher, construct rank-local commands and report selected-provider runtime capabilities. |
 | `src/cltools/Driver.cpp` and replica checkpoint regtests | Use the upstream `--log-file FILE` option with replica suffixes so checkpoint tests inspect independent logs instead of merged stdout. Keep normal logging behavior and all checkpoint/data comparisons; omit the redundant raw driver stdout messages from their references. |
-| `src/core/PlumedMain.cpp` | Expose injection through the existing command mechanism (available since API 11); current API 12 also supports the upstream restart-step command. Construction still permits injection before provider-dependent use. |
+| `src/core/PlumedMain.cpp` | Expose injection through the existing command mechanism (available since API 13); API 12 also supports the upstream restart-step command. Construction still permits injection before provider-dependent use. |
 | `src/tools/Communicator.{h,cpp}` | Replace compile-time serial branches with runtime initialization checks, preserve serial fallbacks, import native bytes through the single boundary helper and resolve default SELF before communication. An explicit flag distinguishes deferred SELF from a valid all-zero native handle. Private buffer descriptions use const references for fatal cppcheck diagnostics; receive buffers remain writable. The header includes only MPI types; the implementation includes the full MPI interface. |
 | `src/tools/TypesafePtr.h` | Include only the MPI type interface, propagate the communicator exclusion bit, and validate communicator/provider arguments. Preserve legacy unannotated communicator calls and ordinary integer commands when native MPI_Comm aliases int. |
 | `src/tools/PlumedHandle.cpp` | Forward the selected implementation to a compatible nested kernel through the existing command API; preserve older-kernel behavior and release the created reference on failure. |

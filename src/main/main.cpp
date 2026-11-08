@@ -78,7 +78,7 @@ int main(int argc,char**argv) {
     // Older kernels predate injection; they retain the native-MPI path.
     int api=0;
     PLUMED_MAIN_CMD("getApiVersion",&api);
-    if(api>=11) {
+    if(api>=13) {
       PLUMED_MAIN_CMD("injectMPIImplementation",plumed_mpi_implementation());
     }
   }

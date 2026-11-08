@@ -93,7 +93,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     // less code to edit when adding new options :)
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-    if (plumedAPIversion_ >= 11)
+    if (plumedAPIversion_ >= 13)
     {
         // Inject before the first command that can use MPI.
         plumed_->cmd("injectMPIImplementation", plumed_mpi_implementation());
@@ -108,7 +108,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     }
 #endif
 #if GMX_THREAD_MPI
-    if (plumedAPIversion_ < 11 && options.mpiComm_->isParallel())
+    if (plumedAPIversion_ < 13 && options.mpiComm_->isParallel())
     {
         GMX_THROW(InvalidInputError(
                 "plumed MPI interface is not compatible with THREAD_MPI when uses more than one "

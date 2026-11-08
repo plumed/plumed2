@@ -43,7 +43,7 @@ int main(int argc,char **argv) {
     require(first.valid());
     int api=0;
     first.cmd("getApiVersion",&api);
-    require(api==11);
+    require(api==13);
     first.cmd("injectMPIImplementation",&descriptor);
     first.cmd("requireProvider");
     {

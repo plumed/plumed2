@@ -89,6 +89,22 @@ if ((status != 91)) || ! grep -q 'unexpected MPI_Init' "$TASK_DIR/init-control.l
 fi
 echo 'MPI host honors --no-mpi without initialization, finalization, or abort'
 
+# Exercise the standard main against upstream APIs that predate injection.
+# --no-mpi also keeps this compatibility check independent of the MPI launcher.
+case "$(uname -s)" in
+  Darwin) compatibility_shared=-dynamiclib ;;
+  *) compatibility_shared=-shared ;;
+esac
+for api in 10 11 12; do
+  "${CXX:-c++}" -std=c++17 -fPIC "$compatibility_shared" -DTEST_API_VERSION="$api" \
+    -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-old-kernel.cpp.in" \
+    -o "$TASK_DIR/old-api$api.so"
+  env -u PLUMED_MPI_WRAPPER -u PLUMED_MPI_WRAPPER_FORCE \
+    PLUMED_KERNEL="$TASK_DIR/old-api$api.so" \
+    "$TASK_DIR/mpi-host-runtime" --no-mpi info --root
+done
+echo 'MPI host skips injection for upstream APIs 10/11/12'
+
 # Separate launcher/runtime failures from any host-header or kernel behavior.
 "$1" -std=c++98 "$ROOT/regtest/basic/rt-mpiwrap-api/mpi-native-probe.cpp" -o "$TASK_DIR/native-probe"
 if command -v ldd >/dev/null 2>&1; then

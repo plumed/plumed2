@@ -4,6 +4,11 @@
 #include <cstring>
 #include <stdexcept>
 
+// Override to exercise newer upstream kernels that still predate MPI injection.
+#ifndef TEST_API_VERSION
+#define TEST_API_VERSION 10
+#endif
+
 namespace {
 struct TestObject {
   unsigned references;
@@ -58,7 +63,7 @@ extern "C" void *plumed_old_create() {
 }
 extern "C" void plumed_old_cmd(void *,const char *key,const void *value) {
   if(std::strcmp(key,"getApiVersion")==0) {
-    *static_cast<int*>(const_cast<void*>(value))=10;
+    *static_cast<int*>(const_cast<void*>(value))=TEST_API_VERSION;
   } else if(std::strcmp(key,"injectMPIImplementation")==0) {
     throw std::runtime_error("unknown command");
   }

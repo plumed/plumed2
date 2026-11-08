@@ -254,7 +254,7 @@ The test separately replaces `AmberTools/src/sander/Plumed.h` with the installed
 header. The small `amber/injection.patch` contains only a C helper, its Fortran
 declaration and a call after global-object creation. Existing `plumed=1` handling
 guards that initialization, and the helper checks that the global object is
-valid and supports API 11 before injecting. Older kernels retain their original
+valid and supports API 13 before injecting. Older kernels retain their original
 communicator setup. There are **no Amber CMake changes**.
 
 The C source enables injection when its compiler can find `mpi.h`; using `cc`

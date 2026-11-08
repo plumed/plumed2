@@ -16,5 +16,15 @@ cp "$ROOT/regtest/basic/rt-mpiwrap-launcher/test-thread-mpi-lifecycle.cpp.in" "$
 cat > "$TASK_DIR/plumed.dat" <<'PLUMED'
 UNITS LENGTH=A ENERGY=kcal/mol TIME=ps
 PLUMED
-(cd "$TASK_DIR" && "$TASK_DIR/thread-mpi-lifecycle")
+case "$(uname -s)" in
+  Darwin) compatibility_shared=-dynamiclib ;;
+  *) compatibility_shared=-shared ;;
+esac
+for api in 10 11 12; do
+  "$CXX" -std=c++17 -fPIC "$compatibility_shared" -DTEST_API_VERSION="$api" \
+    -x c++ "$ROOT/regtest/basic/rt-mpiwrap-api/fake-old-kernel.cpp.in" \
+    -o "$TASK_DIR/old-api$api.so"
+done
+(cd "$TASK_DIR" && "$TASK_DIR/thread-mpi-lifecycle" \
+  "$TASK_DIR/old-api10.so" "$TASK_DIR/old-api11.so" "$TASK_DIR/old-api12.so")
 echo "thread-MPI sentinel guard and repeated-launch lifecycle checks passed"

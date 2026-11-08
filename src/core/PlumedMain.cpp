@@ -805,7 +805,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(12));
+        val.set(int(13));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -895,6 +895,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         plumedDat=val.getCString();
         break;
+      /* ADDED WITH API==13 */
       case cmd_injectMPIImplementation:
 #if defined(__PLUMED_HAS_MPI)
         // Native MPI already owns the implementation. Ignore injection without

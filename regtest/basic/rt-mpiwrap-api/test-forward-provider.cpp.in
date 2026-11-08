@@ -20,7 +20,7 @@ int main(int argc,char **argv) {
       }
       int api=0;
       object.cmd("getApiVersion",&api);
-      if(api>=11) {
+      if(api>=13) {
         object.cmd("injectMPIImplementation",&descriptor);
       }
     } catch(const std::exception &) {

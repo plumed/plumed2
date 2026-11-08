@@ -2,8 +2,10 @@
 #include "core/CLToolMain.h"
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
+#include "tools/PlumedHandle.h"
 #include "mpiwrap/internal.h"
 #include "mpiwrap/mpiwrap.h"
+#include "mpiwrap/mpi.h"
 
 #include <atomic>
 #include <cstddef>
@@ -72,7 +74,7 @@ bool runThroughDispatcher(PLMD::CLToolMain &dispatcher, int ranks) {
 }
 }  // namespace
 
-int main() {
+int main(int argc, char **argv) {
   if(PLMD::mpiwrap::currentRegistry().installed()) {
     return 5;
   }
@@ -83,7 +85,7 @@ int main() {
     PLMD::PlumedMain object;
     int api=0;
     object.cmd("getApiVersion",&api);
-    if(api!=11 || PLMD::mpiwrap::currentRegistry().installed()) {
+    if(api!=13 || PLMD::mpiwrap::currentRegistry().installed()) {
       return 6;
     }
   }
@@ -95,6 +97,16 @@ int main() {
     object.cmd("injectMPIImplementation",PLMD::mpiwrap::plumed_mpiw_thread_mpi_provider());
     if(!PLMD::mpiwrap::currentRegistry().installed() || PLMD::Communicator::initialized()) {
       return 8;
+    }
+  }
+  // These mock upstream kernels reject injection. Loading them after provider
+  // installation must retain the legacy path for APIs 10, 11 and 12.
+  for(int i=1; i<argc; ++i) {
+    auto guest=PLMD::PlumedHandle::dlopen(argv[i]);
+    int api=0;
+    guest.cmd("getApiVersion",&api);
+    if(api<10 || api>12) {
+      return 14;
     }
   }
   GuardContext context{};
