@@ -1,0 +1,28 @@
+hh_phi: READ IGNORE_TIME IGNORE_COMPONENT VALUES=phi FILE=HILLS
+hh_psi_x: READ IGNORE_TIME IGNORE_COMPONENT VALUES=psi.x FILE=HILLS
+hh_sigma_phi: READ IGNORE_TIME IGNORE_COMPONENT VALUES=sigma_phi FILE=HILLS
+hh_sigma_psi_x: READ IGNORE_TIME IGNORE_COMPONENT VALUES=sigma_psi.x FILE=HILLS
+hh_height: READ IGNORE_TIME IGNORE_COMPONENT VALUES=height FILE=HILLS
+
+hh_inst: KDE ARG=hh_phi,hh_psi_x BANDWIDTH=hh_sigma_phi,hh_sigma_psi_x HEIGHTS=hh_height GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 
+hh_bias: ACCUMULATE ARG=hh_inst STRIDE=1
+hh: CUSTOM ARG=hh_bias FUNC=-x PERIODIC=NO
+
+DUMPGRID ARG=hh FILE=fes.dat FMT=%8.4f
+
+hh_collect_phi: COLLECT ARG=hh_phi CLEAR=30
+hh_collect_psi_x: COLLECT ARG=hh_psi_x CLEAR=30
+hh_collect_sigma_phi: COLLECT ARG=hh_sigma_phi CLEAR=30
+hh_collect_sigma_psi_x: COLLECT ARG=hh_sigma_psi_x CLEAR=30
+hh_collect_height: COLLECT ARG=hh_height CLEAR=30
+
+hh_collect_inst: KDE ...
+   ARG=hh_collect_phi,hh_collect_psi_x 
+   BANDWIDTH=hh_collect_sigma_phi,hh_collect_sigma_psi_x 
+   HEIGHTS=hh_collect_height 
+   GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 
+...
+
+hh_collect_bias: ACCUMULATE ARG=hh_collect_inst STRIDE=30 
+hh_final: CUSTOM ARG=hh_collect_bias FUNC=-x PERIODIC=NO
+DUMPGRID ARG=hh_final FILE=fes_stride.dat FMT=%8.4f STRIDE=30 
