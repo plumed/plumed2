@@ -607,7 +607,7 @@ void SASA_LCPO::computeDeltaG() {
 
   // Recompute only when temperature changes.
   // This prevents using stale values and avoids repeatedly appending backbone entries.
-  if (T != Ti) {
+  if (std::fabs(T - Ti) > 1e-12) {
     // Clear all per-atom entries plus the extra backbone slot at index natoms.
     for(unsigned i=0; i<=natoms; i++) {
       DeltaG[i].clear();
