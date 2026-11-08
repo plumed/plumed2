@@ -213,7 +213,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
     MPI_Allgatherv(s,in.size,in.type,r,rc,di,out.type,communicator);
   } else {
     plumed_assert(in.nbytes==out.nbytes);
-    plumed_assert(in.size==out.size);
+    // Pointer receive buffers have no recorded extent; recvcounts supplies it.
     plumed_assert(rc);
     plumed_assert(rc[0]==in.size);
     plumed_assert(di);
@@ -223,7 +223,7 @@ void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const i
   }
 #else
   plumed_assert(in.nbytes==out.nbytes);
-  plumed_assert(in.size==out.size);
+  // Pointer receive buffers have no recorded extent; recvcounts supplies it.
   plumed_assert(rc);
   plumed_assert(rc[0]==in.size);
   plumed_assert(di);

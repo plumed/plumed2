@@ -68,6 +68,9 @@ fi
   if [ $do_cppcheck == true ]; then
     # we discard configurations introduced in small_vector because they are many and
     # get included in many files
+    # Discard imported translation units before analysis; retain the full file
+    # list above for plumedcheck and leave included headers visible.
+    cppfiles=$(grep -E -v '/(molfile|lapack|blas|lepton|asmjit|xdrfile|small_vector)/' <<< "$files" || true)
     # shellcheck disable=SC2086
     cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
       -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
@@ -78,7 +81,7 @@ fi
       -i vesin.cpp \
       --template='[{file}:{line}] ({severity}) :{id}: {message}' \
       --enable=all --suppress=missingIncludeSystem --inline-suppr --force \
-      $files
+      $cppfiles
     #You coud add -I ${basedir}/src/ but that will not check if the correct
     # requisite modules are set in the module configuration file
   fi
