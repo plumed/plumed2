@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <deque>
 #include <filesystem>
+#include <utility>
 
 #ifdef __PLUMED_HAS_LIBHDF5
 #include <hdf5.h>
@@ -221,7 +222,12 @@ Value readAttribute(hid_t obj,const std::string& name,const std::string& path) {
       const std::size_t n=H5Tget_size(t);
       std::string buf(n,'\0');
       err=H5Aread(a,t,buf.data());
-      v.s=buf.c_str();
+      // a fixed-length string is padded with null characters
+      const std::size_t end=buf.find('\0');
+      if(end!=std::string::npos) {
+        buf.resize(end);
+      }
+      v.s=std::move(buf);
     }
   } else {
     check(false,path,"attribute "+name+" has an unsupported type");

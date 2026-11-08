@@ -509,6 +509,7 @@ OFile& OFile::open(const std::string&setpath) {
   // the same file from all of them is slow.
   if(h5table::isH5(path)) {
     // HDF5 table: fp is the null device on all the processes, the table is written by h5writer
+    // (opened with "r+": the null device exists, nothing is created)
     h5mode=true;
     const bool restart=checkRestart();
     h5append=restart;
@@ -521,9 +522,9 @@ OFile& OFile::open(const std::string&setpath) {
       }
     }
 #ifdef _WIN32
-    fp=std::fopen("NUL","w");
+    fp=std::fopen("NUL","r+");
 #else
-    fp=std::fopen("/dev/null","w");
+    fp=std::fopen("/dev/null","r+");
 #endif
     mode=restart ? "a" : "w";
     if(comm) {
