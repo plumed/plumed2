@@ -540,10 +540,12 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
   const double i00=invBox(0,0), i01=invBox(0,1), i02=invBox(0,2);
   const double i10=invBox(1,0), i11=invBox(1,1), i12=invBox(1,2);
   const double i20=invBox(2,0), i21=invBox(2,1), i22=invBox(2,2);
-  // round to nearest without branches or calls (|x| < 2^51)
+  // round to nearest without branches or library calls, for |x| < 2^20 (checked
+  // below). The conversion to int also works with value-unsafe floating point
+  // optimizations (e.g. the default of the Intel compiler), which would remove
+  // the usual (x+2^52+2^51)-(2^52+2^51).
   auto rnd=[](const double x) {
-    constexpr double c=6755399441055744.0;
-    return (x+c)-c;
+    return static_cast<double>(static_cast<int>(x+1048576.5)-1048576);
   };
   // shift of each link, in lattice vectors, from the original positions (a shift of the
   // parent does not change the minimum image); it is stored in the child
@@ -556,9 +558,16 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
     const double s0=d0*i00+d1*i10+d2*i20;
     const double s1=d0*i01+d1*i11+d2*i21;
     const double s2=d0*i02+d1*i12+d2*i22;
-    double n0=rnd(s0), n1=rnd(s1), n2=rnd(s2);
-    const double bound=std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2];
-    if(!(bound<safe && std::fabs(s0)<1e9 && std::fabs(s1)<1e9 && std::fabs(s2)<1e9)) {
+    const bool small=std::fabs(s0)<1e6 && std::fabs(s1)<1e6 && std::fabs(s2)<1e6;
+    double n0=0.0, n1=0.0, n2=0.0;
+    bool ok=false;
+    if(small) {
+      n0=rnd(s0);
+      n1=rnd(s1);
+      n2=rnd(s2);
+      ok=std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
+    }
+    if(!ok) {
       // far from the parent (or not finite): minimum image from distance()
       const Vector t=matmul(b-(a+distance(a,b)),invBox);
       n0=std::nearbyint(t[0]);
