@@ -55,9 +55,7 @@ public:
              Random& /*rng*/) override;
 
   fileTraj(std::string_view fmt,
-           std::string_view fname,
-           bool useMolfile,
-           int command_line_natoms);
+           std::string_view fname);
   bool overrideNat(unsigned& natoms) override;
 };
 } //namespace PLMD

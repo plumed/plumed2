@@ -86,13 +86,9 @@ void fileTraj::frame(View<Vector> posToUpdate,
 }
 
 fileTraj::fileTraj(std::string_view fmt,
-                   std::string_view fname,
-                   bool useMolfile,
-                   int command_line_natoms) {
+                   std::string_view fname) {
   auto errormessage=parser.init(fmt,
-                                fname,
-                                useMolfile,
-                                command_line_natoms);
+                                fname);
   if(errormessage) {
     plumed_error()<<*errormessage;
   }
