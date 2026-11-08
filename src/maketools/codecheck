@@ -174,7 +174,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector"
+echo "    src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector"
 echo "  since they are full of false positives"
 
 #the regexes like this avoid false positives for eventual composite names
@@ -190,13 +190,11 @@ gawk '{
 # with plumed we only exclude specific warnings from lapack and blas
     if(match($0,"[[](.*/|)lapack/")) next;
     if(match($0,"[[](.*/|)blas/")) next;
-    if(match($0,"[[](.*/|)molfile/")) next;
     if(match($0,"[[](.*/|)lepton/")) next;
     if(match($0,"[[](.*/|)asmjit/")) next;
     if(match($0,"[[](.*/|)xdrfile/")) next;
   } else {
-# with cppcheck we exclude molfile lapack and blas
-    if(match($0,"[[](.*/|)molfile/")) next;
+# with cppcheck we exclude lapack and blas
 # whole-program checks, only active with PLMD_CPPCHECK_BUILD_DIR (see above)
     if(match($0,":(unusedFunction|ctu[A-Za-z]+):")) next;
     if(match($0,"[[](.*/|)lapack/")) next;

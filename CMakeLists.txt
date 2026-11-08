@@ -21,7 +21,7 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 # ---------------------------------------------------------------- modules
 set(ALWAYS_MODULES asmjit blas core lapack lepton small_vector tools valtools)
 set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
-    liquid_crystal matrixtools molfile multicolvar refdist secondarystructure
+    liquid_crystal matrixtools multicolvar refdist secondarystructure
     setup vatom xdrfile)
 set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
 # Optional default-off modules (upstream: enabled by touching <mod>.on)
@@ -94,7 +94,7 @@ target_compile_definitions(plumedKernel PRIVATE
     LEPTON_BUILDING_STATIC_LIBRARY
     # optional features off for this build:
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
-    #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL, __PLUMED_HAS_MOLFILE_PLUGINS)
+    #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
 # include dirs: src root (for "core/X.h" style), each module dir (for
 # "tools/Tools.h" resolved from sibling modules), and gen dir for the .inc files

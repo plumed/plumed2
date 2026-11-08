@@ -297,7 +297,6 @@ public:
     set_to_zero(vec[0].data(),s*n*m);
   }
 
-  static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
   /// Build a concatenated exception message.
   /// Should be called with an in-flight exception.
   static std::string concatenateExceptionMessages();

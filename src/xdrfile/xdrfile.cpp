@@ -880,7 +880,7 @@ xdrfile_decompress_coord_float(float     *ptr,
 }
 
 /* PLUMED: the checks on the data read from the file are the ones added to
- * the copy of this decoder in src/molfile/Gromacs.h (xtc_3dfcoord) */
+ * the copy of this decoder in the molfile plugins (Gromacs.h, xtc_3dfcoord; removed in v2.11) */
 int
 xdrfile_decompress_coord_float_long(float     *ptr,
 									int       *size,

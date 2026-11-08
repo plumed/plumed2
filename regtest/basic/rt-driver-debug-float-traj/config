@@ -1,5 +1,4 @@
 type=driver
-plumed_needs=molfile_plugins
 # single precision interface of driver (--debug-float) with binary trajectories:
 # with the molfile plugins the single precision reader read no frame and the driver never ended
 extra_files="../../trajectories/molfile_plugin/traj.xtc"
