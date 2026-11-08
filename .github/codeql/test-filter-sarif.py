@@ -49,7 +49,7 @@ class FilterTests(unittest.TestCase):
     def test_only_opaque_api_comparison(self):
         lines = (ROOT / "src/main/main.cpp").read_text().splitlines()
         api = next(
-            i for i, line in enumerate(lines, 1) if line.strip() == "if(api>=11) {"
+            i for i, line in enumerate(lines, 1) if line.strip() == "if(api>=13) {"
         )
         self.assertTrue(
             module.excluded(

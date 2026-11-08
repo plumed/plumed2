@@ -24,7 +24,7 @@ def excluded(result, root):
         # Match the statement as well as the path so other comparisons stay on.
         line = location.get("region", {}).get("startLine", 0)
         lines = (root / uri).read_text().splitlines()
-        return 0 < line <= len(lines) and lines[line - 1].strip() == "if(api>=11) {"
+        return 0 < line <= len(lines) and lines[line - 1].strip() == "if(api>=13) {"
     return False
 
 
