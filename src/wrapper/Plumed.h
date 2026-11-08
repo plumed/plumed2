@@ -413,8 +413,10 @@
     checking when MPI declarations are visible.
   - Explicit shared C++ checking requires MPI declarations before this header
     and consistent declarations/options throughout the application. Missing
-    declarations are diagnosed. Set either numeric control to 0 to disable its
-    communicator classification; generic and provider type checks remain active.
+    declarations are diagnosed. This control is inactive when the C++ wrapper
+    is disabled with `__PLUMED_WRAPPER_CXX=0`. Set either numeric control to 0 to
+    disable its communicator classification; generic and provider type checks
+    remain active.
 
   C99, explicitly erased void pointers, and legacy callers without communicator
   annotations remain unchecked. Old kernels ignore the new annotations; new
@@ -581,16 +583,16 @@
   Only used in declarations, but affects the scope of the C interface also in definitions.
 */
 
+#ifndef __PLUMED_WRAPPER_CXX
+#define __PLUMED_WRAPPER_CXX 1
+#endif
+
 /* Optional generated MPI adapters. Explicit zero disables each adapter. */
 #ifndef __PLUMED_WRAPPER_MPI_HOST_ADAPTER
 #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 0
 #endif
 #ifndef __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 #define __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER 0
-#endif
-
-#ifndef __PLUMED_WRAPPER_CXX
-#define __PLUMED_WRAPPER_CXX 1
 #endif
 
 /*
@@ -633,7 +635,7 @@
 #ifndef __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK
 #define __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
 #endif
-#if defined(__cplusplus) && __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK && !__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+#if defined(__cplusplus) && __PLUMED_WRAPPER_CXX && __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK && !__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
 #if !defined(MPI_VERSION) && !defined(MPI_Comm) && !defined(__PLUMED_mpiwrap_mpi_h) && !defined(__PLUMED_mpiwrap_mpi_types_h)
 #error "C++ MPI communicator checking in shared wrappers requires MPI declarations before Plumed.h and consistent options in every translation unit"
 #endif
@@ -1331,6 +1333,14 @@ __PLUMED_WRAPPER_C_END
 #endif
 #endif
 
+/* A forward declaration is sufficient for transporting a provider pointer. */
+#ifdef __cplusplus
+namespace PLMD {
+namespace mpiwrap {
+struct plumed_mpi_provider;
+#if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN
+extern "C" {
 /**
  * \brief Native MPI provider descriptor for host injection. Available as of PLUMED 2.11.
  * \return Pointer to this translation unit's static provider descriptor.
@@ -1345,14 +1355,6 @@ __PLUMED_WRAPPER_C_END
  * selection, provider code lifetime and communicator-check defaults.
  * The returned descriptor pointer is passed directly, not by pointer-to-pointer.
  */
-/* A forward declaration is sufficient for transporting a provider pointer. */
-#ifdef __cplusplus
-namespace PLMD {
-namespace mpiwrap {
-struct plumed_mpi_provider;
-#if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-__PLUMED_WRAPPER_ANONYMOUS_BEGIN
-extern "C" {
 __PLUMED_WRAPPER_STATIC_INLINE const plumed_mpi_provider *plumed_mpi_implementation(void);
 }
 __PLUMED_WRAPPER_ANONYMOUS_END
@@ -1365,6 +1367,12 @@ using PLMD::mpiwrap::plumed_mpi_implementation;
 #else
 struct plumed_mpi_provider;
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
+/**
+ * \brief Native MPI provider descriptor for host injection. Available as of PLUMED 2.11.
+ * \return Pointer to this translation unit's static provider descriptor.
+ *
+ * See \ref ReferencePlumedH-2-11 for adapter configuration and provider lifetime.
+ */
 __PLUMED_WRAPPER_STATIC_INLINE const struct plumed_mpi_provider *plumed_mpi_implementation(void);
 #endif
 #endif

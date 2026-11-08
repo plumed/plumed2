@@ -195,7 +195,8 @@ to unchecked classification, keeping their definitions identical in MPI-aware
 and MPI-unaware translation units. Anonymous wrappers default to checking when
 MPI declarations are visible. Explicit shared C++ checking requires consistent
 MPI declarations/options throughout the application and diagnoses missing MPI
-declarations. Explicit 0 disables the corresponding communicator check;
+declarations. The C++ control is inactive when `__PLUMED_WRAPPER_CXX=0`.
+Explicit 0 disables the corresponding communicator check;
 generic type checks and dedicated provider tag checks remain enabled.
 The reserved flag `0x20000000` means the argument is incompatible. New kernels
 check it through `TypesafePtr::getMPIComm()` at the communicator boundary,

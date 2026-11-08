@@ -47,6 +47,14 @@ if "$cxx" -std=c++98 -D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=1 -I"$root/src/wrappe
   echo 'shared checked wrapper accepted missing MPI declarations' >&2; exit 1
 fi
 grep -q 'requires MPI declarations' "$task/no-mpi.log"
+# Disabling the C++ wrapper must also disable its MPI prerequisites.
+printf '%s\n' '#define __PLUMED_WRAPPER_IMPLEMENTATION 0' '#include "Plumed.h"' \
+  'void probe(plumed p, double* x) { plumed_cmd(p,"x",x); }' > "$task/no-cxx.cpp"
+for standard in c++98 c++17; do
+  "$cxx" -std="$standard" -Wall -Wextra -Werror -D__PLUMED_WRAPPER_CXX=0 \
+    -D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=1 -I"$root/src/wrapper" \
+    -x c++ -fsyntax-only "$task/no-cxx.cpp"
+done
 # Both absent declarations and explicit disable must compile in C11.
 printf '%s\n' '#define __PLUMED_WRAPPER_IMPLEMENTATION 0' '#include "Plumed.h"' \
   'void probe(plumed p, double* x) { plumed_cmd(p,"x",x); }' > "$task/no-mpi.c"
