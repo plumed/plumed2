@@ -10,11 +10,13 @@ hh: CUSTOM ARG=hh_bias FUNC=-x PERIODIC=NO
 
 DUMPGRID ARG=hh FILE=fes.dat FMT=%8.4f STRIDE=30 DO_AFTER_FINAL_STEP
 
-hh_collect_phi: COLLECT ARG=hh_phi CLEAR=30
-hh_collect_psi_x: COLLECT ARG=hh_psi_x CLEAR=30
-hh_collect_sigma_phi: COLLECT ARG=hh_sigma_phi CLEAR=30
-hh_collect_sigma_psi_x: COLLECT ARG=hh_sigma_psi_x CLEAR=30
-hh_collect_height: COLLECT ARG=hh_height CLEAR=30
+hh_collect_phi: COLLECT ARG=hh_phi CLEAR=30 ANALYZED_AT_END
+hh_collect_psi_x: COLLECT ARG=hh_psi_x CLEAR=30 ANALYZED_AT_END
+hh_collect_sigma_phi: COLLECT ARG=hh_sigma_phi CLEAR=30 ANALYZED_AT_END
+hh_collect_sigma_psi_x: COLLECT ARG=hh_sigma_psi_x CLEAR=30 ANALYZED_AT_END
+hh_collect_height: COLLECT ARG=hh_height CLEAR=30 ANALYZED_AT_END
+
+DUMPVECTOR ARG=hh_collect_phi,hh_collect_psi_x FILE=colvar STRIDE=30 FMT=%8.4f DO_AFTER_FINAL_STEP 
 
 hh_collect_inst: KDE ...
    ARG=hh_collect_phi,hh_collect_psi_x 
