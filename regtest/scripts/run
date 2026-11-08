@@ -46,6 +46,8 @@ plumed_thread_mpi=auto
 plumed_needs=
 plumed_modules=
 plumed_long=
+# Optional filename:absolute-tolerance entries. Other files use exact diffs.
+plumed_tolerance=()
 
 plumed_language=c++
 plumed_mpi_harness=no
@@ -440,12 +442,22 @@ for file in *.reference ; do
 # In this way, at least PLUMED native files (with fields) will be assumed to be
 # ASCII and diff will be shown in the log
     test "$(head -c 10 "$file")" = "#! FIELDS " && DIFFOPT="-a"
-    out="$(diff $DIFFOPT "$file" "$new.zfix")"
-    test -n "$out" && {
+    tolerance=
+    for entry in "${plumed_tolerance[@]}"; do
+      if [[ "$new" = "${entry%:*}" ]]; then
+        tolerance="${entry##*:}"
+      fi
+    done
+    if [[ -n "$tolerance" ]]; then
+      out="$(../../../scripts/numeric-diff "$file" "$new.zfix" "$tolerance" 2>&1)"
+    else
+      out="$(diff $DIFFOPT "$file" "$new.zfix" 2>&1)"
+    fi
+    if [[ $? -ne 0 ]]; then
       echo FAILURE
       echo "Diff for ${file%.reference}:"
       echo "$out"
-    }
+    fi
   else
     echo FAILURE
     echo FILE $new does not exist

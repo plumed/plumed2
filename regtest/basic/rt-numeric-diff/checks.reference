@@ -1,0 +1,16 @@
+Last decimal place: OK
+Beyond tolerance: OK
+Header mismatch: OK
+Label mismatch: OK
+Unexpected NaN: OK
+Single-column NaN: OK
+Unexpected infinity: OK
+Overflowing number: OK
+Column count: OK
+Missing row: OK
+Extra row: OK
+Empty actual file: OK
+Empty reference file: OK
+Two empty files: OK
+Invalid tolerance: OK
+Overflowing tolerance: OK
