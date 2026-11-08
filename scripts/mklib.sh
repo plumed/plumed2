@@ -30,12 +30,26 @@ then
   exit 1
 fi
 
-rm -f "$obj" "$lib"
+# Compile and link beside the destination, then publish only a complete library.
+tmpdir=$(mktemp -d "$(dirname "$lib")/plumed_mklib.XXXXXX") || exit 1
+cleanup() {
+  rm -rf "$tmpdir"
+}
+trap cleanup EXIT
 
 if test "$PLUMED_IS_INSTALLED" = yes ; then
-  eval "$compile" "$obj" "$file" && eval "$link_installed" "$lib" "$obj"
+  link="$link_installed"
 else
-  eval "$compile" "$obj" "$file" && eval "$link_uninstalled" "$lib" "$obj"
+  link="$link_uninstalled"
+fi
+
+tmpobj="$tmpdir/$(basename "$obj")"
+tmplib="$tmpdir/$(basename "$lib")"
+if eval "$compile" "$tmpobj" "$file" && eval "$link" "$tmplib" "$tmpobj" ; then
+  mv "$tmplib" "$lib"
+else
+  echo "ERROR: compiling or linking $file" >&2
+  exit 1
 fi
 
 
