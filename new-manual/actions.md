@@ -175,6 +175,9 @@ mpirun -np 4 ./plumed-mpi driver --ixyz traj.xyz
 
 The generated executable initializes MPI and injects that implementation before passing the communicator to PLUMED.
 Conda's optional `plumed-mpi` package supplies this executable and a matching provider for its selected MPI runtime.
+The host owns MPI initialization and finalization. Provider selection applies to all objects in the loaded kernel;
+compatible repeated injections retain the first provider and do not add functions to it. Provider code must remain
+loaded while PLUMED uses it, and the host must supply communicators compatible with that provider.
 
 ### OpenMP
 

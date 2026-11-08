@@ -152,7 +152,7 @@ checks.
 ## Inject the host MPI from Plumed.h
 
 When the host needs to inject the MPI implementation already used by its MD
-code, define `__PLUMED_WRAPPER_MPI_HOST_ADAPTER` in exactly one translation unit before
+code, define `__PLUMED_WRAPPER_MPI_HOST_ADAPTER=1` in each host translation unit before
 including `Plumed.h`. This embeds the host adapter independently of the wrapper
 implementation, so the host can link normally to `libplumed`. Define
 `__PLUMED_WRAPPER_IMPLEMENTATION` as well only when embedding the wrapper
@@ -186,8 +186,17 @@ ignore injection without reading or validating the supplied descriptor. Their
 provider registry, dispatch and fallback implementations are compiled out;
 standard MPI calls use the linked MPI library directly.
 
-When the local MPI declaration precedes `Plumed.h`, communicator arguments are
-checked against that translation unit's `MPI_Comm*`, preserving const pointers.
+Communicator classification uses the local `MPI_Comm*`, preserving const
+pointers. The numeric C11 control `__PLUMED_WRAPPER_C_MPI_COMM_CHECK` defaults
+to 1, within the existing C11 typesafe path. The numeric C++ control
+`__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK` defaults to
+`__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE`: shared public C++ wrappers default
+to unchecked classification, keeping their definitions identical in MPI-aware
+and MPI-unaware translation units. Anonymous wrappers default to checking when
+MPI declarations are visible. Explicit shared C++ checking requires consistent
+MPI declarations/options throughout the application and diagnoses missing MPI
+declarations. Explicit 0 disables the corresponding communicator check;
+generic type checks and dedicated provider tag checks remain enabled.
 The reserved flag `0x20000000` means the argument is incompatible. New kernels
 check it through `TypesafePtr::getMPIComm()` at the communicator boundary,
 before discovery or byte copying. In native mode this explicit request is
@@ -201,7 +210,8 @@ Communicator commands retain the pointer-only interface: pass `&comm`.
 An integer or distinct opaque-pointer handle passed by value is rejected when
 the local type is known. Explicitly erased void pointers remain unchecked,
 including when MPI_Comm is itself void*. C99's untyped interface is unchanged.
-Host-adapter mode includes native `mpi.h` before setting up its type checks.
+Host-adapter mode includes native `mpi.h`; explicit shared C++ checking still
+requires MPI declarations before including `Plumed.h`.
 Provider checks use type code 6 alone. No additional provider exclusion bit is
 needed; `0x40000000` and higher bits remain reserved.
 
@@ -218,14 +228,30 @@ invalid-object failure convention.
 Injection is **library-wide**, applying to every object in that loaded kernel.
 Inject into each newly created object: destroying the last object may unload
 the kernel, so a later object is not guaranteed to retain an earlier injection.
-Compatible repeated injections are allowed; replacing a selected provider is
-not. Independent copies of the generated header may have different local
-adapter and constant-accessor addresses. Repeated injection accepts those
-copies only when native runtime identity, ABI/layout, function availability and
-signatures, and constant widths/metadata agree. The original callback table
-remains installed. Objects own their normal loader references independently. Applications
-that need explicit lifetime control can retain their own `dlopen` handle and
-use `plumed_create_dlsym`.
+Every repeated descriptor is independently validated, then its representation
+contract is compared directly: compatible ABI major (accepted additive minor
+extensions may differ), execution as threads or processes, native handle sizes,
+status size/field offsets, and Fortran integer size/signedness. Known layout
+conflicts are rejected. Function/accessor addresses, runtime identity payloads,
+different function sets, optional metadata and descriptions do not reject a
+repeat. Callers are responsible for supplying compatible MPI communicators;
+matching layouts alone do not establish shared runtime identity.
+
+The first installed functions, constants and metadata remain unchanged. Repeated
+injection never merges capabilities; a function missing from the first provider
+still throws its usual unavailable exception. Descriptor/table/name/payload data
+are copied before installation returns, while executable code remains borrowed
+and must stay loaded. The stricter internal launcher identity/table comparison
+proves ownership of the exact embedded thread-MPI runtime and is intentionally
+independent of the public repeated-injection policy.
+
+Each host accessor is always static inline, independent of wrapper extern mode.
+Private generated C++ helpers follow the optional anonymous namespace, while
+shared ABI types retain stable identity and the standalone provider factory
+remains exported with C linkage. Both adapter controls default to numeric 0;
+explicit 0 disables them. Objects own their normal loader references independently.
+Applications needing explicit lifetime control can retain their own `dlopen`
+handle and use `plumed_create_dlsym`.
 
 Constructing an object does not select a provider. Its default communicators
 remain unresolved until actual MPI use and obtain SELF only after MPI is
@@ -617,11 +643,15 @@ name does not require providing it on every runtime.
    `thread-mpi-api.tsv` from the audited headers and review its release history
    as described below. The generated body and function table must use identical
    guards.
-5. Add a signature record in `signature-versions.json`. The fingerprint is
-   calculated by `canonical_signature_fingerprint()` in `generate.py`; the
-   validator rejects mismatches. Function IDs are derived deterministically
-   from names, not table positions or addresses. A signature revision is not an
-   MPI standard version. Changing an existing transport contract requires an
+5. Add a signature record in `signature-versions.json`. Its
+   `canonical_type_sha256` is a generation-time drift guard over the reviewed
+   manifest prototype, calculated by `canonical_signature_fingerprint()` in
+   `generate.py`. It is not computed from installed MPI headers or compared at
+   runtime. Function `signature_id` values hash names, not full prototypes,
+   table positions or addresses. `signature_version` versions the frozen
+   pointer-transport contract, not the MPI standard or native MPI version.
+   Compatible source-level const changes can update the prototype hash without
+   changing that transport revision. Changing an existing transport contract requires an
    explicit compatibility design; do not bump a revision merely to silence
    validation and assume already compiled adapters remain compatible.
 6. Existing conversion kinds are implemented by

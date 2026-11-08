@@ -2362,7 +2362,8 @@ def generate(output, write=True):
         fingerprint = canonical_signature_fingerprint(function["signature"])
         if record.get("canonical_type_sha256") != fingerprint:
             raise ValueError(
-                f"{name}: canonical signature changed; update signature version and fingerprint"
+                f"{name}: canonical prototype changed; review and update canonical_type_sha256; "
+                "change the transport version only if its ABI contract changes"
             )
         versions[name] = record["version"]
     api_symbols = {row["symbol"] for row in api_rows}

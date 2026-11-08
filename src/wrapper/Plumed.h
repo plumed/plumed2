@@ -324,7 +324,7 @@
   cmd("string",&value);       // by pointer
   cmd("string",&value,nelem); // by pointer, specifying the number of elements of the passed array
   cmd("string",&value,shape); // by pointer, specifying the shape of the passed array
-\endverbati
+\endverbatim
   The `nelem` and `shape` arguments are used by PLUMED to check that the user
   provided enough elements. If nelem is provided, the check is done on the flatten array, whereas if shape
   is passed a more thorough check is performed controlling each of the dimensions of the array.
@@ -344,6 +344,83 @@
   - If the C interface is used in C++ code, it calls the C++ interface. Can be disabled with `-D__PLUMED_WRAPPER_CXX_BIND_C=0`.
   - If the C interface is used in C code and compiled with a C11 compiler, it uses _Generic to pass type information.
     Can be disabled using `-D__PLUMED_WRAPPER_C_TYPESAFE=0`.
+
+\section ReferencePlumedH-2-11 New in PLUMED 2.11
+
+  A kernel built without a direct MPI dependency can use the MPI implementation
+  supplied by its host. The host adapter is opt-in and uses the existing command
+  interface: command API version 11 adds `injectMPIImplementation`, while the
+  kernel symbol table remains version 4. Query `getApiVersion` before sending
+  this command to an older kernel.
+
+\verbatim
+  #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
+  #include <mpi.h>
+  #include "Plumed.h"
+
+  // The host owns MPI initialization and finalization.
+  plumed p = plumed_create();
+  int api = 0;
+  plumed_cmd(p, "getApiVersion", &api);
+  if (api >= 11) {
+    plumed_cmd(p, "injectMPIImplementation", plumed_mpi_implementation());
+  }
+  MPI_Comm comm = MPI_COMM_WORLD;
+  plumed_cmd(p, "setMPIComm", &comm);
+\endverbatim
+
+  Inject after creating the object and before communicator setup or other MPI
+  use. Selection applies to every object in that loaded kernel, including rank
+  threads. Inject for each new object because destroying the last object may
+  unload the kernel. A directly MPI-linked kernel ignores injection and must
+  already use a compatible MPI runtime.
+
+  The returned `plumed_mpi_provider` descriptor and its data are copied during
+  installation; the provider's functions and constant-accessor code are borrowed
+  and must remain loaded while the kernel uses them. C++ ABI types have stable
+  identity in `PLMD::mpiwrap`. Each host accessor is always static inline,
+  independent of `__PLUMED_WRAPPER_EXTERN`, so multiple host translation units
+  may enable it. Private adapter helpers honor the optional anonymous namespace.
+
+  The first installed provider is retained, including its functions, constants
+  and metadata. Every repeated descriptor is validated and accepted unless its
+  ABI major or known native representation conflicts: execution as processes
+  or threads, handle sizes, status size/offsets, or Fortran integer representation.
+  Accepted additive ABI minor differences, different shim addresses, function
+  sets and optional metadata do not replace or extend that first table. A
+  missing function remains unavailable. Matching representations do not prove
+  shared MPI runtime identity; the caller must supply compatible communicators.
+
+  MPI adapter build controls are numeric:
+  - `__PLUMED_WRAPPER_MPI_HOST_ADAPTER` defaults to 0; set it to 1 for the local
+    `plumed_mpi_implementation()` accessor. Explicit 0 disables it.
+  - `__PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER` defaults to 0; set it to 1 for a
+    standalone provider with an exported, unmangled factory. It uses the same
+    generated adapter and requires no PLUMED library dependency.
+  - `__PLUMED_WRAPPER_MPI_GROMACS_VERSION` overrides the numeric host `GMX_VERSION`
+    for GROMACS thread-MPI (2026.0 is 20260000). The host bindings must be included
+    first; an unknown version or one older than 2026.0 is rejected.
+
+  Communicators retain their pointer-only interface: pass `&comm`, preserving
+  const storage where appropriate. Local communicator classification is separate
+  from the existing generic type checks and dedicated provider type tag:
+  - `__PLUMED_WRAPPER_C_MPI_COMM_CHECK` defaults to 1 within the existing C11
+    typesafe interface, and classifies when MPI declarations are visible.
+  - `__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK` defaults to
+    `__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE`. Shared public C++ classes thus
+    default to unchecked communicator classification, allowing MPI-aware and
+    MPI-unaware translation units to coexist. Anonymous wrappers default to
+    checking when MPI declarations are visible.
+  - Explicit shared C++ checking requires MPI declarations before this header
+    and consistent declarations/options throughout the application. Missing
+    declarations are diagnosed. Set either numeric control to 0 to disable its
+    communicator classification; generic and provider type checks remain active.
+
+  C99, explicitly erased void pointers, and legacy callers without communicator
+  annotations remain unchecked. Old kernels ignore the new annotations; new
+  kernels still accept correct legacy communicator pointers. Python marks
+  ordinary values as incompatible communicator storage, retaining its recognized
+  `mpi4py.MPI.Comm` and null paths. No MPI build dependency is added to Python.
 
 \section ReferencePlumedH-2-5 New in PLUMED 2.5
 
@@ -1255,23 +1332,18 @@ __PLUMED_WRAPPER_C_END
 #endif
 
 /**
+ * \brief Native MPI provider descriptor for host injection. Available as of PLUMED 2.11.
+ * \return Pointer to this translation unit's static provider descriptor.
+ *
  * Define __PLUMED_WRAPPER_MPI_HOST_ADAPTER to 1 in each host translation unit to provide
  * plumed_mpi_implementation(), using that host's MPI declarations. Pass its
  * result directly (not its address) to the existing command interface:
  *
  *     plumed_cmd(p, "injectMPIImplementation", plumed_mpi_implementation());
  *
- * First check getApiVersion >= 11 for older kernels. Inject after creating p,
- * before setMPIComm/setMPIFComm or initialization. The descriptor is borrowed
- * static storage; the host MPI code must remain loaded while PLUMED uses it.
- * A directly MPI-linked kernel ignores injection and must already use the
- * same MPI runtime as the host. Injection adds no kernel symbol-table entry.
- *
- * C++ and C11 preserve the descriptor's dedicated type tag. For communicator
- * checks, include the local MPI declarations before this header and pass
- * &comm. Explicit void pointers and the untyped C99 interface remain unchecked.
- * The new tag and exclusion bit use formerly reserved safeptr flags: old
- * kernels ignore them, and new kernels accept old communicator arguments.
+ * See \ref ReferencePlumedH-2-11 for command API compatibility, kernel-wide
+ * selection, provider code lifetime and communicator-check defaults.
+ * The returned descriptor pointer is passed directly, not by pointer-to-pointer.
  */
 /* A forward declaration is sufficient for transporting a provider pointer. */
 #ifdef __cplusplus

@@ -148,3 +148,11 @@ preflight lives in this test directory and is compiled separately by that
 script; the normal regression builds only `main.cpp`. The shared `mpi-test.h`
 harness remains in `regtest/scripts` for use by tests across several modules.
 There is no separate CLI host source.
+
+`check-host-header-linkage.sh` checks multiple host translation units in C99 and
+C++98/11/17, both anonymous namespace modes and both wrapper extern modes,
+reinclusion, numeric adapter disable, and non-exported host accessors.
+`check-native-adapter.sh` also checks exported unmangled standalone factories
+with anonymous mode enabled and disabled. Provider registry tests accept
+independent shims, differing valid function/metadata sets and additive ABI
+minors, retain the first table, and reject malformed repeats or layout conflicts.
