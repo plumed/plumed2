@@ -1,5 +1,5 @@
 diff --git a/src/PLUMED/fix_plumed.cpp b/src/PLUMED/fix_plumed.cpp
-index 1774748..f0a08a0 100644
+index 1774748..dfa44f2 100644
 --- a/src/PLUMED/fix_plumed.cpp
 +++ b/src/PLUMED/fix_plumed.cpp
 @@ -37 +37,4 @@
@@ -8,7 +8,8 @@ index 1774748..f0a08a0 100644
 +#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 +#endif
 +#include "../../Plumed.h"
-@@ -71,0 +75,8 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
+@@ -72 +75,9 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
+-  if ((api_version < 5) || (api_version > 11))
 +#if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
 +  if (api_version >= 13)
 +    p->cmd("injectMPIImplementation", plumed_mpi_implementation());
@@ -17,3 +18,7 @@ index 1774748..f0a08a0 100644
 +                   "The loaded PLUMED kernel does not support MPI injection. Ensure that PLUMED "
 +                   "uses the same MPI library as LAMMPS, or upgrade the PLUMED kernel.");
 +#endif
++  if ((api_version < 5) || (api_version > 13))
+@@ -75 +86 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
+-               "Only Plumed 2.4.x, 2.5.x, 2.6.x, 2.7.x, 2.8.x, 2.9.x, 2.10.x are tested and supported.");
++               "Only Plumed 2.4.x, 2.5.x, 2.6.x, 2.7.x, 2.8.x, 2.9.x, 2.10.x, 2.11.x are tested and supported.");

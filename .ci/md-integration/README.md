@@ -173,7 +173,10 @@ The small test-only `lammps/injection.patch` changes `fix_plumed.cpp` to include
 that copy, enables `__PLUMED_WRAPPER_MPI_HOST_ADAPTER`, and calls `injectMPIImplementation`
 after creating the PLUMED object and querying its API. Older kernels receive
 one main-rank warning to use the same MPI library as LAMMPS or upgrade PLUMED;
-their original communicator setup continues. No other LAMMPS code is changed.
+their original communicator setup continues. The patch also raises the tested
+API upper bound from 11 to 13 and adds PLUMED 2.11 to the supported-version
+message, retaining LAMMPS's rejection of newer, untested APIs. No other LAMMPS
+logic is changed.
 CI verifies that reversing the patch restores all tracked sources. CMake uses
 the installed PLUMED runtime wrapper (`PLUMED_MODE=runtime`), disables downloading
 another PLUMED, and enables LAMMPS's `OPENMP` and `PLUMED` packages.
