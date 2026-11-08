@@ -50,6 +50,7 @@
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
+struct t_inputrec;
 struct t_commrec;
 
 namespace gmx
@@ -68,6 +69,8 @@ struct PlumedOptions
     StartingBehavior    startingBehavior_{};
     bool                active_{ false };
     bool                replex_{ false };
+    //! The input record, for the step from which a restarted simulation continues
+    const t_inputrec*     inputrec_{ nullptr };
     //! Whether each atom is a virtual site, empty if there are none
     std::vector<bool>   isVirtualSite_;
 };
@@ -94,6 +97,10 @@ public:
     void setPlumedFile(const std::optional<std::string>& fname);
     //PATCH:: set the replex flag
     void setReplex(bool replex);
+    /*! @brief Sets the address of the input record
+     * @param inputrec the input record (its init_step is read when the module is set up)
+     */
+    void setInputrec(const t_inputrec* inputrec);
     /*! @brief Sets the timestep
      * @param timeStep the timestep value
      */

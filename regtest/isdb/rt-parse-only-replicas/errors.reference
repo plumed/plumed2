@@ -1,0 +1,6 @@
+== SHADOW without REFERENCE, --parse-only: exit code 0
+== SHADOW without REFERENCE: exit code 1
+ERROR in input to action SHADOW with label s : exactly one replica must use the REFERENCE flag
+== MAXENT with two APPLY_WEIGHTS, --parse-only: exit code 0
+== MAXENT with two APPLY_WEIGHTS: exit code 1
+ERROR in input to action MAXENT with label m : APPLY_WEIGHTS should have one value per replica

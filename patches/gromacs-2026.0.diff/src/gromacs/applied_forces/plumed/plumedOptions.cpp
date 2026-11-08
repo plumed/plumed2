@@ -109,6 +109,11 @@ void PlumedOptionProvider::setReplex(bool replex)
     opts_.replex_ = replex;
 }
 
+void PlumedOptionProvider::setInputrec(const t_inputrec* inputrec)
+{
+    opts_.inputrec_ = inputrec;
+}
+
 void PlumedOptionProvider::setMultisim(const gmx_multisim_t* ms)
 {
     opts_.ms_ = ms;

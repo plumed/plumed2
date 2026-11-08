@@ -29,7 +29,6 @@
 
 namespace PLMD {
 
-class Keywords;
 class Log;
 
 /**
@@ -56,8 +55,6 @@ private:
 
   double difference(double d1, double d2 ) const ;
 public:
-  static void registerKeywords( Keywords& keys );
-  static void generateBins( const std::string& params, std::vector<std::string>& bins );
   std::string description() const ;
   //Non periodic constructor
 #pragma acc routine seq
@@ -74,9 +71,6 @@ public:
 #pragma acc routine seq
   void isPeriodic( double mlow, double mhigh );
   static KernelType getKernelType( const std::string& ktype );
-  void setKernelType( const std::string& ktype );
-#pragma acc routine seq
-  void setKernelType( KernelType ktype );
   void set(const std::string& params, std::string& errormsg);
 #pragma acc routine seq
   void set(double l, double h, double w);

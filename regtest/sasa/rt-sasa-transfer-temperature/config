@@ -1,0 +1,21 @@
+type=driver
+plumed_modules=sasa
+# TYPE=TRANSFER without DELTAGFILE: the free energies of transfer are computed from the temperature of the MD engine
+# (--kt, 300 K), with APPROACH=2 and 3, for SASA_LCPO and SASA_HASEL. check.dat says whether the analytical
+# derivatives agree with the numerical ones (SASA_HASEL and SASA_LCPO with APPROACH=3, SASA_LCPO with TYPE=TOTAL).
+# SASA_LCPO is checked with plumed-lcpo.dat on the 4th frame only, where some atoms have a negative area.
+# On master the analytical derivatives of SASA_LCPO included the terms of the atoms whose area is negative,
+# which the value leaves out: they differed from the numerical ones for about 5% of the elements.
+# On master the temperature was read with getkBT() at every step, after the keywords it uses had been destroyed:
+# a segmentation fault depending on the memory layout (this input crashed).
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --kt 2.494339"
+extra_files="../rt-sasa-LCPO/helix.pdb ../rt-sasa-LCPO/ala12_trajectory.xyz"
+
+function plumed_regtest_after(){
+  sed -n '403,536p' ala12_trajectory.xyz > frame4.xyz
+  ${PLUMED_PROGRAM_NAME:-plumed} --no-mpi driver --plumed plumed-lcpo.dat --ixyz frame4.xyz --kt 2.494339 > out-lcpo 2>&1
+  for f in dh dl dt ; do
+    awk -v f=$f '!/^#/{d=$3-$4; if(d<0)d=-d; if(d>md)md=d; a=$3<0?-$3:$3; if(a>ma)ma=a}
+         END{print f ": " ((ma>0 && md<=1e-3*ma) ? "analytical and numerical derivatives agree" : "analytical and numerical derivatives DO NOT AGREE")}' $f
+  done > check.dat
+}

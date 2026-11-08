@@ -18,6 +18,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "tools/Communicator.h"
@@ -301,6 +302,21 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
     if(restartFileName.length()==0) {
       stateRestart=false;
       restartFileName=deltaFsFileName;
+    }
+    // At a restart from a step given by the MD engine the DELTAFS file is trimmed at that step before
+    // being read (see RESTART); the line of that step is kept with STATE_RFILE, since the STATE file
+    // written at the checkpoint of the MD engine includes that step
+    if(plumed.checkpointing.trimsAtRestart() && !getNoTrim()) {
+      if(comm.Get_rank()==0 && (NumWalkers_==1 || getReplicaIndex()==0)) {
+        plumed.checkpointing.trimAtRestart(NumWalkers_>1 ? deltaFsFileName : FileBase::appendSuffix(deltaFsFileName,plumed.getSuffix()),stateRestart);
+      }
+      comm.Barrier();
+      if(walkers_mpi) {
+        if(comm.Get_rank()==0) {
+          multi_sim_comm.Barrier();
+        }
+        comm.Barrier();
+      }
     }
     IFile ifile;
     ifile.link(*this);

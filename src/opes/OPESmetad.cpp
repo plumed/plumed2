@@ -397,6 +397,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
            "Larger values give a larger list, rebuilt less often. A second value is accepted for backward compatibility, but is not used");
   keys.addFlag("NLIST_OFF",false,"do not use the neighbor list for the kernels summation. The result is the same, but it can be slower when there are many kernels");
   keys.addDeprecatedFlag("NLIST","");
+  keys.addDeprecatedFlag("NLIST_PACE_RESET","");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, Z_n=1");
@@ -553,6 +554,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   plumed_massert(!(nlist_off && nlist_flag),"NLIST and NLIST_OFF cannot be used together");
   nlist_=!nlist_off;
   nlist_components_=nlist_flag;
+  bool nlist_pace_reset=false; //removed, the neighbor list is reset after each deposition with WALKERS_MPI
+  parseFlag("NLIST_PACE_RESET",nlist_pace_reset);
+  if(nlist_pace_reset) {
+    warning("NLIST_PACE_RESET has no effect: the neighbor list is exact, and with WALKERS_MPI it is reset after each deposition");
+  }
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
   nlist_param_=3.0;//*cutoff2_ -> max distance of neighbors
@@ -723,6 +729,25 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
     if(restartFileName.length()==0) {
       stateRestart=false;
       restartFileName=kernelsFileName;
+    }
+    // At a restart from a step given by the MD engine the KERNELS file is trimmed at that step before
+    // being read (see RESTART). The kernel of that step is computed again, so it is removed and the first
+    // update is not skipped; the STATE file written at the checkpoint of the MD engine already contains
+    // it, so with STATE_RFILE it is kept (and the first update is skipped as usual).
+    if(plumed.checkpointing.trimsAtRestart() && !getNoTrim()) {
+      if(comm.Get_rank()==0 && walker_rank_==0) {
+        plumed.checkpointing.trimAtRestart(NumWalkers_>1 ? kernelsFileName : FileBase::appendSuffix(kernelsFileName,plumed.getSuffix()),stateRestart);
+      }
+      comm.Barrier();
+      if(walkers_mpi) {
+        if(comm.Get_rank()==0) {
+          multi_sim_comm.Barrier();
+        }
+        comm.Barrier();
+      }
+      if(!stateRestart) {
+        isFirstStep_=false;
+      }
     }
     IFile ifile;
     ifile.link(*this);

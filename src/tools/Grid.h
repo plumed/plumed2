@@ -93,8 +93,6 @@ public:
 class Value;
 class IFile;
 class OFile;
-class KernelFunctions;
-class Communicator;
 class CheckpointWriter;
 class CheckpointReader;
 
@@ -353,8 +351,6 @@ public:
   void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
 /// add to grid value and derivatives (der_size must be the dimension of the grid)
   virtual void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size);
-/// add a kernel function to the grid
-  void addKernel( const KernelFunctions& kernel );
 
 /// call f(index,value) for each point that is stored, in increasing order of index: all the points of a dense grid,
 /// the points that have been set in a sparse grid (the others are zero)
@@ -366,8 +362,6 @@ public:
 
 /// dump grid on file
   virtual void writeToFile(OFile&)=0;
-/// dump grid to gaussian cube file
-  void writeCubeFile(OFile&, const double& lunit);
 
   virtual ~GridBase() = default;
 
@@ -444,8 +438,6 @@ public:
   double getMaxValue() const override;
 /// Scale all grid values and derivatives by a constant factor
   void scaleAllValuesAndDerivatives( const double& scalef );
-/// Takes the scalef times the logarithm of all grid values and derivatives
-  void logAllValuesAndDerivatives( const double& scalef );
 /// dump grid on file
   void writeToFile(OFile&) override;
 
@@ -455,16 +447,11 @@ public:
   void applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) );
 /// Get the difference from the contour
   double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der) const ;
-/// Find a set of points on a contour in the function
-  void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 /// Since this method returns a concrete Grid, it should be here and not in GridBase - GB
 /// project a high dimensional grid onto a low dimensional one: this should be changed at some time
 /// to enable many types of weighting
   Grid project( const std::vector<std::string> & proj, WeightBase *ptr2obj  );
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
-  void mpiSumValuesAndDerivatives( Communicator& comm );
-/// Integrate the function calculated on the grid
-  double integrate( std::vector<unsigned>& npoints );
   void clear();
 };
 
@@ -484,7 +471,6 @@ public:
     GridBase(funcl,args,gmin,gmax,nbin,dospline,usederiv) {}
 
   index_t getSize() const override;
-  index_t getMaxSize() const;
 
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
   using GridBase::getValue;

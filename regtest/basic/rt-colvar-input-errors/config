@@ -12,7 +12,7 @@ function plumed_regtest_after(){
       echo "$name: NOT REJECTED PROPERLY" >> errors
     fi
   done <<'EOT'
-pathmsd_stride0 NEIGH_STRIDE should be specified
+pathmsd_stride0 NEIGH_STRIDE should be positive
 pathmsd_lambda0 LAMBDA should be positive
 contactmap_noatoms no contacts have been specified
 pcarmsd_size eigenvector 1 contains 6 atoms
@@ -21,4 +21,15 @@ ermsd_pairs PAIRS should contain residue indices
 ghbfix_dmax D_MAX should be larger than D_0
 ghbfix_types your types table only covers
 EOT
+  # NEIGH_SIZE without NEIGH_STRIDE is accepted as in v2.10 (an input of PLUMED-NEST): the list is rebuilt at every step
+  for s in "" "NEIGH_STRIDE=1" ; do
+    echo "p: PATHMSD REFERENCE=multi.pdb LAMBDA=30 NEIGH_SIZE=2 $s
+PRINT ARG=p.* FILE=path$s.out FMT=%8.4f" > path.dat
+    $plumed driver --plumed path.dat --ixyz traj.xyz > /dev/null 2>&1
+  done
+  if cmp -s path.out pathNEIGH_STRIDE=1.out ; then
+    echo "pathmsd without NEIGH_STRIDE: same as NEIGH_STRIDE=1" >> errors
+  else
+    echo "pathmsd without NEIGH_STRIDE: DIFFERENT from NEIGH_STRIDE=1" >> errors
+  fi
 }

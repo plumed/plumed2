@@ -1,0 +1,9 @@
+type=driver
+# GYRATION goes through the shortcut (CENTER, DISTANCES, COVARIANCE_MATRIX, DIAGONALIZE) only with PHASES or with a list of WEIGHTS:
+# each TYPE with WEIGHTS=1,...,1 (label ending with w) must give the same value and derivatives as the unweighted GYRATION.
+# NOPBC: with PBC the two paths differ for atoms that are not a molecule (the C++ action makes the list whole, the shortcut takes
+# the minimum image of the distances from the center).
+# The differences are biased linearly, so that the forces (file forces) are zero if the derivatives agree.
+# PHASES and GYRATION_TENSOR are checked against their references.
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/trajectory.xyz"

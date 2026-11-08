@@ -16,6 +16,14 @@ If you would like to contribute new functionalities to PLUMED please read the fo
 
 \ref HowToContributeToPlumed
 
+Before changing an action or a tool used by other actions, read the checks collected here:
+
+\ref DeveloperPitfalls
+
+Inputs written for PLUMED 2.10 that need changes to run with PLUMED 2.11 are listed here:
+
+\ref Migration211
+
 We ask that contributors endeavor to maintain the portability of plumed by, as much as possible, using only the STL library and lapack in modifications.  
 If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not installed during a default compilation.  
 However, do feel free to provide alternative compilation options that incorporate your functionality.

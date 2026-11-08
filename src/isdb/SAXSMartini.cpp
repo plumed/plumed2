@@ -27,7 +27,24 @@
 namespace PLMD {
 namespace isdb {
 
+// Populate Martini coarse-grained force-field form-factor coefficients used by SAXS.
+//
+// This routine appends the tabulated coefficient set for each Martini bead/residue
+// type into `parameter`, indexed by the corresponding enum value (e.g. ALA_BB, ARG_SC1).
+// Each entry is stored as an ordered list of long double constants and must preserve
+// the exact ordering expected by the SAXS model evaluation code.
+//
+// Notes for maintainers:
+// - `atoms` is part of the common interface for form-factor initialization and is not
+//   directly used while inserting this static parameter table.
+// - The values below are reference parameters; do not reorder or modify them unless
+//   updating from a validated Martini parameter source.
+// - `parameter` is appended-to (push_back), so callers must ensure the container is
+//   initialized with enough slots for all enum indices used here.
+// - For each bead type, coefficients are inserted in the exact model-defined order.
+//   Keep exactly seven coefficients per bead entry unless the SAXS model changes.
 void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter) {
+  // Alanine: backbone bead (ALA_BB)
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
   parameter[ALA_BB].push_back(7.54281);
@@ -36,6 +53,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   parameter[ALA_BB].push_back(6.09318);
   parameter[ALA_BB].push_back(-1.18913);
 
+  // Arginine: backbone bead (ARG_BB)
   parameter[ARG_BB].push_back(10.729);
   parameter[ARG_BB].push_back(-0.0392574);
   parameter[ARG_BB].push_back(1.15382);
@@ -44,6 +62,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   parameter[ARG_BB].push_back(1.72922);
   parameter[ARG_BB].push_back(-0.33799);
 
+  // Arginine: side-chain bead 1 (ARG_SC1)
   parameter[ARG_SC1].push_back(-2.796);
   parameter[ARG_SC1].push_back(0.472403);
   parameter[ARG_SC1].push_back(8.07424);
@@ -52,6 +71,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   parameter[ARG_SC1].push_back(4.95677);
   parameter[ARG_SC1].push_back(-0.725797);
 
+  // Arginine: side-chain bead 2 (ARG_SC2)
   parameter[ARG_SC2].push_back(15.396);
   parameter[ARG_SC2].push_back(0.0636736);
   parameter[ARG_SC2].push_back(-1.258);

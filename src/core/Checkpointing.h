@@ -33,6 +33,7 @@ namespace PLMD {
 class PlumedMain;
 class CheckpointReader;
 class OFile;
+class Action;
 
 /**
 Exact-restart checkpoint of a PLUMED run, configured by the CHECKPOINT action.
@@ -61,7 +62,8 @@ class Checkpointing {
 /// Files rewritten from scratch at every write (OFile::rewind): they are not
 /// trimmed at restart, since the next write replaces them anyway
   std::set<std::string> snapshotFiles;
-/// Field headers recorded in the checkpoint being restored, by path
+/// Field headers recorded in the checkpoint being restored, or found when
+/// trimming a file at the restart step, by path
   std::map<std::string,std::string> lastFields;
 /// Checkpoint being restored, consumed at the first step
   std::unique_ptr<CheckpointReader> pending;
@@ -69,6 +71,14 @@ class Checkpointing {
   long long int restartStep=-1;
   long long int lastWrittenStep=-1;
   bool warnedAboutUnportedState=false;
+/// Step from which the MD engine restarts (cmd "setRestartStep"), -1 if not given
+  long long int engineRestartStep=-1;
+/// The first step presented after a restart has been compared with engineRestartStep
+  bool engineRestartStepChecked=false;
+/// False with RESTART NO_TRIM
+  bool trimEnabled=true;
+/// Files already trimmed at the restart step (or left as they are)
+  std::set<std::string> trimmedFiles;
   void write();
   void restore();
   void trimFiles(CheckpointReader& reader);
@@ -87,6 +97,9 @@ public:
 /// Record a file opened for writing (called by OFile::open) and, after a
 /// restart, restore the header of its last line so that it is not printed again.
   void registerOutputFile(OFile& file);
+/// After a restart, restore the field header of the last line of a file appended
+/// to (from the checkpoint, or found when trimming it), so that it is not printed again.
+  void restoreLastFields(OFile& file) const;
 /// Mark a file as rewritten from scratch at every write (called by OFile::rewind).
   void markSnapshotFile(const std::string& fileName);
 /// To be called before any computation of the current step, possibly more
@@ -103,6 +116,37 @@ public:
   }
 /// Full path of the checkpoint file for this replica, given its base name.
   std::string suffixedPath(const std::string& fileName) const;
+/// Step from which the MD engine restarts (cmd "setRestartStep", before init).
+  void setEngineRestartStep(long long int step);
+  long long int getEngineRestartStep() const {
+    return engineRestartStep;
+  }
+/// RESTART NO_TRIM: the files are appended as they are.
+  void disableTrimming() {
+    trimEnabled=false;
+  }
+/// True when the files appended at restart are trimmed at the restart step:
+/// the MD engine gave the step, trimming was not switched off, and the run does
+/// not restart from a checkpoint (which trims the files to the recorded sizes).
+  bool trimsAtRestart() const {
+    return engineRestartStep>=0 && trimEnabled && !isRestartingFromCheckpoint();
+  }
+/// Remove from a file the lines written at or after the restart step, i.e. the
+/// last lines whose time is not smaller than the time of the restart step (the
+/// earlier lines, also those of earlier runs whose time restarted from zero, are
+/// kept). Files without a time field, compressed files, and files where the
+/// time of these lines is not increasing are left as they are, with a line in
+/// the log. Each file is processed only once. To be called by one process only,
+/// before the file is read or written by this run (see OFile).
+/// keepRestartStep: the lines of the restart step itself are kept (e.g. the hill of
+/// that step, when the bias is read from a grid written at the checkpoint).
+  void trimAtRestart(const std::string& fileName,bool keepRestartStep=false);
+/// For an action that reads one of its output files at restart before appending
+/// to it (e.g. the hills of METAD): trim the file at the restart step first, if
+/// it is trimmed (see trimAtRestart and NO_TRIM). The path is the one the action
+/// writes: name with the replica suffix, unless nosuffix. To be called by all the
+/// processes of the action.
+  void trimOutputFileAtRestart(Action& action,const std::string& name,bool nosuffix=false);
 };
 
 }

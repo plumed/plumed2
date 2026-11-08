@@ -402,6 +402,9 @@ public:
   void writeCheckpoint(CheckpointWriter& w) override;
   void readCheckpoint(CheckpointReader& r) override;
   bool checkNeedsGradients()const override;
+
+private:
+  unsigned setupPartitionedFamilies(std::vector<Value*>& pfhold);
 };
 
 PLUMED_REGISTER_ACTION(PBMetaD,"PBMETAD")
@@ -472,87 +475,9 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
 
   parse("FMT",fmt_);
 
-  // Partitioned Families - fill with -1 to mark as invalid
-  std::vector<int> pfs(getNumberOfArguments(), -1);
   // the first argument of each family (for HILLS & GRID files)
   std::vector<Value*> pfhold;
-  std::vector<Value*> familyargs;
-  for(int i = 0;; i++) {
-    parseArgumentList("PF", i, familyargs);
-    if (familyargs.empty()) {
-      break;
-    }
-
-    do_pf_ = true;
-    pfhold.push_back(nullptr);
-    log << "  Identified Partitioned Family " << i << ":";
-    for (unsigned j = 0; j < familyargs.size(); j++) {
-      log << " " << familyargs[j]->getName();
-      // loop through the argument list to make sure it exists and assign it
-      bool foundArg = false;
-      for (unsigned argnum = 0; argnum < getNumberOfArguments(); argnum++) {
-        if (familyargs[j]->getName() == getPntrToArgument(argnum)->getName()) {
-          foundArg = true;
-          if (pfs[argnum] != -1) {
-            error(familyargs[j]->getName() + " already present in PF" + std::to_string(pfs[argnum]));
-          }
-          pfs[argnum] = i;  // store the pf# for each cv
-          if (pfhold[i] == nullptr) {
-            // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
-            pfhold[i] = getPntrToArgument(argnum);
-          }
-        }
-      }
-      if (!foundArg) {
-        error(familyargs[j]->getName() + " in PF" + std::to_string(i) + " not found in ARG");
-      }
-    }
-    log << "\n";
-  }
-
-  // if PF were specified, every argument gets treated as its own PF
-  if (!do_pf_) {
-    for(unsigned i=0; i < getNumberOfArguments(); i++) {
-      pfhold.push_back(getPntrToArgument(i));
-      pfs[i] = i;
-    }
-  } else {
-    // If we are doing PF, make sure each argument got assigned to a family.
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      if (pfs[i] == -1) {
-        error(getPntrToArgument(i)->getName() + " was not assigned a PF");
-      }
-    }
-  }
-  const unsigned pf_n=pfhold.size();
-  pfs_.assign(pfs.begin(),pfs.end());
-  // the arguments of a family share a one dimensional bias (and its hills file and grid)
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    const Value* arg=getPntrToArgument(i);
-    const Value* first=pfhold[pfs_[i]];
-    bool same=(arg->isPeriodic()==first->isPeriodic());
-    if(same && arg->isPeriodic()) {
-      std::string amin,amax,fmin,fmax;
-      arg->getDomain(amin,amax);
-      first->getDomain(fmin,fmax);
-      same=(amin==fmin && amax==fmax);
-    }
-    if(!same) {
-      error("the arguments in a partitioned family must have the same periodicity: "+arg->getName()+" and "+first->getName()+" do not");
-    }
-  }
-  families_.resize(pf_n);
-  for(unsigned i=0; i<getNumberOfArguments(); i++) {
-    families_[pfs_[i]].args.push_back(i);
-  }
-  for(unsigned f=0; f<pf_n; f++) {
-    families_[f].arg=pfhold[f];
-    families_[f].kernel.setArguments(std::vector<Value*>(1,pfhold[f]));
-    // stretched Gaussians (they go to zero at the cutoff), as in METAD and as written in the hills files
-    if(!dp2cutoffNoStretch()) {
-      families_[f].kernel.setStretch(dp2cutoffA,dp2cutoffB);
-    }
-  }
+  const unsigned pf_n=setupPartitionedFamilies(pfhold);
 
   // parse the sigma
   parseVector("SIGMA",sigma0_);
@@ -994,6 +919,89 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
     log<<plumed.cite("Prakash, Fu, Bonomi, and Pfaendtner, J. Chem. Theory Comput. 14, 4985 (2018)");
   }
   log<<"\n";
+}
+
+unsigned PBMetaD::setupPartitionedFamilies(std::vector<Value*>& pfhold) {
+  // Partitioned Families - fill with -1 to mark as invalid
+  std::vector<int> pfs(getNumberOfArguments(), -1);
+  std::vector<Value*> familyargs;
+  for(int i = 0;; i++) {
+    parseArgumentList("PF", i, familyargs);
+    if (familyargs.empty()) {
+      break;
+    }
+
+    do_pf_ = true;
+    pfhold.push_back(nullptr);
+    log << "  Identified Partitioned Family " << i << ":";
+    for (unsigned j = 0; j < familyargs.size(); j++) {
+      log << " " << familyargs[j]->getName();
+      // loop through the argument list to make sure it exists and assign it
+      bool foundArg = false;
+      for (unsigned argnum = 0; argnum < getNumberOfArguments(); argnum++) {
+        if (familyargs[j]->getName() == getPntrToArgument(argnum)->getName()) {
+          foundArg = true;
+          if (pfs[argnum] != -1) {
+            error(familyargs[j]->getName() + " already present in PF" + std::to_string(pfs[argnum]));
+          }
+          pfs[argnum] = i;  // store the pf# for each cv
+          if (pfhold[i] == nullptr) {
+            // if this is the first argument in the family, store a pointer for it (this is for HILLS & GRID files)
+            pfhold[i] = getPntrToArgument(argnum);
+          }
+        }
+      }
+      if (!foundArg) {
+        error(familyargs[j]->getName() + " in PF" + std::to_string(i) + " not found in ARG");
+      }
+    }
+    log << "\n";
+  }
+
+  // if PF were specified, every argument gets treated as its own PF
+  if (!do_pf_) {
+    for(unsigned i=0; i < getNumberOfArguments(); i++) {
+      pfhold.push_back(getPntrToArgument(i));
+      pfs[i] = i;
+    }
+  } else {
+    // If we are doing PF, make sure each argument got assigned to a family.
+    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+      if (pfs[i] == -1) {
+        error(getPntrToArgument(i)->getName() + " was not assigned a PF");
+      }
+    }
+  }
+  const unsigned pf_n=pfhold.size();
+  pfs_.assign(pfs.begin(),pfs.end());
+  // the arguments of a family share a one dimensional bias (and its hills file and grid)
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    const Value* arg=getPntrToArgument(i);
+    const Value* first=pfhold[pfs_[i]];
+    bool same=(arg->isPeriodic()==first->isPeriodic());
+    if(same && arg->isPeriodic()) {
+      std::string amin,amax,fmin,fmax;
+      arg->getDomain(amin,amax);
+      first->getDomain(fmin,fmax);
+      same=(amin==fmin && amax==fmax);
+    }
+    if(!same) {
+      error("the arguments in a partitioned family must have the same periodicity: "+arg->getName()+" and "+first->getName()+" do not");
+    }
+  }
+  families_.resize(pf_n);
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    families_[pfs_[i]].args.push_back(i);
+  }
+  for(unsigned f=0; f<pf_n; f++) {
+    families_[f].arg=pfhold[f];
+    families_[f].kernel.setArguments(std::vector<Value*>(1,pfhold[f]));
+    // stretched Gaussians (they go to zero at the cutoff), as in METAD and as written in the hills files
+    if(!dp2cutoffNoStretch()) {
+      families_[f].kernel.setStretch(dp2cutoffA,dp2cutoffB);
+    }
+  }
+  return pf_n;
 }
 
 void PBMetaD::initializeDiffusionStatistics() {

@@ -307,11 +307,12 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
       unsigned ind;
       Tools::convert( gtype.substr(und+1), ind );
       // Now get the appropriate quantity
-      if( ind==3 ) {
+      // the eigenvalues are in decreasing order: RGYR_1 (the largest radius) leaves out the smallest one
+      if( ind==1 ) {
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-2 FUNC=sqrt(x+y) PERIODIC=NO");
       } else if( ind==2 ) {
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-1," + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
-      } else if( ind==1 ) {
+      } else if( ind==3 ) {
         readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_diag.vals-2," + getShortcutLabel() + "_diag.vals-3 FUNC=sqrt(x+y) PERIODIC=NO");
       } else {
         error( gtype + " is not a valid type for gyration radius");

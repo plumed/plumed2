@@ -116,6 +116,7 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.addFlag("NO_AVERAGE",false,"output a two-dimensional grid with separate RDF functions for each of the central atoms");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
+  keys.add("hidden","CUTOFF","removed in PLUMED 2.11: use D_MAX in KERNEL instead");
   keys.setValueDescription("grid","the radial distribution function");
   keys.needsAction("REFERENCE_GRID");
   keys.needsAction("VOLUME");
@@ -131,6 +132,14 @@ void RDF::registerKeywords( Keywords& keys ) {
 RDF::RDF(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
+  // CUTOFF was removed with the new syntax for the kernels: say what to write instead
+  double oldcut=-1;
+  parse("CUTOFF",oldcut);
+  if( oldcut>=0 ) {
+    std::string dmax;
+    Tools::convert( std::sqrt(2*oldcut), dmax );
+    error("CUTOFF was removed in PLUMED 2.11: the kernels are now truncated with KERNEL, use KERNEL={GAUSSIAN D_MAX=" + dmax + "} (D_MAX=sqrt(2*CUTOFF), in units of BANDWIDTH)");
+  }
   bool noaverage;
   parseFlag("NO_AVERAGE",noaverage);
   // Read in grid extent and number of bins

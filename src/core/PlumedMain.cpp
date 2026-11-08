@@ -805,7 +805,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(11));
+        val.set(int(12));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -982,6 +982,14 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         if(val.get<int>()!=0) {
           restart=true;
         }
+        break;
+      /* ADDED WITH API==12 */
+      case cmd_setRestartStep:
+        // the step from which the MD engine restarts: the lines written at or after
+        // it in the files that are appended are removed (see RESTART)
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        checkpointing.setEngineRestartStep(val.get<long long int>());
         break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:

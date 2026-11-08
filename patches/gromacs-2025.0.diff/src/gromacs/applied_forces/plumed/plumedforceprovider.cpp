@@ -53,6 +53,7 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -119,6 +120,17 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
         {
             int res = 1;
             plumed_->cmd("setRestart", &res);
+        }
+    }
+
+    if (plumedAPIversion_ > 11)
+    {
+        /* The step from which the simulation continues after -cpi: PLUMED removes from its
+           output files the lines written at or after it, as GROMACS does with its own files */
+        if (options.startingBehavior_ != StartingBehavior::NewSimulation && options.inputrec_ != nullptr)
+        {
+            long long int restartStep = options.inputrec_->init_step;
+            plumed_->cmd("setRestartStep", &restartStep);
         }
     }
 

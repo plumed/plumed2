@@ -284,7 +284,8 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(apply_weights.size()==0) {
     apply_weights.resize(nrep,1.0);
   }
-  if(apply_weights.size()!=static_cast<std::size_t>(nrep)) {
+  // with --parse-only the input of a run with several replicas is read by a single replica
+  if(apply_weights.size()!=static_cast<std::size_t>(nrep) && !plumed.parseOnlyMode()) {
     error("APPLY_WEIGHTS should have one value per replica");
   }
   parseVector("KAPPA",kappa);
@@ -385,6 +386,10 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   std::string fname;
   fname=lagmultfname;
   ifile.link(*this);
+  if(getRestart()) {
+    // at a restart from a step given by the MD engine the lines from that step on are removed first (see RESTART)
+    plumed.checkpointing.trimOutputFileAtRestart(*this,fname);
+  }
   if(ifile.FileExist(fname)) {
     ifile.open(fname);
     if(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {
