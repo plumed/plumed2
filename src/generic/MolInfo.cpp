@@ -79,6 +79,22 @@ files, for instance using different naming conventions (see issue 134).
 
 More information of the PDB parser implemented in PLUMED can be found in the documentation for the [PDB2CONSTANT](PDB2CONSTANT.md) command.
 
+The STRUCTURE file can also be an mmCIF (PDBx/mmCIF) file: files with extension `.cif` or `.mmcif` are read as mmCIF.
+The atoms are read from the `_atom_site` table (first model only), using the author (`auth_`) chain ids, residue numbers,
+residue names and atom names when they are present, and the `label_` ones otherwise. Chain ids and residue names are read in full,
+so that chains with more than one character can be selected (see below).
+By default the atoms are numbered with the `_atom_site.id` column. If these ids do not match the numbering of the atoms in your
+simulation, `CIF_ATOM_ID=order` numbers the atoms 1,2,3... in the order in which they appear in the file:
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt-molinfo-mmcif/ref-gmx.cif
+MOLINFO STRUCTURE=regtest/basic/rt-molinfo-mmcif/ref-gmx.cif CIF_ATOM_ID=order
+t1: TORSION ATOMS=@phi-A_3
+```
+
+When the structure has alternate locations for some atoms (in a PDB or in an mmCIF file), only the first location found in each residue
+is read, and the number of atoms that were skipped is written in the log.
+
 If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e. not broken by PBC.
 **This will impact PBC calculations in all the actions following the MOLINFO action!**.
 In particular, actions that reconstruct molecules locally will do the reconstruction using a
@@ -130,10 +146,20 @@ So for example
 @psi-C1  or @psi-C_1 will define the same torsion for residue 1 of chain C.
 @psi--3, @psi-C-3 or @psi-C_-3 will select the psi torsion of residue -3 (of chain C in the last two cases).
 @psi-3_1 will define the same torsion for residue 1 of chain 3.
+@psi-A1_12 will define the torsion for residue 12 of chain A1.
+@psi-A_52A or @psi-52A will define the torsion for residue 52 with insertion code A (of chain A in the first case).
 ````
 
 Using the underscore to separate chain and residue is available as of PLUMED 2.5 and allows you to select chains
-with a numeric id.
+with a numeric id. The chain is everything that precedes the last underscore, so this form works with any chain id,
+including the ones with more than one character that are found in mmCIF files (`@psi-AA_12`, `@psi-A1_12`).
+Without the underscore, the chain is everything that precedes the first digit.
+
+The residue number can be followed by an insertion code (`@phi-A_52A`), as found in the column 27 of PDB files and in
+`_atom_site.pdbx_PDB_ins_code` of mmCIF files. A residue number without insertion code selects the residue that has no insertion code.
+The dihedrals that involve the previous or the next residue (e.g. `@phi-#` and `@psi-#`) take the residue that precedes or follows
+in the file, in the same chain, if its number is the previous (next) one or the same with another insertion code
+(as in a numbering such as 52, 52A, 52B, 53); otherwise the residue with the previous (next) number.
 
 Breaking the table above down we see that for protein residues, the following groups are available:
 
