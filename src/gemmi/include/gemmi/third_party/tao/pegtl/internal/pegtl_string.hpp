@@ -10,7 +10,7 @@
 #include "../ascii.hpp"
 #include "../config.hpp"
 
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -52,7 +52,7 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 
 #define TAO_PEGTL_INTERNAL_EMPTY()
 #define TAO_PEGTL_INTERNAL_DEFER( X ) X TAO_PEGTL_INTERNAL_EMPTY()

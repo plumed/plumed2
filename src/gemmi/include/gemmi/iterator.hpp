@@ -9,7 +9,7 @@
 #include <type_traits>  // for remove_cv
 #include <vector>
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 
 // Disable warning "X<T>::operator X<T>() const will not be called for
 // implicit or explicit conversions", which is triggered when templates
@@ -283,5 +283,5 @@ private:
   #pragma nv_diagnostic pop
 #endif
 
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

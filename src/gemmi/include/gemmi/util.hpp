@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 
 //   #####   string helpers   #####
 
@@ -311,5 +311,5 @@ constexpr int ialpha3_id(const char* s) {
   return (s[0] << 16 | s[1] << 8 | s[2]) & ~0x20202020;
 }
 
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

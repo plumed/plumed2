@@ -28,7 +28,7 @@
 #pragma warning(disable: 4267)
 #endif
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 namespace cif {
 using std::size_t;
 using gemmi::fail;
@@ -1200,5 +1200,5 @@ inline std::string quote(std::string v) {
 #endif
 
 } // namespace cif
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

@@ -9,7 +9,7 @@
 #include "grammar_info.hpp"
 #include "rule_type.hpp"
 
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -38,6 +38,6 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 
 #endif

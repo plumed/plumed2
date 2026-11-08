@@ -32,7 +32,15 @@
 
 #ifdef __PLUMED_HAS_SYSTEM_GEMMI
 #include <gemmi/cif.hpp>
+// A gemmi installed in the system lives in the global namespaces gemmi and tao:
+// PLUMED refers to them as PLMD::gemmi and PLMD::tao in both cases
+namespace PLMD {
+namespace gemmi = ::gemmi;
+namespace tao = ::tao;
+}
 #else
+// The shipped copy is in the namespaces PLMD::gemmi and PLMD::tao (see import.sh),
+// so that it cannot clash with another copy of gemmi or PEGTL in the same program
 #include "include/gemmi/cif.hpp"
 #endif
 

@@ -6,7 +6,7 @@
 
 #include "config.hpp"
 
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -15,6 +15,6 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 
 #endif

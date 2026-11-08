@@ -17,7 +17,7 @@
 #include <stdexcept>  // for invalid_argument
 #include <string>
 
-namespace gemmi {
+namespace PLMD { namespace gemmi {
 
 // equivalent of std::isspace for C locale (no handling of EOF)
 inline bool is_space(char c) {
@@ -131,5 +131,5 @@ inline int no_sign_atoi(const char* p, const char** endptr=nullptr) {
   return n;
 }
 
-} // namespace gemmi
+} } // namespace PLMD::gemmi
 #endif

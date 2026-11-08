@@ -15,7 +15,7 @@
 // std::filesystem::filesystem_error (the latter is derived from the former).
 // Here we half-backported it - input_error is replaced with system_error.
 #if 0
-namespace tao
+namespace PLMD { namespace tao
 {
    namespace TAO_PEGTL_NAMESPACE
    {
@@ -33,7 +33,7 @@ namespace tao
 
    }  // namespace TAO_PEGTL_NAMESPACE
 
-}  // namespace tao
+} }  // namespace PLMD::tao
 #endif
 
 #define TAO_PEGTL_INTERNAL_UNWRAP( ... ) __VA_ARGS__
