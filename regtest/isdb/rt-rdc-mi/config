@@ -1,3 +1,10 @@
 mpiprocs=4
 type=driver
 arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --ixyz ala12_trajectory.xyz --multi 2  --dump-forces allforce"
+
+# Finite-difference derivatives can round to adjacent values with Intel's
+# compiler. Allow one unit of the two printed decimals in these files only.
+plumed_tolerance=(
+  "deriv.0:1e-2"
+  "deriv.1:1e-2"
+)
