@@ -24,6 +24,7 @@
 #include "MetaDHills.h"
 #include "core/Action.h"
 #include "core/Checkpointing.h"
+#include "tools/H5Table.h"
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
@@ -172,6 +173,15 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
   const bool restart=action.getRestart();
   // with WALKERS_MPI the walkers must all read a grid, or none
   walkers.checkSameChoice(action,restartedFromGrid,"GRID");
+  // with WALKERS_N a walker reads the hills files while the others write them: this is possible
+  // with text files, not with HDF5 tables
+  if(walkers.n>1) {
+    for(const auto & input : inputs) {
+      if(h5table::isH5(input.name)) {
+        action.error("the hills files of multiple walkers that share files (WALKERS_N) cannot be HDF5 tables (.h5): use WALKERS_MPI or text files");
+      }
+    }
+  }
 
   if(walkers.mpi && walkers.dir=="") {
     // if possible the first replica shares its current directory, so that all the walkers read the same files

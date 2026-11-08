@@ -23,6 +23,7 @@
 #define __PLUMED_tools_OFile_h
 
 #include "FileBase.h"
+#include "H5Table.h"
 #include <vector>
 #include <sstream>
 #include <memory>
@@ -164,7 +165,23 @@ class OFile:
 /// Class identifying a single field for fielded output
   class Field:
     public FieldBase {
+  public:
+/// the value with its type, for HDF5 tables (value holds it as text)
+    h5table::Value typed;
   };
+/// Set a field (text: as written in a text file, typed: for HDF5 tables)
+  void setField(const std::string& name,const std::string& text,const h5table::Value& typed);
+/// True for an HDF5 table (extension .h5): the rows are written with h5writer
+  bool h5mode=false;
+/// Writer of the HDF5 table (on the writing process only), created at the first row (see h5open)
+  std::unique_ptr<h5table::Writer> h5writer;
+/// The HDF5 table is appended to (restart, or after its first row) rather than created
+  bool h5append=false;
+/// Create the writer of the HDF5 table, if not done yet (writing process only): after the
+/// trim at the restart step, so that files rewritten at every write are never trimmed
+  void h5open();
+/// Close the HDF5 table
+  void closeBackend() override;
 /// Low-level write
   std::size_t llwrite(const char*,std::size_t);
 /// True if fields has changed.
@@ -227,6 +244,10 @@ public:
   }
 /// Constructor
   OFile();
+/// Destructor
+  ~OFile() override;
+/// For an HDF5 table: the number of rows of every block written so far (on the writing process)
+  std::vector<unsigned long long> getH5Rows();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open

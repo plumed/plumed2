@@ -30,6 +30,7 @@
 #include "tools/OFile.h"
 #include "tools/FileBase.h"
 #include "tools/Tools.h"
+#include "tools/H5Table.h"
 #include "config/Config.h"
 #include <algorithm>
 #include <filesystem>
@@ -128,12 +129,15 @@ namespace {
 /// of several gzip members, which are read as a single stream)
 class TrimLineReader {
   std::ifstream in;
+  std::unique_ptr<h5table::Reader> h5reader;
 #ifdef __PLUMED_HAS_ZLIB
   gzFile gz=nullptr;
 #endif
 public:
   TrimLineReader(const std::string& fname,bool compressed) {
-    if(compressed) {
+    if(h5table::isH5(fname)) {
+      h5reader=std::make_unique<h5table::Reader>(fname);
+    } else if(compressed) {
 #ifdef __PLUMED_HAS_ZLIB
       gz=gzopen(fname.c_str(),"rb");
       if(!gz) {
@@ -158,6 +162,10 @@ public:
   TrimLineReader& operator=(const TrimLineReader&)=delete;
   /// the next line without its newline; newline tells if it had one (the last line may not)
   bool getline(std::string& line,bool& newline) {
+    if(h5reader) {
+      newline=true;
+      return h5reader->getline(line);
+    }
 #ifdef __PLUMED_HAS_ZLIB
     if(gz) {
       line.clear();
@@ -256,6 +264,9 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   // the field header (FIELDS and SET lines) of the current section, and the one of the last line kept,
   // in the format of OFile::getLastFields: the restarted run does not print it again if it is the same
   std::string header,keptHeader;
+  // for HDF5 tables: the block (a FIELDS line starts one) and the row of the last line kept
+  long long block=-1,row=0,keepBlock=-1,keepRow=0;
+  const bool table=h5table::isH5(fname);
   {
     TrimLineReader reader(fname,compressed);
     std::string line;
@@ -264,6 +275,8 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     while(reader.getline(line,newline)) {
       const long long end=offset+line.size()+(newline?1:0);
       if(line.compare(0,9,"#! FIELDS")==0) {
+        block++;
+        row=0;
         words=Tools::getWords(line.substr(9));
         timeIndex=-1;
         header.clear();
@@ -281,12 +294,15 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
           header+=line.substr(7,sp-7)+"\t1\t"+line.substr(sp+1)+"\n";
         }
       } else if(!line.empty() && line[0]!='#' && timeIndex>=0) {
+        row++;
         words=Tools::getWords(line);
         double t;
         if(words.size()>static_cast<unsigned>(timeIndex) && Tools::convertNoexcept(words[timeIndex],t)) {
           if(t<tcut) {
             keepEnd=end;
             keptHeader=header;
+            keepBlock=block;
+            keepRow=row;
             inTail=false;
             ntail=0;
             increasing=true;
@@ -315,7 +331,8 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     return;
   }
   // the file ends with the header of its last line: it is not printed again if the fields are the same
-  if(keptHeader.length()>0) {
+  // (an HDF5 table continues its last block if the fields are the same)
+  if(keptHeader.length()>0 && !table) {
     lastFields[fname]=keptHeader;
   }
   if(!inTail) {
@@ -323,7 +340,18 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   }
   // the removed lines are kept in a separate file
   const std::string backup=trimmedBackupName(fname);
-  if(!compressed) {
+  if(table) {
+    // the blocks before the one of the last line kept, and its rows up to that line
+    const auto rows=h5table::rows(fname);
+    std::vector<unsigned long long> keep;
+    for(long long b=0; b<keepBlock; b++) {
+      keep.push_back(rows[b]);
+    }
+    if(keepBlock>=0) {
+      keep.push_back(keepRow);
+    }
+    h5table::truncate(fname,keep,backup);
+  } else if(!compressed) {
     {
       std::ifstream in(fname,std::ios::binary);
       std::ofstream out(backup,std::ios::binary);
@@ -432,6 +460,21 @@ void Checkpointing::write() {
         }
       }
       w.write("path"+num,f);
+      if(h5table::isH5(f)) {
+        // an HDF5 table: the rows of its blocks, its size in bytes is meaningless
+        std::vector<long long> rows;
+        for(const auto & fb : plumed.getFiles()) {
+          OFile* of=dynamic_cast<OFile*>(fb);
+          if(of && of->isOpen() && of->getPath()==f) {
+            for(const auto r : of->getH5Rows()) {
+              rows.push_back(r);
+            }
+            break;
+          }
+        }
+        w.write("h5rows"+num,rows);
+        size=0;
+      }
       w.write("size"+num,size);
       w.write("crc"+num,size>0 ? crcOfTail(f,size) : std::string("0"));
       w.write("snapshot"+num,snapshotFiles.count(f)>0);
@@ -537,6 +580,35 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         continue;
       }
       std::error_code ec;
+      if(r.has("h5rows"+num)) {
+        // an HDF5 table: the blocks are cut to the rows they had
+        std::vector<long long> rows;
+        r.read("h5rows"+num,rows);
+        if(!std::filesystem::exists(f,ec)) {
+          if(rows.empty()) {
+            continue;
+          }
+          plumed_merror("checkpoint: file "+f+" is missing, but it had rows when the checkpoint was written");
+        }
+        const auto current=h5table::rows(f);
+        if(current.size()<rows.size()) {
+          plumed_merror("checkpoint: file "+f+" has fewer blocks than when the checkpoint was written");
+        }
+        bool longer=current.size()>rows.size();
+        std::vector<unsigned long long> keep;
+        for(unsigned b=0; b<rows.size(); b++) {
+          if(current[b]<static_cast<unsigned long long>(rows[b])) {
+            plumed_merror("checkpoint: file "+f+" has fewer rows than when the checkpoint was written");
+          }
+          longer=longer || current[b]>static_cast<unsigned long long>(rows[b]);
+          keep.push_back(rows[b]);
+        }
+        if(longer) {
+          h5table::truncate(f,keep,"");
+          log<<"  file "<<f<<" truncated to the rows it had at the checkpoint\n";
+        }
+        continue;
+      }
       if(!std::filesystem::exists(f,ec)) {
         if(size==0) {
           continue;

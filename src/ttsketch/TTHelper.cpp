@@ -46,7 +46,7 @@ unsigned ttCount(const std::string& filename) {
     std::fclose(fp);
   }
   auto f = h5_open(filename, 'r');
-  h5::group g(f);
+  ::h5::group g(f);
   unsigned n = 0;
   while(g.has_subgroup("tt_" + std::to_string(n + 1))) {
     ++n;
@@ -65,7 +65,7 @@ void ttMomentsWrite(const std::string& filename, const MPS& B, const std::vector
 
 bool ttMomentsRead(const std::string& filename, unsigned count, unsigned nA, MPS& B, std::vector<ITensor>& A) {
   auto f = h5_open(filename, 'r');
-  h5::group g(f);
+  ::h5::group g(f);
   const std::string tag = std::to_string(count - 1);
   if(!g.has_subgroup("bprev_" + tag)) {
     return false;
