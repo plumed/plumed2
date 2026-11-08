@@ -27,7 +27,7 @@ extern "C" void plumed_free(void* p) {
 }
 extern "C" void plumed_cmd_safe_nothrow(plumed,const char*,plumed_safeptr safe,plumed_nothrow_handler) {
   assert(((safe.flags>>16)&0xffu)==expectedType);
-  assert(!!(safe.flags&0x20000000u)==expectedNotComm);
+  assert(!!(safe.flags&0x20000000u)==(__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK ? expectedNotComm : 0));
   assert(!(safe.flags&0x40000000u));
   if(communicatorCommand) {
     assert(std::memcmp(safe.ptr,&expectedComm,sizeof(expectedComm))==0);

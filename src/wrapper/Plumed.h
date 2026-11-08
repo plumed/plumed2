@@ -548,6 +548,20 @@
 #define __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE 0
 #endif
 
+/* Communicator classification affects C++ inline definitions. Shared wrapper
+   classes default to unchecked so MPI-aware and MPI-unaware TUs can coexist. */
+#ifndef __PLUMED_WRAPPER_C_MPI_COMM_CHECK
+#define __PLUMED_WRAPPER_C_MPI_COMM_CHECK 1
+#endif
+#ifndef __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK
+#define __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+#endif
+#if defined(__cplusplus) && __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK && !__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+#if !defined(MPI_VERSION) && !defined(MPI_Comm) && !defined(__PLUMED_mpiwrap_mpi_h) && !defined(__PLUMED_mpiwrap_mpi_types_h)
+#error "C++ MPI communicator checking in shared wrappers requires MPI declarations before Plumed.h and consistent options in every translation unit"
+#endif
+#endif
+
 
 /*
   1: throw exceptions such as PLMD::Exception
@@ -1241,7 +1255,7 @@ __PLUMED_WRAPPER_C_END
 #endif
 
 /**
- * Define __PLUMED_WRAPPER_MPI_HOST_ADAPTER in one translation unit to provide
+ * Define __PLUMED_WRAPPER_MPI_HOST_ADAPTER to 1 in each host translation unit to provide
  * plumed_mpi_implementation(), using that host's MPI declarations. Pass its
  * result directly (not its address) to the existing command interface:
  *
@@ -1265,7 +1279,11 @@ namespace PLMD {
 namespace mpiwrap {
 struct plumed_mpi_provider;
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-extern "C" const plumed_mpi_provider *plumed_mpi_implementation(void);
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN
+extern "C" {
+__PLUMED_WRAPPER_STATIC_INLINE const plumed_mpi_provider *plumed_mpi_implementation(void);
+}
+__PLUMED_WRAPPER_ANONYMOUS_END
 #endif
 }
 }
@@ -1275,7 +1293,7 @@ using PLMD::mpiwrap::plumed_mpi_implementation;
 #else
 struct plumed_mpi_provider;
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-const struct plumed_mpi_provider *plumed_mpi_implementation(void);
+__PLUMED_WRAPPER_STATIC_INLINE const struct plumed_mpi_provider *plumed_mpi_implementation(void);
 #endif
 #endif
 
@@ -1552,7 +1570,7 @@ __PLUMED_WRAPPER_C_END
 
 /* Only classify MPI arguments when the local MPI type is visible. Explicit
    void pointers carry no type information and remain accepted. */
-#if defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h)
+#if __PLUMED_WRAPPER_C_MPI_COMM_CHECK && (defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h))
 #define __PLUMED_WRAPPER_C_MPI_COMM_FLAG(val) _Generic((val), \
   MPI_Comm*: 0u, const MPI_Comm*: 0u, \
   void*: 0u, const void*: 0u, default: 0x20000000u)
@@ -1687,8 +1705,8 @@ __PLUMED_WRAPPER_C_TYPESAFE_EMPTY(struct plumed_mpi_provider,mpi_provider,6)
 __PLUMED_WRAPPER_C_TYPESAFE_INNER(void const,not_mpi_comm,0x20010000u | (0x2000000*3))
 
 static inline void plumed_cmd_null_e(plumed p,const char*key,plumed_error* error,int ignore) {
-  (void) ignore;
-  plumed_cmde_void_p(p,key,NULL,error);
+(void) ignore;
+plumed_cmde_void_p(p,key,NULL,error);
 }
 
 #define plumed_cmdnse_inner(flavor,val) _Generic((val), \
@@ -2579,7 +2597,7 @@ private:
   public:
     // sizeof selects the compatible-pointer overload without evaluating it.
     // This also works in C++98, without MPI-specific duplicate overloads for int.
-#if defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h)
+#if __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK && (defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h))
     static char mpiCommPointer(const MPI_Comm*);
     struct NotMPICommPointer {
       char data[2];
@@ -2588,7 +2606,7 @@ private:
 #endif
     template<typename T>
     static __PLUMED_WRAPPER_STD size_t mpiCommExclusionFlag(T val) {
-#if defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h)
+#if __PLUMED_WRAPPER_CXX_MPI_COMM_CHECK && (defined(MPI_VERSION) || defined(MPI_Comm) || defined(__PLUMED_mpiwrap_mpi_h) || defined(__PLUMED_mpiwrap_mpi_types_h))
       return sizeof(mpiCommPointer(val))==sizeof(char) ? 0 : 0x20000000u;
 #else
       (void) val;
@@ -5257,6 +5275,9 @@ typedef const plumed_mpi_provider *(*plumed_mpi_factory_pointer)(void);
 #ifdef __cplusplus
 namespace PLMD {
 namespace mpiwrap {
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+namespace {
+#endif
 extern "C" {
 #endif
 
@@ -9073,6 +9094,9 @@ static const plumed_mpi_provider *plumed_mpiw_get_descriptor(void) {
 
 #ifdef __cplusplus
 }
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+} // anonymous namespace
+#endif
 } // namespace mpiwrap
 } // namespace PLMD
 #endif
@@ -9081,9 +9105,11 @@ namespace PLMD {
 namespace mpiwrap {
 extern "C" {
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-extern "C" const plumed_mpi_provider *plumed_mpi_implementation(void) {
+__PLUMED_WRAPPER_ANONYMOUS_BEGIN
+__PLUMED_WRAPPER_STATIC_INLINE const plumed_mpi_provider *plumed_mpi_implementation(void) {
   return plumed_mpiw_get_descriptor();
 }
+__PLUMED_WRAPPER_ANONYMOUS_END
 #endif
 #if __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 const plumed_mpi_provider *plumed_mpiw_provider_factory(void) {
@@ -9098,7 +9124,7 @@ using PLMD::mpiwrap::plumed_mpi_implementation;
 #endif
 #else
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
-const plumed_mpi_provider *plumed_mpi_implementation(void) {
+__PLUMED_WRAPPER_STATIC_INLINE const plumed_mpi_provider *plumed_mpi_implementation(void) {
 return plumed_mpiw_get_descriptor();
 }
 #endif

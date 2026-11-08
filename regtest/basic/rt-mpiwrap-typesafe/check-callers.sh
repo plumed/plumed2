@@ -21,16 +21,20 @@ typedef int MPI_Op;
 typedef int MPI_Request;
 #endif
 HEADER
-  "${CC:-cc}" -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
+  for ccheck in 0 1; do
+  "${CC:-cc}" -D__PLUMED_WRAPPER_C_MPI_COMM_CHECK=$ccheck -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
   "$task/caller"
+  done
   "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -D__PLUMED_HAS_MPI \
     -I"$task" -I"$root/src" -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/kernel.cpp.in" \
     "$root/src/tools/TypesafePtr.cpp" "$root/src/tools/Exception.cpp" -o "$task/kernel"
   "$task/kernel"
   for standard in c++98 c++11 c++17; do
-    "${CXX:-c++}" -std="$standard" -Wall -Wextra -Werror $flag -I"$task" -x c++ \
+    for options in "" "-D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1" "-D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=1" "-D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1 -D__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK=0"; do
+    "${CXX:-c++}" $options -std="$standard" -Wall -Wextra -Werror $flag -I"$task" -x c++ \
       "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-cxx"
     "$task/caller-cxx"
+    done
   done
 done
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -DPLUMED_TEST_WRAPPER_COMM \

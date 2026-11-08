@@ -45,6 +45,7 @@ for provider in mpich openmpi; do
         -o "$tmp/host-$provider-$capacity-$host_language.o"
     done
   done
+  for anonymous in 0 1; do
   for language in c99 cxx98; do
     # The public wrapper embeds a C-only adapter body in both language modes.
     linker=$cc
@@ -54,6 +55,7 @@ for provider in mpich openmpi; do
       cxx98) std=c++98; input_language=c++ ;;
     esac
     "$linker" "$shared_flag" -fPIC -std="$std" -iquote "$module_dir" \
+      -D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=$anonymous \
       -x "$input_language" "$fixture_dir/test-native-adapter.c.in" -o "$library"
     python3 - "$library" <<'PYTHON'
 import ctypes
@@ -73,6 +75,7 @@ PYTHON
       echo "$provider $language provider links a PLUMED library" >&2
       exit 1
     fi
+  done
   done
 done
 

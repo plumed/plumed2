@@ -5,6 +5,9 @@
 #ifdef __cplusplus
 namespace PLMD {
 namespace mpiwrap {
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+namespace {
+#endif
 extern "C" {
 #endif
 
@@ -126,6 +129,9 @@ static const plumed_mpi_provider *plumed_mpiw_get_descriptor(void) {
 
 #ifdef __cplusplus
 }
+#if __PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE
+} // anonymous namespace
+#endif
 } // namespace mpiwrap
 } // namespace PLMD
 #endif

@@ -27,3 +27,17 @@ and Communicator.h do not pull in provider dispatch.
 To annotate communicators,
 the local MPI declaration must precede Plumed.h (native mpi.h, the wrapper
 mpi.h or mpi-types.h, or GROMACS MPI bindings). Host-adapter mode includes native mpi.h itself.
+
+`__PLUMED_WRAPPER_C_MPI_COMM_CHECK` defaults to 1 in the existing C11 path.
+`__PLUMED_WRAPPER_CXX_MPI_COMM_CHECK` defaults to the anonymous-namespace
+switch: shared public C++ wrappers are unchecked by default, while anonymous
+wrappers classify arguments when MPI declarations are visible. Explicit shared
+C++ checking requires matching MPI declarations and options in every translation
+unit; missing declarations are diagnosed. Disabling these checks preserves the
+provider type tag and all generic type checks.
+
+Run `check-header-odr.sh` for mixed MPI-aware/unaware translation units at O0,
+with reversed link order and O2/LTO when supported. `check-callers.sh` exercises
+explicit enable/disable, anonymous defaults and shared defaults independently.
+The API directory's `check-host-header-linkage.sh` accepts MPICC/MPICXX and checks
+C99/C++98+ host adapters across both namespace and linkage modes.

@@ -24,7 +24,7 @@ void plumed_cmd_safe_nothrow(plumed p,const char* key,plumed_safeptr safe,plumed
     assert(memcmp(safe.ptr,&expected_comm,sizeof(expected_comm))==0);
   }
   assert(((safe.flags>>16)&0xffu)==expected_type);
-  assert(!!(safe.flags&0x20000000u)==expected_not_comm);
+  assert(!!(safe.flags&0x20000000u)==(__PLUMED_WRAPPER_C_MPI_COMM_CHECK ? expected_not_comm : 0));
   assert(!(safe.flags&0x40000000u));
 }
 void plumed_cmd_safe(plumed p,const char* key,plumed_safeptr safe) {
