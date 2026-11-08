@@ -15,7 +15,10 @@ shipped by gemmi in `include/gemmi/third_party/tao`.
   gemmi too). **Never edit these files by hand**: problems are fixed upstream
   and a new release is imported.
 - `./import.sh /path/to/gemmi-X.Y.Z` copies the closure of `cif.hpp`
-  (computed by the compiler), `version.hpp` and the licences from an
+  (every header reached through `#include "..."`, also inside `#if` blocks, so
+  that the copy works on every platform: e.g. `utf.hpp` and `demangle_nop.hpp`
+  are used only on Windows/MSVC; the few PEGTL headers that gemmi does not ship
+  are skipped), `version.hpp` and the licences from an
   extracted release (GitHub tarball or PyPI sdist). The pinned version is
   at the top of the script and is checked against `version.hpp`.
 - `cif.h` is PLUMED's only entry point. It includes the copy in `include/`,
