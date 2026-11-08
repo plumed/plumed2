@@ -2,6 +2,7 @@
 
 if [ "$1" = --description ] ; then
   echo "compile one or more *.cpp files into a shared library"
+  exit 0
 fi
 
 MANUAL='Compile one or more *.cpp files into a shared library.
@@ -36,8 +37,6 @@ then
   exit 1
 fi
 
-source "$PLUMED_ROOT"/src/config/compile_options.sh
-
 prefix=""
 lib=""
 no_clobber=""
@@ -65,6 +64,10 @@ if [ ${#files[@]} = 0 ] ; then
   echo "pass at least one file"
   exit 1
 fi
+
+# Compiler settings are needed only when building a library, not for metadata
+# and completion queries handled above.
+source "$PLUMED_ROOT"/src/config/compile_options.sh || exit 1
 
 if [ -z "$lib" ]
 then
