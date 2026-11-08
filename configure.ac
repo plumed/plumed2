@@ -371,6 +371,7 @@ PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonat
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
+PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
@@ -816,6 +817,23 @@ if test $asmjit = true ; then
   else
     AC_MSG_WARN([cannot link required clock or shared-memory functions on this Linux, asmjit will not be enabled])
   fi
+fi
+
+# the gemmi CIF parser (header only) is in src/gemmi; with --enable-system-gemmi
+# the one installed in the system is used instead (put its include directory in CPPFLAGS)
+if test $system_gemmi = true ; then
+  AC_MSG_CHECKING([whether the gemmi CIF parser installed in the system can be used])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <gemmi/cif.hpp>
+template<typename Rule> struct plumed_test_action : tao::pegtl::nothing<Rule> {};
+  ],[
+  tao::pegtl::memory_input<> in("data_test\n", "test");
+  return tao::pegtl::parse<gemmi::cif::rules::file, plumed_test_action, gemmi::cif::Errors>(in) ? 0 : 1;
+  ])],
+  [AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_HAS_SYSTEM_GEMMI])],
+  [AC_MSG_RESULT([no]);
+  AC_MSG_WARN([cannot use the gemmi CIF parser installed in the system, the copy in src/gemmi will be used])])
 fi
 
 if test $dlopen = true ; then
