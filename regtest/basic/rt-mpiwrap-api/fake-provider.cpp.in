@@ -5,7 +5,7 @@
 #include <fstream>
 
 namespace {
-plumed_mpiw_provider_descriptor descriptor{};
+plumed_mpi_provider descriptor{};
 struct UnloadMarker {
   ~UnloadMarker() {
     const char *path=std::getenv("MPIW_TEST_PROVIDER_MARKER");
@@ -17,6 +17,6 @@ struct UnloadMarker {
 } unload_marker;
 }
 
-extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_provider_factory() {
+extern "C" const plumed_mpi_provider *plumed_mpiw_provider_factory() {
   return &descriptor;
 }

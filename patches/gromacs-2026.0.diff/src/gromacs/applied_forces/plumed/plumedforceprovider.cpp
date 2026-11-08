@@ -74,7 +74,7 @@
 
 // Embed the adapter using this host build's MPI types and functions.
 #if GMX_LIB_MPI || GMX_THREAD_MPI
-#define PLUMED_MPIW_HOST_ADAPTER 1
+#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 #endif
 #include "../../../../Plumed.h"
 

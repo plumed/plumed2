@@ -4,7 +4,7 @@
 #include <string.h>
 #define PLUMED_MPIW_ABI_ONLY 1
 #include "mpiwrap.h"
-#define PLUMED_MPIW_NATIVE_ADAPTER 1
+#define __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER 1
 #define __PLUMED_WRAPPER_IMPLEMENTATION 0
 #define __PLUMED_WRAPPER_CXX 0
 #include "../../../src/wrapper/Plumed.h"
@@ -50,8 +50,8 @@ int MPI_Group_range_incl(MPI_Group group, int n, int ranges[][3],
   return MPI_SUCCESS;
 }
 
-static plumed_mpiw_generic_fn find_function(const char *name) {
-  const plumed_mpiw_provider_descriptor *descriptor = plumed_mpiw_get_descriptor();
+static plumed_mpi_generic_pointer find_function(const char *name) {
+  const plumed_mpi_provider *descriptor = plumed_mpiw_get_descriptor();
   uint64_t i;
   for (i = 0; i < descriptor->function_count; ++i) {
     if (strcmp(descriptor->functions[i].name, name) == 0) {
@@ -68,11 +68,11 @@ int main(void) {
   int rank = -1;
   int *rank_pointer = &rank;
   int return_value = -1;
-  plumed_mpiw_transport_MPI_Comm_rank_fn rank_dispatch;
-  plumed_mpiw_transport_MPI_Comm_dup_fn dup_dispatch;
-  plumed_mpiw_transport_MPI_Waitsome_fn waitsome_dispatch;
-  plumed_mpiw_transport_MPI_Group_range_incl_fn range_dispatch;
-  plumed_mpiw_generic_fn erased;
+  plumed_mpi_transport_MPI_Comm_rank_pointer rank_dispatch;
+  plumed_mpi_transport_MPI_Comm_dup_pointer dup_dispatch;
+  plumed_mpi_transport_MPI_Waitsome_pointer waitsome_dispatch;
+  plumed_mpi_transport_MPI_Group_range_incl_pointer range_dispatch;
+  plumed_mpi_generic_pointer erased;
   MPI_Request requests[2] = {MPI_REQUEST_NULL, MPI_REQUEST_NULL};
   int outcount = -1;
   int indices[2] = {-7, -7};
@@ -82,26 +82,26 @@ int main(void) {
   MPI_Group group = MPI_GROUP_NULL;
   MPI_Group newgroup = MPI_GROUP_NULL;
   MPI_Group *newgroup_pointer = &newgroup;
-  plumed_mpiw_constant_accessor_fn status_ignore_accessor = NULL;
+  plumed_mpi_constant_accessor_pointer status_ignore_accessor = NULL;
   void *status_ignore = (void *)1;
   uint64_t i;
 
   erased = find_function("MPI_Comm_rank");
   assert(erased != NULL);
-  rank_dispatch = (plumed_mpiw_transport_MPI_Comm_rank_fn)erased;
+  rank_dispatch = (plumed_mpi_transport_MPI_Comm_rank_pointer)erased;
   rank_dispatch(&communicator, rank_pointer, &return_value);
   assert(return_value == MPI_SUCCESS && rank == 37);
 
   erased = find_function("MPI_Comm_dup");
   assert(erased != NULL);
-  dup_dispatch = (plumed_mpiw_transport_MPI_Comm_dup_fn)erased;
+  dup_dispatch = (plumed_mpi_transport_MPI_Comm_dup_pointer)erased;
   return_value = -1;
   dup_dispatch(&communicator, duplicate_pointer, &return_value);
   assert(return_value == MPI_SUCCESS && duplicate == communicator);
 
   erased = find_function("MPI_Waitsome");
   assert(erased != NULL);
-  waitsome_dispatch = (plumed_mpiw_transport_MPI_Waitsome_fn)erased;
+  waitsome_dispatch = (plumed_mpi_transport_MPI_Waitsome_pointer)erased;
   return_value = -1;
   waitsome_dispatch(&n, requests, &outcount, indices, MPI_STATUSES_IGNORE,
                     &return_value);
@@ -110,14 +110,14 @@ int main(void) {
 
   erased = find_function("MPI_Group_range_incl");
   assert(erased != NULL);
-  range_dispatch = (plumed_mpiw_transport_MPI_Group_range_incl_fn)erased;
+  range_dispatch = (plumed_mpi_transport_MPI_Group_range_incl_pointer)erased;
   return_value = -1;
   range_dispatch(&group, &n, ranges_pointer, newgroup_pointer, &return_value);
   assert(return_value == MPI_SUCCESS && saw_group_ranges);
   assert(newgroup == group);
 
   for (i = 0; i < plumed_mpiw_descriptor.metadata_count; ++i) {
-    const plumed_mpiw_metadata_entry *entry = &plumed_mpiw_descriptor.metadata[i];
+    const plumed_mpi_metadata_entry *entry = &plumed_mpiw_descriptor.metadata[i];
     if (strcmp(entry->name, "value:MPI_STATUS_IGNORE") == 0) {
       assert(entry->value_size == sizeof(status_ignore_accessor));
       assert(entry->native_value_size == sizeof(MPI_Status *));

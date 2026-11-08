@@ -43,7 +43,7 @@
 
 namespace PLMD {
 namespace mpiwrap {
-struct plumed_mpiw_provider_descriptor;
+struct plumed_mpi_provider;
 }
 
 static inline bool typesafePtrSkipCheck() {
@@ -69,10 +69,10 @@ std::size_t typesafePtrSizeof<const void>() {
 }
 
 // Provider descriptors are opaque here; their own ABI validates the layout.
-template<> inline std::size_t typesafePtrSizeof<mpiwrap::plumed_mpiw_provider_descriptor>() {
+template<> inline std::size_t typesafePtrSizeof<mpiwrap::plumed_mpi_provider>() {
   return 0;
 }
-template<> inline std::size_t typesafePtrSizeof<const mpiwrap::plumed_mpiw_provider_descriptor>() {
+template<> inline std::size_t typesafePtrSizeof<const mpiwrap::plumed_mpi_provider>() {
   return 0;
 }
 
@@ -119,17 +119,17 @@ class TypesafePtr {
   static std::string extra_msg();
 
   template<typename T>
-  static std::size_t mpiCommFlag(T) {
+  static std::size_t mpiCommExclusionFlag(T) {
 #if defined(__PLUMED_HAS_MPI) || defined(__PLUMED_MPIWRAP)
     return std::is_convertible<T,const MPI_Comm*>::value ? 0 : 0x20000000u;
 #else
     return 0;
 #endif
   }
-  static std::size_t mpiCommFlag(void*) {
+  static std::size_t mpiCommExclusionFlag(void*) {
     return 0;
   }
-  static std::size_t mpiCommFlag(const void*) {
+  static std::size_t mpiCommExclusionFlag(const void*) {
     return 0;
   }
 
@@ -170,7 +170,7 @@ public:
   TypesafePtr(type_*ptr, std::size_t nelem=0, const std::size_t* shape=nullptr) : \
     myptr((void*)const_cast<type*>(ptr)), \
     mynelem(nelem), \
-    myflags((flags_) | mpiCommFlag(ptr)) \
+    myflags((flags_) | mpiCommExclusionFlag(ptr)) \
   { \
     init_shape(shape); \
     buffer[0]='\0'; \
@@ -196,11 +196,11 @@ public:
   __PLUMED_WRAPPER_TYPESAFEPTR(type,code,sizeof(type)) \
   TypesafePtr(type val, std::size_t nelem=0, const std::size_t* shape=nullptr): \
       mynelem(1), \
-      myflags(sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommFlag(val)) \
+      myflags(sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommExclusionFlag(val)) \
     { \
     plumed_assert(sizeof(type)<=32); \
     myptr=&buffer[0]; \
-    myflags=sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommFlag(val); \
+    myflags=sizeof(type) | (0x10000*(code)) | (0x2000000*1) | mpiCommExclusionFlag(val); \
     std::memcpy(&buffer[0],&val,sizeof(type)); \
     init_shape(shape); \
   }
@@ -227,12 +227,12 @@ public:
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(double,4)
   __PLUMED_WRAPPER_TYPESAFEPTR_SIZED(long double,4)
   __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(FILE,5)
-  __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(mpiwrap::plumed_mpiw_provider_descriptor,6)
+  __PLUMED_WRAPPER_TYPESAFEPTR_EMPTY(mpiwrap::plumed_mpi_provider,6)
 
   template<typename T>
   TypesafePtr(T* ptr, std::size_t nelem=0, const std::size_t* shape=nullptr):
     TypesafePtr(static_cast<const void*>(ptr),nelem,shape) {
-    myflags=0x10000u | (0x2000000u*(std::is_const<T>::value ? 3 : 2)) | mpiCommFlag(ptr);
+    myflags=0x10000u | (0x2000000u*(std::is_const<T>::value ? 3 : 2)) | mpiCommExclusionFlag(ptr);
   }
 
   ~TypesafePtr() {
@@ -327,7 +327,7 @@ private:
       throw ExceptionTypeError()<<"This command expects a pointer to MPI_Comm"<<extra_msg();
     }
 #endif
-    const bool provider=std::is_same<typename std::remove_cv<T>::type,mpiwrap::plumed_mpiw_provider_descriptor>::value;
+    const bool provider=std::is_same<typename std::remove_cv<T>::type,mpiwrap::plumed_mpi_provider>::value;
     // This new API requires its dedicated type tag. Calls without any type
     // metadata (the untyped C interface) already returned above.
     if(provider && type!=6) {

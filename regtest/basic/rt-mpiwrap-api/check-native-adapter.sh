@@ -39,7 +39,7 @@ for provider in mpich openmpi; do
         cxx98) host_compiler=$cxx; host_standard=c++98; host_input_language=c++ ;;
       esac
       "$host_compiler" -std="$host_standard" -Wall -Wextra -Werror $capacity_flag \
-        -D__PLUMED_WRAPPER_IMPLEMENTATION=1 -DPLUMED_MPIW_HOST_ADAPTER=1 \
+        -D__PLUMED_WRAPPER_IMPLEMENTATION=1 -D__PLUMED_WRAPPER_MPI_HOST_ADAPTER=1 \
         -D__PLUMED_HAS_DLOPEN=1 -iquote "$module_dir" -x "$host_input_language" -c \
         "$fixture_dir/test-host-header-adapter.c.in" \
         -o "$tmp/host-$provider-$capacity-$host_language.o"
@@ -88,10 +88,10 @@ if [ -n "${GMX_THREAD_MPI_INCLUDE:-}" ]; then
         long_long_flag=-DSIZEOF_LONG_LONG_INT=8
       fi
       "$host_compiler" -std="$host_standard" -Wall -Wextra -Werror \
-        -DGMX_THREAD_MPI=1 -DPLUMED_MPIW_GROMACS_VERSION=20260000 \
+        -DGMX_THREAD_MPI=1 -D__PLUMED_WRAPPER_MPI_GROMACS_VERSION=20260000 \
         -DPLUMED_MPIW_TEST_THREAD_MPI=1 \
         $long_long_flag -D__PLUMED_WRAPPER_IMPLEMENTATION=1 \
-        -DPLUMED_MPIW_HOST_ADAPTER=1 -D__PLUMED_HAS_DLOPEN=1 \
+        -D__PLUMED_WRAPPER_MPI_HOST_ADAPTER=1 -D__PLUMED_HAS_DLOPEN=1 \
         -I"$GMX_THREAD_MPI_INCLUDE" -iquote "$module_dir" -x "$host_input_language" -c \
         "$fixture_dir/test-host-header-adapter.c.in" \
         -o "$tmp/host-thread-mpi-$long_long_support-$host_language.o"

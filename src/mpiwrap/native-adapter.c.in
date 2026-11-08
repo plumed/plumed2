@@ -1,6 +1,6 @@
 /* Minimal native-MPI provider adapter. All conversions happen in the kernel. */
 
-/* PLUMED_MPIW_GROMACS_VERSION_GUARD */
+/* __PLUMED_WRAPPER_MPI_GROMACS_VERSION_GUARD */
 
 #ifdef __cplusplus
 namespace PLMD {
@@ -38,10 +38,10 @@ extern "C" {
 
 /* PLUMED_MPIW_CONSTANT_ACCESSORS */
 #define PLUMED_MPIW_VALUE(name, type) \
-  { (uint32_t)sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, \
-    0u, "value:" #name, sizeof(plumed_mpiw_constant_accessor_fn), sizeof(type), \
+  { (uint32_t)sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, \
+    0u, "value:" #name, sizeof(plumed_mpi_constant_accessor_pointer), sizeof(type), \
     (const void *)&plumed_mpiw_accessor_##name }
-static const plumed_mpiw_metadata_entry plumed_mpiw_metadata[] = {
+static const plumed_mpi_metadata_entry plumed_mpiw_metadata[] = {
   /* PLUMED_MPIW_CONSTANT_METADATA */
 };
 
@@ -79,8 +79,8 @@ PLUMED_MPIW_CHECK_NATIVE_ALIGNMENT(status, MPI_Status);
 #endif
 PLUMED_MPIW_STATIC_ASSERT(sizeof(int) == sizeof(int32_t) && (int)-1 < 0,
                           "native MPI int must be signed 32-bit");
-static const plumed_mpiw_provider_descriptor plumed_mpiw_descriptor = {
-  (uint32_t)sizeof(plumed_mpiw_provider_descriptor),
+static const plumed_mpi_provider plumed_mpiw_descriptor = {
+  (uint32_t)sizeof(plumed_mpi_provider),
   PLUMED_MPIW_PROVIDER_ABI_MAJOR, 0u,
   (uint32_t)(
 #if defined(GMX_THREAD_MPI) && GMX_THREAD_MPI
@@ -120,7 +120,7 @@ static const plumed_mpiw_provider_descriptor plumed_mpiw_descriptor = {
 #undef PLUMED_MPIW_JOIN
 #undef PLUMED_MPIW_JOIN_INNER
 
-static const plumed_mpiw_provider_descriptor *plumed_mpiw_get_descriptor(void) {
+static const plumed_mpi_provider *plumed_mpiw_get_descriptor(void) {
   return &plumed_mpiw_descriptor;
 }
 

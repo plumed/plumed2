@@ -13,8 +13,8 @@ namespace PLMD {
 using namespace thread_mpi;
 }
 #define GMX_THREAD_MPI 1
-#define PLUMED_MPIW_GROMACS_VERSION 20260400
-#define PLUMED_MPIW_HOST_ADAPTER 1
+#define __PLUMED_WRAPPER_MPI_GROMACS_VERSION 20260400
+#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 #define __PLUMED_WRAPPER_IMPLEMENTATION 1
 #define __PLUMED_WRAPPER_LINK_RUNTIME 1
 #define __PLUMED_HAS_DLOPEN 1
@@ -54,7 +54,7 @@ int run(int argc,char **argv) {
   const auto install=reinterpret_cast<Install>(dlsym(kernel,"mpiw_test_install"));
   check=reinterpret_cast<Check>(dlsym(kernel,"mpiw_test_check"));
   const auto preinit=reinterpret_cast<int (*)()>(dlsym(kernel,"mpiw_test_preinit"));
-  const auto descriptor=static_cast<const mpiwrap::plumed_mpiw_provider_descriptor *>(
+  const auto descriptor=static_cast<const mpiwrap::plumed_mpi_provider *>(
                           mpiwrap::plumed_mpi_implementation());
   // Missing native entries must select the kernel algorithms, not private
   // emulations accidentally copied into the frozen host header.

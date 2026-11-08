@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // PLUMED_C_COMPATIBLE
 #ifdef __PLUMED_HAS_MPI
-#define PLUMED_MPIW_HOST_ADAPTER 1
+#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 #include <mpi.h>
 #endif
 #define __PLUMED_WRAPPER_CXX 0

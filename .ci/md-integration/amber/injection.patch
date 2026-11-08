@@ -3,10 +3,10 @@
 @@ -42,0 +43,15 @@
 +/* Use sander's MPI implementation when this C compiler can see MPI headers. */
 +#ifdef MPI
-+#if !defined(PLUMED_MPIW_HOST_ADAPTER)
++#if !__PLUMED_WRAPPER_MPI_HOST_ADAPTER
 +#if defined(__has_include)
 +#if __has_include(<mpi.h>)
-+#define PLUMED_MPIW_HOST_ADAPTER 1
++#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 +#else
 +#warning "C compiler cannot find mpi.h: PLUMED MPI injection is disabled; original Fortran communicator setup is retained. Use mpicc or add matching MPI include flags."
 +#endif
@@ -21,7 +21,7 @@
 +/* Called from Fortran after creating the global PLUMED wrapper, before
 +   importing sander's MPI communicator. */
 +int plumed_mpiw_inject_(void) {
-+#if defined(MPI) && defined(PLUMED_MPIW_HOST_ADAPTER)
++#if defined(MPI) && __PLUMED_WRAPPER_MPI_HOST_ADAPTER
 +  int api = 0;
 +  if(!plumed_gvalid()) return -2;
 +  plumed_gcmd("getApiVersion", &api);

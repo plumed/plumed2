@@ -37,8 +37,8 @@ namespace mpiwrap {
 
 /* Function table entries erase the exact per-function transport signature.
    Callers must cast back to that generated signature before invoking it. */
-typedef void (*plumed_mpiw_generic_fn)(void);
-typedef void (*plumed_mpiw_constant_accessor_fn)(void *output);
+typedef void (*plumed_mpi_generic_pointer)(void);
+typedef void (*plumed_mpi_constant_accessor_pointer)(void *output);
 
 typedef struct {
   uint32_t struct_size;      /* fixed entry layout within one ABI major */
@@ -46,8 +46,8 @@ typedef struct {
   uint32_t signature_id;
   uint32_t signature_version;
   uint32_t argument_count;
-  plumed_mpiw_generic_fn function;
-} plumed_mpiw_function_entry;
+  plumed_mpi_generic_pointer function;
+} plumed_mpi_function_entry;
 
 typedef struct {
   uint32_t struct_size;      /* fixed entry layout within one ABI major */
@@ -57,9 +57,9 @@ typedef struct {
   uint64_t value_size;       /* exact payload byte count at value */
   uint64_t native_value_size; /* accessor result width; zero for other values */
   const void *value;         /* payload copied by installer before install returns */
-} plumed_mpiw_metadata_entry;
+} plumed_mpi_metadata_entry;
 
-typedef struct plumed_mpiw_provider_descriptor {
+typedef struct plumed_mpi_provider {
   uint32_t struct_size;
   uint32_t abi_major;
   uint32_t abi_minor;
@@ -78,12 +78,12 @@ typedef struct plumed_mpiw_provider_descriptor {
   uint32_t native_fint_size;
   uint32_t native_fint_signed;
   uint64_t function_count;
-  const plumed_mpiw_function_entry *functions;
+  const plumed_mpi_function_entry *functions;
   uint64_t metadata_count;
-  const plumed_mpiw_metadata_entry *metadata;
-} plumed_mpiw_provider_descriptor;
+  const plumed_mpi_metadata_entry *metadata;
+} plumed_mpi_provider;
 
-typedef const plumed_mpiw_provider_descriptor *(*plumed_mpiw_factory_fn)(void);
+typedef const plumed_mpi_provider *(*plumed_mpi_factory_pointer)(void);
 
 #ifdef __cplusplus
 } // namespace mpiwrap
@@ -96,245 +96,245 @@ namespace PLMD {
 namespace mpiwrap {
 extern "C" {
 #endif
-typedef int32_t (*plumed_mpiw_provider_constant_fn)(void *output, uint32_t capacity);
-typedef void (*plumed_mpiw_user_callback_invoke_fn)(plumed_mpiw_generic_fn, void *, void *, int32_t, plumed_mpiw_handle_storage);
-typedef struct { plumed_mpiw_generic_fn function; plumed_mpiw_user_callback_invoke_fn invoke; } plumed_mpiw_user_callback;
-typedef void (*plumed_mpiw_comm_errhandler_invoke_fn)(plumed_mpiw_generic_fn, plumed_mpiw_handle_storage, int32_t);
-typedef struct { plumed_mpiw_generic_fn function; plumed_mpiw_comm_errhandler_invoke_fn invoke; } plumed_mpiw_comm_errhandler_callback;
-typedef int32_t (*plumed_mpiw_MPI_Init_fn)(int32_t * argc, char *** argv);
-typedef void (*plumed_mpiw_transport_MPI_Init_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Finalize_fn)(void);
-typedef void (*plumed_mpiw_transport_MPI_Finalize_fn)(void *result);
-typedef int32_t (*plumed_mpiw_MPI_Initialized_fn)(int32_t * flag);
-typedef void (*plumed_mpiw_transport_MPI_Initialized_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_dup_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * newcomm);
-typedef void (*plumed_mpiw_transport_MPI_Comm_dup_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_free_fn)(plumed_mpiw_handle_storage * comm);
-typedef void (*plumed_mpiw_transport_MPI_Comm_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_rank_fn)(plumed_mpiw_handle_storage comm, int32_t * rank);
-typedef void (*plumed_mpiw_transport_MPI_Comm_rank_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_size_fn)(plumed_mpiw_handle_storage comm, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Comm_size_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_split_fn)(plumed_mpiw_handle_storage comm, int32_t color, int32_t key, plumed_mpiw_handle_storage * newcomm);
-typedef void (*plumed_mpiw_transport_MPI_Comm_split_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Abort_fn)(plumed_mpiw_handle_storage comm, int32_t errorcode);
-typedef void (*plumed_mpiw_transport_MPI_Abort_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Bcast_fn)(void * buffer, int32_t count, plumed_mpiw_handle_storage datatype, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Bcast_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Scatter_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Scatter_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Gather_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Gather_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Allreduce_fn)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Allreduce_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Isend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Isend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Wait_fn)(plumed_mpiw_handle_storage * request, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Wait_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Allgather_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Allgather_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Allgatherv_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Allgatherv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Recv_fn)(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Recv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Barrier_fn)(plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Barrier_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Get_count_fn)(const plumed_mpiw_status * status, plumed_mpiw_handle_storage datatype, int32_t * count);
-typedef void (*plumed_mpiw_transport_MPI_Get_count_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Sendrecv_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, int32_t dest, int32_t sendtag, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t source, int32_t recvtag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Sendrecv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *argument_9, void *argument_10, void *argument_11, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Error_string_fn)(int32_t errorcode, char * string, int32_t * resultlen);
-typedef void (*plumed_mpiw_transport_MPI_Error_string_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_create_errhandler_fn)(plumed_mpiw_comm_errhandler_callback *, plumed_mpiw_handle_storage *);
-typedef void (*plumed_mpiw_transport_MPI_Comm_create_errhandler_fn)(void *argument_0, void *argument_1, void *result);
-typedef plumed_mpiw_handle_storage (*plumed_mpiw_MPI_Comm_f2c_fn)(int32_t comm);
-typedef void (*plumed_mpiw_transport_MPI_Comm_f2c_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Send_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Send_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Bsend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Bsend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Ssend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Ssend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Rsend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Rsend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Buffer_attach_fn)(void * buffer, int32_t size);
-typedef void (*plumed_mpiw_transport_MPI_Buffer_attach_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Buffer_detach_fn)(void * buffer_addr, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Buffer_detach_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Ibsend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Ibsend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Issend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Issend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Irsend_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Irsend_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Irecv_fn)(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Irecv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Test_fn)(plumed_mpiw_handle_storage * request, int32_t * flag, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Test_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Request_free_fn)(plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Request_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Waitany_fn)(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * indx, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Waitany_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Testany_fn)(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * indx, int32_t * flag, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Testany_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Waitall_fn)(int32_t count, plumed_mpiw_handle_storage array_of_requests[], plumed_mpiw_status * array_of_statuses);
-typedef void (*plumed_mpiw_transport_MPI_Waitall_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Testall_fn)(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * flag, plumed_mpiw_status * array_of_statuses);
-typedef void (*plumed_mpiw_transport_MPI_Testall_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Waitsome_fn)(int32_t incount, plumed_mpiw_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpiw_status * array_of_statuses);
-typedef void (*plumed_mpiw_transport_MPI_Waitsome_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Testsome_fn)(int32_t incount, plumed_mpiw_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpiw_status * array_of_statuses);
-typedef void (*plumed_mpiw_transport_MPI_Testsome_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Iprobe_fn)(int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, int32_t * flag, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Iprobe_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Probe_fn)(int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Probe_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cancel_fn)(plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Cancel_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Test_cancelled_fn)(const plumed_mpiw_status * status, int32_t * flag);
-typedef void (*plumed_mpiw_transport_MPI_Test_cancelled_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Send_init_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Send_init_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Bsend_init_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Bsend_init_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Ssend_init_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Ssend_init_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Rsend_init_fn)(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Rsend_init_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Recv_init_fn)(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Recv_init_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Start_fn)(plumed_mpiw_handle_storage * request);
-typedef void (*plumed_mpiw_transport_MPI_Start_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Startall_fn)(int32_t count, plumed_mpiw_handle_storage array_of_requests[]);
-typedef void (*plumed_mpiw_transport_MPI_Startall_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Sendrecv_replace_fn)(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t sendtag, int32_t source, int32_t recvtag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status);
-typedef void (*plumed_mpiw_transport_MPI_Sendrecv_replace_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_contiguous_fn)(int32_t count, plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype);
-typedef void (*plumed_mpiw_transport_MPI_Type_contiguous_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_vector_fn)(int32_t count, int32_t blocklength, int32_t stride, plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype);
-typedef void (*plumed_mpiw_transport_MPI_Type_vector_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_indexed_fn)(int32_t count, const int32_t array_of_blocklengths[], const int32_t array_of_displacements[], plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype);
-typedef void (*plumed_mpiw_transport_MPI_Type_indexed_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_commit_fn)(plumed_mpiw_handle_storage * datatype);
-typedef void (*plumed_mpiw_transport_MPI_Type_commit_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_free_fn)(plumed_mpiw_handle_storage * datatype);
-typedef void (*plumed_mpiw_transport_MPI_Type_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Type_size_fn)(plumed_mpiw_handle_storage datatype, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Type_size_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Get_elements_fn)(const plumed_mpiw_status * status, plumed_mpiw_handle_storage datatype, int32_t * count);
-typedef void (*plumed_mpiw_transport_MPI_Get_elements_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Pack_fn)(const void * inbuf, int32_t incount, plumed_mpiw_handle_storage datatype, void * outbuf, int32_t outsize, int32_t * position, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Pack_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Unpack_fn)(const void * inbuf, int32_t insize, int32_t * position, void * outbuf, int32_t outcount, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Unpack_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Pack_size_fn)(int32_t incount, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage comm, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Pack_size_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Gatherv_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Gatherv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Scatterv_fn)(const void * sendbuf, const int32_t sendcounts[], const int32_t displs[], plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Scatterv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Alltoall_fn)(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Alltoall_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Alltoallv_fn)(const void * sendbuf, const int32_t sendcounts[], const int32_t sdispls[], plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t rdispls[], plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Alltoallv_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Reduce_fn)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, int32_t root, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Reduce_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Op_create_fn)(plumed_mpiw_user_callback *, int32_t, plumed_mpiw_handle_storage *);
-typedef void (*plumed_mpiw_transport_MPI_Op_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Op_free_fn)(plumed_mpiw_handle_storage * op);
-typedef void (*plumed_mpiw_transport_MPI_Op_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Reduce_scatter_fn)(const void * sendbuf, void * recvbuf, const int32_t recvcounts[], plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Reduce_scatter_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Scan_fn)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm);
-typedef void (*plumed_mpiw_transport_MPI_Scan_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_size_fn)(plumed_mpiw_handle_storage group, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Group_size_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_rank_fn)(plumed_mpiw_handle_storage group, int32_t * rank);
-typedef void (*plumed_mpiw_transport_MPI_Group_rank_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_translate_ranks_fn)(plumed_mpiw_handle_storage group1, int32_t n, const int32_t ranks1[], plumed_mpiw_handle_storage group2, int32_t ranks2[]);
-typedef void (*plumed_mpiw_transport_MPI_Group_translate_ranks_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_compare_fn)(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, int32_t * result);
-typedef void (*plumed_mpiw_transport_MPI_Group_compare_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_group_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * group);
-typedef void (*plumed_mpiw_transport_MPI_Comm_group_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_union_fn)(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_union_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_intersection_fn)(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_intersection_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_difference_fn)(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_difference_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_incl_fn)(plumed_mpiw_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_incl_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_excl_fn)(plumed_mpiw_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_excl_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_range_incl_fn)(plumed_mpiw_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_range_incl_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_range_excl_fn)(plumed_mpiw_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpiw_handle_storage * newgroup);
-typedef void (*plumed_mpiw_transport_MPI_Group_range_excl_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Group_free_fn)(plumed_mpiw_handle_storage * group);
-typedef void (*plumed_mpiw_transport_MPI_Group_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_compare_fn)(plumed_mpiw_handle_storage comm1, plumed_mpiw_handle_storage comm2, int32_t * result);
-typedef void (*plumed_mpiw_transport_MPI_Comm_compare_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_create_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage group, plumed_mpiw_handle_storage * newcomm);
-typedef void (*plumed_mpiw_transport_MPI_Comm_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_test_inter_fn)(plumed_mpiw_handle_storage comm, int32_t * flag);
-typedef void (*plumed_mpiw_transport_MPI_Comm_test_inter_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_remote_size_fn)(plumed_mpiw_handle_storage comm, int32_t * size);
-typedef void (*plumed_mpiw_transport_MPI_Comm_remote_size_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_remote_group_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * group);
-typedef void (*plumed_mpiw_transport_MPI_Comm_remote_group_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Intercomm_create_fn)(plumed_mpiw_handle_storage local_comm, int32_t local_leader, plumed_mpiw_handle_storage peer_comm, int32_t remote_leader, int32_t tag, plumed_mpiw_handle_storage * newintercomm);
-typedef void (*plumed_mpiw_transport_MPI_Intercomm_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Intercomm_merge_fn)(plumed_mpiw_handle_storage intercomm, int32_t high, plumed_mpiw_handle_storage * newintracomm);
-typedef void (*plumed_mpiw_transport_MPI_Intercomm_merge_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_create_fn)(plumed_mpiw_handle_storage comm_old, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t reorder, plumed_mpiw_handle_storage * comm_cart);
-typedef void (*plumed_mpiw_transport_MPI_Cart_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Dims_create_fn)(int32_t nnodes, int32_t ndims, int32_t dims[]);
-typedef void (*plumed_mpiw_transport_MPI_Dims_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graph_create_fn)(plumed_mpiw_handle_storage comm_old, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t reorder, plumed_mpiw_handle_storage * comm_graph);
-typedef void (*plumed_mpiw_transport_MPI_Graph_create_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Topo_test_fn)(plumed_mpiw_handle_storage comm, int32_t * status);
-typedef void (*plumed_mpiw_transport_MPI_Topo_test_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graphdims_get_fn)(plumed_mpiw_handle_storage comm, int32_t * nnodes, int32_t * nedges);
-typedef void (*plumed_mpiw_transport_MPI_Graphdims_get_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graph_get_fn)(plumed_mpiw_handle_storage comm, int32_t maxindex, int32_t maxedges, int32_t indx[], int32_t edges[]);
-typedef void (*plumed_mpiw_transport_MPI_Graph_get_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cartdim_get_fn)(plumed_mpiw_handle_storage comm, int32_t * ndims);
-typedef void (*plumed_mpiw_transport_MPI_Cartdim_get_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_get_fn)(plumed_mpiw_handle_storage comm, int32_t maxdims, int32_t dims[], int32_t periods[], int32_t coords[]);
-typedef void (*plumed_mpiw_transport_MPI_Cart_get_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_rank_fn)(plumed_mpiw_handle_storage comm, const int32_t coords[], int32_t * rank);
-typedef void (*plumed_mpiw_transport_MPI_Cart_rank_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_coords_fn)(plumed_mpiw_handle_storage comm, int32_t rank, int32_t maxdims, int32_t coords[]);
-typedef void (*plumed_mpiw_transport_MPI_Cart_coords_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graph_neighbors_count_fn)(plumed_mpiw_handle_storage comm, int32_t rank, int32_t * nneighbors);
-typedef void (*plumed_mpiw_transport_MPI_Graph_neighbors_count_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graph_neighbors_fn)(plumed_mpiw_handle_storage comm, int32_t rank, int32_t maxneighbors, int32_t neighbors[]);
-typedef void (*plumed_mpiw_transport_MPI_Graph_neighbors_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_shift_fn)(plumed_mpiw_handle_storage comm, int32_t direction, int32_t disp, int32_t * rank_source, int32_t * rank_dest);
-typedef void (*plumed_mpiw_transport_MPI_Cart_shift_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_sub_fn)(plumed_mpiw_handle_storage comm, const int32_t remain_dims[], plumed_mpiw_handle_storage * newcomm);
-typedef void (*plumed_mpiw_transport_MPI_Cart_sub_fn)(void *argument_0, void *argument_1, void *argument_2, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Cart_map_fn)(plumed_mpiw_handle_storage comm, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t * newrank);
-typedef void (*plumed_mpiw_transport_MPI_Cart_map_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Graph_map_fn)(plumed_mpiw_handle_storage comm, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t * newrank);
-typedef void (*plumed_mpiw_transport_MPI_Graph_map_fn)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Get_processor_name_fn)(char * name, int32_t * resultlen);
-typedef void (*plumed_mpiw_transport_MPI_Get_processor_name_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Errhandler_free_fn)(plumed_mpiw_handle_storage * errhandler);
-typedef void (*plumed_mpiw_transport_MPI_Errhandler_free_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Error_class_fn)(int32_t errorcode, int32_t * errorclass);
-typedef void (*plumed_mpiw_transport_MPI_Error_class_fn)(void *argument_0, void *argument_1, void *result);
-typedef double (*plumed_mpiw_MPI_Wtime_fn)(void);
-typedef void (*plumed_mpiw_transport_MPI_Wtime_fn)(void *result);
-typedef double (*plumed_mpiw_MPI_Wtick_fn)(void);
-typedef void (*plumed_mpiw_transport_MPI_Wtick_fn)(void *result);
-typedef int32_t (*plumed_mpiw_MPI_Finalized_fn)(int32_t * flag);
-typedef void (*plumed_mpiw_transport_MPI_Finalized_fn)(void *argument_0, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_get_errhandler_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * errhandler);
-typedef void (*plumed_mpiw_transport_MPI_Comm_get_errhandler_fn)(void *argument_0, void *argument_1, void *result);
-typedef int32_t (*plumed_mpiw_MPI_Comm_set_errhandler_fn)(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage errhandler);
-typedef void (*plumed_mpiw_transport_MPI_Comm_set_errhandler_fn)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_provider_constant_pointer)(void *output, uint32_t capacity);
+typedef void (*plumed_mpi_user_callback_invoke_fn)(plumed_mpi_generic_pointer, void *, void *, int32_t, plumed_mpi_handle_storage);
+typedef struct { plumed_mpi_generic_pointer function; plumed_mpi_user_callback_invoke_fn invoke; } plumed_mpi_user_callback;
+typedef void (*plumed_mpi_comm_errhandler_invoke_pointer)(plumed_mpi_generic_pointer, plumed_mpi_handle_storage, int32_t);
+typedef struct { plumed_mpi_generic_pointer function; plumed_mpi_comm_errhandler_invoke_pointer invoke; } plumed_mpi_comm_errhandler_callback;
+typedef int32_t (*plumed_mpi_MPI_Init_pointer)(int32_t * argc, char *** argv);
+typedef void (*plumed_mpi_transport_MPI_Init_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Finalize_pointer)(void);
+typedef void (*plumed_mpi_transport_MPI_Finalize_pointer)(void *result);
+typedef int32_t (*plumed_mpi_MPI_Initialized_pointer)(int32_t * flag);
+typedef void (*plumed_mpi_transport_MPI_Initialized_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_dup_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * newcomm);
+typedef void (*plumed_mpi_transport_MPI_Comm_dup_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_free_pointer)(plumed_mpi_handle_storage * comm);
+typedef void (*plumed_mpi_transport_MPI_Comm_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_rank_pointer)(plumed_mpi_handle_storage comm, int32_t * rank);
+typedef void (*plumed_mpi_transport_MPI_Comm_rank_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_size_pointer)(plumed_mpi_handle_storage comm, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Comm_size_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_split_pointer)(plumed_mpi_handle_storage comm, int32_t color, int32_t key, plumed_mpi_handle_storage * newcomm);
+typedef void (*plumed_mpi_transport_MPI_Comm_split_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Abort_pointer)(plumed_mpi_handle_storage comm, int32_t errorcode);
+typedef void (*plumed_mpi_transport_MPI_Abort_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Bcast_pointer)(void * buffer, int32_t count, plumed_mpi_handle_storage datatype, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Bcast_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Scatter_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Scatter_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
+typedef int32_t (*plumed_mpi_MPI_Gather_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Gather_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
+typedef int32_t (*plumed_mpi_MPI_Allreduce_pointer)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Allreduce_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Isend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Isend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Wait_pointer)(plumed_mpi_handle_storage * request, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Wait_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Allgather_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Allgather_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Allgatherv_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Allgatherv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *result);
+typedef int32_t (*plumed_mpi_MPI_Recv_pointer)(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Recv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Barrier_pointer)(plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Barrier_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Get_count_pointer)(const plumed_mpi_status * status, plumed_mpi_handle_storage datatype, int32_t * count);
+typedef void (*plumed_mpi_transport_MPI_Get_count_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Sendrecv_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, int32_t dest, int32_t sendtag, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t source, int32_t recvtag, plumed_mpi_handle_storage comm, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Sendrecv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *argument_9, void *argument_10, void *argument_11, void *result);
+typedef int32_t (*plumed_mpi_MPI_Error_string_pointer)(int32_t errorcode, char * string, int32_t * resultlen);
+typedef void (*plumed_mpi_transport_MPI_Error_string_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_create_errhandler_pointer)(plumed_mpi_comm_errhandler_callback *, plumed_mpi_handle_storage *);
+typedef void (*plumed_mpi_transport_MPI_Comm_create_errhandler_pointer)(void *argument_0, void *argument_1, void *result);
+typedef plumed_mpi_handle_storage (*plumed_mpi_MPI_Comm_f2c_pointer)(int32_t comm);
+typedef void (*plumed_mpi_transport_MPI_Comm_f2c_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Send_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Send_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Bsend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Bsend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Ssend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Ssend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Rsend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Rsend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Buffer_attach_pointer)(void * buffer, int32_t size);
+typedef void (*plumed_mpi_transport_MPI_Buffer_attach_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Buffer_detach_pointer)(void * buffer_addr, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Buffer_detach_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Ibsend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Ibsend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Issend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Issend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Irsend_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Irsend_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Irecv_pointer)(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Irecv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Test_pointer)(plumed_mpi_handle_storage * request, int32_t * flag, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Test_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Request_free_pointer)(plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Request_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Waitany_pointer)(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * indx, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Waitany_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Testany_pointer)(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * indx, int32_t * flag, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Testany_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Waitall_pointer)(int32_t count, plumed_mpi_handle_storage array_of_requests[], plumed_mpi_status * array_of_statuses);
+typedef void (*plumed_mpi_transport_MPI_Waitall_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Testall_pointer)(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * flag, plumed_mpi_status * array_of_statuses);
+typedef void (*plumed_mpi_transport_MPI_Testall_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Waitsome_pointer)(int32_t incount, plumed_mpi_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpi_status * array_of_statuses);
+typedef void (*plumed_mpi_transport_MPI_Waitsome_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Testsome_pointer)(int32_t incount, plumed_mpi_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpi_status * array_of_statuses);
+typedef void (*plumed_mpi_transport_MPI_Testsome_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Iprobe_pointer)(int32_t source, int32_t tag, plumed_mpi_handle_storage comm, int32_t * flag, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Iprobe_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Probe_pointer)(int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Probe_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cancel_pointer)(plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Cancel_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Test_cancelled_pointer)(const plumed_mpi_status * status, int32_t * flag);
+typedef void (*plumed_mpi_transport_MPI_Test_cancelled_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Send_init_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Send_init_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Bsend_init_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Bsend_init_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Ssend_init_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Ssend_init_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Rsend_init_pointer)(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Rsend_init_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Recv_init_pointer)(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Recv_init_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Start_pointer)(plumed_mpi_handle_storage * request);
+typedef void (*plumed_mpi_transport_MPI_Start_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Startall_pointer)(int32_t count, plumed_mpi_handle_storage array_of_requests[]);
+typedef void (*plumed_mpi_transport_MPI_Startall_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Sendrecv_replace_pointer)(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t sendtag, int32_t source, int32_t recvtag, plumed_mpi_handle_storage comm, plumed_mpi_status * status);
+typedef void (*plumed_mpi_transport_MPI_Sendrecv_replace_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_contiguous_pointer)(int32_t count, plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype);
+typedef void (*plumed_mpi_transport_MPI_Type_contiguous_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_vector_pointer)(int32_t count, int32_t blocklength, int32_t stride, plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype);
+typedef void (*plumed_mpi_transport_MPI_Type_vector_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_indexed_pointer)(int32_t count, const int32_t array_of_blocklengths[], const int32_t array_of_displacements[], plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype);
+typedef void (*plumed_mpi_transport_MPI_Type_indexed_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_commit_pointer)(plumed_mpi_handle_storage * datatype);
+typedef void (*plumed_mpi_transport_MPI_Type_commit_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_free_pointer)(plumed_mpi_handle_storage * datatype);
+typedef void (*plumed_mpi_transport_MPI_Type_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Type_size_pointer)(plumed_mpi_handle_storage datatype, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Type_size_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Get_elements_pointer)(const plumed_mpi_status * status, plumed_mpi_handle_storage datatype, int32_t * count);
+typedef void (*plumed_mpi_transport_MPI_Get_elements_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Pack_pointer)(const void * inbuf, int32_t incount, plumed_mpi_handle_storage datatype, void * outbuf, int32_t outsize, int32_t * position, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Pack_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Unpack_pointer)(const void * inbuf, int32_t insize, int32_t * position, void * outbuf, int32_t outcount, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Unpack_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Pack_size_pointer)(int32_t incount, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage comm, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Pack_size_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Gatherv_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Gatherv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
+typedef int32_t (*plumed_mpi_MPI_Scatterv_pointer)(const void * sendbuf, const int32_t sendcounts[], const int32_t displs[], plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Scatterv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
+typedef int32_t (*plumed_mpi_MPI_Alltoall_pointer)(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Alltoall_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Alltoallv_pointer)(const void * sendbuf, const int32_t sendcounts[], const int32_t sdispls[], plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t rdispls[], plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Alltoallv_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *argument_7, void *argument_8, void *result);
+typedef int32_t (*plumed_mpi_MPI_Reduce_pointer)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, int32_t root, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Reduce_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *argument_6, void *result);
+typedef int32_t (*plumed_mpi_MPI_Op_create_pointer)(plumed_mpi_user_callback *, int32_t, plumed_mpi_handle_storage *);
+typedef void (*plumed_mpi_transport_MPI_Op_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Op_free_pointer)(plumed_mpi_handle_storage * op);
+typedef void (*plumed_mpi_transport_MPI_Op_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Reduce_scatter_pointer)(const void * sendbuf, void * recvbuf, const int32_t recvcounts[], plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Reduce_scatter_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Scan_pointer)(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm);
+typedef void (*plumed_mpi_transport_MPI_Scan_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_size_pointer)(plumed_mpi_handle_storage group, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Group_size_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_rank_pointer)(plumed_mpi_handle_storage group, int32_t * rank);
+typedef void (*plumed_mpi_transport_MPI_Group_rank_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_translate_ranks_pointer)(plumed_mpi_handle_storage group1, int32_t n, const int32_t ranks1[], plumed_mpi_handle_storage group2, int32_t ranks2[]);
+typedef void (*plumed_mpi_transport_MPI_Group_translate_ranks_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_compare_pointer)(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, int32_t * result);
+typedef void (*plumed_mpi_transport_MPI_Group_compare_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_group_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * group);
+typedef void (*plumed_mpi_transport_MPI_Comm_group_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_union_pointer)(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_union_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_intersection_pointer)(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_intersection_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_difference_pointer)(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_difference_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_incl_pointer)(plumed_mpi_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_incl_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_excl_pointer)(plumed_mpi_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_excl_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_range_incl_pointer)(plumed_mpi_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_range_incl_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_range_excl_pointer)(plumed_mpi_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpi_handle_storage * newgroup);
+typedef void (*plumed_mpi_transport_MPI_Group_range_excl_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Group_free_pointer)(plumed_mpi_handle_storage * group);
+typedef void (*plumed_mpi_transport_MPI_Group_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_compare_pointer)(plumed_mpi_handle_storage comm1, plumed_mpi_handle_storage comm2, int32_t * result);
+typedef void (*plumed_mpi_transport_MPI_Comm_compare_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_create_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage group, plumed_mpi_handle_storage * newcomm);
+typedef void (*plumed_mpi_transport_MPI_Comm_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_test_inter_pointer)(plumed_mpi_handle_storage comm, int32_t * flag);
+typedef void (*plumed_mpi_transport_MPI_Comm_test_inter_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_remote_size_pointer)(plumed_mpi_handle_storage comm, int32_t * size);
+typedef void (*plumed_mpi_transport_MPI_Comm_remote_size_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_remote_group_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * group);
+typedef void (*plumed_mpi_transport_MPI_Comm_remote_group_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Intercomm_create_pointer)(plumed_mpi_handle_storage local_comm, int32_t local_leader, plumed_mpi_handle_storage peer_comm, int32_t remote_leader, int32_t tag, plumed_mpi_handle_storage * newintercomm);
+typedef void (*plumed_mpi_transport_MPI_Intercomm_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Intercomm_merge_pointer)(plumed_mpi_handle_storage intercomm, int32_t high, plumed_mpi_handle_storage * newintracomm);
+typedef void (*plumed_mpi_transport_MPI_Intercomm_merge_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_create_pointer)(plumed_mpi_handle_storage comm_old, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t reorder, plumed_mpi_handle_storage * comm_cart);
+typedef void (*plumed_mpi_transport_MPI_Cart_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Dims_create_pointer)(int32_t nnodes, int32_t ndims, int32_t dims[]);
+typedef void (*plumed_mpi_transport_MPI_Dims_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graph_create_pointer)(plumed_mpi_handle_storage comm_old, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t reorder, plumed_mpi_handle_storage * comm_graph);
+typedef void (*plumed_mpi_transport_MPI_Graph_create_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *argument_5, void *result);
+typedef int32_t (*plumed_mpi_MPI_Topo_test_pointer)(plumed_mpi_handle_storage comm, int32_t * status);
+typedef void (*plumed_mpi_transport_MPI_Topo_test_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graphdims_get_pointer)(plumed_mpi_handle_storage comm, int32_t * nnodes, int32_t * nedges);
+typedef void (*plumed_mpi_transport_MPI_Graphdims_get_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graph_get_pointer)(plumed_mpi_handle_storage comm, int32_t maxindex, int32_t maxedges, int32_t indx[], int32_t edges[]);
+typedef void (*plumed_mpi_transport_MPI_Graph_get_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cartdim_get_pointer)(plumed_mpi_handle_storage comm, int32_t * ndims);
+typedef void (*plumed_mpi_transport_MPI_Cartdim_get_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_get_pointer)(plumed_mpi_handle_storage comm, int32_t maxdims, int32_t dims[], int32_t periods[], int32_t coords[]);
+typedef void (*plumed_mpi_transport_MPI_Cart_get_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_rank_pointer)(plumed_mpi_handle_storage comm, const int32_t coords[], int32_t * rank);
+typedef void (*plumed_mpi_transport_MPI_Cart_rank_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_coords_pointer)(plumed_mpi_handle_storage comm, int32_t rank, int32_t maxdims, int32_t coords[]);
+typedef void (*plumed_mpi_transport_MPI_Cart_coords_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graph_neighbors_count_pointer)(plumed_mpi_handle_storage comm, int32_t rank, int32_t * nneighbors);
+typedef void (*plumed_mpi_transport_MPI_Graph_neighbors_count_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graph_neighbors_pointer)(plumed_mpi_handle_storage comm, int32_t rank, int32_t maxneighbors, int32_t neighbors[]);
+typedef void (*plumed_mpi_transport_MPI_Graph_neighbors_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_shift_pointer)(plumed_mpi_handle_storage comm, int32_t direction, int32_t disp, int32_t * rank_source, int32_t * rank_dest);
+typedef void (*plumed_mpi_transport_MPI_Cart_shift_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_sub_pointer)(plumed_mpi_handle_storage comm, const int32_t remain_dims[], plumed_mpi_handle_storage * newcomm);
+typedef void (*plumed_mpi_transport_MPI_Cart_sub_pointer)(void *argument_0, void *argument_1, void *argument_2, void *result);
+typedef int32_t (*plumed_mpi_MPI_Cart_map_pointer)(plumed_mpi_handle_storage comm, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t * newrank);
+typedef void (*plumed_mpi_transport_MPI_Cart_map_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Graph_map_pointer)(plumed_mpi_handle_storage comm, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t * newrank);
+typedef void (*plumed_mpi_transport_MPI_Graph_map_pointer)(void *argument_0, void *argument_1, void *argument_2, void *argument_3, void *argument_4, void *result);
+typedef int32_t (*plumed_mpi_MPI_Get_processor_name_pointer)(char * name, int32_t * resultlen);
+typedef void (*plumed_mpi_transport_MPI_Get_processor_name_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Errhandler_free_pointer)(plumed_mpi_handle_storage * errhandler);
+typedef void (*plumed_mpi_transport_MPI_Errhandler_free_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Error_class_pointer)(int32_t errorcode, int32_t * errorclass);
+typedef void (*plumed_mpi_transport_MPI_Error_class_pointer)(void *argument_0, void *argument_1, void *result);
+typedef double (*plumed_mpi_MPI_Wtime_pointer)(void);
+typedef void (*plumed_mpi_transport_MPI_Wtime_pointer)(void *result);
+typedef double (*plumed_mpi_MPI_Wtick_pointer)(void);
+typedef void (*plumed_mpi_transport_MPI_Wtick_pointer)(void *result);
+typedef int32_t (*plumed_mpi_MPI_Finalized_pointer)(int32_t * flag);
+typedef void (*plumed_mpi_transport_MPI_Finalized_pointer)(void *argument_0, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_get_errhandler_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * errhandler);
+typedef void (*plumed_mpi_transport_MPI_Comm_get_errhandler_pointer)(void *argument_0, void *argument_1, void *result);
+typedef int32_t (*plumed_mpi_MPI_Comm_set_errhandler_pointer)(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage errhandler);
+typedef void (*plumed_mpi_transport_MPI_Comm_set_errhandler_pointer)(void *argument_0, void *argument_1, void *result);
 #ifdef __cplusplus
 }
 }
@@ -342,7 +342,7 @@ typedef void (*plumed_mpiw_transport_MPI_Comm_set_errhandler_fn)(void *argument_
 #endif
 #if defined(__cplusplus) && !defined(PLUMED_MPIW_ABI_ONLY)
 /* FALLBACK_DECLARATIONS_BEGIN */
-#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if !defined(__PLUMED_HAS_MPI) && !__PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 namespace PLMD {
 namespace mpiwrap {
 struct MPI_Request;
@@ -374,7 +374,7 @@ bool try_singleton_reduce(const void *, void *, int, MPI_Datatype,
 #endif
 /* FALLBACK_DECLARATIONS_END */
 // Generated by generate.py; do not edit.
-#if defined(__PLUMED_HAS_MPI) || defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if defined(__PLUMED_HAS_MPI) || __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 #include <mpi.h>
 #include <cstddef>
 #include <cstring>
@@ -440,447 +440,447 @@ namespace PLMD {
 namespace mpiwrap {
 namespace pointers {
 extern std::atomic<bool> ready;
-extern plumed_mpiw_MPI_Init_fn Init;
-extern plumed_mpiw_MPI_Finalize_fn Finalize;
-extern plumed_mpiw_MPI_Initialized_fn Initialized;
-extern plumed_mpiw_MPI_Comm_dup_fn Comm_dup;
-extern plumed_mpiw_MPI_Comm_free_fn Comm_free;
-extern plumed_mpiw_MPI_Comm_rank_fn Comm_rank;
-extern plumed_mpiw_MPI_Comm_size_fn Comm_size;
-extern plumed_mpiw_MPI_Comm_split_fn Comm_split;
-extern plumed_mpiw_MPI_Abort_fn Abort;
-extern plumed_mpiw_MPI_Bcast_fn Bcast;
-extern plumed_mpiw_MPI_Scatter_fn Scatter;
-extern plumed_mpiw_MPI_Gather_fn Gather;
-extern plumed_mpiw_MPI_Allreduce_fn Allreduce;
-extern plumed_mpiw_MPI_Isend_fn Isend;
-extern plumed_mpiw_MPI_Wait_fn Wait;
-extern plumed_mpiw_MPI_Allgather_fn Allgather;
-extern plumed_mpiw_MPI_Allgatherv_fn Allgatherv;
-extern plumed_mpiw_MPI_Recv_fn Recv;
-extern plumed_mpiw_MPI_Barrier_fn Barrier;
-extern plumed_mpiw_MPI_Get_count_fn Get_count;
-extern plumed_mpiw_MPI_Sendrecv_fn Sendrecv;
-extern plumed_mpiw_MPI_Error_string_fn Error_string;
-extern plumed_mpiw_MPI_Comm_create_errhandler_fn Comm_create_errhandler;
-extern plumed_mpiw_MPI_Comm_f2c_fn Comm_f2c;
-extern plumed_mpiw_MPI_Send_fn Send;
-extern plumed_mpiw_MPI_Bsend_fn Bsend;
-extern plumed_mpiw_MPI_Ssend_fn Ssend;
-extern plumed_mpiw_MPI_Rsend_fn Rsend;
-extern plumed_mpiw_MPI_Buffer_attach_fn Buffer_attach;
-extern plumed_mpiw_MPI_Buffer_detach_fn Buffer_detach;
-extern plumed_mpiw_MPI_Ibsend_fn Ibsend;
-extern plumed_mpiw_MPI_Issend_fn Issend;
-extern plumed_mpiw_MPI_Irsend_fn Irsend;
-extern plumed_mpiw_MPI_Irecv_fn Irecv;
-extern plumed_mpiw_MPI_Test_fn Test;
-extern plumed_mpiw_MPI_Request_free_fn Request_free;
-extern plumed_mpiw_MPI_Waitany_fn Waitany;
-extern plumed_mpiw_MPI_Testany_fn Testany;
-extern plumed_mpiw_MPI_Waitall_fn Waitall;
-extern plumed_mpiw_MPI_Testall_fn Testall;
-extern plumed_mpiw_MPI_Waitsome_fn Waitsome;
-extern plumed_mpiw_MPI_Testsome_fn Testsome;
-extern plumed_mpiw_MPI_Iprobe_fn Iprobe;
-extern plumed_mpiw_MPI_Probe_fn Probe;
-extern plumed_mpiw_MPI_Cancel_fn Cancel;
-extern plumed_mpiw_MPI_Test_cancelled_fn Test_cancelled;
-extern plumed_mpiw_MPI_Send_init_fn Send_init;
-extern plumed_mpiw_MPI_Bsend_init_fn Bsend_init;
-extern plumed_mpiw_MPI_Ssend_init_fn Ssend_init;
-extern plumed_mpiw_MPI_Rsend_init_fn Rsend_init;
-extern plumed_mpiw_MPI_Recv_init_fn Recv_init;
-extern plumed_mpiw_MPI_Start_fn Start;
-extern plumed_mpiw_MPI_Startall_fn Startall;
-extern plumed_mpiw_MPI_Sendrecv_replace_fn Sendrecv_replace;
-extern plumed_mpiw_MPI_Type_contiguous_fn Type_contiguous;
-extern plumed_mpiw_MPI_Type_vector_fn Type_vector;
-extern plumed_mpiw_MPI_Type_indexed_fn Type_indexed;
-extern plumed_mpiw_MPI_Type_commit_fn Type_commit;
-extern plumed_mpiw_MPI_Type_free_fn Type_free;
-extern plumed_mpiw_MPI_Type_size_fn Type_size;
-extern plumed_mpiw_MPI_Get_elements_fn Get_elements;
-extern plumed_mpiw_MPI_Pack_fn Pack;
-extern plumed_mpiw_MPI_Unpack_fn Unpack;
-extern plumed_mpiw_MPI_Pack_size_fn Pack_size;
-extern plumed_mpiw_MPI_Gatherv_fn Gatherv;
-extern plumed_mpiw_MPI_Scatterv_fn Scatterv;
-extern plumed_mpiw_MPI_Alltoall_fn Alltoall;
-extern plumed_mpiw_MPI_Alltoallv_fn Alltoallv;
-extern plumed_mpiw_MPI_Reduce_fn Reduce;
-extern plumed_mpiw_MPI_Op_create_fn Op_create;
-extern plumed_mpiw_MPI_Op_free_fn Op_free;
-extern plumed_mpiw_MPI_Reduce_scatter_fn Reduce_scatter;
-extern plumed_mpiw_MPI_Scan_fn Scan;
-extern plumed_mpiw_MPI_Group_size_fn Group_size;
-extern plumed_mpiw_MPI_Group_rank_fn Group_rank;
-extern plumed_mpiw_MPI_Group_translate_ranks_fn Group_translate_ranks;
-extern plumed_mpiw_MPI_Group_compare_fn Group_compare;
-extern plumed_mpiw_MPI_Comm_group_fn Comm_group;
-extern plumed_mpiw_MPI_Group_union_fn Group_union;
-extern plumed_mpiw_MPI_Group_intersection_fn Group_intersection;
-extern plumed_mpiw_MPI_Group_difference_fn Group_difference;
-extern plumed_mpiw_MPI_Group_incl_fn Group_incl;
-extern plumed_mpiw_MPI_Group_excl_fn Group_excl;
-extern plumed_mpiw_MPI_Group_range_incl_fn Group_range_incl;
-extern plumed_mpiw_MPI_Group_range_excl_fn Group_range_excl;
-extern plumed_mpiw_MPI_Group_free_fn Group_free;
-extern plumed_mpiw_MPI_Comm_compare_fn Comm_compare;
-extern plumed_mpiw_MPI_Comm_create_fn Comm_create;
-extern plumed_mpiw_MPI_Comm_test_inter_fn Comm_test_inter;
-extern plumed_mpiw_MPI_Comm_remote_size_fn Comm_remote_size;
-extern plumed_mpiw_MPI_Comm_remote_group_fn Comm_remote_group;
-extern plumed_mpiw_MPI_Intercomm_create_fn Intercomm_create;
-extern plumed_mpiw_MPI_Intercomm_merge_fn Intercomm_merge;
-extern plumed_mpiw_MPI_Cart_create_fn Cart_create;
-extern plumed_mpiw_MPI_Dims_create_fn Dims_create;
-extern plumed_mpiw_MPI_Graph_create_fn Graph_create;
-extern plumed_mpiw_MPI_Topo_test_fn Topo_test;
-extern plumed_mpiw_MPI_Graphdims_get_fn Graphdims_get;
-extern plumed_mpiw_MPI_Graph_get_fn Graph_get;
-extern plumed_mpiw_MPI_Cartdim_get_fn Cartdim_get;
-extern plumed_mpiw_MPI_Cart_get_fn Cart_get;
-extern plumed_mpiw_MPI_Cart_rank_fn Cart_rank;
-extern plumed_mpiw_MPI_Cart_coords_fn Cart_coords;
-extern plumed_mpiw_MPI_Graph_neighbors_count_fn Graph_neighbors_count;
-extern plumed_mpiw_MPI_Graph_neighbors_fn Graph_neighbors;
-extern plumed_mpiw_MPI_Cart_shift_fn Cart_shift;
-extern plumed_mpiw_MPI_Cart_sub_fn Cart_sub;
-extern plumed_mpiw_MPI_Cart_map_fn Cart_map;
-extern plumed_mpiw_MPI_Graph_map_fn Graph_map;
-extern plumed_mpiw_MPI_Get_processor_name_fn Get_processor_name;
-extern plumed_mpiw_MPI_Errhandler_free_fn Errhandler_free;
-extern plumed_mpiw_MPI_Error_class_fn Error_class;
-extern plumed_mpiw_MPI_Wtime_fn Wtime;
-extern plumed_mpiw_MPI_Wtick_fn Wtick;
-extern plumed_mpiw_MPI_Finalized_fn Finalized;
-extern plumed_mpiw_MPI_Comm_get_errhandler_fn Comm_get_errhandler;
-extern plumed_mpiw_MPI_Comm_set_errhandler_fn Comm_set_errhandler;
-extern plumed_mpiw_provider_constant_fn constant_FLOAT;
-extern plumed_mpiw_provider_constant_fn constant_DOUBLE;
-extern plumed_mpiw_provider_constant_fn constant_INT;
-extern plumed_mpiw_provider_constant_fn constant_CHAR;
-extern plumed_mpiw_provider_constant_fn constant_UNSIGNED;
-extern plumed_mpiw_provider_constant_fn constant_UNSIGNED_LONG;
-extern plumed_mpiw_provider_constant_fn constant_UNSIGNED_LONG_LONG;
-extern plumed_mpiw_provider_constant_fn constant_LONG_DOUBLE;
-extern plumed_mpiw_provider_constant_fn constant_COMM_WORLD;
-extern plumed_mpiw_provider_constant_fn constant_COMM_SELF;
-extern plumed_mpiw_provider_constant_fn constant_COMM_NULL;
-extern plumed_mpiw_provider_constant_fn constant_IN_PLACE;
-extern plumed_mpiw_provider_constant_fn constant_SUM;
-extern plumed_mpiw_provider_constant_fn constant_PROD;
-extern plumed_mpiw_provider_constant_fn constant_MAX;
-extern plumed_mpiw_provider_constant_fn constant_MIN;
-extern plumed_mpiw_provider_constant_fn constant_STATUS_IGNORE;
-extern plumed_mpiw_provider_constant_fn constant_STATUSES_IGNORE;
-extern plumed_mpiw_provider_constant_fn constant_GROUP_NULL;
-extern plumed_mpiw_provider_constant_fn constant_GROUP_EMPTY;
-extern plumed_mpiw_provider_constant_fn constant_REQUEST_NULL;
-extern plumed_mpiw_provider_constant_fn constant_DATATYPE_NULL;
-extern plumed_mpiw_provider_constant_fn constant_OP_NULL;
-extern plumed_mpiw_provider_constant_fn constant_ERRHANDLER_NULL;
-extern plumed_mpiw_provider_constant_fn constant_ERRORS_ARE_FATAL;
-extern plumed_mpiw_provider_constant_fn constant_ERRORS_RETURN;
-extern plumed_mpiw_provider_constant_fn constant_BYTE;
-extern plumed_mpiw_provider_constant_fn constant_PACKED;
-extern plumed_mpiw_provider_constant_fn constant_SHORT;
-extern plumed_mpiw_provider_constant_fn constant_LONG;
-extern plumed_mpiw_provider_constant_fn constant_UNSIGNED_CHAR;
-extern plumed_mpiw_provider_constant_fn constant_UNSIGNED_SHORT;
-extern plumed_mpiw_provider_constant_fn constant_LONG_LONG_INT;
-extern plumed_mpiw_provider_constant_fn constant_LONG_LONG;
-extern plumed_mpiw_provider_constant_fn constant_FLOAT_INT;
-extern plumed_mpiw_provider_constant_fn constant_DOUBLE_INT;
-extern plumed_mpiw_provider_constant_fn constant_LONG_INT;
-extern plumed_mpiw_provider_constant_fn constant_TWO_INTS;
-extern plumed_mpiw_provider_constant_fn constant_SHORT_INT;
-extern plumed_mpiw_provider_constant_fn constant_LONG_DOUBLE_INT;
-extern plumed_mpiw_provider_constant_fn constant_MAXLOC;
-extern plumed_mpiw_provider_constant_fn constant_MINLOC;
-extern plumed_mpiw_provider_constant_fn constant_LAND;
-extern plumed_mpiw_provider_constant_fn constant_BAND;
-extern plumed_mpiw_provider_constant_fn constant_LOR;
-extern plumed_mpiw_provider_constant_fn constant_BOR;
-extern plumed_mpiw_provider_constant_fn constant_LXOR;
-extern plumed_mpiw_provider_constant_fn constant_BXOR;
-extern plumed_mpiw_provider_constant_fn constant_UNDEFINED;
-extern plumed_mpiw_provider_constant_fn constant_ANY_SOURCE;
-extern plumed_mpiw_provider_constant_fn constant_ANY_TAG;
-extern plumed_mpiw_provider_constant_fn constant_PROC_NULL;
-extern plumed_mpiw_provider_constant_fn constant_IDENT;
-extern plumed_mpiw_provider_constant_fn constant_CONGRUENT;
-extern plumed_mpiw_provider_constant_fn constant_SIMILAR;
-extern plumed_mpiw_provider_constant_fn constant_UNEQUAL;
-extern plumed_mpiw_provider_constant_fn constant_CART;
-extern plumed_mpiw_provider_constant_fn constant_GRAPH;
-extern plumed_mpiw_provider_constant_fn constant_MAX_PROCESSOR_NAME;
-extern plumed_mpiw_provider_constant_fn constant_MAX_ERROR_STRING;
-extern plumed_mpiw_provider_constant_fn constant_BSEND_OVERHEAD;
-extern plumed_mpiw_provider_constant_fn constant_SUCCESS;
-extern plumed_mpiw_provider_constant_fn constant_ERR_BUFFER;
-extern plumed_mpiw_provider_constant_fn constant_ERR_COUNT;
-extern plumed_mpiw_provider_constant_fn constant_ERR_TYPE;
-extern plumed_mpiw_provider_constant_fn constant_ERR_TAG;
-extern plumed_mpiw_provider_constant_fn constant_ERR_COMM;
-extern plumed_mpiw_provider_constant_fn constant_ERR_RANK;
-extern plumed_mpiw_provider_constant_fn constant_ERR_REQUEST;
-extern plumed_mpiw_provider_constant_fn constant_ERR_ROOT;
-extern plumed_mpiw_provider_constant_fn constant_ERR_GROUP;
-extern plumed_mpiw_provider_constant_fn constant_ERR_OP;
-extern plumed_mpiw_provider_constant_fn constant_ERR_TOPOLOGY;
-extern plumed_mpiw_provider_constant_fn constant_ERR_DIMS;
-extern plumed_mpiw_provider_constant_fn constant_ERR_ARG;
-extern plumed_mpiw_provider_constant_fn constant_ERR_UNKNOWN;
-extern plumed_mpiw_provider_constant_fn constant_ERR_TRUNCATE;
-extern plumed_mpiw_provider_constant_fn constant_ERR_OTHER;
-extern plumed_mpiw_provider_constant_fn constant_ERR_INTERN;
-extern plumed_mpiw_provider_constant_fn constant_ERR_PENDING;
-extern plumed_mpiw_provider_constant_fn constant_BOTTOM;
-extern plumed_mpiw_provider_constant_fn constant_ERR_IN_STATUS;
-extern plumed_mpiw_provider_constant_fn constant_SIGNED_CHAR;
-extern plumed_mpiw_provider_constant_fn constant_C_BOOL;
-extern plumed_mpiw_provider_constant_fn constant_INT64_T;
+extern plumed_mpi_MPI_Init_pointer Init;
+extern plumed_mpi_MPI_Finalize_pointer Finalize;
+extern plumed_mpi_MPI_Initialized_pointer Initialized;
+extern plumed_mpi_MPI_Comm_dup_pointer Comm_dup;
+extern plumed_mpi_MPI_Comm_free_pointer Comm_free;
+extern plumed_mpi_MPI_Comm_rank_pointer Comm_rank;
+extern plumed_mpi_MPI_Comm_size_pointer Comm_size;
+extern plumed_mpi_MPI_Comm_split_pointer Comm_split;
+extern plumed_mpi_MPI_Abort_pointer Abort;
+extern plumed_mpi_MPI_Bcast_pointer Bcast;
+extern plumed_mpi_MPI_Scatter_pointer Scatter;
+extern plumed_mpi_MPI_Gather_pointer Gather;
+extern plumed_mpi_MPI_Allreduce_pointer Allreduce;
+extern plumed_mpi_MPI_Isend_pointer Isend;
+extern plumed_mpi_MPI_Wait_pointer Wait;
+extern plumed_mpi_MPI_Allgather_pointer Allgather;
+extern plumed_mpi_MPI_Allgatherv_pointer Allgatherv;
+extern plumed_mpi_MPI_Recv_pointer Recv;
+extern plumed_mpi_MPI_Barrier_pointer Barrier;
+extern plumed_mpi_MPI_Get_count_pointer Get_count;
+extern plumed_mpi_MPI_Sendrecv_pointer Sendrecv;
+extern plumed_mpi_MPI_Error_string_pointer Error_string;
+extern plumed_mpi_MPI_Comm_create_errhandler_pointer Comm_create_errhandler;
+extern plumed_mpi_MPI_Comm_f2c_pointer Comm_f2c;
+extern plumed_mpi_MPI_Send_pointer Send;
+extern plumed_mpi_MPI_Bsend_pointer Bsend;
+extern plumed_mpi_MPI_Ssend_pointer Ssend;
+extern plumed_mpi_MPI_Rsend_pointer Rsend;
+extern plumed_mpi_MPI_Buffer_attach_pointer Buffer_attach;
+extern plumed_mpi_MPI_Buffer_detach_pointer Buffer_detach;
+extern plumed_mpi_MPI_Ibsend_pointer Ibsend;
+extern plumed_mpi_MPI_Issend_pointer Issend;
+extern plumed_mpi_MPI_Irsend_pointer Irsend;
+extern plumed_mpi_MPI_Irecv_pointer Irecv;
+extern plumed_mpi_MPI_Test_pointer Test;
+extern plumed_mpi_MPI_Request_free_pointer Request_free;
+extern plumed_mpi_MPI_Waitany_pointer Waitany;
+extern plumed_mpi_MPI_Testany_pointer Testany;
+extern plumed_mpi_MPI_Waitall_pointer Waitall;
+extern plumed_mpi_MPI_Testall_pointer Testall;
+extern plumed_mpi_MPI_Waitsome_pointer Waitsome;
+extern plumed_mpi_MPI_Testsome_pointer Testsome;
+extern plumed_mpi_MPI_Iprobe_pointer Iprobe;
+extern plumed_mpi_MPI_Probe_pointer Probe;
+extern plumed_mpi_MPI_Cancel_pointer Cancel;
+extern plumed_mpi_MPI_Test_cancelled_pointer Test_cancelled;
+extern plumed_mpi_MPI_Send_init_pointer Send_init;
+extern plumed_mpi_MPI_Bsend_init_pointer Bsend_init;
+extern plumed_mpi_MPI_Ssend_init_pointer Ssend_init;
+extern plumed_mpi_MPI_Rsend_init_pointer Rsend_init;
+extern plumed_mpi_MPI_Recv_init_pointer Recv_init;
+extern plumed_mpi_MPI_Start_pointer Start;
+extern plumed_mpi_MPI_Startall_pointer Startall;
+extern plumed_mpi_MPI_Sendrecv_replace_pointer Sendrecv_replace;
+extern plumed_mpi_MPI_Type_contiguous_pointer Type_contiguous;
+extern plumed_mpi_MPI_Type_vector_pointer Type_vector;
+extern plumed_mpi_MPI_Type_indexed_pointer Type_indexed;
+extern plumed_mpi_MPI_Type_commit_pointer Type_commit;
+extern plumed_mpi_MPI_Type_free_pointer Type_free;
+extern plumed_mpi_MPI_Type_size_pointer Type_size;
+extern plumed_mpi_MPI_Get_elements_pointer Get_elements;
+extern plumed_mpi_MPI_Pack_pointer Pack;
+extern plumed_mpi_MPI_Unpack_pointer Unpack;
+extern plumed_mpi_MPI_Pack_size_pointer Pack_size;
+extern plumed_mpi_MPI_Gatherv_pointer Gatherv;
+extern plumed_mpi_MPI_Scatterv_pointer Scatterv;
+extern plumed_mpi_MPI_Alltoall_pointer Alltoall;
+extern plumed_mpi_MPI_Alltoallv_pointer Alltoallv;
+extern plumed_mpi_MPI_Reduce_pointer Reduce;
+extern plumed_mpi_MPI_Op_create_pointer Op_create;
+extern plumed_mpi_MPI_Op_free_pointer Op_free;
+extern plumed_mpi_MPI_Reduce_scatter_pointer Reduce_scatter;
+extern plumed_mpi_MPI_Scan_pointer Scan;
+extern plumed_mpi_MPI_Group_size_pointer Group_size;
+extern plumed_mpi_MPI_Group_rank_pointer Group_rank;
+extern plumed_mpi_MPI_Group_translate_ranks_pointer Group_translate_ranks;
+extern plumed_mpi_MPI_Group_compare_pointer Group_compare;
+extern plumed_mpi_MPI_Comm_group_pointer Comm_group;
+extern plumed_mpi_MPI_Group_union_pointer Group_union;
+extern plumed_mpi_MPI_Group_intersection_pointer Group_intersection;
+extern plumed_mpi_MPI_Group_difference_pointer Group_difference;
+extern plumed_mpi_MPI_Group_incl_pointer Group_incl;
+extern plumed_mpi_MPI_Group_excl_pointer Group_excl;
+extern plumed_mpi_MPI_Group_range_incl_pointer Group_range_incl;
+extern plumed_mpi_MPI_Group_range_excl_pointer Group_range_excl;
+extern plumed_mpi_MPI_Group_free_pointer Group_free;
+extern plumed_mpi_MPI_Comm_compare_pointer Comm_compare;
+extern plumed_mpi_MPI_Comm_create_pointer Comm_create;
+extern plumed_mpi_MPI_Comm_test_inter_pointer Comm_test_inter;
+extern plumed_mpi_MPI_Comm_remote_size_pointer Comm_remote_size;
+extern plumed_mpi_MPI_Comm_remote_group_pointer Comm_remote_group;
+extern plumed_mpi_MPI_Intercomm_create_pointer Intercomm_create;
+extern plumed_mpi_MPI_Intercomm_merge_pointer Intercomm_merge;
+extern plumed_mpi_MPI_Cart_create_pointer Cart_create;
+extern plumed_mpi_MPI_Dims_create_pointer Dims_create;
+extern plumed_mpi_MPI_Graph_create_pointer Graph_create;
+extern plumed_mpi_MPI_Topo_test_pointer Topo_test;
+extern plumed_mpi_MPI_Graphdims_get_pointer Graphdims_get;
+extern plumed_mpi_MPI_Graph_get_pointer Graph_get;
+extern plumed_mpi_MPI_Cartdim_get_pointer Cartdim_get;
+extern plumed_mpi_MPI_Cart_get_pointer Cart_get;
+extern plumed_mpi_MPI_Cart_rank_pointer Cart_rank;
+extern plumed_mpi_MPI_Cart_coords_pointer Cart_coords;
+extern plumed_mpi_MPI_Graph_neighbors_count_pointer Graph_neighbors_count;
+extern plumed_mpi_MPI_Graph_neighbors_pointer Graph_neighbors;
+extern plumed_mpi_MPI_Cart_shift_pointer Cart_shift;
+extern plumed_mpi_MPI_Cart_sub_pointer Cart_sub;
+extern plumed_mpi_MPI_Cart_map_pointer Cart_map;
+extern plumed_mpi_MPI_Graph_map_pointer Graph_map;
+extern plumed_mpi_MPI_Get_processor_name_pointer Get_processor_name;
+extern plumed_mpi_MPI_Errhandler_free_pointer Errhandler_free;
+extern plumed_mpi_MPI_Error_class_pointer Error_class;
+extern plumed_mpi_MPI_Wtime_pointer Wtime;
+extern plumed_mpi_MPI_Wtick_pointer Wtick;
+extern plumed_mpi_MPI_Finalized_pointer Finalized;
+extern plumed_mpi_MPI_Comm_get_errhandler_pointer Comm_get_errhandler;
+extern plumed_mpi_MPI_Comm_set_errhandler_pointer Comm_set_errhandler;
+extern plumed_mpi_provider_constant_pointer constant_FLOAT;
+extern plumed_mpi_provider_constant_pointer constant_DOUBLE;
+extern plumed_mpi_provider_constant_pointer constant_INT;
+extern plumed_mpi_provider_constant_pointer constant_CHAR;
+extern plumed_mpi_provider_constant_pointer constant_UNSIGNED;
+extern plumed_mpi_provider_constant_pointer constant_UNSIGNED_LONG;
+extern plumed_mpi_provider_constant_pointer constant_UNSIGNED_LONG_LONG;
+extern plumed_mpi_provider_constant_pointer constant_LONG_DOUBLE;
+extern plumed_mpi_provider_constant_pointer constant_COMM_WORLD;
+extern plumed_mpi_provider_constant_pointer constant_COMM_SELF;
+extern plumed_mpi_provider_constant_pointer constant_COMM_NULL;
+extern plumed_mpi_provider_constant_pointer constant_IN_PLACE;
+extern plumed_mpi_provider_constant_pointer constant_SUM;
+extern plumed_mpi_provider_constant_pointer constant_PROD;
+extern plumed_mpi_provider_constant_pointer constant_MAX;
+extern plumed_mpi_provider_constant_pointer constant_MIN;
+extern plumed_mpi_provider_constant_pointer constant_STATUS_IGNORE;
+extern plumed_mpi_provider_constant_pointer constant_STATUSES_IGNORE;
+extern plumed_mpi_provider_constant_pointer constant_GROUP_NULL;
+extern plumed_mpi_provider_constant_pointer constant_GROUP_EMPTY;
+extern plumed_mpi_provider_constant_pointer constant_REQUEST_NULL;
+extern plumed_mpi_provider_constant_pointer constant_DATATYPE_NULL;
+extern plumed_mpi_provider_constant_pointer constant_OP_NULL;
+extern plumed_mpi_provider_constant_pointer constant_ERRHANDLER_NULL;
+extern plumed_mpi_provider_constant_pointer constant_ERRORS_ARE_FATAL;
+extern plumed_mpi_provider_constant_pointer constant_ERRORS_RETURN;
+extern plumed_mpi_provider_constant_pointer constant_BYTE;
+extern plumed_mpi_provider_constant_pointer constant_PACKED;
+extern plumed_mpi_provider_constant_pointer constant_SHORT;
+extern plumed_mpi_provider_constant_pointer constant_LONG;
+extern plumed_mpi_provider_constant_pointer constant_UNSIGNED_CHAR;
+extern plumed_mpi_provider_constant_pointer constant_UNSIGNED_SHORT;
+extern plumed_mpi_provider_constant_pointer constant_LONG_LONG_INT;
+extern plumed_mpi_provider_constant_pointer constant_LONG_LONG;
+extern plumed_mpi_provider_constant_pointer constant_FLOAT_INT;
+extern plumed_mpi_provider_constant_pointer constant_DOUBLE_INT;
+extern plumed_mpi_provider_constant_pointer constant_LONG_INT;
+extern plumed_mpi_provider_constant_pointer constant_TWO_INTS;
+extern plumed_mpi_provider_constant_pointer constant_SHORT_INT;
+extern plumed_mpi_provider_constant_pointer constant_LONG_DOUBLE_INT;
+extern plumed_mpi_provider_constant_pointer constant_MAXLOC;
+extern plumed_mpi_provider_constant_pointer constant_MINLOC;
+extern plumed_mpi_provider_constant_pointer constant_LAND;
+extern plumed_mpi_provider_constant_pointer constant_BAND;
+extern plumed_mpi_provider_constant_pointer constant_LOR;
+extern plumed_mpi_provider_constant_pointer constant_BOR;
+extern plumed_mpi_provider_constant_pointer constant_LXOR;
+extern plumed_mpi_provider_constant_pointer constant_BXOR;
+extern plumed_mpi_provider_constant_pointer constant_UNDEFINED;
+extern plumed_mpi_provider_constant_pointer constant_ANY_SOURCE;
+extern plumed_mpi_provider_constant_pointer constant_ANY_TAG;
+extern plumed_mpi_provider_constant_pointer constant_PROC_NULL;
+extern plumed_mpi_provider_constant_pointer constant_IDENT;
+extern plumed_mpi_provider_constant_pointer constant_CONGRUENT;
+extern plumed_mpi_provider_constant_pointer constant_SIMILAR;
+extern plumed_mpi_provider_constant_pointer constant_UNEQUAL;
+extern plumed_mpi_provider_constant_pointer constant_CART;
+extern plumed_mpi_provider_constant_pointer constant_GRAPH;
+extern plumed_mpi_provider_constant_pointer constant_MAX_PROCESSOR_NAME;
+extern plumed_mpi_provider_constant_pointer constant_MAX_ERROR_STRING;
+extern plumed_mpi_provider_constant_pointer constant_BSEND_OVERHEAD;
+extern plumed_mpi_provider_constant_pointer constant_SUCCESS;
+extern plumed_mpi_provider_constant_pointer constant_ERR_BUFFER;
+extern plumed_mpi_provider_constant_pointer constant_ERR_COUNT;
+extern plumed_mpi_provider_constant_pointer constant_ERR_TYPE;
+extern plumed_mpi_provider_constant_pointer constant_ERR_TAG;
+extern plumed_mpi_provider_constant_pointer constant_ERR_COMM;
+extern plumed_mpi_provider_constant_pointer constant_ERR_RANK;
+extern plumed_mpi_provider_constant_pointer constant_ERR_REQUEST;
+extern plumed_mpi_provider_constant_pointer constant_ERR_ROOT;
+extern plumed_mpi_provider_constant_pointer constant_ERR_GROUP;
+extern plumed_mpi_provider_constant_pointer constant_ERR_OP;
+extern plumed_mpi_provider_constant_pointer constant_ERR_TOPOLOGY;
+extern plumed_mpi_provider_constant_pointer constant_ERR_DIMS;
+extern plumed_mpi_provider_constant_pointer constant_ERR_ARG;
+extern plumed_mpi_provider_constant_pointer constant_ERR_UNKNOWN;
+extern plumed_mpi_provider_constant_pointer constant_ERR_TRUNCATE;
+extern plumed_mpi_provider_constant_pointer constant_ERR_OTHER;
+extern plumed_mpi_provider_constant_pointer constant_ERR_INTERN;
+extern plumed_mpi_provider_constant_pointer constant_ERR_PENDING;
+extern plumed_mpi_provider_constant_pointer constant_BOTTOM;
+extern plumed_mpi_provider_constant_pointer constant_ERR_IN_STATUS;
+extern plumed_mpi_provider_constant_pointer constant_SIGNED_CHAR;
+extern plumed_mpi_provider_constant_pointer constant_C_BOOL;
+extern plumed_mpi_provider_constant_pointer constant_INT64_T;
 }
 }
 } // namespace PLMD::mpiwrap::pointers
 namespace PLMD {
 namespace mpiwrap {
 struct ProviderBindings {
-using MPI_Init_fn = plumed_mpiw_MPI_Init_fn;
+using MPI_Init_fn = plumed_mpi_MPI_Init_pointer;
 MPI_Init_fn MPI_Init_pointer = nullptr;
-using MPI_Finalize_fn = plumed_mpiw_MPI_Finalize_fn;
+using MPI_Finalize_fn = plumed_mpi_MPI_Finalize_pointer;
 MPI_Finalize_fn MPI_Finalize_pointer = nullptr;
-using MPI_Initialized_fn = plumed_mpiw_MPI_Initialized_fn;
+using MPI_Initialized_fn = plumed_mpi_MPI_Initialized_pointer;
 MPI_Initialized_fn MPI_Initialized_pointer = nullptr;
-using MPI_Comm_dup_fn = plumed_mpiw_MPI_Comm_dup_fn;
+using MPI_Comm_dup_fn = plumed_mpi_MPI_Comm_dup_pointer;
 MPI_Comm_dup_fn MPI_Comm_dup_pointer = nullptr;
-using MPI_Comm_free_fn = plumed_mpiw_MPI_Comm_free_fn;
+using MPI_Comm_free_fn = plumed_mpi_MPI_Comm_free_pointer;
 MPI_Comm_free_fn MPI_Comm_free_pointer = nullptr;
-using MPI_Comm_rank_fn = plumed_mpiw_MPI_Comm_rank_fn;
+using MPI_Comm_rank_fn = plumed_mpi_MPI_Comm_rank_pointer;
 MPI_Comm_rank_fn MPI_Comm_rank_pointer = nullptr;
-using MPI_Comm_size_fn = plumed_mpiw_MPI_Comm_size_fn;
+using MPI_Comm_size_fn = plumed_mpi_MPI_Comm_size_pointer;
 MPI_Comm_size_fn MPI_Comm_size_pointer = nullptr;
-using MPI_Comm_split_fn = plumed_mpiw_MPI_Comm_split_fn;
+using MPI_Comm_split_fn = plumed_mpi_MPI_Comm_split_pointer;
 MPI_Comm_split_fn MPI_Comm_split_pointer = nullptr;
-using MPI_Abort_fn = plumed_mpiw_MPI_Abort_fn;
+using MPI_Abort_fn = plumed_mpi_MPI_Abort_pointer;
 MPI_Abort_fn MPI_Abort_pointer = nullptr;
-using MPI_Bcast_fn = plumed_mpiw_MPI_Bcast_fn;
+using MPI_Bcast_fn = plumed_mpi_MPI_Bcast_pointer;
 MPI_Bcast_fn MPI_Bcast_pointer = nullptr;
-using MPI_Scatter_fn = plumed_mpiw_MPI_Scatter_fn;
+using MPI_Scatter_fn = plumed_mpi_MPI_Scatter_pointer;
 MPI_Scatter_fn MPI_Scatter_pointer = nullptr;
-using MPI_Gather_fn = plumed_mpiw_MPI_Gather_fn;
+using MPI_Gather_fn = plumed_mpi_MPI_Gather_pointer;
 MPI_Gather_fn MPI_Gather_pointer = nullptr;
-using MPI_Allreduce_fn = plumed_mpiw_MPI_Allreduce_fn;
+using MPI_Allreduce_fn = plumed_mpi_MPI_Allreduce_pointer;
 MPI_Allreduce_fn MPI_Allreduce_pointer = nullptr;
-using MPI_Isend_fn = plumed_mpiw_MPI_Isend_fn;
+using MPI_Isend_fn = plumed_mpi_MPI_Isend_pointer;
 MPI_Isend_fn MPI_Isend_pointer = nullptr;
-using MPI_Wait_fn = plumed_mpiw_MPI_Wait_fn;
+using MPI_Wait_fn = plumed_mpi_MPI_Wait_pointer;
 MPI_Wait_fn MPI_Wait_pointer = nullptr;
-using MPI_Allgather_fn = plumed_mpiw_MPI_Allgather_fn;
+using MPI_Allgather_fn = plumed_mpi_MPI_Allgather_pointer;
 MPI_Allgather_fn MPI_Allgather_pointer = nullptr;
-using MPI_Allgatherv_fn = plumed_mpiw_MPI_Allgatherv_fn;
+using MPI_Allgatherv_fn = plumed_mpi_MPI_Allgatherv_pointer;
 MPI_Allgatherv_fn MPI_Allgatherv_pointer = nullptr;
-using MPI_Recv_fn = plumed_mpiw_MPI_Recv_fn;
+using MPI_Recv_fn = plumed_mpi_MPI_Recv_pointer;
 MPI_Recv_fn MPI_Recv_pointer = nullptr;
-using MPI_Barrier_fn = plumed_mpiw_MPI_Barrier_fn;
+using MPI_Barrier_fn = plumed_mpi_MPI_Barrier_pointer;
 MPI_Barrier_fn MPI_Barrier_pointer = nullptr;
-using MPI_Get_count_fn = plumed_mpiw_MPI_Get_count_fn;
+using MPI_Get_count_fn = plumed_mpi_MPI_Get_count_pointer;
 MPI_Get_count_fn MPI_Get_count_pointer = nullptr;
-using MPI_Sendrecv_fn = plumed_mpiw_MPI_Sendrecv_fn;
+using MPI_Sendrecv_fn = plumed_mpi_MPI_Sendrecv_pointer;
 MPI_Sendrecv_fn MPI_Sendrecv_pointer = nullptr;
-using MPI_Error_string_fn = plumed_mpiw_MPI_Error_string_fn;
+using MPI_Error_string_fn = plumed_mpi_MPI_Error_string_pointer;
 MPI_Error_string_fn MPI_Error_string_pointer = nullptr;
-using MPI_Comm_create_errhandler_fn = plumed_mpiw_MPI_Comm_create_errhandler_fn;
+using MPI_Comm_create_errhandler_fn = plumed_mpi_MPI_Comm_create_errhandler_pointer;
 MPI_Comm_create_errhandler_fn MPI_Comm_create_errhandler_pointer = nullptr;
-using MPI_Comm_f2c_fn = plumed_mpiw_MPI_Comm_f2c_fn;
+using MPI_Comm_f2c_fn = plumed_mpi_MPI_Comm_f2c_pointer;
 MPI_Comm_f2c_fn MPI_Comm_f2c_pointer = nullptr;
-using MPI_Send_fn = plumed_mpiw_MPI_Send_fn;
+using MPI_Send_fn = plumed_mpi_MPI_Send_pointer;
 MPI_Send_fn MPI_Send_pointer = nullptr;
-using MPI_Bsend_fn = plumed_mpiw_MPI_Bsend_fn;
+using MPI_Bsend_fn = plumed_mpi_MPI_Bsend_pointer;
 MPI_Bsend_fn MPI_Bsend_pointer = nullptr;
-using MPI_Ssend_fn = plumed_mpiw_MPI_Ssend_fn;
+using MPI_Ssend_fn = plumed_mpi_MPI_Ssend_pointer;
 MPI_Ssend_fn MPI_Ssend_pointer = nullptr;
-using MPI_Rsend_fn = plumed_mpiw_MPI_Rsend_fn;
+using MPI_Rsend_fn = plumed_mpi_MPI_Rsend_pointer;
 MPI_Rsend_fn MPI_Rsend_pointer = nullptr;
-using MPI_Buffer_attach_fn = plumed_mpiw_MPI_Buffer_attach_fn;
+using MPI_Buffer_attach_fn = plumed_mpi_MPI_Buffer_attach_pointer;
 MPI_Buffer_attach_fn MPI_Buffer_attach_pointer = nullptr;
-using MPI_Buffer_detach_fn = plumed_mpiw_MPI_Buffer_detach_fn;
+using MPI_Buffer_detach_fn = plumed_mpi_MPI_Buffer_detach_pointer;
 MPI_Buffer_detach_fn MPI_Buffer_detach_pointer = nullptr;
-using MPI_Ibsend_fn = plumed_mpiw_MPI_Ibsend_fn;
+using MPI_Ibsend_fn = plumed_mpi_MPI_Ibsend_pointer;
 MPI_Ibsend_fn MPI_Ibsend_pointer = nullptr;
-using MPI_Issend_fn = plumed_mpiw_MPI_Issend_fn;
+using MPI_Issend_fn = plumed_mpi_MPI_Issend_pointer;
 MPI_Issend_fn MPI_Issend_pointer = nullptr;
-using MPI_Irsend_fn = plumed_mpiw_MPI_Irsend_fn;
+using MPI_Irsend_fn = plumed_mpi_MPI_Irsend_pointer;
 MPI_Irsend_fn MPI_Irsend_pointer = nullptr;
-using MPI_Irecv_fn = plumed_mpiw_MPI_Irecv_fn;
+using MPI_Irecv_fn = plumed_mpi_MPI_Irecv_pointer;
 MPI_Irecv_fn MPI_Irecv_pointer = nullptr;
-using MPI_Test_fn = plumed_mpiw_MPI_Test_fn;
+using MPI_Test_fn = plumed_mpi_MPI_Test_pointer;
 MPI_Test_fn MPI_Test_pointer = nullptr;
-using MPI_Request_free_fn = plumed_mpiw_MPI_Request_free_fn;
+using MPI_Request_free_fn = plumed_mpi_MPI_Request_free_pointer;
 MPI_Request_free_fn MPI_Request_free_pointer = nullptr;
-using MPI_Waitany_fn = plumed_mpiw_MPI_Waitany_fn;
+using MPI_Waitany_fn = plumed_mpi_MPI_Waitany_pointer;
 MPI_Waitany_fn MPI_Waitany_pointer = nullptr;
-using MPI_Testany_fn = plumed_mpiw_MPI_Testany_fn;
+using MPI_Testany_fn = plumed_mpi_MPI_Testany_pointer;
 MPI_Testany_fn MPI_Testany_pointer = nullptr;
-using MPI_Waitall_fn = plumed_mpiw_MPI_Waitall_fn;
+using MPI_Waitall_fn = plumed_mpi_MPI_Waitall_pointer;
 MPI_Waitall_fn MPI_Waitall_pointer = nullptr;
-using MPI_Testall_fn = plumed_mpiw_MPI_Testall_fn;
+using MPI_Testall_fn = plumed_mpi_MPI_Testall_pointer;
 MPI_Testall_fn MPI_Testall_pointer = nullptr;
-using MPI_Waitsome_fn = plumed_mpiw_MPI_Waitsome_fn;
+using MPI_Waitsome_fn = plumed_mpi_MPI_Waitsome_pointer;
 MPI_Waitsome_fn MPI_Waitsome_pointer = nullptr;
-using MPI_Testsome_fn = plumed_mpiw_MPI_Testsome_fn;
+using MPI_Testsome_fn = plumed_mpi_MPI_Testsome_pointer;
 MPI_Testsome_fn MPI_Testsome_pointer = nullptr;
-using MPI_Iprobe_fn = plumed_mpiw_MPI_Iprobe_fn;
+using MPI_Iprobe_fn = plumed_mpi_MPI_Iprobe_pointer;
 MPI_Iprobe_fn MPI_Iprobe_pointer = nullptr;
-using MPI_Probe_fn = plumed_mpiw_MPI_Probe_fn;
+using MPI_Probe_fn = plumed_mpi_MPI_Probe_pointer;
 MPI_Probe_fn MPI_Probe_pointer = nullptr;
-using MPI_Cancel_fn = plumed_mpiw_MPI_Cancel_fn;
+using MPI_Cancel_fn = plumed_mpi_MPI_Cancel_pointer;
 MPI_Cancel_fn MPI_Cancel_pointer = nullptr;
-using MPI_Test_cancelled_fn = plumed_mpiw_MPI_Test_cancelled_fn;
+using MPI_Test_cancelled_fn = plumed_mpi_MPI_Test_cancelled_pointer;
 MPI_Test_cancelled_fn MPI_Test_cancelled_pointer = nullptr;
-using MPI_Send_init_fn = plumed_mpiw_MPI_Send_init_fn;
+using MPI_Send_init_fn = plumed_mpi_MPI_Send_init_pointer;
 MPI_Send_init_fn MPI_Send_init_pointer = nullptr;
-using MPI_Bsend_init_fn = plumed_mpiw_MPI_Bsend_init_fn;
+using MPI_Bsend_init_fn = plumed_mpi_MPI_Bsend_init_pointer;
 MPI_Bsend_init_fn MPI_Bsend_init_pointer = nullptr;
-using MPI_Ssend_init_fn = plumed_mpiw_MPI_Ssend_init_fn;
+using MPI_Ssend_init_fn = plumed_mpi_MPI_Ssend_init_pointer;
 MPI_Ssend_init_fn MPI_Ssend_init_pointer = nullptr;
-using MPI_Rsend_init_fn = plumed_mpiw_MPI_Rsend_init_fn;
+using MPI_Rsend_init_fn = plumed_mpi_MPI_Rsend_init_pointer;
 MPI_Rsend_init_fn MPI_Rsend_init_pointer = nullptr;
-using MPI_Recv_init_fn = plumed_mpiw_MPI_Recv_init_fn;
+using MPI_Recv_init_fn = plumed_mpi_MPI_Recv_init_pointer;
 MPI_Recv_init_fn MPI_Recv_init_pointer = nullptr;
-using MPI_Start_fn = plumed_mpiw_MPI_Start_fn;
+using MPI_Start_fn = plumed_mpi_MPI_Start_pointer;
 MPI_Start_fn MPI_Start_pointer = nullptr;
-using MPI_Startall_fn = plumed_mpiw_MPI_Startall_fn;
+using MPI_Startall_fn = plumed_mpi_MPI_Startall_pointer;
 MPI_Startall_fn MPI_Startall_pointer = nullptr;
-using MPI_Sendrecv_replace_fn = plumed_mpiw_MPI_Sendrecv_replace_fn;
+using MPI_Sendrecv_replace_fn = plumed_mpi_MPI_Sendrecv_replace_pointer;
 MPI_Sendrecv_replace_fn MPI_Sendrecv_replace_pointer = nullptr;
-using MPI_Type_contiguous_fn = plumed_mpiw_MPI_Type_contiguous_fn;
+using MPI_Type_contiguous_fn = plumed_mpi_MPI_Type_contiguous_pointer;
 MPI_Type_contiguous_fn MPI_Type_contiguous_pointer = nullptr;
-using MPI_Type_vector_fn = plumed_mpiw_MPI_Type_vector_fn;
+using MPI_Type_vector_fn = plumed_mpi_MPI_Type_vector_pointer;
 MPI_Type_vector_fn MPI_Type_vector_pointer = nullptr;
-using MPI_Type_indexed_fn = plumed_mpiw_MPI_Type_indexed_fn;
+using MPI_Type_indexed_fn = plumed_mpi_MPI_Type_indexed_pointer;
 MPI_Type_indexed_fn MPI_Type_indexed_pointer = nullptr;
-using MPI_Type_commit_fn = plumed_mpiw_MPI_Type_commit_fn;
+using MPI_Type_commit_fn = plumed_mpi_MPI_Type_commit_pointer;
 MPI_Type_commit_fn MPI_Type_commit_pointer = nullptr;
-using MPI_Type_free_fn = plumed_mpiw_MPI_Type_free_fn;
+using MPI_Type_free_fn = plumed_mpi_MPI_Type_free_pointer;
 MPI_Type_free_fn MPI_Type_free_pointer = nullptr;
-using MPI_Type_size_fn = plumed_mpiw_MPI_Type_size_fn;
+using MPI_Type_size_fn = plumed_mpi_MPI_Type_size_pointer;
 MPI_Type_size_fn MPI_Type_size_pointer = nullptr;
-using MPI_Get_elements_fn = plumed_mpiw_MPI_Get_elements_fn;
+using MPI_Get_elements_fn = plumed_mpi_MPI_Get_elements_pointer;
 MPI_Get_elements_fn MPI_Get_elements_pointer = nullptr;
-using MPI_Pack_fn = plumed_mpiw_MPI_Pack_fn;
+using MPI_Pack_fn = plumed_mpi_MPI_Pack_pointer;
 MPI_Pack_fn MPI_Pack_pointer = nullptr;
-using MPI_Unpack_fn = plumed_mpiw_MPI_Unpack_fn;
+using MPI_Unpack_fn = plumed_mpi_MPI_Unpack_pointer;
 MPI_Unpack_fn MPI_Unpack_pointer = nullptr;
-using MPI_Pack_size_fn = plumed_mpiw_MPI_Pack_size_fn;
+using MPI_Pack_size_fn = plumed_mpi_MPI_Pack_size_pointer;
 MPI_Pack_size_fn MPI_Pack_size_pointer = nullptr;
-using MPI_Gatherv_fn = plumed_mpiw_MPI_Gatherv_fn;
+using MPI_Gatherv_fn = plumed_mpi_MPI_Gatherv_pointer;
 MPI_Gatherv_fn MPI_Gatherv_pointer = nullptr;
-using MPI_Scatterv_fn = plumed_mpiw_MPI_Scatterv_fn;
+using MPI_Scatterv_fn = plumed_mpi_MPI_Scatterv_pointer;
 MPI_Scatterv_fn MPI_Scatterv_pointer = nullptr;
-using MPI_Alltoall_fn = plumed_mpiw_MPI_Alltoall_fn;
+using MPI_Alltoall_fn = plumed_mpi_MPI_Alltoall_pointer;
 MPI_Alltoall_fn MPI_Alltoall_pointer = nullptr;
-using MPI_Alltoallv_fn = plumed_mpiw_MPI_Alltoallv_fn;
+using MPI_Alltoallv_fn = plumed_mpi_MPI_Alltoallv_pointer;
 MPI_Alltoallv_fn MPI_Alltoallv_pointer = nullptr;
-using MPI_Reduce_fn = plumed_mpiw_MPI_Reduce_fn;
+using MPI_Reduce_fn = plumed_mpi_MPI_Reduce_pointer;
 MPI_Reduce_fn MPI_Reduce_pointer = nullptr;
-using MPI_Op_create_fn = plumed_mpiw_MPI_Op_create_fn;
+using MPI_Op_create_fn = plumed_mpi_MPI_Op_create_pointer;
 MPI_Op_create_fn MPI_Op_create_pointer = nullptr;
-using MPI_Op_free_fn = plumed_mpiw_MPI_Op_free_fn;
+using MPI_Op_free_fn = plumed_mpi_MPI_Op_free_pointer;
 MPI_Op_free_fn MPI_Op_free_pointer = nullptr;
-using MPI_Reduce_scatter_fn = plumed_mpiw_MPI_Reduce_scatter_fn;
+using MPI_Reduce_scatter_fn = plumed_mpi_MPI_Reduce_scatter_pointer;
 MPI_Reduce_scatter_fn MPI_Reduce_scatter_pointer = nullptr;
-using MPI_Scan_fn = plumed_mpiw_MPI_Scan_fn;
+using MPI_Scan_fn = plumed_mpi_MPI_Scan_pointer;
 MPI_Scan_fn MPI_Scan_pointer = nullptr;
-using MPI_Group_size_fn = plumed_mpiw_MPI_Group_size_fn;
+using MPI_Group_size_fn = plumed_mpi_MPI_Group_size_pointer;
 MPI_Group_size_fn MPI_Group_size_pointer = nullptr;
-using MPI_Group_rank_fn = plumed_mpiw_MPI_Group_rank_fn;
+using MPI_Group_rank_fn = plumed_mpi_MPI_Group_rank_pointer;
 MPI_Group_rank_fn MPI_Group_rank_pointer = nullptr;
-using MPI_Group_translate_ranks_fn = plumed_mpiw_MPI_Group_translate_ranks_fn;
+using MPI_Group_translate_ranks_fn = plumed_mpi_MPI_Group_translate_ranks_pointer;
 MPI_Group_translate_ranks_fn MPI_Group_translate_ranks_pointer = nullptr;
-using MPI_Group_compare_fn = plumed_mpiw_MPI_Group_compare_fn;
+using MPI_Group_compare_fn = plumed_mpi_MPI_Group_compare_pointer;
 MPI_Group_compare_fn MPI_Group_compare_pointer = nullptr;
-using MPI_Comm_group_fn = plumed_mpiw_MPI_Comm_group_fn;
+using MPI_Comm_group_fn = plumed_mpi_MPI_Comm_group_pointer;
 MPI_Comm_group_fn MPI_Comm_group_pointer = nullptr;
-using MPI_Group_union_fn = plumed_mpiw_MPI_Group_union_fn;
+using MPI_Group_union_fn = plumed_mpi_MPI_Group_union_pointer;
 MPI_Group_union_fn MPI_Group_union_pointer = nullptr;
-using MPI_Group_intersection_fn = plumed_mpiw_MPI_Group_intersection_fn;
+using MPI_Group_intersection_fn = plumed_mpi_MPI_Group_intersection_pointer;
 MPI_Group_intersection_fn MPI_Group_intersection_pointer = nullptr;
-using MPI_Group_difference_fn = plumed_mpiw_MPI_Group_difference_fn;
+using MPI_Group_difference_fn = plumed_mpi_MPI_Group_difference_pointer;
 MPI_Group_difference_fn MPI_Group_difference_pointer = nullptr;
-using MPI_Group_incl_fn = plumed_mpiw_MPI_Group_incl_fn;
+using MPI_Group_incl_fn = plumed_mpi_MPI_Group_incl_pointer;
 MPI_Group_incl_fn MPI_Group_incl_pointer = nullptr;
-using MPI_Group_excl_fn = plumed_mpiw_MPI_Group_excl_fn;
+using MPI_Group_excl_fn = plumed_mpi_MPI_Group_excl_pointer;
 MPI_Group_excl_fn MPI_Group_excl_pointer = nullptr;
-using MPI_Group_range_incl_fn = plumed_mpiw_MPI_Group_range_incl_fn;
+using MPI_Group_range_incl_fn = plumed_mpi_MPI_Group_range_incl_pointer;
 MPI_Group_range_incl_fn MPI_Group_range_incl_pointer = nullptr;
-using MPI_Group_range_excl_fn = plumed_mpiw_MPI_Group_range_excl_fn;
+using MPI_Group_range_excl_fn = plumed_mpi_MPI_Group_range_excl_pointer;
 MPI_Group_range_excl_fn MPI_Group_range_excl_pointer = nullptr;
-using MPI_Group_free_fn = plumed_mpiw_MPI_Group_free_fn;
+using MPI_Group_free_fn = plumed_mpi_MPI_Group_free_pointer;
 MPI_Group_free_fn MPI_Group_free_pointer = nullptr;
-using MPI_Comm_compare_fn = plumed_mpiw_MPI_Comm_compare_fn;
+using MPI_Comm_compare_fn = plumed_mpi_MPI_Comm_compare_pointer;
 MPI_Comm_compare_fn MPI_Comm_compare_pointer = nullptr;
-using MPI_Comm_create_fn = plumed_mpiw_MPI_Comm_create_fn;
+using MPI_Comm_create_fn = plumed_mpi_MPI_Comm_create_pointer;
 MPI_Comm_create_fn MPI_Comm_create_pointer = nullptr;
-using MPI_Comm_test_inter_fn = plumed_mpiw_MPI_Comm_test_inter_fn;
+using MPI_Comm_test_inter_fn = plumed_mpi_MPI_Comm_test_inter_pointer;
 MPI_Comm_test_inter_fn MPI_Comm_test_inter_pointer = nullptr;
-using MPI_Comm_remote_size_fn = plumed_mpiw_MPI_Comm_remote_size_fn;
+using MPI_Comm_remote_size_fn = plumed_mpi_MPI_Comm_remote_size_pointer;
 MPI_Comm_remote_size_fn MPI_Comm_remote_size_pointer = nullptr;
-using MPI_Comm_remote_group_fn = plumed_mpiw_MPI_Comm_remote_group_fn;
+using MPI_Comm_remote_group_fn = plumed_mpi_MPI_Comm_remote_group_pointer;
 MPI_Comm_remote_group_fn MPI_Comm_remote_group_pointer = nullptr;
-using MPI_Intercomm_create_fn = plumed_mpiw_MPI_Intercomm_create_fn;
+using MPI_Intercomm_create_fn = plumed_mpi_MPI_Intercomm_create_pointer;
 MPI_Intercomm_create_fn MPI_Intercomm_create_pointer = nullptr;
-using MPI_Intercomm_merge_fn = plumed_mpiw_MPI_Intercomm_merge_fn;
+using MPI_Intercomm_merge_fn = plumed_mpi_MPI_Intercomm_merge_pointer;
 MPI_Intercomm_merge_fn MPI_Intercomm_merge_pointer = nullptr;
-using MPI_Cart_create_fn = plumed_mpiw_MPI_Cart_create_fn;
+using MPI_Cart_create_fn = plumed_mpi_MPI_Cart_create_pointer;
 MPI_Cart_create_fn MPI_Cart_create_pointer = nullptr;
-using MPI_Dims_create_fn = plumed_mpiw_MPI_Dims_create_fn;
+using MPI_Dims_create_fn = plumed_mpi_MPI_Dims_create_pointer;
 MPI_Dims_create_fn MPI_Dims_create_pointer = nullptr;
-using MPI_Graph_create_fn = plumed_mpiw_MPI_Graph_create_fn;
+using MPI_Graph_create_fn = plumed_mpi_MPI_Graph_create_pointer;
 MPI_Graph_create_fn MPI_Graph_create_pointer = nullptr;
-using MPI_Topo_test_fn = plumed_mpiw_MPI_Topo_test_fn;
+using MPI_Topo_test_fn = plumed_mpi_MPI_Topo_test_pointer;
 MPI_Topo_test_fn MPI_Topo_test_pointer = nullptr;
-using MPI_Graphdims_get_fn = plumed_mpiw_MPI_Graphdims_get_fn;
+using MPI_Graphdims_get_fn = plumed_mpi_MPI_Graphdims_get_pointer;
 MPI_Graphdims_get_fn MPI_Graphdims_get_pointer = nullptr;
-using MPI_Graph_get_fn = plumed_mpiw_MPI_Graph_get_fn;
+using MPI_Graph_get_fn = plumed_mpi_MPI_Graph_get_pointer;
 MPI_Graph_get_fn MPI_Graph_get_pointer = nullptr;
-using MPI_Cartdim_get_fn = plumed_mpiw_MPI_Cartdim_get_fn;
+using MPI_Cartdim_get_fn = plumed_mpi_MPI_Cartdim_get_pointer;
 MPI_Cartdim_get_fn MPI_Cartdim_get_pointer = nullptr;
-using MPI_Cart_get_fn = plumed_mpiw_MPI_Cart_get_fn;
+using MPI_Cart_get_fn = plumed_mpi_MPI_Cart_get_pointer;
 MPI_Cart_get_fn MPI_Cart_get_pointer = nullptr;
-using MPI_Cart_rank_fn = plumed_mpiw_MPI_Cart_rank_fn;
+using MPI_Cart_rank_fn = plumed_mpi_MPI_Cart_rank_pointer;
 MPI_Cart_rank_fn MPI_Cart_rank_pointer = nullptr;
-using MPI_Cart_coords_fn = plumed_mpiw_MPI_Cart_coords_fn;
+using MPI_Cart_coords_fn = plumed_mpi_MPI_Cart_coords_pointer;
 MPI_Cart_coords_fn MPI_Cart_coords_pointer = nullptr;
-using MPI_Graph_neighbors_count_fn = plumed_mpiw_MPI_Graph_neighbors_count_fn;
+using MPI_Graph_neighbors_count_fn = plumed_mpi_MPI_Graph_neighbors_count_pointer;
 MPI_Graph_neighbors_count_fn MPI_Graph_neighbors_count_pointer = nullptr;
-using MPI_Graph_neighbors_fn = plumed_mpiw_MPI_Graph_neighbors_fn;
+using MPI_Graph_neighbors_fn = plumed_mpi_MPI_Graph_neighbors_pointer;
 MPI_Graph_neighbors_fn MPI_Graph_neighbors_pointer = nullptr;
-using MPI_Cart_shift_fn = plumed_mpiw_MPI_Cart_shift_fn;
+using MPI_Cart_shift_fn = plumed_mpi_MPI_Cart_shift_pointer;
 MPI_Cart_shift_fn MPI_Cart_shift_pointer = nullptr;
-using MPI_Cart_sub_fn = plumed_mpiw_MPI_Cart_sub_fn;
+using MPI_Cart_sub_fn = plumed_mpi_MPI_Cart_sub_pointer;
 MPI_Cart_sub_fn MPI_Cart_sub_pointer = nullptr;
-using MPI_Cart_map_fn = plumed_mpiw_MPI_Cart_map_fn;
+using MPI_Cart_map_fn = plumed_mpi_MPI_Cart_map_pointer;
 MPI_Cart_map_fn MPI_Cart_map_pointer = nullptr;
-using MPI_Graph_map_fn = plumed_mpiw_MPI_Graph_map_fn;
+using MPI_Graph_map_fn = plumed_mpi_MPI_Graph_map_pointer;
 MPI_Graph_map_fn MPI_Graph_map_pointer = nullptr;
-using MPI_Get_processor_name_fn = plumed_mpiw_MPI_Get_processor_name_fn;
+using MPI_Get_processor_name_fn = plumed_mpi_MPI_Get_processor_name_pointer;
 MPI_Get_processor_name_fn MPI_Get_processor_name_pointer = nullptr;
-using MPI_Errhandler_free_fn = plumed_mpiw_MPI_Errhandler_free_fn;
+using MPI_Errhandler_free_fn = plumed_mpi_MPI_Errhandler_free_pointer;
 MPI_Errhandler_free_fn MPI_Errhandler_free_pointer = nullptr;
-using MPI_Error_class_fn = plumed_mpiw_MPI_Error_class_fn;
+using MPI_Error_class_fn = plumed_mpi_MPI_Error_class_pointer;
 MPI_Error_class_fn MPI_Error_class_pointer = nullptr;
-using MPI_Wtime_fn = plumed_mpiw_MPI_Wtime_fn;
+using MPI_Wtime_fn = plumed_mpi_MPI_Wtime_pointer;
 MPI_Wtime_fn MPI_Wtime_pointer = nullptr;
-using MPI_Wtick_fn = plumed_mpiw_MPI_Wtick_fn;
+using MPI_Wtick_fn = plumed_mpi_MPI_Wtick_pointer;
 MPI_Wtick_fn MPI_Wtick_pointer = nullptr;
-using MPI_Finalized_fn = plumed_mpiw_MPI_Finalized_fn;
+using MPI_Finalized_fn = plumed_mpi_MPI_Finalized_pointer;
 MPI_Finalized_fn MPI_Finalized_pointer = nullptr;
-using MPI_Comm_get_errhandler_fn = plumed_mpiw_MPI_Comm_get_errhandler_fn;
+using MPI_Comm_get_errhandler_fn = plumed_mpi_MPI_Comm_get_errhandler_pointer;
 MPI_Comm_get_errhandler_fn MPI_Comm_get_errhandler_pointer = nullptr;
-using MPI_Comm_set_errhandler_fn = plumed_mpiw_MPI_Comm_set_errhandler_fn;
+using MPI_Comm_set_errhandler_fn = plumed_mpi_MPI_Comm_set_errhandler_pointer;
 MPI_Comm_set_errhandler_fn MPI_Comm_set_errhandler_pointer = nullptr;
 };
 }
@@ -897,7 +897,7 @@ static_assert(sizeof(int) == sizeof(std::int32_t), "C int must be 32-bit");
 static_assert(std::is_same<int, std::int32_t>::value, "MPI integer arrays require int32_t to be native int");
 namespace PLMD {
 namespace mpiwrap {
-inline bool handle_storage_is_zero(const plumed_mpiw_handle_storage &value) {
+inline bool handle_storage_is_zero(const plumed_mpi_handle_storage &value) {
 for (std::size_t i = 0; i < sizeof(value.bytes); ++i)
   if (value.bytes[i]) {
     return false;
@@ -905,14 +905,14 @@ for (std::size_t i = 0; i < sizeof(value.bytes); ++i)
 return true;
 }
 MPI_Comm Comm_from_native(const void *native);
-bool Comm_export_storage(MPI_Comm value, plumed_mpiw_handle_storage *storage);
+bool Comm_export_storage(MPI_Comm value, plumed_mpi_handle_storage *storage);
 bool Comm_export_native(MPI_Comm value, void *output, std::size_t capacity);
 void ensure_provider_selected();
 void ensure_provider_for_communicator();
 bool provider_has_capability(const char *name);
 [[noreturn]] void unavailable(const char *name);
-plumed_mpiw_status status_to_transport(const MPI_Status &status);
-void status_from_transport(const plumed_mpiw_status &value, MPI_Status *status);
+plumed_mpi_status status_to_transport(const MPI_Status &status);
+void status_from_transport(const plumed_mpi_status &value, MPI_Status *status);
 MPI_Datatype FLOAT();
 MPI_Datatype DOUBLE();
 MPI_Datatype INT();
@@ -1235,8 +1235,8 @@ bool has_Comm_get_errhandler();
 int Comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler);
 bool has_Comm_set_errhandler();
 // Inline helper bodies and provider dispatch follow all declarations.
-inline plumed_mpiw_status status_to_transport(const MPI_Status &status) {
-plumed_mpiw_status value{};
+inline plumed_mpi_status status_to_transport(const MPI_Status &status) {
+plumed_mpi_status value{};
 value.source = status.MPI_SOURCE;
 value.tag = status.MPI_TAG;
 value.error = status.MPI_ERROR;
@@ -1244,7 +1244,7 @@ value.raw_size = status.raw_size;
 std::memcpy(value.raw, status.raw, sizeof(value.raw));
 return value;
 }
-inline void status_from_transport(const plumed_mpiw_status &value, MPI_Status *status) {
+inline void status_from_transport(const plumed_mpi_status &value, MPI_Status *status) {
 status->MPI_SOURCE = value.source;
 status->MPI_TAG = value.tag;
 status->MPI_ERROR = value.error;
@@ -1296,7 +1296,7 @@ ensure_provider_selected();
 if (!newcomm) {
   throw std::invalid_argument("MPI_Comm_dup requires newcomm");
 }
-plumed_mpiw_handle_storage native_newcomm{};
+plumed_mpi_handle_storage native_newcomm{};
 if (!pointers::Comm_dup) {
   unavailable("MPI_Comm_dup");
 }
@@ -1314,7 +1314,7 @@ ensure_provider_selected();
 if (!comm) {
   throw std::invalid_argument("MPI_Comm_free requires comm");
 }
-plumed_mpiw_handle_storage native_comm{};
+plumed_mpi_handle_storage native_comm{};
 native_comm = comm->storage;
 if (!pointers::Comm_free) {
   unavailable("MPI_Comm_free");
@@ -1372,7 +1372,7 @@ ensure_provider_selected();
 if (!newcomm) {
   throw std::invalid_argument("MPI_Comm_split requires newcomm");
 }
-plumed_mpiw_handle_storage native_newcomm{};
+plumed_mpi_handle_storage native_newcomm{};
 if (!pointers::Comm_split) {
   unavailable("MPI_Comm_split");
 }
@@ -1451,7 +1451,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Isend requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Isend) {
   unavailable("MPI_Isend");
 }
@@ -1469,9 +1469,9 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Wait requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 native_request = request->storage;
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Wait) {
   if (!can_fallback_Wait()) {
     unavailable("MPI_Wait");
@@ -1520,7 +1520,7 @@ return pointers::ready.load(std::memory_order_acquire) && (pointers::Allgatherv 
 }
 inline int Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Recv) {
   unavailable("MPI_Recv");
 }
@@ -1546,7 +1546,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Barrier != n
 }
 inline int Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!status) {
   throw std::invalid_argument("MPI_Get_count requires status");
 }
@@ -1576,7 +1576,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Get_count !=
 }
 inline int Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype, int dest, int sendtag, void *recvbuf, int recvcount, MPI_Datatype recvtype, int source, int recvtag, MPI_Comm comm, MPI_Status *status) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Sendrecv) {
   unavailable("MPI_Sendrecv");
 }
@@ -1621,7 +1621,7 @@ ensure_provider_selected();
 if (!pointers::Comm_f2c) {
   unavailable("MPI_Comm_f2c");
 }
-plumed_mpiw_handle_storage native_return_value = pointers::Comm_f2c(comm);
+plumed_mpi_handle_storage native_return_value = pointers::Comm_f2c(comm);
 MPI_Comm value{};
 value.storage = native_return_value;
 return value;
@@ -1707,7 +1707,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Ibsend requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Ibsend) {
   unavailable("MPI_Ibsend");
 }
@@ -1725,7 +1725,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Issend requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Issend) {
   unavailable("MPI_Issend");
 }
@@ -1743,7 +1743,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Irsend requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Irsend) {
   unavailable("MPI_Irsend");
 }
@@ -1761,7 +1761,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Irecv requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Irecv) {
   unavailable("MPI_Irecv");
 }
@@ -1779,13 +1779,13 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Test requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 native_request = request->storage;
 if (!flag) {
   throw std::invalid_argument("MPI_Test requires flag");
 }
 std::int32_t native_flag = 0;
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Test) {
   unavailable("MPI_Test");
 }
@@ -1820,7 +1820,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Request_free requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 native_request = request->storage;
 if (!pointers::Request_free) {
   unavailable("MPI_Request_free");
@@ -1845,7 +1845,7 @@ if (count < 0) {
 if (count > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Waitany requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
 for (int i = 0; i < count; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -1853,7 +1853,7 @@ if (!indx) {
   throw std::invalid_argument("MPI_Waitany requires indx");
 }
 std::int32_t native_indx = 0;
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Waitany) {
   unavailable("MPI_Waitany");
 }
@@ -1894,7 +1894,7 @@ if (count < 0) {
 if (count > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Testany requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
 for (int i = 0; i < count; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -1906,7 +1906,7 @@ if (!flag) {
   throw std::invalid_argument("MPI_Testany requires flag");
 }
 std::int32_t native_flag = 0;
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Testany) {
   unavailable("MPI_Testany");
 }
@@ -1951,14 +1951,14 @@ if (count < 0) {
 if (count > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Waitall requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
 for (int i = 0; i < count; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
 if (count < 0) {
   throw std::invalid_argument("MPI_Waitall requires nonnegative count");
 }
-std::vector<plumed_mpiw_status> native_array_of_statuses;
+std::vector<plumed_mpi_status> native_array_of_statuses;
 if (array_of_statuses && count > 0) {
   native_array_of_statuses.resize(static_cast<std::size_t>(count));
 }
@@ -1987,7 +1987,7 @@ if (count < 0) {
 if (count > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Testall requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
 for (int i = 0; i < count; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -1998,7 +1998,7 @@ std::int32_t native_flag = 0;
 if (count < 0) {
   throw std::invalid_argument("MPI_Testall requires nonnegative count");
 }
-std::vector<plumed_mpiw_status> native_array_of_statuses;
+std::vector<plumed_mpi_status> native_array_of_statuses;
 if (array_of_statuses && count > 0) {
   native_array_of_statuses.resize(static_cast<std::size_t>(count));
 }
@@ -2030,7 +2030,7 @@ if (incount < 0) {
 if (incount > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Waitsome requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(incount));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(incount));
 for (int i = 0; i < incount; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -2041,7 +2041,7 @@ std::int32_t native_outcount = 0;
 if (incount < 0) {
   throw std::invalid_argument("MPI_Waitsome requires nonnegative incount");
 }
-std::vector<plumed_mpiw_status> native_array_of_statuses;
+std::vector<plumed_mpi_status> native_array_of_statuses;
 if (array_of_statuses && incount > 0) {
   native_array_of_statuses.resize(static_cast<std::size_t>(incount));
 }
@@ -2076,7 +2076,7 @@ if (incount < 0) {
 if (incount > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Testsome requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(incount));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(incount));
 for (int i = 0; i < incount; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -2087,7 +2087,7 @@ std::int32_t native_outcount = 0;
 if (incount < 0) {
   throw std::invalid_argument("MPI_Testsome requires nonnegative incount");
 }
-std::vector<plumed_mpiw_status> native_array_of_statuses;
+std::vector<plumed_mpi_status> native_array_of_statuses;
 if (array_of_statuses && incount > 0) {
   native_array_of_statuses.resize(static_cast<std::size_t>(incount));
 }
@@ -2120,7 +2120,7 @@ if (!flag) {
   throw std::invalid_argument("MPI_Iprobe requires flag");
 }
 std::int32_t native_flag = 0;
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Iprobe) {
   unavailable("MPI_Iprobe");
 }
@@ -2138,7 +2138,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Iprobe != nu
 }
 inline int Probe(int source, int tag, MPI_Comm comm, MPI_Status *status) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Probe) {
   unavailable("MPI_Probe");
 }
@@ -2156,7 +2156,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Cancel requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 native_request = request->storage;
 if (!pointers::Cancel) {
   unavailable("MPI_Cancel");
@@ -2172,7 +2172,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Cancel != nu
 }
 inline int Test_cancelled(const MPI_Status *status, int *flag) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!status) {
   throw std::invalid_argument("MPI_Test_cancelled requires status");
 }
@@ -2205,7 +2205,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Send_init requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Send_init) {
   unavailable("MPI_Send_init");
 }
@@ -2223,7 +2223,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Bsend_init requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Bsend_init) {
   unavailable("MPI_Bsend_init");
 }
@@ -2241,7 +2241,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Ssend_init requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Ssend_init) {
   unavailable("MPI_Ssend_init");
 }
@@ -2259,7 +2259,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Rsend_init requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Rsend_init) {
   unavailable("MPI_Rsend_init");
 }
@@ -2277,7 +2277,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Recv_init requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 if (!pointers::Recv_init) {
   unavailable("MPI_Recv_init");
 }
@@ -2295,7 +2295,7 @@ ensure_provider_selected();
 if (!request) {
   throw std::invalid_argument("MPI_Start requires request");
 }
-plumed_mpiw_handle_storage native_request{};
+plumed_mpi_handle_storage native_request{};
 native_request = request->storage;
 if (!pointers::Start) {
   unavailable("MPI_Start");
@@ -2317,7 +2317,7 @@ if (count < 0) {
 if (count > 0 && !array_of_requests) {
   throw std::invalid_argument("MPI_Startall requires array_of_requests");
 }
-std::vector<plumed_mpiw_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
+std::vector<plumed_mpi_handle_storage> native_array_of_requests(static_cast<std::size_t>(count));
 for (int i = 0; i < count; ++i) {
   native_array_of_requests[static_cast<std::size_t>(i)] = array_of_requests[i].storage;
 }
@@ -2336,7 +2336,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Startall != 
 }
 inline int Sendrecv_replace(void *buf, int count, MPI_Datatype datatype, int dest, int sendtag, int source, int recvtag, MPI_Comm comm, MPI_Status *status) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!pointers::Sendrecv_replace) {
   unavailable("MPI_Sendrecv_replace");
 }
@@ -2354,7 +2354,7 @@ ensure_provider_selected();
 if (!newtype) {
   throw std::invalid_argument("MPI_Type_contiguous requires newtype");
 }
-plumed_mpiw_handle_storage native_newtype{};
+plumed_mpi_handle_storage native_newtype{};
 if (!pointers::Type_contiguous) {
   unavailable("MPI_Type_contiguous");
 }
@@ -2372,7 +2372,7 @@ ensure_provider_selected();
 if (!newtype) {
   throw std::invalid_argument("MPI_Type_vector requires newtype");
 }
-plumed_mpiw_handle_storage native_newtype{};
+plumed_mpi_handle_storage native_newtype{};
 if (!pointers::Type_vector) {
   unavailable("MPI_Type_vector");
 }
@@ -2390,7 +2390,7 @@ ensure_provider_selected();
 if (!newtype) {
   throw std::invalid_argument("MPI_Type_indexed requires newtype");
 }
-plumed_mpiw_handle_storage native_newtype{};
+plumed_mpi_handle_storage native_newtype{};
 if (!pointers::Type_indexed) {
   unavailable("MPI_Type_indexed");
 }
@@ -2408,7 +2408,7 @@ ensure_provider_selected();
 if (!datatype) {
   throw std::invalid_argument("MPI_Type_commit requires datatype");
 }
-plumed_mpiw_handle_storage native_datatype{};
+plumed_mpi_handle_storage native_datatype{};
 native_datatype = datatype->storage;
 if (!pointers::Type_commit) {
   unavailable("MPI_Type_commit");
@@ -2427,7 +2427,7 @@ ensure_provider_selected();
 if (!datatype) {
   throw std::invalid_argument("MPI_Type_free requires datatype");
 }
-plumed_mpiw_handle_storage native_datatype{};
+plumed_mpi_handle_storage native_datatype{};
 native_datatype = datatype->storage;
 if (!pointers::Type_free) {
   unavailable("MPI_Type_free");
@@ -2464,7 +2464,7 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Type_size !=
 }
 inline int Get_elements(const MPI_Status *status, MPI_Datatype datatype, int *count) {
 ensure_provider_selected();
-plumed_mpiw_status native_status{};
+plumed_mpi_status native_status{};
 if (!status) {
   throw std::invalid_argument("MPI_Get_elements requires status");
 }
@@ -2624,7 +2624,7 @@ ensure_provider_selected();
 if (!op) {
   throw std::invalid_argument("MPI_Op_free requires op");
 }
-plumed_mpiw_handle_storage native_op{};
+plumed_mpi_handle_storage native_op{};
 native_op = op->storage;
 if (!pointers::Op_free) {
   unavailable("MPI_Op_free");
@@ -2730,7 +2730,7 @@ ensure_provider_selected();
 if (!group) {
   throw std::invalid_argument("MPI_Comm_group requires group");
 }
-plumed_mpiw_handle_storage native_group{};
+plumed_mpi_handle_storage native_group{};
 if (!pointers::Comm_group) {
   unavailable("MPI_Comm_group");
 }
@@ -2748,7 +2748,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_union requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_union) {
   unavailable("MPI_Group_union");
 }
@@ -2766,7 +2766,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_intersection requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_intersection) {
   unavailable("MPI_Group_intersection");
 }
@@ -2784,7 +2784,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_difference requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_difference) {
   unavailable("MPI_Group_difference");
 }
@@ -2802,7 +2802,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_incl requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_incl) {
   unavailable("MPI_Group_incl");
 }
@@ -2820,7 +2820,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_excl requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_excl) {
   unavailable("MPI_Group_excl");
 }
@@ -2838,7 +2838,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_range_incl requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_range_incl) {
   unavailable("MPI_Group_range_incl");
 }
@@ -2856,7 +2856,7 @@ ensure_provider_selected();
 if (!newgroup) {
   throw std::invalid_argument("MPI_Group_range_excl requires newgroup");
 }
-plumed_mpiw_handle_storage native_newgroup{};
+plumed_mpi_handle_storage native_newgroup{};
 if (!pointers::Group_range_excl) {
   unavailable("MPI_Group_range_excl");
 }
@@ -2874,7 +2874,7 @@ ensure_provider_selected();
 if (!group) {
   throw std::invalid_argument("MPI_Group_free requires group");
 }
-plumed_mpiw_handle_storage native_group{};
+plumed_mpi_handle_storage native_group{};
 native_group = group->storage;
 if (!pointers::Group_free) {
   unavailable("MPI_Group_free");
@@ -2914,7 +2914,7 @@ ensure_provider_selected();
 if (!newcomm) {
   throw std::invalid_argument("MPI_Comm_create requires newcomm");
 }
-plumed_mpiw_handle_storage native_newcomm{};
+plumed_mpi_handle_storage native_newcomm{};
 if (!pointers::Comm_create) {
   unavailable("MPI_Comm_create");
 }
@@ -2968,7 +2968,7 @@ ensure_provider_selected();
 if (!group) {
   throw std::invalid_argument("MPI_Comm_remote_group requires group");
 }
-plumed_mpiw_handle_storage native_group{};
+plumed_mpi_handle_storage native_group{};
 if (!pointers::Comm_remote_group) {
   unavailable("MPI_Comm_remote_group");
 }
@@ -2986,7 +2986,7 @@ ensure_provider_selected();
 if (!newintercomm) {
   throw std::invalid_argument("MPI_Intercomm_create requires newintercomm");
 }
-plumed_mpiw_handle_storage native_newintercomm{};
+plumed_mpi_handle_storage native_newintercomm{};
 if (!pointers::Intercomm_create) {
   unavailable("MPI_Intercomm_create");
 }
@@ -3004,7 +3004,7 @@ ensure_provider_selected();
 if (!newintracomm) {
   throw std::invalid_argument("MPI_Intercomm_merge requires newintracomm");
 }
-plumed_mpiw_handle_storage native_newintracomm{};
+plumed_mpi_handle_storage native_newintracomm{};
 if (!pointers::Intercomm_merge) {
   unavailable("MPI_Intercomm_merge");
 }
@@ -3022,7 +3022,7 @@ ensure_provider_selected();
 if (!comm_cart) {
   throw std::invalid_argument("MPI_Cart_create requires comm_cart");
 }
-plumed_mpiw_handle_storage native_comm_cart{};
+plumed_mpi_handle_storage native_comm_cart{};
 if (!pointers::Cart_create) {
   unavailable("MPI_Cart_create");
 }
@@ -3051,7 +3051,7 @@ ensure_provider_selected();
 if (!comm_graph) {
   throw std::invalid_argument("MPI_Graph_create requires comm_graph");
 }
-plumed_mpiw_handle_storage native_comm_graph{};
+plumed_mpi_handle_storage native_comm_graph{};
 if (!pointers::Graph_create) {
   unavailable("MPI_Graph_create");
 }
@@ -3235,7 +3235,7 @@ ensure_provider_selected();
 if (!newcomm) {
   throw std::invalid_argument("MPI_Cart_sub requires newcomm");
 }
-plumed_mpiw_handle_storage native_newcomm{};
+plumed_mpi_handle_storage native_newcomm{};
 if (!pointers::Cart_sub) {
   unavailable("MPI_Cart_sub");
 }
@@ -3307,7 +3307,7 @@ ensure_provider_selected();
 if (!errhandler) {
   throw std::invalid_argument("MPI_Errhandler_free requires errhandler");
 }
-plumed_mpiw_handle_storage native_errhandler{};
+plumed_mpi_handle_storage native_errhandler{};
 native_errhandler = errhandler->storage;
 if (!pointers::Errhandler_free) {
   unavailable("MPI_Errhandler_free");
@@ -3392,7 +3392,7 @@ ensure_provider_selected();
 if (!errhandler) {
   throw std::invalid_argument("MPI_Comm_get_errhandler requires errhandler");
 }
-plumed_mpiw_handle_storage native_errhandler{};
+plumed_mpi_handle_storage native_errhandler{};
 if (!pointers::Comm_get_errhandler) {
   unavailable("MPI_Comm_get_errhandler");
 }
@@ -3419,11 +3419,11 @@ return pointers::ready.load(std::memory_order_acquire) && pointers::Comm_set_err
 } // namespace mpiwrap
 } // namespace PLMD
 #endif // native/provider declarations
-#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if !defined(__PLUMED_HAS_MPI) && !__PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 #include <exception>
 namespace PLMD {
 namespace mpiwrap {
-extern "C" inline void invoke_user_callback(plumed_mpiw_generic_fn original, void *invec, void *inoutvec, std::int32_t length, plumed_mpiw_handle_storage datatype_storage) noexcept {
+extern "C" inline void invoke_user_callback(plumed_mpi_generic_pointer original, void *invec, void *inoutvec, std::int32_t length, plumed_mpi_handle_storage datatype_storage) noexcept {
 using Callback = void (*)(void *, void *, int *, MPI_Datatype *);
 try {
   Callback callback = reinterpret_cast<Callback>(original);
@@ -3435,13 +3435,13 @@ try {
   std::terminate();
 }
 }
-inline plumed_mpiw_user_callback make_user_callback(MPI_User_function *callback) {
-plumed_mpiw_user_callback result{};
-result.function = reinterpret_cast<plumed_mpiw_generic_fn>(callback);
+inline plumed_mpi_user_callback make_user_callback(MPI_User_function *callback) {
+plumed_mpi_user_callback result{};
+result.function = reinterpret_cast<plumed_mpi_generic_pointer>(callback);
 result.invoke = &invoke_user_callback;
 return result;
 }
-extern "C" inline void invoke_comm_errhandler_callback(plumed_mpiw_generic_fn original, plumed_mpiw_handle_storage comm_storage, std::int32_t error_code) noexcept {
+extern "C" inline void invoke_comm_errhandler_callback(plumed_mpi_generic_pointer original, plumed_mpi_handle_storage comm_storage, std::int32_t error_code) noexcept {
 using Callback = void (*)(MPI_Comm *, int *, ...);
 try {
   Callback callback = reinterpret_cast<Callback>(original);
@@ -3453,9 +3453,9 @@ try {
   std::terminate();
 }
 }
-inline plumed_mpiw_comm_errhandler_callback make_comm_errhandler_callback(MPI_Comm_errhandler_function *callback) {
-plumed_mpiw_comm_errhandler_callback result{};
-result.function = reinterpret_cast<plumed_mpiw_generic_fn>(callback);
+inline plumed_mpi_comm_errhandler_callback make_comm_errhandler_callback(MPI_Comm_errhandler_function *callback) {
+plumed_mpi_comm_errhandler_callback result{};
+result.function = reinterpret_cast<plumed_mpi_generic_pointer>(callback);
 result.invoke = &invoke_comm_errhandler_callback;
 return result;
 }

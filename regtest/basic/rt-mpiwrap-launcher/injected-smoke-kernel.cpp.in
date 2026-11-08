@@ -10,7 +10,7 @@ namespace PLMD {
 namespace thread_mpi {
 extern "C" int mpiw_test_install(const void *opaque) {
   std::string error;
-  const auto descriptor=static_cast<const mpiwrap::plumed_mpiw_provider_descriptor *>(opaque);
+  const auto descriptor=static_cast<const mpiwrap::plumed_mpi_provider *>(opaque);
   if(!mpiwrap::currentRegistry().install(descriptor,error)) {
     std::fprintf(stderr,"injected smoke install: %s\n",error.c_str());
     return 1;

@@ -17,9 +17,9 @@ esac
 cat > "$TASK_DIR/bypassed.cpp" <<'SOURCE'
 #include <cstdio>
 #include <cstdlib>
-struct plumed_mpiw_provider_descriptor;
+struct plumed_mpi_provider;
 namespace PLMD {
-extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_provider_factory() { return 0; }
+extern "C" const plumed_mpi_provider *plumed_mpiw_provider_factory() { return 0; }
 __attribute__((destructor)) void bypassedProviderUnloaded() {
   const char *path=std::getenv("MPIW_BYPASSED_MARKER");
   if(path) {

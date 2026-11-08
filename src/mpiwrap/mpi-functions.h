@@ -4,7 +4,7 @@
 #define __PLUMED_mpiwrap_mpi_functions_h
 #include "mpi-types.h"
 #include "mpiwrap.h"
-#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if !defined(__PLUMED_HAS_MPI) && !__PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 #define MPI_Init(...) ::PLMD::mpiwrap::Init(__VA_ARGS__)
 #define MPI_Finalize(...) ::PLMD::mpiwrap::Finalize(__VA_ARGS__)
 #define MPI_Initialized(...) ::PLMD::mpiwrap::Initialized(__VA_ARGS__)

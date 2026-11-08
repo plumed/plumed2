@@ -1,4 +1,4 @@
-/* Compile with PLUMED_MPIW_HOST_ADAPTER and wrapper implementation enabled. */
+/* Compile with __PLUMED_WRAPPER_MPI_HOST_ADAPTER and wrapper implementation enabled. */
 #if defined(PLUMED_MPIW_TEST_THREAD_MPI)
 #include <thread_mpi/mpi_bindings.h>
 #endif
@@ -15,9 +15,9 @@
 
 int main(void) {
 #ifdef __cplusplus
-  const PLMD::mpiwrap::plumed_mpiw_provider_descriptor *(*implementation)(void) = plumed_mpi_implementation;
+  const PLMD::mpiwrap::plumed_mpi_provider *(*implementation)(void) = plumed_mpi_implementation;
 #else
-  const plumed_mpiw_provider_descriptor *(*implementation)(void) = plumed_mpi_implementation;
+  const plumed_mpi_provider *(*implementation)(void) = plumed_mpi_implementation;
 #endif
   plumed (*create)(void) = plumed_create;
   (void)implementation;

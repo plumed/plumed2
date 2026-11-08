@@ -1,8 +1,8 @@
 #include <plumed/mpiwrap/mpiwrap.h>
 
-static_assert(sizeof(((PLMD::mpiwrap::plumed_mpiw_handle_storage *)0)->bytes) == 24,
+static_assert(sizeof(((PLMD::mpiwrap::plumed_mpi_handle_storage *)0)->bytes) == 24,
               "configured handle capacity remains available in native builds");
-static_assert(sizeof(((PLMD::mpiwrap::plumed_mpiw_status *)0)->raw) == 192,
+static_assert(sizeof(((PLMD::mpiwrap::plumed_mpi_status *)0)->raw) == 192,
               "configured status capacity remains available in native builds");
 
 int main() {

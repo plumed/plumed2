@@ -180,7 +180,7 @@ if [[ "$executable" = yes ]]; then
 fi
 adapter_source="$build_dir/mpiwrap_implementation.c"
 cat > "$adapter_source" <<'ADAPTER'
-#define PLUMED_MPIW_NATIVE_ADAPTER 1
+#define __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER 1
 #define __PLUMED_WRAPPER_IMPLEMENTATION 0
 #define __PLUMED_WRAPPER_CXX 0
 #include <Plumed.h>

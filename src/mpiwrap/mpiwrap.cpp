@@ -18,208 +18,208 @@ namespace PLMD {
 namespace mpiwrap {
 namespace pointers {
 std::atomic<bool> ready{false};
-plumed_mpiw_MPI_Init_fn Init = nullptr;
-plumed_mpiw_MPI_Finalize_fn Finalize = nullptr;
-plumed_mpiw_MPI_Initialized_fn Initialized = nullptr;
-plumed_mpiw_MPI_Comm_dup_fn Comm_dup = nullptr;
-plumed_mpiw_MPI_Comm_free_fn Comm_free = nullptr;
-plumed_mpiw_MPI_Comm_rank_fn Comm_rank = nullptr;
-plumed_mpiw_MPI_Comm_size_fn Comm_size = nullptr;
-plumed_mpiw_MPI_Comm_split_fn Comm_split = nullptr;
-plumed_mpiw_MPI_Abort_fn Abort = nullptr;
-plumed_mpiw_MPI_Bcast_fn Bcast = nullptr;
-plumed_mpiw_MPI_Scatter_fn Scatter = nullptr;
-plumed_mpiw_MPI_Gather_fn Gather = nullptr;
-plumed_mpiw_MPI_Allreduce_fn Allreduce = nullptr;
-plumed_mpiw_MPI_Isend_fn Isend = nullptr;
-plumed_mpiw_MPI_Wait_fn Wait = nullptr;
-plumed_mpiw_MPI_Allgather_fn Allgather = nullptr;
-plumed_mpiw_MPI_Allgatherv_fn Allgatherv = nullptr;
-plumed_mpiw_MPI_Recv_fn Recv = nullptr;
-plumed_mpiw_MPI_Barrier_fn Barrier = nullptr;
-plumed_mpiw_MPI_Get_count_fn Get_count = nullptr;
-plumed_mpiw_MPI_Sendrecv_fn Sendrecv = nullptr;
-plumed_mpiw_MPI_Error_string_fn Error_string = nullptr;
-plumed_mpiw_MPI_Comm_create_errhandler_fn Comm_create_errhandler = nullptr;
-plumed_mpiw_MPI_Comm_f2c_fn Comm_f2c = nullptr;
-plumed_mpiw_MPI_Send_fn Send = nullptr;
-plumed_mpiw_MPI_Bsend_fn Bsend = nullptr;
-plumed_mpiw_MPI_Ssend_fn Ssend = nullptr;
-plumed_mpiw_MPI_Rsend_fn Rsend = nullptr;
-plumed_mpiw_MPI_Buffer_attach_fn Buffer_attach = nullptr;
-plumed_mpiw_MPI_Buffer_detach_fn Buffer_detach = nullptr;
-plumed_mpiw_MPI_Ibsend_fn Ibsend = nullptr;
-plumed_mpiw_MPI_Issend_fn Issend = nullptr;
-plumed_mpiw_MPI_Irsend_fn Irsend = nullptr;
-plumed_mpiw_MPI_Irecv_fn Irecv = nullptr;
-plumed_mpiw_MPI_Test_fn Test = nullptr;
-plumed_mpiw_MPI_Request_free_fn Request_free = nullptr;
-plumed_mpiw_MPI_Waitany_fn Waitany = nullptr;
-plumed_mpiw_MPI_Testany_fn Testany = nullptr;
-plumed_mpiw_MPI_Waitall_fn Waitall = nullptr;
-plumed_mpiw_MPI_Testall_fn Testall = nullptr;
-plumed_mpiw_MPI_Waitsome_fn Waitsome = nullptr;
-plumed_mpiw_MPI_Testsome_fn Testsome = nullptr;
-plumed_mpiw_MPI_Iprobe_fn Iprobe = nullptr;
-plumed_mpiw_MPI_Probe_fn Probe = nullptr;
-plumed_mpiw_MPI_Cancel_fn Cancel = nullptr;
-plumed_mpiw_MPI_Test_cancelled_fn Test_cancelled = nullptr;
-plumed_mpiw_MPI_Send_init_fn Send_init = nullptr;
-plumed_mpiw_MPI_Bsend_init_fn Bsend_init = nullptr;
-plumed_mpiw_MPI_Ssend_init_fn Ssend_init = nullptr;
-plumed_mpiw_MPI_Rsend_init_fn Rsend_init = nullptr;
-plumed_mpiw_MPI_Recv_init_fn Recv_init = nullptr;
-plumed_mpiw_MPI_Start_fn Start = nullptr;
-plumed_mpiw_MPI_Startall_fn Startall = nullptr;
-plumed_mpiw_MPI_Sendrecv_replace_fn Sendrecv_replace = nullptr;
-plumed_mpiw_MPI_Type_contiguous_fn Type_contiguous = nullptr;
-plumed_mpiw_MPI_Type_vector_fn Type_vector = nullptr;
-plumed_mpiw_MPI_Type_indexed_fn Type_indexed = nullptr;
-plumed_mpiw_MPI_Type_commit_fn Type_commit = nullptr;
-plumed_mpiw_MPI_Type_free_fn Type_free = nullptr;
-plumed_mpiw_MPI_Type_size_fn Type_size = nullptr;
-plumed_mpiw_MPI_Get_elements_fn Get_elements = nullptr;
-plumed_mpiw_MPI_Pack_fn Pack = nullptr;
-plumed_mpiw_MPI_Unpack_fn Unpack = nullptr;
-plumed_mpiw_MPI_Pack_size_fn Pack_size = nullptr;
-plumed_mpiw_MPI_Gatherv_fn Gatherv = nullptr;
-plumed_mpiw_MPI_Scatterv_fn Scatterv = nullptr;
-plumed_mpiw_MPI_Alltoall_fn Alltoall = nullptr;
-plumed_mpiw_MPI_Alltoallv_fn Alltoallv = nullptr;
-plumed_mpiw_MPI_Reduce_fn Reduce = nullptr;
-plumed_mpiw_MPI_Op_create_fn Op_create = nullptr;
-plumed_mpiw_MPI_Op_free_fn Op_free = nullptr;
-plumed_mpiw_MPI_Reduce_scatter_fn Reduce_scatter = nullptr;
-plumed_mpiw_MPI_Scan_fn Scan = nullptr;
-plumed_mpiw_MPI_Group_size_fn Group_size = nullptr;
-plumed_mpiw_MPI_Group_rank_fn Group_rank = nullptr;
-plumed_mpiw_MPI_Group_translate_ranks_fn Group_translate_ranks = nullptr;
-plumed_mpiw_MPI_Group_compare_fn Group_compare = nullptr;
-plumed_mpiw_MPI_Comm_group_fn Comm_group = nullptr;
-plumed_mpiw_MPI_Group_union_fn Group_union = nullptr;
-plumed_mpiw_MPI_Group_intersection_fn Group_intersection = nullptr;
-plumed_mpiw_MPI_Group_difference_fn Group_difference = nullptr;
-plumed_mpiw_MPI_Group_incl_fn Group_incl = nullptr;
-plumed_mpiw_MPI_Group_excl_fn Group_excl = nullptr;
-plumed_mpiw_MPI_Group_range_incl_fn Group_range_incl = nullptr;
-plumed_mpiw_MPI_Group_range_excl_fn Group_range_excl = nullptr;
-plumed_mpiw_MPI_Group_free_fn Group_free = nullptr;
-plumed_mpiw_MPI_Comm_compare_fn Comm_compare = nullptr;
-plumed_mpiw_MPI_Comm_create_fn Comm_create = nullptr;
-plumed_mpiw_MPI_Comm_test_inter_fn Comm_test_inter = nullptr;
-plumed_mpiw_MPI_Comm_remote_size_fn Comm_remote_size = nullptr;
-plumed_mpiw_MPI_Comm_remote_group_fn Comm_remote_group = nullptr;
-plumed_mpiw_MPI_Intercomm_create_fn Intercomm_create = nullptr;
-plumed_mpiw_MPI_Intercomm_merge_fn Intercomm_merge = nullptr;
-plumed_mpiw_MPI_Cart_create_fn Cart_create = nullptr;
-plumed_mpiw_MPI_Dims_create_fn Dims_create = nullptr;
-plumed_mpiw_MPI_Graph_create_fn Graph_create = nullptr;
-plumed_mpiw_MPI_Topo_test_fn Topo_test = nullptr;
-plumed_mpiw_MPI_Graphdims_get_fn Graphdims_get = nullptr;
-plumed_mpiw_MPI_Graph_get_fn Graph_get = nullptr;
-plumed_mpiw_MPI_Cartdim_get_fn Cartdim_get = nullptr;
-plumed_mpiw_MPI_Cart_get_fn Cart_get = nullptr;
-plumed_mpiw_MPI_Cart_rank_fn Cart_rank = nullptr;
-plumed_mpiw_MPI_Cart_coords_fn Cart_coords = nullptr;
-plumed_mpiw_MPI_Graph_neighbors_count_fn Graph_neighbors_count = nullptr;
-plumed_mpiw_MPI_Graph_neighbors_fn Graph_neighbors = nullptr;
-plumed_mpiw_MPI_Cart_shift_fn Cart_shift = nullptr;
-plumed_mpiw_MPI_Cart_sub_fn Cart_sub = nullptr;
-plumed_mpiw_MPI_Cart_map_fn Cart_map = nullptr;
-plumed_mpiw_MPI_Graph_map_fn Graph_map = nullptr;
-plumed_mpiw_MPI_Get_processor_name_fn Get_processor_name = nullptr;
-plumed_mpiw_MPI_Errhandler_free_fn Errhandler_free = nullptr;
-plumed_mpiw_MPI_Error_class_fn Error_class = nullptr;
-plumed_mpiw_MPI_Wtime_fn Wtime = nullptr;
-plumed_mpiw_MPI_Wtick_fn Wtick = nullptr;
-plumed_mpiw_MPI_Finalized_fn Finalized = nullptr;
-plumed_mpiw_MPI_Comm_get_errhandler_fn Comm_get_errhandler = nullptr;
-plumed_mpiw_MPI_Comm_set_errhandler_fn Comm_set_errhandler = nullptr;
-plumed_mpiw_provider_constant_fn constant_FLOAT = nullptr;
-plumed_mpiw_provider_constant_fn constant_DOUBLE = nullptr;
-plumed_mpiw_provider_constant_fn constant_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_CHAR = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNSIGNED = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNSIGNED_LONG = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNSIGNED_LONG_LONG = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG_DOUBLE = nullptr;
-plumed_mpiw_provider_constant_fn constant_COMM_WORLD = nullptr;
-plumed_mpiw_provider_constant_fn constant_COMM_SELF = nullptr;
-plumed_mpiw_provider_constant_fn constant_COMM_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_IN_PLACE = nullptr;
-plumed_mpiw_provider_constant_fn constant_SUM = nullptr;
-plumed_mpiw_provider_constant_fn constant_PROD = nullptr;
-plumed_mpiw_provider_constant_fn constant_MAX = nullptr;
-plumed_mpiw_provider_constant_fn constant_MIN = nullptr;
-plumed_mpiw_provider_constant_fn constant_STATUS_IGNORE = nullptr;
-plumed_mpiw_provider_constant_fn constant_STATUSES_IGNORE = nullptr;
-plumed_mpiw_provider_constant_fn constant_GROUP_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_GROUP_EMPTY = nullptr;
-plumed_mpiw_provider_constant_fn constant_REQUEST_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_DATATYPE_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_OP_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERRHANDLER_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERRORS_ARE_FATAL = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERRORS_RETURN = nullptr;
-plumed_mpiw_provider_constant_fn constant_BYTE = nullptr;
-plumed_mpiw_provider_constant_fn constant_PACKED = nullptr;
-plumed_mpiw_provider_constant_fn constant_SHORT = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNSIGNED_CHAR = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNSIGNED_SHORT = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG_LONG_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG_LONG = nullptr;
-plumed_mpiw_provider_constant_fn constant_FLOAT_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_DOUBLE_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_TWO_INTS = nullptr;
-plumed_mpiw_provider_constant_fn constant_SHORT_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_LONG_DOUBLE_INT = nullptr;
-plumed_mpiw_provider_constant_fn constant_MAXLOC = nullptr;
-plumed_mpiw_provider_constant_fn constant_MINLOC = nullptr;
-plumed_mpiw_provider_constant_fn constant_LAND = nullptr;
-plumed_mpiw_provider_constant_fn constant_BAND = nullptr;
-plumed_mpiw_provider_constant_fn constant_LOR = nullptr;
-plumed_mpiw_provider_constant_fn constant_BOR = nullptr;
-plumed_mpiw_provider_constant_fn constant_LXOR = nullptr;
-plumed_mpiw_provider_constant_fn constant_BXOR = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNDEFINED = nullptr;
-plumed_mpiw_provider_constant_fn constant_ANY_SOURCE = nullptr;
-plumed_mpiw_provider_constant_fn constant_ANY_TAG = nullptr;
-plumed_mpiw_provider_constant_fn constant_PROC_NULL = nullptr;
-plumed_mpiw_provider_constant_fn constant_IDENT = nullptr;
-plumed_mpiw_provider_constant_fn constant_CONGRUENT = nullptr;
-plumed_mpiw_provider_constant_fn constant_SIMILAR = nullptr;
-plumed_mpiw_provider_constant_fn constant_UNEQUAL = nullptr;
-plumed_mpiw_provider_constant_fn constant_CART = nullptr;
-plumed_mpiw_provider_constant_fn constant_GRAPH = nullptr;
-plumed_mpiw_provider_constant_fn constant_MAX_PROCESSOR_NAME = nullptr;
-plumed_mpiw_provider_constant_fn constant_MAX_ERROR_STRING = nullptr;
-plumed_mpiw_provider_constant_fn constant_BSEND_OVERHEAD = nullptr;
-plumed_mpiw_provider_constant_fn constant_SUCCESS = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_BUFFER = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_COUNT = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_TYPE = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_TAG = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_COMM = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_RANK = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_REQUEST = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_ROOT = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_GROUP = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_OP = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_TOPOLOGY = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_DIMS = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_ARG = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_UNKNOWN = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_TRUNCATE = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_OTHER = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_INTERN = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_PENDING = nullptr;
-plumed_mpiw_provider_constant_fn constant_BOTTOM = nullptr;
-plumed_mpiw_provider_constant_fn constant_ERR_IN_STATUS = nullptr;
-plumed_mpiw_provider_constant_fn constant_SIGNED_CHAR = nullptr;
-plumed_mpiw_provider_constant_fn constant_C_BOOL = nullptr;
-plumed_mpiw_provider_constant_fn constant_INT64_T = nullptr;
+plumed_mpi_MPI_Init_pointer Init = nullptr;
+plumed_mpi_MPI_Finalize_pointer Finalize = nullptr;
+plumed_mpi_MPI_Initialized_pointer Initialized = nullptr;
+plumed_mpi_MPI_Comm_dup_pointer Comm_dup = nullptr;
+plumed_mpi_MPI_Comm_free_pointer Comm_free = nullptr;
+plumed_mpi_MPI_Comm_rank_pointer Comm_rank = nullptr;
+plumed_mpi_MPI_Comm_size_pointer Comm_size = nullptr;
+plumed_mpi_MPI_Comm_split_pointer Comm_split = nullptr;
+plumed_mpi_MPI_Abort_pointer Abort = nullptr;
+plumed_mpi_MPI_Bcast_pointer Bcast = nullptr;
+plumed_mpi_MPI_Scatter_pointer Scatter = nullptr;
+plumed_mpi_MPI_Gather_pointer Gather = nullptr;
+plumed_mpi_MPI_Allreduce_pointer Allreduce = nullptr;
+plumed_mpi_MPI_Isend_pointer Isend = nullptr;
+plumed_mpi_MPI_Wait_pointer Wait = nullptr;
+plumed_mpi_MPI_Allgather_pointer Allgather = nullptr;
+plumed_mpi_MPI_Allgatherv_pointer Allgatherv = nullptr;
+plumed_mpi_MPI_Recv_pointer Recv = nullptr;
+plumed_mpi_MPI_Barrier_pointer Barrier = nullptr;
+plumed_mpi_MPI_Get_count_pointer Get_count = nullptr;
+plumed_mpi_MPI_Sendrecv_pointer Sendrecv = nullptr;
+plumed_mpi_MPI_Error_string_pointer Error_string = nullptr;
+plumed_mpi_MPI_Comm_create_errhandler_pointer Comm_create_errhandler = nullptr;
+plumed_mpi_MPI_Comm_f2c_pointer Comm_f2c = nullptr;
+plumed_mpi_MPI_Send_pointer Send = nullptr;
+plumed_mpi_MPI_Bsend_pointer Bsend = nullptr;
+plumed_mpi_MPI_Ssend_pointer Ssend = nullptr;
+plumed_mpi_MPI_Rsend_pointer Rsend = nullptr;
+plumed_mpi_MPI_Buffer_attach_pointer Buffer_attach = nullptr;
+plumed_mpi_MPI_Buffer_detach_pointer Buffer_detach = nullptr;
+plumed_mpi_MPI_Ibsend_pointer Ibsend = nullptr;
+plumed_mpi_MPI_Issend_pointer Issend = nullptr;
+plumed_mpi_MPI_Irsend_pointer Irsend = nullptr;
+plumed_mpi_MPI_Irecv_pointer Irecv = nullptr;
+plumed_mpi_MPI_Test_pointer Test = nullptr;
+plumed_mpi_MPI_Request_free_pointer Request_free = nullptr;
+plumed_mpi_MPI_Waitany_pointer Waitany = nullptr;
+plumed_mpi_MPI_Testany_pointer Testany = nullptr;
+plumed_mpi_MPI_Waitall_pointer Waitall = nullptr;
+plumed_mpi_MPI_Testall_pointer Testall = nullptr;
+plumed_mpi_MPI_Waitsome_pointer Waitsome = nullptr;
+plumed_mpi_MPI_Testsome_pointer Testsome = nullptr;
+plumed_mpi_MPI_Iprobe_pointer Iprobe = nullptr;
+plumed_mpi_MPI_Probe_pointer Probe = nullptr;
+plumed_mpi_MPI_Cancel_pointer Cancel = nullptr;
+plumed_mpi_MPI_Test_cancelled_pointer Test_cancelled = nullptr;
+plumed_mpi_MPI_Send_init_pointer Send_init = nullptr;
+plumed_mpi_MPI_Bsend_init_pointer Bsend_init = nullptr;
+plumed_mpi_MPI_Ssend_init_pointer Ssend_init = nullptr;
+plumed_mpi_MPI_Rsend_init_pointer Rsend_init = nullptr;
+plumed_mpi_MPI_Recv_init_pointer Recv_init = nullptr;
+plumed_mpi_MPI_Start_pointer Start = nullptr;
+plumed_mpi_MPI_Startall_pointer Startall = nullptr;
+plumed_mpi_MPI_Sendrecv_replace_pointer Sendrecv_replace = nullptr;
+plumed_mpi_MPI_Type_contiguous_pointer Type_contiguous = nullptr;
+plumed_mpi_MPI_Type_vector_pointer Type_vector = nullptr;
+plumed_mpi_MPI_Type_indexed_pointer Type_indexed = nullptr;
+plumed_mpi_MPI_Type_commit_pointer Type_commit = nullptr;
+plumed_mpi_MPI_Type_free_pointer Type_free = nullptr;
+plumed_mpi_MPI_Type_size_pointer Type_size = nullptr;
+plumed_mpi_MPI_Get_elements_pointer Get_elements = nullptr;
+plumed_mpi_MPI_Pack_pointer Pack = nullptr;
+plumed_mpi_MPI_Unpack_pointer Unpack = nullptr;
+plumed_mpi_MPI_Pack_size_pointer Pack_size = nullptr;
+plumed_mpi_MPI_Gatherv_pointer Gatherv = nullptr;
+plumed_mpi_MPI_Scatterv_pointer Scatterv = nullptr;
+plumed_mpi_MPI_Alltoall_pointer Alltoall = nullptr;
+plumed_mpi_MPI_Alltoallv_pointer Alltoallv = nullptr;
+plumed_mpi_MPI_Reduce_pointer Reduce = nullptr;
+plumed_mpi_MPI_Op_create_pointer Op_create = nullptr;
+plumed_mpi_MPI_Op_free_pointer Op_free = nullptr;
+plumed_mpi_MPI_Reduce_scatter_pointer Reduce_scatter = nullptr;
+plumed_mpi_MPI_Scan_pointer Scan = nullptr;
+plumed_mpi_MPI_Group_size_pointer Group_size = nullptr;
+plumed_mpi_MPI_Group_rank_pointer Group_rank = nullptr;
+plumed_mpi_MPI_Group_translate_ranks_pointer Group_translate_ranks = nullptr;
+plumed_mpi_MPI_Group_compare_pointer Group_compare = nullptr;
+plumed_mpi_MPI_Comm_group_pointer Comm_group = nullptr;
+plumed_mpi_MPI_Group_union_pointer Group_union = nullptr;
+plumed_mpi_MPI_Group_intersection_pointer Group_intersection = nullptr;
+plumed_mpi_MPI_Group_difference_pointer Group_difference = nullptr;
+plumed_mpi_MPI_Group_incl_pointer Group_incl = nullptr;
+plumed_mpi_MPI_Group_excl_pointer Group_excl = nullptr;
+plumed_mpi_MPI_Group_range_incl_pointer Group_range_incl = nullptr;
+plumed_mpi_MPI_Group_range_excl_pointer Group_range_excl = nullptr;
+plumed_mpi_MPI_Group_free_pointer Group_free = nullptr;
+plumed_mpi_MPI_Comm_compare_pointer Comm_compare = nullptr;
+plumed_mpi_MPI_Comm_create_pointer Comm_create = nullptr;
+plumed_mpi_MPI_Comm_test_inter_pointer Comm_test_inter = nullptr;
+plumed_mpi_MPI_Comm_remote_size_pointer Comm_remote_size = nullptr;
+plumed_mpi_MPI_Comm_remote_group_pointer Comm_remote_group = nullptr;
+plumed_mpi_MPI_Intercomm_create_pointer Intercomm_create = nullptr;
+plumed_mpi_MPI_Intercomm_merge_pointer Intercomm_merge = nullptr;
+plumed_mpi_MPI_Cart_create_pointer Cart_create = nullptr;
+plumed_mpi_MPI_Dims_create_pointer Dims_create = nullptr;
+plumed_mpi_MPI_Graph_create_pointer Graph_create = nullptr;
+plumed_mpi_MPI_Topo_test_pointer Topo_test = nullptr;
+plumed_mpi_MPI_Graphdims_get_pointer Graphdims_get = nullptr;
+plumed_mpi_MPI_Graph_get_pointer Graph_get = nullptr;
+plumed_mpi_MPI_Cartdim_get_pointer Cartdim_get = nullptr;
+plumed_mpi_MPI_Cart_get_pointer Cart_get = nullptr;
+plumed_mpi_MPI_Cart_rank_pointer Cart_rank = nullptr;
+plumed_mpi_MPI_Cart_coords_pointer Cart_coords = nullptr;
+plumed_mpi_MPI_Graph_neighbors_count_pointer Graph_neighbors_count = nullptr;
+plumed_mpi_MPI_Graph_neighbors_pointer Graph_neighbors = nullptr;
+plumed_mpi_MPI_Cart_shift_pointer Cart_shift = nullptr;
+plumed_mpi_MPI_Cart_sub_pointer Cart_sub = nullptr;
+plumed_mpi_MPI_Cart_map_pointer Cart_map = nullptr;
+plumed_mpi_MPI_Graph_map_pointer Graph_map = nullptr;
+plumed_mpi_MPI_Get_processor_name_pointer Get_processor_name = nullptr;
+plumed_mpi_MPI_Errhandler_free_pointer Errhandler_free = nullptr;
+plumed_mpi_MPI_Error_class_pointer Error_class = nullptr;
+plumed_mpi_MPI_Wtime_pointer Wtime = nullptr;
+plumed_mpi_MPI_Wtick_pointer Wtick = nullptr;
+plumed_mpi_MPI_Finalized_pointer Finalized = nullptr;
+plumed_mpi_MPI_Comm_get_errhandler_pointer Comm_get_errhandler = nullptr;
+plumed_mpi_MPI_Comm_set_errhandler_pointer Comm_set_errhandler = nullptr;
+plumed_mpi_provider_constant_pointer constant_FLOAT = nullptr;
+plumed_mpi_provider_constant_pointer constant_DOUBLE = nullptr;
+plumed_mpi_provider_constant_pointer constant_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_CHAR = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNSIGNED = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNSIGNED_LONG = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNSIGNED_LONG_LONG = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG_DOUBLE = nullptr;
+plumed_mpi_provider_constant_pointer constant_COMM_WORLD = nullptr;
+plumed_mpi_provider_constant_pointer constant_COMM_SELF = nullptr;
+plumed_mpi_provider_constant_pointer constant_COMM_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_IN_PLACE = nullptr;
+plumed_mpi_provider_constant_pointer constant_SUM = nullptr;
+plumed_mpi_provider_constant_pointer constant_PROD = nullptr;
+plumed_mpi_provider_constant_pointer constant_MAX = nullptr;
+plumed_mpi_provider_constant_pointer constant_MIN = nullptr;
+plumed_mpi_provider_constant_pointer constant_STATUS_IGNORE = nullptr;
+plumed_mpi_provider_constant_pointer constant_STATUSES_IGNORE = nullptr;
+plumed_mpi_provider_constant_pointer constant_GROUP_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_GROUP_EMPTY = nullptr;
+plumed_mpi_provider_constant_pointer constant_REQUEST_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_DATATYPE_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_OP_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERRHANDLER_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERRORS_ARE_FATAL = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERRORS_RETURN = nullptr;
+plumed_mpi_provider_constant_pointer constant_BYTE = nullptr;
+plumed_mpi_provider_constant_pointer constant_PACKED = nullptr;
+plumed_mpi_provider_constant_pointer constant_SHORT = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNSIGNED_CHAR = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNSIGNED_SHORT = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG_LONG_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG_LONG = nullptr;
+plumed_mpi_provider_constant_pointer constant_FLOAT_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_DOUBLE_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_TWO_INTS = nullptr;
+plumed_mpi_provider_constant_pointer constant_SHORT_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_LONG_DOUBLE_INT = nullptr;
+plumed_mpi_provider_constant_pointer constant_MAXLOC = nullptr;
+plumed_mpi_provider_constant_pointer constant_MINLOC = nullptr;
+plumed_mpi_provider_constant_pointer constant_LAND = nullptr;
+plumed_mpi_provider_constant_pointer constant_BAND = nullptr;
+plumed_mpi_provider_constant_pointer constant_LOR = nullptr;
+plumed_mpi_provider_constant_pointer constant_BOR = nullptr;
+plumed_mpi_provider_constant_pointer constant_LXOR = nullptr;
+plumed_mpi_provider_constant_pointer constant_BXOR = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNDEFINED = nullptr;
+plumed_mpi_provider_constant_pointer constant_ANY_SOURCE = nullptr;
+plumed_mpi_provider_constant_pointer constant_ANY_TAG = nullptr;
+plumed_mpi_provider_constant_pointer constant_PROC_NULL = nullptr;
+plumed_mpi_provider_constant_pointer constant_IDENT = nullptr;
+plumed_mpi_provider_constant_pointer constant_CONGRUENT = nullptr;
+plumed_mpi_provider_constant_pointer constant_SIMILAR = nullptr;
+plumed_mpi_provider_constant_pointer constant_UNEQUAL = nullptr;
+plumed_mpi_provider_constant_pointer constant_CART = nullptr;
+plumed_mpi_provider_constant_pointer constant_GRAPH = nullptr;
+plumed_mpi_provider_constant_pointer constant_MAX_PROCESSOR_NAME = nullptr;
+plumed_mpi_provider_constant_pointer constant_MAX_ERROR_STRING = nullptr;
+plumed_mpi_provider_constant_pointer constant_BSEND_OVERHEAD = nullptr;
+plumed_mpi_provider_constant_pointer constant_SUCCESS = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_BUFFER = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_COUNT = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_TYPE = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_TAG = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_COMM = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_RANK = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_REQUEST = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_ROOT = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_GROUP = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_OP = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_TOPOLOGY = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_DIMS = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_ARG = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_UNKNOWN = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_TRUNCATE = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_OTHER = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_INTERN = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_PENDING = nullptr;
+plumed_mpi_provider_constant_pointer constant_BOTTOM = nullptr;
+plumed_mpi_provider_constant_pointer constant_ERR_IN_STATUS = nullptr;
+plumed_mpi_provider_constant_pointer constant_SIGNED_CHAR = nullptr;
+plumed_mpi_provider_constant_pointer constant_C_BOOL = nullptr;
+plumed_mpi_provider_constant_pointer constant_INT64_T = nullptr;
 }
 }
 } // namespace PLMD::mpiwrap::pointers
@@ -405,7 +405,7 @@ public:
   }
 };
 
-void encodeNativeStatus(Registry &registry, const plumed_mpiw_status &source,
+void encodeNativeStatus(Registry &registry, const plumed_mpi_status &source,
                         void *output) {
   const std::uint32_t size = registry.nativeStatusSize();
   if (source.raw_size == size) {
@@ -425,7 +425,7 @@ void encodeNativeStatus(Registry &registry, const plumed_mpiw_status &source,
 }
 
 void decodeNativeStatus(Registry &registry, const void *input,
-                        plumed_mpiw_status *output) {
+                        plumed_mpi_status *output) {
   const std::uint32_t size = registry.nativeStatusSize();
   std::memset(output, 0, sizeof(*output));
   output->raw_size = size;
@@ -459,8 +459,8 @@ void *nativeStatusesIgnore(Registry &registry) {
 // Generated canonical-dispatch bridges for the typed frontend.
 static int32_t plumed_mpiw_bridge_MPI_Initialized(int32_t * flag) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Initialized", 0xd4498369u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Initialized_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Initialized_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Initialized", 0xd4498369u, 1u, 1u);
+  plumed_mpi_transport_MPI_Initialized_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Initialized_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Initialized");
   }
@@ -468,15 +468,15 @@ static int32_t plumed_mpiw_bridge_MPI_Initialized(int32_t * flag) {
   dispatch(flag, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_dup(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * newcomm) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_dup(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * newcomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_dup", native_comm.data());
   NativeBuffer native_newcomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newcomm = newcomm ? native_newcomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_dup", 0xf0dc6608u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_dup_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_dup_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_dup", 0xf0dc6608u, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_dup_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_dup_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_dup");
   }
@@ -489,7 +489,7 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_dup(plumed_mpiw_handle_storage comm, 
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_free(plumed_mpiw_handle_storage * comm) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_free(plumed_mpi_handle_storage * comm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   if (comm) {
@@ -499,8 +499,8 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_free(plumed_mpiw_handle_storage * com
     validateInputComm(registry, "MPI_Comm_free", native_comm.data());
   }
   void *native_pointer_comm = comm ? native_comm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_free", 0x4da4e1b2u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Comm_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_free", 0x4da4e1b2u, 1u, 1u);
+  plumed_mpi_transport_MPI_Comm_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_free");
   }
@@ -513,13 +513,13 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_free(plumed_mpiw_handle_storage * com
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_rank(plumed_mpiw_handle_storage comm, int32_t * rank) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_rank(plumed_mpi_handle_storage comm, int32_t * rank) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_rank", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_rank", 0x4e7672aau, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_rank_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_rank_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_rank", 0x4e7672aau, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_rank_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_rank_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_rank");
   }
@@ -527,13 +527,13 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_rank(plumed_mpiw_handle_storage comm,
   dispatch(native_comm.data(), rank, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_size(plumed_mpiw_handle_storage comm, int32_t * size) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_size(plumed_mpi_handle_storage comm, int32_t * size) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_size", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_size", 0xda2369ecu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_size_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_size_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_size", 0xda2369ecu, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_size_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_size_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_size");
   }
@@ -541,7 +541,7 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_size(plumed_mpiw_handle_storage comm,
   dispatch(native_comm.data(), size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_split(plumed_mpiw_handle_storage comm, int32_t color, int32_t key, plumed_mpiw_handle_storage * newcomm) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_split(plumed_mpi_handle_storage comm, int32_t color, int32_t key, plumed_mpi_handle_storage * newcomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
@@ -550,8 +550,8 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_split(plumed_mpiw_handle_storage comm
   int native_key = static_cast<int>(key);
   NativeBuffer native_newcomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newcomm = newcomm ? native_newcomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_split", 0x97f1adf0u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Comm_split_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_split_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_split", 0x97f1adf0u, 1u, 4u);
+  plumed_mpi_transport_MPI_Comm_split_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_split_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_split");
   }
@@ -564,14 +564,14 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_split(plumed_mpiw_handle_storage comm
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Abort(plumed_mpiw_handle_storage comm, int32_t errorcode) {
+static int32_t plumed_mpiw_bridge_MPI_Abort(plumed_mpi_handle_storage comm, int32_t errorcode) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Abort", native_comm.data());
   int native_errorcode = static_cast<int>(errorcode);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Abort", 0x84f458d6u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Abort_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Abort_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Abort", 0x84f458d6u, 1u, 2u);
+  plumed_mpi_transport_MPI_Abort_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Abort_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Abort");
   }
@@ -579,7 +579,7 @@ static int32_t plumed_mpiw_bridge_MPI_Abort(plumed_mpiw_handle_storage comm, int
   dispatch(native_comm.data(), &native_errorcode, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Bcast(void * buffer, int32_t count, plumed_mpiw_handle_storage datatype, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Bcast(void * buffer, int32_t count, plumed_mpi_handle_storage datatype, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -588,8 +588,8 @@ static int32_t plumed_mpiw_bridge_MPI_Bcast(void * buffer, int32_t count, plumed
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Bcast", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Bcast", 0xe809e1cau, 1u, 5u);
-  plumed_mpiw_transport_MPI_Bcast_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Bcast_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Bcast", 0xe809e1cau, 1u, 5u);
+  plumed_mpi_transport_MPI_Bcast_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Bcast_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Bcast");
   }
@@ -597,7 +597,7 @@ static int32_t plumed_mpiw_bridge_MPI_Bcast(void * buffer, int32_t count, plumed
   dispatch(buffer, &native_count, native_datatype.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Scatter(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Scatter(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -609,8 +609,8 @@ static int32_t plumed_mpiw_bridge_MPI_Scatter(const void * sendbuf, int32_t send
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Scatter", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Scatter", 0xb2fa0f58u, 1u, 8u);
-  plumed_mpiw_transport_MPI_Scatter_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Scatter_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Scatter", 0xb2fa0f58u, 1u, 8u);
+  plumed_mpi_transport_MPI_Scatter_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Scatter_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Scatter");
   }
@@ -618,7 +618,7 @@ static int32_t plumed_mpiw_bridge_MPI_Scatter(const void * sendbuf, int32_t send
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, &native_recvcount, native_recvtype.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Gather(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Gather(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -630,8 +630,8 @@ static int32_t plumed_mpiw_bridge_MPI_Gather(const void * sendbuf, int32_t sendc
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Gather", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Gather", 0xb1f903d9u, 1u, 8u);
-  plumed_mpiw_transport_MPI_Gather_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Gather_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Gather", 0xb1f903d9u, 1u, 8u);
+  plumed_mpi_transport_MPI_Gather_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Gather_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Gather");
   }
@@ -639,7 +639,7 @@ static int32_t plumed_mpiw_bridge_MPI_Gather(const void * sendbuf, int32_t sendc
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, &native_recvcount, native_recvtype.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Allreduce(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Allreduce(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -649,8 +649,8 @@ static int32_t plumed_mpiw_bridge_MPI_Allreduce(const void * sendbuf, void * rec
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Allreduce", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Allreduce", 0x788900dbu, 1u, 6u);
-  plumed_mpiw_transport_MPI_Allreduce_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Allreduce_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Allreduce", 0x788900dbu, 1u, 6u);
+  plumed_mpi_transport_MPI_Allreduce_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Allreduce_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Allreduce");
   }
@@ -658,7 +658,7 @@ static int32_t plumed_mpiw_bridge_MPI_Allreduce(const void * sendbuf, void * rec
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), recvbuf, &native_count, native_datatype.data(), native_op.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Isend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Isend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -670,8 +670,8 @@ static int32_t plumed_mpiw_bridge_MPI_Isend(const void * buf, int32_t count, plu
   validateInputComm(registry, "MPI_Isend", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Isend", 0xf5e9d915u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Isend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Isend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Isend", 0xf5e9d915u, 1u, 7u);
+  plumed_mpi_transport_MPI_Isend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Isend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Isend");
   }
@@ -684,7 +684,7 @@ static int32_t plumed_mpiw_bridge_MPI_Isend(const void * buf, int32_t count, plu
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Wait(plumed_mpiw_handle_storage * request, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Wait(plumed_mpi_handle_storage * request, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   if (request) {
@@ -696,8 +696,8 @@ static int32_t plumed_mpiw_bridge_MPI_Wait(plumed_mpiw_handle_storage * request,
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Wait", 0x4b15813du, 1u, 2u);
-  plumed_mpiw_transport_MPI_Wait_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Wait_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Wait", 0x4b15813du, 1u, 2u);
+  plumed_mpi_transport_MPI_Wait_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Wait_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Wait");
   }
@@ -713,7 +713,7 @@ static int32_t plumed_mpiw_bridge_MPI_Wait(plumed_mpiw_handle_storage * request,
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Allgather(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Allgather(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -724,8 +724,8 @@ static int32_t plumed_mpiw_bridge_MPI_Allgather(const void * sendbuf, int32_t se
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Allgather", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Allgather", 0xab8b26c9u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Allgather_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Allgather_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Allgather", 0xab8b26c9u, 1u, 7u);
+  plumed_mpi_transport_MPI_Allgather_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Allgather_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Allgather");
   }
@@ -733,7 +733,7 @@ static int32_t plumed_mpiw_bridge_MPI_Allgather(const void * sendbuf, int32_t se
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, &native_recvcount, native_recvtype.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Allgatherv(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Allgatherv(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -743,8 +743,8 @@ static int32_t plumed_mpiw_bridge_MPI_Allgatherv(const void * sendbuf, int32_t s
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Allgatherv", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Allgatherv", 0x0f1b22f3u, 1u, 8u);
-  plumed_mpiw_transport_MPI_Allgatherv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Allgatherv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Allgatherv", 0x0f1b22f3u, 1u, 8u);
+  plumed_mpi_transport_MPI_Allgatherv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Allgatherv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Allgatherv");
   }
@@ -752,7 +752,7 @@ static int32_t plumed_mpiw_bridge_MPI_Allgatherv(const void * sendbuf, int32_t s
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, const_cast<void *>(static_cast<const void *>(recvcounts)), const_cast<void *>(static_cast<const void *>(displs)), native_recvtype.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Recv(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Recv(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -767,8 +767,8 @@ static int32_t plumed_mpiw_bridge_MPI_Recv(void * buf, int32_t count, plumed_mpi
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Recv", 0xdd56a4bcu, 1u, 7u);
-  plumed_mpiw_transport_MPI_Recv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Recv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Recv", 0xdd56a4bcu, 1u, 7u);
+  plumed_mpi_transport_MPI_Recv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Recv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Recv");
   }
@@ -780,13 +780,13 @@ static int32_t plumed_mpiw_bridge_MPI_Recv(void * buf, int32_t count, plumed_mpi
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Barrier(plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Barrier(plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Barrier", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Barrier", 0xe7a052f4u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Barrier_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Barrier_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Barrier", 0xe7a052f4u, 1u, 1u);
+  plumed_mpi_transport_MPI_Barrier_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Barrier_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Barrier");
   }
@@ -794,7 +794,7 @@ static int32_t plumed_mpiw_bridge_MPI_Barrier(plumed_mpiw_handle_storage comm) {
   dispatch(native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Get_count(const plumed_mpiw_status * status, plumed_mpiw_handle_storage datatype, int32_t * count) {
+static int32_t plumed_mpiw_bridge_MPI_Get_count(const plumed_mpi_status * status, plumed_mpi_handle_storage datatype, int32_t * count) {
   Registry &registry = currentRegistry();
   NativeBuffer native_status(registry.nativeStatusSize());
   if (status && true) {
@@ -803,8 +803,8 @@ static int32_t plumed_mpiw_bridge_MPI_Get_count(const plumed_mpiw_status * statu
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_datatype.data(), datatype.bytes, native_datatype.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Get_count", 0x71967a66u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Get_count_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Get_count_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Get_count", 0x71967a66u, 1u, 3u);
+  plumed_mpi_transport_MPI_Get_count_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Get_count_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Get_count");
   }
@@ -812,7 +812,7 @@ static int32_t plumed_mpiw_bridge_MPI_Get_count(const plumed_mpiw_status * statu
   dispatch(native_pointer_status, native_datatype.data(), count, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Sendrecv(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, int32_t dest, int32_t sendtag, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t source, int32_t recvtag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Sendrecv(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, int32_t dest, int32_t sendtag, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t source, int32_t recvtag, plumed_mpi_handle_storage comm, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -832,8 +832,8 @@ static int32_t plumed_mpiw_bridge_MPI_Sendrecv(const void * sendbuf, int32_t sen
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Sendrecv", 0xb09a6fc1u, 1u, 12u);
-  plumed_mpiw_transport_MPI_Sendrecv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Sendrecv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Sendrecv", 0xb09a6fc1u, 1u, 12u);
+  plumed_mpi_transport_MPI_Sendrecv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Sendrecv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Sendrecv");
   }
@@ -848,8 +848,8 @@ static int32_t plumed_mpiw_bridge_MPI_Sendrecv(const void * sendbuf, int32_t sen
 static int32_t plumed_mpiw_bridge_MPI_Error_string(int32_t errorcode, char * string, int32_t * resultlen) {
   Registry &registry = currentRegistry();
   int native_errorcode = static_cast<int>(errorcode);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Error_string", 0xd272abecu, 1u, 3u);
-  plumed_mpiw_transport_MPI_Error_string_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Error_string_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Error_string", 0xd272abecu, 1u, 3u);
+  plumed_mpi_transport_MPI_Error_string_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Error_string_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Error_string");
   }
@@ -857,21 +857,21 @@ static int32_t plumed_mpiw_bridge_MPI_Error_string(int32_t errorcode, char * str
   dispatch(&native_errorcode, string, resultlen, &native_return_value);
   return native_return_value;
 }
-static plumed_mpiw_handle_storage plumed_mpiw_bridge_MPI_Comm_f2c(int32_t comm) {
+static plumed_mpi_handle_storage plumed_mpiw_bridge_MPI_Comm_f2c(int32_t comm) {
   Registry &registry = currentRegistry();
   MPI_Fint native_comm = static_cast<MPI_Fint>(comm);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_f2c", 0x9a9e7fcdu, 1u, 1u);
-  plumed_mpiw_transport_MPI_Comm_f2c_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_f2c_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_f2c", 0x9a9e7fcdu, 1u, 1u);
+  plumed_mpi_transport_MPI_Comm_f2c_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_f2c_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_f2c");
   }
   NativeBuffer native_result(registry.nativeHandleSize("Comm"));
   dispatch(&native_comm, native_result.data());
-  plumed_mpiw_handle_storage result{};
+  plumed_mpi_handle_storage result{};
   std::memcpy(result.bytes, native_result.data(), native_result.size());
   return result;
 }
-static int32_t plumed_mpiw_bridge_MPI_Send(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Send(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -881,8 +881,8 @@ static int32_t plumed_mpiw_bridge_MPI_Send(const void * buf, int32_t count, plum
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Send", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Send", 0xbd2b6912u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Send_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Send_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Send", 0xbd2b6912u, 1u, 6u);
+  plumed_mpi_transport_MPI_Send_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Send_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Send");
   }
@@ -890,7 +890,7 @@ static int32_t plumed_mpiw_bridge_MPI_Send(const void * buf, int32_t count, plum
   dispatch(const_cast<void *>(static_cast<const void *>(buf)), &native_count, native_datatype.data(), &native_dest, &native_tag, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Bsend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Bsend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -900,8 +900,8 @@ static int32_t plumed_mpiw_bridge_MPI_Bsend(const void * buf, int32_t count, plu
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Bsend", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Bsend", 0xa9dbf685u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Bsend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Bsend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Bsend", 0xa9dbf685u, 1u, 6u);
+  plumed_mpi_transport_MPI_Bsend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Bsend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Bsend");
   }
@@ -909,7 +909,7 @@ static int32_t plumed_mpiw_bridge_MPI_Bsend(const void * buf, int32_t count, plu
   dispatch(const_cast<void *>(static_cast<const void *>(buf)), &native_count, native_datatype.data(), &native_dest, &native_tag, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Ssend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Ssend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -919,8 +919,8 @@ static int32_t plumed_mpiw_bridge_MPI_Ssend(const void * buf, int32_t count, plu
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Ssend", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Ssend", 0x5edcf0deu, 1u, 6u);
-  plumed_mpiw_transport_MPI_Ssend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Ssend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Ssend", 0x5edcf0deu, 1u, 6u);
+  plumed_mpi_transport_MPI_Ssend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Ssend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Ssend");
   }
@@ -928,7 +928,7 @@ static int32_t plumed_mpiw_bridge_MPI_Ssend(const void * buf, int32_t count, plu
   dispatch(const_cast<void *>(static_cast<const void *>(buf)), &native_count, native_datatype.data(), &native_dest, &native_tag, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Rsend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Rsend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -938,8 +938,8 @@ static int32_t plumed_mpiw_bridge_MPI_Rsend(const void * buf, int32_t count, plu
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Rsend", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Rsend", 0xbfa09b06u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Rsend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Rsend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Rsend", 0xbfa09b06u, 1u, 6u);
+  plumed_mpi_transport_MPI_Rsend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Rsend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Rsend");
   }
@@ -950,8 +950,8 @@ static int32_t plumed_mpiw_bridge_MPI_Rsend(const void * buf, int32_t count, plu
 static int32_t plumed_mpiw_bridge_MPI_Buffer_attach(void * buffer, int32_t size) {
   Registry &registry = currentRegistry();
   int native_size = static_cast<int>(size);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Buffer_attach", 0xe00bd480u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Buffer_attach_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Buffer_attach_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Buffer_attach", 0xe00bd480u, 1u, 2u);
+  plumed_mpi_transport_MPI_Buffer_attach_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Buffer_attach_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Buffer_attach");
   }
@@ -961,8 +961,8 @@ static int32_t plumed_mpiw_bridge_MPI_Buffer_attach(void * buffer, int32_t size)
 }
 static int32_t plumed_mpiw_bridge_MPI_Buffer_detach(void * buffer_addr, int32_t * size) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Buffer_detach", 0x74dec40fu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Buffer_detach_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Buffer_detach_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Buffer_detach", 0x74dec40fu, 1u, 2u);
+  plumed_mpi_transport_MPI_Buffer_detach_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Buffer_detach_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Buffer_detach");
   }
@@ -970,7 +970,7 @@ static int32_t plumed_mpiw_bridge_MPI_Buffer_detach(void * buffer_addr, int32_t 
   dispatch(buffer_addr, size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Ibsend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Ibsend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -982,8 +982,8 @@ static int32_t plumed_mpiw_bridge_MPI_Ibsend(const void * buf, int32_t count, pl
   validateInputComm(registry, "MPI_Ibsend", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Ibsend", 0xa4d683afu, 1u, 7u);
-  plumed_mpiw_transport_MPI_Ibsend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Ibsend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Ibsend", 0xa4d683afu, 1u, 7u);
+  plumed_mpi_transport_MPI_Ibsend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Ibsend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Ibsend");
   }
@@ -996,7 +996,7 @@ static int32_t plumed_mpiw_bridge_MPI_Ibsend(const void * buf, int32_t count, pl
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Issend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Issend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1008,8 +1008,8 @@ static int32_t plumed_mpiw_bridge_MPI_Issend(const void * buf, int32_t count, pl
   validateInputComm(registry, "MPI_Issend", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Issend", 0x8275e866u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Issend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Issend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Issend", 0x8275e866u, 1u, 7u);
+  plumed_mpi_transport_MPI_Issend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Issend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Issend");
   }
@@ -1022,7 +1022,7 @@ static int32_t plumed_mpiw_bridge_MPI_Issend(const void * buf, int32_t count, pl
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Irsend(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Irsend(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1034,8 +1034,8 @@ static int32_t plumed_mpiw_bridge_MPI_Irsend(const void * buf, int32_t count, pl
   validateInputComm(registry, "MPI_Irsend", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Irsend", 0xb13d1d70u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Irsend_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Irsend_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Irsend", 0xb13d1d70u, 1u, 7u);
+  plumed_mpi_transport_MPI_Irsend_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Irsend_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Irsend");
   }
@@ -1048,7 +1048,7 @@ static int32_t plumed_mpiw_bridge_MPI_Irsend(const void * buf, int32_t count, pl
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Irecv(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Irecv(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1060,8 +1060,8 @@ static int32_t plumed_mpiw_bridge_MPI_Irecv(void * buf, int32_t count, plumed_mp
   validateInputComm(registry, "MPI_Irecv", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Irecv", 0xb69a0083u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Irecv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Irecv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Irecv", 0xb69a0083u, 1u, 7u);
+  plumed_mpi_transport_MPI_Irecv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Irecv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Irecv");
   }
@@ -1074,7 +1074,7 @@ static int32_t plumed_mpiw_bridge_MPI_Irecv(void * buf, int32_t count, plumed_mp
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Test(plumed_mpiw_handle_storage * request, int32_t * flag, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Test(plumed_mpi_handle_storage * request, int32_t * flag, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   if (request) {
@@ -1086,8 +1086,8 @@ static int32_t plumed_mpiw_bridge_MPI_Test(plumed_mpiw_handle_storage * request,
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Test", 0x1d207e4cu, 1u, 3u);
-  plumed_mpiw_transport_MPI_Test_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Test_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Test", 0x1d207e4cu, 1u, 3u);
+  plumed_mpi_transport_MPI_Test_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Test_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Test");
   }
@@ -1103,15 +1103,15 @@ static int32_t plumed_mpiw_bridge_MPI_Test(plumed_mpiw_handle_storage * request,
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Request_free(plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Request_free(plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   if (request) {
     std::memcpy(native_request.data(), request->bytes, native_request.size());
   }
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Request_free", 0x475f38a1u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Request_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Request_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Request_free", 0x475f38a1u, 1u, 1u);
+  plumed_mpi_transport_MPI_Request_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Request_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Request_free");
   }
@@ -1124,7 +1124,7 @@ static int32_t plumed_mpiw_bridge_MPI_Request_free(plumed_mpiw_handle_storage * 
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Waitany(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * indx, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Waitany(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * indx, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   if (count < 0) {
@@ -1142,8 +1142,8 @@ static int32_t plumed_mpiw_bridge_MPI_Waitany(int32_t count, plumed_mpiw_handle_
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Waitany", 0x5acd4436u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Waitany_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Waitany_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Waitany", 0x5acd4436u, 1u, 4u);
+  plumed_mpi_transport_MPI_Waitany_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Waitany_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Waitany");
   }
@@ -1160,7 +1160,7 @@ static int32_t plumed_mpiw_bridge_MPI_Waitany(int32_t count, plumed_mpiw_handle_
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Testany(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * indx, int32_t * flag, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Testany(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * indx, int32_t * flag, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   if (count < 0) {
@@ -1178,8 +1178,8 @@ static int32_t plumed_mpiw_bridge_MPI_Testany(int32_t count, plumed_mpiw_handle_
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Testany", 0xf329c686u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Testany_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Testany_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Testany", 0xf329c686u, 1u, 5u);
+  plumed_mpi_transport_MPI_Testany_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Testany_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Testany");
   }
@@ -1196,7 +1196,7 @@ static int32_t plumed_mpiw_bridge_MPI_Testany(int32_t count, plumed_mpiw_handle_
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Waitall(int32_t count, plumed_mpiw_handle_storage array_of_requests[], plumed_mpiw_status * array_of_statuses) {
+static int32_t plumed_mpiw_bridge_MPI_Waitall(int32_t count, plumed_mpi_handle_storage array_of_requests[], plumed_mpi_status * array_of_statuses) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   if (count < 0) {
@@ -1219,8 +1219,8 @@ static int32_t plumed_mpiw_bridge_MPI_Waitall(int32_t count, plumed_mpiw_handle_
       encodeNativeStatus(registry, array_of_statuses[i], native_array_of_statuses.data() + static_cast<std::size_t>(i) * native_array_of_statuses_size);
     }
   void *native_pointer_array_of_statuses = array_of_statuses && count > 0 ? native_array_of_statuses.data() : nativeStatusesIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Waitall", 0x7a57ae23u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Waitall_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Waitall_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Waitall", 0x7a57ae23u, 1u, 3u);
+  plumed_mpi_transport_MPI_Waitall_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Waitall_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Waitall");
   }
@@ -1238,7 +1238,7 @@ static int32_t plumed_mpiw_bridge_MPI_Waitall(int32_t count, plumed_mpiw_handle_
     }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Testall(int32_t count, plumed_mpiw_handle_storage array_of_requests[], int32_t * flag, plumed_mpiw_status * array_of_statuses) {
+static int32_t plumed_mpiw_bridge_MPI_Testall(int32_t count, plumed_mpi_handle_storage array_of_requests[], int32_t * flag, plumed_mpi_status * array_of_statuses) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   if (count < 0) {
@@ -1261,8 +1261,8 @@ static int32_t plumed_mpiw_bridge_MPI_Testall(int32_t count, plumed_mpiw_handle_
       encodeNativeStatus(registry, array_of_statuses[i], native_array_of_statuses.data() + static_cast<std::size_t>(i) * native_array_of_statuses_size);
     }
   void *native_pointer_array_of_statuses = array_of_statuses && count > 0 ? native_array_of_statuses.data() : nativeStatusesIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Testall", 0x593a1626u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Testall_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Testall_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Testall", 0x593a1626u, 1u, 4u);
+  plumed_mpi_transport_MPI_Testall_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Testall_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Testall");
   }
@@ -1280,7 +1280,7 @@ static int32_t plumed_mpiw_bridge_MPI_Testall(int32_t count, plumed_mpiw_handle_
     }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Waitsome(int32_t incount, plumed_mpiw_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpiw_status * array_of_statuses) {
+static int32_t plumed_mpiw_bridge_MPI_Waitsome(int32_t incount, plumed_mpi_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpi_status * array_of_statuses) {
   Registry &registry = currentRegistry();
   int native_incount = static_cast<int>(incount);
   if (incount < 0) {
@@ -1303,8 +1303,8 @@ static int32_t plumed_mpiw_bridge_MPI_Waitsome(int32_t incount, plumed_mpiw_hand
       encodeNativeStatus(registry, array_of_statuses[i], native_array_of_statuses.data() + static_cast<std::size_t>(i) * native_array_of_statuses_size);
     }
   void *native_pointer_array_of_statuses = array_of_statuses && incount > 0 ? native_array_of_statuses.data() : nativeStatusesIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Waitsome", 0xb6562e1au, 1u, 5u);
-  plumed_mpiw_transport_MPI_Waitsome_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Waitsome_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Waitsome", 0xb6562e1au, 1u, 5u);
+  plumed_mpi_transport_MPI_Waitsome_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Waitsome_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Waitsome");
   }
@@ -1322,7 +1322,7 @@ static int32_t plumed_mpiw_bridge_MPI_Waitsome(int32_t incount, plumed_mpiw_hand
     }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Testsome(int32_t incount, plumed_mpiw_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpiw_status * array_of_statuses) {
+static int32_t plumed_mpiw_bridge_MPI_Testsome(int32_t incount, plumed_mpi_handle_storage array_of_requests[], int32_t * outcount, int32_t array_of_indices[], plumed_mpi_status * array_of_statuses) {
   Registry &registry = currentRegistry();
   int native_incount = static_cast<int>(incount);
   if (incount < 0) {
@@ -1345,8 +1345,8 @@ static int32_t plumed_mpiw_bridge_MPI_Testsome(int32_t incount, plumed_mpiw_hand
       encodeNativeStatus(registry, array_of_statuses[i], native_array_of_statuses.data() + static_cast<std::size_t>(i) * native_array_of_statuses_size);
     }
   void *native_pointer_array_of_statuses = array_of_statuses && incount > 0 ? native_array_of_statuses.data() : nativeStatusesIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Testsome", 0x5a87d17bu, 1u, 5u);
-  plumed_mpiw_transport_MPI_Testsome_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Testsome_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Testsome", 0x5a87d17bu, 1u, 5u);
+  plumed_mpi_transport_MPI_Testsome_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Testsome_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Testsome");
   }
@@ -1364,7 +1364,7 @@ static int32_t plumed_mpiw_bridge_MPI_Testsome(int32_t incount, plumed_mpiw_hand
     }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Iprobe(int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, int32_t * flag, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Iprobe(int32_t source, int32_t tag, plumed_mpi_handle_storage comm, int32_t * flag, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_source = static_cast<int>(source);
   int native_tag = static_cast<int>(tag);
@@ -1376,8 +1376,8 @@ static int32_t plumed_mpiw_bridge_MPI_Iprobe(int32_t source, int32_t tag, plumed
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Iprobe", 0xd1ba8db8u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Iprobe_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Iprobe_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Iprobe", 0xd1ba8db8u, 1u, 5u);
+  plumed_mpi_transport_MPI_Iprobe_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Iprobe_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Iprobe");
   }
@@ -1389,7 +1389,7 @@ static int32_t plumed_mpiw_bridge_MPI_Iprobe(int32_t source, int32_t tag, plumed
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Probe(int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Probe(int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_source = static_cast<int>(source);
   int native_tag = static_cast<int>(tag);
@@ -1401,8 +1401,8 @@ static int32_t plumed_mpiw_bridge_MPI_Probe(int32_t source, int32_t tag, plumed_
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Probe", 0xfed81500u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Probe_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Probe_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Probe", 0xfed81500u, 1u, 4u);
+  plumed_mpi_transport_MPI_Probe_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Probe_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Probe");
   }
@@ -1414,15 +1414,15 @@ static int32_t plumed_mpiw_bridge_MPI_Probe(int32_t source, int32_t tag, plumed_
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cancel(plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Cancel(plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   if (request) {
     std::memcpy(native_request.data(), request->bytes, native_request.size());
   }
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cancel", 0xed47f9abu, 1u, 1u);
-  plumed_mpiw_transport_MPI_Cancel_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cancel_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cancel", 0xed47f9abu, 1u, 1u);
+  plumed_mpi_transport_MPI_Cancel_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cancel_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cancel");
   }
@@ -1435,15 +1435,15 @@ static int32_t plumed_mpiw_bridge_MPI_Cancel(plumed_mpiw_handle_storage * reques
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Test_cancelled(const plumed_mpiw_status * status, int32_t * flag) {
+static int32_t plumed_mpiw_bridge_MPI_Test_cancelled(const plumed_mpi_status * status, int32_t * flag) {
   Registry &registry = currentRegistry();
   NativeBuffer native_status(registry.nativeStatusSize());
   if (status && true) {
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Test_cancelled", 0xec5e3092u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Test_cancelled_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Test_cancelled_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Test_cancelled", 0xec5e3092u, 1u, 2u);
+  plumed_mpi_transport_MPI_Test_cancelled_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Test_cancelled_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Test_cancelled");
   }
@@ -1451,7 +1451,7 @@ static int32_t plumed_mpiw_bridge_MPI_Test_cancelled(const plumed_mpiw_status * 
   dispatch(native_pointer_status, flag, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Send_init(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Send_init(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1463,8 +1463,8 @@ static int32_t plumed_mpiw_bridge_MPI_Send_init(const void * buf, int32_t count,
   validateInputComm(registry, "MPI_Send_init", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Send_init", 0xd381e137u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Send_init_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Send_init_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Send_init", 0xd381e137u, 1u, 7u);
+  plumed_mpi_transport_MPI_Send_init_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Send_init_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Send_init");
   }
@@ -1477,7 +1477,7 @@ static int32_t plumed_mpiw_bridge_MPI_Send_init(const void * buf, int32_t count,
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Bsend_init(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Bsend_init(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1489,8 +1489,8 @@ static int32_t plumed_mpiw_bridge_MPI_Bsend_init(const void * buf, int32_t count
   validateInputComm(registry, "MPI_Bsend_init", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Bsend_init", 0x16ede22eu, 1u, 7u);
-  plumed_mpiw_transport_MPI_Bsend_init_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Bsend_init_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Bsend_init", 0x16ede22eu, 1u, 7u);
+  plumed_mpi_transport_MPI_Bsend_init_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Bsend_init_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Bsend_init");
   }
@@ -1503,7 +1503,7 @@ static int32_t plumed_mpiw_bridge_MPI_Bsend_init(const void * buf, int32_t count
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Ssend_init(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Ssend_init(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1515,8 +1515,8 @@ static int32_t plumed_mpiw_bridge_MPI_Ssend_init(const void * buf, int32_t count
   validateInputComm(registry, "MPI_Ssend_init", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Ssend_init", 0xeea1c733u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Ssend_init_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Ssend_init_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Ssend_init", 0xeea1c733u, 1u, 7u);
+  plumed_mpi_transport_MPI_Ssend_init_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Ssend_init_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Ssend_init");
   }
@@ -1529,7 +1529,7 @@ static int32_t plumed_mpiw_bridge_MPI_Ssend_init(const void * buf, int32_t count
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Rsend_init(const void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Rsend_init(const void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1541,8 +1541,8 @@ static int32_t plumed_mpiw_bridge_MPI_Rsend_init(const void * buf, int32_t count
   validateInputComm(registry, "MPI_Rsend_init", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Rsend_init", 0x018fab06u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Rsend_init_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Rsend_init_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Rsend_init", 0x018fab06u, 1u, 7u);
+  plumed_mpi_transport_MPI_Rsend_init_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Rsend_init_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Rsend_init");
   }
@@ -1555,7 +1555,7 @@ static int32_t plumed_mpiw_bridge_MPI_Rsend_init(const void * buf, int32_t count
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Recv_init(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t source, int32_t tag, plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Recv_init(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t source, int32_t tag, plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1567,8 +1567,8 @@ static int32_t plumed_mpiw_bridge_MPI_Recv_init(void * buf, int32_t count, plume
   validateInputComm(registry, "MPI_Recv_init", native_comm.data());
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Recv_init", 0x9cbb4e8au, 1u, 7u);
-  plumed_mpiw_transport_MPI_Recv_init_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Recv_init_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Recv_init", 0x9cbb4e8au, 1u, 7u);
+  plumed_mpi_transport_MPI_Recv_init_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Recv_init_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Recv_init");
   }
@@ -1581,15 +1581,15 @@ static int32_t plumed_mpiw_bridge_MPI_Recv_init(void * buf, int32_t count, plume
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Start(plumed_mpiw_handle_storage * request) {
+static int32_t plumed_mpiw_bridge_MPI_Start(plumed_mpi_handle_storage * request) {
   Registry &registry = currentRegistry();
   NativeBuffer native_request(registry.nativeHandleSize("Request"));
   if (request) {
     std::memcpy(native_request.data(), request->bytes, native_request.size());
   }
   void *native_pointer_request = request ? native_request.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Start", 0xfb62fbe3u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Start_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Start_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Start", 0xfb62fbe3u, 1u, 1u);
+  plumed_mpi_transport_MPI_Start_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Start_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Start");
   }
@@ -1602,7 +1602,7 @@ static int32_t plumed_mpiw_bridge_MPI_Start(plumed_mpiw_handle_storage * request
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Startall(int32_t count, plumed_mpiw_handle_storage array_of_requests[]) {
+static int32_t plumed_mpiw_bridge_MPI_Startall(int32_t count, plumed_mpi_handle_storage array_of_requests[]) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   if (count < 0) {
@@ -1615,8 +1615,8 @@ static int32_t plumed_mpiw_bridge_MPI_Startall(int32_t count, plumed_mpiw_handle
       std::memcpy(native_array_of_requests.data() + static_cast<std::size_t>(i) * native_array_of_requests_size, array_of_requests[i].bytes, native_array_of_requests_size);
     }
   void *native_pointer_array_of_requests = array_of_requests && count > 0 ? native_array_of_requests.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Startall", 0xc3d7cddfu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Startall_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Startall_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Startall", 0xc3d7cddfu, 1u, 2u);
+  plumed_mpi_transport_MPI_Startall_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Startall_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Startall");
   }
@@ -1630,7 +1630,7 @@ static int32_t plumed_mpiw_bridge_MPI_Startall(int32_t count, plumed_mpiw_handle
     }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Sendrecv_replace(void * buf, int32_t count, plumed_mpiw_handle_storage datatype, int32_t dest, int32_t sendtag, int32_t source, int32_t recvtag, plumed_mpiw_handle_storage comm, plumed_mpiw_status * status) {
+static int32_t plumed_mpiw_bridge_MPI_Sendrecv_replace(void * buf, int32_t count, plumed_mpi_handle_storage datatype, int32_t dest, int32_t sendtag, int32_t source, int32_t recvtag, plumed_mpi_handle_storage comm, plumed_mpi_status * status) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1647,8 +1647,8 @@ static int32_t plumed_mpiw_bridge_MPI_Sendrecv_replace(void * buf, int32_t count
     encodeNativeStatus(registry, *status, native_status.data());
   }
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Sendrecv_replace", 0x7c6ffc57u, 1u, 9u);
-  plumed_mpiw_transport_MPI_Sendrecv_replace_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Sendrecv_replace_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Sendrecv_replace", 0x7c6ffc57u, 1u, 9u);
+  plumed_mpi_transport_MPI_Sendrecv_replace_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Sendrecv_replace_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Sendrecv_replace");
   }
@@ -1660,15 +1660,15 @@ static int32_t plumed_mpiw_bridge_MPI_Sendrecv_replace(void * buf, int32_t count
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_contiguous(int32_t count, plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype) {
+static int32_t plumed_mpiw_bridge_MPI_Type_contiguous(int32_t count, plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_oldtype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_oldtype.data(), oldtype.bytes, native_oldtype.size());
   NativeBuffer native_newtype(registry.nativeHandleSize("Datatype"));
   void *native_pointer_newtype = newtype ? native_newtype.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_contiguous", 0xe41681d2u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Type_contiguous_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_contiguous_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_contiguous", 0xe41681d2u, 1u, 3u);
+  plumed_mpi_transport_MPI_Type_contiguous_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_contiguous_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_contiguous");
   }
@@ -1681,7 +1681,7 @@ static int32_t plumed_mpiw_bridge_MPI_Type_contiguous(int32_t count, plumed_mpiw
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_vector(int32_t count, int32_t blocklength, int32_t stride, plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype) {
+static int32_t plumed_mpiw_bridge_MPI_Type_vector(int32_t count, int32_t blocklength, int32_t stride, plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   int native_blocklength = static_cast<int>(blocklength);
@@ -1690,8 +1690,8 @@ static int32_t plumed_mpiw_bridge_MPI_Type_vector(int32_t count, int32_t blockle
   std::memcpy(native_oldtype.data(), oldtype.bytes, native_oldtype.size());
   NativeBuffer native_newtype(registry.nativeHandleSize("Datatype"));
   void *native_pointer_newtype = newtype ? native_newtype.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_vector", 0xc7b9dbb0u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Type_vector_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_vector_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_vector", 0xc7b9dbb0u, 1u, 5u);
+  plumed_mpi_transport_MPI_Type_vector_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_vector_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_vector");
   }
@@ -1704,15 +1704,15 @@ static int32_t plumed_mpiw_bridge_MPI_Type_vector(int32_t count, int32_t blockle
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_indexed(int32_t count, const int32_t array_of_blocklengths[], const int32_t array_of_displacements[], plumed_mpiw_handle_storage oldtype, plumed_mpiw_handle_storage * newtype) {
+static int32_t plumed_mpiw_bridge_MPI_Type_indexed(int32_t count, const int32_t array_of_blocklengths[], const int32_t array_of_displacements[], plumed_mpi_handle_storage oldtype, plumed_mpi_handle_storage * newtype) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_oldtype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_oldtype.data(), oldtype.bytes, native_oldtype.size());
   NativeBuffer native_newtype(registry.nativeHandleSize("Datatype"));
   void *native_pointer_newtype = newtype ? native_newtype.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_indexed", 0xeb606d34u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Type_indexed_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_indexed_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_indexed", 0xeb606d34u, 1u, 5u);
+  plumed_mpi_transport_MPI_Type_indexed_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_indexed_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_indexed");
   }
@@ -1725,15 +1725,15 @@ static int32_t plumed_mpiw_bridge_MPI_Type_indexed(int32_t count, const int32_t 
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_commit(plumed_mpiw_handle_storage * datatype) {
+static int32_t plumed_mpiw_bridge_MPI_Type_commit(plumed_mpi_handle_storage * datatype) {
   Registry &registry = currentRegistry();
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   if (datatype) {
     std::memcpy(native_datatype.data(), datatype->bytes, native_datatype.size());
   }
   void *native_pointer_datatype = datatype ? native_datatype.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_commit", 0xf848da1fu, 1u, 1u);
-  plumed_mpiw_transport_MPI_Type_commit_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_commit_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_commit", 0xf848da1fu, 1u, 1u);
+  plumed_mpi_transport_MPI_Type_commit_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_commit_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_commit");
   }
@@ -1746,15 +1746,15 @@ static int32_t plumed_mpiw_bridge_MPI_Type_commit(plumed_mpiw_handle_storage * d
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_free(plumed_mpiw_handle_storage * datatype) {
+static int32_t plumed_mpiw_bridge_MPI_Type_free(plumed_mpi_handle_storage * datatype) {
   Registry &registry = currentRegistry();
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   if (datatype) {
     std::memcpy(native_datatype.data(), datatype->bytes, native_datatype.size());
   }
   void *native_pointer_datatype = datatype ? native_datatype.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_free", 0xdacde819u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Type_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_free", 0xdacde819u, 1u, 1u);
+  plumed_mpi_transport_MPI_Type_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_free");
   }
@@ -1767,12 +1767,12 @@ static int32_t plumed_mpiw_bridge_MPI_Type_free(plumed_mpiw_handle_storage * dat
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Type_size(plumed_mpiw_handle_storage datatype, int32_t * size) {
+static int32_t plumed_mpiw_bridge_MPI_Type_size(plumed_mpi_handle_storage datatype, int32_t * size) {
   Registry &registry = currentRegistry();
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_datatype.data(), datatype.bytes, native_datatype.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Type_size", 0x95660c77u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Type_size_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Type_size_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Type_size", 0x95660c77u, 1u, 2u);
+  plumed_mpi_transport_MPI_Type_size_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Type_size_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Type_size");
   }
@@ -1780,7 +1780,7 @@ static int32_t plumed_mpiw_bridge_MPI_Type_size(plumed_mpiw_handle_storage datat
   dispatch(native_datatype.data(), size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Get_elements(const plumed_mpiw_status * status, plumed_mpiw_handle_storage datatype, int32_t * count) {
+static int32_t plumed_mpiw_bridge_MPI_Get_elements(const plumed_mpi_status * status, plumed_mpi_handle_storage datatype, int32_t * count) {
   Registry &registry = currentRegistry();
   NativeBuffer native_status(registry.nativeStatusSize());
   if (status && true) {
@@ -1789,8 +1789,8 @@ static int32_t plumed_mpiw_bridge_MPI_Get_elements(const plumed_mpiw_status * st
   void *native_pointer_status = status ? native_status.data() : nativeStatusIgnore(registry);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_datatype.data(), datatype.bytes, native_datatype.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Get_elements", 0xf71eaa9au, 1u, 3u);
-  plumed_mpiw_transport_MPI_Get_elements_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Get_elements_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Get_elements", 0xf71eaa9au, 1u, 3u);
+  plumed_mpi_transport_MPI_Get_elements_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Get_elements_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Get_elements");
   }
@@ -1798,7 +1798,7 @@ static int32_t plumed_mpiw_bridge_MPI_Get_elements(const plumed_mpiw_status * st
   dispatch(native_pointer_status, native_datatype.data(), count, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Pack(const void * inbuf, int32_t incount, plumed_mpiw_handle_storage datatype, void * outbuf, int32_t outsize, int32_t * position, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Pack(const void * inbuf, int32_t incount, plumed_mpi_handle_storage datatype, void * outbuf, int32_t outsize, int32_t * position, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_incount = static_cast<int>(incount);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1807,8 +1807,8 @@ static int32_t plumed_mpiw_bridge_MPI_Pack(const void * inbuf, int32_t incount, 
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Pack", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Pack", 0x5649ba7au, 1u, 7u);
-  plumed_mpiw_transport_MPI_Pack_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Pack_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Pack", 0x5649ba7au, 1u, 7u);
+  plumed_mpi_transport_MPI_Pack_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Pack_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Pack");
   }
@@ -1816,7 +1816,7 @@ static int32_t plumed_mpiw_bridge_MPI_Pack(const void * inbuf, int32_t incount, 
   dispatch(const_cast<void *>(static_cast<const void *>(inbuf)), &native_incount, native_datatype.data(), outbuf, &native_outsize, position, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Unpack(const void * inbuf, int32_t insize, int32_t * position, void * outbuf, int32_t outcount, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Unpack(const void * inbuf, int32_t insize, int32_t * position, void * outbuf, int32_t outcount, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_insize = static_cast<int>(insize);
   int native_outcount = static_cast<int>(outcount);
@@ -1825,8 +1825,8 @@ static int32_t plumed_mpiw_bridge_MPI_Unpack(const void * inbuf, int32_t insize,
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Unpack", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Unpack", 0x49901f8bu, 1u, 7u);
-  plumed_mpiw_transport_MPI_Unpack_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Unpack_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Unpack", 0x49901f8bu, 1u, 7u);
+  plumed_mpi_transport_MPI_Unpack_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Unpack_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Unpack");
   }
@@ -1834,7 +1834,7 @@ static int32_t plumed_mpiw_bridge_MPI_Unpack(const void * inbuf, int32_t insize,
   dispatch(const_cast<void *>(static_cast<const void *>(inbuf)), &native_insize, position, outbuf, &native_outcount, native_datatype.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Pack_size(int32_t incount, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage comm, int32_t * size) {
+static int32_t plumed_mpiw_bridge_MPI_Pack_size(int32_t incount, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage comm, int32_t * size) {
   Registry &registry = currentRegistry();
   int native_incount = static_cast<int>(incount);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1842,8 +1842,8 @@ static int32_t plumed_mpiw_bridge_MPI_Pack_size(int32_t incount, plumed_mpiw_han
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Pack_size", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Pack_size", 0x24de0131u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Pack_size_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Pack_size_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Pack_size", 0x24de0131u, 1u, 4u);
+  plumed_mpi_transport_MPI_Pack_size_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Pack_size_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Pack_size");
   }
@@ -1851,7 +1851,7 @@ static int32_t plumed_mpiw_bridge_MPI_Pack_size(int32_t incount, plumed_mpiw_han
   dispatch(&native_incount, native_datatype.data(), native_comm.data(), size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Gatherv(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Gatherv(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t displs[], plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -1862,8 +1862,8 @@ static int32_t plumed_mpiw_bridge_MPI_Gatherv(const void * sendbuf, int32_t send
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Gatherv", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Gatherv", 0xc90455c9u, 1u, 9u);
-  plumed_mpiw_transport_MPI_Gatherv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Gatherv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Gatherv", 0xc90455c9u, 1u, 9u);
+  plumed_mpi_transport_MPI_Gatherv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Gatherv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Gatherv");
   }
@@ -1871,7 +1871,7 @@ static int32_t plumed_mpiw_bridge_MPI_Gatherv(const void * sendbuf, int32_t send
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, const_cast<void *>(static_cast<const void *>(recvcounts)), const_cast<void *>(static_cast<const void *>(displs)), native_recvtype.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Scatterv(const void * sendbuf, const int32_t sendcounts[], const int32_t displs[], plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Scatterv(const void * sendbuf, const int32_t sendcounts[], const int32_t displs[], plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_sendtype.data(), sendtype.bytes, native_sendtype.size());
@@ -1882,8 +1882,8 @@ static int32_t plumed_mpiw_bridge_MPI_Scatterv(const void * sendbuf, const int32
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Scatterv", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Scatterv", 0x765eb673u, 1u, 9u);
-  plumed_mpiw_transport_MPI_Scatterv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Scatterv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Scatterv", 0x765eb673u, 1u, 9u);
+  plumed_mpi_transport_MPI_Scatterv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Scatterv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Scatterv");
   }
@@ -1891,7 +1891,7 @@ static int32_t plumed_mpiw_bridge_MPI_Scatterv(const void * sendbuf, const int32
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), const_cast<void *>(static_cast<const void *>(sendcounts)), const_cast<void *>(static_cast<const void *>(displs)), native_sendtype.data(), recvbuf, &native_recvcount, native_recvtype.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Alltoall(const void * sendbuf, int32_t sendcount, plumed_mpiw_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Alltoall(const void * sendbuf, int32_t sendcount, plumed_mpi_handle_storage sendtype, void * recvbuf, int32_t recvcount, plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_sendcount = static_cast<int>(sendcount);
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
@@ -1902,8 +1902,8 @@ static int32_t plumed_mpiw_bridge_MPI_Alltoall(const void * sendbuf, int32_t sen
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Alltoall", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Alltoall", 0xcfe270aeu, 1u, 7u);
-  plumed_mpiw_transport_MPI_Alltoall_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Alltoall_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Alltoall", 0xcfe270aeu, 1u, 7u);
+  plumed_mpi_transport_MPI_Alltoall_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Alltoall_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Alltoall");
   }
@@ -1911,7 +1911,7 @@ static int32_t plumed_mpiw_bridge_MPI_Alltoall(const void * sendbuf, int32_t sen
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), &native_sendcount, native_sendtype.data(), recvbuf, &native_recvcount, native_recvtype.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Alltoallv(const void * sendbuf, const int32_t sendcounts[], const int32_t sdispls[], plumed_mpiw_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t rdispls[], plumed_mpiw_handle_storage recvtype, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Alltoallv(const void * sendbuf, const int32_t sendcounts[], const int32_t sdispls[], plumed_mpi_handle_storage sendtype, void * recvbuf, const int32_t recvcounts[], const int32_t rdispls[], plumed_mpi_handle_storage recvtype, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_sendtype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_sendtype.data(), sendtype.bytes, native_sendtype.size());
@@ -1920,8 +1920,8 @@ static int32_t plumed_mpiw_bridge_MPI_Alltoallv(const void * sendbuf, const int3
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Alltoallv", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Alltoallv", 0xa4d99ed0u, 1u, 9u);
-  plumed_mpiw_transport_MPI_Alltoallv_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Alltoallv_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Alltoallv", 0xa4d99ed0u, 1u, 9u);
+  plumed_mpi_transport_MPI_Alltoallv_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Alltoallv_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Alltoallv");
   }
@@ -1929,7 +1929,7 @@ static int32_t plumed_mpiw_bridge_MPI_Alltoallv(const void * sendbuf, const int3
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), const_cast<void *>(static_cast<const void *>(sendcounts)), const_cast<void *>(static_cast<const void *>(sdispls)), native_sendtype.data(), recvbuf, const_cast<void *>(static_cast<const void *>(recvcounts)), const_cast<void *>(static_cast<const void *>(rdispls)), native_recvtype.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Reduce(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, int32_t root, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Reduce(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, int32_t root, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1940,8 +1940,8 @@ static int32_t plumed_mpiw_bridge_MPI_Reduce(const void * sendbuf, void * recvbu
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Reduce", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Reduce", 0x3a815604u, 1u, 7u);
-  plumed_mpiw_transport_MPI_Reduce_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Reduce_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Reduce", 0x3a815604u, 1u, 7u);
+  plumed_mpi_transport_MPI_Reduce_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Reduce_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Reduce");
   }
@@ -1949,15 +1949,15 @@ static int32_t plumed_mpiw_bridge_MPI_Reduce(const void * sendbuf, void * recvbu
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), recvbuf, &native_count, native_datatype.data(), native_op.data(), &native_root, native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Op_free(plumed_mpiw_handle_storage * op) {
+static int32_t plumed_mpiw_bridge_MPI_Op_free(plumed_mpi_handle_storage * op) {
   Registry &registry = currentRegistry();
   NativeBuffer native_op(registry.nativeHandleSize("Op"));
   if (op) {
     std::memcpy(native_op.data(), op->bytes, native_op.size());
   }
   void *native_pointer_op = op ? native_op.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Op_free", 0x94fea4e6u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Op_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Op_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Op_free", 0x94fea4e6u, 1u, 1u);
+  plumed_mpi_transport_MPI_Op_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Op_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Op_free");
   }
@@ -1970,7 +1970,7 @@ static int32_t plumed_mpiw_bridge_MPI_Op_free(plumed_mpiw_handle_storage * op) {
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Reduce_scatter(const void * sendbuf, void * recvbuf, const int32_t recvcounts[], plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Reduce_scatter(const void * sendbuf, void * recvbuf, const int32_t recvcounts[], plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
   std::memcpy(native_datatype.data(), datatype.bytes, native_datatype.size());
@@ -1979,8 +1979,8 @@ static int32_t plumed_mpiw_bridge_MPI_Reduce_scatter(const void * sendbuf, void 
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Reduce_scatter", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Reduce_scatter", 0x2f70a384u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Reduce_scatter_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Reduce_scatter_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Reduce_scatter", 0x2f70a384u, 1u, 6u);
+  plumed_mpi_transport_MPI_Reduce_scatter_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Reduce_scatter_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Reduce_scatter");
   }
@@ -1988,7 +1988,7 @@ static int32_t plumed_mpiw_bridge_MPI_Reduce_scatter(const void * sendbuf, void 
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), recvbuf, const_cast<void *>(static_cast<const void *>(recvcounts)), native_datatype.data(), native_op.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Scan(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpiw_handle_storage datatype, plumed_mpiw_handle_storage op, plumed_mpiw_handle_storage comm) {
+static int32_t plumed_mpiw_bridge_MPI_Scan(const void * sendbuf, void * recvbuf, int32_t count, plumed_mpi_handle_storage datatype, plumed_mpi_handle_storage op, plumed_mpi_handle_storage comm) {
   Registry &registry = currentRegistry();
   int native_count = static_cast<int>(count);
   NativeBuffer native_datatype(registry.nativeHandleSize("Datatype"));
@@ -1998,8 +1998,8 @@ static int32_t plumed_mpiw_bridge_MPI_Scan(const void * sendbuf, void * recvbuf,
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Scan", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Scan", 0x64e2ee54u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Scan_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Scan_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Scan", 0x64e2ee54u, 1u, 6u);
+  plumed_mpi_transport_MPI_Scan_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Scan_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Scan");
   }
@@ -2007,12 +2007,12 @@ static int32_t plumed_mpiw_bridge_MPI_Scan(const void * sendbuf, void * recvbuf,
   dispatch(const_cast<void *>(static_cast<const void *>(sendbuf)), recvbuf, &native_count, native_datatype.data(), native_op.data(), native_comm.data(), &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_size(plumed_mpiw_handle_storage group, int32_t * size) {
+static int32_t plumed_mpiw_bridge_MPI_Group_size(plumed_mpi_handle_storage group, int32_t * size) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_size", 0x7de536d5u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Group_size_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_size_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_size", 0x7de536d5u, 1u, 2u);
+  plumed_mpi_transport_MPI_Group_size_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_size_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_size");
   }
@@ -2020,12 +2020,12 @@ static int32_t plumed_mpiw_bridge_MPI_Group_size(plumed_mpiw_handle_storage grou
   dispatch(native_group.data(), size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_rank(plumed_mpiw_handle_storage group, int32_t * rank) {
+static int32_t plumed_mpiw_bridge_MPI_Group_rank(plumed_mpi_handle_storage group, int32_t * rank) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_rank", 0x668fab96u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Group_rank_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_rank_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_rank", 0x668fab96u, 1u, 2u);
+  plumed_mpi_transport_MPI_Group_rank_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_rank_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_rank");
   }
@@ -2033,15 +2033,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_rank(plumed_mpiw_handle_storage grou
   dispatch(native_group.data(), rank, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_translate_ranks(plumed_mpiw_handle_storage group1, int32_t n, const int32_t ranks1[], plumed_mpiw_handle_storage group2, int32_t ranks2[]) {
+static int32_t plumed_mpiw_bridge_MPI_Group_translate_ranks(plumed_mpi_handle_storage group1, int32_t n, const int32_t ranks1[], plumed_mpi_handle_storage group2, int32_t ranks2[]) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group1(registry.nativeHandleSize("Group"));
   std::memcpy(native_group1.data(), group1.bytes, native_group1.size());
   int native_n = static_cast<int>(n);
   NativeBuffer native_group2(registry.nativeHandleSize("Group"));
   std::memcpy(native_group2.data(), group2.bytes, native_group2.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_translate_ranks", 0x2ac4d2c6u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Group_translate_ranks_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_translate_ranks_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_translate_ranks", 0x2ac4d2c6u, 1u, 5u);
+  plumed_mpi_transport_MPI_Group_translate_ranks_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_translate_ranks_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_translate_ranks");
   }
@@ -2049,14 +2049,14 @@ static int32_t plumed_mpiw_bridge_MPI_Group_translate_ranks(plumed_mpiw_handle_s
   dispatch(native_group1.data(), &native_n, const_cast<void *>(static_cast<const void *>(ranks1)), native_group2.data(), ranks2, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_compare(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, int32_t * result) {
+static int32_t plumed_mpiw_bridge_MPI_Group_compare(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, int32_t * result) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group1(registry.nativeHandleSize("Group"));
   std::memcpy(native_group1.data(), group1.bytes, native_group1.size());
   NativeBuffer native_group2(registry.nativeHandleSize("Group"));
   std::memcpy(native_group2.data(), group2.bytes, native_group2.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_compare", 0xb0d34b44u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Group_compare_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_compare_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_compare", 0xb0d34b44u, 1u, 3u);
+  plumed_mpi_transport_MPI_Group_compare_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_compare_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_compare");
   }
@@ -2064,15 +2064,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_compare(plumed_mpiw_handle_storage g
   dispatch(native_group1.data(), native_group2.data(), result, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_group(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * group) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_group(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * group) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_group", native_comm.data());
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   void *native_pointer_group = group ? native_group.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_group", 0xd11f4483u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_group_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_group_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_group", 0xd11f4483u, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_group_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_group_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_group");
   }
@@ -2085,7 +2085,7 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_group(plumed_mpiw_handle_storage comm
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_union(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_union(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group1(registry.nativeHandleSize("Group"));
   std::memcpy(native_group1.data(), group1.bytes, native_group1.size());
@@ -2093,8 +2093,8 @@ static int32_t plumed_mpiw_bridge_MPI_Group_union(plumed_mpiw_handle_storage gro
   std::memcpy(native_group2.data(), group2.bytes, native_group2.size());
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_union", 0xc288bd65u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Group_union_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_union_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_union", 0xc288bd65u, 1u, 3u);
+  plumed_mpi_transport_MPI_Group_union_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_union_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_union");
   }
@@ -2107,7 +2107,7 @@ static int32_t plumed_mpiw_bridge_MPI_Group_union(plumed_mpiw_handle_storage gro
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_intersection(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_intersection(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group1(registry.nativeHandleSize("Group"));
   std::memcpy(native_group1.data(), group1.bytes, native_group1.size());
@@ -2115,8 +2115,8 @@ static int32_t plumed_mpiw_bridge_MPI_Group_intersection(plumed_mpiw_handle_stor
   std::memcpy(native_group2.data(), group2.bytes, native_group2.size());
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_intersection", 0xddf0ecb4u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Group_intersection_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_intersection_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_intersection", 0xddf0ecb4u, 1u, 3u);
+  plumed_mpi_transport_MPI_Group_intersection_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_intersection_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_intersection");
   }
@@ -2129,7 +2129,7 @@ static int32_t plumed_mpiw_bridge_MPI_Group_intersection(plumed_mpiw_handle_stor
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_difference(plumed_mpiw_handle_storage group1, plumed_mpiw_handle_storage group2, plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_difference(plumed_mpi_handle_storage group1, plumed_mpi_handle_storage group2, plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group1(registry.nativeHandleSize("Group"));
   std::memcpy(native_group1.data(), group1.bytes, native_group1.size());
@@ -2137,8 +2137,8 @@ static int32_t plumed_mpiw_bridge_MPI_Group_difference(plumed_mpiw_handle_storag
   std::memcpy(native_group2.data(), group2.bytes, native_group2.size());
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_difference", 0x37101ec1u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Group_difference_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_difference_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_difference", 0x37101ec1u, 1u, 3u);
+  plumed_mpi_transport_MPI_Group_difference_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_difference_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_difference");
   }
@@ -2151,15 +2151,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_difference(plumed_mpiw_handle_storag
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_incl(plumed_mpiw_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_incl(plumed_mpi_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
   int native_n = static_cast<int>(n);
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_incl", 0xbe8bfe71u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Group_incl_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_incl_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_incl", 0xbe8bfe71u, 1u, 4u);
+  plumed_mpi_transport_MPI_Group_incl_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_incl_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_incl");
   }
@@ -2172,15 +2172,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_incl(plumed_mpiw_handle_storage grou
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_excl(plumed_mpiw_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_excl(plumed_mpi_handle_storage group, int32_t n, const int32_t ranks[], plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
   int native_n = static_cast<int>(n);
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_excl", 0x45fa0902u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Group_excl_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_excl_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_excl", 0x45fa0902u, 1u, 4u);
+  plumed_mpi_transport_MPI_Group_excl_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_excl_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_excl");
   }
@@ -2193,15 +2193,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_excl(plumed_mpiw_handle_storage grou
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_range_incl(plumed_mpiw_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_range_incl(plumed_mpi_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
   int native_n = static_cast<int>(n);
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_range_incl", 0x801adc54u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Group_range_incl_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_range_incl_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_range_incl", 0x801adc54u, 1u, 4u);
+  plumed_mpi_transport_MPI_Group_range_incl_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_range_incl_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_range_incl");
   }
@@ -2214,15 +2214,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_range_incl(plumed_mpiw_handle_storag
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_range_excl(plumed_mpiw_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpiw_handle_storage * newgroup) {
+static int32_t plumed_mpiw_bridge_MPI_Group_range_excl(plumed_mpi_handle_storage group, int32_t n, int32_t ranges[][3], plumed_mpi_handle_storage * newgroup) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   std::memcpy(native_group.data(), group.bytes, native_group.size());
   int native_n = static_cast<int>(n);
   NativeBuffer native_newgroup(registry.nativeHandleSize("Group"));
   void *native_pointer_newgroup = newgroup ? native_newgroup.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_range_excl", 0xc416deb6u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Group_range_excl_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_range_excl_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_range_excl", 0xc416deb6u, 1u, 4u);
+  plumed_mpi_transport_MPI_Group_range_excl_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_range_excl_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_range_excl");
   }
@@ -2235,15 +2235,15 @@ static int32_t plumed_mpiw_bridge_MPI_Group_range_excl(plumed_mpiw_handle_storag
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Group_free(plumed_mpiw_handle_storage * group) {
+static int32_t plumed_mpiw_bridge_MPI_Group_free(plumed_mpi_handle_storage * group) {
   Registry &registry = currentRegistry();
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   if (group) {
     std::memcpy(native_group.data(), group->bytes, native_group.size());
   }
   void *native_pointer_group = group ? native_group.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Group_free", 0xfd1c62d1u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Group_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Group_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Group_free", 0xfd1c62d1u, 1u, 1u);
+  plumed_mpi_transport_MPI_Group_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Group_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Group_free");
   }
@@ -2256,7 +2256,7 @@ static int32_t plumed_mpiw_bridge_MPI_Group_free(plumed_mpiw_handle_storage * gr
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_compare(plumed_mpiw_handle_storage comm1, plumed_mpiw_handle_storage comm2, int32_t * result) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_compare(plumed_mpi_handle_storage comm1, plumed_mpi_handle_storage comm2, int32_t * result) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm1(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm1.data(), comm1.bytes, native_comm1.size());
@@ -2264,8 +2264,8 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_compare(plumed_mpiw_handle_storage co
   NativeBuffer native_comm2(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm2.data(), comm2.bytes, native_comm2.size());
   validateInputComm(registry, "MPI_Comm_compare", native_comm2.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_compare", 0xdacd79cdu, 1u, 3u);
-  plumed_mpiw_transport_MPI_Comm_compare_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_compare_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_compare", 0xdacd79cdu, 1u, 3u);
+  plumed_mpi_transport_MPI_Comm_compare_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_compare_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_compare");
   }
@@ -2273,7 +2273,7 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_compare(plumed_mpiw_handle_storage co
   dispatch(native_comm1.data(), native_comm2.data(), result, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_create(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage group, plumed_mpiw_handle_storage * newcomm) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_create(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage group, plumed_mpi_handle_storage * newcomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
@@ -2282,8 +2282,8 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_create(plumed_mpiw_handle_storage com
   std::memcpy(native_group.data(), group.bytes, native_group.size());
   NativeBuffer native_newcomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newcomm = newcomm ? native_newcomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_create", 0x1de85fa0u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Comm_create_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_create_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_create", 0x1de85fa0u, 1u, 3u);
+  plumed_mpi_transport_MPI_Comm_create_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_create_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_create");
   }
@@ -2296,13 +2296,13 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_create(plumed_mpiw_handle_storage com
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_test_inter(plumed_mpiw_handle_storage comm, int32_t * flag) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_test_inter(plumed_mpi_handle_storage comm, int32_t * flag) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_test_inter", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_test_inter", 0x29431089u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_test_inter_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_test_inter_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_test_inter", 0x29431089u, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_test_inter_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_test_inter_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_test_inter");
   }
@@ -2310,13 +2310,13 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_test_inter(plumed_mpiw_handle_storage
   dispatch(native_comm.data(), flag, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_remote_size(plumed_mpiw_handle_storage comm, int32_t * size) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_remote_size(plumed_mpi_handle_storage comm, int32_t * size) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_remote_size", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_remote_size", 0xaa0c6ac3u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_remote_size_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_remote_size_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_remote_size", 0xaa0c6ac3u, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_remote_size_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_remote_size_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_remote_size");
   }
@@ -2324,15 +2324,15 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_remote_size(plumed_mpiw_handle_storag
   dispatch(native_comm.data(), size, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_remote_group(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * group) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_remote_group(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * group) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_remote_group", native_comm.data());
   NativeBuffer native_group(registry.nativeHandleSize("Group"));
   void *native_pointer_group = group ? native_group.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_remote_group", 0x49ee9d8fu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_remote_group_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_remote_group_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_remote_group", 0x49ee9d8fu, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_remote_group_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_remote_group_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_remote_group");
   }
@@ -2345,7 +2345,7 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_remote_group(plumed_mpiw_handle_stora
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Intercomm_create(plumed_mpiw_handle_storage local_comm, int32_t local_leader, plumed_mpiw_handle_storage peer_comm, int32_t remote_leader, int32_t tag, plumed_mpiw_handle_storage * newintercomm) {
+static int32_t plumed_mpiw_bridge_MPI_Intercomm_create(plumed_mpi_handle_storage local_comm, int32_t local_leader, plumed_mpi_handle_storage peer_comm, int32_t remote_leader, int32_t tag, plumed_mpi_handle_storage * newintercomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_local_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_local_comm.data(), local_comm.bytes, native_local_comm.size());
@@ -2358,8 +2358,8 @@ static int32_t plumed_mpiw_bridge_MPI_Intercomm_create(plumed_mpiw_handle_storag
   int native_tag = static_cast<int>(tag);
   NativeBuffer native_newintercomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newintercomm = newintercomm ? native_newintercomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Intercomm_create", 0x320542c0u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Intercomm_create_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Intercomm_create_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Intercomm_create", 0x320542c0u, 1u, 6u);
+  plumed_mpi_transport_MPI_Intercomm_create_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Intercomm_create_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Intercomm_create");
   }
@@ -2372,7 +2372,7 @@ static int32_t plumed_mpiw_bridge_MPI_Intercomm_create(plumed_mpiw_handle_storag
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Intercomm_merge(plumed_mpiw_handle_storage intercomm, int32_t high, plumed_mpiw_handle_storage * newintracomm) {
+static int32_t plumed_mpiw_bridge_MPI_Intercomm_merge(plumed_mpi_handle_storage intercomm, int32_t high, plumed_mpi_handle_storage * newintracomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_intercomm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_intercomm.data(), intercomm.bytes, native_intercomm.size());
@@ -2380,8 +2380,8 @@ static int32_t plumed_mpiw_bridge_MPI_Intercomm_merge(plumed_mpiw_handle_storage
   int native_high = static_cast<int>(high);
   NativeBuffer native_newintracomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newintracomm = newintracomm ? native_newintracomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Intercomm_merge", 0x1f6a920au, 1u, 3u);
-  plumed_mpiw_transport_MPI_Intercomm_merge_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Intercomm_merge_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Intercomm_merge", 0x1f6a920au, 1u, 3u);
+  plumed_mpi_transport_MPI_Intercomm_merge_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Intercomm_merge_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Intercomm_merge");
   }
@@ -2394,7 +2394,7 @@ static int32_t plumed_mpiw_bridge_MPI_Intercomm_merge(plumed_mpiw_handle_storage
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_create(plumed_mpiw_handle_storage comm_old, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t reorder, plumed_mpiw_handle_storage * comm_cart) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_create(plumed_mpi_handle_storage comm_old, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t reorder, plumed_mpi_handle_storage * comm_cart) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm_old(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm_old.data(), comm_old.bytes, native_comm_old.size());
@@ -2403,8 +2403,8 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_create(plumed_mpiw_handle_storage com
   int native_reorder = static_cast<int>(reorder);
   NativeBuffer native_comm_cart(registry.nativeHandleSize("Comm"));
   void *native_pointer_comm_cart = comm_cart ? native_comm_cart.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_create", 0xfd363844u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Cart_create_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_create_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_create", 0xfd363844u, 1u, 6u);
+  plumed_mpi_transport_MPI_Cart_create_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_create_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_create");
   }
@@ -2421,8 +2421,8 @@ static int32_t plumed_mpiw_bridge_MPI_Dims_create(int32_t nnodes, int32_t ndims,
   Registry &registry = currentRegistry();
   int native_nnodes = static_cast<int>(nnodes);
   int native_ndims = static_cast<int>(ndims);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Dims_create", 0xfb2dd1cdu, 1u, 3u);
-  plumed_mpiw_transport_MPI_Dims_create_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Dims_create_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Dims_create", 0xfb2dd1cdu, 1u, 3u);
+  plumed_mpi_transport_MPI_Dims_create_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Dims_create_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Dims_create");
   }
@@ -2430,7 +2430,7 @@ static int32_t plumed_mpiw_bridge_MPI_Dims_create(int32_t nnodes, int32_t ndims,
   dispatch(&native_nnodes, &native_ndims, dims, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graph_create(plumed_mpiw_handle_storage comm_old, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t reorder, plumed_mpiw_handle_storage * comm_graph) {
+static int32_t plumed_mpiw_bridge_MPI_Graph_create(plumed_mpi_handle_storage comm_old, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t reorder, plumed_mpi_handle_storage * comm_graph) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm_old(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm_old.data(), comm_old.bytes, native_comm_old.size());
@@ -2439,8 +2439,8 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_create(plumed_mpiw_handle_storage co
   int native_reorder = static_cast<int>(reorder);
   NativeBuffer native_comm_graph(registry.nativeHandleSize("Comm"));
   void *native_pointer_comm_graph = comm_graph ? native_comm_graph.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graph_create", 0x00eb0f02u, 1u, 6u);
-  plumed_mpiw_transport_MPI_Graph_create_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graph_create_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graph_create", 0x00eb0f02u, 1u, 6u);
+  plumed_mpi_transport_MPI_Graph_create_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graph_create_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graph_create");
   }
@@ -2453,13 +2453,13 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_create(plumed_mpiw_handle_storage co
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Topo_test(plumed_mpiw_handle_storage comm, int32_t * status) {
+static int32_t plumed_mpiw_bridge_MPI_Topo_test(plumed_mpi_handle_storage comm, int32_t * status) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Topo_test", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Topo_test", 0x09cbe810u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Topo_test_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Topo_test_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Topo_test", 0x09cbe810u, 1u, 2u);
+  plumed_mpi_transport_MPI_Topo_test_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Topo_test_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Topo_test");
   }
@@ -2467,13 +2467,13 @@ static int32_t plumed_mpiw_bridge_MPI_Topo_test(plumed_mpiw_handle_storage comm,
   dispatch(native_comm.data(), status, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graphdims_get(plumed_mpiw_handle_storage comm, int32_t * nnodes, int32_t * nedges) {
+static int32_t plumed_mpiw_bridge_MPI_Graphdims_get(plumed_mpi_handle_storage comm, int32_t * nnodes, int32_t * nedges) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Graphdims_get", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graphdims_get", 0xc56e163bu, 1u, 3u);
-  plumed_mpiw_transport_MPI_Graphdims_get_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graphdims_get_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graphdims_get", 0xc56e163bu, 1u, 3u);
+  plumed_mpi_transport_MPI_Graphdims_get_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graphdims_get_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graphdims_get");
   }
@@ -2481,15 +2481,15 @@ static int32_t plumed_mpiw_bridge_MPI_Graphdims_get(plumed_mpiw_handle_storage c
   dispatch(native_comm.data(), nnodes, nedges, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graph_get(plumed_mpiw_handle_storage comm, int32_t maxindex, int32_t maxedges, int32_t indx[], int32_t edges[]) {
+static int32_t plumed_mpiw_bridge_MPI_Graph_get(plumed_mpi_handle_storage comm, int32_t maxindex, int32_t maxedges, int32_t indx[], int32_t edges[]) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Graph_get", native_comm.data());
   int native_maxindex = static_cast<int>(maxindex);
   int native_maxedges = static_cast<int>(maxedges);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graph_get", 0x12829ea5u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Graph_get_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graph_get_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graph_get", 0x12829ea5u, 1u, 5u);
+  plumed_mpi_transport_MPI_Graph_get_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graph_get_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graph_get");
   }
@@ -2497,13 +2497,13 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_get(plumed_mpiw_handle_storage comm,
   dispatch(native_comm.data(), &native_maxindex, &native_maxedges, indx, edges, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cartdim_get(plumed_mpiw_handle_storage comm, int32_t * ndims) {
+static int32_t plumed_mpiw_bridge_MPI_Cartdim_get(plumed_mpi_handle_storage comm, int32_t * ndims) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cartdim_get", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cartdim_get", 0xa979e88cu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Cartdim_get_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cartdim_get_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cartdim_get", 0xa979e88cu, 1u, 2u);
+  plumed_mpi_transport_MPI_Cartdim_get_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cartdim_get_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cartdim_get");
   }
@@ -2511,14 +2511,14 @@ static int32_t plumed_mpiw_bridge_MPI_Cartdim_get(plumed_mpiw_handle_storage com
   dispatch(native_comm.data(), ndims, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_get(plumed_mpiw_handle_storage comm, int32_t maxdims, int32_t dims[], int32_t periods[], int32_t coords[]) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_get(plumed_mpi_handle_storage comm, int32_t maxdims, int32_t dims[], int32_t periods[], int32_t coords[]) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_get", native_comm.data());
   int native_maxdims = static_cast<int>(maxdims);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_get", 0x0a3d9750u, 1u, 5u);
-  plumed_mpiw_transport_MPI_Cart_get_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_get_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_get", 0x0a3d9750u, 1u, 5u);
+  plumed_mpi_transport_MPI_Cart_get_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_get_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_get");
   }
@@ -2526,13 +2526,13 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_get(plumed_mpiw_handle_storage comm, 
   dispatch(native_comm.data(), &native_maxdims, dims, periods, coords, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_rank(plumed_mpiw_handle_storage comm, const int32_t coords[], int32_t * rank) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_rank(plumed_mpi_handle_storage comm, const int32_t coords[], int32_t * rank) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_rank", native_comm.data());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_rank", 0xf899fe26u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Cart_rank_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_rank_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_rank", 0xf899fe26u, 1u, 3u);
+  plumed_mpi_transport_MPI_Cart_rank_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_rank_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_rank");
   }
@@ -2540,15 +2540,15 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_rank(plumed_mpiw_handle_storage comm,
   dispatch(native_comm.data(), const_cast<void *>(static_cast<const void *>(coords)), rank, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_coords(plumed_mpiw_handle_storage comm, int32_t rank, int32_t maxdims, int32_t coords[]) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_coords(plumed_mpi_handle_storage comm, int32_t rank, int32_t maxdims, int32_t coords[]) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_coords", native_comm.data());
   int native_rank = static_cast<int>(rank);
   int native_maxdims = static_cast<int>(maxdims);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_coords", 0xf0bdc30cu, 1u, 4u);
-  plumed_mpiw_transport_MPI_Cart_coords_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_coords_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_coords", 0xf0bdc30cu, 1u, 4u);
+  plumed_mpi_transport_MPI_Cart_coords_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_coords_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_coords");
   }
@@ -2556,14 +2556,14 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_coords(plumed_mpiw_handle_storage com
   dispatch(native_comm.data(), &native_rank, &native_maxdims, coords, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors_count(plumed_mpiw_handle_storage comm, int32_t rank, int32_t * nneighbors) {
+static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors_count(plumed_mpi_handle_storage comm, int32_t rank, int32_t * nneighbors) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Graph_neighbors_count", native_comm.data());
   int native_rank = static_cast<int>(rank);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graph_neighbors_count", 0x5a79d6b6u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Graph_neighbors_count_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graph_neighbors_count_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graph_neighbors_count", 0x5a79d6b6u, 1u, 3u);
+  plumed_mpi_transport_MPI_Graph_neighbors_count_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graph_neighbors_count_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graph_neighbors_count");
   }
@@ -2571,15 +2571,15 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors_count(plumed_mpiw_handle_s
   dispatch(native_comm.data(), &native_rank, nneighbors, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors(plumed_mpiw_handle_storage comm, int32_t rank, int32_t maxneighbors, int32_t neighbors[]) {
+static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors(plumed_mpi_handle_storage comm, int32_t rank, int32_t maxneighbors, int32_t neighbors[]) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Graph_neighbors", native_comm.data());
   int native_rank = static_cast<int>(rank);
   int native_maxneighbors = static_cast<int>(maxneighbors);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graph_neighbors", 0x567d4ff6u, 1u, 4u);
-  plumed_mpiw_transport_MPI_Graph_neighbors_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graph_neighbors_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graph_neighbors", 0x567d4ff6u, 1u, 4u);
+  plumed_mpi_transport_MPI_Graph_neighbors_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graph_neighbors_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graph_neighbors");
   }
@@ -2587,15 +2587,15 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_neighbors(plumed_mpiw_handle_storage
   dispatch(native_comm.data(), &native_rank, &native_maxneighbors, neighbors, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_shift(plumed_mpiw_handle_storage comm, int32_t direction, int32_t disp, int32_t * rank_source, int32_t * rank_dest) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_shift(plumed_mpi_handle_storage comm, int32_t direction, int32_t disp, int32_t * rank_source, int32_t * rank_dest) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_shift", native_comm.data());
   int native_direction = static_cast<int>(direction);
   int native_disp = static_cast<int>(disp);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_shift", 0x4d227e7cu, 1u, 5u);
-  plumed_mpiw_transport_MPI_Cart_shift_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_shift_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_shift", 0x4d227e7cu, 1u, 5u);
+  plumed_mpi_transport_MPI_Cart_shift_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_shift_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_shift");
   }
@@ -2603,15 +2603,15 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_shift(plumed_mpiw_handle_storage comm
   dispatch(native_comm.data(), &native_direction, &native_disp, rank_source, rank_dest, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_sub(plumed_mpiw_handle_storage comm, const int32_t remain_dims[], plumed_mpiw_handle_storage * newcomm) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_sub(plumed_mpi_handle_storage comm, const int32_t remain_dims[], plumed_mpi_handle_storage * newcomm) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_sub", native_comm.data());
   NativeBuffer native_newcomm(registry.nativeHandleSize("Comm"));
   void *native_pointer_newcomm = newcomm ? native_newcomm.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_sub", 0x1e9d3861u, 1u, 3u);
-  plumed_mpiw_transport_MPI_Cart_sub_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_sub_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_sub", 0x1e9d3861u, 1u, 3u);
+  plumed_mpi_transport_MPI_Cart_sub_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_sub_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_sub");
   }
@@ -2624,14 +2624,14 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_sub(plumed_mpiw_handle_storage comm, 
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Cart_map(plumed_mpiw_handle_storage comm, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t * newrank) {
+static int32_t plumed_mpiw_bridge_MPI_Cart_map(plumed_mpi_handle_storage comm, int32_t ndims, const int32_t dims[], const int32_t periods[], int32_t * newrank) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Cart_map", native_comm.data());
   int native_ndims = static_cast<int>(ndims);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Cart_map", 0xba5a7b4cu, 1u, 5u);
-  plumed_mpiw_transport_MPI_Cart_map_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Cart_map_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Cart_map", 0xba5a7b4cu, 1u, 5u);
+  plumed_mpi_transport_MPI_Cart_map_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Cart_map_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Cart_map");
   }
@@ -2639,14 +2639,14 @@ static int32_t plumed_mpiw_bridge_MPI_Cart_map(plumed_mpiw_handle_storage comm, 
   dispatch(native_comm.data(), &native_ndims, const_cast<void *>(static_cast<const void *>(dims)), const_cast<void *>(static_cast<const void *>(periods)), newrank, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Graph_map(plumed_mpiw_handle_storage comm, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t * newrank) {
+static int32_t plumed_mpiw_bridge_MPI_Graph_map(plumed_mpi_handle_storage comm, int32_t nnodes, const int32_t indx[], const int32_t edges[], int32_t * newrank) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Graph_map", native_comm.data());
   int native_nnodes = static_cast<int>(nnodes);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Graph_map", 0xefd795ebu, 1u, 5u);
-  plumed_mpiw_transport_MPI_Graph_map_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Graph_map_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Graph_map", 0xefd795ebu, 1u, 5u);
+  plumed_mpi_transport_MPI_Graph_map_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Graph_map_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Graph_map");
   }
@@ -2656,8 +2656,8 @@ static int32_t plumed_mpiw_bridge_MPI_Graph_map(plumed_mpiw_handle_storage comm,
 }
 static int32_t plumed_mpiw_bridge_MPI_Get_processor_name(char * name, int32_t * resultlen) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Get_processor_name", 0xf8e4ccc3u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Get_processor_name_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Get_processor_name_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Get_processor_name", 0xf8e4ccc3u, 1u, 2u);
+  plumed_mpi_transport_MPI_Get_processor_name_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Get_processor_name_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Get_processor_name");
   }
@@ -2665,15 +2665,15 @@ static int32_t plumed_mpiw_bridge_MPI_Get_processor_name(char * name, int32_t * 
   dispatch(name, resultlen, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Errhandler_free(plumed_mpiw_handle_storage * errhandler) {
+static int32_t plumed_mpiw_bridge_MPI_Errhandler_free(plumed_mpi_handle_storage * errhandler) {
   Registry &registry = currentRegistry();
   NativeBuffer native_errhandler(registry.nativeHandleSize("Errhandler"));
   if (errhandler) {
     std::memcpy(native_errhandler.data(), errhandler->bytes, native_errhandler.size());
   }
   void *native_pointer_errhandler = errhandler ? native_errhandler.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Errhandler_free", 0xf03f8309u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Errhandler_free_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Errhandler_free_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Errhandler_free", 0xf03f8309u, 1u, 1u);
+  plumed_mpi_transport_MPI_Errhandler_free_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Errhandler_free_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Errhandler_free");
   }
@@ -2689,8 +2689,8 @@ static int32_t plumed_mpiw_bridge_MPI_Errhandler_free(plumed_mpiw_handle_storage
 static int32_t plumed_mpiw_bridge_MPI_Error_class(int32_t errorcode, int32_t * errorclass) {
   Registry &registry = currentRegistry();
   int native_errorcode = static_cast<int>(errorcode);
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Error_class", 0x3b9188a6u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Error_class_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Error_class_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Error_class", 0x3b9188a6u, 1u, 2u);
+  plumed_mpi_transport_MPI_Error_class_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Error_class_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Error_class");
   }
@@ -2700,8 +2700,8 @@ static int32_t plumed_mpiw_bridge_MPI_Error_class(int32_t errorcode, int32_t * e
 }
 static double plumed_mpiw_bridge_MPI_Wtime(void) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Wtime", 0x75704e2eu, 1u, 0u);
-  plumed_mpiw_transport_MPI_Wtime_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Wtime_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Wtime", 0x75704e2eu, 1u, 0u);
+  plumed_mpi_transport_MPI_Wtime_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Wtime_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Wtime");
   }
@@ -2711,8 +2711,8 @@ static double plumed_mpiw_bridge_MPI_Wtime(void) {
 }
 static double plumed_mpiw_bridge_MPI_Wtick(void) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Wtick", 0x84f54b80u, 1u, 0u);
-  plumed_mpiw_transport_MPI_Wtick_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Wtick_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Wtick", 0x84f54b80u, 1u, 0u);
+  plumed_mpi_transport_MPI_Wtick_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Wtick_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Wtick");
   }
@@ -2722,8 +2722,8 @@ static double plumed_mpiw_bridge_MPI_Wtick(void) {
 }
 static int32_t plumed_mpiw_bridge_MPI_Finalized(int32_t * flag) {
   Registry &registry = currentRegistry();
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Finalized", 0x105b65c7u, 1u, 1u);
-  plumed_mpiw_transport_MPI_Finalized_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Finalized_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Finalized", 0x105b65c7u, 1u, 1u);
+  plumed_mpi_transport_MPI_Finalized_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Finalized_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Finalized");
   }
@@ -2731,15 +2731,15 @@ static int32_t plumed_mpiw_bridge_MPI_Finalized(int32_t * flag) {
   dispatch(flag, &native_return_value);
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_get_errhandler(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage * errhandler) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_get_errhandler(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage * errhandler) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_get_errhandler", native_comm.data());
   NativeBuffer native_errhandler(registry.nativeHandleSize("Errhandler"));
   void *native_pointer_errhandler = errhandler ? native_errhandler.data() : nullptr;
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_get_errhandler", 0x74d05159u, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_get_errhandler_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_get_errhandler_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_get_errhandler", 0x74d05159u, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_get_errhandler_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_get_errhandler_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_get_errhandler");
   }
@@ -2752,15 +2752,15 @@ static int32_t plumed_mpiw_bridge_MPI_Comm_get_errhandler(plumed_mpiw_handle_sto
   }
   return native_return_value;
 }
-static int32_t plumed_mpiw_bridge_MPI_Comm_set_errhandler(plumed_mpiw_handle_storage comm, plumed_mpiw_handle_storage errhandler) {
+static int32_t plumed_mpiw_bridge_MPI_Comm_set_errhandler(plumed_mpi_handle_storage comm, plumed_mpi_handle_storage errhandler) {
   Registry &registry = currentRegistry();
   NativeBuffer native_comm(registry.nativeHandleSize("Comm"));
   std::memcpy(native_comm.data(), comm.bytes, native_comm.size());
   validateInputComm(registry, "MPI_Comm_set_errhandler", native_comm.data());
   NativeBuffer native_errhandler(registry.nativeHandleSize("Errhandler"));
   std::memcpy(native_errhandler.data(), errhandler.bytes, native_errhandler.size());
-  plumed_mpiw_generic_fn erased = registry.dispatch("MPI_Comm_set_errhandler", 0xe6af3a8fu, 1u, 2u);
-  plumed_mpiw_transport_MPI_Comm_set_errhandler_fn dispatch = reinterpret_cast<plumed_mpiw_transport_MPI_Comm_set_errhandler_fn>(erased);
+  plumed_mpi_generic_pointer erased = registry.dispatch("MPI_Comm_set_errhandler", 0xe6af3a8fu, 1u, 2u);
+  plumed_mpi_transport_MPI_Comm_set_errhandler_pointer dispatch = reinterpret_cast<plumed_mpi_transport_MPI_Comm_set_errhandler_pointer>(erased);
   if (!dispatch) {
     unavailable("MPI_Comm_set_errhandler");
   }
@@ -4210,7 +4210,7 @@ bool validString(const char *text) {
 }
 
 std::uint64_t compatibilityFingerprint(
-  const plumed_mpiw_provider_descriptor &descriptor) {
+  const plumed_mpi_provider &descriptor) {
   std::uint64_t hash = UINT64_C(14695981039346656037);
   const std::uint64_t values[] = {
     descriptor.abi_major, descriptor.abi_minor, descriptor.ranks_are_threads,
@@ -4255,15 +4255,15 @@ bool setError(std::string &error, const std::string &message) {
   return false;
 }
 
-bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
+bool validateDescriptor(const plumed_mpi_provider *descriptor,
                         std::unordered_map<std::string, Registry::FunctionEntry> &functions,
                         std::unordered_map<std::string, std::string> &metadata,
                         std::unordered_map<std::string, Registry::ValueEntry> &values,
                         ProviderBindings &bindings,
                         std::string &provider_name,
                         std::vector<unsigned char> &runtime_identity,
-                        plumed_mpiw_generic_fn &function_comm_rank,
-                        plumed_mpiw_generic_fn &function_initialized,
+                        plumed_mpi_generic_pointer &function_comm_rank,
+                        plumed_mpi_generic_pointer &function_initialized,
                         std::uint32_t &runtime_kind,
                         std::uint32_t &native_comm_size,
                         std::uint32_t *native_handle_sizes,
@@ -4295,7 +4295,7 @@ bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
   };
   const char *handle_names[] = {"Comm", "Group", "Datatype", "Request", "Op", "Errhandler"};
   for (std::size_t i = 0; i < sizeof(handle_sizes) / sizeof(handle_sizes[0]); ++i) {
-    if (handle_sizes[i] == 0 || handle_sizes[i] > sizeof(plumed_mpiw_handle_storage)) {
+    if (handle_sizes[i] == 0 || handle_sizes[i] > sizeof(plumed_mpi_handle_storage)) {
       return setError(error, std::string("MPI provider native ") + handle_names[i] +
                       " handle exceeds configured byte storage");
     }
@@ -4326,7 +4326,7 @@ bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
 
   std::unordered_set<std::string> names;
   for (std::uint64_t i = 0; i < descriptor->function_count; ++i) {
-    const plumed_mpiw_function_entry &entry = descriptor->functions[i];
+    const plumed_mpi_function_entry &entry = descriptor->functions[i];
     if (entry.struct_size != sizeof(entry) || !validString(entry.name) || !entry.function) {
       return setError(error, "malformed MPI provider function entry");
     }
@@ -4472,7 +4472,7 @@ bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
 
   names.clear();
   for (std::uint64_t i = 0; i < descriptor->metadata_count; ++i) {
-    const plumed_mpiw_metadata_entry &entry = descriptor->metadata[i];
+    const plumed_mpi_metadata_entry &entry = descriptor->metadata[i];
     if (entry.struct_size != sizeof(entry) || !validString(entry.name) ||
         entry.value_size > UINT64_C(1048576) ||
         (entry.value_size != 0 && !entry.value) ||
@@ -4581,7 +4581,7 @@ bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
         continue;
       }
       if (entry.value_type != PLUMED_MPIW_VALUE_ACCESSOR ||
-          entry.value_size != sizeof(plumed_mpiw_constant_accessor_fn) ||
+          entry.value_size != sizeof(plumed_mpi_constant_accessor_pointer) ||
           entry.native_value_size == 0 ||
           entry.native_value_size > PLUMED_MPIW_STATUS_CAPACITY || !entry.value) {
         return setError(error, std::string("invalid provider constant metadata: ") + name);
@@ -4598,7 +4598,7 @@ bool validateDescriptor(const plumed_mpiw_provider_descriptor *descriptor,
     }
     if (std::strcmp(entry.name, "identity:runtime") == 0) {
       if (entry.value_type != PLUMED_MPIW_VALUE_OPAQUE ||
-          entry.value_size != sizeof(plumed_mpiw_generic_fn) || entry.native_value_size != 0 ||
+          entry.value_size != sizeof(plumed_mpi_generic_pointer) || entry.native_value_size != 0 ||
           !entry.value) {
         return setError(error, "invalid MPI runtime identity metadata");
       }
@@ -4697,15 +4697,15 @@ void validateInputComm(Registry &registry, const char *function,
 
 
 struct Registry::DescriptorSnapshot {
-  plumed_mpiw_provider_descriptor descriptor{};
+  plumed_mpi_provider descriptor{};
   std::string description;
   std::vector<std::string> function_names;
-  std::vector<plumed_mpiw_function_entry> functions;
+  std::vector<plumed_mpi_function_entry> functions;
   std::vector<std::string> metadata_names;
   std::vector<std::vector<unsigned char>> metadata_values;
-  std::vector<plumed_mpiw_metadata_entry> metadata;
+  std::vector<plumed_mpi_metadata_entry> metadata;
 
-  DescriptorSnapshot(const plumed_mpiw_provider_descriptor &source)
+  DescriptorSnapshot(const plumed_mpi_provider &source)
     : descriptor(source), description(source.description ? source.description : "") {
     function_names.reserve(static_cast<std::size_t>(source.function_count));
     functions.reserve(static_cast<std::size_t>(source.function_count));
@@ -4714,7 +4714,7 @@ struct Registry::DescriptorSnapshot {
       functions.push_back(source.functions[i]);
     }
     for (std::uint64_t i = 0; i < source.metadata_count; ++i) {
-      const plumed_mpiw_metadata_entry &entry = source.metadata[i];
+      const plumed_mpi_metadata_entry &entry = source.metadata[i];
       metadata_names.emplace_back(entry.name);
       const std::size_t payload_size = static_cast<std::size_t>(entry.value_size);
       metadata_values.emplace_back(payload_size);
@@ -4743,7 +4743,7 @@ struct Registry::DescriptorSnapshot {
       return false;
     }
     for (std::size_t i = 0; i < metadata.size(); ++i) {
-      const plumed_mpiw_metadata_entry &left = metadata[i];
+      const plumed_mpi_metadata_entry &left = metadata[i];
       std::size_t match = other.metadata.size();
       for (std::size_t j = 0; j < other.metadata.size(); ++j) {
         if (metadata_names[i] == other.metadata_names[j]) {
@@ -4754,7 +4754,7 @@ struct Registry::DescriptorSnapshot {
       if (match == other.metadata.size()) {
         return false;
       }
-      const plumed_mpiw_metadata_entry &right = other.metadata[match];
+      const plumed_mpi_metadata_entry &right = other.metadata[match];
       if (left.value_type != right.value_type || left.flags != right.flags ||
           left.value_size != right.value_size ||
           left.native_value_size != right.native_value_size ||
@@ -4784,7 +4784,7 @@ Registry::~Registry() {
 #endif
 }
 
-bool Registry::install(const plumed_mpiw_provider_descriptor *descriptor,
+bool Registry::install(const plumed_mpi_provider *descriptor,
                        std::string &error,void *provider_library) {
   std::unordered_map<std::string, FunctionEntry> next_functions;
   std::unordered_map<std::string, std::string> next_metadata;
@@ -4792,8 +4792,8 @@ bool Registry::install(const plumed_mpiw_provider_descriptor *descriptor,
   ProviderBindings next_bindings{};
   std::string next_name;
   std::vector<unsigned char> next_identity;
-  plumed_mpiw_generic_fn next_comm_rank = nullptr;
-  plumed_mpiw_generic_fn next_initialized = nullptr;
+  plumed_mpi_generic_pointer next_comm_rank = nullptr;
+  plumed_mpi_generic_pointer next_initialized = nullptr;
   std::uint32_t next_runtime_kind = 0;
   std::uint32_t next_native_comm_size = 0;
   std::uint32_t next_handle_sizes[6] = {};
@@ -5081,7 +5081,7 @@ bool Registry::install(const plumed_mpiw_provider_descriptor *descriptor,
   return true;
 }
 
-const plumed_mpiw_provider_descriptor *Registry::descriptorSnapshot() const noexcept {
+const plumed_mpi_provider *Registry::descriptorSnapshot() const noexcept {
   if (!ready_.load(std::memory_order_acquire) || !descriptor_snapshot_) {
     return nullptr;
   }
@@ -5102,7 +5102,7 @@ void Registry::markProviderValueUsed(const char *name) {
 }
 
 bool Registry::beginInternalLaunch(
-  const plumed_mpiw_provider_descriptor *descriptor, std::string &error) {
+  const plumed_mpi_provider *descriptor, std::string &error) {
   if (!descriptor) {
     return setError(error, "missing embedded thread-MPI provider descriptor");
   }
@@ -5112,8 +5112,8 @@ bool Registry::beginInternalLaunch(
   ProviderBindings ignored_bindings{};
   std::string ignored_name;
   std::vector<unsigned char> descriptor_identity;
-  plumed_mpiw_generic_fn descriptor_rank = nullptr;
-  plumed_mpiw_generic_fn descriptor_initialized = nullptr;
+  plumed_mpi_generic_pointer descriptor_rank = nullptr;
+  plumed_mpi_generic_pointer descriptor_initialized = nullptr;
   std::uint32_t descriptor_runtime_kind = 0;
   std::uint32_t descriptor_comm_size = 0;
   std::uint32_t descriptor_handle_sizes[6] = {};
@@ -5180,7 +5180,7 @@ bool Registry::hasCapability(const char *name) const {
   return found != metadata_.end() && found->second == "true";
 }
 
-plumed_mpiw_generic_fn Registry::dispatch(const char *name,
+plumed_mpi_generic_pointer Registry::dispatch(const char *name,
     std::uint32_t signature_id,
     std::uint32_t signature_version,
     std::uint32_t argument_count) const {
@@ -5273,7 +5273,7 @@ bool Registry::copyNativeValue(const char *name, void *output, std::size_t size)
   if (!name || !output) {
     return false;
   }
-  plumed_mpiw_constant_accessor_fn accessor = nullptr;
+  plumed_mpi_constant_accessor_pointer accessor = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!installed_) {
@@ -5321,7 +5321,7 @@ MPI_Comm importComm(Registry &registry, const void *native) {
 }
 
 bool exportComm(Registry &registry, MPI_Comm value,
-                plumed_mpiw_handle_storage *storage) {
+                plumed_mpi_handle_storage *storage) {
   if (!storage) {
     return false;
   }
@@ -5349,7 +5349,7 @@ bool exportNativeComm(Registry &registry, MPI_Comm value, void *output,
 
 }  // namespace mpiwrap
 
-#if !defined(__PLUMED_HAS_MPI) && !defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if !defined(__PLUMED_HAS_MPI) && !__PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 
 namespace mpiwrap {
 MPI_Comm Comm_from_native(const void *native) {
@@ -5357,7 +5357,7 @@ MPI_Comm Comm_from_native(const void *native) {
 }
 
 bool Comm_export_storage(MPI_Comm value,
-                         plumed_mpiw_handle_storage *storage) {
+                         plumed_mpi_handle_storage *storage) {
   return mpiwrap::exportComm(mpiwrap::currentRegistry(), value,
                              storage);
 }

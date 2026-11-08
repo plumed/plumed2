@@ -3,7 +3,7 @@
 #ifndef __PLUMED_mpiwrap_mpi_types_h
 #define __PLUMED_mpiwrap_mpi_types_h
 #include "types.h"
-#if defined(__PLUMED_HAS_MPI) || defined(PLUMED_MPIW_NATIVE_ADAPTER)
+#if defined(__PLUMED_HAS_MPI) || __PLUMED_WRAPPER_MPI_PROVIDER_ADAPTER
 #include <mpi.h>
 #elif defined(__cplusplus) && !defined(PLUMED_MPIW_ABI_ONLY)
 using ::PLMD::mpiwrap::MPI_Comm;

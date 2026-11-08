@@ -124,7 +124,7 @@ struct ProviderBuildDirectory {
 };
 
 void installProviderLibrary(Registry &registry, void *library) {
-  using Factory = const plumed_mpiw_provider_descriptor *(*)();
+  using Factory = const plumed_mpi_provider *(*)();
   void *symbol = dlsym(library, PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL);
   Factory factory = nullptr;
   static_assert(sizeof(factory) == sizeof(symbol), "dlopen function pointer representation");

@@ -66,6 +66,6 @@ expected_type=_Generic((comm),int:3u,default:1u);
   plumed_cmd(p,"legacy",(const void*)&comm);
   expected_type=6;
   expected_not_comm=1;
-  plumed_cmd(p,"provider",(const struct plumed_mpiw_provider_descriptor*)&unrelated);
+  plumed_cmd(p,"provider",(const struct plumed_mpi_provider*)&unrelated);
   return 0;
 }

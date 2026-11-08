@@ -170,7 +170,7 @@ thread-MPI backend.
 
 The test copies the installed current `Plumed.h` to the LAMMPS source root.
 The small test-only `lammps/injection.patch` changes `fix_plumed.cpp` to include
-that copy, enables `PLUMED_MPIW_HOST_ADAPTER`, and calls `injectMPIImplementation`
+that copy, enables `__PLUMED_WRAPPER_MPI_HOST_ADAPTER`, and calls `injectMPIImplementation`
 after creating the PLUMED object and querying its API. Older kernels receive
 one main-rank warning to use the same MPI library as LAMMPS or upgrade PLUMED;
 their original communicator setup continues. No other LAMMPS code is changed.
@@ -264,7 +264,7 @@ the helper returns zero without accessing PLUMED. Fortran then writes a warning
 to Amber's output on the master rank and proceeds with the original interface.
 This path does not inject an MPI implementation: PLUMED must use the same MPI
 library as sander through its existing native/provider configuration. Compilers
-without `__has_include` can explicitly define `PLUMED_MPIW_HOST_ADAPTER` when
+without `__has_include` can explicitly define `__PLUMED_WRAPPER_MPI_HOST_ADAPTER` when
 the matching C MPI headers and libraries are available. An MPI-enabled adapter
 still needs the native MPI C symbols at link time; the tested MPI Fortran
 libraries already supply the matching `libmpi` dependency.

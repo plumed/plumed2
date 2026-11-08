@@ -12,7 +12,7 @@
 
 namespace PLMD {
 namespace mpiwrap {
-extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_thread_mpi_provider(void);
+extern "C" const plumed_mpi_provider *plumed_mpiw_thread_mpi_provider(void);
 } // namespace mpiwrap
 }
 

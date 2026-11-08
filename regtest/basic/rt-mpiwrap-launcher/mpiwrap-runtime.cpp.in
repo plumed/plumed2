@@ -15,7 +15,7 @@
 
 namespace PLMD {
 namespace thread_mpi {
-extern "C" const mpiwrap::plumed_mpiw_provider_descriptor *
+extern "C" const mpiwrap::plumed_mpi_provider *
 plumed_mpiw_thread_mpi_provider(void);
 
 namespace mpiwrap_runtime_test {
@@ -575,7 +575,7 @@ int run(int ranks) {
     return 1;
   }
   MPI_Comm imported_world = mpiwrap::Comm_from_native(&thread_mpi::TMPI_COMM_WORLD);
-  mpiwrap::plumed_mpiw_handle_storage exported_world{};
+  mpiwrap::plumed_mpi_handle_storage exported_world{};
   if (!mpiwrap::Comm_export_storage(imported_world, &exported_world) ||
       std::memcmp(&exported_world, &imported_world.storage,
                   sizeof(exported_world)) != 0) {
@@ -583,7 +583,7 @@ int run(int ranks) {
     return 1;
   }
   alignas(std::max_align_t)
-  unsigned char native_world[sizeof(mpiwrap::plumed_mpiw_handle_storage)] {};
+  unsigned char native_world[sizeof(mpiwrap::plumed_mpi_handle_storage)] {};
   MPI_Comm native_roundtrip{};
   if (mpiwrap::Comm_export_native(imported_world, native_world,
                                   sizeof(native_world))) {

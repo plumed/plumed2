@@ -481,47 +481,47 @@ void get_MPI_FLOAT(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_FLOAT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_FLOAT = &get_MPI_FLOAT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_FLOAT = &get_MPI_FLOAT;
 void get_MPI_DOUBLE(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_DOUBLE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_DOUBLE = &get_MPI_DOUBLE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_DOUBLE = &get_MPI_DOUBLE;
 void get_MPI_INT(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_INT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_INT = &get_MPI_INT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_INT = &get_MPI_INT;
 void get_MPI_CHAR(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_CHAR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_CHAR = &get_MPI_CHAR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_CHAR = &get_MPI_CHAR;
 void get_MPI_UNSIGNED(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_UNSIGNED;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNSIGNED = &get_MPI_UNSIGNED;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNSIGNED = &get_MPI_UNSIGNED;
 void get_MPI_UNSIGNED_LONG(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_UNSIGNED_LONG;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNSIGNED_LONG = &get_MPI_UNSIGNED_LONG;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNSIGNED_LONG = &get_MPI_UNSIGNED_LONG;
 void get_MPI_UNSIGNED_LONG_LONG(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_UNSIGNED_LONG_LONG;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNSIGNED_LONG_LONG = &get_MPI_UNSIGNED_LONG_LONG;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNSIGNED_LONG_LONG = &get_MPI_UNSIGNED_LONG_LONG;
 void get_MPI_LONG_DOUBLE(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_LONG_DOUBLE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LONG_DOUBLE = &get_MPI_LONG_DOUBLE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LONG_DOUBLE = &get_MPI_LONG_DOUBLE;
 void get_MPI_COMM_WORLD(void *output) {
   const thread_mpi::tMPI_Comm value = TMPI_COMM_WORLD;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_COMM_WORLD = &get_MPI_COMM_WORLD;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_COMM_WORLD = &get_MPI_COMM_WORLD;
 void get_self(void *output) {
   thread_mpi::tMPI_Comm value{};
   int initialized = 0;
@@ -530,370 +530,370 @@ void get_self(void *output) {
   }
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_COMM_SELF = &get_self;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_COMM_SELF = &get_self;
 void get_MPI_COMM_NULL(void *output) {
   const thread_mpi::tMPI_Comm value = (thread_mpi::tMPI_Comm)0;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_COMM_NULL = &get_MPI_COMM_NULL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_COMM_NULL = &get_MPI_COMM_NULL;
 void get_MPI_IN_PLACE(void *output) {
   const void * value = TMPI_IN_PLACE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_IN_PLACE = &get_MPI_IN_PLACE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_IN_PLACE = &get_MPI_IN_PLACE;
 void get_MPI_SUM(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_SUM;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_SUM = &get_MPI_SUM;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_SUM = &get_MPI_SUM;
 void get_MPI_PROD(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_PROD;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_PROD = &get_MPI_PROD;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_PROD = &get_MPI_PROD;
 void get_MPI_MAX(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_MAX;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_MAX = &get_MPI_MAX;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_MAX = &get_MPI_MAX;
 void get_MPI_MIN(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_MIN;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_MIN = &get_MPI_MIN;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_MIN = &get_MPI_MIN;
 void get_MPI_STATUS_IGNORE(void *output) {
   const thread_mpi::tMPI_Status * value = TMPI_STATUS_IGNORE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_STATUS_IGNORE = &get_MPI_STATUS_IGNORE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_STATUS_IGNORE = &get_MPI_STATUS_IGNORE;
 void get_MPI_STATUSES_IGNORE(void *output) {
   const thread_mpi::tMPI_Status * value = TMPI_STATUSES_IGNORE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_STATUSES_IGNORE = &get_MPI_STATUSES_IGNORE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_STATUSES_IGNORE = &get_MPI_STATUSES_IGNORE;
 void get_MPI_GROUP_NULL(void *output) {
   const thread_mpi::tMPI_Group value = (thread_mpi::tMPI_Group)0;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_GROUP_NULL = &get_MPI_GROUP_NULL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_GROUP_NULL = &get_MPI_GROUP_NULL;
 void get_MPI_GROUP_EMPTY(void *output) {
   const thread_mpi::tMPI_Group value = TMPI_GROUP_EMPTY;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_GROUP_EMPTY = &get_MPI_GROUP_EMPTY;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_GROUP_EMPTY = &get_MPI_GROUP_EMPTY;
 void get_MPI_REQUEST_NULL(void *output) {
   const thread_mpi::tMPI_Request value = TMPI_REQUEST_NULL;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_REQUEST_NULL = &get_MPI_REQUEST_NULL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_REQUEST_NULL = &get_MPI_REQUEST_NULL;
 void get_MPI_DATATYPE_NULL(void *output) {
   const thread_mpi::tMPI_Datatype value = (thread_mpi::tMPI_Datatype)0;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_DATATYPE_NULL = &get_MPI_DATATYPE_NULL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_DATATYPE_NULL = &get_MPI_DATATYPE_NULL;
 void get_MPI_ERRORS_ARE_FATAL(void *output) {
   const thread_mpi::tMPI_Errhandler value = TMPI_ERRORS_ARE_FATAL;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERRORS_ARE_FATAL = &get_MPI_ERRORS_ARE_FATAL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERRORS_ARE_FATAL = &get_MPI_ERRORS_ARE_FATAL;
 void get_MPI_ERRORS_RETURN(void *output) {
   const thread_mpi::tMPI_Errhandler value = TMPI_ERRORS_RETURN;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERRORS_RETURN = &get_MPI_ERRORS_RETURN;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERRORS_RETURN = &get_MPI_ERRORS_RETURN;
 void get_MPI_BYTE(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_BYTE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_BYTE = &get_MPI_BYTE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_BYTE = &get_MPI_BYTE;
 void get_MPI_SHORT(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_SHORT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_SHORT = &get_MPI_SHORT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_SHORT = &get_MPI_SHORT;
 void get_MPI_LONG(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_LONG;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LONG = &get_MPI_LONG;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LONG = &get_MPI_LONG;
 void get_MPI_UNSIGNED_CHAR(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_UNSIGNED_CHAR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNSIGNED_CHAR = &get_MPI_UNSIGNED_CHAR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNSIGNED_CHAR = &get_MPI_UNSIGNED_CHAR;
 void get_MPI_UNSIGNED_SHORT(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_UNSIGNED_SHORT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNSIGNED_SHORT = &get_MPI_UNSIGNED_SHORT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNSIGNED_SHORT = &get_MPI_UNSIGNED_SHORT;
 void get_MPI_LONG_LONG_INT(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_LONG_LONG_INT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LONG_LONG_INT = &get_MPI_LONG_LONG_INT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LONG_LONG_INT = &get_MPI_LONG_LONG_INT;
 void get_MPI_LONG_LONG(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_LONG_LONG;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LONG_LONG = &get_MPI_LONG_LONG;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LONG_LONG = &get_MPI_LONG_LONG;
 void get_MPI_LAND(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_LAND;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LAND = &get_MPI_LAND;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LAND = &get_MPI_LAND;
 void get_MPI_BAND(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_BAND;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_BAND = &get_MPI_BAND;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_BAND = &get_MPI_BAND;
 void get_MPI_LOR(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_LOR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LOR = &get_MPI_LOR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LOR = &get_MPI_LOR;
 void get_MPI_BOR(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_BOR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_BOR = &get_MPI_BOR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_BOR = &get_MPI_BOR;
 void get_MPI_LXOR(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_LXOR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_LXOR = &get_MPI_LXOR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_LXOR = &get_MPI_LXOR;
 void get_MPI_BXOR(void *output) {
   const thread_mpi::tMPI_Op value = TMPI_BXOR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_BXOR = &get_MPI_BXOR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_BXOR = &get_MPI_BXOR;
 void get_MPI_UNDEFINED(void *output) {
   const int value = TMPI_UNDEFINED;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNDEFINED = &get_MPI_UNDEFINED;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNDEFINED = &get_MPI_UNDEFINED;
 void get_MPI_ANY_SOURCE(void *output) {
   const int value = TMPI_ANY_SOURCE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ANY_SOURCE = &get_MPI_ANY_SOURCE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ANY_SOURCE = &get_MPI_ANY_SOURCE;
 void get_MPI_ANY_TAG(void *output) {
   const int value = TMPI_ANY_TAG;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ANY_TAG = &get_MPI_ANY_TAG;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ANY_TAG = &get_MPI_ANY_TAG;
 void get_MPI_IDENT(void *output) {
   const int value = TMPI_IDENT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_IDENT = &get_MPI_IDENT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_IDENT = &get_MPI_IDENT;
 void get_MPI_CONGRUENT(void *output) {
   const int value = TMPI_CONGRUENT;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_CONGRUENT = &get_MPI_CONGRUENT;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_CONGRUENT = &get_MPI_CONGRUENT;
 void get_MPI_SIMILAR(void *output) {
   const int value = TMPI_SIMILAR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_SIMILAR = &get_MPI_SIMILAR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_SIMILAR = &get_MPI_SIMILAR;
 void get_MPI_UNEQUAL(void *output) {
   const int value = TMPI_UNEQUAL;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_UNEQUAL = &get_MPI_UNEQUAL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_UNEQUAL = &get_MPI_UNEQUAL;
 void get_MPI_CART(void *output) {
   const int value = TMPI_CART;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_CART = &get_MPI_CART;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_CART = &get_MPI_CART;
 void get_MPI_GRAPH(void *output) {
   const int value = TMPI_GRAPH;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_GRAPH = &get_MPI_GRAPH;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_GRAPH = &get_MPI_GRAPH;
 void get_MPI_MAX_PROCESSOR_NAME(void *output) {
   const int value = TMPI_MAX_PROCESSOR_NAME;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_MAX_PROCESSOR_NAME = &get_MPI_MAX_PROCESSOR_NAME;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_MAX_PROCESSOR_NAME = &get_MPI_MAX_PROCESSOR_NAME;
 void get_MPI_MAX_ERROR_STRING(void *output) {
   const int value = TMPI_MAX_ERROR_STRING;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_MAX_ERROR_STRING = &get_MPI_MAX_ERROR_STRING;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_MAX_ERROR_STRING = &get_MPI_MAX_ERROR_STRING;
 void get_MPI_SUCCESS(void *output) {
   const int value = TMPI_SUCCESS;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_SUCCESS = &get_MPI_SUCCESS;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_SUCCESS = &get_MPI_SUCCESS;
 void get_MPI_ERR_TYPE(void *output) {
   const int value = TMPI_ERR_TYPE;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_TYPE = &get_MPI_ERR_TYPE;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_TYPE = &get_MPI_ERR_TYPE;
 void get_MPI_ERR_COMM(void *output) {
   const int value = TMPI_ERR_COMM;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_COMM = &get_MPI_ERR_COMM;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_COMM = &get_MPI_ERR_COMM;
 void get_MPI_ERR_GROUP(void *output) {
   const int value = TMPI_ERR_GROUP;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_GROUP = &get_MPI_ERR_GROUP;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_GROUP = &get_MPI_ERR_GROUP;
 void get_MPI_ERR_DIMS(void *output) {
   const int value = TMPI_ERR_DIMS;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_DIMS = &get_MPI_ERR_DIMS;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_DIMS = &get_MPI_ERR_DIMS;
 void get_MPI_ERR_UNKNOWN(void *output) {
   const int value = TMPI_ERR_UNKNOWN;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_UNKNOWN = &get_MPI_ERR_UNKNOWN;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_UNKNOWN = &get_MPI_ERR_UNKNOWN;
 void get_MPI_ERR_IN_STATUS(void *output) {
   const int value = TMPI_ERR_IN_STATUS;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_ERR_IN_STATUS = &get_MPI_ERR_IN_STATUS;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_ERR_IN_STATUS = &get_MPI_ERR_IN_STATUS;
 void get_MPI_SIGNED_CHAR(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_SIGNED_CHAR;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_SIGNED_CHAR = &get_MPI_SIGNED_CHAR;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_SIGNED_CHAR = &get_MPI_SIGNED_CHAR;
 void get_MPI_C_BOOL(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_C_BOOL;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_C_BOOL = &get_MPI_C_BOOL;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_C_BOOL = &get_MPI_C_BOOL;
 void get_MPI_INT64_T(void *output) {
   const thread_mpi::tMPI_Datatype value = TMPI_INT64_T;
   std::memcpy(output, &value, sizeof(value));
 }
-static const plumed_mpiw_constant_accessor_fn constant_accessor_MPI_INT64_T = &get_MPI_INT64_T;
+static const plumed_mpi_constant_accessor_pointer constant_accessor_MPI_INT64_T = &get_MPI_INT64_T;
 
-static const plumed_mpiw_function_entry functions[] = {
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Initialized", 0xd4498369u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Initialized },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_dup", 0xf0dc6608u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_dup },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_free", 0x4da4e1b2u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_free },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_rank", 0x4e7672aau, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_rank },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_size", 0xda2369ecu, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_size },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_split", 0x97f1adf0u, 1u, 4u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_split },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Abort", 0x84f458d6u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Abort },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Bcast", 0xe809e1cau, 1u, 5u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Bcast },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Scatter", 0xb2fa0f58u, 1u, 8u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Scatter },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Gather", 0xb1f903d9u, 1u, 8u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Gather },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Allreduce", 0x788900dbu, 1u, 6u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Allreduce },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Isend", 0xf5e9d915u, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Isend },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Recv", 0xdd56a4bcu, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Recv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Barrier", 0xe7a052f4u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Barrier },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Get_count", 0x71967a66u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Get_count },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Sendrecv", 0xb09a6fc1u, 1u, 12u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Sendrecv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Error_string", 0xd272abecu, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Error_string },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Send", 0xbd2b6912u, 1u, 6u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Send },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Rsend", 0xbfa09b06u, 1u, 6u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Rsend },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Irsend", 0xb13d1d70u, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Irsend },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Irecv", 0xb69a0083u, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Irecv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Waitany", 0x5acd4436u, 1u, 4u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Waitany },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Waitall", 0x7a57ae23u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Waitall },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Type_contiguous", 0xe41681d2u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Type_contiguous },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Type_commit", 0xf848da1fu, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Type_commit },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Type_free", 0xdacde819u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Type_free },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Gatherv", 0xc90455c9u, 1u, 9u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Gatherv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Scatterv", 0x765eb673u, 1u, 9u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Scatterv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Alltoall", 0xcfe270aeu, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Alltoall },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Alltoallv", 0xa4d99ed0u, 1u, 9u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Alltoallv },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Reduce", 0x3a815604u, 1u, 7u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Reduce },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Scan", 0x64e2ee54u, 1u, 6u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Scan },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Group_size", 0x7de536d5u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Group_size },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Group_rank", 0x668fab96u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Group_rank },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_group", 0xd11f4483u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_group },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Group_incl", 0xbe8bfe71u, 1u, 4u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Group_incl },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Group_free", 0xfd1c62d1u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Group_free },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_compare", 0xdacd79cdu, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_compare },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_create", 0x1de85fa0u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_create },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_create", 0xfd363844u, 1u, 6u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_create },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Topo_test", 0x09cbe810u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Topo_test },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cartdim_get", 0xa979e88cu, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cartdim_get },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_get", 0x0a3d9750u, 1u, 5u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_get },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_rank", 0xf899fe26u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_rank },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_coords", 0xf0bdc30cu, 1u, 4u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_coords },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_sub", 0x1e9d3861u, 1u, 3u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_sub },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Cart_map", 0xba5a7b4cu, 1u, 5u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Cart_map },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Get_processor_name", 0xf8e4ccc3u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Get_processor_name },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Wtime", 0x75704e2eu, 1u, 0u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Wtime },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Wtick", 0x84f54b80u, 1u, 0u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Wtick },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Finalized", 0x105b65c7u, 1u, 1u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Finalized },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_get_errhandler", 0x74d05159u, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_get_errhandler },
-  { (uint32_t)sizeof(plumed_mpiw_function_entry), "MPI_Comm_set_errhandler", 0xe6af3a8fu, 1u, 2u, (plumed_mpiw_generic_fn)plumed_mpiw_MPI_Comm_set_errhandler },
+static const plumed_mpi_function_entry functions[] = {
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Initialized", 0xd4498369u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Initialized },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_dup", 0xf0dc6608u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_dup },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_free", 0x4da4e1b2u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_free },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_rank", 0x4e7672aau, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_rank },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_size", 0xda2369ecu, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_size },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_split", 0x97f1adf0u, 1u, 4u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_split },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Abort", 0x84f458d6u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Abort },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Bcast", 0xe809e1cau, 1u, 5u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Bcast },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Scatter", 0xb2fa0f58u, 1u, 8u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Scatter },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Gather", 0xb1f903d9u, 1u, 8u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Gather },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Allreduce", 0x788900dbu, 1u, 6u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Allreduce },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Isend", 0xf5e9d915u, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Isend },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Recv", 0xdd56a4bcu, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Recv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Barrier", 0xe7a052f4u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Barrier },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Get_count", 0x71967a66u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Get_count },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Sendrecv", 0xb09a6fc1u, 1u, 12u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Sendrecv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Error_string", 0xd272abecu, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Error_string },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Send", 0xbd2b6912u, 1u, 6u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Send },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Rsend", 0xbfa09b06u, 1u, 6u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Rsend },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Irsend", 0xb13d1d70u, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Irsend },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Irecv", 0xb69a0083u, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Irecv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Waitany", 0x5acd4436u, 1u, 4u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Waitany },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Waitall", 0x7a57ae23u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Waitall },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Type_contiguous", 0xe41681d2u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Type_contiguous },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Type_commit", 0xf848da1fu, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Type_commit },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Type_free", 0xdacde819u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Type_free },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Gatherv", 0xc90455c9u, 1u, 9u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Gatherv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Scatterv", 0x765eb673u, 1u, 9u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Scatterv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Alltoall", 0xcfe270aeu, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Alltoall },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Alltoallv", 0xa4d99ed0u, 1u, 9u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Alltoallv },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Reduce", 0x3a815604u, 1u, 7u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Reduce },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Scan", 0x64e2ee54u, 1u, 6u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Scan },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Group_size", 0x7de536d5u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Group_size },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Group_rank", 0x668fab96u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Group_rank },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_group", 0xd11f4483u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_group },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Group_incl", 0xbe8bfe71u, 1u, 4u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Group_incl },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Group_free", 0xfd1c62d1u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Group_free },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_compare", 0xdacd79cdu, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_compare },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_create", 0x1de85fa0u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_create },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_create", 0xfd363844u, 1u, 6u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_create },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Topo_test", 0x09cbe810u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Topo_test },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cartdim_get", 0xa979e88cu, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cartdim_get },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_get", 0x0a3d9750u, 1u, 5u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_get },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_rank", 0xf899fe26u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_rank },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_coords", 0xf0bdc30cu, 1u, 4u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_coords },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_sub", 0x1e9d3861u, 1u, 3u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_sub },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Cart_map", 0xba5a7b4cu, 1u, 5u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Cart_map },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Get_processor_name", 0xf8e4ccc3u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Get_processor_name },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Wtime", 0x75704e2eu, 1u, 0u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Wtime },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Wtick", 0x84f54b80u, 1u, 0u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Wtick },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Finalized", 0x105b65c7u, 1u, 1u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Finalized },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_get_errhandler", 0x74d05159u, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_get_errhandler },
+  { (uint32_t)sizeof(plumed_mpi_function_entry), "MPI_Comm_set_errhandler", 0xe6af3a8fu, 1u, 2u, (plumed_mpi_generic_pointer)plumed_mpiw_MPI_Comm_set_errhandler },
 };
-static plumed_mpiw_generic_fn runtime_identity = (plumed_mpiw_generic_fn)&thread_mpi::tMPI_Initialized;
-static const plumed_mpiw_metadata_entry metadata[] = {
+static plumed_mpi_generic_pointer runtime_identity = (plumed_mpi_generic_pointer)&thread_mpi::tMPI_Initialized;
+static const plumed_mpi_metadata_entry metadata[] = {
 // Generated descriptor metadata rows for stable thread-MPI values.
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_FLOAT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_FLOAT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_DOUBLE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_DOUBLE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_INT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_INT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CHAR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_CHAR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_LONG", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_LONG },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_LONG_LONG", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_LONG_LONG },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_DOUBLE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_DOUBLE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_WORLD", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_WORLD },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_SELF", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_SELF },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_NULL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_NULL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_IN_PLACE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(void *), &constant_accessor_MPI_IN_PLACE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SUM", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_SUM },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_PROD", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_PROD },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_MAX },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MIN", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_MIN },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_STATUS_IGNORE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Status *), &constant_accessor_MPI_STATUS_IGNORE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_STATUSES_IGNORE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Status *), &constant_accessor_MPI_STATUSES_IGNORE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GROUP_NULL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Group), &constant_accessor_MPI_GROUP_NULL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GROUP_EMPTY", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Group), &constant_accessor_MPI_GROUP_EMPTY },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_REQUEST_NULL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Request), &constant_accessor_MPI_REQUEST_NULL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_DATATYPE_NULL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_DATATYPE_NULL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERRORS_ARE_FATAL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Errhandler), &constant_accessor_MPI_ERRORS_ARE_FATAL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERRORS_RETURN", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Errhandler), &constant_accessor_MPI_ERRORS_RETURN },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BYTE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_BYTE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SHORT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_SHORT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_CHAR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_CHAR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_SHORT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_SHORT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_LONG_INT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_LONG_INT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_LONG", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_LONG },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LAND", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LAND },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BAND", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BAND },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LOR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LOR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BOR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BOR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LXOR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LXOR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BXOR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BXOR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNDEFINED", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_UNDEFINED },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ANY_SOURCE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ANY_SOURCE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ANY_TAG", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ANY_TAG },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_IDENT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_IDENT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CONGRUENT", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_CONGRUENT },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SIMILAR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_SIMILAR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNEQUAL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_UNEQUAL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CART", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_CART },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GRAPH", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_GRAPH },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX_PROCESSOR_NAME", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_MAX_PROCESSOR_NAME },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX_ERROR_STRING", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_MAX_ERROR_STRING },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SUCCESS", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_SUCCESS },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_TYPE", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_TYPE },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_COMM", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_COMM },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_GROUP", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_GROUP },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_DIMS", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_DIMS },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_UNKNOWN", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_UNKNOWN },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_IN_STATUS", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(int), &constant_accessor_MPI_ERR_IN_STATUS },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SIGNED_CHAR", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_SIGNED_CHAR },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_C_BOOL", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_C_BOOL },
-  { sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_INT64_T", sizeof(plumed_mpiw_constant_accessor_fn), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_INT64_T },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_FLOAT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_FLOAT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_DOUBLE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_DOUBLE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_INT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_INT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CHAR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_CHAR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_LONG", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_LONG },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_LONG_LONG", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_LONG_LONG },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_DOUBLE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_DOUBLE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_WORLD", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_WORLD },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_SELF", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_SELF },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_COMM_NULL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Comm), &constant_accessor_MPI_COMM_NULL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_IN_PLACE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(void *), &constant_accessor_MPI_IN_PLACE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SUM", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_SUM },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_PROD", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_PROD },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_MAX },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MIN", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_MIN },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_STATUS_IGNORE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Status *), &constant_accessor_MPI_STATUS_IGNORE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_STATUSES_IGNORE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Status *), &constant_accessor_MPI_STATUSES_IGNORE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GROUP_NULL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Group), &constant_accessor_MPI_GROUP_NULL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GROUP_EMPTY", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Group), &constant_accessor_MPI_GROUP_EMPTY },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_REQUEST_NULL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Request), &constant_accessor_MPI_REQUEST_NULL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_DATATYPE_NULL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_DATATYPE_NULL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERRORS_ARE_FATAL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Errhandler), &constant_accessor_MPI_ERRORS_ARE_FATAL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERRORS_RETURN", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Errhandler), &constant_accessor_MPI_ERRORS_RETURN },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BYTE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_BYTE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SHORT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_SHORT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_CHAR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_CHAR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNSIGNED_SHORT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_UNSIGNED_SHORT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_LONG_INT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_LONG_INT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LONG_LONG", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_LONG_LONG },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LAND", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LAND },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BAND", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BAND },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LOR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LOR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BOR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BOR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_LXOR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_LXOR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_BXOR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Op), &constant_accessor_MPI_BXOR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNDEFINED", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_UNDEFINED },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ANY_SOURCE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ANY_SOURCE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ANY_TAG", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ANY_TAG },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_IDENT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_IDENT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CONGRUENT", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_CONGRUENT },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SIMILAR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_SIMILAR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_UNEQUAL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_UNEQUAL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_CART", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_CART },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_GRAPH", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_GRAPH },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX_PROCESSOR_NAME", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_MAX_PROCESSOR_NAME },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_MAX_ERROR_STRING", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_MAX_ERROR_STRING },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SUCCESS", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_SUCCESS },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_TYPE", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_TYPE },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_COMM", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_COMM },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_GROUP", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_GROUP },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_DIMS", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_DIMS },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_UNKNOWN", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_UNKNOWN },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_ERR_IN_STATUS", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(int), &constant_accessor_MPI_ERR_IN_STATUS },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_SIGNED_CHAR", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_SIGNED_CHAR },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_C_BOOL", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_C_BOOL },
+  { sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_ACCESSOR, 0, "value:MPI_INT64_T", sizeof(plumed_mpi_constant_accessor_pointer), sizeof(thread_mpi::tMPI_Datatype), &constant_accessor_MPI_INT64_T },
 
-  { (uint32_t)sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_OPAQUE, 0, "identity:runtime", sizeof(plumed_mpiw_generic_fn), 0, &runtime_identity },
-  { (uint32_t)sizeof(plumed_mpiw_metadata_entry), PLUMED_MPIW_VALUE_UTF8, 0, "capability:intracommunicators-only", sizeof("true"), 0, "true" },
+  { (uint32_t)sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_OPAQUE, 0, "identity:runtime", sizeof(plumed_mpi_generic_pointer), 0, &runtime_identity },
+  { (uint32_t)sizeof(plumed_mpi_metadata_entry), PLUMED_MPIW_VALUE_UTF8, 0, "capability:intracommunicators-only", sizeof("true"), 0, "true" },
 };
-static const plumed_mpiw_provider_descriptor descriptor = {
-  (uint32_t)sizeof(plumed_mpiw_provider_descriptor), PLUMED_MPIW_PROVIDER_ABI_MAJOR, 0, 1,
+static const plumed_mpi_provider descriptor = {
+  (uint32_t)sizeof(plumed_mpi_provider), PLUMED_MPIW_PROVIDER_ABI_MAJOR, 0, 1,
   "PLUMED embedded GROMACS thread-MPI",
   (uint32_t)sizeof(thread_mpi::tMPI_Comm), (uint32_t)sizeof(thread_mpi::tMPI_Group),
   (uint32_t)sizeof(thread_mpi::tMPI_Datatype), (uint32_t)sizeof(thread_mpi::tMPI_Request),
@@ -906,7 +906,7 @@ static const plumed_mpiw_provider_descriptor descriptor = {
   (uint64_t)(sizeof(metadata) / sizeof(metadata[0])), metadata
 };
 }
-extern "C" const plumed_mpiw_provider_descriptor *plumed_mpiw_thread_mpi_provider(void) {
+extern "C" const plumed_mpi_provider *plumed_mpiw_thread_mpi_provider(void) {
   return &thread_mpi_adapter::descriptor;
 }
 }

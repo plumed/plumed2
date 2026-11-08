@@ -5,7 +5,7 @@ index 1774748..f0a08a0 100644
 @@ -37 +37,4 @@
 -#include "plumed/wrapper/Plumed.h"
 +#if !defined(MPI_STUBS)
-+#define PLUMED_MPIW_HOST_ADAPTER 1
++#define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
 +#endif
 +#include "../../Plumed.h"
 @@ -71,0 +75,8 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :

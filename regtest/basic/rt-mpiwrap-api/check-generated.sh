@@ -28,7 +28,7 @@ if "${CC:-cc}" -E -I"$generated" -DGMX_THREAD_MPI=1 \
   echo "GROMACS tMPI adapter unexpectedly accepted an unknown host version" >&2
   exit 1
 fi
-grep -q 'requires GMX_VERSION or PLUMED_MPIW_GROMACS_VERSION' "$tmp/no-gromacs-version.log"
+grep -q 'requires GMX_VERSION or __PLUMED_WRAPPER_MPI_GROMACS_VERSION' "$tmp/no-gromacs-version.log"
 if "${CC:-cc}" -E -I"$generated" -DGMX_THREAD_MPI=1 -DGMX_VERSION=20250000 \
     -x c "$generated/test-gromacs-version-guard.c.in" >"$tmp/old-gromacs-version.log" 2>&1; then
   echo "GROMACS tMPI adapter unexpectedly accepted a pre-2026 host version" >&2

@@ -104,7 +104,7 @@ int launchRanks(int ranks,
 
 namespace PLMD {
 namespace mpiwrap {
-extern "C" const plumed_mpiw_provider_descriptor *
+extern "C" const plumed_mpi_provider *
 plumed_mpiw_thread_mpi_provider(void);
 } // namespace mpiwrap
 }
@@ -140,7 +140,7 @@ void rankEntry(const void *opaque) {
   int local_result = 0;
   try {
     alignas(std::max_align_t)
-    unsigned char native_world[sizeof(plumed_mpiw_handle_storage)] {};
+    unsigned char native_world[sizeof(plumed_mpi_handle_storage)] {};
     const MPI_Comm world = COMM_WORLD();
     const std::size_t native_size = currentRegistry().nativeCommSize();
     if (!Comm_export_native(world, native_world,
@@ -183,7 +183,7 @@ int launchInternalThreadMPI(int ranks, Callback callback,
   }
 
   forceEnvironmentProvider();
-  const plumed_mpiw_provider_descriptor *descriptor =
+  const plumed_mpi_provider *descriptor =
     plumed_mpiw_thread_mpi_provider();
   Registry &registry = currentRegistry();
   std::string error;

@@ -30,8 +30,8 @@ namespace mpiwrap {
 
 /* Function table entries erase the exact per-function transport signature.
    Callers must cast back to that generated signature before invoking it. */
-typedef void (*plumed_mpiw_generic_fn)(void);
-typedef void (*plumed_mpiw_constant_accessor_fn)(void *output);
+typedef void (*plumed_mpi_generic_pointer)(void);
+typedef void (*plumed_mpi_constant_accessor_pointer)(void *output);
 
 typedef struct {
   uint32_t struct_size;      /* fixed entry layout within one ABI major */
@@ -39,8 +39,8 @@ typedef struct {
   uint32_t signature_id;
   uint32_t signature_version;
   uint32_t argument_count;
-  plumed_mpiw_generic_fn function;
-} plumed_mpiw_function_entry;
+  plumed_mpi_generic_pointer function;
+} plumed_mpi_function_entry;
 
 typedef struct {
   uint32_t struct_size;      /* fixed entry layout within one ABI major */
@@ -50,9 +50,9 @@ typedef struct {
   uint64_t value_size;       /* exact payload byte count at value */
   uint64_t native_value_size; /* accessor result width; zero for other values */
   const void *value;         /* payload copied by installer before install returns */
-} plumed_mpiw_metadata_entry;
+} plumed_mpi_metadata_entry;
 
-typedef struct plumed_mpiw_provider_descriptor {
+typedef struct plumed_mpi_provider {
   uint32_t struct_size;
   uint32_t abi_major;
   uint32_t abi_minor;
@@ -71,12 +71,12 @@ typedef struct plumed_mpiw_provider_descriptor {
   uint32_t native_fint_size;
   uint32_t native_fint_signed;
   uint64_t function_count;
-  const plumed_mpiw_function_entry *functions;
+  const plumed_mpi_function_entry *functions;
   uint64_t metadata_count;
-  const plumed_mpiw_metadata_entry *metadata;
-} plumed_mpiw_provider_descriptor;
+  const plumed_mpi_metadata_entry *metadata;
+} plumed_mpi_provider;
 
-typedef const plumed_mpiw_provider_descriptor *(*plumed_mpiw_factory_fn)(void);
+typedef const plumed_mpi_provider *(*plumed_mpi_factory_pointer)(void);
 
 #ifdef __cplusplus
 } // namespace mpiwrap

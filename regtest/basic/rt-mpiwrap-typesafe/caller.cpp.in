@@ -82,5 +82,5 @@ int main() {
   expectedType=6;
   expectedNotComm=1;
   expectedPointer=&comm;
-  PLMD::Plumed::plumed_cmd_cxx(p,"provider",reinterpret_cast<const PLMD::mpiwrap::plumed_mpiw_provider_descriptor*>(&comm));
+  PLMD::Plumed::plumed_cmd_cxx(p,"provider",reinterpret_cast<const PLMD::mpiwrap::plumed_mpi_provider*>(&comm));
 }

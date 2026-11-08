@@ -30,12 +30,12 @@ public:
     std::uint32_t signature_id;
     std::uint32_t signature_version;
     std::uint32_t argument_count;
-    plumed_mpiw_generic_fn function;
+    plumed_mpi_generic_pointer function;
   };
   struct ValueEntry {
     std::uint32_t value_type;
     std::uint32_t native_size;
-    plumed_mpiw_constant_accessor_fn accessor;
+    plumed_mpi_constant_accessor_pointer accessor;
     bool operator==(const ValueEntry &other) const {
       return value_type == other.value_type && native_size == other.native_size &&
              accessor == other.accessor;
@@ -47,20 +47,20 @@ public:
   Registry(const Registry &) = delete;
   Registry &operator=(const Registry &) = delete;
 
-  bool install(const plumed_mpiw_provider_descriptor *descriptor,
+  bool install(const plumed_mpi_provider *descriptor,
                std::string &error,void *provider_library=nullptr);
   bool has(const char *name) const;
-  plumed_mpiw_generic_fn dispatch(const char *name,
-                                  std::uint32_t signature_id,
-                                  std::uint32_t signature_version,
-                                  std::uint32_t argument_count) const;
+  plumed_mpi_generic_pointer dispatch(const char *name,
+                                      std::uint32_t signature_id,
+                                      std::uint32_t signature_version,
+                                      std::uint32_t argument_count) const;
   bool installed() const noexcept {
     return ready_.load(std::memory_order_acquire);
   }
   /* Immutable, owned copy for injection into a nested compatible kernel. */
-  const plumed_mpiw_provider_descriptor *descriptorSnapshot() const noexcept;
+  const plumed_mpi_provider *descriptorSnapshot() const noexcept;
   void markProviderValueUsed(const char *name);
-  bool beginInternalLaunch(const plumed_mpiw_provider_descriptor *descriptor,
+  bool beginInternalLaunch(const plumed_mpi_provider *descriptor,
                            std::string &error);
   void finishInternalLaunch() noexcept;
   std::uint32_t runtimeKind() const;
@@ -92,8 +92,8 @@ private:
   ProviderBindings bindings_;
   std::string provider_name_;
   std::vector<unsigned char> runtime_identity_;
-  plumed_mpiw_generic_fn descriptor_function_comm_rank_;
-  plumed_mpiw_generic_fn descriptor_function_initialized_;
+  plumed_mpi_generic_pointer descriptor_function_comm_rank_;
+  plumed_mpi_generic_pointer descriptor_function_initialized_;
   std::uint32_t runtime_kind_;
   std::uint32_t native_comm_size_;
   std::uint32_t native_handle_sizes_[6];
@@ -123,7 +123,7 @@ void ensureProviderForCommunicator();
 void ensureProviderSelected();
 MPI_Comm importComm(Registry &registry, const void *native);
 bool exportComm(Registry &registry, MPI_Comm value,
-                plumed_mpiw_handle_storage *storage);
+                plumed_mpi_handle_storage *storage);
 bool exportNativeComm(Registry &registry, MPI_Comm value,
                       void *output,std::size_t capacity);
 void validateInputComm(Registry &registry, const char *function,

@@ -22,7 +22,7 @@ int checkForcedProvider(int argc, char **argv) {
     if(!library) {
       throw std::runtime_error("could not open MPI provider");
     }
-    using Factory=const plumed_mpiw_provider_descriptor*(*)();
+    using Factory=const plumed_mpi_provider*(*)();
     void* symbol=dlsym(library.get(),PLUMED_MPIW_PROVIDER_FACTORY_SYMBOL);
     if(!symbol) {
       throw std::runtime_error("MPI provider has no factory");
@@ -30,7 +30,7 @@ int checkForcedProvider(int argc, char **argv) {
     Factory factory=nullptr;
     static_assert(sizeof(factory)==sizeof(symbol),"loader function pointer representation");
     std::memcpy(&factory,&symbol,sizeof(factory));
-    plumed_mpiw_provider_descriptor invalid{};
+    plumed_mpi_provider invalid{};
     const auto* descriptor=factory();
     if(!descriptor) {
       descriptor=&invalid;
