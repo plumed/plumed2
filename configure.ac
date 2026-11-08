@@ -379,6 +379,7 @@ PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, files with extension .h5)],[yes])
 PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
+PLUMED_CONFIG_ENABLE([libchemfiles],[search for chemfiles, to read more trajectory formats in driver and benchmark],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
@@ -1326,6 +1327,19 @@ int main() { return 0; }
       return 0;
     }
   ], [__PLUMED_HAS_LIBHDF5], [ hdf5_hl hdf5 ], [true])
+fi
+
+if test $libchemfiles = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libchemfiles],[
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+  ], [__PLUMED_HAS_LIBCHEMFILES], [chemfiles])
 fi
 
 if test $libitensor = true ; then

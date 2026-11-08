@@ -164,6 +164,31 @@ are still accepted, with a warning, and are the same as `--ixtc`, `--itrr`, `--i
 they will be removed in a future version. The amber crd (`--mf_crd`, `--mf_crdbox`), trj and g96 formats
 cannot be read anymore: convert these trajectories to another format, e.g. xtc or dcd.
 
+### Other formats, with chemfiles
+
+When PLUMED is configured with `--enable-libchemfiles`, the driver (and the benchmark) can read any trajectory format
+read by the [chemfiles](https://chemfiles.org) library with the option `--itraj`, for instance Amber NetCDF, LAMMPS, TNG,
+GROMACS TPR and compressed files (`.gz`, `.xz`, `.bz2`).
+chemfiles guesses the format from the extension of the file; when it cannot, give the format with `--traj-format`,
+as chemfiles names it (see the list of formats in the chemfiles documentation; e.g. `"Amber NetCDF"`, `"LAMMPS"`, `"XYZ / GZ"`):
+
+```plumed
+plumed driver --plumed plumed.dat --itraj traj.nc
+plumed driver --plumed plumed.dat --itraj dump.lammpstrj.gz --traj-format "LAMMPS / GZ"
+```
+
+`plumed config has libchemfiles` tells whether PLUMED was compiled with chemfiles (without it, `--itraj` and `--traj-format`
+are not listed by `plumed driver --help`, and `--itraj` stops with an error).
+The coordinates are converted to nm, so `--length-units` should not be used with `--itraj`.
+The step stored in the file (e.g. for xtc, trr, TNG and LAMMPS files) is used with `--trajectory-stride 0`, as for `--ixtc`
+(with chemfiles 0.10, the files that do not store it number their frames from 0).
+The masses and the charges are taken from the file only for the formats that store both of them (GROMACS TPR and LAMMPS Data, which
+contain a single frame); they then replace those given with `--pdb` or `--mc`, as for DL_POLY_4 files.
+For the other formats use `--pdb` or `--mc`.
+chemfiles reports the errors it finds in a file, but it does not check every corrupted file (some of them crash the driver), and it does not
+skip with a warning the incomplete last frame of a truncated file as `--ixtc`, `--itrr` and `--idcd` do:
+for xtc, trr, dcd, pdb, gro and xyz files use the options of PLUMED listed above.
+
 ## Multiple replicas
 
 When PLUMED is compiled with MPI support, you can emulate a multi-simulation setup with `driver` by providing the `--multi`
@@ -197,7 +222,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
   keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation"
            " (0 means that the number of the step is read from the trajectory file,"
-           " currently working only for xtc/trr files read with --ixtc/--trr)"
+           " currently working only for xtc/trr files read with --ixtc/--itrr and for the formats that store it read with --itraj)"
           );
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
@@ -417,6 +442,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   real kt=-1.0;
   parse("--kt",kt);
   std::string trajectory_fmt;
+  // with --itraj, the format of the file as named by chemfiles (empty: guessed from the extension)
+  std::string trajFormat;
 
   // Read in an xyz file
   std::string trajectoryFile(""), pdbfile(""), mcfile("");
@@ -461,6 +488,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
         return 1;
       }
+    }
+    parse("--traj-format",trajFormat);
+    if(trajFormat.length()>0 && trajectory_fmt!="traj") {
+      error("--traj-format can only be used with --itraj");
     }
 
     if(trajectoryFile.length()==0&&!parseOnly) {
@@ -617,7 +648,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           trajectoryFile=testfile;
         }
       }
-      auto errormessage=parser.init(trajectory_fmt,trajectoryFile);
+      auto errormessage=parser.init(trajectory_fmt,trajectoryFile,trajFormat);
       if(errormessage) {
         error(*errormessage);
       }

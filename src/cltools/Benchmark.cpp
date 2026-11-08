@@ -331,10 +331,17 @@ public:
         //let the "main"
         return std::nullopt;
       }
+      std::string trajFormat;
+      parse("--traj-format",trajFormat);
+      if(trajFormat.length()>0 && trajectory_fmt!="traj") {
+        std::fprintf(stderr,"ERROR: --traj-format can only be used with --itraj\n");
+        return std::nullopt;
+      }
       if (nn==1) {
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
-                 trajectoryFile
+                 trajectoryFile,
+                 trajFormat
                );
       }
     }

@@ -1,0 +1,88 @@
+type=driver
+plumed_needs="libchemfiles"
+export PLUMED_STACK_TRACE=no
+# Trajectories read with chemfiles (--itraj). The files were written by make_files.py (chemfiles python 0.10.4):
+# the same 5 frames of 12 atoms in a triclinic cell, as xtc, trr, dcd, pdb (also read by the native readers),
+# Amber NetCDF, LAMMPS dump, gzipped xyz and pdb. Every file must give the frames of the native readers
+# (the coordinates are exact in all the formats; DUMPATOMS writes 5 decimals).
+# example.tng (TNG) is from the chemfiles test files, topol.tpr is tpr/gmx_v2022_s.tpr from the same files
+# (GROMACS 2022, 293 atoms): the masses and charges of TPR and LAMMPS Data files go to PLUMED (DUMPMASSCHARGE).
+# Errors of the files must stop the driver with a message (the text after "chemfiles:" comes from chemfiles and is not compared).
+arg="--plumed plumed.dat --itraj traj.nc"
+
+function plumed_regtest_after(){
+  dump(){ echo "DUMPATOMS ATOMS=@mdatoms FILE=$1.xyz PRECISION=5" > plumed_$1.dat ; }
+  # native readers
+  for f in xtc trr dcd pdb ; do
+    dump native_$f
+    $plumed driver --plumed plumed_native_$f.dat --i$f traj.$f > native_$f.out 2>&1
+  done
+  # the same files and the other formats, with chemfiles
+  for f in xtc trr dcd pdb lammpstrj xyz.gz pdb.gz ; do
+    dump $f
+    $plumed driver --plumed plumed_$f.dat --itraj traj.$f > $f.out 2>&1
+    echo "$f: exit code $?" >> messages
+  done
+  dump lammps
+  $plumed driver --plumed plumed_lammps.dat --itraj traj.dump --traj-format LAMMPS > lammps.out 2>&1
+  echo "lammps (--traj-format): exit code $?" >> messages
+  for f in xtc trr dcd pdb ; do
+    cmp -s $f.xyz native_$f.xyz && echo "$f: same frames as --i$f" >> messages
+  done
+  for f in nc lammpstrj xyz.gz pdb.gz lammps ; do
+    cmp -s $f.xyz native_trr.xyz && echo "$f: same frames as --itrr" >> messages
+  done
+
+  # the steps stored in the file, with --trajectory-stride 0
+  echo "c: CELL" > plumed_steps.dat
+  echo "PRINT ARG=c.ax FILE=steps FMT=%8.4f" >> plumed_steps.dat
+  $plumed driver --plumed plumed_steps.dat --itraj traj.xtc --trajectory-stride 0 --timestep 0.002 > steps.out 2>&1
+  for f in trr lammpstrj ; do
+    sed "s/FILE=steps/FILE=steps_$f/" plumed_steps.dat > plumed_steps_$f.dat
+    $plumed driver --plumed plumed_steps_$f.dat --itraj traj.$f --trajectory-stride 0 --timestep 0.002 > steps_$f.out 2>&1
+    cmp -s steps steps_$f && echo "$f: same steps as xtc" >> messages
+  done
+
+  # TNG
+  dump tng
+  $plumed driver --plumed plumed_tng.dat --itraj example.tng > tng.out 2>&1
+  echo "tng: exit code $?" >> messages
+
+  # masses and charges
+  echo "DUMPMASSCHARGE FILE=tpr.mc" > plumed_tpr.dat
+  echo "DUMPATOMS ATOMS=1-5,289-293 FILE=tpr.xyz PRECISION=5" >> plumed_tpr.dat
+  $plumed driver --plumed plumed_tpr.dat --itraj topol.tpr > tpr.out 2>&1
+  echo "tpr: exit code $?" >> messages
+  echo "DUMPMASSCHARGE FILE=lmp.mc" > plumed_lmp.dat
+  echo "DUMPATOMS ATOMS=@mdatoms FILE=lmp.xyz PRECISION=5" >> plumed_lmp.dat
+  $plumed driver --plumed plumed_lmp.dat --itraj water.lmp --traj-format "LAMMPS Data" > lmp.out 2>&1
+  echo "lammps data: exit code $?" >> messages
+
+  # errors
+  echo "DUMPATOMS ATOMS=@mdatoms FILE=error.xyz" > plumed_error.dat
+  head -c 1000 traj.nc > truncated.nc
+  head -c 600 traj.trr > truncated.trr
+  head -c 2500 traj.lammpstrj > truncated.lammpstrj
+  echo "this is not a netcdf file" > garbage.nc
+  error(){
+    name=$1 ; shift
+    $plumed driver --plumed plumed_error.dat "$@" > $name.out 2> $name.err
+    ret=$?
+    if test $ret -gt 0 && test $ret -lt 128 ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: exit code $ret" >> errors
+    fi
+    # the message of PLUMED, without the part written by chemfiles
+    cat $name.err $name.out | grep -m1 "ERROR : .*: ." | sed 's/.*ERROR : in input for command line tool driver : /  /' | sed 's/chemfiles:.*/chemfiles: .../' >> errors
+  }
+  error missing --itraj missing.nc
+  error format --itraj traj.nc --traj-format "NO SUCH FORMAT"
+  error format_native --ixtc traj.xtc --traj-format XTC
+  error stdin --itraj - < traj.nc
+  error natoms --itraj natoms.xyz
+  error truncated_nc --itraj truncated.nc
+  error truncated_trr --itraj truncated.trr
+  error truncated_lammpstrj --itraj truncated.lammpstrj
+  error garbage --itraj garbage.nc
+}
