@@ -21,8 +21,10 @@ typedef int MPI_Op;
 typedef int MPI_Request;
 #endif
 HEADER
-  for ccheck in 0 1; do
-    "${CC:-cc}" -D__PLUMED_WRAPPER_C_MPI_COMM_CHECK=$ccheck -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
+  for ccheck in default 0 1; do
+    ccheck_flag=
+    if [[ $ccheck != default ]]; then ccheck_flag=-D__PLUMED_WRAPPER_C_MPI_COMM_CHECK=$ccheck; fi
+    "${CC:-cc}" $ccheck_flag -std=c11 -Wall -Wextra -Werror $flag -I"$task" -x c "$fixture" -o "$task/caller"
     "$task/caller"
   done
   "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -D__PLUMED_HAS_MPI \
@@ -37,13 +39,15 @@ HEADER
     done
   done
 done
-"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -DPLUMED_TEST_WRAPPER_COMM \
-  -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-wrapper"
-"$task/caller-wrapper"
-# Type-only consumers must retain the same communicator annotations.
-"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -DPLUMED_TEST_WRAPPER_COMM -DPLUMED_TEST_TYPES_ONLY \
-  -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-types"
-"$task/caller-types"
+for options in "" "-D__PLUMED_WRAPPER_CXX_ANONYMOUS_NAMESPACE=1"; do
+  "${CXX:-c++}" $options -std=c++17 -Wall -Wextra -Werror -DPLUMED_TEST_WRAPPER_COMM \
+    -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-wrapper"
+  "$task/caller-wrapper"
+  # Type-only consumers must retain the same communicator annotations.
+  "${CXX:-c++}" $options -std=c++17 -Wall -Wextra -Werror -DPLUMED_TEST_WRAPPER_COMM -DPLUMED_TEST_TYPES_ONLY \
+    -x c++ "$root/regtest/basic/rt-mpiwrap-typesafe/caller.cpp.in" -o "$task/caller-types"
+  "$task/caller-types"
+done
 # These common headers must not pull provider dispatch into every action.
 cat > "$task/common.cpp" <<HEADER
 #include "$root/src/tools/TypesafePtr.h"
