@@ -290,6 +290,7 @@ PlumedMain::PlumedMain():
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
   passtools->usingNaturalUnits=false;
+  OpenMP::retainRuntime();
   increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
