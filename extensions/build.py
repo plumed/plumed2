@@ -184,6 +184,7 @@ for name in order:
             *linker,
             *flags("LDFLAGS"),
             *search,
+            "-L" + str(base / "lib"),
             "-o",
             library,
             *objects,
