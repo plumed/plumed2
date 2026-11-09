@@ -1,0 +1,15 @@
+type=driver
+plumed_needs="libchemfiles"
+# MOLINFO with a GROMACS TPR file, read with chemfiles (see plumed.dat). chemfiles 0.10.4 warns that the TPR file
+# of GROMACS 2023 (version 129) is from the future, and reads it.
+# A TPR file cannot give the masses and charges to the driver with --pdb: this must stop the driver with a message.
+arg="--plumed plumed.dat --ipdb conf.pdb"
+
+function plumed_regtest_after(){
+  # the chains of the TPR file, as written by MOLINFO
+  grep -A3 "pdb file named topol.tpr" out | head -4 > chains
+  echo "--pdb with a TPR file" > errors
+  $plumed driver --plumed /dev/null --pdb topol.tpr --ipdb conf.pdb > pdb_tpr.out 2>&1
+  echo "exit code $?" >> errors
+  grep -o "\-\-pdb cannot be a TPR file" pdb_tpr.out >> errors
+}

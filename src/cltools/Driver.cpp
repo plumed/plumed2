@@ -516,6 +516,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     parse("--pdb",pdbfile);
     if(pdbfile.length()>0) {
+      // the masses and charges are the occupancy and beta columns, which a TPR file does not have
+      if(PDB::isTprFile(pdbfile)) {
+        error("--pdb cannot be a TPR file: the masses and charges of a TPR file can be written by DUMPMASSCHARGE, "
+              "running the driver with --itraj on the TPR file (with chemfiles), and then read with --mc");
+      }
       bool check=pdb.read(pdbfile,false,1.0);
       if(!check) {
         error("error reading pdb file");
