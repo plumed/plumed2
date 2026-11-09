@@ -236,7 +236,7 @@ void ERMSD::setReference(const std::vector<Vector>& reference,
   referenceList.update(centers);
   for(unsigned p=0; p<referenceList.size(); ++p) {
     const auto ij=referenceList.getUpdatedPair(p);
-    for(const auto pair: {
+    for(const auto& pair: {
           ij,std::make_pair(ij.second,ij.first)
         }) {
       const auto i=pair.first,j=pair.second;
