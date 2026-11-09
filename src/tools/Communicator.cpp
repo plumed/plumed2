@@ -349,6 +349,15 @@ bool Communicator::initialized() {
   return flag!=0;
 }
 
+bool Communicator::finalized() {
+  if(!mpiwrap::provider_installed()) {
+    return false;
+  }
+  int flag=0;
+  MPI_Finalized(&flag);
+  return flag!=0;
+}
+
 void Communicator::Request::wait(Status&s) {
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(&s==&StatusIgnore) {

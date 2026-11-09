@@ -12,6 +12,22 @@ PLUMED: Restarting from checkpoint plumed.cpt written at step 21
 PLUMED:   file COLVAR truncated
 PLUMED:   file COLVAR2 truncated
 PLUMED: Checkpoint state restored at step 21
+final/COLVAR IDENTICAL
+final/COLVAR2 IDENTICAL
+plumed_final.cpt
+bck.0.plumed_final.cpt
+plumed_final.cpt
+restart/plumed.cpt
+restart/plumed_prev.cpt
+final/bck.0.plumed_final.cpt
+PLUMED:   the MD engine is restarting: reading the checkpoint plumed.cpt
+PLUMED: Checkpoint written to plumed_final.cpt at step 25
+PLUMED:   (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step 25)
+PLUMED: Checkpoint written to plumed_final.cpt at step 60
+PLUMED:   (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step 60)
+PLUMED:   the MD engine is restarting: reading the checkpoint plumed_final.cpt
+PLUMED: Restarting from checkpoint plumed_final.cpt written at step 25 
+PLUMED: Checkpoint state restored at step 25
 PLUMED:   file GRID is rewritten at every write and is not truncated
 PLUMED:   file HILLS truncated
 PLUMED:   file COLVAR_METAD truncated
