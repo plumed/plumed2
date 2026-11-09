@@ -95,6 +95,9 @@ class Tools {
   template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
   static constexpr inline T fastpow_rec(T base, T result);
 public:
+/// Quote one literal argument for a POSIX shell, including embedded single quotes.
+  static std::string quoteForShell(const std::string&);
+
   static constexpr std::string_view replicaToken="@replicas:";
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from

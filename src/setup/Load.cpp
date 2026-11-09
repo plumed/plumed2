@@ -37,6 +37,28 @@ This new functionality can be in a .so file or a .cpp file. If the
 new functionality is in a cpp file then the code is compiled and the
 the resulting object is loaded.
 
+Extra header search directories can be supplied when compiling a `.cpp` file:
+
+````
+LOAD FILE=x.cpp INCLUDE_PATH={headers:other headers}
+````
+
+`INCLUDE_PATH` is a colon-separated, ordered list. Enclose the whole value in
+braces when a directory contains spaces. Relative directories are resolved from
+the working directory, not from the source or input file directory. Empty values
+and empty entries are errors; directory names containing colons are not supported.
+The option is rejected for precompiled libraries. Existing compiler flags and
+include environment variables remain in effect; these additional directories
+apply only to this LOAD invocation.
+
+With `INCLUDE_PATH`, PLUMED compiles on every LOAD into a separate temporary
+location next to the source and removes the temporary library after loading.
+This avoids reusing a library compiled with different include paths, including
+when multiple PLUMED objects load the same source concurrently, and reflects
+header changes on the next LOAD. The source directory must be writable.
+Without `INCLUDE_PATH`, the existing source-timestamp cache is unchanged (it does
+not track header dependencies).
+
 Using the LOAD action is useful for making quick tests while developing your own
 actions. Of course, once your implementation is ready you should
 add it to the PLUMED source tree and recompile PLUMED.
@@ -167,6 +189,7 @@ PLUMED_REGISTER_ACTION(Load,"LOAD")
 void Load::registerKeywords( Keywords& keys ) {
   ActionAnyorder::registerKeywords(keys);
   keys.add("compulsory","FILE","file to be loaded");
+  keys.add("optional","INCLUDE_PATH","colon-separated header search directories for a .cpp file; relative to the working directory");
 }
 
 Load::Load(const ActionOptions&ao):
@@ -174,8 +197,34 @@ Load::Load(const ActionOptions&ao):
   ActionAnyorder(ao) {
   std::string f;
   parse("FILE",f);
+  const bool hasIncludePath=!getKeyword("INCLUDE_PATH").empty();
+  std::string includePath;
+  parse("INCLUDE_PATH",includePath);
+  // An explicitly empty keyword must not silently select the ordinary cache.
+  if(hasIncludePath && includePath.empty()) {
+    error("INCLUDE_PATH must contain at least one directory");
+  }
+  std::vector<std::string> includeDirs;
+  if(hasIncludePath) {
+    size_t start=0;
+    while(true) {
+      const auto end=includePath.find(':',start);
+      const auto dir=includePath.substr(start,end==std::string::npos ? end : end-start);
+      if(dir.empty()) {
+        error("INCLUDE_PATH cannot contain empty directories");
+      }
+      includeDirs.push_back(dir);
+      if(end==std::string::npos) {
+        break;
+      }
+      start=end+1;
+    }
+    if(f.size()<4 || f.substr(f.size()-4)!=".cpp") {
+      error("INCLUDE_PATH is only supported for FILE ending in .cpp");
+    }
+  }
   checkRead();
-  plumed.load(f);
+  plumed.load(f,includeDirs);
 }
 
 }
