@@ -186,6 +186,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
     pairs_[i]--;
   }
 
+  ermsd.setCommunicator(comm);
   ermsd.setReference(reference_positions,pairs_,cutoff/getUnits().getLength());
 
   requestAtoms(atoms_);

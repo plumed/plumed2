@@ -35,6 +35,7 @@ namespace PLMD {
 
 class PDB;
 class Pbc;
+class Communicator;
 
 /// A class that implements ERMSD calculations
 class ERMSD {
@@ -43,10 +44,13 @@ class ERMSD {
   std::size_t nresidues;
   std::vector<std::pair <unsigned,unsigned> > pairs;
   double cutoff;
+  Communicator* communicator=nullptr;
 
 public:
 /// Constructor
   ERMSD(): natoms(0),nresidues(0), cutoff(0.0) {}
+
+  void setCommunicator(Communicator& comm) { communicator=&comm; }
 
 /// clear the structure
   void clear();
@@ -56,7 +60,7 @@ public:
 /// set reference coordinates
   void setReference(const std::vector<Vector> & reference, const std::vector<unsigned> & pairs_vec,double mycutoff=0.24);
 
-  void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<TensorGeneric<4,3> > & Gderivatives);
+  void calcMat(const std::vector<Vector> & positions, const Pbc& pbc,std::vector<Vector4d> &mat,std::vector<TensorGeneric<4,3> > & Gderivatives, std::vector<Vector>* derivatives=nullptr, double* sum=nullptr);
 
 /// Compute ermsd ( no pbc )
 //  double calculate(const std::vector<Vector> & positions,

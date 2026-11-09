@@ -31,6 +31,8 @@
 #include "Tensor.h"
 
 #include "Pbc.h"
+#include "Communicator.h"
+#include "OpenMP.h"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -58,7 +60,7 @@ void ERMSD::setReference(const std::vector<Vector> & reference, const std::vecto
 
   cutoff = mycutoff;
   std::vector<TensorGeneric<4,3> > deri;
-  deri.resize(natoms*natoms);
+
   reference_mat.resize(nresidues*nresidues);
   Pbc fake_pbc;
 
@@ -82,7 +84,7 @@ bool ERMSD::inPair(unsigned i, unsigned j) {
   return false;
 }
 
-void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::vector<Vector4d> &mat, std::vector<TensorGeneric<4,3> > &Gderi) {
+void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::vector<Vector4d> &mat, std::vector<TensorGeneric<4,3> > &Gderi, std::vector<Vector>* derivatives, double* sum) {
 
   std::vector<Vector3d> pos;
   pos.resize(3*nresidues);
@@ -166,99 +168,95 @@ void ERMSD::calcMat(const std::vector<Vector> & positions,const Pbc& pbc, std::v
   }
 
 
-  // Initialization (unnecessary?)
-  for (unsigned i1=0; i1<nresidues*nresidues; i1++) {
-    for (unsigned i2=0; i2<4; i2++) {
-      mat[i1][i2] = 0.0;
-    }
+  if(!derivatives) {
+    mat.assign(nresidues*nresidues,Vector4d());
   }
-
-  double maxdist = cutoff/form_factor[0];
-  const double maxdist2 = maxdist*maxdist;
-  double gamma = pi/cutoff;
-  unsigned idx;
-  unsigned idx1 = 0;
-  // Calculate mat
-  for (unsigned i=0; i<nresidues; i++) {
-    for (unsigned j=0; j<nresidues; j++) {
-
-      // skip i==j
-      if(inPair(i,j) and i != j) {
-
-
-        // Calculate normal distance first
-        Vector diff = delta(centers[i],centers[j]);
-        if(diff.modulo2()<maxdist2) {
-
-          // calculate r_tilde_ij
-          Vector3d rtilde;
-          for (unsigned k=0; k<3; k++) {
-            for (unsigned l=0; l<3; l++) {
-              rtilde[l] += pos[3*i+l][k]*diff[k]*form_factor[l];
-            }
+  const double maxdist2 = cutoff*cutoff/4.;
+  const double gamma = pi/cutoff;
+  const unsigned stride=derivatives && communicator ? communicator->Get_size() : 1;
+  const unsigned rank=derivatives && communicator ? communicator->Get_rank() : 0;
+  const unsigned nt=derivatives ? OpenMP::getNumThreads() : 1;
+  double localSum=0.;
+  #pragma omp parallel num_threads(nt) reduction(+:localSum)
+  {
+    std::vector<Vector> privateDerivatives(nt>1 ? natoms : 0);
+    auto* output=nt>1 ? &privateDerivatives : derivatives;
+    #pragma omp for schedule(static)
+    for(unsigned i=rank; i<nresidues; i+=stride) {
+    for(unsigned j=0; j<nresidues; ++j) {
+      if(i==j || !inPair(i,j)) {
+        continue;
+      }
+      const auto idx = i*nresidues+j;
+      Vector4d g;
+      std::array<TensorGeneric<4,3>,6> dg;
+      const Vector diff = delta(centers[i],centers[j]);
+      bool active=false;
+      if(diff.modulo2()<maxdist2) {
+        Vector rtilde;
+        for(unsigned l=0; l<3; ++l) {
+          rtilde[l]=dotProduct(pos[3*i+l],diff)*form_factor[l];
+        }
+        const double r=rtilde.modulo();
+        if(r<cutoff) {
+          active=true;
+          const double x=gamma*r;
+          const double dummy = r>0. ? std::sin(x)/x : 1.;
+          for(unsigned l=0; l<3; ++l) {
+            g[l]=dummy*rtilde[l];
           }
-          double rtilde_norm = rtilde.modulo();
-
-          double irnorm = 1./rtilde_norm;
-
-          // ellipsoidal cutoff
-          if(rtilde_norm < cutoff) {
-            idx = i*nresidues + j;
-
-
-            // fill 4d matrix
-            double dummy = std::sin(gamma*rtilde_norm)/(rtilde_norm*gamma);
-            mat[idx][0] = dummy*rtilde[0];
-            mat[idx][1] = dummy*rtilde[1];
-            mat[idx][2] = dummy*rtilde[2];
-            mat[idx][3] = (1.+ std::cos(gamma*rtilde_norm))/gamma;
-
-            // Derivative (drtilde_dx)
-            std::array<Tensor3d,6> drtilde_dx;
-            unsigned pos_idx = 3*i;
-            unsigned deri_idx = 9*i;
-            for (unsigned at=0; at<3; at++) {
-              for (unsigned l=0; l<3; l++) {
-                Vector3d rvec = form_factor[l]*((pos[pos_idx+l])/3.);
-                Vector3d vvec = form_factor[l]*(matmul(deri[deri_idx+3*at+l],diff));
-                drtilde_dx[at].setRow(l,vvec-rvec);
-                drtilde_dx[at+3].setRow(l,rvec);
+          g[3]=(1.+std::cos(x))/gamma;
+          if(derivatives) {
+            std::array<Tensor,6> dr;
+            for(unsigned at=0; at<3; ++at) {
+              for(unsigned l=0; l<3; ++l) {
+                const Vector rv=form_factor[l]*pos[3*i+l]/3.;
+                const Vector vv=form_factor[l]*matmul(deri[9*i+3*at+l],diff);
+                dr[at].setRow(l,vv-rv);
+                dr[at+3].setRow(l,rv);
               }
             }
-
-            double dummy1 = (std::cos(gamma*rtilde_norm) - dummy);
-
-            idx1 = i*nresidues*6 + j*6;
-
-            for (unsigned l=0; l<6; l++) {
-
-              // components 1,2,3
-              // std::sin(gamma*|rtilde|)/gamma*|rtilde|*d_rtilde +
-              // + ((d_rtilde*r_tilde/r_tilde^2) out r_tilde)*
-              // (std::cos(gamma*|rtilde| - std::sin(gamma*|rtilde|)/gamma*|rtilde|))
-              Vector3d rdr = matmul(rtilde,drtilde_dx[l]);
-              Tensor tt = dummy*drtilde_dx[l] + (dummy1*irnorm*irnorm)*Tensor(rtilde,rdr);
-              for (unsigned m=0; m<3; m++) {
-                // Transpose here
-                //dG_dx[l].setRow(m,tt.getRow(m));
-                Gderi[idx1+l].setRow(m,tt.getRow(m));
+            // The limiting value also makes coincident centers well defined.
+            const double factor = r>0. ? (std::cos(x)-dummy)/(r*r) : -gamma*gamma/3.;
+            for(unsigned l=0; l<6; ++l) {
+              const Vector rdr=matmul(rtilde,dr[l]);
+              const Tensor tt=dummy*dr[l]+factor*Tensor(rtilde,rdr);
+              for(unsigned m=0; m<3; ++m) {
+                dg[l].setRow(m,tt.getRow(m));
               }
-              // component 4
-              // - std::sin(gamma*|rtilde|)/|rtilde|*(r_tilde*d_rtilde)
-              //dG_dx[l].setRow(3,-dummy*gamma*rdr);
-              Gderi[idx1+l].setRow(3,-dummy*gamma*rdr);
+              dg[l].setRow(3,-dummy*gamma*rdr);
             }
-
-
-
-
           }
         }
       }
-
+      if(derivatives) {
+        const Vector4d dd=delta(reference_mat[idx],g);
+        localSum+=dd.modulo2();
+        if(active) {
+          for(unsigned k=0; k<3; ++k) {
+            (*output)[3*i+k]+=matmul(dd,dg[k]);
+            (*output)[3*j+k]+=matmul(dd,dg[k+3]);
+          }
+        }
+      } else {
+        mat[idx]=g;
+      }
     }
   }
-
+    #pragma omp critical
+    if(nt>1 && derivatives) {
+      for(unsigned k=0; k<natoms; ++k) {
+        (*derivatives)[k]+=privateDerivatives[k];
+      }
+    }
+  }
+  if(derivatives) {
+    if(communicator) {
+      communicator->Sum(localSum);
+      communicator->Sum(&(*derivatives)[0][0],3*natoms);
+    }
+    *sum=localSum;
+  }
 }
 
 
@@ -266,44 +264,18 @@ double ERMSD::calculate(const std::vector<Vector> & positions,const Pbc& pbc,\
                         std::vector<Vector> &derivatives, Tensor& virial) {
 
 
-  double ermsd=0.;
+  double sum=0.;
   std::vector<Vector4d> mat;
-  mat.resize(nresidues*nresidues);
-
-  std::vector<TensorGeneric<4,3> > Gderi;
-  Gderi.resize(natoms*natoms);
-
-  calcMat(positions,pbc,mat,Gderi);
-
-  unsigned idx1 = 0;
-  for(unsigned i=0; i<nresidues; i++) {
-    for(unsigned j=0; j<nresidues; j++) {
-      unsigned ii = i*nresidues + j;
-
-      Vector4d dd = delta(reference_mat[ii],mat[ii]);
-      double val = dd.modulo2();
-
-      if(val>0.0 && i!=j) {
-
-        for(unsigned k=0; k<3; k++) {
-          idx1 = i*nresidues*6 + j*6 + k;
-
-          derivatives[3*i+k] += matmul(dd,Gderi[idx1]);
-          derivatives[3*j+k] += matmul(dd,Gderi[idx1+3]);
-        }
-        ermsd += val;
-      }
+  std::vector<TensorGeneric<4,3>> unused;
+  calcMat(positions,pbc,mat,unused,&derivatives,&sum);
+  const double ermsd=std::sqrt(sum/nresidues);
+  if(ermsd>0.) {
+    const double scale=1./(ermsd*nresidues);
+    for(auto& d: derivatives) {
+      d*=scale;
     }
   }
-
-  ermsd = std::sqrt(ermsd/nresidues);
-  double iermsd = 1.0/(ermsd*nresidues);
-  for(unsigned i=0; i<natoms; ++i) {
-    derivatives[i] *= iermsd;
-  }
-
   return ermsd;
 }
-
 
 }
