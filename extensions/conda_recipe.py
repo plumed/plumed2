@@ -43,9 +43,9 @@ for name in modules:
     output = f"""  - name: plumed-ext-{name}
     build:
       string: base_{{{{ base_build }}}}_0
-      files:
-        - lib/libplumed-ext-{name}.*
-        - lib/plumed/plugins/{name}.plumed
+    files:
+      - lib/libplumed-ext-{name}.*
+      - lib/plumed/plugins/{name}.plumed
     requirements:
       host:
         - plumed {{{{ version }}}}

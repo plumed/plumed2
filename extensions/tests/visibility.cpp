@@ -2,6 +2,8 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <thread>
+#include <vector>
 
 using PLMD::Plumed;
 std::unique_ptr<Plumed> object() {
@@ -53,4 +55,15 @@ void check(bool dependencyFirst) {
 int main() {
   check(false);
   check(true);
+  std::vector<std::thread> threads;
+  for(unsigned i=0; i<4; ++i) {
+    threads.emplace_back([i] {
+      for(unsigned repeat=0; repeat<3; ++repeat) {
+        check(i%2==0);
+      }
+    });
+  }
+  for(auto& thread:threads) {
+    thread.join();
+  }
 }

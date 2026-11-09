@@ -27,9 +27,9 @@ outputs:
   - name: plumed-ext-adjmat
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-adjmat.*
-        - lib/plumed/plugins/adjmat.plumed
+    files:
+      - lib/libplumed-ext-adjmat.*
+      - lib/plumed/plugins/adjmat.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -43,9 +43,9 @@ outputs:
   - name: plumed-ext-annfunc
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-annfunc.*
-        - lib/plumed/plugins/annfunc.plumed
+    files:
+      - lib/libplumed-ext-annfunc.*
+      - lib/plumed/plugins/annfunc.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -59,9 +59,9 @@ outputs:
   - name: plumed-ext-clusters
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-clusters.*
-        - lib/plumed/plugins/clusters.plumed
+    files:
+      - lib/libplumed-ext-clusters.*
+      - lib/plumed/plugins/clusters.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -75,9 +75,9 @@ outputs:
   - name: plumed-ext-contour
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-contour.*
-        - lib/plumed/plugins/contour.plumed
+    files:
+      - lib/libplumed-ext-contour.*
+      - lib/plumed/plugins/contour.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -91,9 +91,9 @@ outputs:
   - name: plumed-ext-crystdistrib
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-crystdistrib.*
-        - lib/plumed/plugins/crystdistrib.plumed
+    files:
+      - lib/libplumed-ext-crystdistrib.*
+      - lib/plumed/plugins/crystdistrib.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -107,9 +107,9 @@ outputs:
   - name: plumed-ext-dimred
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-dimred.*
-        - lib/plumed/plugins/dimred.plumed
+    files:
+      - lib/libplumed-ext-dimred.*
+      - lib/plumed/plugins/dimred.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -124,9 +124,9 @@ outputs:
   - name: plumed-ext-eds
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-eds.*
-        - lib/plumed/plugins/eds.plumed
+    files:
+      - lib/libplumed-ext-eds.*
+      - lib/plumed/plugins/eds.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -140,9 +140,9 @@ outputs:
   - name: plumed-ext-envsim
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-envsim.*
-        - lib/plumed/plugins/envsim.plumed
+    files:
+      - lib/libplumed-ext-envsim.*
+      - lib/plumed/plugins/envsim.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -156,9 +156,9 @@ outputs:
   - name: plumed-ext-fisst
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-fisst.*
-        - lib/plumed/plugins/fisst.plumed
+    files:
+      - lib/libplumed-ext-fisst.*
+      - lib/plumed/plugins/fisst.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -172,9 +172,9 @@ outputs:
   - name: plumed-ext-funnel
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-funnel.*
-        - lib/plumed/plugins/funnel.plumed
+    files:
+      - lib/libplumed-ext-funnel.*
+      - lib/plumed/plugins/funnel.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -188,9 +188,9 @@ outputs:
   - name: plumed-ext-landmarks
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-landmarks.*
-        - lib/plumed/plugins/landmarks.plumed
+    files:
+      - lib/libplumed-ext-landmarks.*
+      - lib/plumed/plugins/landmarks.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -204,9 +204,9 @@ outputs:
   - name: plumed-ext-logmfd
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-logmfd.*
-        - lib/plumed/plugins/logmfd.plumed
+    files:
+      - lib/libplumed-ext-logmfd.*
+      - lib/plumed/plugins/logmfd.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -220,9 +220,9 @@ outputs:
   - name: plumed-ext-mapping
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-mapping.*
-        - lib/plumed/plugins/mapping.plumed
+    files:
+      - lib/libplumed-ext-mapping.*
+      - lib/plumed/plugins/mapping.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -236,9 +236,9 @@ outputs:
   - name: plumed-ext-maze
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-maze.*
-        - lib/plumed/plugins/maze.plumed
+    files:
+      - lib/libplumed-ext-maze.*
+      - lib/plumed/plugins/maze.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -252,9 +252,9 @@ outputs:
   - name: plumed-ext-membranefusion
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-membranefusion.*
-        - lib/plumed/plugins/membranefusion.plumed
+    files:
+      - lib/libplumed-ext-membranefusion.*
+      - lib/plumed/plugins/membranefusion.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -268,9 +268,9 @@ outputs:
   - name: plumed-ext-opes
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-opes.*
-        - lib/plumed/plugins/opes.plumed
+    files:
+      - lib/libplumed-ext-opes.*
+      - lib/plumed/plugins/opes.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -284,9 +284,9 @@ outputs:
   - name: plumed-ext-pamm
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-pamm.*
-        - lib/plumed/plugins/pamm.plumed
+    files:
+      - lib/libplumed-ext-pamm.*
+      - lib/plumed/plugins/pamm.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -301,9 +301,9 @@ outputs:
   - name: plumed-ext-pathbias
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-pathbias.*
-        - lib/plumed/plugins/pathbias.plumed
+    files:
+      - lib/libplumed-ext-pathbias.*
+      - lib/plumed/plugins/pathbias.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -317,9 +317,9 @@ outputs:
   - name: plumed-ext-pines
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-pines.*
-        - lib/plumed/plugins/pines.plumed
+    files:
+      - lib/libplumed-ext-pines.*
+      - lib/plumed/plugins/pines.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -333,9 +333,9 @@ outputs:
   - name: plumed-ext-piv
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-piv.*
-        - lib/plumed/plugins/piv.plumed
+    files:
+      - lib/libplumed-ext-piv.*
+      - lib/plumed/plugins/piv.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -349,9 +349,9 @@ outputs:
   - name: plumed-ext-s2cm
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-s2cm.*
-        - lib/plumed/plugins/s2cm.plumed
+    files:
+      - lib/libplumed-ext-s2cm.*
+      - lib/plumed/plugins/s2cm.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -365,9 +365,9 @@ outputs:
   - name: plumed-ext-sasa
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-sasa.*
-        - lib/plumed/plugins/sasa.plumed
+    files:
+      - lib/libplumed-ext-sasa.*
+      - lib/plumed/plugins/sasa.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -381,9 +381,9 @@ outputs:
   - name: plumed-ext-sizeshape
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-sizeshape.*
-        - lib/plumed/plugins/sizeshape.plumed
+    files:
+      - lib/libplumed-ext-sizeshape.*
+      - lib/plumed/plugins/sizeshape.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -397,9 +397,9 @@ outputs:
   - name: plumed-ext-sprint
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-sprint.*
-        - lib/plumed/plugins/sprint.plumed
+    files:
+      - lib/libplumed-ext-sprint.*
+      - lib/plumed/plugins/sprint.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -413,9 +413,9 @@ outputs:
   - name: plumed-ext-symfunc
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-symfunc.*
-        - lib/plumed/plugins/symfunc.plumed
+    files:
+      - lib/libplumed-ext-symfunc.*
+      - lib/plumed/plugins/symfunc.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -429,9 +429,9 @@ outputs:
   - name: plumed-ext-ves
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-ves.*
-        - lib/plumed/plugins/ves.plumed
+    files:
+      - lib/libplumed-ext-ves.*
+      - lib/plumed/plugins/ves.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -445,9 +445,9 @@ outputs:
   - name: plumed-ext-volumes
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-volumes.*
-        - lib/plumed/plugins/volumes.plumed
+    files:
+      - lib/libplumed-ext-volumes.*
+      - lib/plumed/plugins/volumes.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -461,9 +461,9 @@ outputs:
   - name: plumed-ext-wham
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-wham.*
-        - lib/plumed/plugins/wham.plumed
+    files:
+      - lib/libplumed-ext-wham.*
+      - lib/plumed/plugins/wham.plumed
     requirements:
       host:
         - plumed {{ version }}
@@ -477,9 +477,9 @@ outputs:
   - name: plumed-ext-xsprint
     build:
       string: base_{{ base_build }}_0
-      files:
-        - lib/libplumed-ext-xsprint.*
-        - lib/plumed/plugins/xsprint.plumed
+    files:
+      - lib/libplumed-ext-xsprint.*
+      - lib/plumed/plugins/xsprint.plumed
     requirements:
       host:
         - plumed {{ version }}

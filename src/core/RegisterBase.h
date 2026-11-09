@@ -353,10 +353,12 @@ RegisterBase<Content>::~RegisterBase() noexcept {
 
 template<class Content>
 void RegisterBase<Content>::completeRegistration(void*handle) {
-  // lock map for writing
-  std::unique_lock<std::shared_mutex> lock(mutex);
+  // staged_m is protected by the enclosing RegistrationLock. Resolve native
+  // ownership before taking the map mutex: another thread can be inside
+  // dlclose while its deregistration callback needs that mutex.
   for (auto iter = staged_m.begin(); iter != staged_m.end(); ) {
     auto owner=registrationImage(iter->second->anchor,handle,iter->second->fullPath);
+    std::unique_lock<std::shared_mutex> lock(mutex);
     auto key = imageToString(owner) + ":" + iter->first;
     plumed_assert(!m.count(key)) << "cannot register key twice with the same name "<< key<<"\n";
     m[key] = std::move(iter->second);
