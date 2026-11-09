@@ -12,6 +12,11 @@ cp "$kernel" "$task/kernel-before"
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "plumed-ext-ves=$VERSION" "plumed-ext-pamm=$VERSION"
 cmp "$kernel" "$task/kernel-before"
+# Output-specific host requirements must keep unrelated native stacks out of
+# lightweight extensions, even though all modules share one build environment.
+for record in "$prefix"/conda-meta/{libtorch,libboost,libmetatomic-torch}-*.json; do
+  test ! -e "$record"
+done
 python extensions/tests/installed.py --base "$prefix" --extensions "$prefix"
 # The public C wrapper permits a host compiler to exercise several independent
 # objects against the same installed kernel, including concurrent activation.
@@ -21,6 +26,28 @@ read -r -a host_compiler <<< "${CXX:-c++}"
   -L"$prefix/lib" -Wl,-rpath,"$prefix/lib" -ldl -o "$task/visibility"
 PLUMED_AUTOLOAD=0 PLUMED_KERNEL="$kernel" \
   PLUMED_PLUGIN_PATH="$prefix/lib/plumed/plugins" "$task/visibility"
+
+# Available conda libraries must actually enable their module features; merely
+# loading an identity-only library would miss broken include/link probes.
+conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
+  "plumed-ext-drr=$VERSION" "plumed-ext-fourier=$VERSION" \
+  "plumed-ext-pytorch=$VERSION" "plumed-ext-metatomic=$VERSION" \
+  "plumed-ext-ttsketch=$VERSION" "plumed-ext-kenref=$VERSION"
+python - "$prefix" <<'PYTHON'
+import json
+import sys
+from pathlib import Path
+reports = Path(sys.argv[1]) / "lib/plumed/plugins"
+for module, feature in [
+    ("drr", "BOOST_SERIALIZATION"), ("fourier", "FFTW"),
+    ("pytorch", "LIBTORCH"), ("metatomic", "LIBMETATOMIC"),
+    ("metatomic", "LIBTORCH"), ("ttsketch", "LIBHDF5"),
+]:
+    report = json.loads((reports / (module + ".json")).read_text())
+    assert report["optional_features"][feature], report
+PYTHON
+"$prefix/bin/plumed" config -q module drr fourier pytorch metatomic ttsketch kenref
+cmp "$kernel" "$task/kernel-before"
 
 conda remove -y -p "$prefix" --override-channels -c local -c conda-forge plumed-ext-ves
 cmp "$kernel" "$task/kernel-before"

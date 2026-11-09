@@ -12,6 +12,9 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from features import FeatureProbes
+from inventory import generate_catalog
+
 root = Path(__file__).resolve().parent.parent
 config = {}
 for line in (root / "Makefile.conf").read_text().splitlines():
@@ -22,7 +25,7 @@ base = Path(config["EXTENSION_BASE"])
 prefix = Path(config["EXTENSION_PREFIX"])
 build_id = config["EXTENSION_BUILD_ID"]
 selected = config["EXTENSION_MODULES"].split()
-catalog = json.loads((root / "extensions/catalog.json").read_text())
+catalog = generate_catalog()
 work = root / "_extensions"
 work.mkdir(exist_ok=True)
 environment = dict(os.environ, PLUMED_AUTOLOAD="0")
@@ -108,6 +111,9 @@ def run(command):
 header_hash = hashlib.sha256()
 for header in sorted((root / "src").glob("*/*.h")):
     header_hash.update(header.read_bytes())
+# Native headers/ABI can change independently of the immutable base package.
+for metadata in sorted((base / "conda-meta").glob("*.json")):
+    header_hash.update(metadata.read_bytes())
 headers = header_hash.hexdigest()
 
 
@@ -132,6 +138,9 @@ for component in ("blas", "lapack"):
     )
 
 native_report = {}
+probes = FeatureProbes(
+    compiler, cppflags, cxxflags, flags("LDFLAGS"), base, work / "probes"
+)
 
 
 def numeric_link_flags(objects):
@@ -185,6 +194,9 @@ for name in order:
         + f'extern "C" const char* plumed_module_{name}() {{ return "{build_id}"; }}\n'
         + f'extern "C" const void* plumed_module_{name}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
     )
+    feature_flags, native_flags, enabled_features = probes.module_flags(
+        catalog["modules"][name]["feature_guards"]
+    )
     objects = []
     tasks = []
     for source in [*sources, identity]:
@@ -199,6 +211,7 @@ for name in order:
                     *compiler,
                     *cppflags,
                     *cxxflags,
+                    *feature_flags,
                     "-I" + str(base / "include/plumed"),
                     "-I" + str(root / "src"),
                     f'-DPLUMED_MODULE_DIR="{name}/"',
@@ -230,17 +243,6 @@ for name in order:
             "-Wl,-rpath," + str(base / "lib"),
             "-Wl,-z,defs",
         ]
-    required = catalog["modules"][name]["required_features"]
-    if all("link_flags" in catalog["native_features"][feature] for feature in required):
-        native_flags = [
-            flag
-            for feature in required
-            for flag in catalog["native_features"][feature]["link_flags"]
-        ]
-    else:
-        # Dependency-rich builds still require the base's complete development
-        # environment; their conda recipes/feature-local probes are a later stage.
-        native_flags = flags("DYNAMIC_LIBS")
     numeric_flags, imported_numeric = numeric_link_flags(objects)
     native_report[name] = {
         "module": name,
@@ -248,7 +250,12 @@ for name in order:
         "numeric_imports": imported_numeric,
         "native_link_flags": native_flags + numeric_flags,
         "hard_modules": dependencies(name),
-        "feature_macros": ["__PLUMED_HAS_" + feature for feature in required]
+        "optional_features": enabled_features,
+        "feature_macros": [
+            "__PLUMED_HAS_" + feature
+            for feature, enabled in enabled_features.items()
+            if enabled
+        ]
         + [
             "__PLUMED_HAS_EXTERNAL_" + component.upper()
             for component, symbols in imported_numeric.items()

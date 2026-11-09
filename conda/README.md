@@ -10,6 +10,7 @@ covered by the [MPI wrapper documentation](../src/mpiwrap/README.md).
 | `plumed` | One serial-built kernel, wrappers, headers, CLI, and embedded thread-MPI | None |
 | `plumed-mpi` (`mpi_mpich_*` variant) | MPICH provider library and `plumed-mpi` executable | MPICH |
 | `plumed-mpi` (`mpi_openmpi_*` variant) | Open MPI provider library and `plumed-mpi` executable | Open MPI |
+| `plumed-ext-<module>` | Separately loaded optional module and registration | None |
 | `py-plumed` | Python wrapper, depending on the same `plumed` | None |
 
 `plumed` retains its name; there is no `plumed-kernel` package or `nompi`
@@ -65,8 +66,13 @@ make -C conda
 make -C conda test
 ```
 
-The build script builds `plumed` once, then both small `plumed-mpi` variants,
-then the existing Python variants. Local packages take priority when building
+The build script builds `plumed` once, generates the extension inventory and
+recipe, builds all 35 default-off extension outputs, then both small `plumed-mpi`
+variants and the existing Python variants. Module-local `conda.mk` files declare
+native conda requirements; licenses come from module license files. Optional
+libraries that are unavailable do not exclude modules during this proof of concept.
+To invoke conda-build directly on extensions, first run
+`python extensions/conda_recipe.py` from the repository root. Local packages take priority when building
 and testing dependents. No packages are uploaded by these commands; the
 existing upload target remains a separate, token-controlled release step.
 

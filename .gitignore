@@ -31,3 +31,6 @@ __pycache__
 .claude
 
 /_extensions/
+
+/extensions/catalog.json
+/conda/plumed-extensions/meta.yaml

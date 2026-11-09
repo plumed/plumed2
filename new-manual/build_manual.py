@@ -440,12 +440,55 @@ There are also some shortcuts available:
 
 The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
    
-The table below lists all the available modules and tells you whether they are always compiled, on by default or off by default.  An alternative, graphical
-view of this information is available [here](modulegraph.md).
+## Module dependencies
+
+The table below lists the direct native dependencies declared in each module's `USE=` line in its Makefile. The same list appears on each module page.
+Always-compiled components, such as `core` and `tools`, are supplied by the PLUMED kernel. Components without their own action documentation are shown without a link.
+
+A shortcut can also invoke actions from other modules at runtime. These action requirements are included in the [dependency graph](modulegraph.md), but they are
+separate from the native dependencies in the table. They do not create package dependencies: install and load any additional modules needed by the shortcuts you use.
+
+## Separately installed modules
+
+Optional modules can also be built as separate libraries against an installed PLUMED base. Use the same PLUMED source version and a compatible compiler:
+
+```bash
+./configure --with-extension-base=/path/to/base --enable-extension-modules=ves:pamm --prefix=/path/to/extensions
+make
+make install
+```
+
+This builds VES, PAMM and any native dependencies that are missing from the base, including adjmat. It does not rebuild the kernel.
+The libraries must match the exact base version and build. Distributions can provide them as packages such as `plumed-ext-ves`.
+Their package dependencies include the native module dependencies from `USE=`, but not shortcut requirements.
+
+Installed modules are loaded automatically from `lib/plumed/plugins` beside the loaded kernel. Set `PLUMED_PLUGIN_PATH` to a colon-separated list of additional
+registration directories when libraries are installed in separate prefixes, as with HPC environment modules. Include the directories of their native dependencies too.
+
+Set `PLUMED_AUTOLOAD=0` before starting PLUMED to disable automatic loading. A module can still be loaded explicitly with [LOAD](LOAD.md):
+
+````
+LOAD MODULE=ves
+````
+
+or for a command-line invocation:
+
+```bash
+PLUMED_AUTOLOAD=0 plumed --load-module=ves driver --plumed plumed.dat --noatoms
+```
+
+Explicit loading makes the requested module and its native dependencies available to that PLUMED object or command-line invocation. Other objects keep their own module selection.
+Use `plumed config module ves` or `plumed --list-modules` to query modules available at runtime. The standalone `plumed-config` script describes the base build.
+
+The table below lists the modules, their default build setting and their direct native dependencies. The [graph](modulegraph.md) also includes action requirements.
 
 """
     mf.write(content)
-    printDataTable(mf, ["Name", "Description", "Authors", "Type"], tabledata)
+    printDataTable(
+        mf,
+        ["Name", "Description", "Authors", "Type", "Direct native dependencies"],
+        tabledata,
+    )
 
 
 def printPluginListPage(mf, version, tabledata):
@@ -511,11 +554,27 @@ def drawModuleNode(index, key, of):
 
 
 def getModuleRequirementsFromMakefile(thismodule):
-    with open("../src/" + thismodule + "/Makefile") as f:
-        for line in f.readlines():
-            if "USE=" in line:
-                return line.replace("USE=", "").split()
+    makefile = Path(__file__).resolve().parent.parent / "src" / thismodule / "Makefile"
+    with makefile.open() as f:
+        for line in f:
+            declaration, _, _ = line.partition("#")
+            key, separator, value = declaration.partition("=")
+            if separator and key.strip() == "USE":
+                return value.split()
     return []
+
+
+def formatModuleRequirements(thismodule, documented_modules):
+    dependencies = getModuleRequirementsFromMakefile(thismodule)
+    return (
+        ", ".join(
+            '<a href="../module_' + name + '">' + name + "</a>"
+            if name in documented_modules
+            else "<code>" + name + "</code>"
+            for name in dependencies
+        )
+        or "None"
+    )
 
 
 def createModuleGraph(version, plumed_syntax):
@@ -555,7 +614,9 @@ PLUMED to include it during the configure stage by using:
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).
 
-You can view the information about the modules in the graph above in a table by following [the following link](modules.md). 
+This graph combines native `USE=` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
+The complete direct native dependency lists are given in the [module table](modules.md#module-dependencies) and on each module page.
+Only the native `USE=` dependencies determine separately installed module packages.
 
 <pre class=\"mermaid\">
 """
@@ -695,6 +756,7 @@ def createModulePage(
     plumedtags,
     tagdictionary,
     broken_inputs,
+    documented_modules,
 ):
     with open("module_" + modname + ".md", "w") as f:
         f.write("# [Module](modules.md): " + modname + "\n\n")
@@ -740,6 +802,11 @@ def createModulePage(
                 + " eggs](https://img.shields.io/badge/nest-0-red.svg)"
             )
         f.write("|\n\n")
+        f.write(
+            "**Direct native dependencies:** "
+            + formatModuleRequirements(modname, documented_modules)
+            + "\n\nSee [module dependencies](modules.md#module-dependencies) for the distinction between native dependencies and shortcut requirements.\n\n"
+        )
         f.write("## Details \n")
         if os.path.exists("../../src/" + modname + "/module.md"):
             with open("../../src/" + modname + "/module.md") as iff:
@@ -1686,6 +1753,7 @@ if (
                     mod_dict["description"],
                     mod_dict["authors"],
                     getModuleType(module),
+                    formatModuleRequirements(module, modules),
                 ]
             )
             createModulePage(
@@ -1698,6 +1766,7 @@ if (
                 plumedtags,
                 tagdictionary,
                 broken_inputs,
+                modules,
             )
         if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists(
             "../src/" + module + "/module.yml"

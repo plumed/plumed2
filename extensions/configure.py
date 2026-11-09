@@ -2,11 +2,11 @@
 """Configure extension-only builds against an installed PLUMED base."""
 
 import argparse
-import json
 import os
-import re
 import subprocess
 from pathlib import Path
+
+from inventory import generate_catalog
 
 root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser()
@@ -29,16 +29,13 @@ builtin = set(
 build_id = subprocess.check_output(
     [str(plumed), "--module-build-id"], env=environment, text=True
 ).strip()
-catalog = json.loads((root / "extensions/catalog.json").read_text())
-features = set(re.findall(r"-D__PLUMED_HAS_([A-Z0-9_]+)(?:=1)?", config))
+generate_catalog()
 modules = args.enable_extension_modules.replace(":", " ").split()
 if modules == ["all"]:
     modules = [
         p.parent.name
         for p in sorted((root / "src").glob("*/module.type"))
-        if p.read_text().strip() == "default-off"
-        and p.parent.name not in builtin
-        and set(catalog["modules"][p.parent.name]["required_features"]) <= features
+        if p.read_text().strip() == "default-off" and p.parent.name not in builtin
     ]
 if not modules:
     parser.error("select at least one extension module")
@@ -48,11 +45,6 @@ for name in modules:
         or not (root / "src" / name / "module.type").is_file()
     ):
         parser.error(f"unknown module: {name}")
-    missing = set(catalog["modules"][name]["required_features"]) - features
-    if missing:
-        parser.error(
-            f"{name} needs base feature macros: {sorted(missing)}; dependency-enabled extension builds are not yet configured"
-        )
     if name in builtin:
         parser.error(f"{name} is already built into the selected base")
 # GNU Make paths are intentionally constrained; shell commands quote all paths.

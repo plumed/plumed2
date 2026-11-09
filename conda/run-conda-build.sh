@@ -10,6 +10,7 @@ echo "#Building plumed for conda"
 conda-build -c conda-forge plumed
 # Prefer the package just built locally, not an existing conda-forge PLUMED.
 echo "#Building optional action modules"
+python ../extensions/conda_recipe.py
 conda-build -c local -c conda-forge plumed-extensions
 echo "#Building the MPICH and Open MPI add-ons"
 conda-build -c local -c conda-forge plumed-mpi
