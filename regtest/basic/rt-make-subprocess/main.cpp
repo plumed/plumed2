@@ -5,6 +5,9 @@
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
+#include <sys/wait.h>
+#include <csignal>
+#include <cstdlib>
 
 using namespace PLMD;
 
@@ -13,6 +16,30 @@ int main() {
   // only a finite number of them will be allowed
 
   std::ofstream ofs("should_be_empty");
+
+  // Literal arguments, inherited variables, empty overrides and exit status.
+  const std::string literal="space ' $(touch injected_subprocess)";
+  const int status=Subprocess::run("/bin/sh", {
+    "-c", "test \"$1\" = \"$SUBPROCESS_RUN_VALUE\" && "
+    "test \"$SUBPROCESS_RUN_INHERITED\" = inherited && "
+    "test \"$SUBPROCESS_RUN_EMPTY\" = '' && exit 7", "test",literal
+  }, {{"SUBPROCESS_RUN_VALUE",literal},{"SUBPROCESS_RUN_EMPTY",""}});
+  if(status<0 || !WIFEXITED(status) || WEXITSTATUS(status)!=7 ||
+      std::string(std::getenv("SUBPROCESS_RUN_VALUE"))!="parent" ||
+      std::string(std::getenv("SUBPROCESS_RUN_EMPTY"))!="parent" ||
+      std::ifstream("injected_subprocess")) {
+    ofs<<"literal argument, environment or exit status failure\n";
+  }
+  const int signaled=Subprocess::run("/bin/sh", {"-c","kill -TERM $$"});
+  if(signaled<0 || !WIFSIGNALED(signaled) || WTERMSIG(signaled)!=SIGTERM) {
+    ofs<<"signal status failure\n";
+  }
+  if(Subprocess::run("/plumed-nonexistent-executable")!=-1 || errno!=ENOENT) {
+    ofs<<"missing executable failure\n";
+  }
+  if(Subprocess::run("/bin/sh", {}, {{"invalid=key","value"}})!=-1 || errno!=EINVAL) {
+    ofs<<"invalid environment key failure\n";
+  }
 
   // the number of iteration required to trigger the bugs fixed in
   // 2d45954bbb26471eaf48c72d9a9f0a2dcd8536cc

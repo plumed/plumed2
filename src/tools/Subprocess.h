@@ -27,6 +27,8 @@
 #include <string>
 #include <cstdio>
 #include <memory>
+#include <vector>
+#include <map>
 
 namespace PLMD {
 
@@ -105,6 +107,14 @@ public:
     /// Move assignment.
     Handler & operator=(Handler && handler) noexcept;
   };
+/// Run an executable synchronously with literal arguments (excluding argv[0]).
+/// Inherit stdin/stdout/stderr and the environment, applying overrides only in
+/// the child. No shell is added. Return the raw wait status, or -1 on launch/wait
+/// failure (errno is set). Supported on POSIX builds with subprocess or dlopen
+/// support, independently of the interactive pipe interface's available().
+  static int run(const std::string& executable,
+                 const std::vector<std::string>& arguments = {},
+                 const std::map<std::string,std::string>& environment = {});
 /// Constructor with a command line.
   explicit Subprocess(const std::string & cmd);
 /// Destructor
