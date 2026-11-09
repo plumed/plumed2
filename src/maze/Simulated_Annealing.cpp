@@ -207,8 +207,8 @@ void Simulated_Annealing::optimize() {
     double action = 0;
     double action_next = 0;
 
-    rad_s = rnd::next_double(sampling_r_);
-    Vector dev = rnd::next_plmd_vector(rad_s);
+    rad_s = rnd_.next_double(sampling_r_);
+    Vector dev = rnd_.next_plmd_vector(rad_s);
 
     #pragma omp parallel num_threads(get_n_threads_openmp())
     {
@@ -253,7 +253,7 @@ void Simulated_Annealing::optimize() {
                  std::exp(-(action_next - action) / probability_decreaser_)
                );
 
-    double r = rnd::next_double();
+    double r = rnd_.next_double();
 
     if (r < p) {
       set_opt(dev);
