@@ -145,6 +145,13 @@ if(MSVC)
         target_compile_options(plumedKernel PRIVATE /O2 /MD)
     endif()
 endif()
+# debug information in an optimized build, to get stack traces of crashes
+# (CI: plumed.exe run under cdb). /Z7 keeps it in the objects of the static
+# kernel library, the linker collects it in plumed.pdb.
+option(PLUMED_MSVC_DEBUG_INFO "MSVC: debug information also in Release builds" OFF)
+if(MSVC AND PLUMED_MSVC_DEBUG_INFO)
+    target_compile_options(plumedKernel PRIVATE /Z7)
+endif()
 
 # ------------------------------------------------------------ config.txt
 # Read by "plumed config" (scripts/config.sh) from PLUMED_ROOT/src/config:
@@ -185,6 +192,10 @@ if(MSVC)
     # 8 MB main-thread stack, as on Linux (the MSVC default is 1 MB): nested
     # cmd() calls (DEBUG logRequestedAtoms, the PLUMED action) overflowed it
     target_link_options(plumed PRIVATE "/STACK:8388608")
+    if(PLUMED_MSVC_DEBUG_INFO)
+        target_compile_options(plumed PRIVATE /Z7)
+        target_link_options(plumed PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+    endif()
 elseif(APPLE)
     target_link_options(plumed PRIVATE "LINKER:-force_load,$<TARGET_FILE:plumedKernel>")
 else()
