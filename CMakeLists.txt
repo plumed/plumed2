@@ -104,20 +104,6 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
-# internal molfile plugins (driver --mf_xtc, --mf_pdb, ...). As in
-# src/molfile/Makefile, each plugin gets its own VMDPLUGIN name.
-option(PLUMED_ENABLE_MOLFILE_PLUGINS "Compile the internal molfile plugins" ON)
-if(PLUMED_ENABLE_MOLFILE_PLUGINS)
-    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_MOLFILE_PLUGINS)
-    foreach(_plugin crdplugin dcdplugin gromacsplugin pdbplugin)
-        set_source_files_properties(${PLUMED_SRC}/src/molfile/${_plugin}.cpp PROPERTIES
-            COMPILE_DEFINITIONS "STATIC_PLUGIN;VMDPLUGIN=molfile_${_plugin}")
-    endforeach()
-endif()
-if(WIN32)
-    # the molfile headers include windows.h: keep min/max usable
-    target_compile_definitions(plumedKernel PRIVATE NOMINMAX)
-endif()
 if(PLUMED_ENABLE_THREAD_MPI)
     target_compile_definitions(plumedKernel PRIVATE
         __PLUMED_HAS_THREAD_MPI=1
@@ -166,9 +152,6 @@ endif()
 # (plumed_modules). Same format as src/maketools/update-config-txt.sh,
 # restricted to what this build can enable.
 set(_has cregex)
-if(PLUMED_ENABLE_MOLFILE_PLUGINS)
-    list(APPEND _has molfile_plugins)
-endif()
 if(PLUMED_ENABLE_THREAD_MPI)
     list(APPEND _has mpi thread_mpi)
 endif()
