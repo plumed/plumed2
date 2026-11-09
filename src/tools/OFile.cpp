@@ -521,11 +521,7 @@ OFile& OFile::open(const std::string&setpath) {
         backupFile( backstring, path );
       }
     }
-#ifdef _WIN32
-    fp=std::fopen("NUL","r+");
-#else
-    fp=std::fopen("/dev/null","r+");
-#endif
+    fp=std::fopen(nullDevice,"r+");
     mode=restart ? "a" : "w";
     if(comm) {
       comm->Barrier();
@@ -673,12 +669,9 @@ bool OFile::isWriter()const {
 }
 
 void OFile::openOnWriter(const char* fmode,const char* gzmode,bool reopenFp) {
-#ifdef _WIN32
-  constexpr const char* nullDevice="NUL";
-#else
-  constexpr const char* nullDevice="/dev/null";
-#endif
-  const char* p=isWriter() ? path.c_str() : nullDevice;
+  // "/dev/null" is a valid name on all platforms (on Windows fopen would fail,
+  // and a NULL fp crashed at the first write or flush: WALKERS_MPI hills files)
+  const char* p=(isWriter() && path!="/dev/null") ? path.c_str() : nullDevice;
   if(reopenFp) {
 #ifdef _WIN32
     // binary mode: write LF line endings as on the other platforms

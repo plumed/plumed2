@@ -413,7 +413,7 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     }
   };
 
-  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen("/dev/null","w")};
+  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen(FileBase::nullDevice,"w")};
 
   Log log;
   if(pc.Get_rank()==0) {

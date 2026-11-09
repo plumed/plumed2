@@ -1815,6 +1815,9 @@ double PlumedMain::getWork() const {
 FILE* PlumedMain::fopen(const char *path, const char *mode) {
   std::string mmode(mode);
   std::string ppath(path);
+  if(ppath=="/dev/null") {
+    ppath=FileBase::nullDevice;
+  }
   std::string ppathsuf=ppath+getSuffix();
   FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
   if(!fp) {
