@@ -109,10 +109,13 @@ When the MD engine never sends the `doCheckPoint` signal (e.g. [driver](driver.m
 the run, with the suffix `_final` (`plumed_final.cpt` for `plumed.cpt`). It stores the
 state after the last step, so it is the checkpoint of the step that follows it, and
 the MD engine must restart from that step. It is written when the MD engine calls the
-`runFinalJobs` command of the interface before finalizing PLUMED: an MD engine that does
-not send the signal should make this call to get it. The engines that send the signal
-(GROMACS) write their own restart files at the steps of the signals (GROMACS also at the
-last step), and no final checkpoint is written for them, since it would not match those files.
+`runFinalJobs` command of the interface or, if it does not, when PLUMED is finalized,
+provided that the last step was completed (calculation and update) and that PLUMED is not
+finalized because of an error. An MD engine that does not send the signal should
+preferably call `runFinalJobs`; in any case, it must finalize PLUMED on all the processes,
+and before MPI. The engines that send the signal (GROMACS) write their own restart files
+at the steps of the signals (GROMACS also at the last step), and no final checkpoint is
+written for them, since it would not match those files.
 
 With `RESTART_FROM=AUTO` the final checkpoint, when it exists, is read instead of FILE,
 unless the MD engine tells PLUMED that it restarts from another step (`setRestartStep`

@@ -723,6 +723,7 @@ void Checkpointing::atStepStart(bool signal) {
     return;
   }
   signalReceived=signalReceived || signal;
+  stepComplete=false;
   if(step!=lastStep) {
     if(lastStep>=0 && step>lastStep) {
       stepIncrement=step-lastStep;
@@ -737,11 +738,25 @@ void Checkpointing::atStepStart(bool signal) {
   }
 }
 
-void Checkpointing::atRunEnd() {
+void Checkpointing::atRunEnd(bool fromDestructor) {
+  if(runEndHandled) {
+    return;
+  }
+  runEndHandled=true;
+  // nothing can be written (nor logged) after MPI_Finalize; finalizing PLUMED after MPI is
+  // not allowed anyway (the communicators are freed)
+  if(fromDestructor && Communicator::initialized() && Communicator::finalized()) {
+    return;
+  }
   // an MD engine that sends the checkpointing signal writes its own restart files
   // at the steps of the signals (GROMACS also at the last step): a checkpoint
   // after the last step would not match them
   if(!enabled() || signalReceived || lastStep<0) {
+    return;
+  }
+  auto& log=plumed.getLog();
+  if(!stepComplete) {
+    log<<"Final checkpoint not written: the last step ("<<lastStep<<") was not completed\n";
     return;
   }
   // the state after the update of the last step is the one at the start of the next step

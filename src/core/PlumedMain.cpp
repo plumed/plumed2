@@ -475,6 +475,17 @@ PlumedMain::PlumedMain():
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
+  // final checkpoint, if the MD engine did not call runFinalJobs (and not while an exception
+  // is propagating, since the state of the run could be inconsistent)
+  if(initialized && std::uncaught_exceptions()==0) {
+    try {
+      checkpointing.atRunEnd(true);
+    } catch(const std::exception& e) {
+      log<<"Final checkpoint not written: "<<e.what()<<"\n";
+    } catch(...) {
+      log<<"Final checkpoint not written: unknown error\n";
+    }
+  }
   CountInstances::decrease();
 }
 
@@ -1678,6 +1689,7 @@ void PlumedMain::backwardPropagate() {
 
 void PlumedMain::update() {
   if(!active) {
+    checkpointing.atStepEnd();
     return;
   }
 
@@ -1730,6 +1742,7 @@ void PlumedMain::update() {
 // invalidate the checkpoint status
 // this fix issues like #1428
   doCheckPoint = false;
+  checkpointing.atStepEnd();
 }
 
 void PlumedMain::load(const std::string& fileName) {
