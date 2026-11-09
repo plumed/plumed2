@@ -58,6 +58,23 @@ std::string Checkpointing::suffixedPath(const std::string& fileName) const {
   return FileBase::appendSuffix(fileName,plumed.getSuffix());
 }
 
+std::string Checkpointing::taggedName(const std::string& fileName,const std::string& tag) {
+  // plumed.cpt -> plumed_prev.cpt, plumed_final.cpt (the replica suffix, if any, goes after them)
+  std::string name=fileName;
+  const size_t slash=name.find_last_of("/\\");
+  const size_t dot=name.find_last_of('.');
+  if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
+    name.insert(dot,tag);
+  } else {
+    name+=tag;
+  }
+  return name;
+}
+
+std::string Checkpointing::finalName(const std::string& fileName) {
+  return taggedName(fileName,"_final");
+}
+
 void Checkpointing::setup(const std::string& fileName,long long int checkpointStride) {
   plumed_massert(!enabled(),"only one CHECKPOINT action is allowed");
   plumed_massert(!fileName.empty(),"CHECKPOINT: FILE cannot be empty");
@@ -66,22 +83,15 @@ void Checkpointing::setup(const std::string& fileName,long long int checkpointSt
   file=fileName;
   stride=checkpointStride;
   path=suffixedPath(file);
-  // plumed.cpt -> plumed_prev.cpt (the suffix, if any, stays at the end)
-  std::string prev=file;
-  const size_t slash=prev.find_last_of("/\\");
-  const size_t dot=prev.find_last_of('.');
-  if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
-    prev.insert(dot,"_prev");
-  } else {
-    prev+="_prev";
-  }
-  prevPath=suffixedPath(prev);
+  prevPath=suffixedPath(taggedName(file,"_prev"));
+  finalPath=suffixedPath(finalName(file));
   // a new run does not overwrite the checkpoints of a previous one
   if(!pending) {
     OFile f;
     f.link(plumed);
     f.backupFile("bck",path);
     f.backupFile("bck",prevPath);
+    f.backupFile("bck",finalPath);
   }
 }
 
@@ -424,7 +434,7 @@ std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long
   return std::to_string(CheckpointReader::checksum(tail));
 }
 
-void Checkpointing::write() {
+void Checkpointing::write(long long int step,const std::string& outPath,const std::string& outPrevPath) {
   plumed_assert(enabled());
   auto& log=plumed.getLog();
   auto& comm=plumed.comm;
@@ -441,7 +451,7 @@ void Checkpointing::write() {
     p->fflush();
   }
   CheckpointWriter w(config::getVersionLong());
-  w.write("step",plumed.getStep());
+  w.write("step",step);
   w.write("replica",plumed.getReplicaIndex());
   w.write("nreplicas",plumed.getNumberOfReplicas());
 
@@ -515,11 +525,11 @@ void Checkpointing::write() {
   }
 
   if(comm.Get_rank()==0) {
-    w.writeFile(path,prevPath);
+    w.writeFile(outPath,outPrevPath);
   }
   comm.Barrier();
-  lastWrittenStep=plumed.getStep();
-  log<<"Checkpoint written to "<<path<<" at step "<<plumed.getStep()<<"\n";
+  lastWrittenStep=step;
+  log<<"Checkpoint written to "<<outPath<<" at step "<<step<<"\n";
 }
 
 void Checkpointing::restartFrom(const std::string& fileName) {
@@ -689,6 +699,13 @@ void Checkpointing::restore() {
   }
   pending.reset();
   log<<"Checkpoint state restored at step "<<restartStep<<"\n";
+  // the final checkpoint of the previous run is out of date once the run continues
+  // (RESTART_FROM=AUTO reads it when it exists)
+  if(enabled()) {
+    OFile f;
+    f.link(plumed);
+    f.backupFile("bck",finalPath);
+  }
 }
 
 void Checkpointing::atStepStart(bool signal) {
@@ -705,12 +722,46 @@ void Checkpointing::atStepStart(bool signal) {
   if(!enabled()) {
     return;
   }
+  signalReceived=signalReceived || signal;
+  stepComplete=false;
+  if(step!=lastStep) {
+    if(lastStep>=0 && step>lastStep) {
+      stepIncrement=step-lastStep;
+    }
+    lastStep=step;
+  }
   if(step==lastWrittenStep || step==restartStep) {
     return;
   }
   if(signal || (stride>0 && step%stride==0)) {
-    write();
+    write(step,path,prevPath);
   }
+}
+
+void Checkpointing::atRunEnd(bool fromDestructor) {
+  if(runEndHandled) {
+    return;
+  }
+  runEndHandled=true;
+  // nothing can be written (nor logged) after MPI_Finalize; finalizing PLUMED after MPI is
+  // not allowed anyway (the communicators are freed)
+  if(fromDestructor && Communicator::initialized() && Communicator::finalized()) {
+    return;
+  }
+  // an MD engine that sends the checkpointing signal writes its own restart files
+  // at the steps of the signals (GROMACS also at the last step): a checkpoint
+  // after the last step would not match them
+  if(!enabled() || signalReceived || lastStep<0) {
+    return;
+  }
+  auto& log=plumed.getLog();
+  if(!stepComplete) {
+    log<<"Final checkpoint not written: the last step ("<<lastStep<<") was not completed\n";
+    return;
+  }
+  // the state after the update of the last step is the one at the start of the next step
+  write(lastStep+stepIncrement,finalPath,"");
+  plumed.getLog()<<"  (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step "<<lastStep+stepIncrement<<")\n";
 }
 
 }
