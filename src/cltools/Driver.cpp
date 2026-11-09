@@ -168,7 +168,7 @@ cannot be read anymore: convert these trajectories to another format, e.g. xtc o
 
 When PLUMED is configured with `--enable-libchemfiles`, the driver (and the benchmark) can read any trajectory format
 read by the [chemfiles](https://chemfiles.org) library with the option `--itraj`, for instance Amber NetCDF, LAMMPS, TNG,
-GROMACS TPR and compressed files (`.gz`, `.xz`, `.bz2`).
+GROMACS TPR (with chemfiles 0.10.4 or later) and compressed files (`.gz`, `.xz`, `.bz2`).
 chemfiles guesses the format from the extension of the file; when it cannot, give the format with `--traj-format`,
 as chemfiles names it (see the list of formats in the chemfiles documentation; e.g. `"Amber NetCDF"`, `"LAMMPS"`, `"XYZ / GZ"`):
 
