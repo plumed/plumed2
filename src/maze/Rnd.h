@@ -30,9 +30,7 @@ along with maze. If not, see <https://www.gnu.org/licenses/>.
 
 #include "tools/Random.h"
 #include "tools/Vector.h"
-#include "tools/Tools.h"
 
-#include <cmath>
 #include <vector>
 
 namespace PLMD {
@@ -62,9 +60,7 @@ public:
    * @param m mean
    * @param s spread
    */
-  double next_cauchy(double m, double s) {
-    return m + s * std::tan(pi * (generator_.U01() - 0.5));
-  }
+  double next_cauchy(double m, double s);
 
   /**
    * Returns a random int from the uniform distribution from [f, e) interval.
@@ -104,28 +100,13 @@ public:
   /**
    * Returns a vector of n random doubles from the uniform distribution from (f, e) interval.
    */
-  std::vector<double> next_double(double f, double e, std::size_t n) {
-    std::vector<double> t(n);
-    for (std::size_t i=0; i < n; ++i) {
-      t[i] = next_double(f, e);
-    }
-    return t;
-  }
+  std::vector<double> next_double(double f, double e, std::size_t n);
 
   /**
    * Returns a random vector of length one, uniformly distributed on the sphere
    * (the cosine of the polar angle is uniform in (-1,1)).
    */
-  Vector next_plmd_vector() {
-    double t = next_double() * 2.0 * pi;
-    double c = 2.0 * next_double() - 1.0;
-    double s = std::sqrt(1.0 - c * c);
-    return Vector(
-             s * std::cos(t),
-             s * std::sin(t),
-             c
-           );
-  }
+  Vector next_plmd_vector();
 
   /**
    * Returns a random vector of length r.
