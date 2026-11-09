@@ -60,7 +60,9 @@ class TestRuntimeResources(unittest.TestCase):
     def test_installed_files(self):
         """Resources and real headers occupy the normal installation locations."""
         self.assertEqual(self.root, self.prefix / "lib" / "plumed")
-        self.assertFalse((self.prefix / "share").exists())
+        self.assertTrue(
+            (self.prefix / "share/bash-completion/completions/plumed").is_file()
+        )
         self.assertFalse((self.root / "src" / "include").exists())
         self.assertEqual(kernel_path().parent, self.prefix / "lib")
         self.assertEqual(Path(plumed._bundled_kernel_path()).resolve(), kernel_path())
@@ -73,11 +75,29 @@ class TestRuntimeResources(unittest.TestCase):
             "src/main/main.cpp",
             "vim/syntax/plumed.vim",
             "build-info.txt",
+            "json/syntax.json",
+            "fortran/plumed.f90",
+            "fortran/plumed_f08.f90",
+            "src/lib/Plumed.cmake",
+            "src/lib/Plumed.inc",
+            "modulefile",
+            "plumed-runtime",
+            "plumed-mklib",
         ):
             with self.subTest(resource=relative):
                 self.assertTrue((self.root / relative).is_file())
         for relative in ("patches", "vim/templates", "vim/help"):
             self.assertTrue(any((self.root / relative).iterdir()), relative)
+        for relative in (
+            "bin/plumed-patch",
+            "bin/plumed-config",
+            "lib/libplumedWrapper.a",
+            "lib/pkgconfig/plumed.pc",
+            "lib/pkgconfig/plumedWrapper.pc",
+            "lib/pkgconfig/plumedInternals.pc",
+        ):
+            with self.subTest(installed_file=relative):
+                self.assertTrue((self.prefix / relative).is_file())
         header = self.prefix / "include" / "plumed" / "wrapper" / "Plumed.h"
         self.assertTrue(header.is_file())
         self.assertFalse(header.is_symlink())

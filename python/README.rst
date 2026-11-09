@@ -52,7 +52,12 @@ Python package layout without bundled runtime resources.
 
 ``runtime`` is a private installation prefix: executables are in ``bin``,
 shared libraries in ``lib``, headers in ``include/plumed``, and PLUMED resources
-in ``lib/plumed``. This follows a normal PLUMED installation, entirely inside
+in ``lib/plumed``. The wheel builder uses ``make install`` to populate this prefix, including
+Fortran sources, wrapper archives, build integration files, shell tools, JSON
+and Vim metadata, and Bash completion. Python installation is disabled in this
+native build because the wheel separately supplies the Python package. The
+wheel build enables ``__PLUMED_PIP_BUNDLE`` for resource discovery and applies
+platform loader repair afterward. This is a normal PLUMED installation, entirely inside
 the Python package. The bundled shared kernel discovers its resources and
 headers relative to its library location, including when loaded directly from
 Python or a native host. ``PLUMED_ROOT``, ``PLUMED_INCLUDEDIR`` and
