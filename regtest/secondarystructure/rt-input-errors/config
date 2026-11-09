@@ -12,7 +12,7 @@ function plumed_regtest_after() {
   while read -r name line ; do
     echo "$line" > wrong.dat
     echo "== $name" >> errors
-    plumed driver --plumed wrong.dat --parse-only --natoms 100 2>&1 | awk 'f{print; exit} /^\([a-zA-Z_\/.]+:[0-9]+\)/{f=1}' >> errors
+    plumed driver --plumed wrong.dat --parse-only --natoms 100 2>&1 | awk 'f{print; exit} /^\([^()]+:[0-9]+\)/{f=1}' >> errors
   done <<EOT
 ragged_segments c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,2 SEGMENT2=3,4,5,6 TYPE=OPTIMAL
 index_outside_atoms c1: SECONDARY_STRUCTURE_RMSD ATOMS=1-12 STRUCTURE1=1,0,0,0,1,0,0,0,1 SEGMENT1=0,1,12 TYPE=OPTIMAL

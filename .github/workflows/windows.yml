@@ -59,6 +59,8 @@ jobs:
           TIME_BUDGET: 2400   # seconds, no new test is started after this
         run: |
           export PLUMED_PROGRAM_NAME="$PWD/build/plumed.exe"
+          # some tests call "plumed" directly from their config hooks
+          export PLUMED_PREPEND_PATH="$PWD/build"
           export DEADLINE=$(( $(date +%s) + TIME_BUDGET ))
           cd regtest
           tests=()
