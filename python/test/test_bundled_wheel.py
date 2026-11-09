@@ -85,27 +85,25 @@ def check_package_relocation():
             if not name.startswith(("PLUMED_", "LD_", "DYLD_"))
         }
         env["PYTHONPATH"] = str(root)
+        discovery_script = (
+            "import plumed; from pathlib import Path; "
+            "assert Path(plumed.__file__).resolve().parent.parent == Path.cwd(); "
+            "assert 'DISTANCE' in plumed.InputBuilder()._vimdict"
+        )
         subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                "import plumed; from pathlib import Path; "
-                "assert Path(plumed.__file__).resolve().parent.parent == Path.cwd(); "
-                "assert 'DISTANCE' in plumed.InputBuilder()._vimdict",
-            ],
+            [sys.executable, "-c", discovery_script],
             cwd=root,
             env=env,
             check=True,
             capture_output=True,
             text=True,
         )
+        cli_script = (
+            "import sys; from plumed.runtime.cli import main; "
+            "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()"
+        )
         command = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                "import sys; from plumed.runtime.cli import main; "
-                "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()",
-            ],
+            [sys.executable, "-c", cli_script],
             cwd=root,
             env=env,
             check=True,

@@ -14,8 +14,9 @@ import unittest
 from unittest.mock import patch
 
 import plumed
-from plumed import _io
 
+
+_io = plumed._io
 
 _HAS_PANDAS = importlib.util.find_spec("pandas") is not None
 

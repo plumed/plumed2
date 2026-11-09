@@ -598,3 +598,4 @@ def hills_time_average(
         write_pandas(hills, tofile)
     elif not inplace:
         return hills
+    return None
