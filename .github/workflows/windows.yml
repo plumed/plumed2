@@ -131,39 +131,6 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
           [[ -z "$failed" ]]
 
-      # Temporary: stack size needed by the regtests that overflowed the
-      # default 1 MB stack (rt73 and rt-plumed-action-large-step)
-      - name: Diagnose Windows-only regtest failures
-        if: always() && steps.regtest.outcome != 'skipped'
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $exe = "$PWD\build\plumed.exe"
-          $d = "$PWD\regtest-failures\diag"
-          New-Item -ItemType Directory -Force $d | Out-Null
-          Copy-Item regtest\trajectories\trajectory.xyz, regtest\isdb\rt-baies\trajectory.xtc $d
-          Copy-Item regtest\basic\rt-plumed-action-large-step\guest.dat, regtest\basic\rt-plumed-action-large-step\traj.xyz $d
-          Set-Location $d
-          function run($name, $plumed, $arguments) {
-            Set-Content "$name.dat" $plumed
-            & $exe driver --plumed "$name.dat" @arguments *> "$name.log"
-            "{0,-22} exit {1} (0x{1:X8})" -f $name, $LASTEXITCODE
-          }
-          # plumed.exe is linked with an 8 MB stack: find the size these inputs need
-          $rt73 = Get-Content ..\..\regtest\basic\rt73\plumed.dat
-          $a73 = '--trajectory-stride','1','--timestep','0.005','--ixyz','trajectory.xyz'
-          $big = Get-Content ..\..\regtest\basic\rt-plumed-action-large-step\plumed.dat
-          $abig = '--ixyz','traj.xyz','--initial-step','3000000000','--timestep','0.001'
-          $orig = $exe
-          foreach ($mb in 1,2,4,8) {
-            $exe = "$d\plumed-$mb.exe"
-            Copy-Item $orig $exe
-            editbin /nologo /STACK:$($mb*1048576) $exe
-            run "rt73-stack$mb" $rt73 $a73
-            run "large-step-stack$mb" $big $abig
-            Remove-Item $exe
-          }
-
       - name: Upload regtest results
         if: always() && steps.regtest.outcome != 'skipped'
         uses: actions/upload-artifact@v6
