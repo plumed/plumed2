@@ -22,7 +22,7 @@ MAZE_RANDOM_WALK ...
 ... MAZE_RANDOM_WALK
 
 PRINT ...
-  ARG=opt.sr,opt.x,opt.y,opt.z
+  ARG=opt.sr,opt.x,opt.y,opt.z,opt.loss
   FILE=colvar 
   FMT=%15.8f 
 ... PRINT

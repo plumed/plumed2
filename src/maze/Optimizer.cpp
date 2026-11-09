@@ -418,7 +418,6 @@ void Optimizer::prepare() {
 
 double Optimizer::score() {
   const unsigned nl_size = neighbor_list_->size();
-  Vector distance;
   double function = 0;
 
   #pragma omp parallel num_threads(n_threads_)
@@ -432,6 +431,8 @@ double Optimizer::score() {
         continue;
       }
 
+      // declared inside the loop: each thread needs its own
+      Vector distance;
       if (pbc_) {
         distance = pbcDistance(getPosition(i0), getPosition(i1));
       } else {

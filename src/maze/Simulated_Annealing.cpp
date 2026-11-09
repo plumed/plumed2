@@ -201,8 +201,6 @@ void Simulated_Annealing::optimize() {
   double rad_s;
   const unsigned nl_size = neighbor_list_->size();
 
-  Vector distance, distance_next;
-
   for (unsigned int iter=0; iter < get_n_iterations(); ++iter) {
     double action = 0;
     double action_next = 0;
@@ -221,6 +219,8 @@ void Simulated_Annealing::optimize() {
           continue;
         }
 
+        // declared inside the loop: each thread needs its own
+        Vector distance, distance_next;
         if (pbc_) {
           distance = pbcDistance(
                        getPosition(i0) + get_opt(),

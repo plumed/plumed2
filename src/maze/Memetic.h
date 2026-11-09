@@ -649,7 +649,6 @@ bool Memetic::out_of_bounds(double v) {
 
 double Memetic::score_member(const Vector& coding) {
   double action = 0;
-  Vector distance;
   const unsigned nl_size = neighbor_list_->size();
   Vector dev = coding;
 
@@ -664,6 +663,8 @@ double Memetic::score_member(const Vector& coding) {
         continue;
       }
 
+      // declared inside the loop: each thread needs its own
+      Vector distance;
       if (pbc_) {
         distance = pbcDistance(getPosition(i0) + dev, getPosition(i1));
       } else {

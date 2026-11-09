@@ -113,15 +113,17 @@ public:
   }
 
   /**
-   * Returns a random vector of length one.
+   * Returns a random vector of length one, uniformly distributed on the sphere
+   * (the cosine of the polar angle is uniform in (-1,1)).
    */
   Vector next_plmd_vector() {
     double t = next_double() * 2.0 * pi;
-    double p = next_double() * pi;
+    double c = 2.0 * next_double() - 1.0;
+    double s = std::sqrt(1.0 - c * c);
     return Vector(
-             std::sin(p) * std::cos(t),
-             std::sin(t) * std::sin(p),
-             std::cos(p)
+             s * std::cos(t),
+             s * std::sin(t),
+             c
            );
   }
 
