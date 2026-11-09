@@ -138,9 +138,7 @@ struct twoGlobs: public AtomDistribution {
       PLMD::Vector{2.0*rmax,2.0*rmax,2.0*rmax}
     };
     std::generate(posToUpdate.begin(),posToUpdate.end(),[&]() {
-      //RandInt is only declared
-      // return usv (rng) + centers[rng.RandInt(1)];
-      return usv (rng) + centers[rng.RandU01()>0.5];
+      return usv (rng) + centers[rng.RandInt(2)];
     });
 
     box[0]=4.0 *rmax;
