@@ -139,16 +139,20 @@ subsequent stage.
 
 ## Installed numerical checks
 
-`conda/run-extension-test.sh` runs four existing numerical fixtures through the
-ordinary regression harness against installed packages: VES static bias/forces,
-Fourier grids, DRR checkpoint/restart and PyTorch strided tensors/derivatives.
-The original configs, feature/module guards and references are preserved, and
-any skipped required case fails the packaging check. The test environment installs
-Symfunc explicitly for the Fourier fixture’s coordination-number input; this
-does not create a Fourier package dependency on a shortcut requirement.
-The regression harness uses
-`plumed modules --has` and `--has-feature`, so features supplied by extensions
-are recognized even when the base was compiled without them.
+`conda/plumed-extensions/regtests.json` maintains the required numerical cases
+and the extension packages that supply their native dependencies. The conda
+harness installs those packages at the base version before running the cases.
+The current selection covers VES static bias/forces, Fourier grids, DRR
+checkpoint/restart and PyTorch strided tensors/derivatives. Symfunc is declared
+only for the Fourier test input, without becoming a Fourier package dependency.
+
+The selection can explicitly assert its prerequisites with `force_requirements`.
+The runner sets `PLUMED_REGTEST_FORCE_REQUIREMENTS=yes` only for those cases,
+bypassing module/library eligibility checks in the ordinary regression harness.
+Actual calculations, hooks and reference comparisons still run unchanged; a
+missing action, numerical mismatch or remaining skip fails the package check.
+Ordinary regression runs keep their normal eligibility checks. This curated
+validation does not depend on choosing a per-module feature-query syntax.
 
 Plugin builders can pass `--features LIBRARY_MACRO` to `extensions/register.py`.
 The identity translation unit exports those `__PLUMED_HAS_LIBRARY_MACRO` flags

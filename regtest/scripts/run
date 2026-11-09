@@ -199,6 +199,12 @@ then
   exit 0;
 fi
 
+# Curated package checks can assert that their prerequisites are installed and
+# require actual execution. This bypasses eligibility only, never calculations
+# or comparisons; the package runner rejects any remaining skip or failure.
+if [[ ${PLUMED_REGTEST_FORCE_REQUIREMENTS:-no} = yes ]]; then
+  echo "Module/library prerequisites asserted by the package test selection"
+else
 for need in $plumed_needs
 do
   echo "Checking for $need dependency"
@@ -234,6 +240,8 @@ do
     exit 0;
   fi
 done
+
+fi
 
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then

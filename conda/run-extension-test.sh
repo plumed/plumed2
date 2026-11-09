@@ -29,11 +29,15 @@ PLUMED_AUTOLOAD=0 PLUMED_KERNEL="$kernel" \
 
 # Available conda libraries must actually enable their module features; merely
 # loading an identity-only library would miss broken include/link probes.
+read -r -a regression_packages <<< "$(python extensions/tests/regressions.py --list-packages)"
+for index in "${!regression_packages[@]}"; do
+  regression_packages[index]="${regression_packages[index]}=$VERSION"
+done
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "plumed-ext-drr=$VERSION" "plumed-ext-fourier=$VERSION" \
   "plumed-ext-pytorch=$VERSION" "plumed-ext-metatomic=$VERSION" \
   "plumed-ext-ttsketch=$VERSION" "plumed-ext-kenref=$VERSION" \
-  "plumed-ext-symfunc=$VERSION"
+  "${regression_packages[@]}"
 python - "$prefix" <<'PYTHON'
 import json
 import sys

@@ -1,0 +1,22 @@
+{
+  "description": "Required numerical checks against installed conda packages; native dependencies are supplied by these packages.",
+  "force_requirements": true,
+  "tests": [
+    {
+      "regtest": "ves/rt-le-1d-static-bias",
+      "packages": ["plumed-ext-ves"]
+    },
+    {
+      "regtest": "fourier/rt-fftw",
+      "packages": ["plumed-ext-fourier", "plumed-ext-symfunc"]
+    },
+    {
+      "regtest": "drr/rt-checkpoint-drr",
+      "packages": ["plumed-ext-drr"]
+    },
+    {
+      "regtest": "pytorch/rt-pytorch_model_strided",
+      "packages": ["plumed-ext-pytorch"]
+    }
+  ]
+}
