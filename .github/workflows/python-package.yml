@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
   pull_request:
+    # closed is listed only so that closing or merging a PR starts a run that, through the concurrency
+    # group below, cancels the CI still running for it; all the jobs of that run are skipped.
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
     inputs:
       publish_to_testpypi:
@@ -24,6 +27,7 @@ permissions:
 
 jobs:
   sdist:
+    if: github.event.action != 'closed'
     name: Build source distribution
     runs-on: ubuntu-24.04
     steps:

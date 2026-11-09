@@ -13,6 +13,9 @@ on:
     tags:
       - '*'
   pull_request:
+    # closed is listed only so that closing or merging a PR starts a run that, through the concurrency
+    # group below, cancels the CI still running for it; all the jobs of that run are skipped.
+    types: [opened, synchronize, reopened, closed]
   # Nightly run of the whole CI on master. It catches changes in the compilers, runner images and
   # external libraries CI installs on the day they happen, when nothing in PLUMED changed, and it is
   # the run that also performs the regtests marked as long (plumed_long=yes in their config).
@@ -51,6 +54,7 @@ jobs:
 # have the full picture (and the doc and coverage pushes) also when something fails.
 
   codecheck:
+    if: github.event.action != 'closed'
     uses: ./.github/workflows/codecheckWF.yml
     secrets: inherit
     permissions:
@@ -58,6 +62,7 @@ jobs:
       security-events: write
 
   checks:
+    if: github.event.action != 'closed'
     uses: ./.github/workflows/checksWF.yml
 
   linux:
