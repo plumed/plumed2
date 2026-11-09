@@ -1,10 +1,8 @@
 name: CI
 
 on:
-  # Temporarily run only python-package.yml while validating wheel installation.
-  # Restore these triggers after the wheel matrix passes.
-  # push:
-  # pull_request:
+  push:
+  pull_request:
   # Nightly run of the whole CI on master. It catches changes in the compilers, runner images and
   # external libraries CI installs on the day they happen, when nothing in PLUMED changed, and it is
   # the run that also performs the regtests marked as long (plumed_long=yes in their config).
