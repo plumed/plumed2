@@ -17,7 +17,8 @@
 #
 # Results (progress list, report.txt and tmp/ of failed tests) go to
 # regtest-results/<mode>; a summary is appended to $GITHUB_STEP_SUMMARY.
-# Exit code 1 if a test failed or timed out.
+# Exit code 1 if a test failed or timed out, or if the time budget was
+# exhausted (a slow or hanging build must not pass with untested tests).
 
 set -u
 
@@ -99,6 +100,7 @@ taskkill //F //IM plumed.exe > /dev/null 2>&1 || true
 
 count() { grep -c "^$1 " "$progress" || true; }
 failed=$(grep -E '^(FAIL|TIMEOUT) ' "$progress" | awk '{print $2}' | sort)
+notrun=$(count NOT_RUN)
 for t in $failed; do
   mkdir -p "$out/$t"
   cp -r "$t/report.txt" "$t/tmp" "$out/$t/" 2>/dev/null || true
@@ -115,4 +117,4 @@ done
   grep -vE '^NOT_RUN ' "$progress" | sort -k3 -n -r | head -n 15
   echo '```'
 } | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
-[[ -z "$failed" ]]
+[[ -z "$failed" && $notrun -eq 0 ]]
