@@ -23,4 +23,9 @@ function plumed_regtest_before(){
     echo "FAILURE: mklib accepted include paths with its timestamp cache"
     return 1
   fi
+  # Exercise LOAD with environment-derived paths that must stay literal.
+  # Set this after the CLI tests so it specifically covers LOAD's child setup.
+  ln -s "$root" "root ' \$(touch injected_root)"
+  export PLUMED_ROOT="$PWD/root ' \$(touch injected_root)"
+  export PLUMED_IS_INSTALLED='parent sentinel'
 }

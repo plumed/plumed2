@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include <exception>
+#include <vector>
 
 using PLMD::Plumed;
 
@@ -35,8 +36,14 @@ std::string environment(const char* name) {
 }
 int main() {
   try {
-    const auto before=environment("CPLUS_INCLUDE_PATH");
-    const auto flags=environment("PLUMED_MKLIB_CFLAGS");
+    const std::vector<const char*> variables{
+      "CPLUS_INCLUDE_PATH","PLUMED_MKLIB_CFLAGS","PLUMED_ROOT","PLUMED_VERSION",
+      "PLUMED_HTMLDIR","PLUMED_INCLUDEDIR","PLUMED_PROGRAM_NAME","PLUMED_IS_INSTALLED"
+    };
+    std::vector<std::string> before;
+    for(const auto* name : variables) {
+      before.push_back(environment(name));
+    }
     Plumed first,second;
     init(first,"first.log");
     init(second,"second.log");
@@ -83,10 +90,12 @@ int main() {
     reject(invalid,source+" INCLUDE_PATH=missing");
     // A fresh object cannot inherit include settings from any earlier LOAD.
     reject(invalid,source);
-    if(environment("CPLUS_INCLUDE_PATH")!=before || environment("PLUMED_MKLIB_CFLAGS")!=flags) {
-      throw std::runtime_error("LOAD changed the process environment");
+    for(unsigned i=0; i<variables.size(); ++i) {
+      if(environment(variables[i])!=before[i]) {
+        throw std::runtime_error("LOAD changed the process environment");
+      }
     }
-    if(std::ifstream("injected")) {
+    if(std::ifstream("injected") || std::ifstream("injected_root")) {
       throw std::runtime_error("Shell interpreted a path");
     }
     std::ofstream("result") << "OK\n";

@@ -79,6 +79,12 @@
 #include <limits>
 #include <random>
 #include <atomic>
+#ifdef __PLUMED_HAS_DLOPEN
+#include <spawn.h>
+#include <sys/wait.h>
+#include <cerrno>
+extern char **environ;
+#endif
 
 namespace PLMD {
 
@@ -1732,6 +1738,61 @@ void PlumedMain::update() {
   doCheckPoint = false;
 }
 
+namespace {
+#ifdef __PLUMED_HAS_DLOPEN
+// Invoke the build script with literal arguments and a child-only environment.
+// In particular, configured paths must never become shell command text.
+int runMklib(const std::vector<std::string>& options) {
+  std::vector<std::string> arguments{"/bin/bash","--",config::getPlumedRoot()+"/scripts/mklib.sh"};
+  arguments.insert(arguments.end(),options.begin(),options.end());
+  std::vector<char*> argv;
+  for(auto& argument : arguments) {
+    argv.push_back(argument.data());
+  }
+  argv.push_back(nullptr);
+
+  const std::vector<std::string> settings{
+    "PLUMED_ROOT="+config::getPlumedRoot(),
+    "PLUMED_VERSION="+config::getVersionLong(),
+    "PLUMED_HTMLDIR="+config::getPlumedHtmldir(),
+    "PLUMED_INCLUDEDIR="+config::getPlumedIncludedir(),
+    "PLUMED_PROGRAM_NAME="+config::getPlumedProgramName(),
+    std::string("PLUMED_IS_INSTALLED=")+(config::isInstalled() ? "yes" : "no")
+  };
+  std::vector<std::string> environment;
+  for(char** entry=environ; entry && *entry; ++entry) {
+    bool overridden=false;
+    for(const auto& setting : settings) {
+      if(std::strncmp(*entry,setting.c_str(),setting.find('=')+1)==0) {
+        overridden=true;
+        break;
+      }
+    }
+    if(!overridden) {
+      environment.emplace_back(*entry);
+    }
+  }
+  environment.insert(environment.end(),settings.begin(),settings.end());
+  std::vector<char*> envp;
+  for(auto& entry : environment) {
+    envp.push_back(entry.data());
+  }
+  envp.push_back(nullptr);
+
+  pid_t child;
+  if(posix_spawn(&child,"/bin/bash",nullptr,nullptr,argv.data(),envp.data())!=0) {
+    return -1;
+  }
+  int status=0;
+  pid_t result;
+  do {
+    result=waitpid(child,&status,0);
+  } while(result<0 && errno==EINTR);
+  return result<0 ? -1 : status;
+}
+#endif
+}
+
 void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
   struct BuildDirectory {
     std::filesystem::path path;
@@ -1792,14 +1853,21 @@ void PlumedMain::load(const std::string& fileName, const std::vector<std::string
         libName.resize(length);
         comm.Bcast(libName,0);
       }
-      std::string cmd=config::getEnvCommand()+" "+Tools::quoteForShell(config::getPlumedRoot()+"/scripts/mklib.sh");
+      std::vector<std::string> options;
       if(includeDirs.empty()) {
-        cmd+=" -n";
+        options.push_back("-n");
       }
       for(const auto& dir : includeDirs) {
-        cmd+=" --include "+Tools::quoteForShell(dir);
+        options.push_back("--include");
+        options.push_back(dir);
       }
-      cmd+=" -o "+Tools::quoteForShell(libName)+" "+Tools::quoteForShell(fileName);
+      options.insert(options.end(), {"-o",libName,fileName});
+      // Keep a readable command for logging and the per-command build lock.
+      // This string is not executed.
+      std::string cmd=config::getEnvCommand()+" "+Tools::quoteForShell(config::getPlumedRoot()+"/scripts/mklib.sh");
+      for(const auto& option : options) {
+        cmd+=" "+Tools::quoteForShell(option);
+      }
 
       if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) {
         log<<"Executing: "<<cmd;
@@ -1822,7 +1890,9 @@ void PlumedMain::load(const std::string& fileName, const std::vector<std::string
         // the library is already there, even if running simultaneously).
         // It however decreases the system load if many threads are used.
         auto s=section.startStop(cmd);
-        ret=std::system(cmd.c_str());
+#ifdef __PLUMED_HAS_DLOPEN
+        ret=runMklib(options);
+#endif
       }
       comm.Bcast(ret,0);
       if(ret!=0) {
