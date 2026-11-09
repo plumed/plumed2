@@ -274,12 +274,12 @@ State& state() {
 
 ModuleLoader::Context::Context(const DLLoader& loader):previous(contextLoader) {
   contextLoader=&loader;
-  Register::setContextImages(loader.getHandles());
+  Register::setContextImages(&loader.getHandles());
 }
 
 ModuleLoader::Context::~Context() {
   contextLoader=previous;
-  Register::setContextImages(previous?previous->getHandles():std::vector<void*> {});
+  Register::setContextImages(previous?&previous->getHandles():nullptr);
 }
 
 void ModuleLoader::inheritContext(DLLoader& loader) {

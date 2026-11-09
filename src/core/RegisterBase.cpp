@@ -30,7 +30,9 @@
 namespace PLMD {
 
 namespace {
-thread_local std::vector<void*> contextImages;
+// A nontrivial TLS destructor would pin an otherwise unloadable kernel on ELF.
+// Context owns the referenced loader and restores this pointer before it dies.
+thread_local const std::vector<void*>* contextImages=nullptr;
 class Singleton {
 public:
   /// Mutex to avoid simultaneous registrations from multiple threads
@@ -107,11 +109,13 @@ void Register::completeAllRegistrations(void* image) {
 std::vector<void*> Register::automaticImages() {
   std::lock_guard<std::mutex> lock(getSingleton().imagesMutex);
   auto result=getSingleton().automaticImages;
-  result.insert(result.end(),contextImages.begin(),contextImages.end());
+  if(contextImages) {
+    result.insert(result.end(),contextImages->begin(),contextImages->end());
+  }
   return result;
 }
 
-void Register::setContextImages(const std::vector<void*>& images) {
+void Register::setContextImages(const std::vector<void*>* images) {
   contextImages=images;
 }
 

@@ -90,7 +90,7 @@ public:
   /// return a registration lock
   static RegistrationLock registrationLock(const std::string & fullpath);
 
-  static void setContextImages(const std::vector<void*>& images);
+  static void setContextImages(const std::vector<void*>* images);
   static void setAutomaticImages(const std::vector<void*>& images);
   /// Save all staged objects in all registers
   static void completeAllRegistrations(void* image);
