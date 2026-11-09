@@ -58,6 +58,23 @@ std::string Checkpointing::suffixedPath(const std::string& fileName) const {
   return FileBase::appendSuffix(fileName,plumed.getSuffix());
 }
 
+std::string Checkpointing::taggedName(const std::string& fileName,const std::string& tag) {
+  // plumed.cpt -> plumed_prev.cpt, plumed_final.cpt (the replica suffix, if any, goes after them)
+  std::string name=fileName;
+  const size_t slash=name.find_last_of("/\\");
+  const size_t dot=name.find_last_of('.');
+  if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
+    name.insert(dot,tag);
+  } else {
+    name+=tag;
+  }
+  return name;
+}
+
+std::string Checkpointing::finalName(const std::string& fileName) {
+  return taggedName(fileName,"_final");
+}
+
 void Checkpointing::setup(const std::string& fileName,long long int checkpointStride) {
   plumed_massert(!enabled(),"only one CHECKPOINT action is allowed");
   plumed_massert(!fileName.empty(),"CHECKPOINT: FILE cannot be empty");
@@ -66,20 +83,8 @@ void Checkpointing::setup(const std::string& fileName,long long int checkpointSt
   file=fileName;
   stride=checkpointStride;
   path=suffixedPath(file);
-  // plumed.cpt -> plumed_prev.cpt, plumed_final.cpt (the replica suffix, if any, goes after them)
-  const auto tagged=[this](const std::string& tag) {
-    std::string name=file;
-    const size_t slash=name.find_last_of("/\\");
-    const size_t dot=name.find_last_of('.');
-    if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
-      name.insert(dot,tag);
-    } else {
-      name+=tag;
-    }
-    return suffixedPath(name);
-  };
-  prevPath=tagged("_prev");
-  finalPath=tagged("_final");
+  prevPath=suffixedPath(taggedName(file,"_prev"));
+  finalPath=suffixedPath(finalName(file));
   // a new run does not overwrite the checkpoints of a previous one
   if(!pending) {
     OFile f;
@@ -694,6 +699,13 @@ void Checkpointing::restore() {
   }
   pending.reset();
   log<<"Checkpoint state restored at step "<<restartStep<<"\n";
+  // the final checkpoint of the previous run is out of date once the run continues
+  // (RESTART_FROM=AUTO reads it when it exists)
+  if(enabled()) {
+    OFile f;
+    f.link(plumed);
+    f.backupFile("bck",finalPath);
+  }
 }
 
 void Checkpointing::atStepStart(bool signal) {
@@ -734,7 +746,7 @@ void Checkpointing::atRunEnd() {
   }
   // the state after the update of the last step is the one at the start of the next step
   write(lastStep+stepIncrement,finalPath,"");
-  plumed.getLog()<<"  (final checkpoint: restart from it with the MD engine presenting step "<<lastStep+stepIncrement<<" first, e.g. RESTART_FROM="<<finalPath<<")\n";
+  plumed.getLog()<<"  (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step "<<lastStep+stepIncrement<<")\n";
 }
 
 }

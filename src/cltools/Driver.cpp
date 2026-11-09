@@ -549,13 +549,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   long long int step=0;
   const bool initialStepGiven=parse("--initial-step",step);
 
-  if(restart) {
-    p.cmd("setRestart",1);
-    // like an MD engine restarting from its checkpoint: the files are trimmed at the initial step
-    if(initialStepGiven && restartFromCheckpoint.length()==0) {
-      p.cmd("setRestartStep",step);
-    }
-  }
   if(restartFromCheckpoint.length()>0) {
     // with --multi every replica has its own file, with the replica suffix
     std::string fname=restartFromCheckpoint;
@@ -565,6 +558,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     CheckpointReader reader(CheckpointReader::readFile(fname));
     restartStep=reader.get<long long int>("step");
     std::fprintf(out,"Restarting from checkpoint %s written at step %lld\n",fname.c_str(),restartStep);
+  }
+  if(restart) {
+    p.cmd("setRestart",1);
+    // like an MD engine restarting from its checkpoint: the files are trimmed at the initial step,
+    // or PLUMED restarts from its checkpoint of the same step
+    if(restartFromCheckpoint.length()>0) {
+      p.cmd("setRestartStep",restartStep);
+    } else if(initialStepGiven) {
+      p.cmd("setRestartStep",step);
+    }
   }
 
   if(Communicator::initialized()) {

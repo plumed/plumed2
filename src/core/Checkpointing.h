@@ -127,6 +127,10 @@ public:
   const std::string& getPath() const {
     return path;
   }
+/// plumed.cpt -> plumed_prev.cpt for the tag _prev (without the replica suffix)
+  static std::string taggedName(const std::string& fileName,const std::string& tag);
+/// Name of the checkpoint written at the end of the run (plumed_final.cpt), without the replica suffix
+  static std::string finalName(const std::string& fileName);
 /// Full path of the checkpoint file for this replica, given its base name.
   std::string suffixedPath(const std::string& fileName) const;
 /// Step from which the MD engine restarts (cmd "setRestartStep", before init).
