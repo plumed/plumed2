@@ -202,7 +202,7 @@ fi
 for need in $plumed_needs
 do
   echo "Checking for $need dependency"
-  if ! $plumed_nompi config -q has $need
+  if ! $plumed_nompi modules -q --has-feature $need
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -220,7 +220,7 @@ done
 for module in $plumed_modules
 do
   echo "Checking for $module module"
-  if ! $plumed_nompi config -q module $module
+  if ! $plumed_nompi modules -q --has $module
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then

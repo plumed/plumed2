@@ -478,7 +478,8 @@ PLUMED_AUTOLOAD=0 plumed --load-module=ves driver --plumed plumed.dat --noatoms
 ```
 
 Explicit loading makes the requested module and its native dependencies available to that PLUMED object or command-line invocation. Other objects keep their own module selection.
-Use `plumed config module ves` or `plumed --list-modules` to query modules available at runtime. The standalone `plumed-config` script describes the base build.
+Use `plumed modules --list` to list runtime modules and `plumed modules --has ves` to check their presence (exit status 0 when available, 1 otherwise).
+`plumed modules --has-feature libtorch` checks native features provided by the base and loaded extensions. Both `plumed config` and the standalone `plumed-config` script describe the static base build; the latter can be used when cross compiling.
 
 The table below lists the modules, their default build setting and their direct native dependencies. The [graph](modulegraph.md) also includes action requirements.
 

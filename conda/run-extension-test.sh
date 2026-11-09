@@ -8,7 +8,7 @@ prefix="$task/environment"
 conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed=$VERSION"
 kernel=$(find "$prefix/lib" -maxdepth 1 -name 'libplumedKernel.*' -type f | head -n 1)
 cp "$kernel" "$task/kernel-before"
-! "$prefix/bin/plumed" config -q module ves
+! "$prefix/bin/plumed" modules -q --has ves
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "plumed-ext-ves=$VERSION" "plumed-ext-pamm=$VERSION"
 cmp "$kernel" "$task/kernel-before"
@@ -32,7 +32,8 @@ PLUMED_AUTOLOAD=0 PLUMED_KERNEL="$kernel" \
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "plumed-ext-drr=$VERSION" "plumed-ext-fourier=$VERSION" \
   "plumed-ext-pytorch=$VERSION" "plumed-ext-metatomic=$VERSION" \
-  "plumed-ext-ttsketch=$VERSION" "plumed-ext-kenref=$VERSION"
+  "plumed-ext-ttsketch=$VERSION" "plumed-ext-kenref=$VERSION" \
+  "plumed-ext-symfunc=$VERSION"
 python - "$prefix" <<'PYTHON'
 import json
 import sys
@@ -46,13 +47,19 @@ for module, feature in [
     report = json.loads((reports / (module + ".json")).read_text())
     assert report["optional_features"][feature], report
 PYTHON
-"$prefix/bin/plumed" config -q module drr fourier pytorch metatomic ttsketch kenref
+"$prefix/bin/plumed" modules -q --has drr fourier pytorch metatomic ttsketch kenref
 cmp "$kernel" "$task/kernel-before"
+# Runtime features follow the selected module closure; config stays static.
+! "$prefix/bin/plumed" config -q has libtorch
+! PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" modules -q --has-feature libtorch
+PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" --load-module=pytorch modules -q --has-feature libtorch
+! PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" --load-module=pytorch modules -q --has-feature libmetatomic
+python extensions/tests/regressions.py --prefix "$prefix"
 
 conda remove -y -p "$prefix" --override-channels -c local -c conda-forge plumed-ext-ves
 cmp "$kernel" "$task/kernel-before"
-! "$prefix/bin/plumed" config -q module ves
-"$prefix/bin/plumed" config -q module pamm adjmat
+! "$prefix/bin/plumed" modules -q --has ves
+"$prefix/bin/plumed" modules -q --has pamm adjmat
 # Verify removal leaves all base functionality intact.
 "$prefix/bin/plumed" --has-thread-mpi
-"$prefix/bin/plumed" config -q module bias
+"$prefix/bin/plumed" modules -q --has bias

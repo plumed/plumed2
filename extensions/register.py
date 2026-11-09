@@ -7,6 +7,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from features import feature_identity
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--plumed", required=True)
 parser.add_argument("--module", required=True)
@@ -16,9 +18,18 @@ parser.add_argument(
     help="library path relative to the installed registration directory",
 )
 parser.add_argument("--requires", nargs="*", default=[])
+parser.add_argument(
+    "--features",
+    nargs="*",
+    default=[],
+    help="__PLUMED_HAS_* macro suffixes exported by this plugin",
+)
 parser.add_argument("--variant", default="default")
 parser.add_argument("--output", required=True, type=Path)
 args = parser.parse_args()
+for feature in args.features:
+    if not re.fullmatch(r"[A-Z][A-Z0-9_]*", feature):
+        parser.error("feature macro suffixes must be uppercase C identifiers")
 for name in [args.module, *args.requires]:
     if not re.fullmatch(r"[a-z][a-z0-9_]*", name):
         parser.error("module names must be lowercase C identifiers")
@@ -35,6 +46,7 @@ args.output.mkdir(parents=True, exist_ok=True)
     '#include "config/Config.h"\n'
     + f'extern "C" const char* plumed_module_{args.module}() {{ return "{build_id}"; }}\n'
     + f'extern "C" const void* plumed_module_{args.module}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+    + feature_identity(args.module, args.features)
 )
 (args.output / f"{args.module}.plumed").write_text(
     f"module {args.module}\nbuild {build_id}\nvariant {args.variant}\nlibrary {args.library}\n"

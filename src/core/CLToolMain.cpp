@@ -416,7 +416,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [--load-module MODULE]   : loads an installed module and its hard dependencies\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
-      "Commands:\n";
+      "Commands:\n"
+      "  plumed modules : list or check runtime module and native feature availability\n";
     std::fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
       auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(availableCxx[j]));
@@ -447,37 +448,59 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // this is the command to be executed:
   std::string command(argv[i]);
-  // Module availability is runtime state; other config inquiries retain their
-  // build-provenance semantics in config.sh.
-  if(command=="config") {
-    bool query=false,quiet=false;
+  // Configuration remains build-time provenance. Runtime availability has its
+  // own command and follows this invocation's automatic/explicit load context.
+  if(command=="modules") {
+    bool query=false,featureQuery=false,list=false,quiet=false;
     std::vector<std::string> names;
     for(int j=i+1; j<argc; ++j) {
       const std::string option=argv[j];
-      if(option=="module") {
-        query=true;
+      if(option=="--help" || option=="-h") {
+        std::fprintf(out,"Usage: plumed modules [--list | --has NAME... | --has-feature NAME...] [-q]\n"
+                     "List visible runtime modules (default), or check that all requested modules/features are available.\n"
+                     "Features include the kernel and visible extensions; config describes the base build only.\n"
+                     "Presence checks return 0 when all names are available, otherwise 1. -q suppresses output.\n");
+        return 0;
       } else if(option=="-q" || option=="--quiet") {
         quiet=true;
-      } else {
+      } else if(option=="--list" && !query && !list) {
+        list=true;
+      } else if((option=="--has" || option=="--has-feature") && !query && !list) {
+        query=true;
+        featureQuery=option=="--has-feature";
+      } else if(query && !option.empty() && option[0]!='-') {
         names.push_back(option);
-      }
-    }
-    if(query) {
-      if(names.empty()) {
+      } else {
+        std::fprintf(stderr,"ERROR: invalid modules option %s; use plumed modules --help\n",option.c_str());
         return 1;
       }
-      int result=0;
-      for(const auto& name:names) {
-        const bool present=ModuleLoader::available(name,dlloader);
-        if(!quiet) {
-          std::fprintf(out,"%s %s\n",name.c_str(),present?"on":"off");
-        }
-        if(!present) {
-          result=1;
-        }
-      }
-      return result;
     }
+    if(query && names.empty()) {
+      std::fprintf(stderr,"ERROR: modules presence checks require at least one name\n");
+      return 1;
+    }
+    const auto available=featureQuery?ModuleLoader::features(dlloader):ModuleLoader::modules(dlloader);
+    if(!query) {
+      if(quiet) {
+        std::fprintf(stderr,"ERROR: modules -q requires a presence check\n");
+        return 1;
+      }
+      for(const auto& name:available) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
+    }
+    int result=0;
+    for(const auto& name:names) {
+      const bool present=std::find(available.begin(),available.end(),name)!=available.end();
+      if(!quiet) {
+        std::fprintf(out,"%s %s\n",name.c_str(),present?"on":"off");
+      }
+      if(!present) {
+        result=1;
+      }
+    }
+    return result;
   }
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {

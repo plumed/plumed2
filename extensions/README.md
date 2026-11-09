@@ -55,18 +55,27 @@ LOAD MODULE=ves
 
 ```sh
 PLUMED_AUTOLOAD=0 plumed --load-module=ves driver --plumed plumed.dat --noatoms
-plumed config module ves
-plumed --list-modules
+plumed modules --has ves
+plumed modules --list
 ```
 
 Explicit loading affects only the requesting object or CLI context. Hard
 dependencies become available silently in that context. Repeated loads, including
 already-built-in modules, succeed without changing visibility elsewhere.
 Autoloaded modules are shared by the kernel and retained across object lifetimes.
-`config module` reports built-in and successfully loaded modules. Other config
-fields, including `makefile_conf`, describe the base build. The standalone
-`plumed-config` script remains a static base-build inquiry for cross compilation;
-use the native `plumed config module` command for runtime availability.
+`plumed modules --list` reports built-in and successfully loaded modules.
+`plumed modules --has ves pamm` checks all requested modules and returns 0 only
+when all are visible; `-q` suppresses output. Runtime native feature checks use
+`plumed modules --has-feature libtorch`; they combine the base features with
+features exported by visible extension libraries. This reports availability in
+this invocation, including silently loaded dependencies, rather than installation
+alone. `PLUMED_AUTOLOAD=0` affects these queries normally.
+
+Both `plumed config` and standalone `plumed-config` describe the static base
+build, including module and library features. The standalone script can be used
+when cross compiling without executing the target kernel. For example, installing
+PyTorch can make `plumed modules --has-feature libtorch` succeed while
+`plumed config has libtorch` still describes a base built without Torch.
 
 Two variants with the same module identity are an error. HPC modulefiles should
 expose only the selected variant's directory. For troubleshooting,
@@ -127,3 +136,21 @@ is `_extensions/native-dependencies.json`. No shortcut dependencies are inferred
 The three existing plugins use the common registration mechanism and also have
 local conda declarations. Plugin-specific recipes and CUDA variants remain a
 subsequent stage.
+
+## Installed numerical checks
+
+`conda/run-extension-test.sh` runs four existing numerical fixtures through the
+ordinary regression harness against installed packages: VES static bias/forces,
+Fourier grids, DRR checkpoint/restart and PyTorch strided tensors/derivatives.
+The original configs, feature/module guards and references are preserved, and
+any skipped required case fails the packaging check. The test environment installs
+Symfunc explicitly for the Fourier fixture’s coordination-number input; this
+does not create a Fourier package dependency on a shortcut requirement.
+The regression harness uses
+`plumed modules --has` and `--has-feature`, so features supplied by extensions
+are recognized even when the base was compiled without them.
+
+Plugin builders can pass `--features LIBRARY_MACRO` to `extensions/register.py`.
+The identity translation unit exports those `__PLUMED_HAS_LIBRARY_MACRO` flags
+only when enabled by its compile flags, following the same runtime inquiry
+contract as source modules.

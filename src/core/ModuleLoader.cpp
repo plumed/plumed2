@@ -338,4 +338,60 @@ std::vector<std::string> ModuleLoader::modules(const DLLoader& loader) {
   names.erase(std::unique(names.begin(),names.end()),names.end());
   return names;
 }
+
+std::vector<std::string> ModuleLoader::features(const DLLoader& loader) {
+  std::set<std::string> result;
+  const auto add=[&result](const std::string& words) {
+    std::istringstream stream(words);
+    std::string feature;
+    while(stream>>feature) {
+      result.insert(feature);
+    }
+  };
+  std::istringstream configuration(config::getMakefile());
+  std::string line;
+  const std::string prefix="-D__PLUMED_" "HAS_";
+  while(std::getline(configuration,line)) {
+    if(line.rfind("CPPFLAGS=",0)!=0) {
+      continue;
+    }
+    std::istringstream flags(line.substr(9));
+    std::string flag;
+    while(flags>>flag) {
+      if(flag.rfind(prefix,0)!=0 || flag.size()<=prefix.size()) {
+        continue;
+      }
+      auto feature=flag.substr(prefix.size());
+      const auto equals=feature.find('=');
+      if(equals!=std::string::npos) {
+        if(feature.substr(equals+1)=="0") {
+          continue;
+        }
+        feature.erase(equals);
+      }
+      std::transform(feature.begin(),feature.end(),feature.begin(),[](unsigned char c) {
+        return c>='A' && c<='Z'?c-'A'+'a':c;
+      });
+      add(feature=="mpi"?"mpi real_mpi":feature);
+      if(feature=="thread_mpi") {
+        add("mpi");
+      }
+    }
+  }
+#ifdef __PLUMED_HAS_DLOPEN
+  for(const auto& name:loader.getModuleNames()) {
+    const auto symbol="plumed_module_"+name+"_features";
+    using Features=const char*(*)();
+    for(auto image:loader.getHandles()) {
+      auto features=reinterpret_cast<Features>(dlsym(image,symbol.c_str()));
+      if(features) {
+        add(features());
+        break;
+      }
+    }
+  }
+#endif
+  return {result.begin(),result.end()};
+}
+
 }

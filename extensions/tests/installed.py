@@ -39,16 +39,50 @@ def run(*arguments, success=True, env=None, error=None):
     return result.stdout
 
 
-assert "ves" not in run("--list-modules").split()
-run("config", "-q", "module", "ves", success=False)
-run("--load-module=ves", "config", "-q", "module", "ves")
-run("--load-module=pamm", "config", "-q", "module", "pamm", "adjmat")
-run("--load-module=pamm", "config", "-q", "module", "ves", success=False)
-run("--load-module=bias", "--load-module=bias", "config", "-q", "module", "bias")
-run("--load-module=nonexistent", "config", "-q", "module", "nonexistent", success=False)
+assert "ves" not in run("modules", "--list").split()
+run("modules", "-q", "--has", "ves", success=False)
+run("--load-module=ves", "modules", "-q", "--has", "ves")
+run("--load-module=pamm", "modules", "-q", "--has", "pamm", "adjmat")
+run("--load-module=pamm", "modules", "-q", "--has", "ves", success=False)
+run("--load-module=bias", "--load-module=bias", "modules", "-q", "--has", "bias")
+run("--load-module=nonexistent", "modules", "-q", "--has", "nonexistent", success=False)
 run("--load-module=../ves", "help", success=False)
 automatic = dict(environment, PLUMED_AUTOLOAD="1")
-run("config", "-q", "module", "ves", "pamm", "adjmat", env=automatic)
+run("modules", "-q", "--has", "ves", "pamm", "adjmat", env=automatic)
+# Build-time queries stay identical even when extensions are automatically loaded.
+run("config", "-q", "module", "ves", success=False, env=automatic)
+assert run("config", "module", "ves", success=False, env=automatic) == run(
+    "config", "module", "ves", success=False
+)
+for arguments in [
+    ("module", "ves"),
+    ("module", "bias"),
+    ("has", "libtorch"),
+    ("show",),
+]:
+    runtime_config = subprocess.run(
+        [plumed, "config", *arguments],
+        env=automatic,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    static_config = subprocess.run(
+        [str(base / "bin/plumed-config"), *arguments],
+        env=dict(automatic, PLUMED_KERNEL=str(base / "nonexecutable-target-kernel")),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert (runtime_config.returncode, runtime_config.stdout) == (
+        static_config.returncode,
+        static_config.stdout,
+    )
+run("modules", "--has", success=False)
+run("modules", "--list", "--has", "ves", success=False)
+run("modules", "--unknown", success=False)
+run("modules", "--has-feature", "zlib")
+run("modules", "--has-feature", "nonexistent", success=False)
 # Named loading has to reach driver-created PLUMED objects, not just CLI lookup.
 with tempfile.TemporaryDirectory() as temp:
     directory = Path(temp)
@@ -76,9 +110,9 @@ with tempfile.TemporaryDirectory() as temp:
     )
     (conflict / "ves.plumed").write_text(altered)
     conflicting = dict(automatic, PLUMED_PLUGIN_PATH=f"{registrations}:{conflict}")
-    run("config", "module", "ves", success=False, env=conflicting)
+    run("modules", "--has", "ves", success=False, env=conflicting)
     selected = dict(conflicting, PLUMED_MODULE_OVERRIDE=f"ves={real_library}")
-    run("config", "-q", "module", "ves", env=selected)
+    run("modules", "-q", "--has", "ves", env=selected)
     # Build mismatch is rejected before loading the library.
     mismatch = directory / "mismatch"
     mismatch.mkdir()
@@ -103,9 +137,9 @@ with tempfile.TemporaryDirectory() as temp:
         error="different PLUMED base",
     )
     # Autoload opt-out must recover even with a bad installed registration.
-    run("config", "-q", "module", "bias", env=dict(mismatched, PLUMED_AUTOLOAD="0"))
+    run("modules", "-q", "--has", "bias", env=dict(mismatched, PLUMED_AUTOLOAD="0"))
     absent = dict(automatic, PLUMED_PLUGIN_PATH=str(directory / "absent"))
-    run("config", "-q", "module", "bias", env=absent)
+    run("modules", "-q", "--has", "bias", env=absent)
 if args.visibility:
     subprocess.run(
         [str(args.visibility.resolve())],

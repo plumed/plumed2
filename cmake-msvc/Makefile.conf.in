@@ -2,3 +2,4 @@
 program_name=plumed
 version=@PLUMED_VERSION_LONG@
 version_git=@PLUMED_VERSION_GIT@
+CPPFLAGS=@PLUMED_CONFIG_CPPFLAGS@

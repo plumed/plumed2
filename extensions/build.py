@@ -12,7 +12,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from features import FeatureProbes
+from features import FeatureProbes, feature_identity
 from inventory import generate_catalog
 
 root = Path(__file__).resolve().parent.parent
@@ -193,6 +193,7 @@ for name in order:
         '#include "config/Config.h"\n'
         + f'extern "C" const char* plumed_module_{name}() {{ return "{build_id}"; }}\n'
         + f'extern "C" const void* plumed_module_{name}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+        + feature_identity(name, catalog["modules"][name]["feature_guards"])
     )
     feature_flags, native_flags, enabled_features = probes.module_flags(
         catalog["modules"][name]["feature_guards"]

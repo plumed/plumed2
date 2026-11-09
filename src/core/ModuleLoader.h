@@ -46,6 +46,8 @@ public:
   static void load(const std::string& name, DLLoader& loader);
   static bool available(const std::string& name, const DLLoader& loader);
   static std::vector<std::string> modules(const DLLoader& loader);
+  /// Base native features plus features compiled into visible loaded modules.
+  static std::vector<std::string> features(const DLLoader& loader);
 };
 }
 #endif
