@@ -532,3 +532,53 @@ jobs:
         ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
         make install
+
+  # AddressSanitizer and UndefinedBehaviorSanitizer: a memory error or undefined behaviour stops the
+  # regtest that triggers it. Regtests without MPI and optional libraries, as in checksWF.yml (it is
+  # here and not there because it is too slow to be part of the quick checks that run first).
+  sanitizers:
+    runs-on: ubuntu-24.04
+    env:
+      PLUMED_CCACHE_SIZE: 500M
+      # leaks are not checked: objects that live until the end of the program are not released
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: print_stacktrace=1
+      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
+      # without this the regtests that load the kernel at runtime fail
+      PLUMED_LOAD_NODEEPBIND: yes
+      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
+      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
+      PLUMED_FORTRAN_FLAGS: -fsanitize=address,undefined
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all \
+          --disable-external-blas --disable-external-lapack \
+          CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" \
+          LDFLAGS="-fsanitize=address,undefined" --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail

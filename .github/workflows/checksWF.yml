@@ -17,9 +17,8 @@ env:
 
 jobs:
   # Builds that check the code rather than the results. Each one runs the regtests (no MPI, no optional
-  # libraries) on a configuration that the jobs of linuxWF.yml do not cover:
-  # - sanitizers: AddressSanitizer and UndefinedBehaviorSanitizer; a memory error or undefined behaviour
-  #   stops the regtest that triggers it.
+  # libraries) on a configuration that the jobs of linuxWF.yml do not cover (the sanitizers build, which
+  # is slower, is there):
   # - clang-noopenmp: clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which flags
   #   hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
   #   embedded third-party libraries) fails the job. Run with PLUMED_NUM_THREADS=2 like the other jobs,
@@ -31,10 +30,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - variant: sanitizers
-          cc: gcc
-          cxx: g++
-          config: --disable-external-blas --disable-external-lapack CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" LDFLAGS="-fsanitize=address,undefined"
         - variant: clang-noopenmp
           cc: clang
           cxx: clang++
@@ -46,16 +41,7 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
-      PLUMED_CCACHE_SIZE: ${{ matrix.variant == 'sanitizers' && '500M' || '100M' }}
-      # leaks are not checked: objects that live until the end of the program are not released
-      ASAN_OPTIONS: detect_leaks=0
-      UBSAN_OPTIONS: print_stacktrace=1
-      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
-      # without this the regtests that load the kernel at runtime fail in the sanitizers job
-      PLUMED_LOAD_NODEEPBIND: yes
-      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
-      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
-      PLUMED_FORTRAN_FLAGS: ${{ matrix.variant == 'sanitizers' && '-fsanitize=address,undefined' || '' }}
+      PLUMED_CCACHE_SIZE: 100M
     steps:
     - uses: actions/checkout@v6
     - name: Identify runner image
