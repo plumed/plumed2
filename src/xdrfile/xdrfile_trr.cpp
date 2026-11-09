@@ -58,6 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -127,10 +128,13 @@ static int do_trnheader(XDRFILE *xd,mybool bRead,t_trnheader *sh)
 	char buf[BUFSIZE];
   
 	if (xdrfile_read_int(&magic,1,xd) != 1)
-		return exdrINT;
+		return bRead ? exdrENDOFFILE : exdrINT; /* PLUMED: end of the file when reading */
   
 	if (bRead) 
     {
+        /* PLUMED: the magic number was not checked */
+        if (magic != GROMACS_MAGIC)
+            return exdrMAGIC;
         if (xdrfile_read_int(&slen,1,xd) != 1)
             return exdrINT;
         if (slen != strlen(version)+1)
@@ -168,10 +172,20 @@ static int do_trnheader(XDRFILE *xd,mybool bRead,t_trnheader *sh)
 		return exdrINT;
 	if (xdrfile_read_int(&sh->natoms,1,xd) != 1)
 		return exdrINT;
+	/* PLUMED: the sizes are used as divisors and to allocate the buffers */
+	if (sh->natoms <= 0 || sh->natoms > INT_MAX/(DIM*(int)sizeof(float)) || sh->box_size < 0 || sh->x_size < 0 || sh->v_size < 0 || sh->f_size < 0)
+		return exdrHEADER;
 	
 	if ((result = nFloatSize(sh,&nflsz)) != exdrOK)
 		return result;
 	sh->bDouble = (nflsz == sizeof(double));
+	/* PLUMED: the size of each array must be the one of natoms atoms */
+	{
+		long long nbytes = (long long) sh->natoms * DIM * nflsz;
+		if ((sh->x_size && sh->x_size != nbytes) || (sh->v_size && sh->v_size != nbytes) ||
+		    (sh->f_size && sh->f_size != nbytes) || (sh->box_size && sh->box_size != DIM*DIM*nflsz))
+			return exdrHEADER;
+	}
 	
 	if (xdrfile_read_int(&sh->step,1,xd) != 1)
 		return exdrINT;
@@ -455,10 +469,12 @@ static int do_htrn(XDRFILE *xd,mybool bRead,t_trnheader *sh,
 static int do_trn(XDRFILE *xd,mybool bRead,int *step,float *t,float *lambda,
 				  matrix box,int *natoms,rvec *x,rvec *v,rvec *f)
 {
-    t_trnheader *sh;
+    /* PLUMED: on the stack, it was leaked on the error paths */
+    t_trnheader shdata;
+    t_trnheader *sh=&shdata;
     int result;
   
-    sh = (t_trnheader *)calloc(1,sizeof(*sh));
+    memset(sh,0,sizeof(*sh));
   
     if (!bRead) {
         sh->box_size = (NULL != box) ? sizeof(matrix):0;
@@ -476,6 +492,9 @@ static int do_trn(XDRFILE *xd,mybool bRead,int *step,float *t,float *lambda,
     if ((result = do_trnheader(xd,bRead,sh)) != exdrOK)
         return result;
     if (bRead) {
+        /* PLUMED: x, v and f are sized for *natoms atoms */
+        if (sh->natoms != *natoms)
+            return exdrHEADER;
         *natoms = sh->natoms;
         *step   = sh->step;
         *t      = sh->td;
@@ -483,8 +502,6 @@ static int do_trn(XDRFILE *xd,mybool bRead,int *step,float *t,float *lambda,
     }
     if ((result = do_htrn(xd,bRead,sh,box,x,v,f)) != exdrOK)
         return result;
-
-    free(sh);
   
     return exdrOK;
 }
@@ -504,9 +521,10 @@ int read_trr_natoms(char *fn,int *natoms)
 	xd = xdrfile_open(fn,"r");
 	if (NULL == xd)
 		return exdrFILENOTFOUND;
-	if ((result = do_trnheader(xd,1,&sh)) != exdrOK)
+	result = do_trnheader(xd,1,&sh);
+	xdrfile_close(xd); /* PLUMED: it was not closed on error */
+	if (result != exdrOK)
 		return result;
-	xdrfile_close(xd);
 	*natoms = sh.natoms;
 	
 	return exdrOK;

@@ -365,8 +365,6 @@ AC_ARG_ENABLE([thread-mpi],
   [])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
-PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
@@ -380,6 +378,7 @@ PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonat
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, files with extension .h5)],[yes])
+PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
@@ -734,32 +733,6 @@ fi
 #### Optional libraries ####
 AC_MSG_NOTICE([Now we will check for optional headers and libraries])
 
-#############################################################
-# I add the possibility to completely remove molfile_plugins
-# I would like to be 100% that the molfile module compiles
-# correctly on all machines
-# In case of problem, it is sufficient to configure with
-# ./configure --disable-molfile-plugins
-# GB
-#############################################################
-
-if test $molfile_plugins = true ; then
-
-# Check for molfile_plugins and use internal fallback if not found. TG
-
-# We always have molfile, now
-AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
-
-  if test "$external_molfile_plugins" = true ; then
-    PLUMED_CHECK_PACKAGE([libmolfile_plugin.h],[molfile_dcdplugin_init],[__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS],molfile_plugin)
-    if test "$__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS" != yes ; then
-      AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
-    else
-      AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
-    fi
-  fi
-fi
-
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
 # to be loaded later
@@ -851,6 +824,23 @@ if test $asmjit = true ; then
   else
     AC_MSG_WARN([cannot link required clock or shared-memory functions on this Linux, asmjit will not be enabled])
   fi
+fi
+
+# the gemmi CIF parser (header only) is in src/gemmi; with --enable-system-gemmi
+# the one installed in the system is used instead (put its include directory in CPPFLAGS)
+if test $system_gemmi = true ; then
+  AC_MSG_CHECKING([whether the gemmi CIF parser installed in the system can be used])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <gemmi/cif.hpp>
+template<typename Rule> struct plumed_test_action : tao::pegtl::nothing<Rule> {};
+  ],[
+  tao::pegtl::memory_input<> in("data_test\n", "test");
+  return tao::pegtl::parse<gemmi::cif::rules::file, plumed_test_action, gemmi::cif::Errors>(in) ? 0 : 1;
+  ])],
+  [AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_HAS_SYSTEM_GEMMI])],
+  [AC_MSG_RESULT([no]);
+  AC_MSG_WARN([cannot use the gemmi CIF parser installed in the system, the copy in src/gemmi will be used])])
 fi
 
 if test $dlopen = true ; then

@@ -1,0 +1,5 @@
+# a valid mmCIF file with two models (the second one is ignored) and a unit cell;
+# the malformed files are in config (plumed_regtest_after), with the messages in errors.reference
+MOLINFO STRUCTURE=good.cif WHOLE
+d: DISTANCE ATOMS=@N-A_1,@O-A_1
+PRINT ARG=d FILE=colvar FMT=%8.4f

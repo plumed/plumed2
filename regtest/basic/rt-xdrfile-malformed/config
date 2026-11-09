@@ -1,0 +1,110 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# The main run writes valid xtc and trr files with DUMPATOMS (xdrfile writer).
+# Then the files are read back with --ixtc and --itrr (xdrfile reader), and corrupted
+# files, the same as in rt-molfile-malformed, are given to the xdrfile reader: on master
+# they overflowed the buffers, divided by zero, or were taken as the end of the file.
+# A truncated last frame is ignored with a warning.
+
+# big endian (xdr) 32 bit integers, written as raw bytes
+function be32(){ printf "$(printf '\\%03o\\%03o\\%03o\\%03o' $(( ($1>>24)&255 )) $(( ($1>>16)&255 )) $(( ($1>>8)&255 )) $(( $1&255 )))" ; }
+function zeros(){ head -c $1 /dev/zero ; }
+function xtc_box(){ for v in 0x40400000 0 0 0 0x40400000 0 0 0 0x40400000 ; do be32 $v ; done ; }
+# xtc_frame natoms natoms2 smallidx minint maxint datalen
+function xtc_frame(){
+  be32 1995 ; be32 $1 ; be32 0 ; be32 0 ; xtc_box
+  be32 $2 ; be32 0x447a0000
+  be32 $4 ; be32 $4 ; be32 $4 ; be32 $5 ; be32 $5 ; be32 $5 ; be32 $3
+  be32 $6 ; zeros $6
+}
+# trr_header titlesize natoms
+function trr_header(){
+  be32 1993 ; be32 1 ; be32 $1 ; printf "GMX_trn_file" ; be32 0 ; be32 0 ; be32 36 ; be32 0 ; be32 0 ; be32 0 ; be32 0
+  be32 $(( 12*$2 )) ; be32 0 ; be32 0 ; be32 $2 ; be32 0 ; be32 0 ; be32 0 ; be32 0
+}
+
+function plumed_regtest_before(){
+  # two frames of 20 atoms
+  awk 'BEGIN{for(f=0;f<2;f++){print 20; print "3.0 3.0 3.0"; for(i=1;i<=20;i++) printf "X %.3f %.3f %.3f\n", 0.1*i+0.01*f, 0.05*i, 2.0-0.07*i}}' > traj.xyz
+  # xtc: the two copies of the number of atoms differ (uncompressed frame, then compressed frame)
+  { be32 1995 ; be32 5 ; be32 0 ; be32 0 ; xtc_box ; be32 9 ; zeros 108 ; } > bad_xtc_natoms_small.xtc
+  xtc_frame 10 100000 20 0 1000 64 > bad_xtc_natoms.xtc
+  xtc_frame 10 10 20 0 1000 4000 > bad_xtc_datalen.xtc
+  xtc_frame 10 10 20 5 4 64 > bad_xtc_sizeint.xtc
+  xtc_frame 10 10 2000 0 1000 64 > bad_xtc_smallidx.xtc
+  xtc_frame 10 10 -9000 0 1000 64 > bad_xtc_smallidx_neg.xtc
+  { be32 1995 ; be32 10 ; be32 0 ; be32 0 ; xtc_box ; be32 10 ; be32 0x447a0000 ; for v in 0 0 0 10 10 10 10 ; do be32 $v ; done ; be32 64 ; for i in $(seq 64) ; do printf '\377' ; done ; } > bad_xtc_run.xtc
+  { be32 1995 ; be32 -5 ; zeros 100 ; } > bad_xtc_natoms_neg.xtc
+  # trr: wrong size of the version string, negative number of atoms, wrong magic number
+  { be32 1993 ; be32 1 ; be32 -1 ; for i in $(seq 200) ; do printf AAAAAAAAAAAAAAAAAAAA ; done ; } > bad_trr_title.trr
+  { trr_header 12 -3 ; zeros 100 ; } > bad_trr_natoms.trr
+  { be32 1994 ; zeros 200 ; } > bad_trr_magic.trr
+  echo "DUMPATOMS ATOMS=1-20 FILE=out.xyz PRECISION=3" > plumed_read.dat
+  echo "DUMPATOMS ATOMS=1 FILE=out.xyz" > plumed_bad.dat
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  # files written by the main run: the second frame has more atoms than the first one (heap overflow on master)
+  cat ok10.xtc ok20.xtc > bad_xtc_grow.xtc
+  cat ok10.trr ok20.trr > bad_trr_grow.trr
+  # truncated files, as written by a simulation that stopped while writing (as gmx, the incomplete frame is ignored with a warning)
+  head -c $(( $(wc -c < ok20.xtc) - 7 )) ok20.xtc > bad_xtc_truncated.xtc
+  head -c $(( $(wc -c < ok20.trr) - 7 )) ok20.trr > bad_trr_truncated.trr
+  # name, format, text that must be in the output
+  while read -r name fmt text ; do
+    $plumed driver --plumed plumed_bad.dat --i$fmt bad_$name.$fmt > bad_$name.out 2> bad_$name.err
+    rc=$?
+    if test $rc -gt 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+xtc_natoms_small xtc Requested to decompress 5 coords, file contains 9
+xtc_natoms xtc Requested to decompress 10 coords, file contains 100000
+xtc_datalen xtc XTC corrupted, compressed data larger than the frame
+xtc_sizeint xtc XTC corrupted, sizeint==0
+xtc_smallidx xtc XTC corrupted, smallidx out of range
+xtc_smallidx_neg xtc XTC corrupted, smallidx out of range
+xtc_run xtc XTC corrupted, run beyond the last atom
+xtc_natoms_neg xtc cannot read the number of atoms of the xtc file bad_xtc_natoms_neg.xtc
+xtc_grow xtc cannot read a frame of the xtc file bad_xtc_grow.xtc (xdrfile: Header)
+trr_title trr cannot read the number of atoms of the trr file bad_trr_title.trr
+trr_natoms trr cannot read the number of atoms of the trr file bad_trr_natoms.trr
+trr_magic trr cannot read the number of atoms of the trr file bad_trr_magic.trr
+trr_grow trr cannot read a frame of the trr file bad_trr_grow.trr (xdrfile: Header)
+EOT
+  # truncated files: the complete first frame is read, then the driver stops normally with a warning
+  for f in xtc trr ; do
+    rm -f out.xyz
+    $plumed driver --plumed plumed_read.dat --i$f bad_${f}_truncated.$f > trunc_$f.out 2> trunc_$f.err
+    rc=$?
+    if test $rc -eq 0 && grep -q -F "WARNING: the last frame of the $f file bad_${f}_truncated.$f is incomplete, it is ignored" trunc_$f.err && test "$(grep -c '^ *20$' out.xyz)" -eq 1 ; then
+      echo "${f}_truncated: one frame and a warning" >> errors
+    else
+      echo "${f}_truncated: NOT HANDLED PROPERLY" >> errors
+    fi
+  done
+  # the valid files are read back, and give the positions written (3 decimals)
+  for f in ok20.xtc ok20.trr ; do
+    rm -f out.xyz
+    $plumed driver --plumed plumed_read.dat --i${f##*.} $f > read_$f.out 2>&1 && mv out.xyz read_$f.xyz
+    if cmp -s ok.xyz read_$f.xyz ; then
+      echo "$f: read back" >> errors
+    else
+      echo "$f: DIFFERENT" >> errors
+    fi
+  done
+  # a frame of an xtc file with magic number 2023, as GROMACS writes for very large systems:
+  # same frame, but the size of the compressed data is a 64 bit integer (4 more bytes at byte 88)
+  { be32 2023 ; head -c 88 one20.xtc | tail -c 84 ; zeros 4 ; tail -c +89 one20.xtc ; } > long20.xtc
+  $plumed driver --plumed plumed_read.dat --ixtc one20.xtc > read_one20.out 2>&1 && mv out.xyz read_one20.xyz
+  $plumed driver --plumed plumed_read.dat --ixtc long20.xtc > read_long20.out 2>&1 && mv out.xyz read_long20.xyz
+  if cmp -s read_one20.xyz read_long20.xyz && test -s read_long20.xyz ; then
+    echo "xtc with magic 2023: same frame" >> errors
+  else
+    echo "xtc with magic 2023: DIFFERENT" >> errors
+  fi
+}

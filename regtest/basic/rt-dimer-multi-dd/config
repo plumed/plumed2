@@ -2,3 +2,12 @@ mpiprocs=4
 type=driver
 # two replicas with two ranks each, under a fake domain decomposition
 arg="--plumed plumed.dat --mf_pdb dimer8.pdb --dump-forces ff --dump-forces-fmt %10.6f --multi 2 --debug-dd yes"
+
+# The dimer forces are large (up to 5e4) and printed with 6 decimals: with Intel's compiler the
+# last printed digits of a few of them differ (2e-6, i.e. 4e-11 relative). Allow 1e-5 in these files only.
+plumed_tolerance=(
+  "ff.0:1e-5"
+  "ff.1:1e-5"
+  "ff.2:1e-5"
+  "ff.3:1e-5"
+)

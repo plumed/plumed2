@@ -1,0 +1,9 @@
+type=driver
+# single precision interface of driver (--debug-float) with binary trajectories:
+# with the molfile plugins the single precision reader read no frame and the driver never ended
+extra_files="../../trajectories/molfile_plugin/traj.xtc"
+arg="--plumed plumed.dat --mf_xtc traj.xtc --debug-float yes"
+function plumed_regtest_after(){
+  # the xdrfile reader gives the same frames
+  $plumed driver --plumed plumed_ixtc.dat --ixtc traj.xtc --debug-float yes > ixtc.out 2>&1
+}

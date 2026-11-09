@@ -413,8 +413,6 @@ def _compile_runtime(source_root: Path, modules: list[str]) -> None:
             "--disable-external-blas",
             "--disable-external-lapack",
             "--disable-fftw",
-            "--disable-molfile-plugins",
-            "--disable-external-molfile-plugins",
             "--disable-zlib",
             "--disable-rpath",
             "CXXFLAGS="

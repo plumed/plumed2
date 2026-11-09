@@ -1,4 +1,4 @@
-USE=core lapack lepton small_vector xdrfile molfile mpiwrap
+USE=core lapack lepton small_vector xdrfile mpiwrap gemmi
 
 # generic makefile
 include ../maketools/make.module

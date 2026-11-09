@@ -20,6 +20,7 @@
 !/eds
 !/envsim
 !/fourier
+!/gemmi
 !/function
 !/generic
 !/gridtools
@@ -38,7 +39,6 @@
 !/manyrestraints
 !/matrixtools
 !/maze
-!/molfile
 !/mpiwrap
 !/multicolvar
 !/opes

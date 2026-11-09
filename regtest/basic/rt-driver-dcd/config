@@ -1,0 +1,24 @@
+type=driver
+# dcd files of every flavour read by the dcd reader (written by make_dcd.py):
+# CHARMM with the unit cell as lengths and cosines, little and big endian, 64 bit record markers (CHARMM -i8),
+# orthorhombic cell, NAMD 2.5 (angles in degrees), no cell, X-PLOR (no CHARMM version), fixed atoms (the first frame
+# has all the atoms, the next ones only the free atoms), a 4th dimension, the symmetric shape matrix of CHARMM c36,
+# and files whose last frame is incomplete (the frames before it are read, with a warning).
+# Except for the shape matrix (taken for angles: the box was not valid), the files give the same numbers as the
+# molfile dcd plugin of v2.10 (--mf_dcd), which is now an alias of --idcd.
+arg="--plumed plumed.dat --idcd charmm_le.dcd"
+
+function plumed_regtest_after(){
+  for f in charmm_be charmm_i8 charmm_i8_be charmm_ortho charmm_matrix namd25_degrees nocell xplor xplor_be fixed_le fixed_be fixed_i8 fourdims truncated truncated_fixed ; do
+    echo "DUMPATOMS ATOMS=@mdatoms FILE=$f.xyz PRECISION=6" > plumed_$f.dat
+    $plumed driver --plumed plumed_$f.dat --idcd $f.dcd > $f.out 2> $f.err
+    echo "$f: exit code $?" >> messages
+    grep WARNING $f.err >> messages
+  done
+  # the deprecated option gives the same frames, with a warning
+  echo "DUMPATOMS ATOMS=@mdatoms FILE=alias.xyz PRECISION=6" > plumed_alias.dat
+  $plumed driver --plumed plumed_alias.dat --mf_dcd charmm_le.dcd > alias.out 2> alias.err
+  echo "alias: exit code $?" >> messages
+  grep WARNING alias.err >> messages
+  cmp alias.xyz charmm_le.xyz >> messages && echo "alias: same frames as --idcd" >> messages
+}

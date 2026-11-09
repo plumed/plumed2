@@ -307,24 +307,25 @@ public:
           trajectoryFile=tmp;
         }
       }
-      bool use_molfile=false;
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-      {
-        auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
-        for(unsigned i=0; i<plugins_names.size(); i++) {
-          std::string molfile_key="--mf_"+plugins_names[i];
-          std::string traj_molfile;
-          parse(molfile_key,traj_molfile);
-          if(traj_molfile.length()>0) {
-            ++nn;
-            log << "Using --mf_"<<plugins_names[i]<<"=" << traj_molfile << "\n";
-            trajectoryFile=traj_molfile;
-            trajectory_fmt=plugins_names[i];
-            use_molfile=true;
-          }
+      for (const auto & opt : TrajectoryParser::deprecatedOptions()) {
+        std::string tmp;
+        parse(opt.first, tmp);
+        if (tmp.length()>0) {
+          log << "Using "<<opt.first<<"=" << tmp << " (deprecated: use --i"<<opt.second<<")\n";
+          std::fprintf(stderr,"WARNING: %s is deprecated (the molfile plugins were removed in v2.11) and will be removed in a future version: use --i%s\n",opt.first.c_str(),opt.second.c_str());
+          trajectory_fmt=opt.second;
+          ++nn;
+          trajectoryFile=tmp;
         }
       }
-#endif
+      for (const auto & opt : TrajectoryParser::removedOptions()) {
+        std::string tmp;
+        parse(opt, tmp);
+        if (tmp.length()>0) {
+          std::fprintf(stderr,"ERROR: %s\n",TrajectoryParser::removedOptionMessage(opt).c_str());
+          return std::nullopt;
+        }
+      }
       if(nn>1) {
         std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
         //let the "main"
@@ -333,9 +334,7 @@ public:
       if (nn==1) {
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
-                 trajectoryFile,
-                 use_molfile,
-                 -1
+                 trajectoryFile
                );
       }
     }

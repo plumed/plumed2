@@ -39,10 +39,27 @@ class Log;
 /// Minimalistic pdb parser.
 /// Contain positions, atomic indexes, occupancy and beta.
 /// We should also add other info (e.g. residue name etc).
+/// The same structure is filled by the reader of mmCIF files (files named *.cif or *.mmcif),
+/// see PDBCif.cpp.
 class PDB {
+public:
+/// How the atoms are numbered
+  enum class AtomNumbering {
+    serial, ///< with the serial number of the ATOM record (PDB) or the _atom_site.id column (mmCIF), the default
+    order   ///< 1,2,3... in the order of the file (after removing other models and alternate locations)
+  };
+private:
   std::vector<unsigned> block_ends;
   std::vector<std::string> atomsymb, chain;
   std::vector<int> residue;
+/// insertion code of the residue (empty if none)
+  std::vector<std::string> insertion;
+/// element symbol (empty if not given)
+  std::vector<std::string> element;
+/// number of atoms of alternate locations that were skipped
+  unsigned skippedAltLocs=0;
+/// how the atoms are numbered (set by read)
+  AtomNumbering numbering=AtomNumbering::serial;
   std::vector<Vector> positions;
   std::vector<double> occupancy;
   std::vector<double> beta;
@@ -56,9 +73,26 @@ class PDB {
   Vector BoxXYZ,BoxABG;
   Tensor Box;
   std::string spaceGroup;
+/// for each residue (chain, number, insertion code) with alternate locations, the one that is kept
+  std::map<std::string,std::string> altLocKept;
+/// true if an atom with this alternate location must be read (the first one found in its residue is kept)
+  bool keepAltLoc(const std::string& chainid,int resnum,const std::string& icode,const std::string& altloc);
+/// store an atom
+  void addAtom(AtomNumber a,const std::string& atomname,const std::string& residuename,int resnum,
+               const std::string& chainid,const std::string& icode,const std::string& elem,
+               const Vector& p,double o,double b);
+/// set the box from the lengths (already scaled) and the angles in degrees, as in the CRYST1 record
+  void setBoxFromLengthsAndAngles();
+/// index of the first atom of residue (resnum,icode) of chain, -1 if there is none; "*" matches any chain or code
+  long findResidue(int resnum,const std::string& chainid,const std::string& icode) const;
+/// read an mmCIF file
+  void readCif(const std::string& file,double scale);
 public:
-/// Read the pdb from a file, scaling positions by a factor scale
-  bool read(const std::string&file,bool naturalUnits,double scale);
+/// Read the pdb from a file, scaling positions by a factor scale.
+/// Files named *.cif or *.mmcif (any case) are read as mmCIF. The atoms are numbered as said by atomNumbering.
+  bool read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering=AtomNumbering::serial);
+/// True if the file would be read as mmCIF by read()
+  static bool isCifFile(const std::string& file);
 /// Read from a file pointer
   bool readFromFilepointer(FILE *fp,bool naturalUnits,double scale);
 /// Access to the position array
@@ -92,6 +126,25 @@ public:
   int getResidueNumber(AtomNumber a) const;
 /// return the residue name for a specific atom
   std::string getResidueName(AtomNumber a) const;
+/// return the insertion code of the residue of a specific atom (empty if none)
+  std::string getInsertionCode(AtomNumber a) const;
+/// return the element symbol of a specific atom (empty if not given in the file)
+  std::string getElement(AtomNumber a) const;
+/// number of atoms of alternate locations that were not read (only the first location of each residue is read)
+  unsigned getNumberOfSkippedAlternateLocations() const;
+/// Get the residues found in a chain as (number, insertion code), in the order in which they appear in the file (each listed once)
+  std::vector<std::pair<int,std::string> > getResidueIdsInChain( const std::string& chainname ) const;
+/// get the name of residue (resnum,icode) of chain; icode=="*" matches any insertion code
+  std::string getResidueName(int resnum,const std::string& chain,const std::string& icode) const;
+/// Return the atom named aname from residue (resnum,icode) of chain; icode=="*" matches any insertion code
+  AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chain, const std::string& icode ) const;
+/// Access to the atoms of residue (resnum,icode); icode=="*" matches any insertion code
+  std::vector<AtomNumber> getAtomsInResidue(int resnum,const std::string& chainid,const std::string& icode)const;
+/// The residue that precedes (step=-1) or follows (step=+1) residue (resnum,icode) of chain.
+/// It is the residue before (after) it in the file, in the same chain, if its number is resnum+step,
+/// or resnum with a different insertion code (e.g. 52 -> 52A -> 53).
+/// Otherwise it is residue resnum+step with any insertion code, as in previous versions.
+  void getAdjacentResidue(int resnum,const std::string& chain,const std::string& icode,int step,int& adjnum,std::string& adjicode) const;
 /// get the name of the resnum'th residue of chain
 /// Chain=="*" matches any chain and makes it equivalent to getResidueName
   std::string getResidueName(int resnum,const std::string& chain ) const;

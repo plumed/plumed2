@@ -1,0 +1,26 @@
+#! FIELDS time pdb_alpha pdb_phi pdb_psi cif_alpha cif_phi cif_psi gmx_alpha gmx_phi gmx_psi long_alpha long_phi long_psi af_alpha af_phi af_psi gmx4_alpha gmx4_phi gmx4_psi
+#! SET min_pdb_phi -pi
+#! SET max_pdb_phi pi
+#! SET min_pdb_psi -pi
+#! SET max_pdb_psi pi
+#! SET min_cif_phi -pi
+#! SET max_cif_phi pi
+#! SET min_cif_psi -pi
+#! SET max_cif_psi pi
+#! SET min_gmx_phi -pi
+#! SET max_gmx_phi pi
+#! SET min_gmx_psi -pi
+#! SET max_gmx_psi pi
+#! SET min_long_phi -pi
+#! SET max_long_phi pi
+#! SET min_long_psi -pi
+#! SET max_long_psi pi
+#! SET min_af_phi -pi
+#! SET max_af_phi pi
+#! SET min_af_psi -pi
+#! SET max_af_psi pi
+#! SET min_gmx4_phi -pi
+#! SET max_gmx4_phi pi
+#! SET min_gmx4_psi -pi
+#! SET max_gmx4_psi pi
+ 0.000000   0.1550  -2.8744   2.7256   0.1550  -2.8744   2.7256   0.1550  -2.8744   2.7256   0.1550  -2.8744   2.7256   0.1550  -2.8744   2.7256   0.1550  -2.8744   2.7256

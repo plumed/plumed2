@@ -139,38 +139,30 @@ and the `--timestep` is equal to the simulation timestep.  As such the `STRIDE` 
 files are referred to the original timestep and any files output resemble those that would have been generated
 had we run the calculation we are running with driver when the MD simulation was running.
 
-PLUMED can read xyz files (in PLUMED units) and gro files (in nm). In addition,
-PLUMED includes support for a
-subset of the trajectory file formats supported by VMD, e.g. xtc and dcd:
+PLUMED can read the following trajectory formats, each with its own option:
+
+- `--ixyz`: xyz files (in PLUMED units), with the box in the second line of each frame
+- `--igro`: gro files (in nm)
+- `--idlp4`: DL_POLY_4 HISTORY files
+- `--ixtc` and `--itrr`: GROMACS xtc and trr files (with the xdrfile library included in PLUMED)
+- `--idcd`: dcd files written by CHARMM, NAMD, X-PLOR and other codes (either endianness, fixed atoms, unit cell)
+- `--ipdb`: pdb files, with frames separated by END or ENDMDL records and the box in the CRYST1 record
 
 ```plumed
-plumed driver --plumed plumed.dat --pdb diala.pdb --mf_xtc traj.xtc --trajectory-stride 100 --timestep 0.001
+plumed driver --plumed plumed.dat --pdb diala.pdb --ixtc traj.xtc --trajectory-stride 100 --timestep 0.001
 ```
 
-where `--mf_` prefixes the extension of one of the accepted molfile plugin format.
-If PLUMED has been installed with full molfile support, other formats will be available.
-Just type `plumed driver --help` to see which file formats you can use.
-
-Molfile plugin requires the periodic cell to be triangular (i.e. the first vector oriented along x and
-second vector in xy plane). This is true for many MD codes. However, it could be false
+The cell vectors of dcd and pdb files are rebuilt from the lengths and angles of the cell, with the first vector
+along x and the second one in the xy plane. This is true for many MD codes. However, it could be false
 if you rotate the coordinates in your trajectory before reading them in the driver.
-Also notice that some formats (e.g. amber crd) do not specify the total number of atoms. In this case you can use
-the `--natoms` option as shown below
+If the last frame of an xtc, trr or dcd file is incomplete (for instance because the simulation stopped while writing it),
+the driver ignores it with a warning.
 
-```plumed
-plumed driver --plumed plumed.dat --mf_crd trajectory.crd --natoms 128
-```
-
-Check the available molfile plugins and limitations at [this link](http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/).
-The g96 format (`--mf_g96`) is not supported by the driver.
-
-You can also use the xdrfile implementation of xtc and trr with plumed driver. If you want to do so you just
-download and install properly the xdrfile library (see [this link](http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)).
-If the xdrfile library is installed properly the PLUMED configure script should be able to
-detect it and enable it.
-Notice that the xdrfile implementation of xtc and trr
-is more robust than the molfile one, since it provides support for generic cell shapes.
-In addition, if you install xdrfile you can then use the [DUMPATOMS](DUMPATOMS.md) command to write compressed xtc files.
+Up to version 2.10 the driver read some of these formats with the molfile plugins of VMD (options `--mf_xtc`, `--mf_dcd` ...).
+The molfile plugins were removed in version 2.11: the options `--mf_xtc`, `--mf_trr`, `--mf_gro`, `--mf_pdb` and `--mf_dcd`
+are still accepted, with a warning, and are the same as `--ixtc`, `--itrr`, `--igro`, `--ipdb` and `--idcd`;
+they will be removed in a future version. The amber crd (`--mf_crd`, `--mf_crdbox`), trj and g96 formats
+cannot be read anymore: convert these trajectories to another format, e.g. xtc or dcd.
 
 ## Multiple replicas
 
@@ -226,7 +218,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorhombic, 9 for generic)");
-  keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
+  keys.add("optional","--natoms","provides number of atoms - only used with --parse-only (the trajectory files contain the number of atoms)");
   keys.add("optional","--initial-step","provides a number for the initial step, default is 0. With --restart, the run is a continuation from this step, as after the restart of an MD engine from its checkpoint: the lines written at or after it in the files that are appended are removed (see RESTART)");
   keys.add("optional","--debug-forces","output a file containing the forces due to the bias evaluated using numerical derivatives "
            "and using the analytical derivatives implemented in plumed");
@@ -426,8 +418,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   parse("--kt",kt);
   std::string trajectory_fmt;
 
-  bool use_molfile=false;
-
   // Read in an xyz file
   std::string trajectoryFile(""), pdbfile(""), mcfile("");
   bool pbc_cli_given=false;
@@ -435,6 +425,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int command_line_natoms=-1;
 
   TrajectoryParser parser;
+  TrajectoryFrame<real> trajFrame;
   if(!noatoms) {
     int nn=0;
     trajectory_fmt="";
@@ -447,28 +438,23 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         trajectoryFile=tmp;
       }
     }
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-    {
-      auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
-      for(unsigned i=0; i<plugins_names.size(); i++) {
-        std::string molfile_key="--mf_"+plugins_names[i];
-        std::string traj_molfile;
-        parse(molfile_key,traj_molfile);
-        if(traj_molfile.length()>0) {
-          // the g96 plugin reads the header of the file when the file is opened, and expects it to be
-          // read again by read_structure, which the driver does not call: the frames are not read correctly
-          if(plugins_names[i]=="g96") {
-            error("the g96 format is not supported by the driver (--mf_g96): convert the trajectory to another format, e.g. gro or xtc");
-          }
-          ++nn;
-          std::fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins_names[i].c_str(),traj_molfile.c_str());
-          trajectoryFile=traj_molfile;
-          trajectory_fmt=plugins_names[i];
-          use_molfile=true;
-        }
+    for (const auto & opt : TrajectoryParser::deprecatedOptions()) {
+      std::string tmp;
+      parse(opt.first, tmp);
+      if (tmp.length()>0) {
+        std::fprintf(stderr,"WARNING: %s is deprecated (the molfile plugins were removed in v2.11) and will be removed in a future version: use --i%s\n",opt.first.c_str(),opt.second.c_str());
+        trajectory_fmt=opt.second;
+        ++nn;
+        trajectoryFile=tmp;
       }
     }
-#endif
+    for (const auto & opt : TrajectoryParser::removedOptions()) {
+      std::string tmp;
+      parse(opt, tmp);
+      if (tmp.length()>0) {
+        error(TrajectoryParser::removedOptionMessage(opt));
+      }
+    }
     {
 
       if(nn>1) {
@@ -631,7 +617,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           trajectoryFile=testfile;
         }
       }
-      auto errormessage=parser.init(trajectory_fmt,trajectoryFile,use_molfile,command_line_natoms);
+      auto errormessage=parser.init(trajectory_fmt,trajectoryFile);
       if(errormessage) {
         error(*errormessage);
       }
@@ -688,9 +674,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
     bool first_step=false;
     if(!noatoms&&!parseOnly) {
 
-      real timeStep=-1.0;
-
-      auto errormessage=parser.readHeader(step,timeStep);
+      trajFrame.step=step;
+      auto errormessage=parser.readHeader(trajFrame);
+      step=trajFrame.step;
 
       if (errormessage) {
         if (*errormessage =="EOF") {
@@ -699,8 +685,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           error(*errormessage);
         }
       }
-      if (lstep && timeStep>0.0) {
-        p.cmd("setTimestep",real(timeStep));
+      if (lstep && trajFrame.timestep && *trajFrame.timestep>0.0) {
+        p.cmd("setTimestep",real(*trajFrame.timestep));
         lstep = false;
       }
       natoms=parser.nOfAtoms();
@@ -1038,21 +1024,23 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
 
     int plumedStopCondition=0;
     if(!noatoms) {
-      auto errormessage=parser.readAtoms(
-                          stride,
-                          pbc_cli_given,
-                          debug_pd,
-                          pd_start,
-                          pd_nlocal,
-                          step,
-                          masses.data(),
-                          charges.data(),
-                          coordinates.data(),
-                          cell.data()
-                        );
+      trajFrame.stride=stride;
+      trajFrame.readBox=!pbc_cli_given;
+      trajFrame.first=pd_start;
+      trajFrame.count=debug_pd ? pd_nlocal : -1;
+      trajFrame.positions=coordinates.data();
+      trajFrame.box=cell.data();
+      trajFrame.masses=masses.data();
+      trajFrame.charges=charges.data();
+      trajFrame.step=step;
+      auto errormessage=parser.readAtoms(trajFrame);
+      step=trajFrame.step;
 
       if (errormessage) {
         if (*errormessage =="EOF") {
+          if(trajFrame.warning && intracomm.Get_rank()==0) {
+            std::fprintf(stderr,"WARNING: %s\n",trajFrame.warning->c_str());
+          }
           break;
         } else {
           error(*errormessage);

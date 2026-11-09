@@ -52,6 +52,7 @@ void GenericMolInfo::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","PYTHON_BIN","default","python interpreter");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
   keys.add("hidden","STRIDE","frequency for resetting the python interpreter. Should be 1.");
+  keys.add("compulsory","ATOM_ID","serial","how the atoms of the STRUCTURE file are numbered: serial (the serial number of the PDB file, the _atom_site.id column of the mmCIF file) or order (1,2,3... in the order of the file)");
   keys.addFlag("WHOLE", false, "The reference structure is whole, i.e. not broken by PBC. If the pdb file has a CRYST1 record with space group P 1, this is checked along each chain, and a warning is written to the log if consecutive atoms of a residue, or of two consecutive protein or nucleic-acid residues, are on opposite sides of the periodic boundary");
 }
 
@@ -152,9 +153,23 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   }
   if( read_backbone.size()==0 ) {
     parse("STRUCTURE",reference);
+    std::string atomId;
+    parse("ATOM_ID",atomId);
+    PDB::AtomNumbering numbering=PDB::AtomNumbering::serial;
+    if(atomId=="order") {
+      numbering=PDB::AtomNumbering::order;
+    } else if(atomId!="serial") {
+      error("ATOM_ID should be serial or order, not " + atomId);
+    }
 
-    if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength())) {
+    if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength(),numbering)) {
       plumed_merror("missing input file " + reference );
+    }
+    if( numbering==PDB::AtomNumbering::order ) {
+      log<<"  atoms numbered in the order of the file (ATOM_ID=order)\n";
+    }
+    if( pdb.getNumberOfSkippedAlternateLocations()>0 ) {
+      log<<"  "<<pdb.getNumberOfSkippedAlternateLocations()<<" atoms of alternate locations were skipped (only the first location of each residue is read)\n";
     }
     if( iswhole_ ) {
       const std::string msg=checkWhole(pdb,usingNaturalUnits() ? 1.0 : 0.1/getUnits().getLength());
@@ -163,22 +178,27 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
       }
     }
 
-    std::vector<std::string> chains;
-    pdb.getChainNames( chains );
-    log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
-    for(unsigned i=0; i<chains.size(); ++i) {
-      int start,end;
-      std::string errmsg;
-      pdb.getResidueRange( chains[i], start, end, errmsg );
-      if( errmsg.length()!=0 ) {
-        error( errmsg );
+    // the chains, block by block: a chain can appear in more than one block of the file
+    // (e.g. the ligands and the waters of a chain written after the other chains, as in wwPDB files)
+    {
+      std::vector<std::string> blocks;
+      pdb.getChainNames( blocks );
+      std::vector<std::string> chains;
+      for(const auto & c : blocks) {
+        if( std::find(chains.begin(),chains.end(),c)==chains.end() ) {
+          chains.push_back(c);
+        }
       }
-      AtomNumber astart,aend;
-      pdb.getAtomRange( chains[i], astart, aend, errmsg );
-      if( errmsg.length()!=0 ) {
-        error( errmsg );
+      log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
+      const auto & at=pdb.getAtomNumbers();
+      std::size_t first=0;
+      for(std::size_t i=1; i<=at.size(); ++i) {
+        if( i==at.size() || pdb.getChainID(at[i])!=pdb.getChainID(at[first]) ) {
+          log.printf("  chain named %s contains residues %d to %d and atoms %u to %u \n",pdb.getChainID(at[first]).c_str(),
+                     pdb.getResidueNumber(at[first]),pdb.getResidueNumber(at[i-1]),at[first].serial(),at[i-1].serial());
+          first=i;
+        }
       }
-      log.printf("  chain named %s contains residues %d to %d and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
 
     std::string python_bin;
@@ -274,9 +294,14 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     }
   } else {
     bool useter=false; // This is used to deal with terminal groups in WHOLEMOLECULES
-    // residues are identified by (chain, residue number), so that chains that use
+    // residues are identified by (chain, residue number, insertion code), so that chains that use
     // the same residue numbers (e.g. all starting from 1) are not mixed up
-    std::vector< std::pair<std::string,int> > residues;
+    struct Residue {
+      std::string chain;
+      int number;
+      std::string icode;
+    };
+    std::vector<Residue> residues;
     std::vector<std::string> chains;
     {
       std::vector<std::string> allchains;
@@ -293,23 +318,23 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     }
     if( restrings.size()==1 && restrings[0].find("all")!=std::string::npos ) {
       // list explicitly the residues that are present in each chain:
-      // this works also with negative residue numbers and with gaps in the numbering
+      // this works also with negative residue numbers, with gaps in the numbering and with insertion codes
       for(const auto & c : chains) {
-        const std::vector<int> res = pdb.getResiduesInChain( c );
+        const auto res = pdb.getResidueIdsInChain( c );
         if( res.empty() ) {
           continue;
         }
         std::size_t first=0, last=res.size();
         if( !useter ) {
-          if( MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.front(), c ) ) ) {
+          if( MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.front().first, c, res.front().second ) ) ) {
             first++;
           }
-          if( last>first && MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.back(), c ) ) ) {
+          if( last>first && MolDataClass::isTerminalGroup( mytype, pdb.getResidueName( res.back().first, c, res.back().second ) ) ) {
             last--;
           }
         }
         for(std::size_t k=first; k<last; ++k) {
-          residues.emplace_back( c, res[k] );
+          residues.push_back( {c, res[k].first, res[k].second} );
         }
       }
     } else {
@@ -335,7 +360,12 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
         if( p->second.size()>1 ) {
           ambiguous += " " + rs;
         }
-        residues.emplace_back( p->second[0], r );
+        // all the residues with this number (with different insertion codes), in the order of the file
+        for(const auto & id : pdb.getResidueIdsInChain( p->second[0] )) {
+          if( id.first==r ) {
+            residues.push_back( {p->second[0], r, id.second} );
+          }
+        }
       }
       if( ambiguous.length()>0 ) {
         warning("residues" + ambiguous + " are present in more than one chain of the reference pdb file: they are taken from the first chain that contains them. Use RESIDUES=all to include all the chains");
@@ -346,15 +376,19 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     }
 
     // Convert the list of involved residues into a list of segments of consecutive residues of the same chain
-    std::vector< std::vector< std::pair<std::string,int> > > segments;
-    std::vector< std::pair<std::string,int> > thissegment;
+    // (residue n is followed by n+1, or by n with another insertion code, e.g. 52 -> 52A -> 53)
+    std::vector< std::vector<Residue> > segments;
+    std::vector<Residue> thissegment;
     thissegment.push_back( residues[0] );
     for(unsigned i=1; i<residues.size(); ++i) {
-      if( residues[i-1].second+1!=residues[i].second || residues[i-1].first!=residues[i].first ) {
+      const Residue & a=residues[i-1];
+      const Residue & b=residues[i];
+      const bool consecutive=( a.number+1==b.number || ( a.number==b.number && a.icode!=b.icode ) );
+      if( !consecutive || a.chain!=b.chain ) {
         segments.push_back(thissegment);
         thissegment.resize(0);
       }
-      thissegment.push_back( residues[i] );
+      thissegment.push_back( b );
     }
     segments.push_back( thissegment );
 
@@ -363,12 +397,13 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
     std::vector<AtomNumber> atomnumbers;
     for(unsigned i=0; i<segments.size(); ++i) {
       for(unsigned j=0; j<segments[i].size(); ++j) {
-        const std::string & chain=segments[i][j].first;
-        const int resnum=segments[i][j].second;
+        const std::string & chain=segments[i][j].chain;
+        const int resnum=segments[i][j].number;
+        const std::string & icode=segments[i][j].icode;
         std::string num;
         Tools::convert( resnum, num );
-        num += " of chain " + chain;
-        std::string resname=pdb.getResidueName( resnum, chain );
+        num += icode + " of chain " + chain;
+        std::string resname=pdb.getResidueName( resnum, chain, icode );
         if( !MolDataClass::allowedResidue(mytype, resname) ) {
           error("residue " + num + " is not recognized for moltype " + mytype );
         }
@@ -378,7 +413,7 @@ void GenericMolInfo::getBackbone( std::vector<std::string>& restrings, const std
         if( resname=="GLY" ) {
           warning("GLY residues are achiral - assuming HA2 atom is in CB position");
         }
-        MolDataClass::getBackboneForResidue( mytype, resnum, chain, pdb, atomnumbers );
+        MolDataClass::getBackboneForResidue( mytype, resnum, chain, icode, pdb, atomnumbers );
         if( atomnumbers.size()==0 ) {
           error("Could not find required backbone atom in residue number " + num );
         } else {

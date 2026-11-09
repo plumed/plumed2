@@ -31,8 +31,8 @@ Read it before changing an action or a tool that other actions use.
 - `plumed driver --noatoms` without a trajectory runs forever: give a small trajectory with `--ixyz`.
   Inside a regtest use `--noatoms` only with an input that reads its data with READ.
 - A `--trajectory-stride` larger than the number of frames is an error.
-- The driver never calls `read_structure` of a molfile plugin: a reader that consumes the header in `open_file_read`
-  must handle it there. Test a new format with a valid file under valgrind before trusting its regtest.
+- Test a new trajectory reader with valid and corrupted files under valgrind before trusting its regtest
+  (see regtest/basic/rt-trajectory-malformed).
 
 \section DeveloperPitfallsInput Input errors and messages
 

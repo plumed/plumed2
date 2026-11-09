@@ -145,7 +145,7 @@ fi
     # These imported modules already have their diagnostics discarded below.
     # Exclude their translation units before analysis, keeping the full file
     # list for plumedcheck. Included headers remain visible to cppcheck.
-    cppfiles=$(grep -E -v '/(molfile|lapack|blas|lepton|asmjit|xdrfile|small_vector|thread_mpi)/' <<< "$files" || true)
+    cppfiles=$(grep -E -v '/(lapack|blas|lepton|asmjit|xdrfile|small_vector|thread_mpi)/' <<< "$files" || true)
     srcfiles=$(grep -E -v -s '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
@@ -180,7 +180,7 @@ CLEAN_FILE="$TMPDIR/codecheck.clean"
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "  In the following analysis we exclude:"
-echo "    src/molfile src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector src/thread_mpi"
+echo "    src/lapack src/blas src/lepton src/asmjit src/xdrfile src/small_vector src/thread_mpi src/gemmi"
 echo "  since they are full of false positives"
 
 #the regexes like this avoid false positives for eventual composite names
@@ -198,13 +198,12 @@ gawk '{
 # with plumed we only exclude specific warnings from lapack and blas
     if(match($0,"[[](.*/|)lapack/")) next;
     if(match($0,"[[](.*/|)blas/")) next;
-    if(match($0,"[[](.*/|)molfile/")) next;
     if(match($0,"[[](.*/|)lepton/")) next;
     if(match($0,"[[](.*/|)asmjit/")) next;
     if(match($0,"[[](.*/|)xdrfile/")) next;
+    if(match($0,"[[](.*/|)gemmi/")) next;
   } else {
-# with cppcheck we exclude molfile lapack and blas
-    if(match($0,"[[](.*/|)molfile/")) next;
+# with cppcheck we exclude lapack and blas
 # whole-program checks, only active with PLMD_CPPCHECK_BUILD_DIR (see above)
     if(match($0,":(unusedFunction|ctu[A-Za-z]+):")) next;
     if(match($0,"[[](.*/|)lapack/")) next;
@@ -213,6 +212,7 @@ gawk '{
     if(match($0,"[[](.*/|)asmjit/")) next;
     if(match($0,"[[](.*/|)xdrfile/")) next;
     if(match($0,"[[](.*/|)small_vector/")) next;
+    if(match($0,"[[](.*/|)gemmi/")) next;
   }
   print
 }' <codecheck.log >"${CLEAN_FILE}"

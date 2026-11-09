@@ -37,14 +37,13 @@ void fileTraj::rewind() {
 //read the next step
 void fileTraj::step(bool doRewind) {
   read=false;
-  long long int mystep=0;
-  double timeStep;
+  TrajectoryFrame<double> trajFrame;
+  trajFrame.readBox=!dont_read_pbc;
   std::optional<std::string> errormessage;
-  if (masses.empty()) {
-    errormessage=parser.readHeader(
-                   mystep,
-                   timeStep
-                 );
+  // the first time the header is read here, to size the buffers
+  const bool firstFrame=masses.empty();
+  if (firstFrame) {
+    errormessage=parser.readHeader(trajFrame);
     if (errormessage) {
       plumed_error()<<*errormessage;
     }
@@ -54,30 +53,15 @@ void fileTraj::step(bool doRewind) {
     charges.assign(natoms,0.0);
     coordinates.assign(natoms,Vector(0.0,0.0,0.0));
     cell.assign(9,0.0);
-    errormessage=parser.readAtoms(1,
-                                  dont_read_pbc,
-                                  false,
-                                  0,
-                                  0,
-                                  mystep,
-                                  masses.data(),
-                                  charges.data(),
-                                  &coordinates[0][0],
-                                  cell.data()
-                                 );
+  }
+  trajFrame.positions=&coordinates[0][0];
+  trajFrame.box=cell.data();
+  trajFrame.masses=masses.data();
+  trajFrame.charges=charges.data();
+  if (firstFrame) {
+    errormessage=parser.readAtoms(trajFrame);
   } else {
-    errormessage=parser.readFrame(1,
-                                  dont_read_pbc,
-                                  false,
-                                  0,
-                                  0,
-                                  mystep,
-                                  timeStep,
-                                  masses.data(),
-                                  charges.data(),
-                                  &coordinates[0][0],
-                                  cell.data()
-                                 );
+    errormessage=parser.readFrame(trajFrame);
   }
 
   if (errormessage) {
@@ -102,13 +86,9 @@ void fileTraj::frame(View<Vector> posToUpdate,
 }
 
 fileTraj::fileTraj(std::string_view fmt,
-                   std::string_view fname,
-                   bool useMolfile,
-                   int command_line_natoms) {
+                   std::string_view fname) {
   auto errormessage=parser.init(fmt,
-                                fname,
-                                useMolfile,
-                                command_line_natoms);
+                                fname);
   if(errormessage) {
     plumed_error()<<*errormessage;
   }
