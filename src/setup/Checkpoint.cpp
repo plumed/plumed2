@@ -103,6 +103,17 @@ Actions that keep an internal state but do not store it in the checkpoint
 yet are listed in a warning in the log: for them the restart is the usual
 file-based one and an exact continuation is not guaranteed.
 
+When the MD engine never sends the `doCheckPoint` signal (e.g. [driver](driver.md),
+[simplemd](simplemd.md), [pesmd](pesmd.md)), a checkpoint is also written at the end of
+the run, with the suffix `_final` (`plumed_final.cpt` for `plumed.cpt`). It stores the
+state after the last step, so it is the checkpoint of the step that follows it: to use
+it, restart with `RESTART_FROM=plumed_final.cpt` and an MD engine that presents that
+step first. It is written when the MD engine calls the `runFinalJobs` command of the
+interface before finalizing PLUMED: an MD engine that does not send the signal should
+make this call to get it. The engines that send the signal (GROMACS) write their own
+restart files at the steps of the signals (GROMACS also at the last step), and no final
+checkpoint is written for them, since it would not match those files.
+
 The content of a checkpoint can be inspected with `plumed checkpoint --dump`.
 Compressed (`.gz`) output files cannot be truncated and are not allowed
 together with CHECKPOINT.

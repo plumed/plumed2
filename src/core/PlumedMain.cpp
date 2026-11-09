@@ -1080,6 +1080,8 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
+        // before the final jobs, whose output would be written again at the end of the continuation
+        checkpointing.atRunEnd();
         runJobsAtEndOfCalculation();
         break;
       case cmd_isEnergyNeeded: {

@@ -47,7 +47,9 @@ which is replayed in full. No action needs to know that a step is repeated.
 The checkpoint is written when the MD engine sends the checkpointing signal
 (cmd "doCheckPoint") or, with STRIDE, every STRIDE steps. It is a separate
 file, one per replica (usual suffix), written atomically; the previous one is
-kept with a _prev suffix.
+kept with a _prev suffix. If the MD engine never sends the signal, a checkpoint
+of the state after the last step (i.e. for the next step) is written at the end
+of the run (cmd "runFinalJobs"), with a _final suffix.
 */
 class Checkpointing {
   PlumedMain& plumed;
@@ -56,7 +58,14 @@ class Checkpointing {
 /// Full path (with the replica suffix) and path of the previous checkpoint
   std::string path;
   std::string prevPath;
+/// Path of the checkpoint written at the end of the run (atRunEnd)
+  std::string finalPath;
   long long int stride=0;
+/// A checkpointing signal was received from the MD engine in this run
+  bool signalReceived=false;
+/// Last step presented and difference between the last two steps (to know the next one)
+  long long int lastStep=-1;
+  long long int stepIncrement=1;
 /// Paths of all the files opened for writing in this run
   std::vector<std::string> outputFiles;
 /// Files rewritten from scratch at every write (OFile::rewind): they are not
@@ -79,7 +88,7 @@ class Checkpointing {
   bool trimEnabled=true;
 /// Files already trimmed at the restart step (or left as they are)
   std::set<std::string> trimmedFiles;
-  void write();
+  void write(long long int step,const std::string& outPath,const std::string& outPrevPath);
   void restore();
   void trimFiles(CheckpointReader& reader);
   static std::string crcOfTail(const std::string& fname,unsigned long long size);
@@ -107,6 +116,10 @@ public:
 /// after a restart, and writes a checkpoint when requested by the signal or
 /// by the stride.
   void atStepStart(bool signal);
+/// At the end of the run (cmd "runFinalJobs", before the final jobs): if the MD engine
+/// never sent the checkpointing signal, write the state after the last step, i.e. at
+/// the start of the next one, to FILE with the suffix _final (plumed_final.cpt).
+  void atRunEnd();
 /// True after restartFrom() has been called (a checkpoint restart is in progress or done).
   bool isRestartingFromCheckpoint() const {
     return restartStep>=0;
