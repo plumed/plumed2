@@ -1,6 +1,6 @@
 name: checksCI
 
-# Quick builds that run first: in pull requests and manual runs the rest of the CI (see ci.yml) waits
+# Quick checks that run first: in pull requests and manual runs the rest of the CI (see ci.yml) waits
 # for these and for codecheck, so that a commit that does not build or breaks the regtests does not
 # take the macOS runners and the long Linux builds.
 
@@ -12,6 +12,9 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# default compilers (the checks job sets its own)
+  CC: gcc
+  CXX: g++
 # long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
   PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 
@@ -78,3 +81,41 @@ jobs:
       run: |
          make --no-print-directory -j 2 -C regtest testclean
          make -C regtest checkfail
+
+  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
+  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
+  # which are in cltools.
+  modules-none:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build PLUMED with --enable-modules=none
+      run: |
+        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install
+
+  # python/plumed.c is generated from plumed.pyx and cplumed.pxd and it is committed,
+  # so that building the python interface does not require cython.
+  # Here we check that it is consistent with the sources.
+  check-plumed-c:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.14"
+    - name: Check that python/plumed.c is up to date
+      working-directory: ./python
+      run: |
+        # keep the version consistent with CYTHON_VERSION in python/Makefile
+        pip install cython==3.2.4
+        python -m cython plumed.pyx -o "$RUNNER_TEMP/plumed.c"
+        # the compressed copies of the strings depend on the python running cython
+        # (version and compression libraries), so they are ignored in the comparison
+        if ! ./compare_plumed_c.sh plumed.c "$RUNNER_TEMP/plumed.c" ; then
+          echo "::error file=python/plumed.c::python/plumed.c is not consistent with plumed.pyx and cplumed.pxd. Regenerate it with 'make -C python cythonize' using cython 3.2.4 and commit it."
+          exit 1
+        fi

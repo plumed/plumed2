@@ -519,20 +519,6 @@ jobs:
         cmake --build "$RUNNER_TEMP/thread-mpi-tests" -j 4
         ctest --test-dir "$RUNNER_TEMP/thread-mpi-tests" --output-on-failure
 
-  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
-  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
-  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
-  # which are in cltools.
-  modules-none:
-    runs-on: ubuntu-24.04
-    steps:
-    - uses: actions/checkout@v6
-    - name: Build PLUMED with --enable-modules=none
-      run: |
-        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
-        make -j 4
-        make install
-
   # AddressSanitizer and UndefinedBehaviorSanitizer: a memory error or undefined behaviour stops the
   # regtest that triggers it. Regtests without MPI and optional libraries, as in checksWF.yml (it is
   # here and not there because it is too slow to be part of the quick checks that run first).
