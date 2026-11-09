@@ -1,2 +1,2 @@
 type=driver
-arg="--plumed plumed.dat --ixyz test.xyz"
+arg="--plumed plumed.dat --ixyz input.xyz"
