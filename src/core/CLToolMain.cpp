@@ -362,6 +362,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     return 1;
   }
 
+  ModuleLoader::Context moduleContext(dlloader);
+
 // Check if plumedRoot/patches/ directory exists (as a further check)
   if(!standalone_executable) {
     std::vector<std::string> files=Tools::ls(root);
@@ -482,7 +484,6 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));
     plumed_assert(cl);
     cl->setDLHandles(dlloader.getHandles());
-    ModuleLoader::Context moduleContext(dlloader);
     int ret=0;
     // NOTE: catch PLUMED exceptions from CLTool readInput() and main() so that user-input
     // errors terminate cleanly with a message and nonzero exit status

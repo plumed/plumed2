@@ -37,6 +37,7 @@ if modules == ["all"]:
         p.parent.name
         for p in sorted((root / "src").glob("*/module.type"))
         if p.read_text().strip() == "default-off"
+        and p.parent.name not in builtin
         and set(catalog["modules"][p.parent.name]["required_features"]) <= features
     ]
 if not modules:

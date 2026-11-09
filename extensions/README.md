@@ -35,7 +35,10 @@ library links must independently resolve every dependency.
 
 The directory beside the actual loaded kernel is discovered automatically.
 `PLUMED_PLUGIN_PATH` adds colon-separated registration directories, including
-separate HPC installations. Empty elements do not search the current directory.
+separate HPC installations. HPC modulefiles must expose the registration
+directories of hard module dependencies too, typically through modulefile
+dependencies; native library search paths alone do not supply registration metadata.
+Empty elements do not search the current directory.
 Discovery is cached for this kernel; install/remove changes take effect in a new
 process. A missing directory is normal. Broken selected registrations or failed
 loads are errors.
