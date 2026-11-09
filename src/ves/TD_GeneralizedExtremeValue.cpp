@@ -177,7 +177,13 @@ double TD_GeneralizedExtremeValue::GEVdiagonal(const std::vector<double>& argume
       if( shape_[k]<0 && argument[k] > (center[k]-scale[k]/shape[k]) ) {
         return 0.0;
       }
-      tx = pow( (1.0+arg*shape[k]), -1.0/shape[k] );
+      // at the boundary of the support 1+arg*shape can be slightly negative because of rounding
+      // (e.g. if the compiler uses a fused multiply-add), and pow would give nan
+      const double base=1.0+arg*shape[k];
+      if(base<=0.0) {
+        return 0.0;
+      }
+      tx = pow( base, -1.0/shape[k] );
     } else {
       tx = exp(-arg);
     }

@@ -27,7 +27,8 @@ if [[ $(uname) == "Darwin" ]]; then
 fi
 
 # libraries are explicitly listed here due to --disable-libsearch
-export LIBS="-lfftw3 -llapack -lblas -lz $LIBS"
+# (hdf5 for the HDF5 tables, files with extension .h5: the same library as h5py and other packages in the environment)
+export LIBS="-lfftw3 -llapack -lblas -lz -lhdf5 $LIBS"
 
 # python is disabled since it should be provided as a separate package
 # --disable-libsearch forces to link only explicitely requested libraries

@@ -1,0 +1,7 @@
+# HDF5 tables with two replicas and two processes per replica (see config)
+d1: DISTANCE ATOMS=@replicas:{{1,2} {1,3}}
+# a table for each replica (COLVAR.0.h5, COLVAR.1.h5)
+m: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.5 PACE=5 FILE=HILLS.h5
+# one table shared by the walkers (HILLS_W.h5, written by the first one)
+w: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.3 PACE=4 FILE=HILLS_W.h5 WALKERS_MPI
+PRINT ARG=d1,m.bias,w.bias FILE=COLVAR.h5

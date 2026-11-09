@@ -1867,7 +1867,7 @@ void PlumedMain::runJobsAtEndOfCalculation() {
       if(!hasArgumentWithNoValues(p.get())) {
         p->calculate();
       }
-    } else if( ap && !av && ap->getStride()==0 ) {
+    } else if( ap && ap->doOnFinalStep() ) {
       p->update();
     } else {
       p->runFinalJobs();

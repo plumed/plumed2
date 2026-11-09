@@ -111,10 +111,13 @@ public:
   //
   ~CoeffsBase();
   //
+  // Preserve the established by-value accessor contracts in this public API.
+  // cppcheck-suppress returnByReference
   std::string getLabel() const {
     return label_;
   }
   void setLabel(const std::string&);
+  // cppcheck-suppress returnByReference
   std::string getDataLabel() const {
     return data_label_;
   };
@@ -145,6 +148,7 @@ public:
     return coeffs_type_==MultiCoeffs_LinearBasisSet;
   }
   //
+  // cppcheck-suppress returnByReference
   std::vector<unsigned int> shapeOfIndices() const {
     return indices_shape_;
   }
@@ -176,6 +180,7 @@ public:
     return coeffs_descriptions_[index];
   }
   std::string getCoeffDescription(const std::vector<unsigned int>&) const;
+  // cppcheck-suppress returnByReference
   std::vector<std::string> getAllCoeffsDescriptions() const {
     return coeffs_descriptions_;
   }
@@ -185,6 +190,7 @@ public:
   void setAllCoeffsDescriptions(const std::vector<std::string>&);
   //
   std::string getDimensionLabel(const unsigned int) const;
+  // cppcheck-suppress returnByReference
   std::vector<std::string> getAllDimensionLabels() const {
     return dimension_labels_;
   }
@@ -221,6 +227,7 @@ public:
   void resetOutputFmt() {
     output_fmt_="%30.16e";
   }
+  // cppcheck-suppress returnByReference
   std::string getOutputFmt() const {
     return output_fmt_;
   }

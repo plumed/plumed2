@@ -107,6 +107,10 @@ public:
 /// Closes the file
 /// Should be used only for explicitly opened files.
   void        close();
+protected:
+/// Called by close(), to close what a derived class opened besides fp (e.g. an HDF5 table)
+  virtual void closeBackend() {}
+public:
 /// Virtual destructor (allows inheritance)
   virtual ~FileBase();
 /// Check for error/eof.
@@ -122,8 +126,11 @@ public:
 /// Check if a file is open
   bool isOpen();
 /// Retrieve the path
+  // Preserve these established by-value accessor contracts.
+  // cppcheck-suppress returnByReference
   std::string getPath()const;
 /// Retrieve the mode
+  // cppcheck-suppress returnByReference
   std::string getMode()const;
 /// Get the file suffix
   std::string getSuffix()const;

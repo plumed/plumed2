@@ -1,0 +1,6 @@
+# the KERNELS of OPES_METAD as an HDF5 table: the same as the text file, and restarted from it (see config)
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+o: OPES_METAD ARG=d1,d2 PACE=5 BARRIER=5 TEMP=300 SIGMA=0.1,0.1 FILE=KERNELS.h5
+ot: OPES_METAD ARG=d1,d2 PACE=5 BARRIER=5 TEMP=300 SIGMA=0.1,0.1 FILE=KERNELS FMT=%24.17g
+PRINT ARG=o.bias,ot.bias FILE=COLVAR.h5

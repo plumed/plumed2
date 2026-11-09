@@ -24,6 +24,7 @@
 
 #include "FileBase.h"
 #include <vector>
+#include <memory>
 #include <cstddef>
 
 namespace PLMD {
@@ -40,6 +41,10 @@ but only for sequential input. See OFile for sequential output.
 */
 
 //TODO: the `fields` component may be made a map or a ordered/unordered set, since Field objects can be ordered (hence findable in Log(N)/log(1)!
+namespace h5table {
+class Reader;
+}
+
 class IFile:
 /// Class identifying a single field for fielded output
   public virtual FileBase {
@@ -57,13 +62,17 @@ class IFile:
   bool noEOL;
 /// Advance to next field (= read one line)
   IFile& advanceField();
+/// Reader of an HDF5 table (files with extension .h5), which gives the lines of the equivalent text file
+  std::unique_ptr<h5table::Reader> h5reader;
+/// Close the HDF5 table
+  void closeBackend() override;
 /// Find field index by name
   unsigned findField(const std::string&name)const;
 public:
 /// Constructor
   IFile();
 /// Destructor
-  ~IFile();
+  ~IFile() override;
 /// Opens the file
   IFile& open(const std::string&mypath) override;
 /// Gets the list of all fields

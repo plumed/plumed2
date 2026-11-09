@@ -1,0 +1,8 @@
+# HDF5 tables (.h5): the same data written in text and in HDF5 (see config)
+d1: DISTANCE ATOMS=1,2
+t: TORSION ATOMS=1,2,3,4
+# hills at fixed height on a trajectory given by the driver
+m: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.5 PACE=5 FILE=HILLS.h5
+mt: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.5 PACE=5 FILE=HILLS FMT=%24.17g
+PRINT ARG=d1,t,m.bias FILE=COLVAR.h5
+PRINT ARG=d1,t,m.bias FILE=COLVAR FMT=%.17g

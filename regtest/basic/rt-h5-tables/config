@@ -1,0 +1,62 @@
+type=driver
+plumed_needs=libhdf5
+plumed_modules=bias
+# Reference run: the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+# comparison of two text files: same number of values in every line, numbers equal
+# within 1e-12 (relative), the rest equal: prints IDENTICAL or DIFFERENT
+compare() {
+  # (a number is compared as a number, everything else as a string; spaces are not compared)
+  awk 'function num(v){ return v ~ /^[-+]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$/ }
+       FNR==NR{a[FNR]=$0;n=FNR;next}
+       {m=FNR; k=split(a[FNR],x); if(NF!=k) bad=1;
+        for(i=1;i<=NF;i++){ if($i==x[i]) continue; if(!num($i) || !num(x[i])){ bad=1; continue }
+          d=$i-x[i]; if(d<0) d=-d; s=(x[i]<0?-x[i]:x[i]); if(s<1) s=1; if(d>1e-12*s) bad=1 } }
+       END{ if(m!=n) bad=1; print (bad?"DIFFERENT":"IDENTICAL") }' "$1" "$2"
+}
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  # A) restart at step 20 (as from a checkpoint of the MD engine), the tables are trimmed and appended to
+  mkdir restart ; cd restart ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+  # B) exact restart with CHECKPOINT
+  mkdir checkpoint ; cd checkpoint
+  { echo "CHECKPOINT FILE=plumed.cpt" ; cat ../plumed.dat ; } > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # C) a file written as free text cannot be an HDF5 table
+  mkdir freetext ; cd freetext
+  echo "PRINT_NDX ATOMS=1-4 FILE=atoms.h5" > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for f in COLVAR HILLS ; do
+      $plumed h5convert --input $f.h5 --output $f.h5.txt
+      # the table has the values of the text file written with all the digits (the time with 6 digits)
+      echo "$f.h5 as text: $(compare $f $f.h5.txt)"
+      for d in restart checkpoint ; do
+        $plumed h5convert --input $d/$f.h5 --output $d/$f.h5.txt
+        if cmp -s $f.h5.txt $d/$f.h5.txt ; then echo "$d/$f.h5 IDENTICAL" ; else echo "$d/$f.h5 DIFFERENT" ; fi
+      done
+      $plumed h5convert --input restart/bck.trimmed.0.$f.h5 --output restart/$f.removed.txt
+      echo "restart/bck.trimmed.0.$f.h5 rows: $(grep -vc '^#' restart/$f.removed.txt)"
+    done
+    # text -> HDF5 -> text gives the same values
+    $plumed h5convert --input COLVAR --output roundtrip.h5
+    $plumed h5convert --input roundtrip.h5 --output roundtrip.txt
+    echo "COLVAR -> h5 -> text: $(compare COLVAR roundtrip.txt)"
+    grep -h "restart step" restart/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "truncated to the rows" checkpoint/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "HDF5 tables" freetext/err1 | head -n 1 | sed 's/^.*\(HDF5 tables\)/\1/'
+  } > restart_check
+}

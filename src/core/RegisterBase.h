@@ -135,6 +135,8 @@ class RegisterBase :
 public:
 /// auxiliary class
   struct ContentAndFullPath {
+    // RegisterBase constructs this aggregate with both fields initialized.
+    // cppcheck-suppress uninitMemberVarNoCtor
     Content content;
     std::string fullPath;
   };

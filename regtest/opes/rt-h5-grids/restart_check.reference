@@ -1,0 +1,5 @@
+grid.h5 as text: IDENTICAL
+STATE.h5 as text: IDENTICAL
+hist.h5 as text: IDENTICAL
+bck.last.grid.h5: present
+restart from the HDF5 grid and state: 59 steps (all but 20), m.bias and o.bias the same as the uninterrupted run

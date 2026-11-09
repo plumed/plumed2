@@ -1,0 +1,16 @@
+COLVAR.h5 as text: IDENTICAL
+restart/COLVAR.h5 IDENTICAL
+checkpoint/COLVAR.h5 IDENTICAL
+restart/bck.trimmed.0.COLVAR.h5 rows: 15
+HILLS.h5 as text: IDENTICAL
+restart/HILLS.h5 IDENTICAL
+checkpoint/HILLS.h5 IDENTICAL
+restart/bck.trimmed.0.HILLS.h5 rows: 3
+COLVAR -> h5 -> text: IDENTICAL
+file COLVAR.h5: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.h5
+file COLVAR: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR
+file HILLS.h5: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS.h5
+file HILLS: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS
+file COLVAR.h5 truncated to the rows it had at the checkpoint
+file HILLS.h5 truncated to the rows it had at the checkpoint
+HDF5 tables (.h5) can only be written field by field (as PRINT does): this file is written as free text, use another extension

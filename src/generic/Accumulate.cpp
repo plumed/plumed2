@@ -178,6 +178,7 @@ void Accumulate::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.addFlag("DO_AFTER_FINAL_STEP",false,"do a final accumulation step at end the trajectory even if the trajectory's length is not a multiple of the stride");
   keys.setValueDescription("scalar/grid","a sum calculated from the time series of the input quantity");
 }
 

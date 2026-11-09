@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Opt-in absolute tolerances for numeric data. Headers, labels, row counts and
+# column counts remain exact. Unexpected nonfinite values are never numeric.
+if [[ $# -ne 3 || ! -f "$1" || ! -f "$2" ]]; then
+  echo "usage: numeric-diff REFERENCE ACTUAL ABSOLUTE_TOLERANCE" >&2
+  exit 2
+fi
+
+awk -v tolerance="$3" '
+  function numeric(s) {
+    return s ~ /^[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][-+]?[0-9]+)?$/
+  }
+  function absolute(x) { return x<0 ? -x : x }
+  function mismatch(message) {
+    if(errors++<10) print "line " FNR ": " message
+  }
+  BEGIN {
+    if(!numeric(tolerance) || tolerance+0<=0 || tolerance+0>1.7976931348623157e308) {
+      print "invalid absolute tolerance: " tolerance
+      invalid=1
+      exit 2
+    }
+  }
+  FILENAME==ARGV[1] { reference[++n]=$0; next }
+  {
+    m++
+    if(m>n) { mismatch("extra row"); next }
+    if("x" $0=="x" reference[m]) next
+    if($0 ~ /^#/ || reference[m] ~ /^#/) {
+      mismatch("header differs")
+      next
+    }
+    count=split(reference[m],expected)
+    if(NF!=count) { mismatch("column count differs"); next }
+    for(i=1;i<=NF;i++) {
+      # Force string comparison: some awk implementations compare nan equal
+      # to finite numeric fields after implicit conversion.
+      if("x" $i=="x" expected[i]) continue
+      if(!numeric($i) || !numeric(expected[i])) {
+        mismatch("column " i " differs: " expected[i] " vs " $i)
+        continue
+      }
+      a=$i+0; b=expected[i]+0
+      if(absolute(a)>1.7976931348623157e308 || absolute(b)>1.7976931348623157e308) {
+        mismatch("column " i " is not finite")
+        continue
+      }
+      scale=absolute(a)>absolute(b) ? absolute(a) : absolute(b)
+      # Parsing and subtracting decimal strings also rounds. Allow a few ULPs
+      # at their scale so a difference of exactly one printed unit can pass.
+      slack=8*2.220446049250313e-16*scale
+      if(absolute(a-b)>tolerance+slack)
+        mismatch("column " i " exceeds " tolerance ": " expected[i] " vs " $i)
+    }
+  }
+  END {
+    if(invalid) exit 2
+    if(m<n) { print "missing rows: expected " n ", found " m; errors++ }
+    exit(errors>0 ? 1 : 0)
+  }
+' "$1" "$2"

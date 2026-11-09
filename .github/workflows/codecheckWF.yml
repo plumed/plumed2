@@ -34,7 +34,7 @@ jobs:
         cache-dependency-path: .ci/requirements-codecheck.txt
     - name: Install requirements
       run: |
-        .ci/install.cppcheck 2.13.4
+        .ci/install.cppcheck 2.22.0
         # it is important that this is the same version used to generate the actual ./configure
         .ci/install.autoconf 2.69
     - name: Build astyle
@@ -51,8 +51,8 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: ~/.cache/plumed-cppcheck
-        key: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
-        restore-keys: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-
+        key: cppcheck-build-ubuntu-22.04-2.22.0-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
+        restore-keys: cppcheck-build-ubuntu-22.04-2.22.0-${{ hashFiles('src/maketools/codecheck') }}-
     - name: Checking code
       id: codecheck
       run: |
@@ -70,7 +70,7 @@ jobs:
       uses: actions/cache/save@v5
       with:
         path: ~/.cache/plumed-cppcheck
-        key: cppcheck-build-ubuntu-22.04-2.13.4-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
+        key: cppcheck-build-ubuntu-22.04-2.22.0-${{ hashFiles('src/maketools/codecheck') }}-${{ github.sha }}
     # The reports are uploaded also when codecheck passes (they have no results then), otherwise GitHub
     # never closes the alerts that have been fixed. Pull requests from forks are skipped: their token
     # cannot upload security events.
