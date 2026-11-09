@@ -131,9 +131,8 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
           [[ -z "$failed" ]]
 
-      # Temporary: narrow down the regtests that crash on Windows (rt73 and
-      # rt-plumed-action-large-step) and dump the coordinates read from the
-      # xtc file of the isdb tests with last-digit differences
+      # Temporary: stack size needed by the regtests that overflowed the
+      # default 1 MB stack (rt73 and rt-plumed-action-large-step)
       - name: Diagnose Windows-only regtest failures
         if: always() && steps.regtest.outcome != 'skipped'
         continue-on-error: true
@@ -150,17 +149,20 @@ jobs:
             & $exe driver --plumed "$name.dat" @arguments *> "$name.log"
             "{0,-22} exit {1} (0x{1:X8})" -f $name, $LASTEXITCODE
           }
+          # plumed.exe is linked with an 8 MB stack: find the size these inputs need
           $rt73 = Get-Content ..\..\regtest\basic\rt73\plumed.dat
           $a73 = '--trajectory-stride','1','--timestep','0.005','--ixyz','trajectory.xyz'
-          run 'rt73-full'      $rt73 $a73
-          run 'rt73-no-req'    ($rt73 | Where-Object { $_ -notmatch 'logRequestedAtoms' }) $a73
-          run 'rt73-no-act'    ($rt73 | Where-Object { $_ -notmatch 'logActivity' }) $a73
-          run 'rt73-no-debug'  ($rt73 | Where-Object { $_ -notmatch '^DEBUG' }) $a73
-          run 'rt73-no-end'    ($rt73 | Where-Object { $_ -notmatch 'ENDPLUMED' }) $a73
           $big = Get-Content ..\..\regtest\basic\rt-plumed-action-large-step\plumed.dat
-          run 'large-step-3e9'   $big '--ixyz','traj.xyz','--initial-step','3000000000','--timestep','0.001'
-          run 'large-step-1e9'   $big '--ixyz','traj.xyz','--initial-step','1000000000','--timestep','0.001'
-          run 'xtc-dump' 'DUMPATOMS ATOMS=1-111 FILE=xtc.xyz PRECISION=9' '--mf_xtc','trajectory.xtc'
+          $abig = '--ixyz','traj.xyz','--initial-step','3000000000','--timestep','0.001'
+          $orig = $exe
+          foreach ($mb in 1,2,4,8) {
+            $exe = "$d\plumed-$mb.exe"
+            Copy-Item $orig $exe
+            editbin /nologo /STACK:$($mb*1048576) $exe
+            run "rt73-stack$mb" $rt73 $a73
+            run "large-step-stack$mb" $big $abig
+            Remove-Item $exe
+          }
 
       - name: Upload regtest results
         if: always() && steps.regtest.outcome != 'skipped'

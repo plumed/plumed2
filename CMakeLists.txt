@@ -199,6 +199,9 @@ add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
 # whole library (upstream links all kernel objects directly, not an archive).
 if(MSVC)
     target_link_options(plumed PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:plumedKernel>")
+    # 8 MB main-thread stack, as on Linux (the MSVC default is 1 MB): nested
+    # cmd() calls (DEBUG logRequestedAtoms, the PLUMED action) overflowed it
+    target_link_options(plumed PRIVATE "/STACK:8388608")
 elseif(APPLE)
     target_link_options(plumed PRIVATE "LINKER:-force_load,$<TARGET_FILE:plumedKernel>")
 else()
