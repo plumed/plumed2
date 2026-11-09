@@ -1,8 +1,9 @@
 name: "PLUMED CodeQL configuration"
 
 # These path filters apply to interpreted and no-build analysis. Manual C++
-# builds still analyze compiled imports; filter-sarif.py removes only imported
-# commented-out-code notes, leaving security diagnostics enabled.
+# builds still analyze compiled imports; filter-sarif.py removes the quality
+# (non-security) results in the imported sources listed below, leaving their
+# security diagnostics enabled.
 #
 # Third-party code that is kept as close as possible to the upstream version
 # (it is updated by re-importing it, so local style fixes would be lost):
