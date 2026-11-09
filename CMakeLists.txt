@@ -120,16 +120,19 @@ set(PPM_INC ${PLUMED_GEN}/PlumedMainEnum.inc ${PLUMED_GEN}/PlumedMainMap.inc
             ${PLUMED_GEN}/ModuleMap.inc
             ${PLUMED_GEN}/ActionDescriptions.inc)
 set(CONFIG_OUT ${PLUMED_GEN}/Config.inc ${PLUMED_GEN}/version.h
-               ${PLUMED_GEN}/Makefile.conf.xxd)
+               ${PLUMED_GEN}/Makefile.conf.xxd ${PLUMED_GEN}/ModuleBuild.inc)
 set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd)
 # The module map is built from every module source; make the generation
 # command depend on them so that it is rerun when actions are added/removed.
-file(GLOB _generator_inputs CONFIGURE_DEPENDS ${PLUMED_SRC}/src/*/*.cpp)
+file(GLOB _generator_inputs CONFIGURE_DEPENDS
+    ${PLUMED_SRC}/src/*/*.cpp ${PLUMED_SRC}/src/*/*.h ${PLUMED_SRC}/src/*/*.c)
 add_custom_command(
     OUTPUT ${PPM_INC} ${CONFIG_OUT} ${COMPLETION_XXD}
     COMMAND ${CMAKE_COMMAND}
             "-DSRC=${PLUMED_SRC}" "-DOUT=${PLUMED_GEN}"
             "-DINSTALLED=${PLUMED_PIP_BUNDLE}" "-DPREFIX=${CMAKE_INSTALL_PREFIX}"
+            "-DMODULES=${MODULES}"
+            "-DMODULE_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}-${CMAKE_CXX_FLAGS}-${CMAKE_BUILD_TYPE}"
             -P ${GEN_SCRIPT}
     DEPENDS ${GEN_SCRIPT} ${GEN_MODULE}
             ${PLUMED_SRC}/src/config/Config.inc.in

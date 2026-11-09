@@ -158,6 +158,39 @@ function(plumed_generate_config src_root out_dir)
   endif()
   configure_file("${src_root}/src/config/Config.inc.in" "${out_dir}/Config.inc" @ONLY)
 
+  # The static Windows build still implements runtime module queries. Generate
+  # the same configuration interface as the Unix make path, using the actual
+  # selected CMake modules and a build-system-specific source/toolchain hash.
+  if(NOT DEFINED MODULES)
+    set(MODULES "")
+    file(GLOB _types "${src_root}/src/*/module.type")
+    foreach(_type IN LISTS _types)
+      file(STRINGS "${_type}" _kind LIMIT_COUNT 1)
+      if(_kind STREQUAL "always" OR _kind STREQUAL "default-on")
+        get_filename_component(_directory "${_type}" DIRECTORY)
+        get_filename_component(_module "${_directory}" NAME)
+        list(APPEND MODULES "${_module}")
+      endif()
+    endforeach()
+  endif()
+  string(JOIN " " _builtin_modules ${MODULES})
+  set(_identity "cmake-static;${PLUMED_VERSION_LONG};${MODULE_TOOLCHAIN};${MODULES}")
+  file(GLOB _identity_sources "${src_root}/src/*/*.cpp"
+       "${src_root}/src/*/*.h" "${src_root}/src/*/*.c")
+  list(SORT _identity_sources)
+  foreach(_source IN LISTS _identity_sources)
+    if(NOT _source STREQUAL "${src_root}/src/config/version.h")
+      file(SHA256 "${_source}" _digest)
+      file(RELATIVE_PATH _relative "${src_root}" "${_source}")
+      string(APPEND _identity ";${_relative}:${_digest}")
+    endif()
+  endforeach()
+  file(SHA256 "${src_root}/CMakeLists.txt" _cmake_digest)
+  string(SHA256 _build_id "${_identity};${_cmake_digest}")
+  file(WRITE "${out_dir}/ModuleBuild.inc"
+       "#define PLUMED_MODULE_BUILD_ID \"${_build_id}\"\n"
+       "#define PLUMED_BUILTIN_MODULES \"${_builtin_modules}\"\n")
+
   # version.h (update-version.sh)
   configure_file("${CMAKE_CURRENT_LIST_DIR}/version.h.in" "${out_dir}/version.h" @ONLY)
 
