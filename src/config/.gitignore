@@ -4,3 +4,6 @@
 /config.txt
 /Config.inc
 /ConfigInstall.inc
+
+/ModuleBuild.inc
+/module-build-id

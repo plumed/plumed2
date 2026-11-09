@@ -57,6 +57,13 @@ void* DLLoader::load(const std::string&s) {
 #endif
 }
 
+void DLLoader::append(DLLoader&& other) {
+  handles.insert(handles.end(),other.handles.begin(),other.handles.end());
+  moduleNames.insert(moduleNames.end(),other.moduleNames.begin(),other.moduleNames.end());
+  other.handles.clear();
+  other.moduleNames.clear();
+}
+
 DLLoader::~DLLoader() {
 #ifdef __PLUMED_HAS_DLOPEN
   auto debug=std::getenv("PLUMED_LOAD_DEBUG");

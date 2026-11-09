@@ -46,8 +46,11 @@ class Register {
 protected:
   /// Mutex protecting access to map
   mutable std::shared_mutex mutex;
+  static std::vector<void*> automaticImages();
   /// Internal tool to format image addresses
   static std::string imageToString(void* image);
+  /// Identify the actual library defining a registration, including dependencies.
+  static void* registrationImage(const void* anchor, void* fallback, std::string& path);
   /// Check if we are in a dlopen section
   static bool isDLRegistering() noexcept;
   /// Return the path of the currently-loading library
@@ -87,6 +90,8 @@ public:
   /// return a registration lock
   static RegistrationLock registrationLock(const std::string & fullpath);
 
+  static void setContextImages(const std::vector<void*>& images);
+  static void setAutomaticImages(const std::vector<void*>& images);
   /// Save all staged objects in all registers
   static void completeAllRegistrations(void* image);
 
@@ -139,6 +144,7 @@ public:
     // cppcheck-suppress uninitMemberVarNoCtor
     Content content;
     std::string fullPath;
+    const void* anchor=nullptr;
   };
 
 private:
@@ -156,7 +162,7 @@ public:
 /// \param key The name of the directive to be used in the input file
 /// \param content The registered content
 /// \param ID A returned ID that can be used to remove the directive later
-  ID add(std::string key,const Content & content);
+  ID add(std::string key,const Content & content, const void* anchor=nullptr);
 
 /// Verify if a key is present in the register, accessing to registered images
   bool check(const std::vector<void*> & images,const std::string & key) const;
@@ -183,6 +189,8 @@ public:
 /// textual version of the image void*
   std::vector<std::string> getKeys() const override;
 
+  std::vector<std::string> visibleKeys() const;
+
   ~RegisterBase() noexcept override;
 
   /// complete registration
@@ -195,9 +203,9 @@ public:
 };
 
 template<class Content>
-typename RegisterBase<Content>::ID RegisterBase<Content>::add(std::string key,const Content & content) {
+typename RegisterBase<Content>::ID RegisterBase<Content>::add(std::string key,const Content & content, const void* anchor) {
 
-  auto ptr=std::make_unique<ContentAndFullPath>(ContentAndFullPath{content,getRegisteringFullPath()});
+  auto ptr=std::make_unique<ContentAndFullPath>(ContentAndFullPath{content,getRegisteringFullPath(),anchor});
   ID id{ptr.get()};
 
   // lock map for writing
@@ -227,14 +235,17 @@ bool RegisterBase<Content>::check(const std::vector<void*> & images,const std::s
       return true;
     }
   }
+  for(auto image : automaticImages()) {
+    if(m.count(imageToString(image)+":"+key)>0) {
+      return true;
+    }
+  }
   return false;
 }
 
 template<class Content>
 bool RegisterBase<Content>::check(const std::string & key) const {
-  // lock map for reading
-  std::shared_lock<std::shared_mutex> lock(mutex);
-  return m.count(key)>0;
+  return check(std::vector<void*> {},key);
 }
 
 template<class Content>
@@ -243,6 +254,12 @@ const Content & RegisterBase<Content>::get(const std::vector<void*> & images,con
   std::shared_lock<std::shared_mutex> lock(mutex);
   for(auto image = images.rbegin(); image != images.rend(); ++image) {
     auto qualified_key=imageToString(*image) + ":" + key;
+    if(m.count(qualified_key)>0) {
+      return m.find(qualified_key)->second->content;
+    }
+  }
+  for(auto image : automaticImages()) {
+    auto qualified_key=imageToString(image)+":"+key;
     if(m.count(qualified_key)>0) {
       return m.find(qualified_key)->second->content;
     }
@@ -263,6 +280,12 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
       return m.find(qualified_key)->second->fullPath;
     }
   }
+  for(auto image : automaticImages()) {
+    auto qualified_key=imageToString(image)+":"+key;
+    if(m.count(qualified_key)>0) {
+      return m.find(qualified_key)->second->fullPath;
+    }
+  }
   if (m.count(key) == 0 ) {
     throw ExceptionRegisterError().setMissingKey(key);
   }
@@ -271,12 +294,7 @@ const std::string & RegisterBase<Content>::getFullPath(const std::vector<void*> 
 
 template<class Content>
 const Content & RegisterBase<Content>::get(const std::string & key) const {
-  // lock map for reading
-  std::shared_lock<std::shared_mutex> lock(mutex);
-  if (m.count(key) == 0 ) {
-    throw ExceptionRegisterError().setMissingKey(key);
-  }
-  return m.find(key)->second->content;
+  return get(std::vector<void*> {},key);
 }
 
 template<class Content>
@@ -306,6 +324,23 @@ std::vector<std::string> RegisterBase<Content>::getKeys() const {
 }
 
 template<class Content>
+std::vector<std::string> RegisterBase<Content>::visibleKeys() const {
+  std::vector<std::string> result;
+  for(const auto& key:getKeys()) {
+    if(key.find(':')==std::string::npos) {
+      result.push_back(key);
+    }
+  }
+  for(auto image:automaticImages()) {
+    const auto keys=getKeysWithDLHandle(image);
+    result.insert(result.end(),keys.begin(),keys.end());
+  }
+  std::sort(result.begin(),result.end());
+  result.erase(std::unique(result.begin(),result.end()),result.end());
+  return result;
+}
+
+template<class Content>
 RegisterBase<Content>::~RegisterBase() noexcept {
   if(m.size()>0) {
     std::string names="";
@@ -321,7 +356,8 @@ void RegisterBase<Content>::completeRegistration(void*handle) {
   // lock map for writing
   std::unique_lock<std::shared_mutex> lock(mutex);
   for (auto iter = staged_m.begin(); iter != staged_m.end(); ) {
-    auto key = imageToString(handle) + ":" + iter->first;
+    auto owner=registrationImage(iter->second->anchor,handle,iter->second->fullPath);
+    auto key = imageToString(owner) + ":" + iter->first;
     plumed_assert(!m.count(key)) << "cannot register key twice with the same name "<< key<<"\n";
     m[key] = std::move(iter->second);
     // Since we've moved out the value, we can safely erase the element from the original map

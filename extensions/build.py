@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""Build optional modules with the installed base's compiler and ABI settings."""
+
+import hashlib
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+root = Path(__file__).resolve().parent.parent
+config = {}
+for line in (root / "Makefile.conf").read_text().splitlines():
+    match = re.match(r"^(\w+)=(.*)$", line)
+    if match:
+        config[match[1]] = match[2]
+base = Path(config["EXTENSION_BASE"])
+prefix = Path(config["EXTENSION_PREFIX"])
+build_id = config["EXTENSION_BUILD_ID"]
+selected = config["EXTENSION_MODULES"].split()
+work = root / "_extensions"
+work.mkdir(exist_ok=True)
+environment = dict(os.environ, PLUMED_AUTOLOAD="0")
+builtin = set(
+    subprocess.check_output(
+        [str(base / "bin/plumed"), "--list-modules"], env=environment, text=True
+    ).split()
+)
+current_id = subprocess.check_output(
+    [str(base / "bin/plumed"), "--module-build-id"], env=environment, text=True
+).strip()
+if current_id != build_id:
+    raise SystemExit("The installed base changed: configure the extensions again")
+soext = config["SOEXT"]
+
+
+# Preserve literal quotes in -D flags: make passes these through a shell once.
+def flags(key):
+    return shlex.split(config.get(key, ""))
+
+
+# PACKAGE_STRING is informational and contains escaped spaces; all ABI feature
+# macros and compiler flags are preserved without running shell expansions.
+cppflags = [word for word in flags("CPPFLAGS") if not word.startswith("-DPACKAGE_")]
+compiler = shlex.split(os.environ.get("CXX", "")) or flags("CXX")
+cxxflags = shlex.split(os.environ.get("CXXFLAGS", "")) or flags("CXXFLAGS")
+if not any(flag.startswith("-std=") for flag in cxxflags):
+    cxxflags.append("-std=c++17")
+if "-fPIC" not in cxxflags:
+    cxxflags.append("-fPIC")
+linker = [*compiler, *flags("LDSHARED")[len(flags("CXX")) :]]
+cppflags += shlex.split(os.environ.get("CPPFLAGS", ""))
+base_kernel = base / "lib" / f"libplumedKernel.{soext}"
+
+
+# USE describes source dependencies. Of these, only omitted modules are separate
+# libraries. No shortcut/action dependency inference is performed.
+def dependencies(name):
+    text = (root / "src" / name / "Makefile").read_text()
+    match = re.search(r"^USE\s*[:?+]?=([^\n]*)", text, re.MULTILINE)
+    return [
+        dep
+        for dep in (match[1].split() if match else [])
+        if dep not in builtin and (root / "src" / dep / "module.type").exists()
+    ]
+
+
+order = []
+visiting = set()
+
+
+def visit(name):
+    if name in order:
+        return
+    if name in visiting:
+        raise SystemExit(f"cyclic module dependency: {name}")
+    visiting.add(name)
+    for dep in dependencies(name):
+        visit(dep)
+    visiting.remove(name)
+    order.append(name)
+
+
+for module in selected:
+    visit(module)
+
+
+def run(command):
+    print(shlex.join(map(str, command)), flush=True)
+    subprocess.run(list(map(str, command)), check=True)
+
+
+header_hash = hashlib.sha256()
+for header in sorted((root / "src").glob("*/*.h")):
+    header_hash.update(header.read_bytes())
+headers = header_hash.hexdigest()
+
+
+def compile_source(task):
+    command, source, obj = task
+    signature = hashlib.sha256(
+        (json.dumps(list(map(str, command))) + headers + build_id).encode()
+        + source.read_bytes()
+    ).hexdigest()
+    stamp = obj.with_suffix(".signature")
+    if obj.exists() and stamp.exists() and stamp.read_text() == signature:
+        return
+    run(command)
+    stamp.write_text(signature)
+
+
+for name in order:
+    directory = work / name
+    directory.mkdir(exist_ok=True)
+    sources = sorted((root / "src" / name).glob("*.cpp"))
+    identity = directory / "module_identity.cpp"
+    identity.write_text(
+        '#include "config/Config.h"\n'
+        + f'extern "C" const char* plumed_module_{name}() {{ return "{build_id}"; }}\n'
+        + f'extern "C" const void* plumed_module_{name}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+    )
+    objects = []
+    tasks = []
+    for source in [*sources, identity]:
+        obj = directory / (source.stem + ".o")
+        objects.append(obj)
+        # The installed base and its headers are immutable for this build ID.
+        # Included module headers can change locally, so never reuse objects
+        # solely based on the translation unit's timestamp.
+        tasks.append(
+            (
+                [
+                    *compiler,
+                    *cppflags,
+                    *cxxflags,
+                    "-I" + str(base / "include/plumed"),
+                    "-I" + str(root / "src"),
+                    f'-DPLUMED_MODULE_DIR="{name}/"',
+                    "-c",
+                    source,
+                    "-o",
+                    obj,
+                ],
+                source,
+                obj,
+            )
+        )
+    with ThreadPoolExecutor(max_workers=int(os.environ.get("CPU_COUNT", "8"))) as pool:
+        list(pool.map(compile_source, tasks))
+    library = work / f"libplumed-ext-{name}.{soext}"
+    dependencies_libs = [
+        work / f"libplumed-ext-{dep}.{soext}" for dep in dependencies(name)
+    ]
+    if soext == "dylib":
+        search = [
+            "-Wl,-install_name,@rpath/" + library.name,
+            "-Wl,-rpath,@loader_path",
+            "-Wl,-rpath," + str(base / "lib"),
+        ]
+    else:
+        search = [
+            "-Wl,-soname," + library.name,
+            "-Wl,-rpath,$ORIGIN",
+            "-Wl,-rpath," + str(base / "lib"),
+            "-Wl,-z,defs",
+        ]
+    run(
+        [
+            *linker,
+            *flags("LDFLAGS"),
+            *search,
+            "-o",
+            library,
+            *objects,
+            *dependencies_libs,
+            base_kernel,
+            *flags("DYNAMIC_LIBS"),
+        ]
+    )
+    if soext == "dylib":
+        kernel_id = (
+            subprocess.check_output(["otool", "-D", str(base_kernel)], text=True)
+            .splitlines()[1]
+            .strip()
+        )
+        run(
+            [
+                "install_name_tool",
+                "-change",
+                kernel_id,
+                "@rpath/" + base_kernel.name,
+                library,
+            ]
+        )
+    registration = work / f"{name}.plumed"
+    registration.write_text(
+        f"module {name}\nbuild {build_id}\nlibrary ../../{library.name}\n"
+        + "requires "
+        + " ".join(dependencies(name))
+        + "\n"
+    )
+    if sys.argv[1] == "install":
+        (prefix / "lib/plumed/plugins").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(library, prefix / "lib" / library.name)
+        shutil.copy2(registration, prefix / "lib/plumed/plugins" / registration.name)
+(work / "modules.json").write_text(json.dumps(order, indent=2) + "\n")

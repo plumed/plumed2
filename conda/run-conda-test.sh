@@ -4,6 +4,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 : "${VERSION:?set VERSION to the version built by run-conda-build.sh}"
 
+bash run-extension-test.sh
+
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-conda-packaging.XXXXXX")
 trap 'rm -rf "$task"' EXIT
 export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1

@@ -1,0 +1,1420 @@
+{
+  "modules": {
+    "adjmat": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/adjmat/AdjacencyMatrixBase.h:52",
+          "src/adjmat/AdjacencyMatrixBase.h:67",
+          "src/adjmat/ContactMatrix.h:31",
+          "src/adjmat/ContactMatrix.h:42",
+          "src/adjmat/ContactMatrix.h:51"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-off"
+    },
+    "annfunc": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "function"
+      ],
+      "type": "default-off"
+    },
+    "asmjit": {
+      "feature_guards": {
+        "ASMJIT": [
+          "src/asmjit/a64.h:1",
+          "src/asmjit/a64.h:65",
+          "src/asmjit/a64archtraits_p.h:1",
+          "src/asmjit/a64archtraits_p.h:84",
+          "src/asmjit/a64assembler.cpp:1",
+          "src/asmjit/a64assembler.cpp:5118",
+          "src/asmjit/a64assembler.h:1",
+          "src/asmjit/a64assembler.h:75",
+          "src/asmjit/a64builder.cpp:1",
+          "src/asmjit/a64builder.cpp:54",
+          "src/asmjit/a64builder.h:1",
+          "src/asmjit/a64builder.h:60",
+          "src/asmjit/a64compiler.cpp:1",
+          "src/asmjit/a64compiler.cpp:63",
+          "src/asmjit/a64compiler.h:1",
+          "src/asmjit/a64compiler.h:250",
+          "src/asmjit/a64emithelper.cpp:1",
+          "src/asmjit/a64emithelper.cpp:467",
+          "src/asmjit/a64emithelper_p.h:1",
+          "src/asmjit/a64emithelper_p.h:53",
+          "src/asmjit/a64emitter.h:1",
+          "src/asmjit/a64emitter.h:1231",
+          "src/asmjit/a64formatter.cpp:1",
+          "src/asmjit/a64formatter.cpp:301",
+          "src/asmjit/a64formatter_p.h:1",
+          "src/asmjit/a64formatter_p.h:62",
+          "src/asmjit/a64func.cpp:1",
+          "src/asmjit/a64func.cpp:192",
+          "src/asmjit/a64func_p.h:1",
+          "src/asmjit/a64func_p.h:36",
+          "src/asmjit/a64globals.h:1",
+          "src/asmjit/a64globals.h:1897",
+          "src/asmjit/a64instapi.cpp:1",
+          "src/asmjit/a64instapi.cpp:281",
+          "src/asmjit/a64instapi_p.h:1",
+          "src/asmjit/a64instapi_p.h:44",
+          "src/asmjit/a64instdb.cpp:1",
+          "src/asmjit/a64instdb.cpp:1960",
+          "src/asmjit/a64instdb.h:1",
+          "src/asmjit/a64instdb.h:77",
+          "src/asmjit/a64instdb_p.h:1",
+          "src/asmjit/a64instdb_p.h:879",
+          "src/asmjit/a64operand.cpp:1",
+          "src/asmjit/a64operand.cpp:88",
+          "src/asmjit/a64operand.h:1",
+          "src/asmjit/a64operand.h:315",
+          "src/asmjit/a64rapass.cpp:1",
+          "src/asmjit/a64rapass.cpp:855",
+          "src/asmjit/a64rapass_p.h:1",
+          "src/asmjit/a64rapass_p.h:108",
+          "src/asmjit/a64utils.h:1",
+          "src/asmjit/a64utils.h:182",
+          "src/asmjit/api-build_p.h:1",
+          "src/asmjit/api-build_p.h:58",
+          "src/asmjit/api-config.h:1",
+          "src/asmjit/api-config.h:639",
+          "src/asmjit/archcommons.h:1",
+          "src/asmjit/archcommons.h:232",
+          "src/asmjit/archtraits.cpp:1",
+          "src/asmjit/archtraits.cpp:163",
+          "src/asmjit/archtraits.h:1",
+          "src/asmjit/archtraits.h:293",
+          "src/asmjit/arm.h:1",
+          "src/asmjit/arm.h:65",
+          "src/asmjit/armformatter.cpp:1",
+          "src/asmjit/armformatter.cpp:146",
+          "src/asmjit/armformatter_p.h:1",
+          "src/asmjit/armformatter_p.h:47",
+          "src/asmjit/armglobals.h:1",
+          "src/asmjit/armglobals.h:24",
+          "src/asmjit/armoperand.h:1",
+          "src/asmjit/armoperand.h:624",
+          "src/asmjit/asmjit-scope-begin.h:1",
+          "src/asmjit/asmjit-scope-begin.h:20",
+          "src/asmjit/asmjit-scope-end.h:1",
+          "src/asmjit/asmjit-scope-end.h:12",
+          "src/asmjit/asmjit.h:1",
+          "src/asmjit/asmjit.h:36",
+          "src/asmjit/assembler.cpp:1",
+          "src/asmjit/assembler.cpp:409",
+          "src/asmjit/assembler.h:1",
+          "src/asmjit/assembler.h:132",
+          "src/asmjit/builder.cpp:1",
+          "src/asmjit/builder.cpp:892",
+          "src/asmjit/builder.h:1",
+          "src/asmjit/builder.h:1394",
+          "src/asmjit/codebuffer.h:1",
+          "src/asmjit/codebuffer.h:116",
+          "src/asmjit/codeholder.cpp:1",
+          "src/asmjit/codeholder.cpp:1152",
+          "src/asmjit/codeholder.h:1",
+          "src/asmjit/codeholder.h:1038",
+          "src/asmjit/codewriter.cpp:1",
+          "src/asmjit/codewriter.cpp:178",
+          "src/asmjit/codewriter_p.h:1",
+          "src/asmjit/codewriter_p.h:182",
+          "src/asmjit/compiler.cpp:1",
+          "src/asmjit/compiler.cpp:585",
+          "src/asmjit/compiler.h:1",
+          "src/asmjit/compiler.h:740",
+          "src/asmjit/compilerdefs.h:1",
+          "src/asmjit/compilerdefs.h:176",
+          "src/asmjit/constpool.cpp:1",
+          "src/asmjit/constpool.cpp:366",
+          "src/asmjit/constpool.h:1",
+          "src/asmjit/constpool.h:253",
+          "src/asmjit/core.h:1",
+          "src/asmjit/core.h:1864",
+          "src/asmjit/cpuinfo.cpp:1",
+          "src/asmjit/cpuinfo.cpp:1165",
+          "src/asmjit/cpuinfo.h:1",
+          "src/asmjit/cpuinfo.h:816",
+          "src/asmjit/emithelper.cpp:1",
+          "src/asmjit/emithelper.cpp:326",
+          "src/asmjit/emithelper_p.h:1",
+          "src/asmjit/emithelper_p.h:61",
+          "src/asmjit/emitter.cpp:1",
+          "src/asmjit/emitter.cpp:336",
+          "src/asmjit/emitter.h:1",
+          "src/asmjit/emitter.h:744",
+          "src/asmjit/emitterutils.cpp:1",
+          "src/asmjit/emitterutils.cpp:132",
+          "src/asmjit/emitterutils_p.h:1",
+          "src/asmjit/emitterutils_p.h:92",
+          "src/asmjit/environment.cpp:1",
+          "src/asmjit/environment.cpp:49",
+          "src/asmjit/environment.h:1",
+          "src/asmjit/environment.h:511",
+          "src/asmjit/errorhandler.cpp:1",
+          "src/asmjit/errorhandler.cpp:17",
+          "src/asmjit/errorhandler.h:1",
+          "src/asmjit/errorhandler.h:231",
+          "src/asmjit/formatter.cpp:1",
+          "src/asmjit/formatter.cpp:587",
+          "src/asmjit/formatter.h:1",
+          "src/asmjit/formatter.h:250",
+          "src/asmjit/formatter_p.h:1",
+          "src/asmjit/formatter_p.h:37",
+          "src/asmjit/func.cpp:1",
+          "src/asmjit/func.cpp:289",
+          "src/asmjit/func.h:1",
+          "src/asmjit/func.h:1448",
+          "src/asmjit/funcargscontext.cpp:1",
+          "src/asmjit/funcargscontext.cpp:296",
+          "src/asmjit/funcargscontext_p.h:1",
+          "src/asmjit/funcargscontext_p.h:202",
+          "src/asmjit/globals.cpp:1",
+          "src/asmjit/globals.cpp:136",
+          "src/asmjit/globals.h:1",
+          "src/asmjit/globals.h:396",
+          "src/asmjit/inst.cpp:1",
+          "src/asmjit/inst.cpp:116",
+          "src/asmjit/inst.h:1",
+          "src/asmjit/inst.h:775",
+          "src/asmjit/jitallocator.cpp:1",
+          "src/asmjit/jitallocator.cpp:1245",
+          "src/asmjit/jitallocator.h:1",
+          "src/asmjit/jitallocator.h:264",
+          "src/asmjit/jitruntime.cpp:1",
+          "src/asmjit/jitruntime.cpp:83",
+          "src/asmjit/jitruntime.h:1",
+          "src/asmjit/jitruntime.h:92",
+          "src/asmjit/logger.cpp:1",
+          "src/asmjit/logger.cpp:72",
+          "src/asmjit/logger.h:1",
+          "src/asmjit/logger.h:201",
+          "src/asmjit/misc_p.h:1",
+          "src/asmjit/misc_p.h:36",
+          "src/asmjit/moved_string.h:1",
+          "src/asmjit/moved_string.h:375",
+          "src/asmjit/operand.cpp:1",
+          "src/asmjit/operand.cpp:135",
+          "src/asmjit/operand.h:1",
+          "src/asmjit/operand.h:1614",
+          "src/asmjit/osutils.cpp:1",
+          "src/asmjit/osutils.cpp:87",
+          "src/asmjit/osutils.h:1",
+          "src/asmjit/osutils.h:64",
+          "src/asmjit/osutils_p.h:1",
+          "src/asmjit/osutils_p.h:71",
+          "src/asmjit/raassignment_p.h:1",
+          "src/asmjit/raassignment_p.h:421",
+          "src/asmjit/rabuilders_p.h:1",
+          "src/asmjit/rabuilders_p.h:615",
+          "src/asmjit/radefs_p.h:1",
+          "src/asmjit/radefs_p.h:1207",
+          "src/asmjit/ralocal.cpp:1",
+          "src/asmjit/ralocal.cpp:1169",
+          "src/asmjit/ralocal_p.h:1",
+          "src/asmjit/ralocal_p.h:257",
+          "src/asmjit/rapass.cpp:1",
+          "src/asmjit/rapass.cpp:1972",
+          "src/asmjit/rapass_p.h:1",
+          "src/asmjit/rapass_p.h:1186",
+          "src/asmjit/rastack.cpp:1",
+          "src/asmjit/rastack.cpp:187",
+          "src/asmjit/rastack_p.h:1",
+          "src/asmjit/rastack_p.h:174",
+          "src/asmjit/string.cpp:1",
+          "src/asmjit/string.cpp:562",
+          "src/asmjit/support.cpp:1",
+          "src/asmjit/support.cpp:497",
+          "src/asmjit/support.h:1",
+          "src/asmjit/support.h:1776",
+          "src/asmjit/target.cpp:1",
+          "src/asmjit/target.cpp:17",
+          "src/asmjit/target.h:1",
+          "src/asmjit/target.h:56",
+          "src/asmjit/type.cpp:1",
+          "src/asmjit/type.cpp:77",
+          "src/asmjit/type.h:1",
+          "src/asmjit/type.h:422",
+          "src/asmjit/virtmem.cpp:1",
+          "src/asmjit/virtmem.cpp:725",
+          "src/asmjit/virtmem.h:1",
+          "src/asmjit/virtmem.h:245",
+          "src/asmjit/x86.h:1",
+          "src/asmjit/x86.h:96",
+          "src/asmjit/x86archtraits_p.h:1",
+          "src/asmjit/x86archtraits_p.h:151",
+          "src/asmjit/x86assembler.cpp:1",
+          "src/asmjit/x86assembler.cpp:5113",
+          "src/asmjit/x86assembler.h:1",
+          "src/asmjit/x86assembler.h:688",
+          "src/asmjit/x86builder.cpp:1",
+          "src/asmjit/x86builder.cpp:55",
+          "src/asmjit/x86builder.h:1",
+          "src/asmjit/x86builder.h:354",
+          "src/asmjit/x86compiler.cpp:1",
+          "src/asmjit/x86compiler.cpp:64",
+          "src/asmjit/x86compiler.h:1",
+          "src/asmjit/x86compiler.h:724",
+          "src/asmjit/x86emithelper.cpp:1",
+          "src/asmjit/x86emithelper.cpp:622",
+          "src/asmjit/x86emithelper_p.h:1",
+          "src/asmjit/x86emithelper_p.h:63",
+          "src/asmjit/x86emitter.h:1",
+          "src/asmjit/x86emitter.h:4318",
+          "src/asmjit/x86formatter.cpp:1",
+          "src/asmjit/x86formatter.cpp:947",
+          "src/asmjit/x86formatter_p.h:1",
+          "src/asmjit/x86formatter_p.h:61",
+          "src/asmjit/x86func.cpp:1",
+          "src/asmjit/x86func.cpp:506",
+          "src/asmjit/x86func_p.h:1",
+          "src/asmjit/x86func_p.h:36",
+          "src/asmjit/x86globals.h:1",
+          "src/asmjit/x86globals.h:2172",
+          "src/asmjit/x86instapi.cpp:1",
+          "src/asmjit/x86instapi.cpp:1735",
+          "src/asmjit/x86instapi_p.h:1",
+          "src/asmjit/x86instapi_p.h:44",
+          "src/asmjit/x86instdb.cpp:1",
+          "src/asmjit/x86instdb.cpp:4430",
+          "src/asmjit/x86instdb.h:1",
+          "src/asmjit/x86instdb.h:566",
+          "src/asmjit/x86instdb_p.h:1",
+          "src/asmjit/x86instdb_p.h:314",
+          "src/asmjit/x86opcode_p.h:1",
+          "src/asmjit/x86opcode_p.h:439",
+          "src/asmjit/x86operand.cpp:1",
+          "src/asmjit/x86operand.cpp:234",
+          "src/asmjit/x86operand.h:1",
+          "src/asmjit/x86operand.h:1088",
+          "src/asmjit/x86rapass.cpp:1",
+          "src/asmjit/x86rapass.cpp:1512",
+          "src/asmjit/x86rapass_p.h:1",
+          "src/asmjit/x86rapass_p.h:97",
+          "src/asmjit/zone.cpp:1",
+          "src/asmjit/zone.cpp:356",
+          "src/asmjit/zone.h:1",
+          "src/asmjit/zone.h:618",
+          "src/asmjit/zonehash.cpp:1",
+          "src/asmjit/zonehash.cpp:312",
+          "src/asmjit/zonehash.h:1",
+          "src/asmjit/zonehash.h:189",
+          "src/asmjit/zonelist.cpp:1",
+          "src/asmjit/zonelist.cpp:166",
+          "src/asmjit/zonelist.h:1",
+          "src/asmjit/zonelist.h:212",
+          "src/asmjit/zonestack.cpp:1",
+          "src/asmjit/zonestack.cpp:179",
+          "src/asmjit/zonestack.h:1",
+          "src/asmjit/zonestack.h:242",
+          "src/asmjit/zonestring.h:1",
+          "src/asmjit/zonestring.h:123",
+          "src/asmjit/zonetree.cpp:1",
+          "src/asmjit/zonetree.cpp:102",
+          "src/asmjit/zonetree.h:1",
+          "src/asmjit/zonetree.h:383",
+          "src/asmjit/zonevector.cpp:1",
+          "src/asmjit/zonevector.cpp:359",
+          "src/asmjit/zonevector.h:1",
+          "src/asmjit/zonevector.h:693"
+        ]
+      },
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "bias": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "blas": {
+      "feature_guards": {
+        "EXTERNAL_BLAS": [
+          "src/blas/blas.cpp:23",
+          "src/blas/blas.h:94",
+          "src/blas/blas.h:246"
+        ]
+      },
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "cltools": {
+      "feature_guards": {
+        "MOLFILE_PLUGINS": [
+          "src/cltools/Benchmark.cpp:311",
+          "src/cltools/Driver.cpp:450"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "config",
+        "tools",
+        "molfile",
+        "xdrfile"
+      ],
+      "type": "default-on"
+    },
+    "clusters": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "matrixtools",
+        "multicolvar"
+      ],
+      "type": "default-off"
+    },
+    "colvar": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "contour": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "gridtools",
+        "function"
+      ],
+      "type": "default-off"
+    },
+    "core": {
+      "feature_guards": {
+        "DLADDR": [
+          "src/core/PlumedMain.cpp:2052",
+          "src/core/RegisterBase.cpp:25",
+          "src/core/RegisterBase.cpp:124"
+        ],
+        "DLOPEN": [
+          "src/core/ModuleLoader.cpp:36",
+          "src/core/ModuleLoader.cpp:208",
+          "src/core/PlumedMainInitializer.cpp:29",
+          "src/core/PlumedMainInitializer.cpp:555",
+          "src/core/RegisterBase.cpp:25",
+          "src/core/RegisterBase.cpp:124"
+        ],
+        "MPI": [
+          "src/core/CLToolMain.cpp:47",
+          "src/core/CLToolMain.cpp:259",
+          "src/core/CLToolMain.cpp:287",
+          "src/core/PlumedMain.cpp:41",
+          "src/core/PlumedMain.cpp:903"
+        ],
+        "PYTHON": [
+          "src/core/PlumedMain.cpp:2048"
+        ],
+        "RTLD_DEFAULT": [
+          "src/core/PlumedMainInitializer.cpp:565"
+        ],
+        "THREAD_MPI": [
+          "src/core/CLToolMain.cpp:47",
+          "src/core/CLToolMain.cpp:259",
+          "src/core/CLToolMain.cpp:303"
+        ],
+        "ZLIB": [
+          "src/core/Checkpointing.cpp:40",
+          "src/core/Checkpointing.cpp:133",
+          "src/core/Checkpointing.cpp:141",
+          "src/core/Checkpointing.cpp:155",
+          "src/core/Checkpointing.cpp:169",
+          "src/core/Checkpointing.cpp:207",
+          "src/core/Checkpointing.cpp:242",
+          "src/core/Checkpointing.cpp:369"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "config",
+        "tools",
+        "lepton",
+        "small_vector",
+        "mpiwrap"
+      ],
+      "type": "always"
+    },
+    "crystdistrib": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar",
+        "matrixtools"
+      ],
+      "type": "default-off"
+    },
+    "dimred": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "gridtools",
+        "mapping"
+      ],
+      "type": "default-off"
+    },
+    "drr": {
+      "feature_guards": {
+        "BOOST_SERIALIZATION": [
+          "src/drr/DRR.cpp:18",
+          "src/drr/DRR.h:21",
+          "src/drr/DynamicReferenceRestraining.cpp:18",
+          "src/drr/drrtool.cpp:18"
+        ]
+      },
+      "required_features": [
+        "BOOST_SERIALIZATION"
+      ],
+      "source_use": [
+        "core",
+        "tools",
+        "bias",
+        "cltools",
+        "config"
+      ],
+      "type": "default-off"
+    },
+    "eds": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "envsim": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "multicolvar"
+      ],
+      "type": "default-off"
+    },
+    "fisst": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "fourier": {
+      "feature_guards": {
+        "FFTW": [
+          "src/fourier/FourierTransform.cpp:26",
+          "src/fourier/FourierTransform.cpp:180",
+          "src/fourier/FourierTransform.cpp:229"
+        ]
+      },
+      "required_features": [
+        "FFTW"
+      ],
+      "source_use": [
+        "core",
+        "gridtools"
+      ],
+      "type": "default-off"
+    },
+    "function": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/function/Between.h:45",
+          "src/function/Between.h:54",
+          "src/function/Combine.h:97",
+          "src/function/Combine.h:104",
+          "src/function/FunctionSetup.h:54",
+          "src/function/FunctionSetup.h:63",
+          "src/function/LessThan.h:35",
+          "src/function/LessThan.h:39",
+          "src/function/LessThan.h:48",
+          "src/function/LessThan.h:57",
+          "src/function/MoreThan.h:40",
+          "src/function/MoreThan.h:44",
+          "src/function/MoreThan.h:53",
+          "src/function/MoreThan.h:62"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "funnel": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "generic": {
+      "feature_guards": {
+        "DLOPEN": [
+          "src/generic/Plumed.cpp:32"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "xdrfile",
+        "mpiwrap"
+      ],
+      "type": "default-on"
+    },
+    "gridtools": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/gridtools/SumOfKernels.h:135",
+          "src/gridtools/SumOfKernels.h:139",
+          "src/gridtools/SumOfKernels.h:157",
+          "src/gridtools/SumOfKernels.h:166"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "function",
+        "lepton"
+      ],
+      "type": "default-on"
+    },
+    "isdb": {
+      "feature_guards": {
+        "LIBTORCH": [
+          "src/isdb/EMMIVox.cpp:23"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "bias",
+        "colvar",
+        "core",
+        "tools",
+        "function"
+      ],
+      "type": "default-on"
+    },
+    "kenref": {
+      "feature_guards": {
+        "KENREF": [
+          "src/kenref/KEnRefBias.cpp:44",
+          "src/kenref/KEnRefBias.cpp:393",
+          "src/kenref/KEnRefBiasSetup.cpp:44",
+          "src/kenref/KEnRefBiasSetup.cpp:57"
+        ]
+      },
+      "required_features": [
+        "KENREF"
+      ],
+      "source_use": [
+        "core",
+        "tools",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "landmarks": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "matrixtools"
+      ],
+      "type": "default-off"
+    },
+    "lapack": {
+      "feature_guards": {
+        "EXTERNAL_LAPACK": [
+          "src/lapack/lapack.cpp:24",
+          "src/lapack/lapack.h:101",
+          "src/lapack/lapack.h:892"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "blas"
+      ],
+      "type": "always"
+    },
+    "lepton": {
+      "feature_guards": {
+        "ASMJIT": [
+          "src/lepton/CompiledExpression.cpp:33",
+          "src/lepton/CompiledExpression.cpp:44",
+          "src/lepton/CompiledExpression.cpp:49",
+          "src/lepton/CompiledExpression.cpp:66",
+          "src/lepton/CompiledExpression.cpp:73",
+          "src/lepton/CompiledExpression.cpp:90",
+          "src/lepton/CompiledExpression.cpp:186",
+          "src/lepton/CompiledExpression.cpp:204",
+          "src/lepton/CompiledExpression.cpp:225"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "asmjit"
+      ],
+      "type": "always"
+    },
+    "liquid_crystal": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar",
+        "multicolvar"
+      ],
+      "type": "default-on"
+    },
+    "logmfd": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "mapping": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "matrixtools": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/matrixtools/MatrixDissimilarities.h:44",
+          "src/matrixtools/MatrixDissimilarities.h:54",
+          "src/matrixtools/MatrixProduct.h:39",
+          "src/matrixtools/MatrixProduct.h:46",
+          "src/matrixtools/MatrixTimesMatrix.h:50",
+          "src/matrixtools/MatrixTimesMatrix.h:61",
+          "src/matrixtools/MatrixTimesVectorBase.h:43",
+          "src/matrixtools/MatrixTimesVectorBase.h:52"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "maze": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "membranefusion": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/membranefusion/FusionPoreExpansionP.cpp:24",
+          "src/membranefusion/FusionPoreNucleationP.cpp:24",
+          "src/membranefusion/MemFusionP.cpp:24"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "metatomic": {
+      "feature_guards": {
+        "LIBMETATOMIC": [
+          "src/metatomic/metatomic.cpp:118"
+        ],
+        "LIBTORCH": [
+          "src/metatomic/metatomic.cpp:118"
+        ]
+      },
+      "required_features": [
+        "LIBMETATOMIC",
+        "LIBTORCH"
+      ],
+      "source_use": [
+        "core"
+      ],
+      "type": "default-off"
+    },
+    "molfile": {
+      "feature_guards": {
+        "EXTERNAL_MOLFILE_PLUGINS": [
+          "src/molfile/crdplugin.cpp:37",
+          "src/molfile/dcdplugin.cpp:37",
+          "src/molfile/gromacsplugin.cpp:37",
+          "src/molfile/pdbplugin.cpp:37"
+        ],
+        "MOLFILE_PLUGINS": [
+          "src/molfile/crdplugin.cpp:37",
+          "src/molfile/dcdplugin.cpp:37",
+          "src/molfile/gromacsplugin.cpp:37",
+          "src/molfile/pdbplugin.cpp:37"
+        ]
+      },
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "mpiwrap": {
+      "feature_guards": {
+        "DLOPEN": [
+          "src/mpiwrap/loader.cpp:13",
+          "src/mpiwrap/loader.cpp:35",
+          "src/mpiwrap/loader.cpp:254",
+          "src/mpiwrap/loader.cpp:357",
+          "src/mpiwrap/mpiwrap.cpp:12",
+          "src/mpiwrap/mpiwrap.cpp:4777"
+        ],
+        "MPI": [
+          "src/mpiwrap/fallbacks.cpp:2",
+          "src/mpiwrap/internal.h:7",
+          "src/mpiwrap/launcher.cpp:2",
+          "src/mpiwrap/loader.cpp:2",
+          "src/mpiwrap/mpi-functions.h:7",
+          "src/mpiwrap/mpi-types.h:6",
+          "src/mpiwrap/mpiwrap.cpp:3",
+          "src/mpiwrap/mpiwrap.cpp:5297",
+          "src/mpiwrap/mpiwrap.cpp:5342",
+          "src/mpiwrap/mpiwrap.h:345",
+          "src/mpiwrap/mpiwrap.h:377",
+          "src/mpiwrap/mpiwrap.h:3422",
+          "src/mpiwrap/mpiwrap.h:3468",
+          "src/mpiwrap/tmpi.cpp:3",
+          "src/mpiwrap/types.h:32"
+        ],
+        "THREAD_MPI": [
+          "src/mpiwrap/launcher.cpp:92",
+          "src/mpiwrap/tmpi.cpp:3"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "config",
+        "tools",
+        "thread_mpi"
+      ],
+      "type": "always"
+    },
+    "multicolvar": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "opes": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "bias",
+        "core",
+        "tools"
+      ],
+      "type": "default-off"
+    },
+    "pamm": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "multicolvar",
+        "adjmat"
+      ],
+      "type": "default-off"
+    },
+    "pathbias": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "function"
+      ],
+      "type": "default-off"
+    },
+    "pines": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "piv": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "pytorch": {
+      "feature_guards": {
+        "LIBTORCH": [
+          "src/pytorch/PytorchModel.cpp:18"
+        ]
+      },
+      "required_features": [
+        "LIBTORCH"
+      ],
+      "source_use": [
+        "core",
+        "function"
+      ],
+      "type": "default-off"
+    },
+    "refdist": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "function"
+      ],
+      "type": "default-on"
+    },
+    "s2cm": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "sasa": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "config"
+      ],
+      "type": "default-off"
+    },
+    "secondarystructure": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "setup": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "sizeshape": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "small_vector": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "sprint": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core"
+      ],
+      "type": "default-off"
+    },
+    "symfunc": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/symfunc/Fccubic.h:47",
+          "src/symfunc/Fccubic.h:54",
+          "src/symfunc/SphericalHarmonic.h:90",
+          "src/symfunc/SphericalHarmonic.h:101"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "multicolvar",
+        "function"
+      ],
+      "type": "default-off"
+    },
+    "thread_mpi": {
+      "feature_guards": {
+        "THREAD_MPI": [
+          "src/thread_mpi/alltoall.cpp:1",
+          "src/thread_mpi/alltoall.cpp:311",
+          "src/thread_mpi/atomic.cpp:1",
+          "src/thread_mpi/atomic.cpp:217",
+          "src/thread_mpi/barrier.cpp:1",
+          "src/thread_mpi/barrier.cpp:149",
+          "src/thread_mpi/bcast.cpp:1",
+          "src/thread_mpi/bcast.cpp:153",
+          "src/thread_mpi/collective.cpp:1",
+          "src/thread_mpi/collective.cpp:586",
+          "src/thread_mpi/comm.cpp:1",
+          "src/thread_mpi/comm.cpp:723",
+          "src/thread_mpi/errhandler.cpp:1",
+          "src/thread_mpi/errhandler.cpp:266",
+          "src/thread_mpi/event.cpp:1",
+          "src/thread_mpi/event.cpp:97",
+          "src/thread_mpi/gather.cpp:1",
+          "src/thread_mpi/gather.cpp:289",
+          "src/thread_mpi/group.cpp:1",
+          "src/thread_mpi/group.cpp:224",
+          "src/thread_mpi/list.cpp:1",
+          "src/thread_mpi/list.cpp:166",
+          "src/thread_mpi/lock.cpp:1",
+          "src/thread_mpi/lock.cpp:126",
+          "src/thread_mpi/numa_malloc.cpp:1",
+          "src/thread_mpi/numa_malloc.cpp:543",
+          "src/thread_mpi/once.cpp:1",
+          "src/thread_mpi/once.cpp:204",
+          "src/thread_mpi/p2p_buffer.cpp:1",
+          "src/thread_mpi/p2p_buffer.cpp:117",
+          "src/thread_mpi/p2p_protocol.cpp:1",
+          "src/thread_mpi/p2p_protocol.cpp:1161",
+          "src/thread_mpi/p2p_send_recv.cpp:1",
+          "src/thread_mpi/p2p_send_recv.cpp:350",
+          "src/thread_mpi/p2p_wait.cpp:1",
+          "src/thread_mpi/p2p_wait.cpp:516",
+          "src/thread_mpi/profile.cpp:1",
+          "src/thread_mpi/profile.cpp:373",
+          "src/thread_mpi/pthreads.cpp:1",
+          "src/thread_mpi/pthreads.cpp:901",
+          "src/thread_mpi/reduce.cpp:1",
+          "src/thread_mpi/reduce.cpp:359",
+          "src/thread_mpi/reduce_fast.cpp:1",
+          "src/thread_mpi/reduce_fast.cpp:129",
+          "src/thread_mpi/scan.cpp:1",
+          "src/thread_mpi/scan.cpp:196",
+          "src/thread_mpi/scatter.cpp:1",
+          "src/thread_mpi/scatter.cpp:353",
+          "src/thread_mpi/tmpi_init.cpp:1",
+          "src/thread_mpi/tmpi_init.cpp:863",
+          "src/thread_mpi/tmpi_malloc.cpp:1",
+          "src/thread_mpi/tmpi_malloc.cpp:109",
+          "src/thread_mpi/topology.cpp:1",
+          "src/thread_mpi/topology.cpp:404",
+          "src/thread_mpi/type.cpp:1",
+          "src/thread_mpi/type.cpp:498",
+          "src/thread_mpi/winthreads.cpp:1",
+          "src/thread_mpi/winthreads.cpp:1539"
+        ]
+      },
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "tools": {
+      "feature_guards": {
+        "DLADDR": [
+          "src/tools/DLLoader.cpp:96",
+          "src/tools/DLLoader.cpp:118",
+          "src/tools/OpenMP.cpp:30",
+          "src/tools/OpenMP.cpp:39"
+        ],
+        "DLOPEN": [
+          "src/tools/DLLoader.cpp:30",
+          "src/tools/DLLoader.cpp:37",
+          "src/tools/DLLoader.cpp:46",
+          "src/tools/DLLoader.cpp:68",
+          "src/tools/DLLoader.cpp:95",
+          "src/tools/DLLoader.cpp:119",
+          "src/tools/DLLoader.cpp:123",
+          "src/tools/DLLoader.cpp:127",
+          "src/tools/DLLoader.cpp:133",
+          "src/tools/DLLoader.cpp:148",
+          "src/tools/OpenMP.cpp:30",
+          "src/tools/OpenMP.cpp:39",
+          "src/tools/PlumedHandle.cpp:30",
+          "src/tools/PlumedHandle.cpp:52"
+        ],
+        "EXECINFO": [
+          "src/tools/Exception.cpp:24",
+          "src/tools/Exception.cpp:88",
+          "src/tools/Exception.cpp:143"
+        ],
+        "EXTERNAL_LAPACK": [
+          "src/tools/Matrix.h:441"
+        ],
+        "EXTERNAL_MOLFILE_PLUGINS": [
+          "src/tools/TrajectoryParser.cpp:33"
+        ],
+        "LIBHDF5": [
+          "src/tools/H5Table.cpp:31",
+          "src/tools/H5Table.cpp:73"
+        ],
+        "MOLFILE_PLUGINS": [
+          "src/tools/TrajectoryParser.cpp:32",
+          "src/tools/TrajectoryParser.cpp:662",
+          "src/tools/TrajectoryParser.cpp:826",
+          "src/tools/TrajectoryParser.cpp:861",
+          "src/tools/TrajectoryParser.cpp:875"
+        ],
+        "MPI": [
+          "src/tools/Communicator.cpp:33",
+          "src/tools/Communicator.cpp:43",
+          "src/tools/Communicator.cpp:76",
+          "src/tools/Communicator.cpp:363",
+          "src/tools/Communicator.cpp:426",
+          "src/tools/Communicator.h:24",
+          "src/tools/Communicator.h:38",
+          "src/tools/PlumedHandle.cpp:27",
+          "src/tools/PlumedHandle.cpp:60",
+          "src/tools/TypesafePtr.h:26",
+          "src/tools/TypesafePtr.h:123",
+          "src/tools/TypesafePtr.h:302",
+          "src/tools/TypesafePtr.h:322",
+          "src/tools/TypesafePtr.h:325",
+          "src/tools/TypesafePtr.h:351",
+          "src/tools/TypesafePtr.h:447",
+          "src/tools/TypesafePtr.h:449"
+        ],
+        "OPENACC": [
+          "src/tools/OpenACC.h:28",
+          "src/tools/OpenACC.h:31",
+          "src/tools/OpenACC.h:96",
+          "src/tools/OpenACC.h:220"
+        ],
+        "RTLD_DEFAULT": [
+          "src/tools/DLLoader.cpp:135"
+        ],
+        "SUBPROCESS": [
+          "src/tools/Subprocess.cpp:25",
+          "src/tools/Subprocess.cpp:52",
+          "src/tools/Subprocess.cpp:129",
+          "src/tools/Subprocess.cpp:205",
+          "src/tools/Subprocess.cpp:219",
+          "src/tools/Subprocess.cpp:227",
+          "src/tools/Subprocess.cpp:233"
+        ],
+        "THREAD_MPI": [
+          "src/tools/Communicator.cpp:33"
+        ],
+        "ZLIB": [
+          "src/tools/FileBase.cpp:36",
+          "src/tools/FileBase.cpp:114",
+          "src/tools/FileBase.cpp:143",
+          "src/tools/IFile.cpp:35",
+          "src/tools/IFile.cpp:107",
+          "src/tools/IFile.cpp:290",
+          "src/tools/IFile.cpp:312",
+          "src/tools/IFile.cpp:347",
+          "src/tools/IFile.cpp:377",
+          "src/tools/OFile.cpp:44",
+          "src/tools/OFile.cpp:69",
+          "src/tools/OFile.cpp:686",
+          "src/tools/OFile.cpp:705",
+          "src/tools/OFile.cpp:760",
+          "src/tools/OFile.cpp:784",
+          "src/tools/OFile.cpp:799"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "lapack",
+        "lepton",
+        "small_vector",
+        "xdrfile",
+        "molfile",
+        "mpiwrap"
+      ],
+      "type": "always"
+    },
+    "ttsketch": {
+      "feature_guards": {
+        "LIBHDF5": [
+          "src/ttsketch/TTHelper.cpp:11",
+          "src/ttsketch/TTHelper.cpp:376",
+          "src/ttsketch/TTHelper.h:6",
+          "src/ttsketch/TTHelper.h:82",
+          "src/ttsketch/TTMetaD.cpp:83",
+          "src/ttsketch/TTMetaD.cpp:1341"
+        ],
+        "LIBITENSOR": [
+          "src/ttsketch/TTHelper.cpp:10",
+          "src/ttsketch/TTHelper.cpp:377",
+          "src/ttsketch/TTHelper.h:5",
+          "src/ttsketch/TTHelper.h:83",
+          "src/ttsketch/TTMetaD.cpp:83",
+          "src/ttsketch/TTMetaD.cpp:1341"
+        ]
+      },
+      "required_features": [
+        "LIBITENSOR",
+        "LIBHDF5"
+      ],
+      "source_use": [
+        "core",
+        "tools",
+        "bias"
+      ],
+      "type": "default-off"
+    },
+    "valtools": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core"
+      ],
+      "type": "always"
+    },
+    "vatom": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-on"
+    },
+    "ves": {
+      "feature_guards": {
+        "MPI": [
+          "src/ves/MD_LinearExpansionPES.cpp:46"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "bias",
+        "cltools",
+        "core",
+        "tools",
+        "lepton"
+      ],
+      "type": "default-off"
+    },
+    "volumes": {
+      "feature_guards": {
+        "OPENACC": [
+          "src/volumes/ActionVolume.h:37",
+          "src/volumes/ActionVolume.h:46",
+          "src/volumes/VolumeAround.h:56",
+          "src/volumes/VolumeAround.h:65",
+          "src/volumes/VolumeInCylinder.h:42",
+          "src/volumes/VolumeInCylinder.h:46",
+          "src/volumes/VolumeInCylinder.h:60",
+          "src/volumes/VolumeInCylinder.h:71",
+          "src/volumes/VolumeInSphere.h:35",
+          "src/volumes/VolumeInSphere.h:39",
+          "src/volumes/VolumeInSphere.h:53",
+          "src/volumes/VolumeInSphere.h:62"
+        ]
+      },
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools",
+        "colvar"
+      ],
+      "type": "default-off"
+    },
+    "wham": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core",
+        "tools"
+      ],
+      "type": "default-off"
+    },
+    "xdrfile": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [],
+      "type": "always"
+    },
+    "xsprint": {
+      "feature_guards": {},
+      "required_features": [],
+      "source_use": [
+        "core"
+      ],
+      "type": "default-off"
+    }
+  },
+  "native_features": {
+    "BOOST_SERIALIZATION": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "feedstock": "boost",
+      "packages": [
+        "libboost-devel",
+        "libboost"
+      ],
+      "source": "https://github.com/conda-forge/boost-feedstock",
+      "status": "recipe-confirmed"
+    },
+    "CUDA": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "packages": [
+        "cuda-nvcc",
+        "cuda-cudart-dev",
+        "cuda-version"
+      ],
+      "status": "recipe-confirmed"
+    },
+    "FFTW": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "feedstock": "fftw",
+      "packages": [
+        "fftw"
+      ],
+      "source": "https://github.com/conda-forge/fftw-feedstock",
+      "status": "recipe-confirmed"
+    },
+    "KENREF": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "note": "kenref_core and PLUMED interface headers; no recipe verified",
+      "packages": [],
+      "status": "not-verified"
+    },
+    "LIBHDF5": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "feedstock": "hdf5",
+      "packages": [
+        "hdf5"
+      ],
+      "source": "https://github.com/conda-forge/hdf5-feedstock",
+      "status": "recipe-confirmed"
+    },
+    "LIBITENSOR": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "note": "ITensor v3 C++; no conda-forge recipe verified",
+      "packages": [],
+      "status": "not-verified"
+    },
+    "LIBMETATOMIC": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "feedstock": "libmetatomic-torch",
+      "packages": [
+        "libmetatomic-torch",
+        "libmetatensor-torch",
+        "libmetatensor"
+      ],
+      "source": "https://github.com/conda-forge/libmetatomic-torch-feedstock",
+      "status": "recipe-confirmed"
+    },
+    "LIBTORCH": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "feedstock": "pytorch-cpu",
+      "packages": [
+        "libtorch"
+      ],
+      "source": "https://github.com/conda-forge/pytorch-cpu-feedstock",
+      "status": "recipe-confirmed"
+    },
+    "OPENACC": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "note": "NVIDIA HPC SDK nvc++; CUDA nvcc is not a substitute",
+      "packages": [],
+      "status": "not-verified"
+    },
+    "PYTHON_EMBED": {
+      "availability_scope": "recipe mapping; platform/version solve not established",
+      "packages": [
+        "python",
+        "pybind11"
+      ],
+      "status": "recipe-confirmed"
+    }
+  },
+  "plugins": {
+    "cuda_coordination": {
+      "conda_forge": "recipe-confirmed",
+      "required_features": [
+        "CUDA"
+      ],
+      "source": "plugins/cudaCoord",
+      "stage": 2
+    },
+    "openacc_ptm": {
+      "conda_forge": "toolchain-not-verified",
+      "required_features": [
+        "OPENACC"
+      ],
+      "source": "plugins/openaccPTM",
+      "stage": 2
+    },
+    "pycv": {
+      "conda_forge": "recipe-confirmed",
+      "required_features": [
+        "PYTHON_EMBED"
+      ],
+      "source": "plugins/pycv",
+      "stage": 2
+    }
+  },
+  "schema": 1
+}

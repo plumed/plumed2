@@ -712,6 +712,8 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_extension_base
+enable_extension_modules
 enable_modules
 enable_libsearch
 enable_static_patch
@@ -1399,6 +1401,9 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-extension-modules=LIST
+                          colon-separated extension modules (requires
+                          --with-extension-base)
   --enable-modules        all/none/reset or : separated list such as
                           +crystallization:-bias default: reset
   --enable-libsearch      enable search for libraries, default: yes
@@ -1477,6 +1482,9 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-extension-base=PREFIX
+                          build extensions only, against an installed
+                          exact-compatible base
   --with-kenref-src=DIR   use a local KEnRef checkout instead of cloning it
                           (with --enable-kenref)
 
@@ -2357,6 +2365,28 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+
+# Check whether --with-extension-base was given.
+if test "${with_extension_base+set}" = set; then :
+  withval=$with_extension_base;
+fi
+
+# Check whether --enable-extension-modules was given.
+if test "${enable_extension_modules+set}" = set; then :
+  enableval=$enable_extension_modules;
+fi
+
+
+# Extension-only builds reuse the installed base's compiler/ABI configuration.
+# Dispatch before ordinary configure probes or module-selection mutations.
+for plumed_option in "$@"; do
+  case "$plumed_option" in
+    --with-extension-base=*)
+      exec python3 "$(dirname "$0")/extensions/configure.py" "$@"
+      ;;
+  esac
+done
 
 ##################################################################
 # In order to add m4 macros, put then in a m4 directory and include them here.

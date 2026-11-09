@@ -15,8 +15,8 @@ covered by the [MPI wrapper documentation](../src/mpiwrap/README.md).
 `plumed` retains its name; there is no `plumed-kernel` package or `nompi`
 add-on. It is built once per platform, explicitly disabling native MPI and
 using the non-MPI FFTW variant. Adding/removing an extension must not replace
-its kernel. The same naming scheme leaves room for future optional packages
-such as `plumed-cuda-extensions` with their own variants; none are added here.
+its kernel. Optional source modules are delivered as `plumed-ext-<module>` packages,
+without an MPI variant dimension. See [extension builds and loading](../extensions/README.md).
 
 Both MPI variants depend on the matching PLUMED version, use the installed
 `Plumed.h`/standard main via `plumed mkmpi`, and install only:

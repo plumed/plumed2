@@ -100,7 +100,7 @@ bool ActionRegister::printTemplate(const std::string& action, bool include_optio
 }
 
 std::vector<std::string> ActionRegister::getActionNames() const {
-  return getKeys();
+  return visibleKeys();
 }
 
 ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywords_pointer kp) {
@@ -109,7 +109,7 @@ ActionRegister::ID ActionRegister::add(std::string key,creator_pointer cp,keywor
   return ( std::islower( c ) )
            ;
   } ) ) plumed_error() << "Action: " + key + " cannot be registered, use only UPPERCASE characters";
-  return RegisterBase::add(key,Pointers{cp,kp});
+  return RegisterBase::add(key,Pointers{cp,kp},reinterpret_cast<const void*>(cp));
 }
 
 bool ActionRegister::getKeywords(const std::string& action, Keywords& keys) {

@@ -16,7 +16,7 @@ endif
 
 # default target
 all:
-	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt ModuleBuild.inc
 	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
@@ -31,6 +31,12 @@ config.txt: ../../Makefile.conf
 version.h:
 	@echo "Updating version.h"
 	@ ../maketools/update-version.sh version.h
+
+ModuleBuild.inc: FORCE
+	../maketools/module-build-info
+
+.PHONY: FORCE
+FORCE:
 
 ConfigInstall.inc: Config.inc.in
 	@echo "Updating ConfigInstall.inc"
@@ -60,8 +66,8 @@ links:
 	@echo Nothing to do in $(CURDIR)
 
 
-Config.o: Config.inc Makefile.conf.xxd version.h
-ConfigInstall.o: ConfigInstall.inc Makefile.conf.xxd version.h
+Config.o: ModuleBuild.inc Config.inc Makefile.conf.xxd version.h
+ConfigInstall.o: ModuleBuild.inc ConfigInstall.inc Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
@@ -98,7 +104,7 @@ compile_options.sh: ../../Makefile.conf Makefile
 
 .PHONY: clean
 clean:
-	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt
+	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt ModuleBuild.inc
 	rm -fr deps 
 	rm -f Config.inc ConfigInstall.inc compile_options.sh install.conf
 	rm -f $(CLEANLIST)

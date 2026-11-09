@@ -48,7 +48,7 @@ add_library(
   PythonCVInterface SHARED src/ActionWithPython.cpp src/PythonCVInterface.cpp
                            src/PythonFunction.cpp)
 # public, so they trickle down to the python module
-target_compile_definitions(PythonCVInterface PUBLIC ${Plumed_CFLAGS})
+target_compile_definitions(PythonCVInterface PUBLIC ${Plumed_CFLAGS} __PLUMED_HAS_PYTHON_EMBED=1)
 target_include_directories(PythonCVInterface PUBLIC src ${Plumed_INCLUDEDIR})
 # ####################################################################
 # uncommenting this brings problems since some symbols here are needed

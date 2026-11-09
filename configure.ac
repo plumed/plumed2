@@ -16,6 +16,21 @@
 AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
+AC_ARG_WITH([extension-base],
+  AS_HELP_STRING([--with-extension-base=PREFIX], [build extensions only, against an installed exact-compatible base]))
+AC_ARG_ENABLE([extension-modules],
+  AS_HELP_STRING([--enable-extension-modules=LIST], [colon-separated extension modules (requires --with-extension-base)]))
+
+# Extension-only builds reuse the installed base's compiler/ABI configuration.
+# Dispatch before ordinary configure probes or module-selection mutations.
+for plumed_option in "$[]@"; do
+  case "$plumed_option" in
+    --with-extension-base=*)
+      exec python3 "$(dirname "$[]0")/extensions/configure.py" "$[]@"
+      ;;
+  esac
+done
+
 ##################################################################
 # In order to add m4 macros, put then in a m4 directory and include them here.
 # E.g.:

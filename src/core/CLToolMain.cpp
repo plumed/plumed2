@@ -27,6 +27,7 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
+#include "ModuleLoader.h"
 #include "tools/Subprocess.h"
 #include "../mpiwrap/mpiwrap.h"
 #include <string>
@@ -269,6 +270,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   }
 
   DLLoader dlloader;
+  ModuleLoader::autoload(dlloader);
 
   std::string root=config::getPlumedRoot();
 
@@ -327,6 +329,19 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       continue;
     } else if(a=="--standalone-executable") {
       standalone_executable=true;
+    } else if(Tools::startWith(a,"--load-module=")) {
+      ModuleLoader::load(a.substr(a.find('=')+1),dlloader);
+      prefix="";
+    } else if(a=="--load-module") {
+      prefix="--load-module=";
+    } else if(a=="--module-build-id") {
+      std::fprintf(out,"%s\n",config::getModuleBuildID().c_str());
+      return 0;
+    } else if(a=="--list-modules") {
+      for(const auto& name:ModuleLoader::modules(dlloader)) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
     } else if(Tools::startWith(a,"--load=")) {
       a.erase(0,a.find("=")+1);
       prefix="";
@@ -342,6 +357,11 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     }
   }
 
+  if(!prefix.empty()) {
+    std::fprintf(stderr,"ERROR: missing argument for %s\n",prefix.c_str());
+    return 1;
+  }
+
 // Check if plumedRoot/patches/ directory exists (as a further check)
   if(!standalone_executable) {
     std::vector<std::string> files=Tools::ls(root);
@@ -354,6 +374,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // Build list of available C++ tools:
   std::vector<std::string> availableCxx=cltoolRegister().list();
+  for(auto image:dlloader.getHandles()) {
+    const auto extra=cltoolRegister().getKeysWithDLHandle(image);
+    availableCxx.insert(availableCxx.end(),extra.begin(),extra.end());
+  }
+  std::sort(availableCxx.begin(),availableCxx.end());
+  availableCxx.erase(std::unique(availableCxx.begin(),availableCxx.end()),availableCxx.end());
 // Build list of available shell tools:
   std::vector<std::string> availableShell;
   if(!standalone_executable) {
@@ -385,6 +411,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [--has-thread-mpi]        : fails if no thread MPI capability is available\n"
       "  [--mpi-ranks-are-threads] : succeeds if the selected MPI provider uses threads\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
+      "  [--load-module MODULE]   : loads an installed module and its hard dependencies\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
       "Commands:\n";
@@ -418,11 +445,44 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // this is the command to be executed:
   std::string command(argv[i]);
+  // Module availability is runtime state; other config inquiries retain their
+  // build-provenance semantics in config.sh.
+  if(command=="config") {
+    bool query=false,quiet=false;
+    std::vector<std::string> names;
+    for(int j=i+1; j<argc; ++j) {
+      const std::string option=argv[j];
+      if(option=="module") {
+        query=true;
+      } else if(option=="-q" || option=="--quiet") {
+        quiet=true;
+      } else {
+        names.push_back(option);
+      }
+    }
+    if(query) {
+      if(names.empty()) {
+        return 1;
+      }
+      int result=0;
+      for(const auto& name:names) {
+        const bool present=ModuleLoader::available(name,dlloader);
+        if(!quiet) {
+          std::fprintf(out,"%s %s\n",name.c_str(),present?"on":"off");
+        }
+        if(!present) {
+          result=1;
+        }
+      }
+      return result;
+    }
+  }
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
     auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));
     plumed_assert(cl);
     cl->setDLHandles(dlloader.getHandles());
+    ModuleLoader::Context moduleContext(dlloader);
     int ret=0;
     // NOTE: catch PLUMED exceptions from CLTool readInput() and main() so that user-input
     // errors terminate cleanly with a message and nonzero exit status

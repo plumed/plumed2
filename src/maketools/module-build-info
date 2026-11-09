@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Called from src/config. Embed the base's build identity and module inventory.
+set -e
+export LC_ALL=C
+output=ModuleBuild.inc
+modules=$(../maketools/find_modules.sh | tr '\n' ' ')
+if command -v sha256sum >/dev/null 2>&1; then
+  hash=sha256sum
+else
+  hash='shasum -a 256'
+fi
+build=$({
+  cat ../../VERSION.txt ../../Makefile.conf
+  compiler=$(sed -n 's/^CXX=//p' ../../Makefile.conf)
+  $compiler --version
+  # Also works in source archives and conda source copies without .git.
+  # Generated config/version.h is excluded to avoid timestamps/git metadata.
+  (cd ..; find . -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name Makefile \) \
+      ! -path './config/version.h' | sort | while IFS= read -r file; do
+    printf '%s\n' "$file"
+    cat "$file"
+  done)
+} | $hash | awk '{print $1}')
+{
+  echo "#define PLUMED_MODULE_BUILD_ID \"$build\""
+  echo "#define PLUMED_BUILTIN_MODULES \"$modules\""
+} > "$output.tmp"
+cmp -s "$output.tmp" "$output" || cp "$output.tmp" "$output"
+rm "$output.tmp"
+printf '%s\n' "$build" > module-build-id
