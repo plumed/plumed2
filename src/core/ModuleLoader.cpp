@@ -56,6 +56,18 @@ struct State {
   std::once_flag discovery, automatic;
   std::map<std::string,Module> catalog;
   DLLoader retained;
+  std::string activating;
+
+  struct Activation {
+    std::string& busy;
+    explicit Activation(std::string& flag,const std::string& name):busy(flag) {
+      plumed_assert(busy.empty())<<"Recursive module activation of "<<name<<" while loading "<<busy;
+      busy=name;
+    }
+    ~Activation() {
+      busy.clear();
+    }
+  };
 
   void discover() {
     std::call_once(discovery,[this] {
@@ -189,6 +201,7 @@ struct State {
     if(builtin(name)) {
       return;
     }
+    Activation activation(activating,name);
     std::set<std::string> visiting,done;
     std::vector<std::string> dependencies;
     closure(name,visiting,done,dependencies);
@@ -284,6 +297,7 @@ void ModuleLoader::autoload(DLLoader& loader) {
   if(enabled && std::string(enabled)=="0") {
     return;
   }
+  plumed_assert(shared.activating.empty())<<"Recursive module autoload while loading "<<shared.activating;
   shared.discover();
   std::call_once(shared.automatic,[&shared] {
     for(const auto& entry:shared.catalog) {

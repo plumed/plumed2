@@ -41,7 +41,8 @@ dependencies; native library search paths alone do not supply registration metad
 Empty elements do not search the current directory.
 Discovery is cached for this kernel; install/remove changes take effect in a new
 process. A missing directory is normal. Broken selected registrations or failed
-loads are errors.
+loads are errors. Recursive extension activation from library initialization
+is rejected with the name of the module being loaded.
 
 Disable eager loading with `PLUMED_AUTOLOAD=0`; named loading still works:
 
