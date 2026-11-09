@@ -124,6 +124,57 @@ def compile_source(task):
     stamp.write_text(signature)
 
 
+numeric_symbols = {}
+for component in ("blas", "lapack"):
+    header = (root / "src" / component / (component + ".h")).read_text()
+    numeric_symbols[component] = set(
+        re.findall(r"PLUMED_BLAS_F77_FUNC\(\s*([a-z0-9_]+)\s*,", header)
+    )
+
+native_report = {}
+
+
+def numeric_link_flags(objects):
+    # Public inline matrix helpers can emit native BLAS/LAPACK calls even when
+    # the module itself has no feature guards. Inspect actual imports, keeping
+    # this independent of shortcut/action dependencies.
+    nm = shlex.split(os.environ.get("NM", "nm"))
+    output = subprocess.check_output([*nm, "-u", *map(str, objects)], text=True)
+    undefined = {
+        line.split()[-1].split("@", 1)[0].strip("_").lower()
+        for line in output.splitlines()
+        if line.split()
+    }
+    needed = {
+        component: sorted(undefined & names)
+        for component, names in numeric_symbols.items()
+    }
+    selected = []
+    if any(needed.values()):
+        dynamic = flags("DYNAMIC_LIBS")
+        for index, flag in enumerate(dynamic):
+            lower = flag.lower()
+            provider = any(
+                name in lower
+                for name in ("openblas", "mkl", "atlas", "blis", "accelerate", "veclib")
+            )
+            direct = any(
+                needed[component] and component in lower for component in needed
+            )
+            if flag.startswith("-L") or (
+                (flag.startswith("-l") or Path(flag).is_absolute())
+                and (provider or direct)
+            ):
+                selected.append(flag)
+            elif (
+                flag == "-framework"
+                and index + 1 < len(dynamic)
+                and dynamic[index + 1] == "Accelerate"
+            ):
+                selected.extend([flag, "Accelerate"])
+    return selected, needed
+
+
 for name in order:
     directory = work / name
     directory.mkdir(exist_ok=True)
@@ -179,6 +230,31 @@ for name in order:
             "-Wl,-rpath," + str(base / "lib"),
             "-Wl,-z,defs",
         ]
+    required = catalog["modules"][name]["required_features"]
+    if all("link_flags" in catalog["native_features"][feature] for feature in required):
+        native_flags = [
+            flag
+            for feature in required
+            for flag in catalog["native_features"][feature]["link_flags"]
+        ]
+    else:
+        # Dependency-rich builds still require the base's complete development
+        # environment; their conda recipes/feature-local probes are a later stage.
+        native_flags = flags("DYNAMIC_LIBS")
+    numeric_flags, imported_numeric = numeric_link_flags(objects)
+    native_report[name] = {
+        "module": name,
+        "base_build": build_id,
+        "numeric_imports": imported_numeric,
+        "native_link_flags": native_flags + numeric_flags,
+        "hard_modules": dependencies(name),
+        "feature_macros": ["__PLUMED_HAS_" + feature for feature in required]
+        + [
+            "__PLUMED_HAS_EXTERNAL_" + component.upper()
+            for component, symbols in imported_numeric.items()
+            if symbols
+        ],
+    }
     run(
         [
             *linker,
@@ -191,11 +267,8 @@ for name in order:
             *dependencies_libs,
             base_kernel,
             *runtime_flags,
-            *(
-                flags("DYNAMIC_LIBS")
-                if catalog["modules"][name]["required_features"]
-                else []
-            ),
+            *native_flags,
+            *numeric_flags,
         ]
     )
     if soext == "dylib":
@@ -220,8 +293,20 @@ for name in order:
         + " ".join(dependencies(name))
         + "\n"
     )
+    metadata = work / f"{name}.json"
+    installed_report = dict(native_report[name])
+    installed_report.pop("native_link_flags")
+    installed_report["native_libraries"] = [
+        flag[2:] for flag in native_flags + numeric_flags if flag.startswith("-l")
+    ]
+    metadata.write_text(json.dumps(installed_report, indent=2) + "\n")
     if sys.argv[1] == "install":
         (prefix / "lib/plumed/plugins").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(metadata, prefix / "lib/plumed/plugins" / metadata.name)
         shutil.copy2(library, prefix / "lib" / library.name)
         shutil.copy2(registration, prefix / "lib/plumed/plugins" / registration.name)
 (work / "modules.json").write_text(json.dumps(order, indent=2) + "\n")
+
+(work / "native-dependencies.json").write_text(
+    json.dumps(native_report, indent=2) + "\n"
+)

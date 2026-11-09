@@ -26,6 +26,7 @@ AC_ARG_ENABLE([extension-modules],
 for plumed_option in "$[]@"; do
   case "$plumed_option" in
     --with-extension-base=*)
+      rm -f confdefs.h
       exec python3 "$(dirname "$[]0")/extensions/configure.py" "$[]@"
       ;;
   esac

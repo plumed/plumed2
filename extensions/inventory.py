@@ -17,7 +17,12 @@ native = {
         "feedstock": "boost",
         "status": "recipe-confirmed",
     },
-    "FFTW": {"packages": ["fftw"], "feedstock": "fftw", "status": "recipe-confirmed"},
+    "FFTW": {
+        "link_flags": ["-lfftw3"],
+        "packages": ["fftw"],
+        "feedstock": "fftw",
+        "status": "recipe-confirmed",
+    },
     "LIBTORCH": {
         "packages": ["libtorch"],
         "feedstock": "pytorch-cpu",
@@ -109,6 +114,7 @@ for feature in native.values():
         )
 result = {
     "schema": 1,
+    "initial_features": ["FFTW"],
     "native_features": native,
     "modules": modules,
     "plugins": plugins,

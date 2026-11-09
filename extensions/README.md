@@ -98,6 +98,11 @@ Optional OpenACC paths do not make those whole modules require a GPU.
 Conda-forge recipe availability does not establish a compatible version/platform
 solve. ITensor, KEnRef and the NVIDIA OpenACC compiler need further packaging
 verification. No shortcut dependency inventory is maintained.
+The build also inspects undefined object symbols for BLAS/LAPACK calls emitted
+by public inline matrix helpers. It links the matching numerical provider flags
+from the base and records their `__PLUMED_HAS_EXTERNAL_*` macros. Each installed
+module owns an accompanying JSON dependency report beside its registration;
+`_extensions/native-dependencies.json` contains the complete build report.
 
 Native package mappings are based on the conda-forge feedstocks for
 [Boost](https://github.com/conda-forge/boost-feedstock),
@@ -107,3 +112,26 @@ Native package mappings are based on the conda-forge feedstocks for
 [HDF5](https://github.com/conda-forge/hdf5-feedstock), with the earlier source
 inventory audited on 2026-11-08. They are availability mappings, not evidence
 that extension builds with these dependencies have passed.
+
+## Initial conda coverage
+
+The initial recipe provides 30 optional modules: the 29 with no mandatory
+module-specific native feature plus Fourier. The existing conda base already
+provides non-MPI FFTW, so Fourier adds no new runtime stack. Its extension links
+FFTW explicitly instead of importing unrelated private kernel libraries.
+
+| Module or plugin | Required feature macros | Native dependency | Conda-forge mapping | Delivery |
+| --- | --- | --- | --- | --- |
+| fourier | `__PLUMED_HAS_FFTW` | `fftw` (non-MPI) | Available | Initial recipe |
+| drr | `__PLUMED_HAS_BOOST_SERIALIZATION` | `libboost-devel` / `libboost` | Available | Later native-dependency builds |
+| pytorch | `__PLUMED_HAS_LIBTORCH` | `libtorch` | Available | Later CPU/CUDA variants |
+| metatomic | `__PLUMED_HAS_LIBMETATOMIC`, `__PLUMED_HAS_LIBTORCH` | Native metatomic/metatensor Torch libraries and LibTorch | Available | Later native-dependency builds |
+| ttsketch | `__PLUMED_HAS_LIBITENSOR`, `__PLUMED_HAS_LIBHDF5` | ITensor v3 C++ and HDF5 | HDF5 available; ITensor recipe not verified | Deferred |
+| kenref | `__PLUMED_HAS_KENREF` | `kenref_core` and interface headers | Recipe not verified | Deferred |
+| cuda_coordination plugin | `__PLUMED_HAS_CUDA` | CUDA compiler/runtime | Available on supported CUDA platforms | Later variants |
+| openacc_ptm plugin | `__PLUMED_HAS_OPENACC` | NVIDIA HPC SDK compiler/runtime | Compiler recipe not verified | Deferred |
+| pycv plugin | `__PLUMED_HAS_PYTHON_EMBED` | Python development API and pybind11 | Available | Later plugin recipe |
+
+Availability denotes package/recipe mapping, not a validated platform/version
+matrix. All plugins can use the common identity/registration mechanism now.
+The initial conda recipe does not yet package the three existing plugin builds.

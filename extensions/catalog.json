@@ -1,4 +1,7 @@
 {
+  "initial_features": [
+    "FFTW"
+  ],
   "modules": {
     "adjmat": {
       "feature_guards": {
@@ -401,13 +404,15 @@
     "core": {
       "feature_guards": {
         "DLADDR": [
+          "src/core/ModuleLoader.cpp:228",
           "src/core/PlumedMain.cpp:2052",
           "src/core/RegisterBase.cpp:25",
           "src/core/RegisterBase.cpp:124"
         ],
         "DLOPEN": [
           "src/core/ModuleLoader.cpp:36",
-          "src/core/ModuleLoader.cpp:208",
+          "src/core/ModuleLoader.cpp:222",
+          "src/core/ModuleLoader.cpp:254",
           "src/core/PlumedMainInitializer.cpp:29",
           "src/core/PlumedMainInitializer.cpp:555",
           "src/core/RegisterBase.cpp:25",
@@ -1328,6 +1333,9 @@
     "FFTW": {
       "availability_scope": "recipe mapping; platform/version solve not established",
       "feedstock": "fftw",
+      "link_flags": [
+        "-lfftw3"
+      ],
       "packages": [
         "fftw"
       ],

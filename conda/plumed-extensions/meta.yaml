@@ -22,6 +22,7 @@ requirements:
     - python
   host:
     - plumed {{ version }}
+    - fftw * nompi_*
 
 outputs:
   - name: plumed-ext-adjmat
@@ -30,6 +31,7 @@ outputs:
     files:
       - lib/libplumed-ext-adjmat.*
       - lib/plumed/plugins/adjmat.plumed
+      - lib/plumed/plugins/adjmat.json
     requirements:
       host:
         - plumed {{ version }}
@@ -37,6 +39,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/adjmat.json"
         - plumed config -q module adjmat
         - PLUMED_AUTOLOAD=0 plumed --load-module=adjmat config -q module adjmat
 
@@ -46,6 +49,7 @@ outputs:
     files:
       - lib/libplumed-ext-annfunc.*
       - lib/plumed/plugins/annfunc.plumed
+      - lib/plumed/plugins/annfunc.json
     requirements:
       host:
         - plumed {{ version }}
@@ -53,6 +57,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/annfunc.json"
         - plumed config -q module annfunc
         - PLUMED_AUTOLOAD=0 plumed --load-module=annfunc config -q module annfunc
 
@@ -62,6 +67,7 @@ outputs:
     files:
       - lib/libplumed-ext-clusters.*
       - lib/plumed/plugins/clusters.plumed
+      - lib/plumed/plugins/clusters.json
     requirements:
       host:
         - plumed {{ version }}
@@ -69,6 +75,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/clusters.json"
         - plumed config -q module clusters
         - PLUMED_AUTOLOAD=0 plumed --load-module=clusters config -q module clusters
 
@@ -78,6 +85,7 @@ outputs:
     files:
       - lib/libplumed-ext-contour.*
       - lib/plumed/plugins/contour.plumed
+      - lib/plumed/plugins/contour.json
     requirements:
       host:
         - plumed {{ version }}
@@ -85,6 +93,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/contour.json"
         - plumed config -q module contour
         - PLUMED_AUTOLOAD=0 plumed --load-module=contour config -q module contour
 
@@ -94,6 +103,7 @@ outputs:
     files:
       - lib/libplumed-ext-crystdistrib.*
       - lib/plumed/plugins/crystdistrib.plumed
+      - lib/plumed/plugins/crystdistrib.json
     requirements:
       host:
         - plumed {{ version }}
@@ -101,6 +111,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/crystdistrib.json"
         - plumed config -q module crystdistrib
         - PLUMED_AUTOLOAD=0 plumed --load-module=crystdistrib config -q module crystdistrib
 
@@ -110,6 +121,7 @@ outputs:
     files:
       - lib/libplumed-ext-dimred.*
       - lib/plumed/plugins/dimred.plumed
+      - lib/plumed/plugins/dimred.json
     requirements:
       host:
         - plumed {{ version }}
@@ -118,6 +130,7 @@ outputs:
         - {{ pin_subpackage('plumed-ext-mapping', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/dimred.json"
         - plumed config -q module dimred
         - PLUMED_AUTOLOAD=0 plumed --load-module=dimred config -q module dimred
 
@@ -127,6 +140,7 @@ outputs:
     files:
       - lib/libplumed-ext-eds.*
       - lib/plumed/plugins/eds.plumed
+      - lib/plumed/plugins/eds.json
     requirements:
       host:
         - plumed {{ version }}
@@ -134,6 +148,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/eds.json"
         - plumed config -q module eds
         - PLUMED_AUTOLOAD=0 plumed --load-module=eds config -q module eds
 
@@ -143,6 +158,7 @@ outputs:
     files:
       - lib/libplumed-ext-envsim.*
       - lib/plumed/plugins/envsim.plumed
+      - lib/plumed/plugins/envsim.json
     requirements:
       host:
         - plumed {{ version }}
@@ -150,6 +166,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/envsim.json"
         - plumed config -q module envsim
         - PLUMED_AUTOLOAD=0 plumed --load-module=envsim config -q module envsim
 
@@ -159,6 +176,7 @@ outputs:
     files:
       - lib/libplumed-ext-fisst.*
       - lib/plumed/plugins/fisst.plumed
+      - lib/plumed/plugins/fisst.json
     requirements:
       host:
         - plumed {{ version }}
@@ -166,8 +184,29 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/fisst.json"
         - plumed config -q module fisst
         - PLUMED_AUTOLOAD=0 plumed --load-module=fisst config -q module fisst
+
+  - name: plumed-ext-fourier
+    build:
+      string: base_{{ base_build }}_0
+    files:
+      - lib/libplumed-ext-fourier.*
+      - lib/plumed/plugins/fourier.plumed
+      - lib/plumed/plugins/fourier.json
+    requirements:
+      host:
+        - plumed {{ version }}
+        - fftw * nompi_*
+      run:
+        - {{ pin_compatible('plumed', exact=True) }}
+        - {{ pin_compatible('fftw') }}
+    test:
+      commands:
+        - test -f "$PREFIX/lib/plumed/plugins/fourier.json"
+        - plumed config -q module fourier
+        - PLUMED_AUTOLOAD=0 plumed --load-module=fourier config -q module fourier
 
   - name: plumed-ext-funnel
     build:
@@ -175,6 +214,7 @@ outputs:
     files:
       - lib/libplumed-ext-funnel.*
       - lib/plumed/plugins/funnel.plumed
+      - lib/plumed/plugins/funnel.json
     requirements:
       host:
         - plumed {{ version }}
@@ -182,6 +222,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/funnel.json"
         - plumed config -q module funnel
         - PLUMED_AUTOLOAD=0 plumed --load-module=funnel config -q module funnel
 
@@ -191,6 +232,7 @@ outputs:
     files:
       - lib/libplumed-ext-landmarks.*
       - lib/plumed/plugins/landmarks.plumed
+      - lib/plumed/plugins/landmarks.json
     requirements:
       host:
         - plumed {{ version }}
@@ -198,6 +240,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/landmarks.json"
         - plumed config -q module landmarks
         - PLUMED_AUTOLOAD=0 plumed --load-module=landmarks config -q module landmarks
 
@@ -207,6 +250,7 @@ outputs:
     files:
       - lib/libplumed-ext-logmfd.*
       - lib/plumed/plugins/logmfd.plumed
+      - lib/plumed/plugins/logmfd.json
     requirements:
       host:
         - plumed {{ version }}
@@ -214,6 +258,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/logmfd.json"
         - plumed config -q module logmfd
         - PLUMED_AUTOLOAD=0 plumed --load-module=logmfd config -q module logmfd
 
@@ -223,6 +268,7 @@ outputs:
     files:
       - lib/libplumed-ext-mapping.*
       - lib/plumed/plugins/mapping.plumed
+      - lib/plumed/plugins/mapping.json
     requirements:
       host:
         - plumed {{ version }}
@@ -230,6 +276,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/mapping.json"
         - plumed config -q module mapping
         - PLUMED_AUTOLOAD=0 plumed --load-module=mapping config -q module mapping
 
@@ -239,6 +286,7 @@ outputs:
     files:
       - lib/libplumed-ext-maze.*
       - lib/plumed/plugins/maze.plumed
+      - lib/plumed/plugins/maze.json
     requirements:
       host:
         - plumed {{ version }}
@@ -246,6 +294,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/maze.json"
         - plumed config -q module maze
         - PLUMED_AUTOLOAD=0 plumed --load-module=maze config -q module maze
 
@@ -255,6 +304,7 @@ outputs:
     files:
       - lib/libplumed-ext-membranefusion.*
       - lib/plumed/plugins/membranefusion.plumed
+      - lib/plumed/plugins/membranefusion.json
     requirements:
       host:
         - plumed {{ version }}
@@ -262,6 +312,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/membranefusion.json"
         - plumed config -q module membranefusion
         - PLUMED_AUTOLOAD=0 plumed --load-module=membranefusion config -q module membranefusion
 
@@ -271,6 +322,7 @@ outputs:
     files:
       - lib/libplumed-ext-opes.*
       - lib/plumed/plugins/opes.plumed
+      - lib/plumed/plugins/opes.json
     requirements:
       host:
         - plumed {{ version }}
@@ -278,6 +330,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/opes.json"
         - plumed config -q module opes
         - PLUMED_AUTOLOAD=0 plumed --load-module=opes config -q module opes
 
@@ -287,6 +340,7 @@ outputs:
     files:
       - lib/libplumed-ext-pamm.*
       - lib/plumed/plugins/pamm.plumed
+      - lib/plumed/plugins/pamm.json
     requirements:
       host:
         - plumed {{ version }}
@@ -295,6 +349,7 @@ outputs:
         - {{ pin_subpackage('plumed-ext-adjmat', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/pamm.json"
         - plumed config -q module pamm
         - PLUMED_AUTOLOAD=0 plumed --load-module=pamm config -q module pamm
 
@@ -304,6 +359,7 @@ outputs:
     files:
       - lib/libplumed-ext-pathbias.*
       - lib/plumed/plugins/pathbias.plumed
+      - lib/plumed/plugins/pathbias.json
     requirements:
       host:
         - plumed {{ version }}
@@ -311,6 +367,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/pathbias.json"
         - plumed config -q module pathbias
         - PLUMED_AUTOLOAD=0 plumed --load-module=pathbias config -q module pathbias
 
@@ -320,6 +377,7 @@ outputs:
     files:
       - lib/libplumed-ext-pines.*
       - lib/plumed/plugins/pines.plumed
+      - lib/plumed/plugins/pines.json
     requirements:
       host:
         - plumed {{ version }}
@@ -327,6 +385,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/pines.json"
         - plumed config -q module pines
         - PLUMED_AUTOLOAD=0 plumed --load-module=pines config -q module pines
 
@@ -336,6 +395,7 @@ outputs:
     files:
       - lib/libplumed-ext-piv.*
       - lib/plumed/plugins/piv.plumed
+      - lib/plumed/plugins/piv.json
     requirements:
       host:
         - plumed {{ version }}
@@ -343,6 +403,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/piv.json"
         - plumed config -q module piv
         - PLUMED_AUTOLOAD=0 plumed --load-module=piv config -q module piv
 
@@ -352,6 +413,7 @@ outputs:
     files:
       - lib/libplumed-ext-s2cm.*
       - lib/plumed/plugins/s2cm.plumed
+      - lib/plumed/plugins/s2cm.json
     requirements:
       host:
         - plumed {{ version }}
@@ -359,6 +421,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/s2cm.json"
         - plumed config -q module s2cm
         - PLUMED_AUTOLOAD=0 plumed --load-module=s2cm config -q module s2cm
 
@@ -368,6 +431,7 @@ outputs:
     files:
       - lib/libplumed-ext-sasa.*
       - lib/plumed/plugins/sasa.plumed
+      - lib/plumed/plugins/sasa.json
     requirements:
       host:
         - plumed {{ version }}
@@ -375,6 +439,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/sasa.json"
         - plumed config -q module sasa
         - PLUMED_AUTOLOAD=0 plumed --load-module=sasa config -q module sasa
 
@@ -384,6 +449,7 @@ outputs:
     files:
       - lib/libplumed-ext-sizeshape.*
       - lib/plumed/plugins/sizeshape.plumed
+      - lib/plumed/plugins/sizeshape.json
     requirements:
       host:
         - plumed {{ version }}
@@ -391,6 +457,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/sizeshape.json"
         - plumed config -q module sizeshape
         - PLUMED_AUTOLOAD=0 plumed --load-module=sizeshape config -q module sizeshape
 
@@ -400,6 +467,7 @@ outputs:
     files:
       - lib/libplumed-ext-sprint.*
       - lib/plumed/plugins/sprint.plumed
+      - lib/plumed/plugins/sprint.json
     requirements:
       host:
         - plumed {{ version }}
@@ -407,6 +475,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/sprint.json"
         - plumed config -q module sprint
         - PLUMED_AUTOLOAD=0 plumed --load-module=sprint config -q module sprint
 
@@ -416,6 +485,7 @@ outputs:
     files:
       - lib/libplumed-ext-symfunc.*
       - lib/plumed/plugins/symfunc.plumed
+      - lib/plumed/plugins/symfunc.json
     requirements:
       host:
         - plumed {{ version }}
@@ -423,6 +493,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/symfunc.json"
         - plumed config -q module symfunc
         - PLUMED_AUTOLOAD=0 plumed --load-module=symfunc config -q module symfunc
 
@@ -432,6 +503,7 @@ outputs:
     files:
       - lib/libplumed-ext-ves.*
       - lib/plumed/plugins/ves.plumed
+      - lib/plumed/plugins/ves.json
     requirements:
       host:
         - plumed {{ version }}
@@ -439,6 +511,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/ves.json"
         - plumed config -q module ves
         - PLUMED_AUTOLOAD=0 plumed --load-module=ves config -q module ves
 
@@ -448,6 +521,7 @@ outputs:
     files:
       - lib/libplumed-ext-volumes.*
       - lib/plumed/plugins/volumes.plumed
+      - lib/plumed/plugins/volumes.json
     requirements:
       host:
         - plumed {{ version }}
@@ -455,6 +529,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/volumes.json"
         - plumed config -q module volumes
         - PLUMED_AUTOLOAD=0 plumed --load-module=volumes config -q module volumes
 
@@ -464,6 +539,7 @@ outputs:
     files:
       - lib/libplumed-ext-wham.*
       - lib/plumed/plugins/wham.plumed
+      - lib/plumed/plugins/wham.json
     requirements:
       host:
         - plumed {{ version }}
@@ -471,6 +547,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/wham.json"
         - plumed config -q module wham
         - PLUMED_AUTOLOAD=0 plumed --load-module=wham config -q module wham
 
@@ -480,6 +557,7 @@ outputs:
     files:
       - lib/libplumed-ext-xsprint.*
       - lib/plumed/plugins/xsprint.plumed
+      - lib/plumed/plugins/xsprint.json
     requirements:
       host:
         - plumed {{ version }}
@@ -487,6 +565,7 @@ outputs:
         - {{ pin_compatible('plumed', exact=True) }}
     test:
       commands:
+        - test -f "$PREFIX/lib/plumed/plugins/xsprint.json"
         - plumed config -q module xsprint
         - PLUMED_AUTOLOAD=0 plumed --load-module=xsprint config -q module xsprint
 
