@@ -35,16 +35,17 @@ for mpi in mpich openmpi; do
   cp "$kernel" "$task/kernel-before"
 
   # Installing a runtime chooses the matching variant of the single add-on name.
-  if [[ $(uname) == Darwin && "$mpi" == openmpi ]]; then
-    # A hardlinked prte can make dyld resolve @rpath from conda's package
-    # cache instead of this environment, where libevent lives. Copy the MPI
-    # dependency first; install our add-on normally so its no_link check below
-    # still verifies the package metadata rather than a global --copy option.
-    conda install --yes --copy --prefix "$prefix" --override-channels -c local -c conda-forge \
-      "$mpi"
-  fi
   conda install --yes --prefix "$prefix" --override-channels -c local -c conda-forge \
     "$mpi" "plumed-mpi=$VERSION"
+  if [[ $(uname) == Darwin && "$mpi" == openmpi ]]; then
+    # The add-on solve can replace an earlier Open MPI with a different build.
+    # Copy the exact runtime selected by that transaction: a hardlinked prte
+    # makes dyld search conda's package cache rather than this environment.
+    # Install the add-on normally above so its no_link check remains meaningful.
+    mpi_package=$(conda list --prefix "$prefix" --export | grep '^openmpi=')
+    conda install --yes --copy --force-reinstall --freeze-installed --prefix "$prefix" \
+      --override-channels -c local -c conda-forge "$mpi_package"
+  fi
   if [[ $(uname) == Darwin ]]; then
     test "$(/usr/bin/stat -f %l "$prefix/bin/plumed-mpi")" = 1
   fi
