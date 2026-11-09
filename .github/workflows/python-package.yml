@@ -2,6 +2,9 @@ name: Python package
 
 on:
   push:
+    # Temporary fork validation; remove before merging upstream.
+    branches:
+      - agents/pip/pr1577-make-install
     tags:
       - "v*"
   pull_request:
