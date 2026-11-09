@@ -131,6 +131,37 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
           [[ -z "$failed" ]]
 
+      # Temporary: narrow down the regtests that crash on Windows (rt73 and
+      # rt-plumed-action-large-step) and dump the coordinates read from the
+      # xtc file of the isdb tests with last-digit differences
+      - name: Diagnose Windows-only regtest failures
+        if: always() && steps.regtest.outcome != 'skipped'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $exe = "$PWD\build\plumed.exe"
+          $d = "$PWD\regtest-failures\diag"
+          New-Item -ItemType Directory -Force $d | Out-Null
+          Copy-Item regtest\trajectories\trajectory.xyz, regtest\isdb\rt-baies\trajectory.xtc $d
+          Copy-Item regtest\basic\rt-plumed-action-large-step\guest.dat, regtest\basic\rt-plumed-action-large-step\traj.xyz $d
+          Set-Location $d
+          function run($name, $plumed, $arguments) {
+            Set-Content "$name.dat" $plumed
+            & $exe driver --plumed "$name.dat" @arguments *> "$name.log"
+            "{0,-22} exit {1} (0x{1:X8})" -f $name, $LASTEXITCODE
+          }
+          $rt73 = Get-Content ..\..\regtest\basic\rt73\plumed.dat
+          $a73 = '--trajectory-stride','1','--timestep','0.005','--ixyz','trajectory.xyz'
+          run 'rt73-full'      $rt73 $a73
+          run 'rt73-no-req'    ($rt73 | Where-Object { $_ -notmatch 'logRequestedAtoms' }) $a73
+          run 'rt73-no-act'    ($rt73 | Where-Object { $_ -notmatch 'logActivity' }) $a73
+          run 'rt73-no-debug'  ($rt73 | Where-Object { $_ -notmatch '^DEBUG' }) $a73
+          run 'rt73-no-end'    ($rt73 | Where-Object { $_ -notmatch 'ENDPLUMED' }) $a73
+          $big = Get-Content ..\..\regtest\basic\rt-plumed-action-large-step\plumed.dat
+          run 'large-step-3e9'   $big '--ixyz','traj.xyz','--initial-step','3000000000','--timestep','0.001'
+          run 'large-step-1e9'   $big '--ixyz','traj.xyz','--initial-step','1000000000','--timestep','0.001'
+          run 'xtc-dump' 'DUMPATOMS ATOMS=1-111 FILE=xtc.xyz PRECISION=9' '--mf_xtc','trajectory.xtc'
+
       - name: Upload regtest results
         if: always() && steps.regtest.outcome != 'skipped'
         uses: actions/upload-artifact@v6
