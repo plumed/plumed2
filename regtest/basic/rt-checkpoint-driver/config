@@ -43,20 +43,21 @@ function plumed_regtest_before() {
   $plumed driver --plumed plumed-no.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out3 2> err3
   cd ..
 
+  # (the lists of files are sorted with LC_ALL=C: the order of ls depends on the locale)
   # F) no checkpointing signal and no STRIDE: the checkpoint written at the end of the
   # run (runFinalJobs) is the one of the next step, 25; the restart from it presents step 25
   mkdir final
   cd final
   cp ../plumed.dat .
   $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
-  ls *.cpt > cpt_files1
+  ls *.cpt | LC_ALL=C sort > cpt_files1
   # RESTART_FROM=AUTO reads plumed_final.cpt (it exists and is for the restart step), which is
   # then backed up; the new one is for step 60
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed_final.cpt > out2 2> err2
-  ls *.cpt > cpt_files2
+  ls *.cpt | LC_ALL=C sort > cpt_files2
   cd ..
   # with the signal (A), no final checkpoint is written
-  ls restart/*.cpt > restart/cpt_files
+  ls restart/*.cpt | LC_ALL=C sort > restart/cpt_files
 
   # C) errors: the engine presents a step different from the one of the checkpoint
   mkdir wrong-step
@@ -85,7 +86,7 @@ function plumed_regtest_after() {
     if cmp $f final/$f ; then echo "final/$f IDENTICAL" ; else echo "final/$f DIFFERENT" ; fi
   done >> restart_check
   cat final/cpt_files1 final/cpt_files2 restart/cpt_files >> restart_check
-  ls final/bck.* >> restart_check
+  ls final/bck.* | LC_ALL=C sort >> restart_check
   grep -h "reading the checkpoint" restart-stride/out2 >> restart_check
   grep -h "Checkpoint written\|final checkpoint" final/out1 final/out2 >> restart_check
   grep -h "Checkpoint state restored\|^PLUMED: Restarting from checkpoint\|reading the checkpoint" final/out2 | sed 's/by PLUMED.*//' >> restart_check
