@@ -20,16 +20,41 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Random.h"
+#include "Exception.h"
 #include <cmath>
-#include <cstdlib>
 #include <sstream>
 #include <limits>
 #include <iostream>
-#include <iterator>
 
 namespace PLMD {
 
 const std::string Random::noname="noname";
+
+namespace {
+/// tag written in front of the state, so that states of other engines are rejected
+const std::string engineTag="xoshiro256**";
+
+inline std::uint64_t rotl(const std::uint64_t x, int k) {
+  return (x << k) | (x >> (64 - k));
+}
+
+/// splitmix64 (Steele, Lea and Flood): used to expand the seed into the engine state
+inline std::uint64_t splitmix64(std::uint64_t & z) {
+  z += UINT64_C(0x9e3779b97f4a7c15);
+  std::uint64_t r = z;
+  r = (r ^ (r >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
+  r = (r ^ (r >> 27)) * UINT64_C(0x94d049bb133111eb);
+  return r ^ (r >> 31);
+}
+
+void checkTag(const std::string & tag,const std::string & name) {
+  if(tag!=engineTag) {
+    plumed_error() << "the state of random number generator " << name
+                   << " was not written by this version of PLUMED (expected " << engineTag
+                   << ", found \"" << tag << "\"): the random number engine changed in PLUMED 2.11";
+  }
+}
+}
 
 Random::Random(const std::string & title):
   switchGaussian(false),
@@ -40,79 +65,61 @@ Random::Random(const std::string & title):
 // a static Random object without enforcing the order of the
 // static constructors.
   name(&title!=&noname?title:"noname") {
-  iy=0;
-  for(unsigned i=0; i<NTAB; i++) {
-    iv[i]=0;
-  }
   setSeed(0);
 }
 
-void Random::setSeed(int idum_) {
-  if(idum_>0) {
-    idum_=-idum_;
+void Random::setSeed(int idum) {
+  // the sign is irrelevant (several actions pass -seed): use the magnitude
+  std::uint64_t z = idum<0 ? -static_cast<std::uint64_t>(static_cast<std::int64_t>(idum))
+                    : static_cast<std::uint64_t>(idum);
+  for(unsigned i=0; i<4; i++) {
+    s[i]=splitmix64(z);
   }
-  idum=idum_;
-  incPrec=false;
+  switchGaussian=false;
+  saveGaussian=0.0;
 }
 
-double Random::RandU01 () {
-  if (incPrec) {
-    return U01d();
-  } else {
-    return U01();
-  }
-}
-
-
-double Random::U01d () {
-  double u;
-  u = U01();
-  u += U01() * fact;
-  return (u < 1.0) ? u : (u - 1.0);
+std::uint64_t Random::next() {
+  // xoshiro256** 1.0 (Blackman and Vigna, public domain reference implementation)
+  const std::uint64_t result = rotl(s[1] * 5, 7) * 9;
+  const std::uint64_t t = s[1] << 17;
+  s[2] ^= s[0];
+  s[3] ^= s[1];
+  s[1] ^= s[2];
+  s[0] ^= s[3];
+  s[2] ^= t;
+  s[3] = rotl(s[3], 45);
+  return result;
 }
 
 double Random::U01() {
-  int j,k;
-  double temp;
-  if (idum <= 0 || !iy) {
-    if (-idum < 1) {
-      idum=1;
-    } else {
-      idum = -idum;
+  // the 53 high bits, centered in their interval: the result is never 0 or 1
+  return (static_cast<double>(next() >> 11) + 0.5) * 0x1.0p-53;
+}
+
+std::uint64_t Random::RandUInt64(std::uint64_t n) {
+  plumed_assert(n>0) << "Random::RandUInt64 needs a positive range";
+  // reject the lowest (2^64 mod n) values, so that every residue is equally likely
+  const std::uint64_t threshold = (0 - n) % n;
+  while(true) {
+    const std::uint64_t r = next();
+    if(r >= threshold) {
+      return r % n;
     }
-    for (j=NTAB+7; j>=0; j--) {
-      k=idum/IQ;
-      idum=IA*(idum-k*IQ)-IR*k;
-      if (idum < 0) {
-        idum += IM;
-      }
-      if (j < NTAB) {
-        iv[j] = idum;
-      }
-    }
-    iy=iv[0];
   }
-  k=idum/IQ;
-  idum=IA*(idum-k*IQ)-IR*k;
-  if (idum < 0) {
-    idum += IM;
-  }
-  j=iy/NDIV;
-  iy=iv[j];
-  iv[j] = idum;
-  if ((temp=AM*iy) > RNMX) {
-    return RNMX;
-  } else {
-    return temp;
-  }
+}
+
+int Random::RandInt(int n) {
+  plumed_assert(n>0) << "Random::RandInt needs a positive range, got " << n;
+  return static_cast<int>(RandUInt64(static_cast<std::uint64_t>(n)));
 }
 
 void Random::WriteStateFull(std::ostream & out)const {
   out<<name<<std::endl;
-  out<<idum<<" "<<iy;
-  for(int i=0; i<NTAB; i++) {
-    out<<" "<<iv[i];
-  };
+  out<<engineTag;
+  for(unsigned i=0; i<4; i++) {
+    out<<" "<<s[i];
+  }
   out<<" "<<switchGaussian;
   out<<" "<<saveGaussian;
   out<<std::endl;
@@ -120,33 +127,43 @@ void Random::WriteStateFull(std::ostream & out)const {
 
 void Random::ReadStateFull (std::istream & in) {
   getline(in,name);
-  in>>idum>>iy;
-  for (int i = 0; i < NTAB; i++) {
-    in>>iv[i];
+  std::string tag;
+  in>>tag;
+  checkTag(tag,name);
+  for(unsigned i=0; i<4; i++) {
+    in>>s[i];
   }
   in>>switchGaussian;
   in>>saveGaussian;
+  if(in.fail()) {
+    plumed_error() << "cannot read the state of random number generator " << name;
+  }
 }
 
 void Random::toString(std::string & str)const {
   std::ostringstream ostr;
-  ostr<<idum<<"|"<<iy;
-  for(int i=0; i<NTAB; i++) {
-    ostr<<"|"<<iv[i];
-  };
+  ostr<<engineTag;
+  for(unsigned i=0; i<4; i++) {
+    ostr<<"|"<<s[i];
+  }
   str=ostr.str();
 }
 
 void Random::fromString(const std::string & str) {
-  std::string s=str;
-  for(unsigned i=0; i<s.length(); i++)
-    if(s[i]=='|') {
-      s[i]=' ';
+  std::string st=str;
+  for(unsigned i=0; i<st.length(); i++)
+    if(st[i]=='|') {
+      st[i]=' ';
     }
-  std::istringstream istr(s.c_str());
-  istr>>idum>>iy;
-  for (int i = 0; i < NTAB; i++) {
-    istr>>iv[i];
+  std::istringstream istr(st);
+  std::string tag;
+  istr>>tag;
+  checkTag(tag,name);
+  for(unsigned i=0; i<4; i++) {
+    istr>>s[i];
+  }
+  if(istr.fail()) {
+    plumed_error() << "cannot read the state of random number generator " << name;
   }
 }
 
@@ -175,8 +192,8 @@ double Random::Gaussian() {
     return saveGaussian;
   }
   while(true) {
-    v1=2.0*RandU01()-1.0;
-    v2=2.0*RandU01()-1.0;
+    v1=2.0*U01()-1.0;
+    v2=2.0*U01()-1.0;
     rsq=v1*v1+v2*v2;
     if(rsq<1.0 && rsq>0.0) {
       break;
@@ -187,16 +204,5 @@ double Random::Gaussian() {
   switchGaussian=true;
   return v2*fac;
 }
-
-void Random::Shuffle(std::vector<unsigned>& vec) {
-  std::iterator_traits<std::vector<unsigned>::iterator >::difference_type i, n;
-  n = vec.end() - vec.begin();
-  for(i=n-1; i>0; --i) {
-    // Fisher-Yates: j is drawn from [0,i]. Drawing it from [0,i-1] (Sattolo's algorithm)
-    // would only produce cyclic permutations
-    std::swap(vec[i], vec[(int)round(RandU01() * IM) % (i+1)]);
-  }
-}
-
 
 }

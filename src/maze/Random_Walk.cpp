@@ -117,7 +117,7 @@ Random_Walk::Random_Walk(const ActionOptions& ao)
 }
 
 void Random_Walk::optimize() {
-  set_opt(rnd::next_plmd_vector());
+  set_opt(rnd_.next_plmd_vector());
   set_opt_value(score());
 }
 

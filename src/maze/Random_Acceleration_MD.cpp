@@ -160,7 +160,7 @@ Random_Acceleration_MD::Random_Acceleration_MD(const ActionOptions& ao)
   }
 
   set_label("RANDOM_ACCELERATION_MD");
-  set_opt(rnd::next_plmd_vector());
+  set_opt(rnd_.next_plmd_vector());
   set_opt_value(0.0);
 
   start_step_stride();
@@ -192,7 +192,7 @@ void Random_Acceleration_MD::optimize() {
   total_dist_ += dist_;
 
   if(dist_ < r_min_) {
-    set_opt(rnd::next_plmd_vector());
+    set_opt(rnd_.next_plmd_vector());
   }
 
   set_opt_value(score());

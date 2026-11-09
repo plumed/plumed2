@@ -103,6 +103,13 @@ void Optimizer::registerKeywords(Keywords& keys) {
     "optimization process every OPTIMIZER_STRIDE."
   );
 
+  keys.add(
+    "optional",
+    "SEED",
+    "Seed of the random numbers used by the optimizer. "
+    "By default the seed is taken from the clock, so that every run is different."
+  );
+
   keys.addOutputComponent(
     "x",
     "default",
@@ -345,7 +352,21 @@ Optimizer::Optimizer(const ActionOptions& ao)
     );
   }
 
-  rnd::randomize();
+  std::string seedstr;
+  parse("SEED", seedstr);
+  int seed = 0;
+  if (seedstr.empty()) {
+    seed = static_cast<int>(std::time(nullptr));
+    // all ranks must draw the same random numbers
+    comm.Bcast(seed, 0);
+    log.printf("maze> Random numbers seeded from the clock (use SEED for reproducible runs).\n");
+  } else {
+    if (!Tools::convertNoexcept(seedstr, seed)) {
+      error("SEED should be an integer, found " + seedstr);
+    }
+    log.printf("maze> Random numbers seeded with %d.\n", seed);
+  }
+  rnd_.seed(seed);
 
   opt_.zero();
 
@@ -397,7 +418,6 @@ void Optimizer::prepare() {
 
 double Optimizer::score() {
   const unsigned nl_size = neighbor_list_->size();
-  Vector distance;
   double function = 0;
 
   #pragma omp parallel num_threads(n_threads_)
@@ -411,6 +431,8 @@ double Optimizer::score() {
         continue;
       }
 
+      // declared inside the loop: each thread needs its own
+      Vector distance;
       if (pbc_) {
         distance = pbcDistance(getPosition(i0), getPosition(i1));
       } else {

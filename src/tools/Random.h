@@ -22,42 +22,59 @@
 #ifndef __PLUMED_tools_Random_h
 #define __PLUMED_tools_Random_h
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <iosfwd>
+#include <utility>
 
 namespace PLMD {
 
 /// \ingroup TOOLBOX
+/// Random number generator used everywhere in PLUMED.
+///
+/// The engine is xoshiro256** (Blackman and Vigna), 64-bit output, period 2^256-1,
+/// seeded from a single integer with splitmix64. The conversions to uniform doubles,
+/// Gaussian numbers, bounded integers and shuffles are implemented here (not with the
+/// std:: distributions), so that a given seed gives the same stream on every compiler
+/// and standard library.
 class Random {
-  static constexpr int IA=16807;
-  static constexpr int IM=2147483647;
-  static constexpr int IQ=127773;
-  static constexpr int IR=2836;
-  static constexpr int NTAB=32;
-  static constexpr int NDIV=(1+(IM-1)/NTAB);
-  static constexpr double fact=5.9604644775390625e-8;     /* 1 / 2^24  */
-  static constexpr double EPS=3.0e-16;
-  static constexpr double AM=1.0/IM;
-  static constexpr double RNMX=1.0-EPS;
   static const std::string noname;
-  bool incPrec;
+  std::uint64_t s[4];
   bool switchGaussian;
   double saveGaussian;
-  int iy;
-  int iv[NTAB];
-  int idum;
   std::string name;
+/// Next 64 random bits
+  std::uint64_t next();
 public:
   explicit Random(const std::string & title=noname);
+/// Seed the generator. Seeds that differ only in sign give the same stream.
   void setSeed(int idum);
-  double RandU01();
+/// Uniform number in the open interval (0,1), 53-bit resolution
+  double RandU01() {
+    return U01();
+  }
   double U01();
-  double U01d();
-  int RandInt(int i);
-  void Shuffle(std::vector<unsigned>& vec);
+/// Same as U01() (kept for compatibility: the engine already has full double resolution)
+  double U01d() {
+    return U01();
+  }
+/// Uniform integer in [0,n), without modulo bias. n must be positive.
+  int RandInt(int n);
+/// Uniform 64-bit integer in [0,n), without modulo bias. n must be positive.
+  std::uint64_t RandUInt64(std::uint64_t n);
+/// Gaussian number with zero mean and unit variance
+  double Gaussian();
+/// Uniform random permutation (Fisher-Yates)
+  template<typename T>
+  void Shuffle(std::vector<T>& vec) {
+    for(std::size_t i=vec.size(); i>1; --i) {
+      std::swap(vec[i-1],vec[RandUInt64(i)]);
+    }
+  }
   void WriteStateFull(std::ostream &)const;
   void ReadStateFull (std::istream &);
+/// State of the uniform generator only (the cached Gaussian number is not included)
   void fromString(const std::string & str);
   void toString(std::string & str)const;
 /// Complete state (including the cached Gaussian number), exact to the last bit: used by the checkpoint.
@@ -72,13 +89,10 @@ public:
     rng.ReadStateFull(in);
     return in;
   }
-  double Gaussian();
-  void IncreasedPrecis(bool i) {
-    incPrec=i;
-  }
+/// No effect, kept for compatibility (U01() already has 53-bit resolution)
+  void IncreasedPrecis(bool) {}
 };
 
 }
 
 #endif
-
