@@ -42,6 +42,11 @@ jobs:
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
 
+      # vim syntax files, as "make" does in vim/ (used by plumed vim2html,
+      # regtest basic/rt-vimsyntax)
+      - name: Generate vim syntax
+        run: ./build/plumed.exe --no-mpi gen_vim --outdir vim --template-dir vim/templates
+
       # Non-blocking for now, see .ci/windows-regtests for the selection.
       # serial: tests without MPI (one in three from regtest/basic)
       - name: Regtests (CLI subset)
