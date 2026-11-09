@@ -42,13 +42,8 @@ jobs:
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
 
-      # Non-blocking for now: regtests that only need the plumed executable
-      # (driver, plumed, sum_hills, simplemd) in the modules built on Windows.
-      # Not run: "make" tests (they need Plumed.inc and a Unix toolchain) and
-      # MPI tests (thread-MPI is covered by the smoke test above).
-      # To keep the job short, only one test in three from regtest/basic is run.
-      # Each test has its own timeout; tests not started within the time
-      # budget are reported as "not run" so that the step always completes.
+      # Non-blocking for now, see .ci/windows-regtests for the selection.
+      # serial: tests without MPI (one in three from regtest/basic)
       - name: Regtests (CLI subset)
         id: regtest
         continue-on-error: true
@@ -57,83 +52,23 @@ jobs:
         env:
           TEST_TIMEOUT: 120   # seconds, per test
           TIME_BUDGET: 2400   # seconds, no new test is started after this
-        run: |
-          export PLUMED_PROGRAM_NAME="$PWD/build/plumed.exe"
-          # some tests call "plumed" directly from their config hooks
-          export PLUMED_PREPEND_PATH="$PWD/build"
-          export DEADLINE=$(( $(date +%s) + TIME_BUDGET ))
-          cd regtest
-          tests=()
-          nbasic=0
-          for d in basic gridtools isdb liquid_crystal multicolvar refdist secondarystructure; do
-            for t in "$d"/rt*/; do
-              t=${t%/}
-              [[ -f "$t/config" ]] || continue
-              case "$(sed -n 's/^type=//p' "$t/config" | head -n 1)" in
-                (driver|plumed|sum_hills|simplemd) ;;
-                (*) continue ;;
-              esac
-              mpiprocs=$(sed -n 's/^mpiprocs=//p' "$t/config" | head -n 1)
-              (( ${mpiprocs:-0} > 0 )) && continue
-              if [[ $d = basic ]]; then
-                (( nbasic++ % 3 == 0 )) || continue
-              fi
-              tests+=("$t")
-            done
-          done
-          echo "running ${#tests[@]} tests (timeout ${TEST_TIMEOUT}s each, budget ${TIME_BUDGET}s)"
+        run: .ci/windows-regtests serial
 
-          runone() {
-            local t=$1 start rc st
-            if (( $(date +%s) > DEADLINE )); then
-              echo "NOT_RUN (time budget exhausted)" > "$t/report.txt"
-              echo "NOT_RUN  $t"
-              return
-            fi
-            start=$(date +%s)
-            ( cd "$t" && timeout -k 10 "$TEST_TIMEOUT" ../../scripts/run > /dev/null 2>&1 )
-            rc=$?
-            if (( rc == 124 || rc == 137 )); then
-              echo "FAILURE: timeout after ${TEST_TIMEOUT}s" >> "$t/report.txt"
-              st=TIMEOUT
-            elif [[ ! -f "$t/report.txt" ]]; then st=FAIL
-            elif grep -q NOT_APPLICABLE "$t/report.txt"; then st=NA
-            elif grep -q '^DEFERRED (long test' "$t/report.txt"; then st=DEFERRED
-            elif grep -q FAILURE "$t/report.txt"; then st=FAIL
-            else st=OK
-            fi
-            printf '%-8s %-60s %4ds\n' "$st" "$t" $(( $(date +%s) - start ))
-          }
-          export -f runone
-          printf '%s\n' "${tests[@]}" | xargs -P 4 -I{} bash -c 'runone "$1"' _ {} | tee ../regtest-progress.txt || true
-          # a timed out test may leave its plumed.exe behind
-          taskkill //F //IM plumed.exe > /dev/null 2>&1 || true
-
-          count() { grep -c "^$1 " ../regtest-progress.txt || true; }
-          failed=$(grep -E '^(FAIL|TIMEOUT) ' ../regtest-progress.txt | awk '{print $2}' | sort)
-          mkdir -p ../regtest-failures
-          cp ../regtest-progress.txt ../regtest-failures/
-          for t in $failed; do
-            mkdir -p "../regtest-failures/$t"
-            cp -r "$t/report.txt" "$t/tmp" "../regtest-failures/$t/" 2>/dev/null || true
-          done
-          {
-            echo "### Windows regtests (CLI subset)"
-            echo "selected: ${#tests[@]}, passed: $(count OK), failed: $(count FAIL), timed out: $(count TIMEOUT), not applicable: $(count NA), deferred: $(count DEFERRED), not run (time budget): $(count NOT_RUN)"
-            echo
-            echo "Failures:"
-            for t in $failed; do echo "- $t"; done
-            echo
-            echo "Slowest tests:"
-            echo '```'
-            grep -vE '^NOT_RUN ' ../regtest-progress.txt | sort -k3 -n -r | head -n 15
-            echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-          [[ -z "$failed" ]]
+      # MPI tests with the embedded thread-MPI, one at a time
+      - name: Regtests (thread-MPI)
+        id: regtest-mpi
+        if: always() && steps.regtest.outcome != 'skipped'
+        continue-on-error: true
+        timeout-minutes: 40
+        shell: bash
+        env:
+          TEST_TIMEOUT: 60    # seconds, per test
+          TIME_BUDGET: 1500   # seconds, no new test is started after this
+        run: .ci/windows-regtests mpi
 
       - name: Upload regtest results
         if: always() && steps.regtest.outcome != 'skipped'
         uses: actions/upload-artifact@v6
         with:
           name: windows-regtest-results
-          path: regtest-failures
+          path: regtest-results
