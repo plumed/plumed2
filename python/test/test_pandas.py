@@ -92,11 +92,8 @@ class Test(unittest.TestCase):
             plumed.write_pandas(d, "COLVAR_write2")
             self.assertTrue(filecmp.cmp("COLVAR_write2", "COLVAR_write.ref"))
             d = plumed.read_as_pandas("COLVAR", index_col=("time", "psi"))
-            try:
+            with self.assertRaises(TypeError):
                 plumed.write_pandas(d, "COLVAR_write3")
-                self.assertTrue(False)
-            except TypeError:
-                pass
 
 
 if __name__ == "__main__":

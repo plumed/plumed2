@@ -16,25 +16,27 @@ import plumed
 
 
 def read_xyz(filename):
-    xyz = open(filename)
-    n_atoms = int(xyz.readline())
-    _title, trajectory = xyz.readline(), []
-    while True:
-        atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms, 3])
-        for i in range(0, n_atoms):
-            line = xyz.readline()
-            atom, x, y, z = line.split()
-            atom_type[i] = atom
-            coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
-        trajectory.append(coordinates)
-        nextline = xyz.readline()
-        if nextline == "":
-            break
-        c_atoms = int(nextline)
-        if c_atoms != n_atoms:
-            break
-        xyz.readline()
-    xyz.close()
+    with open(filename) as xyz:
+        n_atoms = int(xyz.readline())
+        _title, trajectory = xyz.readline(), []
+        while True:
+            atom_type, coordinates = (
+                np.zeros(n_atoms).astype(str),
+                np.zeros([n_atoms, 3]),
+            )
+            for i in range(0, n_atoms):
+                line = xyz.readline()
+                atom, x, y, z = line.split()
+                atom_type[i] = atom
+                coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
+            trajectory.append(coordinates)
+            nextline = xyz.readline()
+            if nextline == "":
+                break
+            c_atoms = int(nextline)
+            if c_atoms != n_atoms:
+                break
+            xyz.readline()
     return trajectory
 
 
@@ -96,28 +98,25 @@ t2 = create_plumed_var(
 # Read in the correct answers that were calculated directly using PLUMED
 correct_values = np.loadtxt("colvar.ref")
 # Open an output file
-of = open("logfile", "w+")
-
-# Now analyze the trajectory
-step = 0
-of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
-p.cmd("setStep", step)
-p.cmd("setBox", box)
-p.cmd("setMasses", masses)
-p.cmd("setCharges", charges)
-p.cmd("setPositions", traj[step])
-p.cmd("setForces", forces)
-p.cmd("setVirial", virial)
-p.cmd("calc")
-bias = np.zeros((1), dtype=np.float64)
-p.cmd("getBias", bias)
-print("T1:", len(t1), t1)
-print("T2:", len(t1), t2)
-variables = np.array([t1, t2]).ravel()
-zeros = variables - correct_values[1:]
-print("ZEROS:", zeros)
-for data in zeros:
-    if abs(data) > 1e-4:
-        of.write("MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON")
-
-of.close()
+with open("logfile", "w+") as of:
+    # Now analyze the trajectory
+    step = 0
+    of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
+    p.cmd("setStep", step)
+    p.cmd("setBox", box)
+    p.cmd("setMasses", masses)
+    p.cmd("setCharges", charges)
+    p.cmd("setPositions", traj[step])
+    p.cmd("setForces", forces)
+    p.cmd("setVirial", virial)
+    p.cmd("calc")
+    bias = np.zeros((1), dtype=np.float64)
+    p.cmd("getBias", bias)
+    print("T1:", len(t1), t1)
+    print("T2:", len(t1), t2)
+    variables = np.array([t1, t2]).ravel()
+    zeros = variables - correct_values[1:]
+    print("ZEROS:", zeros)
+    for data in zeros:
+        if abs(data) > 1e-4:
+            of.write("MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON")
