@@ -1,3 +1,10 @@
 mpiprocs=4
 type=driver
 arg="--plumed plumed.dat --mf_pdb traj.pdb --multi 2 --dump-forces atom_forces"
+
+# The forces on the chemical shifts are printed with 10 decimals: with Intel's compiler the last
+# digit of one of them differs. Allow 1e-9 in these files only.
+plumed_tolerance=(
+  "forces.0:1e-9"
+  "forces.1:1e-9"
+)
