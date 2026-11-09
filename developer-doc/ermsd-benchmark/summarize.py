@@ -41,7 +41,7 @@ for (n, method, config), group in sorted(bykey.items()):
         }
     )
 with (root / "timings.csv").open("w") as f:
-    writer = csv.DictWriter(f, fieldnames=list(summary[0]))
+    writer = csv.DictWriter(f, fieldnames=list(summary[0]), lineterminator="\n")
     writer.writeheader()
     writer.writerows(summary)
 (root / "timings.json").write_text(json.dumps(summary, indent=2) + "\n")
