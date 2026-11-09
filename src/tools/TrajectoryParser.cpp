@@ -891,11 +891,11 @@ public:
           raw.positions[3*i+d]=double(buffer[i])/double(10.);
         }
         if(nfixed>0) {
-          std::copy(buffer.begin(),buffer.end(),fixedCoords.begin()+d*natoms);
+          std::copy(buffer.begin(),buffer.end(),fixedCoords.begin()+std::size_t(d)*natoms);
         }
       } else {
         for(int i=0; i<natoms; i++) {
-          raw.positions[3*i+d]=double(fixedCoords[d*natoms+i])/double(10.);
+          raw.positions[3*i+d]=double(fixedCoords[std::size_t(d)*natoms+i])/double(10.);
         }
         for(std::size_t k=0; k<nread; k++) {
           raw.positions[3*freeIndexes[k]+d]=double(buffer[k])/double(10.);
