@@ -66,36 +66,6 @@ jobs:
           TIME_BUDGET: 1500   # seconds, no new test is started after this
         run: .ci/windows-regtests mpi
 
-      # Temporary: stack traces of thread-MPI tests that crash on Windows
-      # (all of them use WALKERS_MPI; they pass with the pthread backend on Linux)
-      - name: Stack traces of crashing thread-MPI tests
-        if: always() && steps.regtest-mpi.outcome != 'skipped'
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $cdb = "${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\cdb.exe"
-          if (!(Test-Path $cdb)) {
-            "cdb not found at $cdb"
-            Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10" -ErrorAction SilentlyContinue
-            exit 0
-          }
-          $build = "$PWD\build"
-          $exe = "$build\plumed.exe"
-          $root = $PWD
-          function trace($name, $test, $nranks, $arguments) {
-            $d = "$root\regtest-results\cdb\$name"
-            New-Item -ItemType Directory -Force $d | Out-Null
-            Get-ChildItem "$root\regtest\$test" -File | Copy-Item -Destination $d
-            Set-Location $d
-            & $exe --tmpi-threads $nranks driver @arguments *> plain.log
-            "=== $name : exit {0} (0x{0:X8})" -f $LASTEXITCODE
-            & $cdb -g -G -y $build -c ".exr -1; .ecxr; kp 40; ~*k 25; q" $exe --tmpi-threads $nranks driver @arguments *> cdb.log
-            Get-Content cdb.log | Select-Object -Last 250
-            Set-Location $root
-          }
-          trace 'rt-mpi6b' 'basic\rt-mpi6b' 3 @('--plumed=plumed.dat','--timestep=0.05','--ixyz','trajectory.xyz','--dump-forces','ff','--pdb','test.pdb','--multi','3')
-          trace 'rt-bayesgje-2' 'isdb\rt-bayesgje-2' 4 @('--plumed','plumed.dat','--trajectory-stride','1','--timestep','0.005','--ixyz','ala12_trajectory.xyz','--multi','2','--dump-forces','allforce')
-
       - name: Upload regtest results
         if: always() && steps.regtest.outcome != 'skipped'
         uses: actions/upload-artifact@v6
