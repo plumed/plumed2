@@ -40,7 +40,7 @@ class Log;
 /// Contain positions, atomic indexes, occupancy and beta.
 /// We should also add other info (e.g. residue name etc).
 /// The same structure is filled by the reader of mmCIF files (files named *.cif or *.mmcif),
-/// see PDBCif.cpp.
+/// see PDBCif.cpp, and by the reader of GROMACS TPR files (files named *.tpr, with chemfiles), see PDBTpr.cpp.
 class PDB {
 public:
 /// How the atoms are numbered
@@ -87,12 +87,17 @@ private:
   long findResidue(int resnum,const std::string& chainid,const std::string& icode) const;
 /// read an mmCIF file
   void readCif(const std::string& file,double scale);
+/// read a GROMACS TPR file (with chemfiles)
+  void readTpr(const std::string& file,double scale);
 public:
 /// Read the pdb from a file, scaling positions by a factor scale.
-/// Files named *.cif or *.mmcif (any case) are read as mmCIF. The atoms are numbered as said by atomNumbering.
+/// Files named *.cif or *.mmcif (any case) are read as mmCIF, files named *.tpr as GROMACS TPR files.
+/// The atoms are numbered as said by atomNumbering (always in the order of the file for TPR files).
   bool read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering=AtomNumbering::serial);
 /// True if the file would be read as mmCIF by read()
   static bool isCifFile(const std::string& file);
+/// True if the file would be read as a GROMACS TPR file by read()
+  static bool isTprFile(const std::string& file);
 /// Read from a file pointer
   bool readFromFilepointer(FILE *fp,bool naturalUnits,double scale);
 /// Access to the position array
