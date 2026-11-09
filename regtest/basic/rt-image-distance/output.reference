@@ -1,0 +1,8 @@
+self images and box-only derivatives PASS
+values, permutations, translations, atomic and shear derivatives PASS
+extended and skew counterexamples PASS
+boundary reconstruction PASS
+20 random triclinic wide-enumeration comparisons PASS
+ties and near contact PASS
+biased relaxation PASS
+invalid inputs PASS
