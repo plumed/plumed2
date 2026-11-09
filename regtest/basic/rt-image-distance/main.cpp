@@ -210,13 +210,21 @@ int main(int argc,char** argv) {
   out<<"20 random triclinic wide-enumeration comparisons PASS\n";
 
   // Repeated exact ties select the same branch; no finite difference at a cusp.
-  const X tie{{{0,0,0}},{{2,0,0}}};
+  const X tie{{{0,0,0}},{{1,1,0}}};
   h2.sample(tie,cubic);
   const auto tieforce=h2.forces;
+  const auto tievirial=h2.virial;
   for(int i=0; i<5; ++i) {
-    close(h2.sample(tie,cubic),2,0,"tie value");
-    require(h2.forces==tieforce,"deterministic tie branch");
+    close(h2.sample(tie,cubic),std::sqrt(10.0),1e-12,"tie value");
+    require(h2.forces==tieforce && h2.virial==tievirial,"deterministic tie branch");
   }
+  X left=tie,right=tie;
+  left[1][0]-=1e-6;
+  right[1][0]+=1e-6;
+  close(h2.sample(left,cubic),std::sqrt(10.0),2e-6,"left limit at switch");
+  const auto leftforce=h2.forces;
+  close(h2.sample(right,cubic),std::sqrt(10.0),2e-6,"right limit at switch");
+  require(leftforce!=h2.forces,"distinct branches across the cusp");
   X near{{{0,0,0}},{{4-1e-8,0,0}}};
   close(h2.sample(near,rect),1e-8,1e-14,"near contact");
   for(const auto& atom:h2.forces)
