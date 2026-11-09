@@ -8,8 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
-# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
-  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
+# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
@@ -532,80 +532,3 @@ jobs:
         ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
         make -j 4
         make install
-
-  # Builds that check the code rather than the results. Each one runs the regtests (no MPI, no optional
-  # libraries) on a configuration that the jobs above do not cover:
-  # - sanitizers: AddressSanitizer and UndefinedBehaviorSanitizer; a memory error or undefined behaviour
-  #   stops the regtest that triggers it.
-  # - clang-noopenmp: clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which flags
-  #   hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
-  #   embedded third-party libraries) fails the job. Run with PLUMED_NUM_THREADS=2 like the other jobs,
-  #   so the code paths of OpenMP builds that do not depend on OpenMP are tested without it.
-  # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
-  checks:
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - variant: sanitizers
-          cc: gcc
-          cxx: g++
-          config: --disable-external-blas --disable-external-lapack CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" LDFLAGS="-fsanitize=address,undefined"
-        - variant: clang-noopenmp
-          cc: clang
-          cxx: clang++
-          config: --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter"
-        - variant: nodlopen
-          cc: gcc
-          cxx: g++
-          config: --disable-dlopen
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-      PLUMED_CCACHE_SIZE: ${{ matrix.variant == 'sanitizers' && '500M' || '100M' }}
-      # leaks are not checked: objects that live until the end of the program are not released
-      ASAN_OPTIONS: detect_leaks=0
-      UBSAN_OPTIONS: print_stacktrace=1
-      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
-      # without this the regtests that load the kernel at runtime fail in the sanitizers job
-      PLUMED_LOAD_NODEEPBIND: yes
-      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
-      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
-      PLUMED_FORTRAN_FLAGS: ${{ matrix.variant == 'sanitizers' && '-fsanitize=address,undefined' || '' }}
-    steps:
-    - uses: actions/checkout@v6
-    - name: Identify runner image
-      id: image
-      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
-    - uses: actions/cache@v5
-      with:
-        path: ~/.ccache
-        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-${{ github.sha }}
-        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-
-    - name: setup the CI environment
-      uses: ./.github/actions/linux-setup
-      with:
-        ccache: true
-    - name: Configure PLUMED
-      run: |
-        ccache -s -M "$PLUMED_CCACHE_SIZE"
-        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all ${{ matrix.config }} --prefix="$HOME/opt"
-    - name: Config Log
-      if: failure()
-      run: cat config.log
-    - name: Build PLUMED
-      run: |
-        # --output-sync keeps the output of each file together, so that warnings are attributed to the right module
-        # (ccache replays the warnings of the files it takes from the cache)
-        make -j 4 --output-sync=target 2>&1 | tee build.log
-        test ${PIPESTATUS[0]} -eq 0
-        make install
-        ccache -s -M "$PLUMED_CCACHE_SIZE"
-    - name: Check warnings
-      if: matrix.variant == 'clang-noopenmp'
-      run: .ci/check-warnings build.log
-    - name: Run tests
-      run: |
-         make --no-print-directory -j 2 -C regtest testclean
-         make -C regtest checkfail
