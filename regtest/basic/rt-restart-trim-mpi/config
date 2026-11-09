@@ -22,6 +22,6 @@ function plumed_regtest_after() {
     for f in COLVAR.0 COLVAR.1 HILLS.0 HILLS.1 HILLS_W BIAS.0 BIAS.1 ; do
       if test "$(grep -v '^#' $f)" = "$(grep -v '^#' restart/$f)" ; then echo "restart/$f SAME LINES" ; else echo "restart/$f DIFFERENT" ; fi
     done
-    grep -h "restart step" restart/log.* | sed 's/^PLUMED: *//' | sed 's@/[^ ]*/@@g' | LC_ALL=C sort
+    grep -h "restart step" restart/log.* | sed 's/^PLUMED: *//' | sed 's@[^ ]*[/\\]@@g' | LC_ALL=C sort
   } > restart_check
 }

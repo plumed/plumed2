@@ -13,6 +13,11 @@ jobs:
   windows-build:
     runs-on: windows-latest
     steps:
+      # keep LF line endings in the checkout, so that regtest references
+      # match the (binary-mode) files written by PLUMED
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -20,7 +25,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLUMED_MSVC_DEBUG_INFO=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -36,3 +41,39 @@ jobs:
 
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
+
+      # vim syntax files, as "make" does in vim/ (used by plumed vim2html,
+      # regtest basic/rt-vimsyntax)
+      - name: Generate vim syntax
+        run: ./build/plumed.exe --no-mpi gen_vim --outdir vim --template-dir vim/templates
+
+      # See .ci/windows-regtests for the selection. A failed, timed out or
+      # not run test fails the job.
+      # serial: tests without MPI (one in three from regtest/basic)
+      - name: Regtests (CLI subset)
+        id: regtest
+        timeout-minutes: 60
+        shell: bash
+        env:
+          TEST_TIMEOUT: 120   # seconds, per test
+          TIME_BUDGET: 2400   # seconds, no new test is started after this
+        run: .ci/windows-regtests serial
+
+      # MPI tests with the embedded thread-MPI, one at a time
+      # (run also when the serial tests failed)
+      - name: Regtests (thread-MPI)
+        id: regtest-mpi
+        if: always() && steps.regtest.outcome != 'skipped'
+        timeout-minutes: 40
+        shell: bash
+        env:
+          TEST_TIMEOUT: 60    # seconds, per test
+          TIME_BUDGET: 1500   # seconds, no new test is started after this
+        run: .ci/windows-regtests mpi
+
+      - name: Upload regtest results
+        if: always() && steps.regtest.outcome != 'skipped'
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-regtest-results
+          path: regtest-results

@@ -322,7 +322,8 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   auto deleter=[](FILE* f) {
     fclose(f);
   };
-  FILE* file_dummy = fopen("/dev/null","w+");
+  // "r+": the null device exists, nothing is created
+  FILE* file_dummy = fopen(FileBase::nullDevice,"r+");
   plumed_assert(file_dummy);
   // call fclose when file_dummy_deleter goes out of scope
   std::unique_ptr<FILE,decltype(deleter)> file_dummy_deleter(file_dummy,deleter);

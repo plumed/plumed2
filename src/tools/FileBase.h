@@ -78,6 +78,15 @@ protected:
 /// Set to true if you want flush to be heavy (close/reopen)
   bool heavyFlush;
 public:
+/// The null device of the operating system ("NUL" on Windows). PLUMED uses
+/// "/dev/null" as a file name on all platforms: it is mapped to this when the
+/// file is opened.
+#ifdef _WIN32
+  static constexpr const char* nullDevice="NUL";
+#else
+  static constexpr const char* nullDevice="/dev/null";
+#endif
+
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
 /// it conserves some suffix (e.g. gz/xtc/trr).

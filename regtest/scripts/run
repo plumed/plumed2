@@ -434,6 +434,11 @@ for file in *.reference ; do
   if test -f "$new" ; then
     ../../../scripts/fixzeroes.sh "$file"
     cp "$new" "$new.zfix"
+    # on Windows, outputs not written through OFile (stdout, some cltools)
+    # have CRLF line endings: compare them as if they were LF
+    case "$(uname -s)" in
+      (MINGW*|MSYS*|CYGWIN*) sed -i 's/\r$//' "$new.zfix" ;;
+    esac
     ../../../scripts/fixzeroes.sh "$new.zfix"
     DIFFOPT=""
 # this is to enforce ASCII check
