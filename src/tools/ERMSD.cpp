@@ -79,7 +79,7 @@ void ERMSD::makeFrames(const std::vector<Vector>& positions,
 
   const double w = 1./3.;
   unsigned nt=OpenMP::getNumThreads();
-  if(nresidues<nt*10) {
+  if(nresidues/10<nt) {
     nt=1;
   }
   #pragma omp parallel for num_threads(nt) schedule(static)
@@ -337,7 +337,8 @@ double ERMSD::calculate(const std::vector<Vector>& positions, const Pbc&,
   const unsigned stride=communicator->Get_size();
   const unsigned rank=communicator->Get_rank();
   unsigned nt=OpenMP::getNumThreads();
-  if(nresidues<nt*stride*10) {
+  // Divide the work count to avoid overflow in the thread/rank threshold.
+  if(nresidues/10/stride<nt) {
     nt=1;
   }
   double sum=0.;
