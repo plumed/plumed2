@@ -18,6 +18,10 @@ contactmap_noatoms no contacts have been specified
 pcarmsd_size eigenvector 1 contains 6 atoms
 drmsd_nopairs no pairs of atoms are within the cutoffs
 ermsd_pairs PAIRS should contain residue indices
+ermsd_cutoff CUTOFF must be finite and positive
+ermsd_search PAIR_SEARCH must be DIRECT, CELLS, or VERLET
+ermsd_buffer NL_BUFFER must be finite and positive
+ermsd_buffer_direct NL_BUFFER requires PAIR_SEARCH=VERLET
 ghbfix_dmax D_MAX should be larger than D_0
 ghbfix_types your types table only covers
 EOT

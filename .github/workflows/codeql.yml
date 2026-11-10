@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
+    # closed is listed only so that closing or merging a PR starts a run that, through the concurrency
+    # group below, cancels the CI still running for it; all the jobs of that run are skipped.
+    types: [opened, synchronize, reopened, closed]
     branches: [ "master" ]
   schedule:
     - cron: "59 1 * * 2"
@@ -15,6 +18,7 @@ concurrency:
 
 jobs:
   analyze:
+    if: github.event.action != 'closed'
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:

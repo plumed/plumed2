@@ -15,11 +15,11 @@
 #include "tools/File.h"
 #include "tools/OpenMP.h"
 #include "tools/OFile.h"
+#include "tools/Random.h"
 #include "tools/IFile.h"
 #include <algorithm>
 #include <ctime>
 #include <filesystem>
-#include <random>
 
 namespace PLMD {
 namespace ttsketch {
@@ -154,7 +154,9 @@ private:
   bool sketch_conv_;         // true if Gaussian smoothing (conv mode) is active for basis evaluation
   bool nonintrusive_;        // if true, uses the intrusive-free variant: accumulates Bemp directly
   // instead of re-projecting the previous vb_ through the Gram matrix
-  bool deterministic_;       // if true, use a fixed RNG seed (42) in createTTCoeff() for reproducibility
+  bool fixed_seed_;          // if true, every sketch draws its coefficients with seed_ (SEED or DETERMINISTIC);
+  // otherwise each sketch takes a new seed from the clock
+  int seed_;
   // the hills not yet in the TT are stretched as in METAD: height*(A*exp(-dp2)+B), zero at the cutoff
   double stretchA_=1.0;
   double stretchB_=0.0;
@@ -211,7 +213,8 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   frozen_(false),
   sketch_conv_(false),
   nonintrusive_(false),
-  deterministic_(false) {
+  fixed_seed_(false),
+  seed_(0) {
   if(!dp2cutoffNoStretch()) {
     stretchA_=dp2cutoffA;
     stretchB_=dp2cutoffB;
@@ -378,7 +381,27 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   parse("SKETCH_UNTIL", this->sketch_until_);
 
   parseFlag("NONINTRUSIVE", this->nonintrusive_);
-  parseFlag("DETERMINISTIC", this->deterministic_);
+  bool deterministic = false;
+  parseFlag("DETERMINISTIC", deterministic);
+  std::string seedstr;
+  parse("SEED", seedstr);
+  if(deterministic && !seedstr.empty()) {
+    error("use either SEED or DETERMINISTIC, not both");
+  }
+  if(deterministic) {
+    this->fixed_seed_ = true;
+    this->seed_ = 42;
+  } else if(!seedstr.empty()) {
+    this->fixed_seed_ = true;
+    if(!Tools::convertNoexcept(seedstr, this->seed_)) {
+      error("SEED should be an integer, found " + seedstr);
+    }
+  }
+  if(this->fixed_seed_) {
+    log << "  random numbers of the TT sketch from seed " << this->seed_ << "\n";
+  } else {
+    log << "  random numbers of the TT sketch from the clock (use SEED for reproducible results)\n";
+  }
 
   if(getRestart()) {
     // the last TT in the file is the bias; the hills file holds the hills deposited after it
@@ -1046,31 +1069,31 @@ void TTMetaD::paraSketch() {
 // full weight while all other harmonics are scaled down by sketch_alpha_. This
 // ensures the sketch captures the large constant component of the bias accurately.
 MPS TTMetaD::createTTCoeff() const {
-  unsigned seed = this->deterministic_ ? 42u : static_cast<unsigned int>(time(nullptr));
+  int seed = this->fixed_seed_ ? this->seed_ : static_cast<int>(time(nullptr));
   // all ranks of a replica must build the same sketch
   comm.Bcast(seed, 0);
-  std::default_random_engine generator(seed);
-  std::normal_distribution<double> distribution(0.0, 1.0);
+  Random generator;
+  generator.setSeed(seed);
   int n = this->sketch_basis_[0].nbasis();
   auto sites = SiteSet(this->d_, n);
   auto coeff = MPS(sites, this->sketch_rc_);
   for(int j = 1; j <= n; ++j) {
     for(int k = 1; k <= this->sketch_rc_; ++k) {
-      coeff.ref(1).set(sites(1) = j, linkIndex(coeff, 1) = k, distribution(generator));
+      coeff.ref(1).set(sites(1) = j, linkIndex(coeff, 1) = k, generator.Gaussian());
     }
   }
   for(unsigned i = 2; i <= this->d_ - 1; ++i) {
     for(int j = 1; j <= n; ++j) {
       for(int k = 1; k <= this->sketch_rc_; ++k) {
         for(int l = 1; l <= this->sketch_rc_; ++l) {
-          coeff.ref(i).set(sites(i) = j, linkIndex(coeff, i - 1) = k, linkIndex(coeff, i) = l, distribution(generator));
+          coeff.ref(i).set(sites(i) = j, linkIndex(coeff, i - 1) = k, linkIndex(coeff, i) = l, generator.Gaussian());
         }
       }
     }
   }
   for(int j = 1; j <= n; ++j) {
     for(int k = 1; k <= this->sketch_rc_; ++k) {
-      coeff.ref(this->d_).set(sites(this->d_) = j, linkIndex(coeff, this->d_ - 1) = k, distribution(generator));
+      coeff.ref(this->d_).set(sites(this->d_) = j, linkIndex(coeff, this->d_ - 1) = k, generator.Gaussian());
     }
   }
   for(unsigned i = 1; i <= this->d_; ++i) {
@@ -1367,7 +1390,8 @@ void TTMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional", "SKETCH_WIDTH", "Width of Gaussian kernels for smoothing");
   keys.add("optional", "KERNEL_DX", "Width of basis function kernels");
   keys.addFlag("NONINTRUSIVE", false, "Sketching uses previous exact sum of Gaussians instead of TT approximation");
-  keys.addFlag("DETERMINISTIC", false, "Use a fixed random seed for TT sketch construction, ensuring reproducible results. Intended for regression testing.");
+  keys.add("optional", "SEED", "Seed of the random numbers used to build the TT sketch: every sketch uses the same seed, so the results are reproducible. By default each sketch takes a new seed from the clock");
+  keys.addFlag("DETERMINISTIC", false, "Same as SEED=42. Intended for regression testing");
 }
 
 PLUMED_REGISTER_ACTION(TTMetaD, "TTMETAD")

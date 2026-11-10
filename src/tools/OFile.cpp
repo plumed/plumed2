@@ -521,11 +521,7 @@ OFile& OFile::open(const std::string&setpath) {
         backupFile( backstring, path );
       }
     }
-#ifdef _WIN32
-    fp=std::fopen("NUL","r+");
-#else
-    fp=std::fopen("/dev/null","r+");
-#endif
+    fp=std::fopen(nullDevice,"r+");
     mode=restart ? "a" : "w";
     if(comm) {
       comm->Barrier();
@@ -673,14 +669,17 @@ bool OFile::isWriter()const {
 }
 
 void OFile::openOnWriter(const char* fmode,const char* gzmode,bool reopenFp) {
-#ifdef _WIN32
-  constexpr const char* nullDevice="NUL";
-#else
-  constexpr const char* nullDevice="/dev/null";
-#endif
-  const char* p=isWriter() ? path.c_str() : nullDevice;
+  // "/dev/null" is a valid name on all platforms (on Windows fopen would fail,
+  // and a NULL fp crashed at the first write or flush: WALKERS_MPI hills files)
+  const char* p=(isWriter() && path!="/dev/null") ? path.c_str() : nullDevice;
   if(reopenFp) {
+#ifdef _WIN32
+    // binary mode: write LF line endings as on the other platforms
+    // (text mode would turn every \n into \r\n)
+    fp=std::fopen(p,(std::string(fmode)+"b").c_str());
+#else
     fp=std::fopen(p,fmode);
+#endif
   }
   if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
@@ -742,29 +741,38 @@ OFile& OFile::rewind() {
     return *this;
   }
 
+  // close before renaming: on Windows an open file cannot be renamed
+  if(gzfp) {
+#ifdef __PLUMED_HAS_ZLIB
+    gzclose((gzFile)gzfp);
+#endif
+  } else {
+    std::fclose(fp);
+  }
+
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
     size_t found=fname.find_last_of("/\\");
     std::string directory=fname.substr(0,found+1);
     std::string file=fname.substr(found+1);
     std::string backup=directory+backstring +".last."+file;
-    int check=rename(fname.c_str(),backup.c_str());
-    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
+    // std::filesystem::rename replaces an existing backup also on Windows,
+    // where std::rename fails if the target exists
+    std::error_code ec;
+    std::filesystem::rename(fname,backup,ec);
+    plumed_massert(!ec,"renaming "+fname+" into "+backup+" failed: "+ec.message());
   }
 
   if(comm) {
     comm->Barrier();
   }
 
+  // no exception here
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
-    gzclose((gzFile)gzfp);
-    // no exception here
     openOnWriter("w","w9",false);
 #endif
   } else {
-    std::fclose(fp);
-    // no exception here
     openOnWriter("w","w9");
   }
   // see OFile::open

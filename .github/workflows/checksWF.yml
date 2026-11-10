@@ -1,0 +1,121 @@
+name: checksCI
+
+# Quick checks that run first: in pull requests and manual runs the rest of the CI (see ci.yml) waits
+# for these and for codecheck, so that a commit that does not build or breaks the regtests does not
+# take the macOS runners and the long Linux builds.
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# default compilers (the checks job sets its own)
+  CC: gcc
+  CXX: g++
+# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
+
+jobs:
+  # Builds that check the code rather than the results. Each one runs the regtests (no MPI, no optional
+  # libraries) on a configuration that the jobs of linuxWF.yml do not cover (the sanitizers build, which
+  # is slower, is there):
+  # - clang-noopenmp: clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which flags
+  #   hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
+  #   embedded third-party libraries) fails the job. Run with PLUMED_NUM_THREADS=2 like the other jobs,
+  #   so the code paths of OpenMP builds that do not depend on OpenMP are tested without it.
+  # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
+  checks:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - variant: clang-noopenmp
+          cc: clang
+          cxx: clang++
+          config: --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter"
+        - variant: nodlopen
+          cc: gcc
+          cxx: g++
+          config: --disable-dlopen
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      PLUMED_CCACHE_SIZE: 100M
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all ${{ matrix.config }} --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        # --output-sync keeps the output of each file together, so that warnings are attributed to the right module
+        # (ccache replays the warnings of the files it takes from the cache)
+        make -j 4 --output-sync=target 2>&1 | tee build.log
+        test ${PIPESTATUS[0]} -eq 0
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Check warnings
+      if: matrix.variant == 'clang-noopenmp'
+      run: .ci/check-warnings build.log
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail
+
+  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
+  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
+  # which are in cltools.
+  modules-none:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build PLUMED with --enable-modules=none
+      run: |
+        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install
+
+  # python/plumed.c is generated from plumed.pyx and cplumed.pxd and it is committed,
+  # so that building the python interface does not require cython.
+  # Here we check that it is consistent with the sources.
+  check-plumed-c:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.14"
+    - name: Check that python/plumed.c is up to date
+      working-directory: ./python
+      run: |
+        # keep the version consistent with CYTHON_VERSION in python/Makefile
+        pip install cython==3.2.4
+        python -m cython --module-name plumed._plumed plumed.pyx -o "$RUNNER_TEMP/plumed.c"
+        # the compressed copies of the strings depend on the python running cython
+        # (version and compression libraries), so they are ignored in the comparison
+        if ! ./compare_plumed_c.sh plumed.c "$RUNNER_TEMP/plumed.c" ; then
+          echo "::error file=python/plumed.c::python/plumed.c is not consistent with plumed.pyx and cplumed.pxd. Regenerate it with 'make -C python cythonize' using cython 3.2.4 and commit it."
+          exit 1
+        fi

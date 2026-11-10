@@ -101,6 +101,18 @@ Residue names of four characters, as written by GROMACS in the columns 18-21 of 
 The variants of the amino acids with four characters (e.g. `HISE`, `LYSH`, `ASPH`, `CYS2` of the GROMOS force fields)
 are recognized as the amino acid given by their first three characters.
 
+When PLUMED is configured with `--enable-libchemfiles` (chemfiles 0.10.4 or later), the STRUCTURE file can also be a GROMACS TPR file
+(extension `.tpr`). The atoms, residues and chains are then those of the PDB file written by `gmx editconf -f topol.tpr -o reference.pdb`:
+the sequences of residues bonded to each other (the protein and nucleic acid chains) are the chains A, B, C... in the order of the file,
+the other residues (water, ions...) have no chain and are numbered after those of the chains, and the atoms are numbered in the order of the file.
+The selections with `@mda:` work also with a TPR file, which MDAnalysis reads; mdtraj and VMD cannot read it.
+For instance, with the TPR file of a system with two protein chains:
+
+````
+MOLINFO STRUCTURE=topol.tpr
+t1: TORSION ATOMS=@phi-B_3
+````
+
 If the flag `WHOLE` is used, the reference structure is assumed to be whole, i.e. not broken by PBC.
 **This will impact PBC calculations in all the actions following the MOLINFO action!**.
 In particular, actions that reconstruct molecules locally will do the reconstruction using a

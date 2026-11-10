@@ -18,7 +18,8 @@ function plumed_regtest_before() {
   $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
   cd ..
 
-  # B) checkpoints every 7 steps from the STRIDE keyword (no signal from the engine)
+  # B) checkpoints every 7 steps from the STRIDE keyword (no signal from the engine); the run also
+  # writes plumed_final.cpt (step 25), but the restart is from step 21, so AUTO reads plumed.cpt
   mkdir restart-stride
   cd restart-stride
   sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
@@ -41,6 +42,22 @@ function plumed_regtest_before() {
   sed 's/FILE=HILLS/FILE=HILLS RESTART=NO/' plumed.dat > plumed-no.dat
   $plumed driver --plumed plumed-no.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out3 2> err3
   cd ..
+
+  # (the lists of files are sorted with LC_ALL=C: the order of ls depends on the locale)
+  # F) no checkpointing signal and no STRIDE: the checkpoint written at the end of the
+  # run (runFinalJobs) is the one of the next step, 25; the restart from it presents step 25
+  mkdir final
+  cd final
+  cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  ls *.cpt | LC_ALL=C sort > cpt_files1
+  # RESTART_FROM=AUTO reads plumed_final.cpt (it exists and is for the restart step), which is
+  # then backed up; the new one is for step 60
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed_final.cpt > out2 2> err2
+  ls *.cpt | LC_ALL=C sort > cpt_files2
+  cd ..
+  # with the signal (A), no final checkpoint is written
+  ls restart/*.cpt | LC_ALL=C sort > restart/cpt_files
 
   # C) errors: the engine presents a step different from the one of the checkpoint
   mkdir wrong-step
@@ -65,6 +82,14 @@ function plumed_regtest_after() {
     # the files of the interrupted run have been trimmed and the state restored
     grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint" $d/out2 | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//'
   done > restart_check
+  for f in COLVAR COLVAR2 ; do
+    if cmp $f final/$f ; then echo "final/$f IDENTICAL" ; else echo "final/$f DIFFERENT" ; fi
+  done >> restart_check
+  cat final/cpt_files1 final/cpt_files2 restart/cpt_files >> restart_check
+  ls final/bck.* | LC_ALL=C sort >> restart_check
+  grep -h "reading the checkpoint" restart-stride/out2 >> restart_check
+  grep -h "Checkpoint written\|final checkpoint" final/out1 final/out2 >> restart_check
+  grep -h "Checkpoint state restored\|^PLUMED: Restarting from checkpoint\|reading the checkpoint" final/out2 | sed 's/by PLUMED.*//' >> restart_check
   grep -h "truncated\|not truncated\|Checkpoint state restored" metad/out2 | sed 's/ from [0-9]* to [0-9]* bytes//' >> restart_check
   grep -h "truncated\|RESTART=NO\|Checkpoint state restored" metad/out3 | sed 's/ from [0-9]* to [0-9]* bytes//' >> restart_check
   # HILLS was backed up (trimmed at the checkpoint) and the new one starts at the restart step

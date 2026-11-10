@@ -43,7 +43,6 @@ namespace maze {
 #include <ctime>
 #include <utility>
 #include <string>
-#include <random>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -59,7 +58,7 @@ namespace maze {
 #include "tools/Tools.h"
 
 // maze
-#include "Random_MT.h"
+#include "Rnd.h"
 #include "Tools.h"
 
 #endif // __PLUMED_maze_Core_h

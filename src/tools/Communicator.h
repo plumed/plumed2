@@ -230,6 +230,8 @@ public:
   void Barrier()const;
 /// Tests if MPI library is initialized
   static bool initialized();
+/// Tests if MPI library has been finalized (false without MPI)
+  static bool finalized();
 /// Wrapper for MPI_Allreduce with MPI_SUM (data struct)
   void Sum(const Data&);
 /// Wrapper for MPI_Allreduce with MPI_SUM (pointer)

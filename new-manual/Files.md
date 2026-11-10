@@ -65,6 +65,7 @@ kernels gives the same bias as the run that wrote it. The files can be read with
 
 ```python
 import h5py
+
 with h5py.File("COLVAR.h5") as f:
     time = f["block_0/time"][:]
     d = f["block_0/d"][:]

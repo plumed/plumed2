@@ -47,7 +47,9 @@ which is replayed in full. No action needs to know that a step is repeated.
 The checkpoint is written when the MD engine sends the checkpointing signal
 (cmd "doCheckPoint") or, with STRIDE, every STRIDE steps. It is a separate
 file, one per replica (usual suffix), written atomically; the previous one is
-kept with a _prev suffix.
+kept with a _prev suffix. If the MD engine never sends the signal, a checkpoint
+of the state after the last step (i.e. for the next step) is written at the end
+of the run (cmd "runFinalJobs", or the destructor of PlumedMain), with a _final suffix.
 */
 class Checkpointing {
   PlumedMain& plumed;
@@ -56,7 +58,18 @@ class Checkpointing {
 /// Full path (with the replica suffix) and path of the previous checkpoint
   std::string path;
   std::string prevPath;
+/// Path of the checkpoint written at the end of the run (atRunEnd)
+  std::string finalPath;
   long long int stride=0;
+/// A checkpointing signal was received from the MD engine in this run
+  bool signalReceived=false;
+/// The end of the run has been handled (atRunEnd called)
+  bool runEndHandled=false;
+/// The last step presented has been completed (update done)
+  bool stepComplete=false;
+/// Last step presented and difference between the last two steps (to know the next one)
+  long long int lastStep=-1;
+  long long int stepIncrement=1;
 /// Paths of all the files opened for writing in this run
   std::vector<std::string> outputFiles;
 /// Files rewritten from scratch at every write (OFile::rewind): they are not
@@ -79,7 +92,7 @@ class Checkpointing {
   bool trimEnabled=true;
 /// Files already trimmed at the restart step (or left as they are)
   std::set<std::string> trimmedFiles;
-  void write();
+  void write(long long int step,const std::string& outPath,const std::string& outPrevPath);
   void restore();
   void trimFiles(CheckpointReader& reader);
   static std::string crcOfTail(const std::string& fname,unsigned long long size);
@@ -107,6 +120,17 @@ public:
 /// after a restart, and writes a checkpoint when requested by the signal or
 /// by the stride.
   void atStepStart(bool signal);
+/// To be called at the end of the update of a step.
+  void atStepEnd() {
+    stepComplete=true;
+  }
+/// At the end of the run (cmd "runFinalJobs", before the final jobs, or, if it was not
+/// called, when PLUMED is finalized, fromDestructor): if the MD engine never sent the
+/// checkpointing signal, write the state after the last step, i.e. at the start of the
+/// next one, to FILE with the suffix _final (plumed_final.cpt). Only the first call does
+/// something; nothing is written if the last step was not completed or, from the
+/// destructor, if MPI is already finalized.
+  void atRunEnd(bool fromDestructor=false);
 /// True after restartFrom() has been called (a checkpoint restart is in progress or done).
   bool isRestartingFromCheckpoint() const {
     return restartStep>=0;
@@ -114,6 +138,10 @@ public:
   const std::string& getPath() const {
     return path;
   }
+/// plumed.cpt -> plumed_prev.cpt for the tag _prev (without the replica suffix)
+  static std::string taggedName(const std::string& fileName,const std::string& tag);
+/// Name of the checkpoint written at the end of the run (plumed_final.cpt), without the replica suffix
+  static std::string finalName(const std::string& fileName);
 /// Full path of the checkpoint file for this replica, given its base name.
   std::string suffixedPath(const std::string& fileName) const;
 /// Step from which the MD engine restarts (cmd "setRestartStep", before init).

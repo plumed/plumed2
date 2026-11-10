@@ -65,13 +65,13 @@ struct TrajectoryFrame {
   real* charges=nullptr;
   /// input and output: the step counter of the caller.
   /// The step stored in the file replaces it for dlp4 (always, in readHeader())
-  /// and for xtc and trr (only with stride 0, in readAtoms())
+  /// and for xtc, trr and the formats read by chemfiles that store it (only with stride 0, in readAtoms())
   long long step=0;
   /// output of readHeader(): the time step of the simulation, for the formats that store it (dlp4)
   std::optional<double> timestep;
-  /// output of readAtoms(): the time of the frame, for the formats that store it (xtc, trr)
+  /// output of readAtoms(): the time of the frame, for the formats that store it (xtc, trr, some of the formats read by chemfiles)
   std::optional<double> time;
-  /// output of readAtoms(): true if masses and charges were read from the file (dlp4)
+  /// output of readAtoms(): true if masses and charges were read from the file (dlp4, and TPR and LAMMPS Data with chemfiles)
   bool hasMassesAndCharges=false;
   /// output of readAtoms(): set together with "EOF" when the last frame of the file is incomplete
   /// (a truncated xtc, trr or dcd file, as written by a simulation that stopped while writing)
@@ -91,6 +91,8 @@ public:
     dlp4,
     pdb,
     dcd,
+    /// any format read by chemfiles (--itraj)
+    chemfiles,
     error
   };
   static trajfmt FMTfromString(std::string_view fmt);
@@ -103,8 +105,10 @@ public:
   TrajectoryParser();
   ~TrajectoryParser();
   static void registerKeywords(Keywords& keys);
-  /// The formats, each read with the option --i<format>
+  /// The formats, each read with the option --i<format> ("traj" is any format read by chemfiles)
   static std::vector<std::string> trajectoryOptions();
+  /// True if PLUMED was compiled with chemfiles (--itraj)
+  static bool hasChemfiles();
   /// The options of the molfile plugins, removed in v2.11, that are still accepted for one release:
   /// pairs {option, format}, e.g. {"--mf_xtc","xtc"} (the same as --ixtc)
   static const std::vector<std::pair<std::string,std::string>> & deprecatedOptions();
@@ -114,8 +118,12 @@ public:
   static const std::vector<std::string> & removedOptions();
   static std::string removedOptionMessage(std::string_view option);
 
+  /// Open the trajectory file fname in the format fmt (e.g. "xtc", see trajectoryOptions()).
+  /// With fmt "traj" (chemfiles), format is the format of the file as named by chemfiles,
+  /// or empty to guess it from the extension of the file
   std::optional<std::string> init(std::string_view fmt,
-                                  std::string_view fname);
+                                  std::string_view fname,
+                                  std::string_view format="");
   //Driver with filename ="-"
   std::optional<std::string> init(std::string_view fmt,FILE* fileHandle);
 

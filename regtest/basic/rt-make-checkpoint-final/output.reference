@@ -1,0 +1,11 @@
+A: a_final.cpt written
+    (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step 25)
+    the MD engine is restarting: reading the checkpoint a_final.cpt
+  Checkpoint state restored at step 25
+A: COLVAR identical to the reference
+B:
+  Checkpoint written to b_final.cpt at step 25
+C: c_final.cpt not written
+D: d_final.cpt not written
+  Final checkpoint not written: the last step (25) was not completed
+E: e_final.cpt not written

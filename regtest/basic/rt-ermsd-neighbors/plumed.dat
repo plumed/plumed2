@@ -1,0 +1,8 @@
+# Contact entry/exit, buffer threshold crossings, base rotation, empty current
+# contact map, identical reference and coincident centers.
+d: ERMSD ATOMS=1-12 REFERENCE=ref.pdb NOPBC PAIR_SEARCH=DIRECT
+c: ERMSD ATOMS=1-12 REFERENCE=ref.pdb NOPBC PAIR_SEARCH=CELLS
+v: ERMSD ATOMS=1-12 REFERENCE=ref.pdb NOPBC PAIR_SEARCH=VERLET NL_BUFFER=0.2
+p: ERMSD ATOMS=1-12 REFERENCE=ref.pdb NOPBC PAIR_SEARCH=VERLET PAIRS=1,2,1,3,1,4
+PRINT ARG=d,c,v,p FILE=colvar FMT=%14.9f
+DUMPDERIVATIVES ARG=d,c,v,p FILE=der FMT=%14.9f

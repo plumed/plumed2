@@ -1,0 +1,20 @@
+# MOLINFO with a GROMACS TPR file: the same groups as with the PDB file written by gmx editconf -f topol.tpr -o conf.pdb.
+# topol.tpr (GROMACS 2023) is the structure of ../rt-molinfo-mmcif (two chains, A and B, with the insertion codes 2A and 2B
+# in chain B) from gmx pdb2gmx (amber99sb-ildn), with three waters and a sodium ion, which have no chain and are numbered
+# 15 to 18 after the residues of the chains. The TPR file has no chain ids: the chains are found from the bonds.
+
+MOLINFO STRUCTURE=conf.pdb
+DUMPATOMS ATOMS=@phi-A_3,@psi-A_3,@omega-A_3,@sidechain-A_5,@back-A_7,@CA-A_9,@phi-A3,@psi-5,@phi-B_0,@psi-B_0,@phi-B_1,@psi-B_2,@phi-B_2A,@psi-B_2A,@phi-B_2B,@psi-B_2B,@phi-B_3,@omega-B_3,@CB-B_2A,@back-B_2B,@phi-B-0,@C-B_-1,@water,@ions,@OW-16,@HW2-17,@NA-18 FILE=pdb.gro
+pdb_phi: TORSION ATOMS=@phi-B_2A
+pdb_psi: TORSION ATOMS=@psi-B_2A
+
+MOLINFO STRUCTURE=topol.tpr WHOLE
+DUMPATOMS ATOMS=@phi-A_3,@psi-A_3,@omega-A_3,@sidechain-A_5,@back-A_7,@CA-A_9,@phi-A3,@psi-5,@phi-B_0,@psi-B_0,@phi-B_1,@psi-B_2,@phi-B_2A,@psi-B_2A,@phi-B_2B,@psi-B_2B,@phi-B_3,@omega-B_3,@CB-B_2A,@back-B_2B,@phi-B-0,@C-B_-1,@water,@ions,@OW-16,@HW2-17,@NA-18 FILE=tpr.gro
+tpr_phi: TORSION ATOMS=@phi-B_2A
+tpr_psi: TORSION ATOMS=@psi-B_2A
+
+# ATOM_ID has no effect: the atoms of a TPR file are always numbered in the order of the file
+MOLINFO STRUCTURE=topol.tpr ATOM_ID=order
+DUMPATOMS ATOMS=@phi-A_3,@psi-A_3,@omega-A_3,@sidechain-A_5,@back-A_7,@CA-A_9,@phi-A3,@psi-5,@phi-B_0,@psi-B_0,@phi-B_1,@psi-B_2,@phi-B_2A,@psi-B_2A,@phi-B_2B,@psi-B_2B,@phi-B_3,@omega-B_3,@CB-B_2A,@back-B_2B,@phi-B-0,@C-B_-1,@water,@ions,@OW-16,@HW2-17,@NA-18 FILE=tprorder.gro
+
+PRINT ARG=pdb_phi,pdb_psi,tpr_phi,tpr_psi FILE=colvar FMT=%8.4f

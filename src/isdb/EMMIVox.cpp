@@ -198,7 +198,7 @@ private:
   torch::DeviceType device_t_;
 //
 // write file with model density
-  void write_model_density(long int step);
+  void write_model_density(long long int step);
 // get median of vector
   double get_median(std::vector<double> v);
 // read and write status
@@ -209,7 +209,7 @@ private:
   }
   void writeCheckpoint(CheckpointWriter& w) override;
   void readCheckpoint(CheckpointReader& r) override;
-  void print_status(long int step);
+  void print_status(long long int step);
 // accept or reject
   bool doAccept(double oldE, double newE, double kbt);
 // vector of close residues
@@ -607,7 +607,7 @@ void EMMIVOX::prepare_gpu() {
   Map_m_gpu_ = torch::from_blob(Map_m_gpu.data(), {3,nd}, torch::kFloat64).clone().to(torch::kFloat32).to(device_t_);
 }
 
-void EMMIVOX::write_model_density(long int step) {
+void EMMIVOX::write_model_density(long long int step) {
   OFile ovfile;
   ovfile.link(*this);
   std::string num;
@@ -732,7 +732,7 @@ void EMMIVOX::read_status() {
   delete ifile;
 }
 
-void EMMIVOX::print_status(long int step) {
+void EMMIVOX::print_status(long long int step) {
 // if first time open the file
   if(first_status_) {
     first_status_ = false;
@@ -1716,7 +1716,7 @@ void EMMIVOX::calculate_fmod() {
 
   // communicate back model density
   // this is needed only in certain situations
-  long int step = getStep();
+  long long int step = getStep();
   bool do_comm = false;
   if(mapstride_>0 && step%mapstride_==0) {
     do_comm = true;
@@ -1809,7 +1809,7 @@ void EMMIVOX::calculate_score() {
 
 void EMMIVOX::calculate() {
   // get time step
-  long int step = getStep();
+  long long int step = getStep();
 
   // set temperature value
   getPntrToComponent("kbt")->set(kbt_);

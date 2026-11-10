@@ -4,6 +4,10 @@ contactmap_noatoms: rejected
 pcarmsd_size: rejected
 drmsd_nopairs: rejected
 ermsd_pairs: rejected
+ermsd_cutoff: rejected
+ermsd_search: rejected
+ermsd_buffer: rejected
+ermsd_buffer_direct: rejected
 ghbfix_dmax: rejected
 ghbfix_types: rejected
 pathmsd without NEIGH_STRIDE: same as NEIGH_STRIDE=1
