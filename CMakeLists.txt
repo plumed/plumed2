@@ -20,17 +20,25 @@ set(PLUMED_GEN ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
-set(ALWAYS_MODULES asmjit blas core lapack lepton mpiwrap small_vector tools valtools)
-set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
-    liquid_crystal matrixtools multicolvar refdist secondarystructure
-    setup vatom xdrfile)
-set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
+# The "always" and "default-on" modules, as listed by the src/*/module.type
+# files (the same set that ./configure enables by default)
+set(MODULES)
+file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
+list(SORT _module_type_files)
+foreach(_mt ${_module_type_files})
+    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    if(_type STREQUAL "always" OR _type STREQUAL "default-on")
+        get_filename_component(_dir ${_mt} DIRECTORY)
+        get_filename_component(_mod ${_dir} NAME)
+        list(APPEND MODULES ${_mod})
+    endif()
+endforeach()
 # The Windows CMake build uses the imported Win32 thread backend by default.
 # Keep the wrapper frontend enabled when this option is off so the fully
 # serial build still provides the communicator compatibility layer.
 option(PLUMED_ENABLE_THREAD_MPI "Compile the embedded thread-MPI backend" ON)
-if(PLUMED_ENABLE_THREAD_MPI)
-    list(APPEND MODULES thread_mpi)
+if(NOT PLUMED_ENABLE_THREAD_MPI)
+    list(REMOVE_ITEM MODULES thread_mpi)
 endif()
 # Optional default-off modules (upstream: enabled by touching <mod>.on)
 option(PLUMED_ENABLE_VES "Compile the VES module (variational enhanced sampling)" OFF)
@@ -76,6 +84,8 @@ add_custom_command(
 set(PLUMED_SOURCES)
 set(PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src)
 foreach(m ${MODULES} config wrapper main)
+    # aux_source_directory appends to the variable
+    set(_srcs)
     aux_source_directory(${PLUMED_SRC}/src/${m} _srcs)
     list(APPEND PLUMED_SOURCES ${_srcs})
     list(APPEND PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src/${m})
