@@ -67,7 +67,7 @@ jobs:
           New-Item -ItemType Directory -Force $dir | Out-Null
           $exe = (Resolve-Path build/plumed.exe).Path
           $d = $dir.Replace('\','/')
-          Set-Content -Path (Join-Path $dir ("traj-" + $name + ".xyz")) -Value "2`n`nX 0 0 0`nX 1 2 2" -Encoding utf8NoBOM
+          Set-Content -Path (Join-Path $dir ("traj-" + $name + ".xyz")) -Value "2`n10 10 10`nX 0 0 0`nX 1 2 2" -Encoding utf8NoBOM
           Set-Content -Path (Join-Path $dir ("plumed-" + $name + ".dat")) -Value "d: DISTANCE ATOMS=1,2`nPRINT ARG=d FILE=$d/colvar-$name" -Encoding utf8NoBOM
           # twice: the second run backs up colvar (rename)
           foreach ($run in 1, 2) {
@@ -77,7 +77,9 @@ jobs:
           foreach ($file in ("colvar-" + $name), ("bck.0.colvar-" + $name)) {
             if (-not (Test-Path -LiteralPath (Join-Path $dir $file))) { throw "missing $file" }
           }
-          Get-Content -LiteralPath (Join-Path $dir ("colvar-" + $name))
+          $colvar = Get-Content -LiteralPath (Join-Path $dir ("colvar-" + $name))
+          $colvar
+          if (-not ($colvar -match " 3\.000000$")) { throw "wrong distance in colvar-$name" }
 
       # PlumedMain::cmd is called from inside cmd by DEBUG logRequestedAtoms
       # (rt73) and by the PLUMED action (rt-plumed-action-large-step). With
