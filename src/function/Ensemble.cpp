@@ -122,8 +122,6 @@ Ensemble::Ensemble(const ActionOptions&ao):
     do_powers=true;
   }
 
-  checkRead();
-
   master = (comm.Get_rank()==0);
   ens_dim=0;
   my_repl=0;
@@ -157,6 +155,10 @@ Ensemble::Ensemble(const ActionOptions&ao):
       getPntrToComponent(i+narg)->setNotPeriodic();
     }
   }
+
+  // checkRead() may calculate constant arguments immediately.
+  // All state and output components must be ready first.
+  checkRead();
 
   log.printf("  averaging over %u replicas.\n", ens_dim);
   if(do_reweight) {
