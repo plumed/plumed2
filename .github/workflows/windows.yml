@@ -42,6 +42,21 @@ jobs:
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
 
+      # PLUMED_STACK_TRACE=yes (set for the whole workflow): the error message
+      # contains the stack, with names from plumed.pdb (PLUMED_MSVC_DEBUG_INFO)
+      - name: Stack trace of an error
+        shell: bash
+        run: |
+          mkdir -p stacktrace && cd stacktrace
+          echo "NOT_AN_ACTION" > plumed.dat
+          printf '1\n\nX 0 0 0\n' > traj.xyz
+          if ../build/plumed.exe --no-mpi driver --plumed plumed.dat --ixyz traj.xyz > out.log 2>&1 ; then
+            echo "an unknown action did not fail" ; exit 1
+          fi
+          sed -n '/STACK DUMP/,/END STACK DUMP/p' out.log | head -n 30
+          grep -q "STACK DUMP" out.log
+          grep -q "plumed.exe(PLMD::" out.log
+
       # PlumedMain::cmd is called from inside cmd by DEBUG logRequestedAtoms
       # (rt73) and by the PLUMED action (rt-plumed-action-large-step). With
       # MSVC these overflowed a 1 MB stack (the Windows default, e.g. for an MD
