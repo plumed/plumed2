@@ -81,7 +81,8 @@ jobs:
 
   # Shared kernel (plumedKernel.dll), as needed by the python interface and by
   # MD codes loading PLUMED at runtime (PLUMED_KERNEL): plumed.exe linked to the
-  # DLL, installation, and a small host loading the DLL through Plumed.h
+  # DLL, installation, a small host loading the DLL through Plumed.h, and the
+  # python interface (pip install python/) with its tests
   windows-shared-kernel:
     runs-on: windows-latest
     steps:
@@ -90,6 +91,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -139,3 +145,56 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "$host_exe --env failed" }
             Remove-Item Env:PLUMED_KERNEL
           }
+
+      # A second installation, in a directory with a space: its path is
+      # hardcoded in the python module (plumed_default_kernel, a macro that
+      # Plumed.h turns into a string)
+      - name: Install for the python interface
+        run: cmake --install build --prefix "${{ runner.temp }}/plumed python"
+
+      # Wrapper-only module, as with "make install" on Unix (no bundled kernel)
+      - name: Install the python interface
+        working-directory: ./python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy pandas
+          Copy-Item ../VERSION.txt PLUMED_VERSION
+          $env:plumed_default_kernel = "${{ runner.temp }}\plumed python\bin\plumedKernel.dll"
+          python -m pip install .
+          if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
+
+      # See python/test for the tests skipped on Windows (LOAD, MPI, Unix build tools)
+      - name: Run python tests
+        working-directory: ./python
+        run: pytest -v
+
+      # a kernel passed explicitly (also from a non-ASCII directory, as UTF-8),
+      # a missing one, and PLUMED_KERNEL
+      - name: Kernel selection from python
+        working-directory: ${{ runner.temp }}
+        run: |
+          $kernel = "${{ runner.temp }}\plumed python\bin\plumedKernel.dll"
+          $check = @'
+          import os, shutil, sys, tempfile
+          import plumed
+          kernel = sys.argv[1]
+          plumed.Plumed(kernel).finalize()
+          # the copy might still be mapped when the directory is removed
+          with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+              directory = os.path.join(tmp, "kernel-\u00e9")
+              os.mkdir(directory)
+              copy = shutil.copy(kernel, directory)
+              plumed.Plumed(copy).finalize()
+          try:
+              plumed.Plumed(kernel + ".missing")
+          except RuntimeError as error:
+              print("expected:", error)
+          else:
+              raise SystemExit("loading a missing kernel did not fail")
+          '@
+          Set-Content -Path check-kernel.py -Value $check -Encoding ascii
+          python check-kernel.py $kernel
+          if ($LASTEXITCODE -ne 0) { throw "kernel selection failed" }
+          $env:PLUMED_KERNEL = $kernel
+          python -c "import plumed; plumed.Plumed().finalize()"
+          if ($LASTEXITCODE -ne 0) { throw "PLUMED_KERNEL failed" }
