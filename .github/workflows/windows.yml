@@ -60,10 +60,11 @@ jobs:
         run: .ci/windows-regtests serial
 
       # MPI tests with the embedded thread-MPI, one at a time
-      # (run also when the serial tests failed)
+      # (run also when the serial tests failed, but not when the run is cancelled:
+      # always() would start them even then)
       - name: Regtests (thread-MPI)
         id: regtest-mpi
-        if: always() && steps.regtest.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.regtest.outcome != 'skipped' }}
         timeout-minutes: 40
         shell: bash
         env:
@@ -72,7 +73,7 @@ jobs:
         run: .ci/windows-regtests mpi
 
       - name: Upload regtest results
-        if: always() && steps.regtest.outcome != 'skipped'
+        if: ${{ !cancelled() && steps.regtest.outcome != 'skipped' }}
         uses: actions/upload-artifact@v6
         with:
           name: windows-regtest-results
