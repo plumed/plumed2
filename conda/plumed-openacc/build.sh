@@ -43,7 +43,7 @@ make -j"${CPU_COUNT:-4}" NVCXX="$nvcxx" ACCTARGET=gpu,host \
   CXXFLAGS="-O2 -std=c++17 -fPIC -tp=px -gpu=ccall,cuda${openacc_cuda_version}" \
   NVLDSHARED="$nvcxx -shared $sysroot_link -tp=px -gpu=ccall,cuda${openacc_cuda_version} -Xlinker --no-undefined" \
   EXTRA_OBJS="$SRC_DIR/openacc-registration/module_identity.o" \
-  DYNAMIC_LIBS="-L$PREFIX/lib -lopenblas"
+  DYNAMIC_LIBS="-L$PREFIX/lib $PREFIX/lib/libopenblas.so.0"
 readelf -d plumedOpenACC.so
 python - <<'PYCODE'
 import re
