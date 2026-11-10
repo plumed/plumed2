@@ -2,3 +2,6 @@ include PLUMED_VERSION
 include include/Plumed.h
 include plumed.pyx
 include cplumed.pxd
+
+include pyproject.toml
+include test/test_file_ownership.py
