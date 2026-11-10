@@ -95,7 +95,7 @@ include $(wildcard $(DEPFILES))
 
 $(PLUGIN): $(OBJS)
 	@echo Linking $@
-	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_FLAGS) $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	@$(NVLDSHARED)  $(ADDCLDFLAGS) $(SONAME_FLAGS) -o $@ $^ $(DYNAMIC_LIBS) $(PLUMED_KERNEL)
 
 clean:
 	@rm -fv $(OBJS) $(PLUGIN)
