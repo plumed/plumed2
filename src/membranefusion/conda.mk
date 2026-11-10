@@ -1,2 +1,2 @@
-# Optional OpenACC acceleration uses the NVIDIA HPC SDK compiler.
-CONDA_UNAVAILABLE_LIBRARIES = NVHPC
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.

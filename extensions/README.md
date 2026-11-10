@@ -118,11 +118,13 @@ CONDA_UNAVAILABLE_LIBRARIES = example-library
 ```
 
 Quote MatchSpecs containing spaces. Conda selectors are supported at the end of
-a declaration, for example `# [linux]`. These files declare package policy;
+a declaration, for example `# [linux]`. These files are manually curated inputs and are never overwritten by the
+generators. They declare package policy;
 compiler probes only decide which feature macros and native links to enable.
 The current recipe selects all 35 default-off modules. DRR declares Boost;
 Fourier declares non-MPI FFTW; PyTorch and metatomic declare CPU LibTorch and
-native metatomic/metatensor libraries; TTsketch declares non-MPI HDF5 while its
+native metatomic/metatensor libraries; TTsketch builds against non-MPI HDF5 but permits ABI-compatible MPI variants
+at runtime, while its
 unavailable ITensor dependency does not exclude it. KEnRef is also retained.
 Each package gets the license and notices from its own module directory, with
 the root license used only when a module has no notice.
