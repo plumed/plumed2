@@ -13,6 +13,9 @@ bash configure.sh
 # Use the architecture matrix from conda-forge's compiler activation. For older
 # activation packages, query NVCC rather than silently selecting one old GPU.
 nvcc=${CUDACXX:-nvcc}
+actual_cuda=$("$nvcc" --version | sed -n 's/.*release \([0-9][0-9]*\.[0-9][0-9]*\),.*/\1/p')
+echo "Building CUDA variant $cuda_compiler_version with NVCC $actual_cuda"
+[[ $actual_cuda == "$cuda_compiler_version" ]]
 gencode=${NVCC_GENCODE:-}
 if [[ -z $gencode ]]; then
   while read -r sm; do
@@ -26,8 +29,9 @@ fi
 # each target carries normal device code through the separate link step.
 make -j"${CPU_COUNT:-4}" CXX="$CXX" NVCC="$nvcc" \
   EXTRA_OBJS="$SRC_DIR/cuda-registration/module_identity.o" \
-  NVCCCFLAGS="-dc --forward-unknown-to-host-compiler $gencode" \
-  NVCCLDFLAGS="-shared --cudart=shared --forward-unknown-to-host-compiler $gencode"
+  DYNAMIC_LIBS="-L$PREFIX/lib" \
+  NVCCCFLAGS="-dc --forward-unknown-to-host-compiler -Xcompiler -pthread $gencode" \
+  NVCCLDFLAGS="-shared --cudart=shared --forward-unknown-to-host-compiler -Xcompiler -pthread -Xlinker --no-undefined $gencode"
 install -m 755 CudaCoordination.so "$PREFIX/lib/"
 mkdir -p "$PREFIX/lib/plumed/plugins"
 cp "$SRC_DIR/cuda-registration/cuda_coordination.plumed" "$PREFIX/lib/plumed/plugins/"
