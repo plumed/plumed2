@@ -160,3 +160,25 @@ Plugin builders can pass `--features LIBRARY_MACRO` to `extensions/register.py`.
 The identity translation unit exports those `__PLUMED_HAS_LIBRARY_MACRO` flags
 only when enabled by its compile flags, following the same runtime inquiry
 contract as source modules.
+
+### Python collective-variable plugin
+
+`conda install plumed-ext-pycv` installs the pycv plugin and its companion Python
+extension for the environment's Python minor version. The recipe builds Python
+3.11–3.15 variants from `conda/plumed-pycv/conda_build_config.yaml`. Every variant
+links to and pins the same main `plumed` package, without bundling another kernel.
+Python and NumPy are plugin runtime requirements; pybind11 is needed only to build.
+
+Like other extensions, pycv loads automatically. With `PLUMED_AUTOLOAD=0`, use
+`LOAD MODULE=pycv` in the input or `plumed --load-module=pycv ...` on the command
+line. `plumed modules --has pycv` checks runtime availability. `python -m pycv` continues to report the installed library path. Use
+`LOAD MODULE=pycv` with autoloading disabled so its runtime helpers load first.
+
+`extensions/conda_recipe.py` also generates `conda/plumed-pycv/meta.yaml`, using
+its module-local curated declarations and license. The build installs both
+Python components together and registers the library under `lib/plumed/plugins`.
+On macOS the same package also installs a `pycv_runtime` helper module, loaded
+as a dependency before pycv, so Python-hosted and standalone runs share the
+right interpreter symbols. No extra kernel or compiler is required at runtime.
+Its package tests run the existing Python-hosted suite and numerical driver
+fixtures for both autoloading and explicit module loading.

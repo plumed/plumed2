@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 : "${VERSION:?set VERSION to the version built by run-conda-build.sh}"
 
 bash run-extension-test.sh
+bash run-pycv-test.sh
 
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-conda-packaging.XXXXXX")
 trap 'rm -rf "$task"' EXIT

@@ -16,6 +16,8 @@ echo "#Building the MPICH and Open MPI add-ons"
 conda-build -c local -c conda-forge plumed-mpi
 echo "#Building py-plumed for conda"
 conda-build -c local -c conda-forge py-plumed
+echo "#Building Python collective-variable plugins"
+conda-build -c local -c conda-forge plumed-pycv
 
 ls -l $CONDA_PREFIX/conda-bld/
 ls -l $CONDA_PREFIX/conda-bld/*

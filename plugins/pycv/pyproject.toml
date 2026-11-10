@@ -1,13 +1,12 @@
 [build-system]
-requires = ["scikit-build-core>=0.10", "pybind11>=2.10.3,<=2.11.1", "numpy"]
+requires = ["scikit-build-core>=0.10", "pybind11>=3.0", "numpy"]
 build-backend = "scikit_build_core.build"
 
 
 [project]
 name = "pycv"
 dependencies = [
-  "numpy",
-  "pybind11>=2.10.3,<=2.11.1"
+  "numpy"
 ]
 version = "0.0.2"
 description="PyCV support module for plumed"
@@ -26,6 +25,8 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
 ]
 
 [project.optional-dependencies]
