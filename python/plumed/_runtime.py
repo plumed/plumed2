@@ -28,11 +28,11 @@ import sys
 
 def _bundled_kernel_path():
     """Return the installed private kernel path, if this is a bundled wheel."""
-    suffix = ".dylib" if sys.platform == "darwin" else ".so"
-    path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "runtime",
-        "lib",
-        "libplumedKernel" + suffix,
-    )
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime")
+    if sys.platform == "win32":
+        # as installed by CMake: the DLL next to plumed.exe
+        path = os.path.join(root, "bin", "plumedKernel.dll")
+    else:
+        suffix = ".dylib" if sys.platform == "darwin" else ".so"
+        path = os.path.join(root, "lib", "libplumedKernel" + suffix)
     return path if os.path.isfile(path) else None

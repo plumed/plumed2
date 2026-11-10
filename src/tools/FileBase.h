@@ -87,6 +87,11 @@ public:
   static constexpr const char* nullDevice="/dev/null";
 #endif
 
+/// True if path is the null device written with its Windows name ("NUL", any
+/// case, e.g. os.devnull in python), which is then handled as "/dev/null".
+/// Always false on other platforms.
+  static bool isWindowsNullDevice(const std::string&path);
+
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
 /// it conserves some suffix (e.g. gz/xtc/trr).

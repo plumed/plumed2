@@ -499,8 +499,9 @@ OFile& OFile::open(const std::string&setpath) {
   err=false;
   fp=NULL;
   gzfp=NULL;
-  path=setpath;
-  path=appendSuffix(setpath,getSuffix());
+  // the null device must not be backed up (renamed) nor get a suffix
+  path=isWindowsNullDevice(setpath) ? std::string("/dev/null") : setpath;
+  path=appendSuffix(path,getSuffix());
   // this must be done before backing up the file, otherwise
   // the backup would rename the file that is being written by another OFile
   checkNotOpenElsewhere();

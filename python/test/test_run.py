@@ -36,6 +36,7 @@
 #
 # PRINT ARG=t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32 FILE=colvar.ref FMT=%8.4f
 
+import glob
 import unittest
 import numpy as np
 import plumed
@@ -89,7 +90,8 @@ def create_plumed_var(p, name, command):
 
 class Test(unittest.TestCase):
     def runtest(self):
-        os.system("rm -f bck.*")
+        for backup in glob.glob("bck.*"):
+            os.remove(backup)
         # Output to four decimal places only
         np.set_printoptions(precision=4)
         # Read trajectory
