@@ -461,6 +461,56 @@ class HDF5IO(unittest.TestCase):
         )
         self.assertIn("#! SET integer " + str(2**53 + 1), output.read_text())
 
+    def test_python_written_table_can_be_restarted_by_plumed(self):
+        """A Python-created table can be reopened, trimmed, and appended natively."""
+        executable = shutil.which("plumed")
+        if executable is None:
+            self.skipTest("Native plumed executable is unavailable")
+        probe = subprocess.run(
+            [executable, "--no-mpi", "info", "--configuration"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        if "__PLUMED_HAS_LIBHDF5" not in probe.stdout:
+            self.skipTest("Native PLUMED was built without HDF5")
+
+        run_dir = self.path.with_name("native-restart")
+        run_dir.mkdir()
+        table = run_dir / "COLVAR.h5"
+        # Seed rows before, at, and after the restart step using only Python.
+        initial = pd.DataFrame({"time": [0, 1, 2], "d": [10.0, 20.0, 30.0]})
+        plumed.write_pandas(initial, table)
+        (run_dir / "plumed.dat").write_text(
+            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.h5\n"
+        )
+        trajectory = run_dir / "traj.xyz"
+        trajectory.write_text(
+            "2\n10 10 10\nX 0 0 0\nX 1 0 0\n2\n10 10 10\nX 0 0 0\nX 2 0 0\n"
+        )
+        completed = subprocess.run(
+            [
+                executable,
+                "--no-mpi",
+                "driver",
+                "--plumed",
+                "plumed.dat",
+                "--ixyz",
+                str(trajectory),
+                "--restart",
+                "--initial-step",
+                "1",
+            ],
+            cwd=run_dir,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        result = plumed.read_as_pandas(run_dir / "COLVAR.h5", enable_conversion=False)
+        self.assertEqual(result["time"].tolist(), [0, 1, 2])
+        np.testing.assert_allclose(result["d"], [10.0, 1.0, 2.0])
+
 
 if __name__ == "__main__":
     unittest.main()
