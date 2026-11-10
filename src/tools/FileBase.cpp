@@ -151,6 +151,18 @@ FileBase::operator bool()const {
   return !eof;
 }
 
+bool FileBase::isWindowsNullDevice(const std::string&path) {
+#ifdef _WIN32
+  return path.size()==3 &&
+         (path[0]=='N' || path[0]=='n') &&
+         (path[1]=='U' || path[1]=='u') &&
+         (path[2]=='L' || path[2]=='l');
+#else
+  (void) path;
+  return false;
+#endif
+}
+
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix) {
   if(path=="/dev/null") {
     return path;  // do not append a suffix to /dev/null
