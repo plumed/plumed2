@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <new>
 #include <vector>
 
 namespace PLMD {
@@ -83,10 +84,21 @@ std::string simplify(const std::string & path) {
 
 }
 
+namespace {
+/// A copy of the stack trace, or nullptr (also if it cannot be allocated)
+std::array<void*,128>* copyCallstack(const std::unique_ptr<std::array<void*,128>> & callstack) {
+  return callstack ? new(std::nothrow) std::array<void*,128>(*callstack) : nullptr;
+}
+}
+
 Exception::Exception() {
-  callstack.fill(nullptr);
 #ifdef __PLUMED_HAS_EXECINFO
-  callstack_n = backtrace(&callstack[0], callstack.size()-1);
+  // no exception here if there is no memory: no stack trace in that case
+  callstack.reset(new(std::nothrow) std::array<void*,128>);
+  if(callstack) {
+    callstack->fill(nullptr);
+    callstack_n = backtrace(callstack->data(), callstack->size()-1);
+  }
   const char* env=std::getenv("PLUMED_STACK_TRACE");
   if(env && !std::strcmp(env,"yes")) {
     msg+="\n\n********** STACK DUMP **********\n";
@@ -94,6 +106,40 @@ Exception::Exception() {
     msg+="\n********** END STACK DUMP **********\n";
   }
 #endif
+}
+
+Exception::Exception(const Exception & e):
+  msg(e.msg),
+  note(e.note),
+  callstack(copyCallstack(e.callstack)),
+  callstack_n(callstack ? e.callstack_n : 0),
+  stackTrace(e.stackTrace) {
+}
+
+Exception & Exception::operator=(const Exception & e) {
+  if(this!=&e) {
+    msg=e.msg;
+    note=e.note;
+    callstack.reset(copyCallstack(e.callstack));
+    callstack_n=callstack ? e.callstack_n : 0;
+    stackTrace=e.stackTrace;
+  }
+  if(stream) {
+    stream->str("");
+  }
+  return *this;
+}
+
+std::stringstream & Exception::getStream() {
+  if(!stream) {
+    stream=std::make_unique<std::stringstream>();
+  }
+  return *stream;
+}
+
+const std::array<void*,128> & Exception::trace() const noexcept {
+  static const std::array<void*,128> empty{};
+  return callstack ? *callstack : empty;
 }
 
 Exception& Exception::operator<<(const std::string&addmsg) {
@@ -141,8 +187,8 @@ Exception& Exception::operator<<(const Assertion&as) {
 
 const char* Exception::stack() const {
 #ifdef __PLUMED_HAS_EXECINFO
-  if(stackTrace.length()==0) {
-    char** strs = backtrace_symbols(&callstack[0], callstack_n);
+  if(stackTrace.length()==0 && callstack) {
+    char** strs = backtrace_symbols(callstack->data(), callstack_n);
     for (int i = 0; i < callstack_n; ++i) {
       stackTrace+=strs[i];
       stackTrace+="\n";

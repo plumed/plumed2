@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <array>
+#include <memory>
 
 namespace PLMD {
 
@@ -151,6 +152,11 @@ copying the string throw another exception. However, this has been like
 this in all previous PLUMED versions. In case it is necessary, we can replace
 it later with a fixed size array placed on the stack.
 
+The stack trace and the stream used to format the inserted objects are
+allocated on the heap, so that an Exception object is small. A function
+with many plumed_assert or plumed_error (e.g. PlumedMain::cmd) creates many
+of them, and some compilers (MSVC) give each one its own slot in the stack frame.
+
 */
 class Exception : public std::exception {
 /// Reported message. Can be updated.
@@ -158,13 +164,15 @@ class Exception : public std::exception {
 /// Flag to remember if we have to write the `+++ message follows +++` string.
 /// Needed so that the string appears only at the beginning of the message.
   bool note=true;
-/// Stream used to insert objects.
+/// Stream used to insert objects, allocated at first use.
 /// It is not copied when the Exception is copied.
-  std::stringstream stream;
-/// Stack trace, computed at construction
-  std::array<void*,128> callstack;
+  std::unique_ptr<std::stringstream> stream;
+/// Stack trace, computed at construction (when available)
+  std::unique_ptr<std::array<void*,128>> callstack;
 /// Number of frames in stack, computed at construction
   int callstack_n=0;
+/// Returns the stream, allocating it at first use
+  std::stringstream & getStream();
 /// Parsed stack trace. Built at first use, thus mutable.
   mutable std::string stackTrace;
 
@@ -225,25 +233,11 @@ public:
 
 /// Copy constructor.
 /// Needed to make sure stream is not copied
-  Exception(const Exception & e):
-    msg(e.msg),
-    note(e.note),
-    callstack(e.callstack),
-    callstack_n(e.callstack_n),
-    stackTrace(e.stackTrace) {
-  }
+  Exception(const Exception & e);
 
 /// Assignment.
 /// Needed to make sure stream is not copied
-  Exception & operator=(const Exception & e) {
-    msg=e.msg;
-    note=e.note;
-    callstack=e.callstack;
-    callstack_n=e.callstack_n;
-    stackTrace=e.stackTrace;
-    stream.str("");
-    return *this;
-  }
+  Exception & operator=(const Exception & e);
 
 /// Returns the error message.
 /// In case the environment variable PLUMED_STACK_TRACE was defined
@@ -259,9 +253,7 @@ public:
   const char* stack() const;
 
 /// Returns the callstack.
-  const std::array<void*,128> & trace() const noexcept {
-    return callstack;
-  }
+  const std::array<void*,128> & trace() const noexcept;
 
 /// Returns the number of elements in the trace array
   int trace_n() const noexcept {
@@ -288,9 +280,10 @@ public:
 /// Anything that can be written on a stream can go here.
   template<typename T>
   Exception& operator<<(const T & x) {
-    stream<<x;
-    (*this)<<stream.str();
-    stream.str("");
+    auto & s=getStream();
+    s<<x;
+    (*this)<<s.str();
+    s.str("");
     return *this;
   }
 };

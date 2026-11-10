@@ -42,6 +42,37 @@ jobs:
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
 
+      # PlumedMain::cmd is called from inside cmd by DEBUG logRequestedAtoms
+      # (rt73) and by the PLUMED action (rt-plumed-action-large-step). With
+      # MSVC these overflowed a 1 MB stack (the Windows default, e.g. for an MD
+      # code loading PLUMED) when every Exception object in cmd took more than
+      # 1 KB of its stack frame: run them with a 1 MB stack.
+      - name: Nested cmd calls with a 1 MB stack
+        run: |
+          Copy-Item build/plumed.exe build/plumed-1mb.exe
+          editbin /nologo /STACK:1048576 build/plumed-1mb.exe
+          if ($LASTEXITCODE -ne 0) { throw "editbin failed" }
+          $exe = (Resolve-Path build/plumed-1mb.exe).Path
+          $trajectory = (Resolve-Path regtest/trajectories/trajectory.xyz).Path
+          $tests = @(
+            @{ name = "rt73"; arguments = @("driver", "--plumed", "plumed.dat", "--trajectory-stride", "1", "--timestep", "0.005", "--ixyz", "trajectory.xyz") },
+            @{ name = "rt-plumed-action-large-step"; arguments = @("driver", "--plumed", "plumed.dat", "--ixyz", "traj.xyz", "--initial-step", "3000000000", "--timestep", "0.001") }
+          )
+          foreach ($test in $tests) {
+            $dir = Join-Path $env:RUNNER_TEMP ("stack-" + $test.name)
+            Copy-Item -Recurse ("regtest/basic/" + $test.name) $dir
+            Copy-Item $trajectory $dir
+            Push-Location $dir
+            $arguments = $test.arguments
+            & $exe @arguments
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) {
+              throw ($test.name + " failed with a 1 MB stack (exit code " + $code + ")")
+            }
+            Write-Output ($test.name + ": OK")
+          }
+
       # vim syntax files, as "make" does in vim/ (used by plumed vim2html,
       # regtest basic/rt-vimsyntax)
       - name: Generate vim syntax
