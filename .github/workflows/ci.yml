@@ -1,15 +1,11 @@
 name: CI
 
 on:
-  # Pushes run the CI only on master, on the release branches (v2.9, v2.10, ...) and on tags.
-  # Other branches of this repository get it through their pull request (open a draft one if the work
-  # is not ready), or by hand: Actions > CI > Run workflow, or gh workflow run ci.yml --ref <branch>.
-  # Running push CI on every branch meant two full runs (push and pull_request) for each commit of a PR.
+  # Branch filtering is repository-dependent, so it is applied by the policy job.
+  # Forks run every branch; upstream runs master, release branches and tags.
   push:
     branches:
-      - master
-      - 'v2.[0-9]'
-      - 'v2.[0-9][0-9]'
+      - '**'
     tags:
       - '*'
   pull_request:
@@ -48,13 +44,32 @@ env:
 
 jobs:
 
+  policy:
+    runs-on: ubuntu-24.04
+    outputs:
+      run_ci: ${{ steps.branch.outputs.run_ci }}
+    steps:
+    - name: Select branches for this repository
+      id: branch
+      shell: bash
+      run: |
+        run_ci=true
+        if [[ "$GITHUB_REPOSITORY" == plumed/plumed2 && "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/* ]]; then
+          branch=${GITHUB_REF#refs/heads/}
+          if [[ "$branch" != master && ! "$branch" =~ ^v2\.[0-9]{1,2}$ ]]; then
+            run_ci=false
+          fi
+        fi
+        echo "run_ci=$run_ci" >> "$GITHUB_OUTPUT"
+
 # codecheck and checks are quick and run first. In pull requests and manual runs the other jobs start
 # only if both pass, so a commit that does not build, is not formatted or breaks the regtests does not
 # take the macOS runners and the long Linux builds. Pushes and the nightly run everything anyway, to
 # have the full picture (and the doc and coverage pushes) also when something fails.
 
   codecheck:
-    if: github.event.action != 'closed'
+    needs: policy
+    if: needs.policy.outputs.run_ci == 'true' && github.event.action != 'closed'
     uses: ./.github/workflows/codecheckWF.yml
     secrets: inherit
     permissions:
@@ -62,41 +77,42 @@ jobs:
       security-events: write
 
   checks:
-    if: github.event.action != 'closed'
+    needs: policy
+    if: needs.policy.outputs.run_ci == 'true' && github.event.action != 'closed'
     uses: ./.github/workflows/checksWF.yml
 
   linux:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/linuxWF.yml
     secrets: inherit
 
   windows:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/windows.yml
     secrets: inherit
 
   mac:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/macWF.yml
     secrets: inherit
 
   python:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/pythonWF.yml
     secrets: inherit
 
   docker:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/dockerWF.yml
     secrets: inherit
 
   conda:
-    needs: [codecheck, checks]
-    if: ${{ !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/condaWF.yml
     secrets: inherit

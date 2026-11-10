@@ -2,6 +2,9 @@ name: Python package
 
 on:
   push:
+    # Branch pushes build wheels on forks; upstream uses tags and pull requests.
+    branches:
+      - "**"
     tags:
       - "v*"
   pull_request:
@@ -27,7 +30,7 @@ permissions:
 
 jobs:
   sdist:
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && (github.repository != 'plumed/plumed2' || github.event_name != 'push' || startsWith(github.ref, 'refs/tags/'))
     name: Build source distribution
     runs-on: ubuntu-24.04
     steps:
