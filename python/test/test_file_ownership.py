@@ -269,7 +269,7 @@ class TestRootDiscovery(unittest.TestCase):
         for error in (RuntimeError("cannot create log"), OSError("cannot open log")):
             with self.subTest(error=type(error).__name__):
                 with (
-                    patch("tempfile.NamedTemporaryFile", side_effect=error),
+                    patch("tempfile.TemporaryDirectory", side_effect=error),
                     patch(
                         "subprocess.check_output", return_value=b"/legacy/root\n"
                     ) as command,
@@ -286,7 +286,7 @@ class TestRootDiscovery(unittest.TestCase):
         for error in (KeyboardInterrupt(), SystemExit(7)):
             with self.subTest(error=type(error).__name__):
                 with (
-                    patch("tempfile.NamedTemporaryFile", side_effect=error),
+                    patch("tempfile.TemporaryDirectory", side_effect=error),
                     patch("subprocess.check_output") as command,
                     self.assertRaises(type(error)) as raised,
                 ):
