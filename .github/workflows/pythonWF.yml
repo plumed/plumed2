@@ -88,6 +88,10 @@ jobs:
       run: |
          make PLUMED_VERSION
          pip install .
+    - name: Install optional HDF5 test dependencies
+      working-directory: ./python
+      run: python test/install_hdf5_test_dependencies.py
+
     - name: Run python tests
       working-directory: ./python
       run: |

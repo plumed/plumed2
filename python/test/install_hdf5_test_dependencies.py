@@ -1,4 +1,4 @@
-"""Install optional wheel-test dependencies, building a private HDF5 if needed.
+"""Install optional test dependencies, building a private HDF5 if needed.
 
 Some h5py wheels need newer glibc than our manylinux2014 baseline, and h5py
 may not yet publish wheels for the newest Python. Keep this test dependency

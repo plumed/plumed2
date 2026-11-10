@@ -2,4 +2,3 @@ numpy
 pandas
 mdtraj
 MDAnalysis
-h5py
