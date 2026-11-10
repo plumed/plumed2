@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
+#include "tools/FileTools.h"
 
 namespace PLMD {
 
@@ -188,7 +189,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(nullptr,deleter);
 
   if(argc==2) {
-    mystdin=std::fopen(argv[1],"r");
+    mystdin=fopenUTF8(argv[1],"r");
     if(!mystdin) {
       std::fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
       std::fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");

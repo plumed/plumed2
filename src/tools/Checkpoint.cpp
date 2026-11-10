@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Checkpoint.h"
 #include "Exception.h"
+#include "FileTools.h"
 #include <cerrno>
 #include <cstring>
 #include <cstdio>
@@ -288,7 +289,7 @@ void CheckpointWriter::writeFile(const std::string& path,const std::string& prev
       }
     }
 #else
-    std::FILE* fp=std::fopen(tmp.c_str(),"wb");
+    std::FILE* fp=fopenUTF8(tmp,"wb");
 #endif
     if(!fp) {
       plumed_merror("checkpoint: cannot open "+tmp+" for writing: "+std::strerror(errno));
@@ -306,13 +307,13 @@ void CheckpointWriter::writeFile(const std::string& path,const std::string& prev
     }
   }
   std::error_code ec;
-  if(!prevPath.empty() && std::filesystem::exists(path,ec)) {
-    std::filesystem::rename(path,prevPath,ec);
+  if(!prevPath.empty() && std::filesystem::exists(pathFromUTF8(path),ec)) {
+    std::filesystem::rename(pathFromUTF8(path),pathFromUTF8(prevPath),ec);
     if(ec) {
       plumed_merror("checkpoint: cannot rename "+path+" to "+prevPath+": "+ec.message());
     }
   }
-  std::filesystem::rename(tmp,path,ec);
+  std::filesystem::rename(pathFromUTF8(tmp),pathFromUTF8(path),ec);
   if(ec) {
     plumed_merror("checkpoint: cannot rename "+tmp+" to "+path+": "+ec.message());
   }
@@ -325,7 +326,7 @@ unsigned CheckpointReader::checksum(const std::string& data) {
 }
 
 std::string CheckpointReader::readFile(const std::string& path) {
-  std::ifstream in(path,std::ios::binary);
+  std::ifstream in(pathFromUTF8(path),std::ios::binary);
   if(!in) {
     plumed_merror("checkpoint: cannot open "+path+" for reading");
   }

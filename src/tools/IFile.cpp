@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "IFile.h"
 #include "Exception.h"
+#include "FileTools.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
 #include "core/Value.h"
@@ -99,13 +100,13 @@ IFile& IFile::open(const std::string&mypath) {
   if(!FileExist(mypath)) {
     plumed_error() << "file " << mypath << " cannot be found";
   }
-  fp=std::fopen(const_cast<char*>(path.c_str()),"r");
+  fp=fopenUTF8(path,"r");
   if(h5table::isH5(path)) {
     // an HDF5 table, read as the lines of the equivalent text file
     h5reader=std::make_unique<h5table::Reader>(path);
   } else if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
-    gzfp=(void*)gzopen(const_cast<char*>(path.c_str()),"r");
+    gzfp=gzopenUTF8(path,"r");
 #else
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
 #endif

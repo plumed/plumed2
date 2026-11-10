@@ -22,6 +22,7 @@
 #include "TrajectoryParser.h"
 
 #include "FileBase.h"
+#include "FileTools.h"
 #include "IFile.h"
 #include "Tools.h"
 #include "xdrfile/xdrfile.h"
@@ -107,7 +108,7 @@ public:
   std::optional<std::string> init(std::string_view /*fmt*/,
                                   std::string_view fname) override {
     std::string trajectoryFile=std::string(fname);
-    fp_owned.reset(std::fopen(trajectoryFile.c_str(),"r"));
+    fp_owned.reset(fopenUTF8(trajectoryFile,"r"));
     fp = fp_owned.get();
     if(!fp) {
       return "ERROR: Error opening trajectory file "+trajectoryFile;
@@ -840,7 +841,7 @@ public:
   std::optional<std::string> init(std::string_view /*fmt*/,
                                   std::string_view fname) override {
     trajectoryFile=std::string(fname);
-    fp.reset(std::fopen(trajectoryFile.c_str(),"rb"));
+    fp.reset(fopenUTF8(trajectoryFile,"rb"));
     if(!fp) {
       return "ERROR: Error opening trajectory file "+trajectoryFile;
     }

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PDB.h"
 #include "Tools.h"
+#include "FileTools.h"
 #include "Log.h"
 #include "h36.h"
 #include <cctype>
@@ -522,7 +523,7 @@ bool PDB::isTprFile(const std::string& file) {
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering) {
   numbering=atomNumbering;
-  FILE* fp=std::fopen(file.c_str(),"r");
+  FILE* fp=fopenUTF8(file,"r");
   if(!fp) {
     return false;
   }

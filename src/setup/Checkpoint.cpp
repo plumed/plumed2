@@ -25,6 +25,7 @@
 #include "core/Checkpointing.h"
 #include "tools/Checkpoint.h"
 #include "tools/Exception.h"
+#include "tools/FileTools.h"
 #include <filesystem>
 
 namespace PLMD {
@@ -168,7 +169,7 @@ Checkpoint::Checkpoint(const ActionOptions&ao):
       // it is read unless the MD engine says that it restarts from another step
       const std::string finalFile=Checkpointing::finalName(file);
       const std::string finalPath=cpt.suffixedPath(finalFile);
-      if(std::filesystem::exists(finalPath)) {
+      if(std::filesystem::exists(pathFromUTF8(finalPath))) {
         const long long int engineStep=cpt.getEngineRestartStep();
         if(engineStep<0 || CheckpointReader(CheckpointReader::readFile(finalPath)).get<long long int>("step")==engineStep) {
           restartFrom=finalFile;
@@ -182,7 +183,7 @@ Checkpoint::Checkpoint(const ActionOptions&ao):
   }
   if(restartFrom!="NO") {
     const std::string fname=cpt.suffixedPath(restartFrom);
-    if(!std::filesystem::exists(fname)) {
+    if(!std::filesystem::exists(pathFromUTF8(fname))) {
       error("checkpoint file "+fname+" not found. Use RESTART_FROM=NO to restart without a checkpoint");
     }
     cpt.restartFrom(restartFrom);

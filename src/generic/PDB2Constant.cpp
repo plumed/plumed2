@@ -24,6 +24,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/PlumedMain.h"
 #include "tools/PDB.h"
+#include "tools/FileTools.h"
 
 #include <cstdio>
 
@@ -264,7 +265,7 @@ PDB2Constant::PDB2Constant(const ActionOptions& ao):
     error("can only read one argument at a time from input pdb file");
   }
 
-  FILE* fp=std::fopen(input.c_str(),"r");
+  FILE* fp=fopenUTF8(input,"r");
   bool do_read=true;
   std::vector<double> vals;
   if(!fp) {

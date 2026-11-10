@@ -27,6 +27,7 @@
 #include "core/Value.h"
 #include "tools/Exception.h"
 #include "tools/File.h"
+#include "tools/FileTools.h"
 #include "tools/Log.h"
 #include "tools/Matrix.h"
 #include "tools/Tools.h"
@@ -73,7 +74,7 @@ std::string removeIncompleteLastLine(const std::string& path) {
   if(path.length()>3 && path.substr(path.length()-3)==".gz") {
     return "";
   }
-  std::ifstream f(path,std::ios::binary);
+  std::ifstream f(pathFromUTF8(path),std::ios::binary);
   if(!f) {
     return "";
   }
@@ -106,7 +107,7 @@ std::string removeIncompleteLastLine(const std::string& path) {
   std::string message="  WARNING: the last line of "+path+" is incomplete (the previous run was probably interrupted while writing it) and is removed:\n";
   message+="  "+tail+"\n";
   std::error_code ec;
-  std::filesystem::resize_file(path,pos,ec);
+  std::filesystem::resize_file(pathFromUTF8(path),pos,ec);
   if(ec) {
     message+="  WARNING: the incomplete last line of "+path+" could not be removed ("+ec.message()+")\n";
   }
@@ -380,7 +381,7 @@ std::vector<long long> MetaDHillsFiles::readGridComment(const std::string& path,
   if(path.length()>3 && path.substr(path.length()-3)==".gz") {
     return counts;
   }
-  std::ifstream f(path);
+  std::ifstream f(pathFromUTF8(path));
   std::string line;
   // the comment follows the grid (with STORE_GRIDS, the first grid is the one that is read)
   while(std::getline(f,line)) {
