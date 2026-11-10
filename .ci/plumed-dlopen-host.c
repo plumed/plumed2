@@ -85,15 +85,20 @@ int main(int argc,char**argv) {
     {
       /* a copy in a directory whose name is not ASCII, loaded with its UTF-8 path */
       wchar_t wkernel[1024];
-      const wchar_t* wdirectory=L"kernel-é";
+      /* "kernel-" followed by U+00E9 (e acute), spelled out: the source must stay ASCII, since
+         without /utf-8 MSVC reads it in the ANSI code page and a literal letter would change */
+      const wchar_t wdirectory[]= {L'k',L'e',L'r',L'n',L'e',L'l',L'-',0x00e9,0};
       const char* directory="kernel-\xc3\xa9";
       wchar_t wcopy[1100];
+      wchar_t wdecoded[1100];
       char copy[1100];
       MultiByteToWideChar(CP_ACP,0,argv[1],-1,wkernel,1024);
       CreateDirectoryW(wdirectory,NULL);
       _snwprintf(wcopy,1100,L"%ls\\plumedKernel.dll",wdirectory);
       check(CopyFileW(wkernel,wcopy,FALSE)!=0,"copy of the kernel in a non-ASCII directory");
       snprintf(copy,sizeof(copy),"%s/plumedKernel.dll",directory);
+      MultiByteToWideChar(CP_UTF8,0,copy,-1,wdecoded,1100);
+      check(GetFileAttributesW(wdecoded)!=INVALID_FILE_ATTRIBUTES,"the UTF-8 path names the copy");
       p=plumed_create_dlopen(copy);
       check(plumed_valid(p),"kernel loaded from a UTF-8 relative path with forward slashes");
       if(plumed_valid(p)) {
