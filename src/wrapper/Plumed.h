@@ -4228,8 +4228,11 @@ __PLUMED_WRAPPER_INTERNALS_BEGIN
 void* plumed_dlopen(const char*path,int mode) {
   HMODULE handle;
   wchar_t* wpath;
+  wchar_t* fullpath;
   int n;
   int i;
+  int separator;
+  DWORD length;
   DWORD flags;
   DWORD error;
   (void) mode;
@@ -4245,18 +4248,39 @@ void* plumed_dlopen(const char*path,int mode) {
   }
   MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wpath,n);
   /* LoadLibraryEx requires backslashes */
+  separator=0;
   for(i=0; i<n; i++) {
     if(wpath[i]==L'/') {
       wpath[i]=L'\\';
     }
+    if(wpath[i]==L'\\' || wpath[i]==L':') {
+      separator=1;
+    }
   }
   /*
-    With an absolute path, the libraries the kernel depends on are also searched
-    in its directory. LOAD_WITH_ALTERED_SEARCH_PATH must not be used with relative paths.
+    As with dlopen, a path containing a directory is a file, and a relative one is relative
+    to the current directory: LoadLibraryEx would look for it in the DLL search path instead,
+    which might not contain the current directory. The path is thus made absolute, which also
+    allows using LOAD_WITH_ALTERED_SEARCH_PATH, so that the libraries the kernel depends on are
+    searched in its directory. A name without directory is searched in the standard order.
   */
   flags=0;
-  if(n>3 && ((wpath[1]==L':' && wpath[2]==L'\\') || (wpath[0]==L'\\' && wpath[1]==L'\\'))) {
-    flags=LOAD_WITH_ALTERED_SEARCH_PATH;
+  if(separator) {
+    length=GetFullPathNameW(wpath,0,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR);
+    if(length>0) {
+      fullpath=__PLUMED_WRAPPER_STATIC_CAST(wchar_t*, plumed_malloc(length*sizeof(wchar_t)));
+      if(!fullpath) {
+        __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
+        __PLUMED_WRAPPER_STD abort();
+      }
+      if(GetFullPathNameW(wpath,length,fullpath,__PLUMED_WRAPPER_CXX_NULLPTR)>0) {
+        plumed_free(wpath);
+        wpath=fullpath;
+        flags=LOAD_WITH_ALTERED_SEARCH_PATH;
+      } else {
+        plumed_free(fullpath);
+      }
+    }
   }
   handle=LoadLibraryExW(wpath,__PLUMED_WRAPPER_CXX_NULLPTR,flags);
   /* keep the error of LoadLibraryExW for plumed_dlerror */
