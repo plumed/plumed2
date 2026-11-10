@@ -53,10 +53,12 @@ def _fix_file(file, mode):
     """
     name = file if isinstance(file, str) else getattr(file, "name", "")
     decoded = isinstance(getattr(file, "buffer", None), gzip.GzipFile)
+    # files are written with \n line endings on all platforms, as PLUMED does
+    newline = "\n" if "w" in mode else None
     if isinstance(name, str) and re.match(r".*\.gz", name) and not decoded:
-        return gzip.open(name, mode), True
+        return gzip.open(name, mode, newline=newline), True
     if isinstance(file, str):
-        return open(file, mode), True
+        return open(file, mode, newline=newline), True
     return file, False
 
 

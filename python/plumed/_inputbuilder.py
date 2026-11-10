@@ -23,6 +23,7 @@
 """Input construction and metadata access through the public kernel interface."""
 
 import array
+import os
 import re
 import sys
 import types
@@ -39,11 +40,12 @@ def _guessplumedroot(kernel=None):
     dir from there.
     """
     try:
-        from tempfile import NamedTemporaryFile
+        from tempfile import TemporaryDirectory
 
-        # mkstemp does not delete the created file, so we improvise:
-        with NamedTemporaryFile() as tmpfile:
-            log = tmpfile.name
+        # not a NamedTemporaryFile: on Windows the kernel could not open it
+        # for writing while it is open here
+        with TemporaryDirectory() as tmpdir:
+            log = os.path.join(tmpdir, "plumed.log")
             with Plumed(kernel) as p:
                 p.cmd("setLogFile", log)
                 p.cmd("init")

@@ -73,6 +73,16 @@ PlumedError = _exceptions.PlumedError
 LeptonError = _exceptions.LeptonError
 _bundled_kernel_path = _import_module("._runtime", __package__)._bundled_kernel_path
 
+cdef _decode_path(cplumed.plumed_error_filesystem_path path):
+     # the kernel copies the native path (std::filesystem::path::native()), as
+     # numbytes bytes without a terminator: char on Unix, wchar_t on Windows
+     if not path.ptr:
+         return None
+     raw = (<char*>path.ptr)[:path.numbytes]
+     if sys.platform == "win32":
+         return raw.decode("utf-16-le", errors="replace")
+     return os.fsdecode(raw)
+
 cdef class Plumed:
      cdef cplumed.plumed c_plumed
      #cdef int initialized #not used
@@ -148,17 +158,11 @@ cdef class Plumed:
         else:
           raise_from = None
         msg = error.what
-        what = msg.decode("utf-8")
+        # messages from the system (e.g. FormatMessage on Windows) might not be UTF-8
+        what = msg.decode("utf-8", errors="replace")
 
-        # this is likely not working on Windows, where encoding would be different:
-        if error.path1.ptr:
-            path1=(<char*>error.path1.ptr).decode("utf-8")
-        else:
-            path1=None
-        if error.path2.ptr:
-            path2=(<char*>error.path2.ptr).decode("utf-8")
-        else:
-            path2=None
+        path1 = _decode_path(error.path1)
+        path2 = _decode_path(error.path2)
 
         # this map is from cython doc
         if error.code>=20300 and error.code<20400: # PLMD::Plumed::ExceptionTypeError
@@ -230,8 +234,8 @@ cdef class Plumed:
             ashape[i]=shape[i]
          ashape[len(shape)]=0
          self.cmd_low_level(ckey,&abuffer[0], 0, & ashape[0], sizeof(abuffer[0]) + type_integral +  type_pointer + type_not_mpi_comm)
-     cdef cmd_ndarray_long(self, ckey, val):
-         cdef long [:] abuffer = val.ravel()
+     cdef cmd_ndarray_longlong(self, ckey, val):
+         cdef long long [:] abuffer = val.ravel()
          cdef size_t ashape[5]
          shape=val.shape
          assert len(shape)<5
@@ -276,7 +280,9 @@ cdef class Plumed:
             elif( val.dtype==np.intc ) :
                self.cmd_ndarray_int(ckey, val)
             elif( val.dtype==np.int_ ) :
-               self.cmd_ndarray_long(ckey, val)
+               # np.int_ is 64 bit (if not np.intc), also on Windows with numpy>=2,
+               # where long is 32 bit: pass it as long long
+               self.cmd_ndarray_longlong(ckey, val)
             else :
                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
             return

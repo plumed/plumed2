@@ -17,6 +17,10 @@ def kernel_path() -> Path | None:
     """Return the bundled shared kernel, or None in a wrapper-only install."""
     import sys
 
-    suffix = ".dylib" if sys.platform == "darwin" else ".so"
-    path = package_root() / "lib" / ("libplumedKernel" + suffix)
+    if sys.platform == "win32":
+        # as installed by CMake: the DLL next to plumed.exe
+        path = package_root() / "bin" / "plumedKernel.dll"
+    else:
+        suffix = ".dylib" if sys.platform == "darwin" else ".so"
+        path = package_root() / "lib" / ("libplumedKernel" + suffix)
     return path if path.is_file() else None
