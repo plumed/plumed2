@@ -38,7 +38,8 @@ We have tested this module with the following versions of the NVIDIA HPC SDK com
 
 - [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads);
 - 24.5, on GPUs (Leonardo Booster nodes, A100);
-- 25.11, on the CPU (`ACCTARGET=host`), which is the version used to run the regression tests in the GitHub Actions CI.
+- 25.11, on the CPU (`ACCTARGET=host`), which is the version we used to run the regression tests in the GitHub Actions CI.
+- 26.9, on the CPU (`ACCTARGET=host`), which is the version we use to run the regression tests in the GitHub Actions CI.
 
 It currently does not work with NVHPC 26.5 compiler.
 
