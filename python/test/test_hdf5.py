@@ -15,7 +15,9 @@ from pandas.testing import assert_frame_equal
 
 try:
     import h5py
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "h5py":
+        raise
     h5py = None
 
 

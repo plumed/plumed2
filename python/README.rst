@@ -113,18 +113,19 @@ PLUMED kernel, just as for text tables: for example, a constant written as
 in ``plumed_constants`` for writing it back. Ordinary HDF5 numeric columns are
 read directly with their stored types; they do not need expression conversion.
 
-Use ``enable_conversion=False`` to leave constants as stored and read without
-loading a PLUMED kernel::
-
-    data = plumed.read_as_pandas("COLVAR.h5", enable_conversion=False)
-
-This option is useful for a wrapper-only installation without an available
-kernel. It is optional for HDF5 reading; the default examples above use the
-bundled or otherwise selected kernel. Writing HDF5 files needs no kernel.
+Pip wheels include a PLUMED kernel, so ordinary installations can use the
+default conversion shown above. The existing ``enable_conversion=False`` option
+is retained for compatibility and for callers who want constants exactly as
+stored. It also preserves the historical ability to read without a kernel;
+it is not needed for HDF5 reading in a normal wheel installation. Writing
+HDF5 files needs no kernel.
 
 PLUMED itself must be built with ``--enable-libhdf5`` to read/write these files
 in native tools and simulations. Python HDF5 I/O uses ``h5py`` independently
-of whether the selected PLUMED kernel was built with HDF5 support.
+of whether the selected PLUMED kernel was built with HDF5 support. If a
+compatible h5py binary wheel is unavailable, building h5py from source requires
+HDF5 development headers and libraries; see the `h5py installation instructions
+<https://docs.h5py.org/en/stable/build.html>`_.
 
 Data-file ownership
 -------------------
