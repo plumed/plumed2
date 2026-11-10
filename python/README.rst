@@ -31,3 +31,11 @@ Finally, notice that you can set the path to the plumed library directly when de
 This will allow you to mix different plumed versions in the same python script.
 
 CHANGES: See the PLUMED documentation.
+
+File ownership
+--------------
+
+``read_as_pandas`` and ``write_pandas`` close files they open, including on
+errors, and leave supplied streams and standard output open. Chunked readers
+retain their input until exhausted or closed. When stopping early, call
+``reader.close()`` or use ``with read_as_pandas(..., chunksize=...) as reader:``.
