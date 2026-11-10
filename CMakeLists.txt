@@ -245,6 +245,10 @@ if(PLUMED_SHARED_KERNEL)
 else()
     add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
 endif()
+if(MSVC)
+    # UTF-8 as the code page of plumed.exe (file names on the command line)
+    target_sources(plumed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/plumed.manifest)
+endif()
 # Registration objects in a static lib are dropped unless referenced:
 # every RegisterMe global object is unreferenced by design, so pull in the
 # whole library (upstream links all kernel objects directly, not an archive).
