@@ -83,7 +83,6 @@
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/boxmatrix.h"
-#include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
@@ -164,6 +163,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/functions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/matrix.h"
@@ -456,8 +456,8 @@ void LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuXBufferOpsWhenAllowed),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD,
-                           "Only the md integrator is supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->eI == IntegrationAlgorithm::MD || ir->eI == IntegrationAlgorithm::SD1,
+                           "Only the md and sd integrators are supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->etc != TemperatureCoupling::NoseHoover,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
@@ -468,8 +468,7 @@ void LegacySimulator::do_md()
                         || ir->pressureCouplingOptions.epc == PressureCoupling::CRescale,
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
                 "with the GPU update.\n");
-        GMX_RELEASE_ASSERT(!mdAtoms_->haveVsites,
-                           "Virtual sites are not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!virtualSites_, "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(*ir->pull),
@@ -929,6 +928,8 @@ void LegacySimulator::do_md()
             stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
             stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            // The local coordinates are copied in the update stream, so all its earlier work is done
+            integrator->markStreamSynchronized();
         }
 
         // We need to calculate virtual velocities if we are writing them in the current step.
@@ -1010,7 +1011,7 @@ void LegacySimulator::do_md()
 
         if (ir->efep == FreeEnergyPerturbationType::SlowGrowth)
         {
-            updateMdAtomsForMassLambda(mdAtoms_, state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
+            mdAtoms_->updateForMassLambda(state_->lambda[FreeEnergyPerturbationCouplingType::Mass]);
         }
 
         if (bExchanged)
@@ -1341,19 +1342,12 @@ void LegacySimulator::do_md()
                 stateGpu->copyVelocitiesFromGpu(state_->v, AtomLocality::Local);
                 stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             }
-            // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
-            // and update is offloaded hence forces are kept on the GPU for update and have not been
-            // already transferred in do_force().
+            // Copy the final forces for the output if they are only on the GPU,
+            // i.e. they were not already copied to the host in do_force().
             // TODO: There should be an improved, explicit mechanism that ensures this copy is only executed
             //       when the forces are ready on the GPU -- the same synchronizer should be used as the one
             //       prior to GPU update.
-            // TODO: When the output flags will be included in step workload, this copy can be combined with the
-            //       copy call in do_force(...).
-            // NOTE: The forces should not be copied here if the vsites or CPU-staged PP-PME comms are present, since they were modified
-            //       on host after the D2H copy in do_force(...).
-            if (runScheduleWork_->stepWork.useGpuFBufferOps
-                && (simulationWork.useGpuUpdate && !virtualSites_ && !simulationWork.useCpuPmePpCommunication)
-                && do_per_step(step, outputControl.nstfout))
+            if (runScheduleWork_->stepWork.copyFinalFFromGpu)
             {
                 stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
@@ -1526,7 +1520,9 @@ void LegacySimulator::do_md()
                                         stateGpu->getVelocities(),
                                         stateGpu->getForces(),
                                         top_->idef,
-                                        *mdAtoms_);
+                                        *mdAtoms_,
+                                        (cr_->dd != nullptr) ? makeConstArrayRef(cr_->dd->globalAtomIndices)
+                                                             : ArrayRef<const int>{});
 
                         // Copy data to the GPU after buffers might have been reinitialized
                         /* The velocity copy is redundant if we had Center-of-Mass motion removed on
@@ -1544,13 +1540,11 @@ void LegacySimulator::do_md()
                         stateGpu->consumeCoordinatesCopiedToDeviceEvent(AtomLocality::Local);
                     }
 
-                    if ((simulationWork.useGpuPme && simulationWork.useCpuPmePpCommunication)
-                        || (!runScheduleWork_->stepWork.useGpuFBufferOps))
+                    if (runScheduleWork_->stepWork.copyFinalFToGpu)
                     {
-                        // The PME forces were received to the host, and reduced on the CPU with the
-                        // rest of the forces computed on the GPU, so the final forces have to be
-                        // copied back to the GPU. Or the buffer ops were not offloaded this step,
-                        // so the forces are on the host and have to be copied
+                        /* The final forces are on the host, either because the buffer ops were
+                         * not offloaded this step or because they were modified on the host
+                         * after the GPU reduction */
                         stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
                     }
                     const bool doTemperatureScalingGpu =
@@ -1559,8 +1553,7 @@ void LegacySimulator::do_md()
 
                     // This applies Leap-Frog, LINCS and SETTLE in succession
                     integrator->integrate(
-                            stateGpu->getLocalForcesReadyOnDeviceEvent(
-                                    runScheduleWork_->stepWork, runScheduleWork_->simulationWork),
+                            stateGpu->getLocalForcesReadyOnDeviceEvent(runScheduleWork_->stepWork),
                             ir->delta_t,
                             true,
                             bCalcVir,
@@ -1569,7 +1562,9 @@ void LegacySimulator::do_md()
                             ekind_->tcstat,
                             doParrinelloRahman,
                             ir->pressureCouplingOptions.nstpcouple * ir->delta_t,
-                            parrinelloRahmanM);
+                            parrinelloRahmanM,
+                            ir->ld_seed,
+                            step);
                 }
                 else
                 {
@@ -1585,7 +1580,6 @@ void LegacySimulator::do_md()
                     {
                         upd.update_for_constraint_virial(*ir,
                                                          mdAtoms_->numHomeAtoms,
-                                                         mdAtoms_->havePartiallyFrozenAtoms,
                                                          mdAtoms_->invmass,
                                                          mdAtoms_->invMassPerDim,
                                                          *state_,
@@ -1616,7 +1610,6 @@ void LegacySimulator::do_md()
                     upd.update_coords(*ir,
                                       step,
                                       mdAtoms_->numHomeAtoms,
-                                      mdAtoms_->havePartiallyFrozenAtoms,
                                       mdAtoms_->ptype,
                                       mdAtoms_->invmass,
                                       mdAtoms_->invMassPerDim,
@@ -1653,12 +1646,8 @@ void LegacySimulator::do_md()
                                               constr_,
                                               do_log,
                                               do_ene);
-                    upd.finish_update(*ir,
-                                      mdAtoms_->havePartiallyFrozenAtoms,
-                                      mdAtoms_->numHomeAtoms,
-                                      state_,
-                                      wallCycleCounters_,
-                                      constr_ != nullptr);
+                    upd.finish_update(
+                            *ir, mdAtoms_->numHomeAtoms, state_, wallCycleCounters_, constr_ != nullptr);
                 }
 
                 if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
@@ -1730,6 +1719,8 @@ void LegacySimulator::do_md()
                 {
                     stateGpu->copyCoordinatesFromGpu(state_->x, AtomLocality::Local);
                     stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+                    // The local coordinates are copied in the update stream, so all its earlier work is done
+                    integrator->markStreamSynchronized();
                 }
 
                 // Copy velocities back to the host if:
