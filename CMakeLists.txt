@@ -7,6 +7,7 @@
 # Modules: "always" + "default-on" sets, mirroring upstream module.type files.
 cmake_minimum_required(VERSION 3.18)
 project(PlumedMSVC LANGUAGES CXX)
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -91,7 +92,19 @@ list(FILTER PLUMED_SOURCES EXCLUDE REGEX "config/ConfigInstall\\.cpp$")
 # conflict-free for MD-engine hosts (GROMACS provides its own main()).
 list(FILTER PLUMED_SOURCES EXCLUDE REGEX "main/main\\.cpp$")
 
-add_library(plumedKernel STATIC ${PLUMED_SOURCES} ${PPM_INC} ${COMPLETION_XXD} ${CONFIG_OUT})
+# Shared kernel (plumedKernel.dll on Windows), loadable with PLUMED_KERNEL and
+# plumed_create_dlopen (e.g. by the python interface). Only its C entry points are
+# exported (cmake-msvc/plumedKernel.def); the plumed executable is linked to it.
+option(PLUMED_SHARED_KERNEL "Build plumedKernel as a shared library and link plumed to it" OFF)
+if(PLUMED_SHARED_KERNEL)
+    set(_kernel_type SHARED)
+else()
+    set(_kernel_type STATIC)
+endif()
+add_library(plumedKernel ${_kernel_type} ${PLUMED_SOURCES} ${PPM_INC} ${COMPLETION_XXD} ${CONFIG_OUT})
+if(PLUMED_SHARED_KERNEL AND MSVC)
+    target_sources(plumedKernel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/plumedKernel.def)
+endif()
 target_compile_features(plumedKernel PUBLIC cxx_std_17)
 
 target_compile_definitions(plumedKernel PRIVATE
@@ -151,6 +164,9 @@ endif()
 option(PLUMED_MSVC_DEBUG_INFO "MSVC: debug information also in Release builds" OFF)
 if(MSVC AND PLUMED_MSVC_DEBUG_INFO)
     target_compile_options(plumedKernel PRIVATE /Z7)
+    if(PLUMED_SHARED_KERNEL)
+        target_link_options(plumedKernel PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+    endif()
 endif()
 
 # ------------------------------------------------------------ config.txt
@@ -183,11 +199,32 @@ endforeach()
 file(CONFIGURE OUTPUT ${PLUMED_SRC}/src/config/config.txt CONTENT "${_config_txt}" @ONLY)
 
 # ---------------------------------------------------------------- main tool
-add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
+if(PLUMED_SHARED_KERNEL)
+    # main.cpp uses the C interface only: give it its own wrapper, which gets
+    # the kernel functions from the shared kernel (see cmake-msvc/PlumedLinked.cpp)
+    add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedLinked.cpp)
+    if(APPLE)
+        set_target_properties(plumed PROPERTIES INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+    elseif(UNIX)
+        set_target_properties(plumed PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+    endif()
+else()
+    add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
+endif()
 # Registration objects in a static lib are dropped unless referenced:
 # every RegisterMe global object is unreferenced by design, so pull in the
 # whole library (upstream links all kernel objects directly, not an archive).
-if(MSVC)
+# A shared kernel contains all its objects anyway.
+if(PLUMED_SHARED_KERNEL)
+    if(MSVC)
+        target_link_options(plumed PRIVATE "/STACK:8388608")
+        if(PLUMED_MSVC_DEBUG_INFO)
+            target_compile_options(plumed PRIVATE /Z7)
+            target_link_options(plumed PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+        endif()
+    endif()
+elseif(MSVC)
     target_link_options(plumed PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:plumedKernel>")
     # 8 MB main-thread stack, as on Linux (the MSVC default is 1 MB): nested
     # cmd() calls (DEBUG logRequestedAtoms, the PLUMED action) overflowed it
@@ -226,7 +263,15 @@ set(PLUMED_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
 set(PLUMED_INSTALL_PROGRAM_DIR "${CMAKE_INSTALL_LIBDIR}/plumed")
 
 install(TARGETS plumed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES $<TARGET_FILE:plumedKernel> DESTINATION ${PLUMED_INSTALL_LIBDIR})
+if(PLUMED_SHARED_KERNEL)
+    # Windows: plumedKernel.dll next to plumed.exe, import library plumedKernel.lib in lib
+    install(TARGETS plumedKernel
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            LIBRARY DESTINATION ${PLUMED_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${PLUMED_INSTALL_LIBDIR})
+else()
+    install(FILES $<TARGET_FILE:plumedKernel> DESTINATION ${PLUMED_INSTALL_LIBDIR})
+endif()
 
 # headers, with the same include rewrite as maketools/install.headers
 install(CODE "
