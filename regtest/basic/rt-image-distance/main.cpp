@@ -161,6 +161,22 @@ int main(int argc,char** argv) {
   require(rejected,"empty selection rejected");
   out<<"invalid inputs PASS\n";
 
+  X spatialGroup(65);
+  for(auto& point:spatialGroup) {
+    for(double& coordinate:point) {
+      coordinate=0.7*uni(rng);
+    }
+  }
+  const B spatialBox{{4,0,0,1.3,3.7,0,-0.8,0.7,5.1}};
+  derivatives(spatialGroup,spatialBox);
+  const X representatives{{{-0.6,0.2,0.1}},{{0.6,-0.2,0.3}},{{0.1,0.5,-0.4}},{{-0.3,-0.5,0.4}}};
+  for(unsigned i=0; i<spatialGroup.size(); ++i) {
+    spatialGroup[i]=representatives[i%representatives.size()];
+  }
+  Harness spatialHarness(spatialGroup.size());
+  close(spatialHarness.sample(spatialGroup,spatialBox),oracle(representatives,spatialBox),1e-12,"spatial tree independent oracle");
+  out<<"spatial tree oracle and derivatives PASS\n";
+
   if(argc>1 && std::string(argv[1])=="--benchmark") {
     for(int n: {
           10,100,500,1000

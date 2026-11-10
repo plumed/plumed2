@@ -4,5 +4,12 @@ skew self image PASS
 large triclinic work sharing PASS
 ties across rank and thread partitions PASS
 translated triclinic work sharing PASS
+12 random spatial bounds comparisons PASS
+permuted spatial selection PASS
+large coherent translation and conservative padding PASS
+extended group with reduced skew lattice PASS
+image-query cost fallback PASS
+many-image fallback PASS
+frame rebuilds with changing coordinates and cells PASS
 collective invalid-input propagation PASS
 threaded invalid-input propagation PASS

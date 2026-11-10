@@ -6,3 +6,4 @@ boundary reconstruction PASS
 ties and near contact PASS
 biased relaxation PASS
 invalid inputs PASS
+spatial tree oracle and derivatives PASS

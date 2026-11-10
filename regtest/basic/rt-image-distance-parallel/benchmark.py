@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark IMAGE_DISTANCE against its explicitly selected serial Git baseline."""
+"""Benchmark IMAGE_DISTANCE against its explicitly selected Git scan baseline."""
 
 import argparse
 import csv
@@ -17,6 +17,12 @@ def main():
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--launcher", type=Path, required=True)
     parser.add_argument("--openmpi-local", action="store_true")
+    parser.add_argument(
+        "--profiles",
+        nargs="+",
+        choices=("compact", "triclinic", "extended", "wide", "density", "coincident"),
+        default=["compact", "triclinic", "extended", "density"],
+    )
     args = parser.parse_args()
     checkout = Path(__file__).resolve().parents[3]
     work = args.work.resolve()
@@ -59,25 +65,28 @@ def main():
         )
     executable = build / "exe"
     cases = [
-        ("reference", 1, 1),
-        ("serial", 1, 1),
-        ("parallel", 1, 1),
-        ("parallel", 1, 2),
-        ("parallel", 1, 4),
-        ("parallel", 1, 8),
-        ("parallel", 2, 1),
-        ("parallel", 4, 1),
-        ("parallel", 2, 2),
-        ("parallel", 4, 2),
+        (mode, ranks, threads, profile)
+        for profile in args.profiles
+        for ranks, threads in ((1, 1), (1, 4), (1, 8), (4, 1), (4, 2))
+        for mode in ("reference", "parallel")
     ]
     reference_values = {}
     with (work / "results.csv").open("w", newline="") as output:
         writer = csv.writer(output)
         writer.writerow(
-            ["mode", "ranks", "threads", "atoms", "frames", "median_ms", "distance"]
+            [
+                "mode",
+                "ranks",
+                "threads",
+                "atoms",
+                "frames",
+                "median_ms",
+                "distance",
+                "profile",
+            ]
         )
-        for mode, ranks, threads in cases:
-            run = work / f"{mode}-{ranks}x{threads}"
+        for mode, ranks, threads, profile in cases:
+            run = work / f"{profile}-{mode}-{ranks}x{threads}"
             run.mkdir(exist_ok=True)
             env = dict(
                 os.environ,
@@ -98,6 +107,7 @@ def main():
                 str(ranks),
                 "--benchmark",
                 mode,
+                profile,
             ]
             completed = subprocess.run(
                 command,
@@ -121,12 +131,12 @@ def main():
                 )
             for row in rows:
                 atoms, distance = int(row[3]), float(row[6])
-                if mode == "reference":
+                if (profile, atoms) not in reference_values:
                     if not math.isfinite(distance):
                         raise RuntimeError("Nonfinite reference distance")
-                    reference_values[atoms] = distance
+                    reference_values[profile, atoms] = distance
                 elif not math.isclose(
-                    distance, reference_values[atoms], rel_tol=0, abs_tol=1e-12
+                    distance, reference_values[profile, atoms], rel_tol=0, abs_tol=1e-12
                 ):
                     raise RuntimeError(f"Distance changed in {mode} {ranks}x{threads}")
             writer.writerows(rows)
