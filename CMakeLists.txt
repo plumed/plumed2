@@ -20,17 +20,25 @@ set(PLUMED_GEN ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
-set(ALWAYS_MODULES asmjit blas core lapack lepton mpiwrap small_vector tools valtools)
-set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
-    liquid_crystal matrixtools multicolvar refdist secondarystructure
-    setup vatom xdrfile)
-set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
+# The "always" and "default-on" modules, as listed by the src/*/module.type
+# files (the same set that ./configure enables by default)
+set(MODULES)
+file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
+list(SORT _module_type_files)
+foreach(_mt ${_module_type_files})
+    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    if(_type STREQUAL "always" OR _type STREQUAL "default-on")
+        get_filename_component(_dir ${_mt} DIRECTORY)
+        get_filename_component(_mod ${_dir} NAME)
+        list(APPEND MODULES ${_mod})
+    endif()
+endforeach()
 # The Windows CMake build uses the imported Win32 thread backend by default.
 # Keep the wrapper frontend enabled when this option is off so the fully
 # serial build still provides the communicator compatibility layer.
 option(PLUMED_ENABLE_THREAD_MPI "Compile the embedded thread-MPI backend" ON)
-if(PLUMED_ENABLE_THREAD_MPI)
-    list(APPEND MODULES thread_mpi)
+if(NOT PLUMED_ENABLE_THREAD_MPI)
+    list(REMOVE_ITEM MODULES thread_mpi)
 endif()
 # Optional default-off modules (upstream: enabled by touching <mod>.on)
 option(PLUMED_ENABLE_VES "Compile the VES module (variational enhanced sampling)" OFF)
@@ -76,6 +84,8 @@ add_custom_command(
 set(PLUMED_SOURCES)
 set(PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src)
 foreach(m ${MODULES} config wrapper main)
+    # aux_source_directory appends to the variable
+    set(_srcs)
     aux_source_directory(${PLUMED_SRC}/src/${m} _srcs)
     list(APPEND PLUMED_SOURCES ${_srcs})
     list(APPEND PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src/${m})
@@ -117,6 +127,26 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
+# Embedded asmjit, used by lepton to compile expressions (CUSTOM, MATHEVAL,
+# switching functions...) to machine code. As in ./configure, only on x86-64
+# and on 64 bit ARM; PLUMED_USE_ASMJIT=no disables it at run time.
+option(PLUMED_ENABLE_ASMJIT "Compile expressions with the embedded asmjit" ON)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _processor)
+if(PLUMED_ENABLE_ASMJIT AND _processor MATCHES "^(x86_64|amd64|aarch64|arm64)$"
+   AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_ASMJIT)
+    if(UNIX AND NOT APPLE)
+        # clock_gettime, shm_open and shm_unlink are in librt on older Linux systems
+        find_library(PLUMED_RT_LIBRARY rt)
+        if(PLUMED_RT_LIBRARY)
+            target_link_libraries(plumedKernel PRIVATE ${PLUMED_RT_LIBRARY})
+        endif()
+    endif()
+    set(PLUMED_HAS_ASMJIT ON)
+else()
+    set(PLUMED_HAS_ASMJIT OFF)
+endif()
+message(STATUS "PLUMED asmjit: ${PLUMED_HAS_ASMJIT} (${CMAKE_SYSTEM_PROCESSOR})")
 if(PLUMED_ENABLE_THREAD_MPI)
     target_compile_definitions(plumedKernel PRIVATE
         __PLUMED_HAS_THREAD_MPI=1
@@ -175,6 +205,9 @@ endif()
 # (plumed_modules). Same format as src/maketools/update-config-txt.sh,
 # restricted to what this build can enable.
 set(_has cregex)
+if(PLUMED_HAS_ASMJIT)
+    list(APPEND _has asmjit)
+endif()
 if(PLUMED_ENABLE_THREAD_MPI)
     list(APPEND _has mpi thread_mpi)
 endif()
@@ -211,6 +244,10 @@ if(PLUMED_SHARED_KERNEL)
     endif()
 else()
     add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
+endif()
+if(MSVC)
+    # UTF-8 as the code page of plumed.exe (file names on the command line)
+    target_sources(plumed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/plumed.manifest)
 endif()
 # Registration objects in a static lib are dropped unless referenced:
 # every RegisterMe global object is unreferenced by design, so pull in the

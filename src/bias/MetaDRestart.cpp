@@ -28,6 +28,7 @@
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/FileTools.h"
 #include "tools/Keywords.h"
 #include "tools/Log.h"
 #include <exception>
@@ -100,7 +101,7 @@ std::string MetaDWalkers::getFileName(const std::string& name, int walker) const
 }
 
 std::string MetaDWalkers::firstReplicaDirectory(Action& action) const {
-  std::string cwd=std::filesystem::current_path().string();
+  std::string cwd=pathToUTF8(std::filesystem::current_path());
   // the paths of the replicas can have different lengths
   if(action.comm.Get_rank()==0) {
     bcastString(action.multi_sim_comm,cwd);

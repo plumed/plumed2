@@ -42,6 +42,7 @@
 #include "../mpiwrap/internal.h"
 #endif
 #include "tools/DLLoader.h"
+#include "tools/FileTools.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
 #include "tools/Log.h"
@@ -1834,9 +1835,9 @@ FILE* PlumedMain::fopen(const char *path, const char *mode) {
     ppath=FileBase::nullDevice;
   }
   std::string ppathsuf=ppath+getSuffix();
-  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
+  FILE*fp=fopenUTF8(ppathsuf,mmode.c_str());
   if(!fp) {
-    fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
+    fp=fopenUTF8(ppath,mmode.c_str());
   }
   if(!fp) {
     plumed_error() << "file " << ppath << " cannot be found";

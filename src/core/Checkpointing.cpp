@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "ActionWithValue.h"
 #include "tools/Checkpoint.h"
+#include "tools/FileTools.h"
 #include "tools/Communicator.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
@@ -113,7 +114,7 @@ void Checkpointing::registerOutputFile(OFile& f) {
   // devices and pipes (e.g. /dev/null, written by the processes or replicas that do not write a shared file)
   // have no size to record
   std::error_code ec;
-  if(std::filesystem::exists(fileName,ec) && !std::filesystem::is_regular_file(fileName,ec)) {
+  if(std::filesystem::exists(pathFromUTF8(fileName),ec) && !std::filesystem::is_regular_file(pathFromUTF8(fileName),ec)) {
     return;
   }
   if(enabled() && Tools::extension(fileName)=="gz") {
@@ -149,13 +150,13 @@ public:
       h5reader=std::make_unique<h5table::Reader>(fname);
     } else if(compressed) {
 #ifdef __PLUMED_HAS_ZLIB
-      gz=gzopen(fname.c_str(),"rb");
+      gz=(gzFile)gzopenUTF8(fname,"rb");
       if(!gz) {
         plumed_merror("cannot open "+fname+" to trim it at the restart step");
       }
 #endif
     } else {
-      in.open(fname,std::ios::binary);
+      in.open(pathFromUTF8(fname),std::ios::binary);
       if(!in) {
         plumed_merror("cannot open "+fname+" to trim it at the restart step");
       }
@@ -208,7 +209,7 @@ std::string trimmedBackupName(const std::string& fname) {
   for(int i=0;; i++) {
     const std::string b=directory+"bck.trimmed."+std::to_string(i)+"."+file;
     std::error_code ec;
-    if(!std::filesystem::exists(b,ec)) {
+    if(!std::filesystem::exists(pathFromUTF8(b),ec)) {
       return b;
     }
   }
@@ -245,7 +246,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   }
   auto& log=plumed.getLog();
   std::error_code ec;
-  if(!std::filesystem::exists(fname,ec)) {
+  if(!std::filesystem::exists(pathFromUTF8(fname),ec)) {
     return;
   }
   const bool compressed=Tools::extension(fname)=="gz";
@@ -363,15 +364,15 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     h5table::truncate(fname,keep,backup);
   } else if(!compressed) {
     {
-      std::ifstream in(fname,std::ios::binary);
-      std::ofstream out(backup,std::ios::binary);
+      std::ifstream in(pathFromUTF8(fname),std::ios::binary);
+      std::ofstream out(pathFromUTF8(backup),std::ios::binary);
       in.seekg(keepEnd);
       out<<in.rdbuf();
       if(!out) {
         plumed_merror("cannot write "+backup+" while trimming "+fname+" at the restart step");
       }
     }
-    std::filesystem::resize_file(fname,keepEnd,ec);
+    std::filesystem::resize_file(pathFromUTF8(fname),keepEnd,ec);
     if(ec) {
       plumed_merror("cannot trim "+fname+" at the restart step: "+ec.message());
     }
@@ -381,9 +382,9 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     // which is then copied on the file (in place, so that the file is the same for whoever has it open)
     const std::string tmp=fname+".trim.tmp";
     {
-      gzFile in=gzopen(fname.c_str(),"rb");
-      gzFile kept=gzopen(tmp.c_str(),"wb9");
-      gzFile removed=gzopen(backup.c_str(),"wb9");
+      gzFile in=(gzFile)gzopenUTF8(fname,"rb");
+      gzFile kept=(gzFile)gzopenUTF8(tmp,"wb9");
+      gzFile removed=(gzFile)gzopenUTF8(backup,"wb9");
       if(!in || !kept || !removed) {
         plumed_merror("cannot open the files to trim "+fname+" at the restart step");
       }
@@ -395,14 +396,14 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
       }
     }
     {
-      std::ifstream in(tmp,std::ios::binary);
-      std::ofstream out(fname,std::ios::binary|std::ios::trunc);
+      std::ifstream in(pathFromUTF8(tmp),std::ios::binary);
+      std::ofstream out(pathFromUTF8(fname),std::ios::binary|std::ios::trunc);
       out<<in.rdbuf();
       if(!out) {
         plumed_merror("cannot write "+fname+" while trimming it at the restart step");
       }
     }
-    std::filesystem::remove(tmp,ec);
+    std::filesystem::remove(pathFromUTF8(tmp),ec);
 #endif
   }
   log<<"  file "<<fname<<": "<<ntail<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" moved to "<<backup<<"\n";
@@ -420,7 +421,7 @@ void Checkpointing::trimOutputFileAtRestart(Action& action,const std::string& na
 }
 
 std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long size) {
-  std::ifstream in(fname,std::ios::binary);
+  std::ifstream in(pathFromUTF8(fname),std::ios::binary);
   if(!in) {
     plumed_merror("checkpoint: cannot open "+fname+" for reading");
   }
@@ -463,8 +464,8 @@ void Checkpointing::write(long long int step,const std::string& outPath,const st
       const std::string num=std::to_string(i);
       std::error_code ec;
       unsigned long long size=0;
-      if(std::filesystem::exists(f,ec)) {
-        size=std::filesystem::file_size(f,ec);
+      if(std::filesystem::exists(pathFromUTF8(f),ec)) {
+        size=std::filesystem::file_size(pathFromUTF8(f),ec);
         if(ec) {
           plumed_merror("checkpoint: cannot get the size of "+f+": "+ec.message());
         }
@@ -594,7 +595,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         // an HDF5 table: the blocks are cut to the rows they had
         std::vector<long long> rows;
         r.read("h5rows"+num,rows);
-        if(!std::filesystem::exists(f,ec)) {
+        if(!std::filesystem::exists(pathFromUTF8(f),ec)) {
           if(rows.empty()) {
             continue;
           }
@@ -619,13 +620,13 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         }
         continue;
       }
-      if(!std::filesystem::exists(f,ec)) {
+      if(!std::filesystem::exists(pathFromUTF8(f),ec)) {
         if(size==0) {
           continue;
         }
         plumed_merror("checkpoint: file "+f+" is missing, but it had "+std::to_string(size)+" bytes when the checkpoint was written");
       }
-      const unsigned long long current=std::filesystem::file_size(f,ec);
+      const unsigned long long current=std::filesystem::file_size(pathFromUTF8(f),ec);
       if(ec) {
         plumed_merror("checkpoint: cannot get the size of "+f+": "+ec.message());
       }
@@ -633,7 +634,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         plumed_merror("checkpoint: file "+f+" has "+std::to_string(current)+" bytes, fewer than the "+std::to_string(size)+" it had when the checkpoint was written");
       }
       if(current>size) {
-        std::filesystem::resize_file(f,size,ec);
+        std::filesystem::resize_file(pathFromUTF8(f),size,ec);
         if(ec) {
           plumed_merror("checkpoint: cannot truncate "+f+" to "+std::to_string(size)+" bytes: "+ec.message());
         }

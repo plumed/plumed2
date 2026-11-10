@@ -4,7 +4,8 @@
 #
 # usage: .ci/windows-regtests serial|mpi
 #
-# serial: tests without mpiprocs (one in three from regtest/basic), 4 at a time
+# serial: tests without mpiprocs (one in three from regtest/basic, plus those
+#         that need asmjit), 4 at a time
 # mpi:    tests with mpiprocs>0, run with the embedded thread-MPI, one at a time
 #         (each one starts several threads, and a plumed.exe left behind by a
 #         timed-out test can then be killed without touching other tests)
@@ -59,7 +60,8 @@ for d in basic gridtools isdb liquid_crystal multicolvar refdist secondarystruct
     else
       (( ${mpiprocs:-0} > 0 )) && continue
       if [[ $d = basic ]]; then
-        (( nbasic++ % 3 == 0 )) || continue
+        # one in three, plus the tests of the lepton JIT (asmjit)
+        (( nbasic++ % 3 == 0 )) || grep -q '^plumed_needs=.*asmjit' "$t/config" || continue
       fi
     fi
     tests+=("$t")

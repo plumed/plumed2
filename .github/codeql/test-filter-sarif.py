@@ -146,6 +146,33 @@ class FilterTests(unittest.TestCase):
             other = result("cpp/uncontrolled-process-operation", other_path, load)
             self.assertFalse(module.excluded(other, ROOT))
 
+    def test_only_utf8_fopen_path_injection(self):
+        path = "src/tools/FileTools.cpp"
+        lines = (ROOT / path).read_text().splitlines()
+        fopen = next(
+            i
+            for i, line in enumerate(lines, 1)
+            if line.strip() == "return std::fopen(path.c_str(),mode);"
+        )
+        rename = next(
+            i
+            for i, line in enumerate(lines, 1)
+            if line.strip() == "return std::rename(from.c_str(),to.c_str());"
+        )
+        self.assertTrue(
+            module.excluded(result("cpp/path-injection", path, fopen), ROOT)
+        )
+        for rule, other_path, line in [
+            ("cpp/path-injection", path, fopen + 1),
+            ("cpp/path-injection", path, rename),
+            ("cpp/buffer-overflow", path, fopen),
+            # direct file accesses elsewhere keep the rule
+            ("cpp/path-injection", "src/tools/IFile.cpp", fopen),
+            ("cpp/path-injection", "src/cltools/Driver.cpp", fopen),
+        ]:
+            with self.subTest(rule=rule, path=other_path, line=line):
+                self.assertFalse(module.excluded(result(rule, other_path, line), ROOT))
+
     def test_preserves_report_metadata_and_security_results(self):
         kept = result("cpp/buffer-overflow", "src/thread_mpi/comm.cpp")
         report = {

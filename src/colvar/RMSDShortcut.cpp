@@ -23,6 +23,7 @@
 #include "core/ActionRegister.h"
 #include "core/ActionWithArguments.h"
 #include "tools/PDB.h"
+#include "tools/FileTools.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {
@@ -83,7 +84,7 @@ RMSDShortcut::RMSDShortcut(const ActionOptions& ao):
   parse("NUMBER",frame);
   unsigned nf=1;
   if( frame==0 ) {
-    FILE* fp=std::fopen(reference.c_str(),"r");
+    FILE* fp=fopenUTF8(reference,"r");
     if(!fp) {
       plumed_merror("cannot open file " + reference );
     }
