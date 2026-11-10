@@ -7,7 +7,7 @@
 namespace PLMD {
 namespace regtest_mpi {
 int run(MPI_Comm world, int, char**) {
-  int rank,size;
+  int rank=0,size=0;
   MPI_Comm_rank(world,&rank);
   MPI_Comm_size(world,&size);
   bool passed=true;
