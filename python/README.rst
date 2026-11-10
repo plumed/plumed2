@@ -65,7 +65,7 @@ Python or a native host. ``PLUMED_ROOT``, ``PLUMED_INCLUDEDIR`` and
 bundled; ``plumed info --user-doc`` falls back to the online manual.
 
 Pandas text and HDF5 tables
---------------------------
+---------------------------
 
 ``read_as_pandas`` and ``write_pandas`` support both PLUMED text tables and
 PLUMED HDF5 tables. Install the optional pandas and HDF5 dependencies with
