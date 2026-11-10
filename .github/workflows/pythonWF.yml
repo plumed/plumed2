@@ -59,6 +59,11 @@ jobs:
     steps:
       #still checking out to install the plumed package and pycv
     - uses: actions/checkout@v6
+    # h5py may need a source build for the newest Python version.
+    - name: Install HDF5 development libraries
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y libhdf5-dev
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -88,10 +93,6 @@ jobs:
       run: |
          make PLUMED_VERSION
          pip install .
-    - name: Install optional HDF5 test dependencies
-      working-directory: ./python
-      run: python test/install_hdf5_test_dependencies.py
-
     - name: Run python tests
       working-directory: ./python
       run: |

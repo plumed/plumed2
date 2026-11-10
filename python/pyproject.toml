@@ -19,8 +19,6 @@ test-command = [
     "python {package}/test/test_io.py",
     "python {package}/test/test_runtime_resources.py",
     "python {package}/test/test_bundled_wheel.py {package}/plumed_source",
-    "python {package}/test/install_hdf5_test_dependencies.py",
-    "python -W error::ResourceWarning {package}/test/test_hdf5.py",
 ]
 manylinux-x86_64-image = "manylinux2014"
 manylinux-aarch64-image = "manylinux2014"
