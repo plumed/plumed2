@@ -1,0 +1,8 @@
+one atom and empty worker ranks PASS
+extended group and empty worker ranks PASS
+skew self image PASS
+large triclinic work sharing PASS
+ties across rank and thread partitions PASS
+translated triclinic work sharing PASS
+collective invalid-input propagation PASS
+threaded invalid-input propagation PASS
