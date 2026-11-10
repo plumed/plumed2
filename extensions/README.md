@@ -171,14 +171,15 @@ Python and NumPy are plugin runtime requirements; pybind11 is needed only to bui
 Like other extensions, pycv loads automatically. With `PLUMED_AUTOLOAD=0`, use
 `LOAD MODULE=pycv` in the input or `plumed --load-module=pycv ...` on the command
 line. `plumed modules --has pycv` checks runtime availability. `python -m pycv` continues to report the installed library path. Use
-`LOAD MODULE=pycv` with autoloading disabled so its runtime helpers load first.
+`LOAD MODULE=pycv` with autoloading disabled so its private runtime dependencies load with it.
 
 `extensions/conda_recipe.py` also generates `conda/plumed-pycv/meta.yaml`, using
 its module-local curated declarations and license. The build installs both
 Python components together and registers the library under `lib/plumed/plugins`.
-On macOS the same package also installs a `pycv_runtime` helper module, loaded
-as a dependency before pycv, so Python-hosted and standalone runs share the
-right interpreter symbols. No extra kernel or compiler is required at runtime.
+On macOS the same package also installs a private `PythonCVRuntime.dylib`
+dependency, so Python-hosted and standalone runs share the right interpreter
+symbols. It is not registered as a module: `plumed modules --list` shows only
+`pycv`, and users never need a second `LOAD MODULE` command. No extra kernel or compiler is required at runtime.
 Its package tests run the existing Python-hosted suite and numerical driver
 fixtures for both autoloading and explicit module loading.
 

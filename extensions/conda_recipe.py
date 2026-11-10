@@ -119,8 +119,8 @@ package:
 source:
   path: ../..
 build:
-  number: 0
-  string: py{{ py }}_base_{{ base_build }}_0
+  number: 1
+  string: py{{ py }}_base_{{ base_build }}_1
   skip: true  # [win or py<311]
 requirements:
   build:

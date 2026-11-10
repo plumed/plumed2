@@ -41,6 +41,11 @@ subprocess.run(
     env=dict(environment, PLUMED_AUTOLOAD="0"),
     check=True,
 )
+listed = subprocess.check_output(
+    [program, "modules", "--list"], env=environment, text=True
+)
+assert "pycv_runtime" not in listed.split(), "Private Python helper exposed as a module"
+assert not (prefix / "lib/plumed/plugins/pycv_runtime.plumed").exists()
 with tempfile.TemporaryDirectory(prefix="plumed-pycv-tests-") as scratch:
     scratch = Path(scratch)
     # Existing Python-hosted tests exercise the companion extension, lifecycle,

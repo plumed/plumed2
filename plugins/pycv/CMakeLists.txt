@@ -48,7 +48,6 @@ add_library(
   PythonCVInterface SHARED src/ActionWithPython.cpp src/PythonCVInterface.cpp
                            src/PythonFunction.cpp)
 set(PLUMED_MODULE_IDENTITY "" CACHE FILEPATH "Generated module identity source")
-set(PLUMED_RUNTIME_IDENTITY "" CACHE FILEPATH "Generated Python runtime identity source")
 # public, so they trickle down to the python module
 target_compile_definitions(PythonCVInterface PUBLIC ${Plumed_CFLAGS} __PLUMED_HAS_PYTHON_EMBED=1)
 target_include_directories(PythonCVInterface PUBLIC src ${Plumed_INCLUDEDIR})
@@ -59,9 +58,9 @@ target_include_directories(PythonCVInterface PUBLIC src ${Plumed_INCLUDEDIR})
 #######################################################################
 # target_compile_options(PythonCVInterface PRIVATE -fvisibility=hidden)
 if(APPLE AND PLUMED_MODULE_IDENTITY)
-  # The runtime helper is loaded first via the module dependency manifest.
+  # The private runtime dependency makes the embedding library available.
   # Python APIs then resolve to an existing host interpreter, if present.
-  add_library(PythonCVRuntime SHARED src/PythonRuntime.cpp "${PLUMED_RUNTIME_IDENTITY}")
+  add_library(PythonCVRuntime SHARED src/PythonRuntime.cpp)
   target_include_directories(PythonCVRuntime PRIVATE ${Plumed_INCLUDEDIR} "${Plumed_INCLUDEDIR}/plumed")
   target_link_libraries(PythonCVRuntime PRIVATE pybind11::embed plumedKernel)
   set_target_properties(PythonCVRuntime PROPERTIES PREFIX "" INSTALL_RPATH "@loader_path/../../..")
