@@ -195,6 +195,7 @@ setup(
     else {},
     license_files=["LICENSE"],
     setup_requires=["Cython"] if USE_CYTHON else None,
+    extras_require={"hdf5": ["pandas", "h5py"]},
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',

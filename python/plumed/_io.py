@@ -25,6 +25,7 @@
 import array
 import gzip
 import math
+import os
 import re
 import sys
 import warnings
@@ -51,6 +52,8 @@ def _fix_file(file, mode):
     gzip streams retain the legacy filename-based decoding behavior; already
     decoded gzip text streams and other caller-supplied streams are borrowed.
     """
+    if isinstance(file, os.PathLike):
+        file = os.fspath(file)
     name = file if isinstance(file, str) else getattr(file, "name", "")
     decoded = isinstance(getattr(file, "buffer", None), gzip.GzipFile)
     if isinstance(name, str) and re.match(r".*\.gz", name) and not decoded:
@@ -141,21 +144,21 @@ def read_as_pandas(
     skiprows=None,
     nrows=None,
     index_col=None,
+    format=None,
 ):
     """Import a plumed data file as a pandas dataset.
 
     file_or_path : str or file
-        Either string containing the path of the file or an already opened file object.
-        Internally opened files are closed after reading; supplied streams remain open.
-        Chunked results support ``with`` and ``close()``. Use either when stopping
-        before exhaustion to release the parser and any internally opened file.
+        A string/path-like filename or an already opened file object. HDF5 streams
+        must be binary; h5py.File objects are also accepted. Supplied objects
+        remain open. Internally opened files are closed after reading.
 
     enable_constants : str or boolean, optional (default is True)
         If 'columns', constants are read and added as constant columns.
         If 'metadata' or True, constants are read and stored as metadata.
         If 'no' or False, constants are not read at all.
     enable_conversion : str or boolean, optional (default is True)
-        If 'constant' or True, only constants are converted.
+        If 'constants' or True, only constants are converted.
         If 'all', all data are converted. Might be slow and probably useless.
         If 'no' or False, no data are converted.
     kernel : str or Plumed, optional
@@ -166,14 +169,21 @@ def read_as_pandas(
 
     chunksize : int, optional
         Return an iterable object. Useful to process large files in chunks.
+        Use it as a context manager or call close() when stopping early.
+        HDF5 chunks do not cross block boundaries, so constants remain valid.
     usecols : list-like or callable, optional
-        Directly passed to pandas.
+        Passed to pandas for text files; applied to table data for HDF5 files.
     skiprows : list-like, int or callable, optional
-        Directly passed to pandas.
+        Passed to pandas for text files; applied to table data for HDF5 files.
     nrows : int, optional
-        Directly passed to pandas.
+        Passed to pandas for text files; applied to table data for HDF5 files.
     index_col : int, str, sequence of int / str, or False, default None
-        Directly passed to pandas.
+        Passed to pandas for text files; applied to table data for HDF5 files.
+
+    format : {'text', 'hdf5'} or None, optional
+        By default, .h5 and .hdf5 filenames and h5py.File objects select HDF5;
+        other inputs select text. Specify 'hdf5' for anonymous binary streams.
+        HDF5 support requires the optional h5py package.
 
     Returns
     -------
@@ -182,8 +192,8 @@ def read_as_pandas(
     If using `enable_constants='no'` or `enable_constants='columns'`,
     it returns a plain pandas.DataFrame.
 
-    If `chunksize` is provided, it returns a special subclass of pandas.io.parsers.TextFileReader
-    that can be iterated in order to read a file in chunks. Every iteration returns an object
+    If `chunksize` is provided, it returns an iterator with close() and context
+    manager support to read a file in chunks. Every iteration returns an object
     equivalent to the one that would have been returned with a call to
     read_as_pandas with chunksize=None (that is: either a pandas.DataFrame
     or a subclass of it).
@@ -222,12 +232,16 @@ def read_as_pandas(
     Limitations
     -----------
 
-    Only the initial header is read, which implies that files resulting from concatenating
+    For text files, only the initial header is read, which implies that files resulting from concatenating
     datasets with a different number of columns or different column names will not
     be read correctly and that only constants set at the beginning of the file will be considered.
 
-    This issues might be solved using `PLMD::IFile` for reading,
-    which could be useful but possibly a bit complicated to implement.
+    HDF5 blocks are read in numeric order. Changing columns are combined with
+    missing values. If constants change between blocks, use chunksize for
+    per-block metadata, enable_constants='columns' to retain the changing values,
+    or enable_constants=False to discard them. A single set of metadata cannot
+    represent changing constants, so the default mode raises FormatError.
+    HDF5 skiprows counts data rows from zero across all blocks (not headers).
     """
 
     # importing pandas is pretty slow, so we only do it when needed
@@ -260,7 +274,7 @@ def read_as_pandas(
     # it is defined here since it requires PlumedDataFrame to be defined
     def process_dataframe(df, enable_constants, constants, convert_all):
         if convert_all:
-            df = df.applymap(convert_all)
+            df = df.map(convert_all) if hasattr(df, "map") else df.applymap(convert_all)
         if enable_constants == "columns":
             for c in constants:
                 df[c[0]] = c[1]
@@ -291,19 +305,41 @@ def read_as_pandas(
         or enable_constants == "metadata"
         or enable_constants == "columns"
     ):
-        raise ValueError("enable_conversion not valid")
+        raise ValueError("enable_constants not valid")
 
     # conversions functions:
     convert = None
     convert_all = None
     # only create them if needed
     if (
-        enable_conversion == "constants" and enable_constants
+        enable_conversion == "constants" and enable_constants != "no"
     ) or enable_conversion == "all":
         convert = _build_convert_function(kernel)
         # if necessary, set convert_all
         if enable_conversion == "all":
             convert_all = convert
+
+    from . import _hdf5
+
+    if _hdf5.is_hdf5(file_or_path, format):
+
+        def process_hdf(df, constants):
+            constants = [
+                (name, convert(value) if convert else value, text)
+                for name, value, text in constants
+            ]
+            return process_dataframe(df, enable_constants, constants, convert_all)
+
+        return _hdf5.read(
+            file_or_path,
+            chunksize=chunksize,
+            usecols=usecols,
+            skiprows=skiprows,
+            nrows=nrows,
+            index_col=index_col,
+            enable_constants=enable_constants,
+            process=process_hdf,
+        )
 
     file_or_path, owns_file = _fix_file(file_or_path, "rt")
     file_to_close = file_or_path if owns_file else None
@@ -439,7 +475,7 @@ def read_as_pandas(
             file_to_close.close()
 
 
-def write_pandas(df, file_or_path=None):
+def write_pandas(df, file_or_path=None, format=None):
     """Save a pandas dataframe as a PLUMED file.
 
     df: pandas dataframe or derived class
@@ -448,13 +484,20 @@ def write_pandas(df, file_or_path=None):
 
     file_or_path: str, file, or None (default is None)
         path to the file to be written, or already opened file object.
-        If None, stdout is used. Internally opened files are closed after writing,
-        including on errors; supplied streams and stdout remain open.
+        If None, stdout is used for text. Supplied streams remain open;
+        internally opened files are closed. A supplied h5py.File must be empty.
+    format : {'text', 'hdf5'} or None, optional
+        Infer HDF5 from .h5/.hdf5 filenames or h5py.File objects by default.
+        Use format='hdf5' for binary streams. Requires h5py. Output uses the
+        native PLUMED table layout, not pandas' PyTables layout. Numeric columns
+        are stored as float64 or signed int64; strings use UTF-8 bytes. Missing
+        integer/string values and unsupported dtypes raise errors. Named indexes
+        are written as fields; MultiIndexes are not supported.
 
     Examples
     --------
 
-    colvar=plumed.read_as_colvar("COLVAR")
+    colvar=plumed.read_as_pandas("COLVAR")
     colvar["distance"]=colvar["distance"]*2
     plumed.write_pandas(colvar)
 
@@ -462,10 +505,15 @@ def write_pandas(df, file_or_path=None):
     # importing pandas is pretty slow, so we only do it when needed
     import pandas as pd  # noqa: F401 - Preserve lazy dependency validation.
 
+    from . import _hdf5
+
+    if _hdf5.is_hdf5(file_or_path, format):
+        return _hdf5.write(df, file_or_path)
+
     # check if there is an index. if so, write it as an additional field
     has_index = hasattr(df.index, "name") and df.index.name is not None
     # check if there is a multi-index
-    has_mindex = (
+    has_mindex = isinstance(df.index, pd.MultiIndex) or (
         (not has_index) and hasattr(df.index, "names") and df.index.names[0] is not None
     )
     # writing multiindex is currently not supported
@@ -497,7 +545,7 @@ def write_pandas(df, file_or_path=None):
             if has_index:
                 file_or_path.write(" " + str(df.index[i]))
             for j in df.columns:
-                file_or_path.write(" " + str(df[j][i]))
+                file_or_path.write(" " + str(df[j].iloc[i]))
             file_or_path.write("\n")
 
     finally:
