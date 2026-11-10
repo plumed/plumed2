@@ -66,6 +66,11 @@ def excluded(result, root, quality=frozenset()):
         text = source_line(root, uri, line)
         call = "return sizeof(mpiCommPointer(val))"
         return text is not None and text.startswith(call)
+    if rule == "cpp/uncontrolled-process-operation" and uri == "src/wrapper/Plumed.h":
+        # Loading the kernel named by PLUMED_KERNEL (or passed to plumed_create_dlopen)
+        # is what the wrapper is for. All the loads go through plumed_dlopen: match its
+        # only dlopen call, so that the rule stays on for any other process operation.
+        return source_line(root, uri, line) == "return dlopen(path,mode);"
     if rule == "cpp/constant-comparison" and uri == "src/main/main.cpp":
         # getApiVersion writes through the C API's const void* argument.
         # CodeQL cannot see that indirect output and treats api as still zero.

@@ -25,7 +25,16 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#if defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
+#if defined(_WIN32)
+// GetModuleHandleExA and GetModuleFileNameA, for getLibraryPath()
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#elif defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
 #include <dlfcn.h>
 #endif
 
@@ -83,9 +92,14 @@ std::string getPlumedRoot() {
     const std::string library=getLibraryPath();
     if(!library.empty()) {
       // Wheels use a private installation prefix: <prefix>/lib/plumed.
-      const std::filesystem::path candidate=std::filesystem::path(library).parent_path()/"plumed";
-      if(std::filesystem::exists(candidate/"scripts")) {
-        return candidate.string();
+      // The kernel is in <prefix>/lib, or in <prefix>/bin on Windows, where DLLs are
+      // installed next to the executables.
+      const std::filesystem::path directory=std::filesystem::path(library).parent_path();
+      const std::filesystem::path candidates[]= {directory/"plumed",directory.parent_path()/"lib"/"plumed"};
+      for(const auto& candidate : candidates) {
+        if(std::filesystem::exists(candidate/"scripts")) {
+          return candidate.string();
+        }
       }
     }
 #endif
@@ -227,7 +241,28 @@ std::string getCompilationTime() {
 }
 
 std::string getLibraryPath() {
-#ifdef __PLUMED_HAS_DLADDR
+#if defined(_WIN32)
+  // the module (DLL, or executable for a static kernel) containing this function.
+  // Narrow (ANSI) paths, as for the files opened by PLUMED.
+  HMODULE module=nullptr;
+  if(!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         reinterpret_cast<LPCSTR>(&getLibraryPath),&module)) {
+    return "";
+  }
+  std::string path(MAX_PATH,'\0');
+  for(;;) {
+    const DWORD length=GetModuleFileNameA(module,path.data(),static_cast<DWORD>(path.size()));
+    if(length==0) {
+      return "";
+    }
+    if(length<path.size()) {
+      path.resize(length);
+      return path;
+    }
+    // truncated
+    path.resize(2*path.size());
+  }
+#elif defined(__PLUMED_HAS_DLADDR)
   Dl_info info;
   if(dladdr((void*)getLibraryPath,&info) && info.dli_fname) {
     return info.dli_fname;

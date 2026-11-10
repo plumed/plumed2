@@ -116,9 +116,15 @@ class FilterTests(unittest.TestCase):
             for i, line in enumerate(lines, 1)
             if line.strip().startswith("return sizeof(mpiCommPointer(val))")
         )
+        load = next(
+            i
+            for i, line in enumerate(lines, 1)
+            if line.strip() == "return dlopen(path,mode);"
+        )
         for rule, line in [
             ("cpp/commented-out-code", fold),
             ("cpp/sizeof-side-effect", sizeof),
+            ("cpp/uncontrolled-process-operation", load),
         ]:
             self.assertTrue(module.excluded(result(rule, path, line), ROOT))
         for rule, line in [
@@ -127,11 +133,18 @@ class FilterTests(unittest.TestCase):
             ("cpp/sizeof-side-effect", fold),
             ("cpp/sizeof-side-effect", sizeof + 1),
             ("cpp/buffer-overflow", fold),
+            ("cpp/uncontrolled-process-operation", load + 1),
+            ("cpp/uncontrolled-process-operation", sizeof),
+            ("cpp/path-injection", load),
         ]:
             with self.subTest(rule=rule, line=line):
                 self.assertFalse(module.excluded(result(rule, path, line), ROOT))
         other = result("cpp/sizeof-side-effect", "src/core/PlumedMain.cpp", sizeof)
         self.assertFalse(module.excluded(other, ROOT))
+        # LOAD and the MPI provider loader keep the rule
+        for other_path in ["src/tools/DLLoader.cpp", "src/mpiwrap/loader.cpp"]:
+            other = result("cpp/uncontrolled-process-operation", other_path, load)
+            self.assertFalse(module.excluded(other, ROOT))
 
     def test_preserves_report_metadata_and_security_results(self):
         kept = result("cpp/buffer-overflow", "src/thread_mpi/comm.cpp")
