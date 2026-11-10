@@ -182,3 +182,25 @@ as a dependency before pycv, so Python-hosted and standalone runs share the
 right interpreter symbols. No extra kernel or compiler is required at runtime.
 Its package tests run the existing Python-hosted suite and numerical driver
 fixtures for both autoloading and explicit module loading.
+
+### CUDA coordination plugin
+
+`plumed-ext-cuda-coordination` has CUDA 12.9 and 13.0 builds on Linux. Select one
+with `cuda-version=12.9` or `cuda-version=13.0`; they are variants of the same
+package, so conda installs one at a time. Each links to the exact main `plumed`
+version/build and the shared CUDA runtime. The kernel has no CUDA compiler or
+runtime dependency. Compiler tools and CCCL headers are build requirements only.
+
+The plugin autoloads as `cuda_coordination`. With autoloading disabled use
+`LOAD MODULE=cuda_coordination` or `plumed --load-module=cuda_coordination ...`.
+The loader rejects multiple variants exposed through `PLUMED_PLUGIN_PATH`,
+including variants outside the active conda prefix.
+
+Package tests without a GPU verify native loading, both action registrations,
+feature exports and explicit loading. The install/remove harness switches CUDA
+variants and checks that the main kernel bytes stay unchanged. Driver metadata
+is overridden only for those CPU-only CI checks. Actual GPU numerical validation
+can be requested with `python extensions/tests/cuda_coordination.py --prefix
+"$CONDA_PREFIX" --cuda-version 12.9 --gpu`; it runs existing double/float value
+and derivative fixtures in autoload and explicit module modes and rejects skips.
+Passing loading checks alone does not validate GPU calculations.

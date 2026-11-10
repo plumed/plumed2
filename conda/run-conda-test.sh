@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 
 bash run-extension-test.sh
 bash run-pycv-test.sh
+bash run-cuda-coordination-test.sh
 
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-conda-packaging.XXXXXX")
 trap 'rm -rf "$task"' EXIT
