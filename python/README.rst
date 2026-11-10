@@ -105,13 +105,14 @@ Floating-point columns use double precision, integer columns use signed
 ordinary fields. MultiIndexes, missing integer/string values, and unsupported
 column types raise errors. Constants retain their text expressions, such as
 ``pi``, when writing a DataFrame that carries ``plumed_constants`` metadata.
-Numeric HDF5 constants also retain their types when conversion is disabled.
+Already numeric HDF5 constants retain their types, including integer precision.
 
-The default ``enable_conversion=True`` evaluates constants with the selected
-PLUMED kernel, just as for text tables: for example, a constant written as
+The default ``enable_conversion=True`` evaluates string-valued constants with
+the selected PLUMED kernel, just as for text tables: for example, a constant written as
 ``pi`` is returned with its numeric value. Its original expression is retained
 in ``plumed_constants`` for writing it back. Ordinary HDF5 numeric columns are
 read directly with their stored types; they do not need expression conversion.
+The same applies to HDF5 constants that are already stored as numbers.
 
 Pip wheels include a PLUMED kernel, so ordinary installations can use the
 default conversion shown above. The existing ``enable_conversion=False`` option

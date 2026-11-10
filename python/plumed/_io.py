@@ -160,8 +160,8 @@ def read_as_pandas(
     enable_conversion : str or boolean, optional (default is True)
         If 'constants' or True, only constants are converted, evaluating expressions
         such as pi with the selected PLUMED kernel. Their original expressions are
-        retained in plumed_constants. Ordinary HDF5 numeric columns are read with
-        their stored types and do not need expression conversion.
+        retained in plumed_constants. Already numeric HDF5 constants and columns
+        retain their stored types and do not need expression conversion.
         If 'all', all data are converted. Might be slow and probably useless.
         If 'no' or False, constants remain as stored and no PLUMED kernel is needed
         for reading. False is optional for HDF5, not a format requirement.
@@ -329,7 +329,11 @@ def read_as_pandas(
 
         def process_hdf(df, constants):
             constants = [
-                (name, convert(value) if convert else value, text)
+                (
+                    name,
+                    convert(value) if convert and isinstance(value, str) else value,
+                    text,
+                )
                 for name, value, text in constants
             ]
             return process_dataframe(df, enable_constants, constants, convert_all)

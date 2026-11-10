@@ -122,6 +122,26 @@ class HDF5IO(unittest.TestCase):
             block.attrs["real"] = 1.2345678901234567
             block.attrs["expression"] = "pi"
             block.attrs["numeric_string"] = "3.0"
+
+        class Kernel:
+            def cmd(self, command, result):
+                expression = command.removeprefix("convert ")
+                try:
+                    result[0] = np.pi if expression == "pi" else float(expression)
+                except ValueError:
+                    pass
+
+        with patch("plumed._io.Plumed", Kernel):
+            converted = plumed.read_as_pandas(self.path, kernel=Kernel())
+        self.assertIsInstance(converted.plumed_constants[0][1], int)
+        self.assertEqual(converted.plumed_constants[0][1], 2**53 + 1)
+        self.assertEqual(converted.plumed_constants[2][1], np.pi)
+        self.assertEqual(converted.plumed_constants[3][1], 3.0)
+        converted_path = self.path.with_name("converted.h5")
+        plumed.write_pandas(converted, converted_path)
+        with h5py.File(converted_path) as handle:
+            self.assertEqual(handle["block_0"].attrs["integer"], 2**53 + 1)
+
         data = self.read()
         self.assertIsInstance(data.plumed_constants[0][1], int)
         self.assertIsInstance(data.plumed_constants[1][1], float)
