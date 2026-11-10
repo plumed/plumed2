@@ -29,6 +29,9 @@
 #include <chrono>
 #include <thread>
 #include <sys/wait.h>
+#include <spawn.h>
+#include <cstring>
+extern char **environ;
 #endif
 
 namespace PLMD {
@@ -128,7 +131,7 @@ public:
 Subprocess::Subprocess(const std::string & cmd) {
 #ifdef __PLUMED_HAS_SUBPROCESS
   char* arr [] = {
-    // const_cast are necessary here due to the declaration of execv
+    // const_cast are necessary here due to the declaration of posix_spawn
     const_cast<char*>("/bin/sh"),
     const_cast<char*>("-c"),
     const_cast<char*>(cmd.c_str()),
@@ -140,62 +143,65 @@ Subprocess::Subprocess(const std::string & cmd) {
     plumed_error()<<"error creating parent to child pipe";
   }
   if(pipe(cp)<0) {
+    close(pc[0]);
+    close(pc[1]);
     plumed_error()<<"error creating child to parent pipe";
   }
-  pid_t forkedPid=fork();
-  switch(forkedPid) {
-  case -1:
-    plumed_error()<<"error forking";
-    break;
-// CHILD:
-  case 0: {
-    if(close(1)<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(dup(cp[1])<0) {
-      plumed_error()<<"error duplicating file";
-    }
-    if(close(0)<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(dup(pc[0])<0) {
-      plumed_error()<<"error duplicating file";
-    }
-    if(close(pc[1])<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(close(cp[0])<0) {
-      plumed_error()<<"error closing file";
-    }
-    // Make the child the leader of a new process group, so that signals
-    // can be sent to it and to all the processes it spawns.
-    if(setpgid(0,0)<0) {
-      plumed_error()<<"error setting process group";
-    }
-    auto err=execv(arr[0],arr);
-    plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
+  // Establish the process group as part of spawning the shell. Calling
+  // setpgid in both parent and child races on macOS (one call can fail with
+  // EPERM), while calling it only in the child would let an immediate stop()
+  // or destruction signal the group before it exists.
+  posix_spawn_file_actions_t actions;
+  posix_spawnattr_t attributes;
+  int error=posix_spawn_file_actions_init(&actions);
+  const bool actionsInitialized=(error==0);
+  if(error==0) {
+    error=posix_spawnattr_init(&attributes);
   }
-// PARENT::
-  default:
-    // setpgid is also called here to avoid a race condition:
-    // the parent might send a signal to the group before the child has created it.
-    // Errors are ignored: the call fails with EACCES if the child has already called execv,
-    // but in that case the child has already set its process group.
-    setpgid(forkedPid,forkedPid);
-    pid=Tools::make_unique<SubprocessPid>(forkedPid);
-    if(close(pc[0])<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(close(cp[1])<0) {
-      plumed_error()<<"error closing file";
-    }
-    fpc=pc[1];
-    fcp=cp[0];
-    fppc=fdopen(fpc,"w");
-    parent_to_child.link(fppc);
-    fpcp=fdopen(fcp,"r");
-    child_to_parent.link(fpcp);
+  const bool attributesInitialized=(error==0);
+  if(error==0) {
+    error=posix_spawn_file_actions_adddup2(&actions,pc[0],STDIN_FILENO);
   }
+  if(error==0) {
+    error=posix_spawn_file_actions_adddup2(&actions,cp[1],STDOUT_FILENO);
+  }
+  const int pipeDescriptors[4]= {pc[0],pc[1],cp[0],cp[1]};
+  for(const int fd : pipeDescriptors) {
+    if(error==0 && fd!=STDIN_FILENO && fd!=STDOUT_FILENO) {
+      error=posix_spawn_file_actions_addclose(&actions,fd);
+    }
+  }
+  if(error==0) {
+    // A zero pgroup requests a new group with the child's pid as its pgid.
+    error=posix_spawnattr_setpgroup(&attributes,0);
+  }
+  if(error==0) {
+    error=posix_spawnattr_setflags(&attributes,POSIX_SPAWN_SETPGROUP);
+  }
+  pid_t spawnedPid;
+  if(error==0) {
+    error=posix_spawn(&spawnedPid,arr[0],&actions,&attributes,arr,environ);
+  }
+  if(attributesInitialized) {
+    posix_spawnattr_destroy(&attributes);
+  }
+  if(actionsInitialized) {
+    posix_spawn_file_actions_destroy(&actions);
+  }
+  close(pc[0]);
+  close(cp[1]);
+  if(error!=0) {
+    close(pc[1]);
+    close(cp[0]);
+    plumed_error()<<"error spawning script file "<<cmd<<": "<<std::strerror(error);
+  }
+  pid=Tools::make_unique<SubprocessPid>(spawnedPid);
+  fpc=pc[1];
+  fcp=cp[0];
+  fppc=fdopen(fpc,"w");
+  parent_to_child.link(fppc);
+  fpcp=fdopen(fcp,"r");
+  child_to_parent.link(fpcp);
 #else
   plumed_error()<<"Subprocess not supported";
 #endif

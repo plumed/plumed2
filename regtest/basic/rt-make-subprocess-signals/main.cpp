@@ -56,6 +56,21 @@ int main() {
 
   std::ofstream ofs("output");
 
+  // The shell must lead its own process group before it starts the command,
+  // and creating a subprocess must not change the parent's process group.
+  {
+    const pid_t parentGroup=getpgrp();
+    bool groups=true;
+    for(unsigned i=0; i<100; i++) {
+      Subprocess sp("echo $$; read answer");
+      std::string line;
+      sp.getline(line);
+      const pid_t shell=std::stoi(line);
+      groups=groups && getpgid(shell)==shell && getpgrp()==parentGroup;
+    }
+    ofs<<"process groups isolated: "<<(groups?"yes":"no")<<"\n";
+  }
+
   // 1. A bash script that spawns a grandchild and has an EXIT trap,
   //    similar to what scripts/selector.sh does.
   //    The grandchild prints its own pid after exec'ing sh (which keeps the pid).

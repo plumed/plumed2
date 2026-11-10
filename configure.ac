@@ -862,10 +862,13 @@ fi
 
 if test $subprocess = true ; then
   PLUMED_CHECK_CXX_PACKAGE([subprocess],[
-/* random program calling all the functions needed to manage a subprocess */
+/* Check the functions used to spawn, communicate with and reap a subprocess. */
 #include <cstdio>
 #include <unistd.h>
 #include <csignal>
+#include <spawn.h>
+#include <sys/wait.h>
+extern char **environ;
 
 int
 main ()
@@ -873,22 +876,30 @@ main ()
 // notice that [[]] is required to cheat autoconf
   int cp[[2]];
   FILE* fp;
-  char* arr[[3]];
-  arr[[0]]=NULL;
-  arr[[1]]=NULL;
-  arr[[2]]=NULL;
-  arr[[3]]=NULL;
-  if(pipe(cp)>=0)
-  if(fork()>=0)
-  if(close(1)>=0)
-  if(dup(cp[[1]])>=0) {
-    fp=fdopen(cp[[0]],"w");
-    execv(arr[[0]],arr);
-  }
-  auto p=fork();
+  char* arr[[4]]={nullptr,nullptr,nullptr,nullptr};
+  posix_spawn_file_actions_t actions;
+  posix_spawnattr_t attributes;
+  posix_spawn_file_actions_init(&actions);
+  posix_spawnattr_init(&attributes);
+  pipe(cp);
+  posix_spawn_file_actions_adddup2(&actions,cp[[0]],STDIN_FILENO);
+  posix_spawn_file_actions_addclose(&actions,cp[[1]]);
+  posix_spawnattr_setpgroup(&attributes,0);
+  posix_spawnattr_setflags(&attributes,POSIX_SPAWN_SETPGROUP);
+  pid_t p;
+  posix_spawn(&p,"/bin/sh",&actions,&attributes,arr,environ);
+  posix_spawnattr_destroy(&attributes);
+  posix_spawn_file_actions_destroy(&actions);
+  fp=fdopen(cp[[0]],"w");
+  fclose(fp);
+  close(cp[[1]]);
   kill(p,SIGINT);
   kill(p,SIGCONT);
   kill(p,SIGSTOP);
+  siginfo_t info;
+  waitid(P_PID,p,&info,WEXITED|WNOHANG|WNOWAIT);
+  int status;
+  waitpid(p,&status,0);
   return 0;
 }
 

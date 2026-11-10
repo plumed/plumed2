@@ -67,7 +67,6 @@ It can be enabled with `export PLUMED_ENABLE_SIGNALS=1`.
 class Subprocess {
   /// Process ID.
   /// We store this rather than pid_t to avoid including <unistd.h> in this header file.
-  /// This remains nullptr in the child process.
   std::unique_ptr<SubprocessPid> pid;
   /// File descriptor, parent to child
   int fpc=0;
