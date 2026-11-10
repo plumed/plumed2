@@ -111,7 +111,7 @@ jobs:
 # catches numerical differences that the x86 Linux jobs and macsimple (default modules) do not see.
 # This job also covers native MPI (Homebrew Open MPI, wrapping Apple clang) and OpenMP (Homebrew libomp),
 # while macsimple covers the build without them (internal thread-MPI, no OpenMP).
-  macallmodules:
+  mac-all-modules:
     runs-on: macos-latest
     env:
       # Homebrew installs Open MPI 5, where oversubscription is set through PRRTE;
