@@ -73,7 +73,7 @@ PLUMED HDF5 tables. Install the optional pandas and HDF5 dependencies with
 
     import plumed
 
-    data = plumed.read_as_pandas("COLVAR.h5", enable_conversion=False)
+    data = plumed.read_as_pandas("COLVAR.h5")
     plumed.write_pandas(data, "COLVAR-copy.h5")
     plumed.write_pandas(data, "COLVAR")  # convert back to text
 
@@ -84,8 +84,7 @@ accepted. Supplied files/streams remain open. Internally opened files are
 closed after use; when stopping chunked reading early, close the reader or
 use a context manager::
 
-    with plumed.read_as_pandas("HILLS.h5", chunksize=10000,
-                               enable_conversion=False) as reader:
+    with plumed.read_as_pandas("HILLS.h5", chunksize=10000) as reader:
         for chunk in reader:
             print(chunk.plumed_constants)
 
@@ -108,10 +107,24 @@ column types raise errors. Constants retain their text expressions, such as
 ``pi``, when writing a DataFrame that carries ``plumed_constants`` metadata.
 Numeric HDF5 constants also retain their types when conversion is disabled.
 
-Python HDF5 I/O needs no PLUMED kernel when ``enable_conversion=False``.
+The default ``enable_conversion=True`` evaluates constants with the selected
+PLUMED kernel, just as for text tables: for example, a constant written as
+``pi`` is returned with its numeric value. Its original expression is retained
+in ``plumed_constants`` for writing it back. Ordinary HDF5 numeric columns are
+read directly with their stored types; they do not need expression conversion.
+
+Use ``enable_conversion=False`` to leave constants as stored and read without
+loading a PLUMED kernel::
+
+    data = plumed.read_as_pandas("COLVAR.h5", enable_conversion=False)
+
+This option is useful for a wrapper-only installation without an available
+kernel. It is optional for HDF5 reading; the default examples above use the
+bundled or otherwise selected kernel. Writing HDF5 files needs no kernel.
+
 PLUMED itself must be built with ``--enable-libhdf5`` to read/write these files
-in native tools and simulations. Numeric/expression conversion in Python
-still uses the selected PLUMED kernel, as for text tables.
+in native tools and simulations. Python HDF5 I/O uses ``h5py`` independently
+of whether the selected PLUMED kernel was built with HDF5 support.
 
 Data-file ownership
 -------------------

@@ -158,9 +158,13 @@ def read_as_pandas(
         If 'metadata' or True, constants are read and stored as metadata.
         If 'no' or False, constants are not read at all.
     enable_conversion : str or boolean, optional (default is True)
-        If 'constants' or True, only constants are converted.
+        If 'constants' or True, only constants are converted, evaluating expressions
+        such as pi with the selected PLUMED kernel. Their original expressions are
+        retained in plumed_constants. Ordinary HDF5 numeric columns are read with
+        their stored types and do not need expression conversion.
         If 'all', all data are converted. Might be slow and probably useless.
-        If 'no' or False, no data are converted.
+        If 'no' or False, constants remain as stored and no PLUMED kernel is needed
+        for reading. False is optional for HDF5, not a format requirement.
     kernel : str or Plumed, optional
         The Plumed kernel used for conversions. If a string, it is interpreted
         as the path to a kernel. If None, the default Plumed loading procedure is used
