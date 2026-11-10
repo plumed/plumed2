@@ -20,7 +20,7 @@ TOOLS_OBJS = extra/colvar/ColvarInput.o extra/tools/Pbc.o extra/tools/SwitchingF
 
 #this makes make search for files in src
 VPATH = src
-OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
+OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS) $(EXTRA_OBJS)
 # ACCTARGET selects what the OpenACC code is compiled for: "gpu" (default), "multicore" or "host".
 # "host" runs the kernels serially on the CPU and needs no GPU nor OpenMP runtime (used by the CI to run the regtests).
 ACCTARGET ?= gpu

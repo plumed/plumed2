@@ -3,15 +3,16 @@
 if [[ -z $PLUMED_KERNEL ]]; then
   echo "$(basename $0) can work only if \"PLUMED_KERNEL\" is defined"
   echo "either via module load or sourceme.sh"
+  exit 1
 fi
 
 {
   plumed config makefile_conf
   echo "PLUMED_INCLUDE=-I$(plumed info --include-dir)"
-  echo "PLUMED_KERNEL=-L${PLUMED_KERNEL}"
+  echo "PLUMED_KERNEL=${PLUMED_KERNEL} -Xlinker -rpath -Xlinker $(dirname "${PLUMED_KERNEL}")"
 } >Make.tmp
 
-if plumed config has mpi -q; then
+if plumed config has real_mpi -q; then
   echo plumed has mpi, configuring NVCXX as mpic++
   echo NVCXX=mpic++ >>Make.tmp
 fi

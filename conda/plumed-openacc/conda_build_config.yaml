@@ -1,0 +1,8 @@
+nvhpc_version:
+  - "25.11"
+openacc_cuda_version:
+  - "13.0"
+c_compiler_version:
+  - "14"
+cxx_compiler_version:
+  - "14"

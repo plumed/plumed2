@@ -1,3 +1,3 @@
-# Building this plugin requires the NVIDIA HPC SDK compiler.
-# It recompiles shared src code with OpenACC; the base package does not need it.
+# NVHPC is an external build tool, never a dependency of the main kernel.
+# The recipe statically links its runtime and includes the vendor notices.
 CONDA_UNAVAILABLE_LIBRARIES = NVHPC
