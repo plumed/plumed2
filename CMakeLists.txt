@@ -127,6 +127,26 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
+# Embedded asmjit, used by lepton to compile expressions (CUSTOM, MATHEVAL,
+# switching functions...) to machine code. As in ./configure, only on x86-64
+# and on 64 bit ARM; PLUMED_USE_ASMJIT=no disables it at run time.
+option(PLUMED_ENABLE_ASMJIT "Compile expressions with the embedded asmjit" ON)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _processor)
+if(PLUMED_ENABLE_ASMJIT AND _processor MATCHES "^(x86_64|amd64|aarch64|arm64)$"
+   AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_ASMJIT)
+    if(UNIX AND NOT APPLE)
+        # clock_gettime, shm_open and shm_unlink are in librt on older Linux systems
+        find_library(PLUMED_RT_LIBRARY rt)
+        if(PLUMED_RT_LIBRARY)
+            target_link_libraries(plumedKernel PRIVATE ${PLUMED_RT_LIBRARY})
+        endif()
+    endif()
+    set(PLUMED_HAS_ASMJIT ON)
+else()
+    set(PLUMED_HAS_ASMJIT OFF)
+endif()
+message(STATUS "PLUMED asmjit: ${PLUMED_HAS_ASMJIT} (${CMAKE_SYSTEM_PROCESSOR})")
 if(PLUMED_ENABLE_THREAD_MPI)
     target_compile_definitions(plumedKernel PRIVATE
         __PLUMED_HAS_THREAD_MPI=1
@@ -185,6 +205,9 @@ endif()
 # (plumed_modules). Same format as src/maketools/update-config-txt.sh,
 # restricted to what this build can enable.
 set(_has cregex)
+if(PLUMED_HAS_ASMJIT)
+    list(APPEND _has asmjit)
+endif()
 if(PLUMED_ENABLE_THREAD_MPI)
     list(APPEND _has mpi thread_mpi)
 endif()
