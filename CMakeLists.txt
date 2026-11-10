@@ -127,13 +127,6 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
-# Stack traces of the exceptions (PLUMED_STACK_TRACE=yes), as execinfo does
-# with ./configure: CaptureStackBackTrace, and DbgHelp for the names
-# (found only with the debug information, see PLUMED_MSVC_DEBUG_INFO)
-if(WIN32)
-    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_DBGHELP)
-    target_link_libraries(plumedKernel PRIVATE dbghelp)
-endif()
 # Embedded asmjit, used by lepton to compile expressions (CUSTOM, MATHEVAL,
 # switching functions...) to machine code. As in ./configure, only on x86-64
 # and on 64 bit ARM; PLUMED_USE_ASMJIT=no disables it at run time.

@@ -21,10 +21,15 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Exception.h"
 
+// Stack traces: execinfo (found by ./configure) or, with MSVC on Windows,
+// CaptureStackBackTrace and DbgHelp for the names
+#if !defined(__PLUMED_HAS_EXECINFO) && defined(_MSC_VER)
+#define PLUMED_EXCEPTION_DBGHELP 1
+#endif
+
 #if defined(__PLUMED_HAS_EXECINFO)
 #include <execinfo.h>
-#elif defined(__PLUMED_HAS_DBGHELP)
-// Windows: CaptureStackBackTrace, and DbgHelp for the names
+#elif defined(PLUMED_EXCEPTION_DBGHELP)
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -34,10 +39,8 @@
 #include <windows.h>
 #include <dbghelp.h>
 #include <mutex>
-#ifdef _MSC_VER
 // also for the programs linking the static kernel
 #pragma comment(lib, "dbghelp.lib")
-#endif
 #endif
 
 #include <cstdio>
@@ -105,7 +108,7 @@ std::array<void*,128>* copyCallstack(const std::unique_ptr<std::array<void*,128>
   return callstack ? new(std::nothrow) std::array<void*,128>(*callstack) : nullptr;
 }
 
-#ifdef __PLUMED_HAS_DBGHELP
+#ifdef PLUMED_EXCEPTION_DBGHELP
 /// Load the symbols of the process.
 /// Names and lines are found only if the debug information (pdb) is available.
 bool initializeSymbols(HANDLE process) {
@@ -116,7 +119,7 @@ bool initializeSymbols(HANDLE process) {
 }
 
 Exception::Exception() {
-#if defined(__PLUMED_HAS_EXECINFO) || defined(__PLUMED_HAS_DBGHELP)
+#if defined(__PLUMED_HAS_EXECINFO) || defined(PLUMED_EXCEPTION_DBGHELP)
   // no exception here if there is no memory: no stack trace in that case
   callstack.reset(new(std::nothrow) std::array<void*,128>);
   if(callstack) {
@@ -223,7 +226,7 @@ const char* Exception::stack() const {
     }
     free(strs);
   }
-#elif defined(__PLUMED_HAS_DBGHELP)
+#elif defined(PLUMED_EXCEPTION_DBGHELP)
   if(stackTrace.length()==0 && callstack) {
     // the DbgHelp functions are not thread safe
     static std::mutex mutex;
