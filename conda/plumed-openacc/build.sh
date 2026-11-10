@@ -27,6 +27,11 @@ fi
   -gpp "$(command -v "$CXX")" -g77 "$(command -v gfortran)"
 export NVLOCALRC="$SRC_DIR/openacc-registration/localrc"
 test -s "$NVLOCALRC"
+sysroot=$("$CC" -print-sysroot)
+test -d "$sysroot/usr/include"
+# NVHPC otherwise searches host glibc libraries even with conda's GCC profile.
+# Put the conda sysroot first and apply it to GNU ld's library scripts as well.
+sysroot_link="-L$sysroot/usr/lib64 -L$sysroot/lib64 -L$sysroot/usr/lib -L$sysroot/lib -Xlinker --sysroot=$sysroot"
 cd plugins/openaccPTM
 bash configure
 make clean
@@ -36,10 +41,18 @@ make clean
 # Preserve the base CPPFLAGS, including MPIW and other public-header ABI macros.
 make -j"${CPU_COUNT:-4}" NVCXX="$nvcxx" ACCTARGET=gpu,host \
   CXXFLAGS="-O2 -std=c++17 -fPIC -tp=px -gpu=ccall,cuda${openacc_cuda_version}" \
-  NVLDSHARED="$nvcxx -shared -tp=px -gpu=ccall,cuda${openacc_cuda_version} -Xlinker --no-undefined" \
+  NVLDSHARED="$nvcxx -shared $sysroot_link -tp=px -gpu=ccall,cuda${openacc_cuda_version} -Xlinker --no-undefined" \
   EXTRA_OBJS="$SRC_DIR/openacc-registration/module_identity.o" \
-  DYNAMIC_LIBS="-L$PREFIX/lib -llapack"
+  DYNAMIC_LIBS="-L$PREFIX/lib -lopenblas"
 readelf -d plumedOpenACC.so
+python - <<'PYCODE'
+import re
+import subprocess
+versions = subprocess.check_output(["readelf", "--version-info", "plumedOpenACC.so"], text=True)
+required = max((int(a), int(b)) for a, b in re.findall(r"GLIBC_(\d+)\.(\d+)", versions))
+print("OpenACC minimum glibc:", ".".join(map(str, required)), flush=True)
+assert required <= (2, 28), "OpenACC linked against host glibc instead of conda sysroot"
+PYCODE
 # Do not ship a library that depends on an SDK installation on the build host.
 if readelf -d plumedOpenACC.so | grep NEEDED | grep -E 'lib(acc|nv|pg)'; then
   echo 'Unexpected shared NVIDIA runtime dependency' >&2
