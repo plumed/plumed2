@@ -57,6 +57,28 @@ jobs:
           grep -q "STACK DUMP" out.log
           grep -q "plumed.exe(PLMD::" out.log
 
+      # File names with non-ASCII characters (e acute and a CJK character, written
+      # with [char] to keep this file ASCII), in the arguments and in the input:
+      # plumed.exe uses UTF-8 as its code page (cmake-msvc/plumed.manifest)
+      - name: Non-ASCII file names
+        run: |
+          $name = "" + [char]0x00E9 + [char]0x4E2D
+          $dir = Join-Path $env:RUNNER_TEMP ("utf8-" + $name)
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $exe = (Resolve-Path build/plumed.exe).Path
+          $d = $dir.Replace('\','/')
+          Set-Content -Path (Join-Path $dir ("traj-" + $name + ".xyz")) -Value "2`n`nX 0 0 0`nX 1 2 2" -Encoding utf8NoBOM
+          Set-Content -Path (Join-Path $dir ("plumed-" + $name + ".dat")) -Value "d: DISTANCE ATOMS=1,2`nPRINT ARG=d FILE=$d/colvar-$name" -Encoding utf8NoBOM
+          # twice: the second run backs up colvar (rename)
+          foreach ($run in 1, 2) {
+            & $exe --no-mpi driver --plumed "$d/plumed-$name.dat" --ixyz "$d/traj-$name.xyz"
+            if ($LASTEXITCODE -ne 0) { throw "driver failed with non-ASCII file names" }
+          }
+          foreach ($file in ("colvar-" + $name), ("bck.0.colvar-" + $name)) {
+            if (-not (Test-Path -LiteralPath (Join-Path $dir $file))) { throw "missing $file" }
+          }
+          Get-Content -LiteralPath (Join-Path $dir ("colvar-" + $name))
+
       # PlumedMain::cmd is called from inside cmd by DEBUG logRequestedAtoms
       # (rt73) and by the PLUMED action (rt-plumed-action-large-step). With
       # MSVC these overflowed a 1 MB stack (the Windows default, e.g. for an MD
