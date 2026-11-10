@@ -30,7 +30,7 @@ import os
 from contextlib import ExitStack
 from numbers import Integral
 
-from ._io import FormatError
+from ._errors import FormatError
 
 
 def is_hdf5(file, format):

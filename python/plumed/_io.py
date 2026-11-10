@@ -30,18 +30,13 @@ import re
 import sys
 import warnings
 
+from ._errors import FormatError
 from ._plumed import Plumed
 
 try:
     import numpy as np
 except ImportError:
     # Importing the package and using the native wrapper do not require NumPy.
-    pass
-
-
-class FormatError(Exception):
-    """Custom error reported by read_as_pandas."""
-
     pass
 
 
@@ -559,6 +554,7 @@ def write_pandas(df, file_or_path=None, format=None):
     finally:
         if owns_file:
             file_or_path.close()
+    return None
 
 
 def hills_time_average(
