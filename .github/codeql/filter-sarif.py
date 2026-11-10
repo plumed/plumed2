@@ -71,6 +71,13 @@ def excluded(result, root, quality=frozenset()):
         # is what the wrapper is for. All the loads go through plumed_dlopen: match its
         # only dlopen call, so that the rule stays on for any other process operation.
         return source_line(root, uri, line) == "return dlopen(path,mode);"
+    if rule == "cpp/path-injection" and uri == "src/tools/FileTools.cpp":
+        # Opening the files named in the input (or passed through cmd) is what
+        # PLUMED does: since the file names are UTF-8 on all systems, the kernel
+        # opens them through fopenUTF8 (the alerts were dismissed by hand where
+        # IFile and OFile called fopen, and moved here with that call).
+        # Match its only fopen call, so that any other file access keeps the rule.
+        return source_line(root, uri, line) == "return std::fopen(path.c_str(),mode);"
     if rule == "cpp/constant-comparison" and uri == "src/main/main.cpp":
         # getApiVersion writes through the C API's const void* argument.
         # CodeQL cannot see that indirect output and treats api as still zero.
