@@ -135,9 +135,8 @@ the base. Installed JSON reports beside each registration list enabled optional
 features, native libraries and direct hard module dependencies. The full report
 is `_extensions/native-dependencies.json`. No shortcut dependencies are inferred.
 
-The three existing plugins use the common registration mechanism and also have
-local conda declarations. Plugin-specific recipes and CUDA variants remain a
-subsequent stage.
+The three existing plugins use the common registration mechanism and have
+local conda declarations and generated recipes, described below.
 
 ## Installed numerical checks
 
@@ -204,3 +203,54 @@ can be requested with `python extensions/tests/cuda_coordination.py --prefix
 "$CONDA_PREFIX" --cuda-version 12.9 --gpu`; it runs existing double/float value
 and derivative fixtures in autoload and explicit module modes and rejects skips.
 Passing loading checks alone does not validate GPU calculations.
+
+### OpenACC parallel task manager plugin
+
+`plumed-ext-openacc-ptm` is built against the exact main kernel with an external
+NVHPC SDK. The initial recipe targets Linux x86-64 with NVHPC 25.11/CUDA 13.0.
+It produces one library containing NVIDIA GPU and serial-host targets, with
+machine code for multiple GPU architectures. These are runtime choices within
+one package, not alternative device-specific packages. AMD and Apple GPUs are
+not supported by this compiler backend.
+
+The native module name is `openacc_ptm`. It autoloads normally, or can be loaded
+with `LOAD MODULE=openacc_ptm` / `plumed --load-module=openacc_ptm ...` when
+`PLUMED_AUTOLOAD=0`. `plumed modules --has openacc_ptm` checks availability and
+`plumed modules --has-feature openacc` checks the visible compiled feature.
+
+Select the execution target with `NVCOMPILER_ACC_DEVICE_TYPE=HOST` or `NVIDIA`.
+The recipe statically links the NVIDIA runtime, includes its license notices,
+and adds no SDK dependency to the main kernel. A compatible NVIDIA driver is
+needed only for GPU execution; the package can install and run host tests on a
+machine without one. Multicore execution is not included because its NVIDIA
+OpenMP runtime needs separate compatibility validation with the GCC-built base.
+
+To build, provide an isolated SDK installation, generate the recipes and build
+against a locally available main package:
+
+```sh
+bash conda/fetch-nvhpc.sh 25.11 /path/to/private-sdk
+export NVHPC_HOME=/path/to/private-sdk/opt/nvidia/hpc_sdk
+export VERSION=2.11.0dev0
+python extensions/conda_recipe.py
+conda-build -c local -c conda-forge conda/plumed-openacc
+```
+
+The fetch helper downloads the official SDK, verifies its published SHA256 and
+extracts compiler/CUDA components without root or system installation changes.
+An existing matching SDK can be used instead. The compiler is a build tool only.
+The ordinary conda build script also builds this recipe when `NVHPC_HOME` is set.
+
+The package test runs existing DISTANCE value/force and SAXS/SANS chi-squared derivative references on the installed
+multi-target binary with host execution, testing both autoload and explicit
+loading. To require GPU execution of those same comparisons, run:
+
+```sh
+python extensions/tests/openacc.py --prefix "$CONDA_PREFIX" --device nvidia
+```
+
+GPU mode requires `nvidia-smi` and checks NVIDIA runtime kernel-launch messages,
+so CPU fallback cannot count as a GPU test. Host results do not validate device
+code or transfers. `bash conda/run-openacc-test.sh` separately checks fresh
+installation/removal, absence of runtime compiler dependencies, and unchanged
+main kernel bytes.

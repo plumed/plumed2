@@ -25,5 +25,10 @@ if [[ $(uname) == Linux ]]; then
     conda-build -c local -c conda-forge plumed-cuda-coordination
 fi
 
+if [[ $(uname) == Linux && $(uname -m) == x86_64 && -n ${NVHPC_HOME:-} ]]; then
+  echo "#Building the multi-target OpenACC plugin"
+  conda-build -c local -c conda-forge plumed-openacc
+fi
+
 ls -l $CONDA_PREFIX/conda-bld/
 ls -l $CONDA_PREFIX/conda-bld/*

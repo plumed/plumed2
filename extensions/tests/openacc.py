@@ -72,11 +72,28 @@ with tempfile.TemporaryDirectory(prefix="plumed-openacc-regressions-") as scratc
         source / "plugins/openaccPTM/regtest/trajectories", target_is_directory=True
     )
     for mode in ("autoload", "explicit"):
-        for name in ("rt-GPU-DISTANCE",):
+        for group, name in (
+            ("targetGPU", "rt-GPU-DISTANCE"),
+            ("targetSAXS", "rt-GPU-saxs-chi2-deriv"),
+        ):
             fixture = regtest / mode / name
             shutil.copytree(
-                source / "plugins/openaccPTM/regtest/targetGPU" / name, fixture
+                source / "plugins/openaccPTM/regtest" / group / name, fixture
             )
+            if group == "targetSAXS":
+                # Relocate the original fixture's shared CPU references/input.
+                for path in (source / "regtest/isdb/rt-saxs-chi2-deriv").iterdir():
+                    if path.name.endswith(".reference") or path.name == "twoatom.pdb":
+                        shutil.copy2(path, fixture / path.name)
+                config = fixture / "config"
+                config.write_text(
+                    "\n".join(
+                        line
+                        for line in config.read_text().splitlines()
+                        if not line.startswith("extra_files=")
+                    )
+                    + "\n"
+                )
             input_path = fixture / "plumed.dat"
             input_path.write_text(
                 input_path.read_text().replace(
@@ -97,6 +114,11 @@ with tempfile.TemporaryDirectory(prefix="plumed-openacc-regressions-") as scratc
                 check=False,
                 timeout=120,
             )
+            driver_log = "\n".join(
+                path.read_text(errors="replace")
+                for path in (fixture / "tmp/out", fixture / "tmp/err")
+                if path.exists()
+            )
             report = (
                 (fixture / "report.txt").read_text()
                 if (fixture / "report.txt").exists()
@@ -116,15 +138,10 @@ with tempfile.TemporaryDirectory(prefix="plumed-openacc-regressions-") as scratc
                 )
             ):
                 raise AssertionError(
-                    f"{mode} {name}:\n{report}\n{result.stdout}\n{result.stderr}"
+                    f"{mode} {name}:\n{report}\n{result.stdout}\n{result.stderr}\n{driver_log}"
                 )
             if args.device == "nvidia":
-                log = (
-                    (fixture / "tmp/err").read_text()
-                    if (fixture / "tmp/err").exists()
-                    else ""
-                )
-                assert "launch CUDA kernel" in result.stderr + result.stdout + log, (
+                assert "launch CUDA kernel" in driver_log, (
                     "No GPU kernel launch observed"
                 )
             print(

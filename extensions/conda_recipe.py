@@ -256,6 +256,8 @@ openacc_recipe += """test:
   source_files:
     - extensions/tests/openacc.py
     - plugins/openaccPTM/regtest/targetGPU/rt-GPU-DISTANCE
+    - plugins/openaccPTM/regtest/targetSAXS/rt-GPU-saxs-chi2-deriv
+    - regtest/isdb/rt-saxs-chi2-deriv
     - plugins/openaccPTM/regtest/trajectories/isomers.xyz
     - regtest/scripts
   commands:

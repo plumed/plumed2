@@ -7,7 +7,8 @@ sdk="$NVHPC_HOME/Linux_$(uname -m)/$nvhpc_version"
 nvcxx="$sdk/compilers/bin/nvc++"
 "$nvcxx" -V
 mkdir -p "$SRC_DIR/nvhpc-licenses"
-cp "$sdk/compilers/license/"LICENSE*.txt "$SRC_DIR/nvhpc-licenses/"
+cp "$sdk/compilers/license/"* "$SRC_DIR/nvhpc-licenses/"
+cp "$sdk/cuda/$openacc_cuda_version/EULA.txt" "$SRC_DIR/nvhpc-licenses/CUDA-EULA.txt"
 python extensions/register.py --plumed "$PREFIX/bin/plumed" --module openacc_ptm \
   --library ../../plumedOpenACC.so --variant "nvhpc${nvhpc_version}_cuda${openacc_cuda_version}" \
   --features OPENACC --output "$SRC_DIR/openacc-registration"

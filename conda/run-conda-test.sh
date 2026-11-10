@@ -70,3 +70,8 @@ for mpi in mpich openmpi; do
   "$prefix/bin/plumed" --has-thread-mpi
   "$prefix/bin/plumed" info --root
 done
+
+# An externally supplied SDK enables the optional OpenACC build stage.
+if [[ $(uname) == Linux && $(uname -m) == x86_64 && -n ${NVHPC_HOME:-} ]]; then
+  bash run-openacc-test.sh
+fi
