@@ -64,6 +64,70 @@ Python or a native host. ``PLUMED_ROOT``, ``PLUMED_INCLUDEDIR`` and
 ``PLUMED_HTMLDIR`` retain their normal installed meanings. HTML manuals are not
 bundled; ``plumed info --user-doc`` falls back to the online manual.
 
+Pandas text and HDF5 tables
+---------------------------
+
+``read_as_pandas`` and ``write_pandas`` support both PLUMED text tables and
+PLUMED HDF5 tables. Install the optional pandas and HDF5 dependencies with
+``pip install 'plumed[hdf5]'`` (or install ``h5py`` separately)::
+
+    import plumed
+
+    data = plumed.read_as_pandas("COLVAR.h5")
+    plumed.write_pandas(data, "COLVAR-copy.h5")
+    plumed.write_pandas(data, "COLVAR")  # convert back to text
+
+The filename extensions ``.h5`` and ``.hdf5`` select HDF5 automatically.
+Use ``format='hdf5'`` for anonymous binary streams or other filenames;
+``format='text'`` explicitly selects text. Open ``h5py.File`` objects are also
+accepted. Supplied files/streams remain open. Internally opened files are
+closed after use; when stopping chunked reading early, close the reader or
+use a context manager::
+
+    with plumed.read_as_pandas("HILLS.h5", chunksize=10000) as reader:
+        for chunk in reader:
+            print(chunk.plumed_constants)
+
+Column selection, row skipping/limits, and named indexes work for both formats.
+HDF5 row skipping counts data rows from zero across blocks. HDF5 chunks keep
+block boundaries, including changes in constants. Unchunked reading combines
+columns across blocks with missing values where necessary. Integer columns
+with missing values use pandas nullable integers; fields that change between
+integer and floating-point types use objects to preserve integer precision.
+When constants change, use ``enable_constants='columns'`` to retain their values per row,
+``enable_constants=False`` to discard them, or chunked reading for per-block
+metadata. Default metadata mode rejects changing constants in one DataFrame.
+
+The HDF5 layout is the native PLUMED table format, compatible with
+``plumed h5convert``; pandas' ``read_hdf``/``to_hdf`` use a different layout.
+Floating-point columns use double precision, integer columns use signed
+64-bit integers, and string columns contain UTF-8 bytes. Named indexes become
+ordinary fields. MultiIndexes, missing integer/string values, and unsupported
+column types raise errors. Constants retain their text expressions, such as
+``pi``, when writing a DataFrame that carries ``plumed_constants`` metadata.
+Already numeric HDF5 constants retain their types, including integer precision.
+
+The default ``enable_conversion=True`` evaluates string-valued constants with
+the selected PLUMED kernel, just as for text tables: for example, a constant written as
+``pi`` is returned with its numeric value. Its original expression is retained
+in ``plumed_constants`` for writing it back. Ordinary HDF5 numeric columns are
+read directly with their stored types; they do not need expression conversion.
+The same applies to HDF5 constants that are already stored as numbers.
+
+Pip wheels include a PLUMED kernel, so ordinary installations can use the
+default conversion shown above. The existing ``enable_conversion=False`` option
+is retained for compatibility and for callers who want constants exactly as
+stored. It also preserves the historical ability to read without a kernel;
+it is not needed for HDF5 reading in a normal wheel installation. Writing
+HDF5 files needs no kernel.
+
+PLUMED itself must be built with ``--enable-libhdf5`` to read/write these files
+in native tools and simulations. Python HDF5 I/O uses ``h5py`` independently
+of whether the selected PLUMED kernel was built with HDF5 support. If a
+compatible h5py binary wheel is unavailable, building h5py from source requires
+HDF5 development headers and libraries; see the `h5py installation instructions
+<https://docs.h5py.org/en/stable/build.html>`_.
+
 Data-file ownership
 -------------------
 
