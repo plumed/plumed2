@@ -78,3 +78,64 @@ jobs:
         with:
           name: windows-regtest-results
           path: regtest-results
+
+  # Shared kernel (plumedKernel.dll), as needed by the python interface and by
+  # MD codes loading PLUMED at runtime (PLUMED_KERNEL): plumed.exe linked to the
+  # DLL, installation, and a small host loading the DLL through Plumed.h
+  windows-shared-kernel:
+    runs-on: windows-latest
+    steps:
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLUMED_SHARED_KERNEL=ON -DPLUMED_MSVC_DEBUG_INFO=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # only the C entry points listed in cmake-msvc/plumedKernel.def
+      - name: Exported symbols
+        run: dumpbin /nologo /exports build/plumedKernel.dll
+
+      - name: plumed --version (linked to the DLL)
+        run: ./build/plumed.exe info --version
+
+      - name: Smoke test (kt, embedded thread-MPI)
+        run: |
+          ./build/plumed.exe kt --temp 300
+          ./build/plumed.exe --tmpi-threads 2 kt --temp 300
+
+      - name: Install
+        run: cmake --install build --prefix install
+
+      - name: Installed plumed
+        run: |
+          ./install/bin/plumed.exe info --version
+          ./install/bin/plumed.exe --no-mpi kt --temp 300
+
+      # the same host compiled as C and as C++ (both code paths of Plumed.h)
+      - name: Build a host loading the DLL
+        run: |
+          cl /nologo /W3 /D__PLUMED_HAS_DLOPEN /D__PLUMED_WRAPPER_LINK_RUNTIME=1 /D__PLUMED_WRAPPER_IMPLEMENTATION=1 /Isrc\wrapper .ci\plumed-dlopen-host.c /Fe:host-c.exe
+          cl /nologo /W3 /TP /EHsc /Zc:__cplusplus /std:c++17 /D__PLUMED_HAS_DLOPEN /D__PLUMED_WRAPPER_LINK_RUNTIME=1 /D__PLUMED_WRAPPER_IMPLEMENTATION=1 /Isrc\wrapper .ci\plumed-dlopen-host.c /Fe:host-cxx.exe
+
+      - name: Load the DLL (plumed_create_dlopen and PLUMED_KERNEL)
+        run: |
+          $kernel = (Resolve-Path install\bin\plumedKernel.dll).Path
+          New-Item -ItemType Directory -Force host-run | Out-Null
+          Set-Location host-run
+          foreach ($host_exe in "..\host-c.exe", "..\host-cxx.exe") {
+            & $host_exe $kernel
+            if ($LASTEXITCODE -ne 0) { throw "$host_exe $kernel failed" }
+            $env:PLUMED_KERNEL = $kernel
+            & $host_exe --env
+            if ($LASTEXITCODE -ne 0) { throw "$host_exe --env failed" }
+            Remove-Item Env:PLUMED_KERNEL
+          }
