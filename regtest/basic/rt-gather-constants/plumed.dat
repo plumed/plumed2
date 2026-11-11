@@ -1,0 +1,5 @@
+c: CONSTANT VALUE=3
+computed: CUSTOM ARG=c FUNC=2*x PERIODIC=NO
+plain_gather: GATHER_REPLICAS ARG=c
+computed_gather: GATHER_REPLICAS ARG=computed
+PRINT ARG=plain_gather.rep-1,computed_gather.rep-1 FILE=COLVAR FMT=%8.3f
