@@ -149,7 +149,7 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
              "As such if you define portions of the chain with fewer than N residues the code will crash.");
     keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a switching function.");
+             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is a switching function.");
     keys.add("optional","R_0","The r_0 parameter of the switching function.");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
