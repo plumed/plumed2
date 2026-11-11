@@ -35,6 +35,10 @@ These keywords are still read, as the keyword that replaces them, with a warning
 - UPPER_WALLS and LOWER_WALLS acting on a periodic argument do not apply the periodic boundary conditions to the difference
   between the argument and `AT` any more.
 - `ARG=*` leaves out the values that the action cannot use (e.g. in PRINT).
+- METATOMIC loads TorchScript models with the plugin of `metatomic-torch`: add `PLUGIN_LIBRARY` with the path given by
+  `python -c "import metatomic_torch; print(metatomic_torch.utils.plugin_path)"`. A bias acting on a METATOMIC model stops with an error
+  if the model does not compute the gradients of its `feature` output with respect to `positions` and `strain`: export the model
+  again with `explicit_gradients=["positions", "strain"]` in its capabilities, and return these gradients from the model.
 - A function of a sparse matrix that is not zero for zero arguments (e.g. CUSTOM with `FUNC=1-x` on a CONTACT_MATRIX
   with `D_MAX`) stops with an error: the elements that the matrix does not store were silently taken as zero.
   Give the function a `MASK` (e.g. the matrix itself) to compute it only on the stored elements, or remove `D_MAX`.

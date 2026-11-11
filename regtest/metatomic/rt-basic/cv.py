@@ -1,14 +1,14 @@
 from typing import Dict, List, Optional
 
-import torch
 import metatensor.torch as mts
+import torch
 from metatensor.torch import Labels, TensorBlock, TensorMap
 from metatomic.torch import (
     AtomisticModel,
-    ModelCapabilities,
+    LegacyModelCapabilities,
     ModelMetadata,
     ModelOutput,
-    NeighborListOptions,
+    PairListOptions,
     System,
 )
 
@@ -35,9 +35,7 @@ class TestCollectiveVariable(torch.nn.Module):
     def __init__(self, cutoff, multiple_properties, feature_key="feature"):
         super().__init__()
 
-        self._nl_request = NeighborListOptions(
-            cutoff=cutoff, full_list=True, strict=True
-        )
+        self._nl_request = PairListOptions(cutoff=cutoff, full_list=True, strict=True)
         self._multiple_properties = multiple_properties
         self._feature_key = feature_key
 
@@ -79,7 +77,12 @@ class TestCollectiveVariable(torch.nn.Module):
             properties = Labels("cv", torch.tensor([[0]], device=device))
 
         values = torch.zeros(
-            (len(samples), len(properties)), dtype=torch.float32, device=device
+            (len(samples), len(properties)), dtype=torch.float64, device=device
+        )
+        position_values: List[torch.Tensor] = []
+        position_samples: List[List[int]] = []
+        strain_values = torch.zeros(
+            (len(samples), 3, 3, len(properties)), dtype=torch.float64, device=device
         )
         system_start = 0
         for system_i, system in enumerate(systems):
@@ -104,6 +107,45 @@ class TestCollectiveVariable(torch.nn.Module):
                 else:
                     values[system_i, 1] += inv_dist.sum() ** 2
 
+            if len(output.explicit_gradients) != 0:
+                # Derivatives of the same CVs as above, without relying on the
+                # engine to differentiate a standard feature output.
+                vectors = neighbors.values.reshape(-1, 3)
+                second = neighbors.samples.column("second_atom")
+                rows = len(system) if output.sample_kind == "atom" else 1
+                derivatives = torch.zeros(
+                    (rows, len(system), 3, len(properties)),
+                    dtype=torch.float64,
+                    device=device,
+                )
+                for pair in range(len(distances)):
+                    a = int(atom_index[pair])
+                    b = int(second[pair])
+                    row = a if output.sample_kind == "atom" else 0
+                    sample = (
+                        system_start + row if output.sample_kind == "atom" else system_i
+                    )
+                    for prop in range(len(properties)):
+                        factor = -(inv_dist[pair] ** 3)
+                        if prop == 1:
+                            if output.sample_kind == "atom":
+                                factor = -2 * inv_dist[pair] ** 4
+                            else:
+                                factor = -2 * inv_dist.sum() * inv_dist[pair] ** 3
+                        gradient = factor * vectors[pair]
+                        derivatives[row, a, :, prop] -= gradient
+                        derivatives[row, b, :, prop] += gradient
+                        strain_values[sample, :, :, prop] += torch.outer(
+                            vectors[pair], gradient
+                        )
+                position_values.append(derivatives.reshape(-1, 3, len(properties)))
+                for row in range(rows):
+                    sample = (
+                        system_start + row if output.sample_kind == "atom" else system_i
+                    )
+                    for atom in range(len(system)):
+                        position_samples.append([sample, system_i, atom])
+
             system_start = system_stop
 
         block = TensorBlock(
@@ -112,6 +154,47 @@ class TestCollectiveVariable(torch.nn.Module):
             components=[],
             properties=properties,
         )
+        if "positions" in output.explicit_gradients:
+            block.add_gradient(
+                "positions",
+                TensorBlock(
+                    values=torch.cat(position_values)
+                    if len(position_values) != 0
+                    else torch.zeros(
+                        (0, 3, len(properties)), dtype=torch.float64, device=device
+                    ),
+                    samples=Labels(
+                        ["sample", "system", "atom"],
+                        torch.tensor(
+                            position_samples, dtype=torch.int32, device=device
+                        ).reshape(-1, 3),
+                    ),
+                    components=[
+                        Labels("xyz", torch.arange(3, dtype=torch.int32).reshape(-1, 1))
+                    ],
+                    properties=properties,
+                ),
+            )
+        if "strain" in output.explicit_gradients:
+            block.add_gradient(
+                "strain",
+                TensorBlock(
+                    values=strain_values,
+                    samples=Labels(
+                        "sample",
+                        torch.arange(len(samples), dtype=torch.int32).reshape(-1, 1),
+                    ),
+                    components=[
+                        Labels(
+                            "xyz_1", torch.arange(3, dtype=torch.int32).reshape(-1, 1)
+                        ),
+                        Labels(
+                            "xyz_2", torch.arange(3, dtype=torch.int32).reshape(-1, 1)
+                        ),
+                    ],
+                    properties=properties,
+                ),
+            )
         cv = TensorMap(
             keys=Labels("_", torch.tensor([[0]], device=device)),
             blocks=[block],
@@ -127,56 +210,43 @@ class TestCollectiveVariable(torch.nn.Module):
 
         return {self._feature_key: cv}
 
-    def requested_neighbor_lists(self) -> List[NeighborListOptions]:
+    def requested_neighbor_lists(self) -> List[PairListOptions]:
         return [self._nl_request]
 
 
 CUTOFF = 3.5
 
-capabilities = ModelCapabilities(
-    outputs={"feature": ModelOutput(sample_kind="atom")},
-    interaction_range=CUTOFF,
-    supported_devices=["cpu", "mps", "cuda"],
-    length_unit="A",
-    atomic_types=[6, 8],
-    dtype="float32",
+
+def export(
+    path,
+    sample_kind,
+    multiple_properties,
+    feature_key="feature",
+    gradients=("positions", "strain"),
+):
+    # AtomisticModel modifies the capabilities it is given, so each model gets its own
+    capabilities = LegacyModelCapabilities(
+        outputs={
+            feature_key: ModelOutput(
+                sample_kind=sample_kind, explicit_gradients=list(gradients)
+            )
+        },
+        interaction_range=CUTOFF,
+        supported_devices=["cpu", "mps", "cuda"],
+        length_unit="A",
+        atomic_types=[6, 8],
+        dtype="float64",
+    )
+    cv = TestCollectiveVariable(CUTOFF, multiple_properties, feature_key).eval()
+    AtomisticModel(cv, ModelMetadata(), capabilities).save(path)
+
+
+export("scalar-per-atom.pt", "atom", multiple_properties=False)
+export("vector-per-atom.pt", "atom", multiple_properties=True)
+export("scalar-global.pt", "system", multiple_properties=False)
+export("vector-global.pt", "system", multiple_properties=True)
+export(
+    "variant-global.pt", "system", multiple_properties=False, feature_key="feature/variant"
 )
-
-# export all variations of the model
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
-cv.eval()
-model = AtomisticModel(cv, ModelMetadata(), capabilities)
-model.save("scalar-per-atom.pt")
-
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
-cv.eval()
-model = AtomisticModel(cv, ModelMetadata(), capabilities)
-model.save("vector-per-atom.pt")
-
-capabilities = ModelCapabilities(
-    outputs={"feature": ModelOutput(sample_kind="system")},
-    interaction_range=CUTOFF,
-    supported_devices=["cpu", "mps", "cuda"],
-    length_unit="A",
-    atomic_types=[6, 8],
-    dtype="float32",
-)
-
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=False)
-cv.eval()
-model = AtomisticModel(cv, ModelMetadata(), capabilities)
-model.save("scalar-global.pt")
-
-cv = TestCollectiveVariable(cutoff=CUTOFF, multiple_properties=True)
-cv.eval()
-model = AtomisticModel(cv, ModelMetadata(), capabilities)
-model.save("vector-global.pt")
-
-
-cv = TestCollectiveVariable(
-    cutoff=CUTOFF, multiple_properties=False, feature_key="feature/variant"
-)
-capabilities.outputs = {"feature/variant": ModelOutput(sample_kind="system")}
-cv.eval()
-model = AtomisticModel(cv, ModelMetadata(), capabilities)
-model.save("variant-global.pt")
+# like models exported for the TorchScript-only PLUMED interface, without gradients
+export("no-gradients.pt", "system", multiple_properties=False, gradients=[])
