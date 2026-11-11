@@ -46,7 +46,7 @@ mkdir -p "$out"
 cd "$root/regtest"
 tests=()
 nbasic=0
-for d in basic gridtools isdb liquid_crystal multicolvar refdist secondarystructure; do
+for d in basic gridtools isdb liquid_crystal multicolvar opes refdist secondarystructure; do
   for t in "$d"/rt*/; do
     t=${t%/}
     [[ -f "$t/config" ]] || continue
