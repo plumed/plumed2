@@ -327,7 +327,6 @@ def _drop_dependency_paths(paths: list[Path]) -> None:
     dependencies = _dependencies()
     if dependencies is None:
         return
-    prefixes = (str(dependencies), "-I" + str(dependencies))
     for path in paths:
         if not path.is_file():
             continue
@@ -335,11 +334,11 @@ def _drop_dependency_paths(paths: list[Path]) -> None:
         for line in path.read_text().splitlines():
             words = []
             for word in line.split(" "):
-                # also as the first value of a variable (CPPFLAGS=-I...)
-                key, equal, value = word.rpartition("=")
-                if word.startswith(prefixes):
-                    continue
-                if equal and value.startswith(prefixes):
+                if str(dependencies) in word:
+                    # also as the first value of a variable (CPPFLAGS=-I...)
+                    key, equal, _ = word.partition("=")
+                    if not equal or str(dependencies) in key:
+                        continue
                     word = key + equal
                 words.append(word)
             lines.append(" ".join(words))
@@ -549,11 +548,13 @@ def _configure_dependencies() -> list[str]:
     # full paths: the static libraries, not shared ones elsewhere in the paths
     libs = [str(lib / name) for name in ("libchemfiles.a", "libhdf5.a", "libz.a")]
     ldflags = os.environ.get("LDFLAGS", "")
+    # the kernel does not export their symbols, so that it can be loaded with
+    # other copies of these libraries (e.g. the HDF5 of h5py or of an MD code)
     if sys.platform.startswith("linux"):
         libs += ["-ldl", "-lm"]
-        # the kernel does not export their symbols, so that it can be loaded with
-        # other copies of these libraries (e.g. the HDF5 of h5py)
         ldflags += " -Wl,--exclude-libs,ALL"
+    elif sys.platform == "darwin":
+        libs = [f"-Wl,-load_hidden,{library}" for library in libs]
     return [
         "--enable-libhdf5",
         "--enable-libchemfiles",

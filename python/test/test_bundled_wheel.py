@@ -2,6 +2,7 @@
 
 import array
 import ctypes
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -208,23 +209,97 @@ def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
     p.finalize()
 
 
+def check_other_hdf5(executable):
+    """The kernel uses its own HDF5 also when another one is in the global namespace.
+
+    As in an MD code linked to a shared HDF5 that loads the kernel: the HDF5
+    library of h5py (another version) is loaded first with RTLD_GLOBAL, then the
+    kernel, with RTLD_GLOBAL too and without RTLD_DEEPBIND.
+    """
+    if WINDOWS:
+        return  # DLLs have no global namespace
+    spec = importlib.util.find_spec("h5py")
+    if spec is None:
+        print("skipping the test with another HDF5: h5py is not installed")
+        return
+    package = Path(spec.origin).parent
+    candidates = [
+        path
+        for path in (
+            *(package.parent / "h5py.libs").glob("libhdf5-*.so*"),
+            *(package / ".dylibs").glob("libhdf5*.dylib"),
+        )
+        if "_hl" not in path.name
+    ]
+    if not candidates:
+        print("skipping the test with another HDF5: no HDF5 library in h5py")
+        return
+    script = f"""
+import array, ctypes, os, sys
+other = ctypes.CDLL({str(candidates[0])!r}, mode=ctypes.RTLD_GLOBAL)
+version = [ctypes.c_uint() for _ in range(3)]
+assert other.H5get_libversion(*[ctypes.byref(v) for v in version]) >= 0
+print("other HDF5:", ".".join(str(v.value) for v in version))
+os.environ["PLUMED_LOAD_NAMESPACE"] = "GLOBAL"
+os.environ["PLUMED_LOAD_NODEEPBIND"] = "yes"
+import plumed
+p = plumed.Plumed()
+p.cmd("setMDEngine", "python")
+p.cmd("setNatoms", 2)
+p.cmd("setLogFile", "log")
+p.cmd("init")
+p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
+p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5")
+# the arrays must stay alive until calc
+box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+forces = array.array("d", [0] * 6)
+virial = array.array("d", [0] * 9)
+for step in range(2):
+    positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
+    p.cmd("setStep", step)
+    p.cmd("setBox", box)
+    p.cmd("setPositions", positions)
+    p.cmd("setForces", forces)
+    p.cmd("setVirial", virial)
+    p.cmd("calc")
+p.finalize()
+"""
+    with temporary_directory() as temporary:
+        directory = Path(temporary)
+        run_python(script, cwd=directory)
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "h5convert",
+                "--input",
+                "other.h5",
+                "--output",
+                "other.txt",
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in (directory / "other.txt").read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [1.0, 2.0], rows
+
+
 def check_optional_libraries(bundled, executable):
     """HDF5 and chemfiles, linked statically in the kernel, and the opes module."""
     config = (resource_root() / "src" / "config" / "config.txt").read_text()
     for entry in ("has libhdf5 on", "has libchemfiles on", "module opes on"):
         assert re.search(rf"^{entry}\b", config, re.M), entry
-    if not WINDOWS:
-        # their symbols are not exported (Linux: --exclude-libs, Windows: only
-        # the C entry points of the kernel are exported); macOS uses two-level
-        # namespaces, so that exported copies cannot clash with other ones
-        if sys.platform.startswith("linux"):
-            kernel = ctypes.CDLL(str(bundled))
-            for symbol in ("H5Fopen", "chfl_version", "deflate", "lzma_code"):
-                assert not hasattr(kernel, symbol), symbol
-    else:
-        kernel = ctypes.WinDLL(str(bundled))
-        for symbol in ("H5Fopen", "chfl_version", "deflate"):
-            assert not hasattr(kernel, symbol), symbol
+    # their symbols are not exported (Linux: --exclude-libs, macOS: -load_hidden,
+    # Windows: only the C entry points of the kernel are exported), so that
+    # they cannot clash with other copies in the same process
+    kernel = ctypes.WinDLL(str(bundled)) if WINDOWS else ctypes.CDLL(str(bundled))
+    for symbol in ("H5Fopen", "chfl_version", "deflate", "lzma_code"):
+        assert not hasattr(kernel, symbol), symbol
+    check_other_hdf5(executable)
     try:
         # the HDF5 library of h5py, loaded in the same process
         import h5py
@@ -240,14 +315,17 @@ def check_optional_libraries(bundled, executable):
         p.cmd("init")
         p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
         p.cmd("readInputLine", f"PRINT ARG=d FILE={table.as_posix()}")
+        # the arrays must stay alive until calc
         box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+        forces = array.array("d", [0] * 6)
+        virial = array.array("d", [0] * 9)
         for step in range(3):
             positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
             p.cmd("setStep", step)
             p.cmd("setBox", box)
             p.cmd("setPositions", positions)
-            p.cmd("setForces", array.array("d", [0] * 6))
-            p.cmd("setVirial", array.array("d", [0] * 9))
+            p.cmd("setForces", forces)
+            p.cmd("setVirial", virial)
             p.cmd("calc")
         p.finalize()
         if h5py is not None:
