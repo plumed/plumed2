@@ -1,0 +1,3 @@
+PRINT ARG=cv FILE=no-gradients.colvar: exit code 0
+BIASVALUE ARG=cv: exit code 1
+forces were applied to this METATOMIC action, but the model did not compute gradients of 'feature' with respect to positions. metatomic only computes gradients of energies with automatic differentiation, models used as biased CVs must compute these gradients explicitly

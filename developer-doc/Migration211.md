@@ -40,6 +40,10 @@ These keywords are still read, as the keyword that replaces them, with a warning
 - ALPHARMSD, ANTIBETARMSD and PARABETARMSD: with R_0, NN, MM and D_0 (and not LESS_THAN) the switching function is stretched to be
   zero where it is 1e-5 (its D_MAX), as in the other actions that take these keywords; `LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}`
   gives the function of v2.10.
+- METATOMIC loads TorchScript models with the plugin of `metatomic-torch`: add `PLUGIN_LIBRARY` with the path given by
+  `python -c "import metatomic_torch; print(metatomic_torch.utils.legacy_plugin_path)"`. A bias acting on a METATOMIC model stops with an error
+  if the model does not compute the gradients of its `feature` output with respect to `positions` and `strain`: export the model
+  again with `explicit_gradients=["positions", "strain"]` in its capabilities, and return these gradients from the model.
 - A function of a sparse matrix that is not zero for zero arguments (e.g. CUSTOM with `FUNC=1-x` on a CONTACT_MATRIX
   with `D_MAX`) stops with an error: the elements that the matrix does not store were silently taken as zero.
   Give the function a `MASK` (e.g. the matrix itself) to compute it only on the stored elements, or remove `D_MAX`.

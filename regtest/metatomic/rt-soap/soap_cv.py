@@ -1,32 +1,56 @@
-from typing import Dict, List, Optional
+"""
+Per-atom CV: a random projection of the SOAP power spectrum, computed with featomic,
+with explicit gradients with respect to positions and strain.
+"""
 
-import torch
-from metatensor.torch import Labels, TensorBlock, TensorMap
-from metatomic.torch import (
-    AtomisticModel,
-    ModelCapabilities,
-    ModelMetadata,
-    ModelOutput,
-    System,
-)
-from featomic.torch import SoapPowerSpectrum
+import featomic
+import numpy as np
+from metatensor import Labels, TensorBlock, TensorMap
+
+from metatomic import ModelCapabilities, ModelMetadata, NumpyModel, Quantity
 
 
-class SOAP_CV(torch.nn.Module):
-    def __init__(self, species):
+SPECIES = [1, 6, 7, 8]
+
+
+class FeatomicSystem(featomic.systems.SystemBase):
+    """A metatomic system given to featomic, which computes the neighbors itself"""
+
+    def __init__(self, system):
         super().__init__()
+        if np.any(system.pbc) and not np.all(system.pbc):
+            raise ValueError("featomic needs all directions to be periodic, or none")
+        self._types = np.asarray(system.types, dtype=np.int32)
+        self._positions = np.asarray(system.positions, dtype=np.float64)
+        self._cell = np.asarray(system.cell, dtype=np.float64)
 
-        self.neighbor_type_pairs = Labels(
-            names=["neighbor_1_type", "neighbor_2_type"],
-            values=torch.tensor(
-                [[t1, t2] for t1 in species for t2 in species if t1 <= t2]
-            ),
-        )
-        self.calculator = SoapPowerSpectrum(
-            cutoff={
-                "radius": 4.0,
-                "smoothing": {"type": "ShiftedCosine", "width": 0.5},
-            },
+    def size(self):
+        return len(self._types)
+
+    def types(self):
+        return self._types
+
+    def positions(self):
+        return self._positions
+
+    def cell(self):
+        return self._cell
+
+    def compute_neighbors(self, cutoff):
+        raise NotImplementedError("featomic computes the neighbors of this system")
+
+    def pairs(self):
+        raise NotImplementedError("featomic computes the neighbors of this system")
+
+    def pairs_containing(self, atom):
+        raise NotImplementedError("featomic computes the neighbors of this system")
+
+
+class SoapProjection(NumpyModel):
+    def __init__(self):
+        super().__init__()
+        self.calculator = featomic.SoapPowerSpectrum(
+            cutoff={"radius": 4.0, "smoothing": {"type": "ShiftedCosine", "width": 0.5}},
             density={"type": "Gaussian", "width": 0.3},
             basis={
                 "type": "TensorProduct",
@@ -34,63 +58,68 @@ class SOAP_CV(torch.nn.Module):
                 "radial": {"type": "Gto", "max_radial": 5},
             },
         )
+        self.neighbor_pairs = Labels(
+            ["neighbor_1_type", "neighbor_2_type"],
+            np.array([[a, b] for a in SPECIES for b in SPECIES if a <= b]),
+        )
+        self.projection = np.random.default_rng(230623).random((2520, 3))
 
-        torch.manual_seed(-230623)
-        self.register_buffer("pca_projection", torch.rand(2520, 3, dtype=torch.float64))
+    def capabilities(self):
+        return ModelCapabilities(
+            atomic_types=[6, 1, 7, 8],
+            interaction_range=4.0,
+            length_unit="nm",
+            supported_devices=["cpu"],
+            dtype="float64",
+            outputs=[
+                Quantity(
+                    name="feature",
+                    unit="",
+                    sample_kind="atom",
+                    gradients=["positions", "strain"],
+                )
+            ],
+        )
 
-    def forward(
-        self,
-        systems: List[System],
-        outputs: Dict[str, ModelOutput],
-        selected_atoms: Optional[Labels],
-    ) -> Dict[str, TensorMap]:
-        if "feature" not in outputs:
-            return {}
+    def metadata(self):
+        return ModelMetadata(name="SOAP projection")
 
-        if outputs["feature"].sample_kind != "atom":
-            raise ValueError("only per-atom output is supported")
+    def execute_inner(self, systems, selected_atoms, requested_outputs):
+        (output,) = requested_outputs
+        properties = Labels.range("soap_pca", 3)
+        if all(len(system) == 0 for system in systems):
+            # PLUMED is asking for the shape of the output
+            empty = Labels(["system", "atom"], np.zeros((0, 2), dtype=np.int32))
+            block = TensorBlock(np.zeros((0, 3)), empty, [], properties)
+            return [TensorMap(Labels.range("_", 1), [block])]
 
-        if len(systems[0]) == 0:
-            # PLUMED is trying to determine the size of the output
-            projected = torch.zeros((0, 3), dtype=torch.float64)
-            samples = Labels(["system", "atom"], torch.zeros((0, 2), dtype=torch.int32))
-        else:
-            soap = self.calculator(systems, selected_samples=selected_atoms)
-            soap = soap.keys_to_samples("center_type")
-            soap = soap.keys_to_properties(self.neighbor_type_pairs)
-
-            soap_block = soap.block()
-            projected = soap_block.values @ self.pca_projection
-
-            samples = soap_block.samples.remove("center_type")
+        soap = self.calculator.compute(
+            [FeatomicSystem(system) for system in systems],
+            gradients=list(output.gradients),
+            selected_samples=selected_atoms,
+        )
+        soap = soap.keys_to_samples("center_type").keys_to_properties(
+            self.neighbor_pairs
+        )
+        soap = soap.block()
 
         block = TensorBlock(
-            values=projected,
-            samples=samples,
-            components=[],
-            properties=Labels("soap_pca", torch.tensor([[0], [1], [2]])),
+            soap.values @ self.projection,
+            soap.samples.remove("center_type"),
+            [],
+            properties,
         )
-        cv = TensorMap(
-            keys=Labels("_", torch.tensor([[0]])),
-            blocks=[block],
-        )
+        for parameter, gradient in soap.gradients():
+            block.add_gradient(
+                parameter,
+                TensorBlock(
+                    gradient.values @ self.projection,
+                    gradient.samples,
+                    gradient.components,
+                    properties,
+                ),
+            )
+        return [TensorMap(Labels.range("_", 1), [block])]
 
-        return {"feature": cv}
 
-
-cv = SOAP_CV(species=[1, 6, 7, 8])
-cv.eval()
-
-
-capabilities = ModelCapabilities(
-    outputs={"feature": ModelOutput(sample_kind="atom")},
-    interaction_range=4.0,
-    supported_devices=["cpu"],
-    length_unit="nm",
-    atomic_types=[6, 1, 7, 8],
-    dtype="float64",
-)
-
-metadata = ModelMetadata(name="Collective Variable test")
-model = AtomisticModel(cv, metadata, capabilities)
-model.save("soap_cv.pt", collect_extensions="extensions")
+model = SoapProjection()
