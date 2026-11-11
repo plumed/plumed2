@@ -67,7 +67,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
-compile_options.sh: ../../Makefile.conf
+compile_options.sh: ../../Makefile.conf Makefile
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
 # on osx, in order to use two-level namespace, we should back link the Kernel library
