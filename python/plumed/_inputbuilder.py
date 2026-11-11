@@ -50,7 +50,8 @@ def _guessplumedroot(kernel=None):
                 p.cmd("setLogFile", log)
                 p.cmd("init")
             root = None
-            with open(log) as fin:
+            # the kernel writes UTF-8 (paths included)
+            with open(log, encoding="utf-8", errors="replace") as fin:
                 for line in fin:
                     if re.match("PLUMED: Root: ", line):
                         root = re.sub("PLUMED: Root: ", "", line).rstrip("\n")
@@ -165,7 +166,8 @@ def _readvimdict(plumedroot=None, kernel=None):
     # local dictionary, read from VIM
     plumedDictionary = {}
     pattern = re.compile(r"^let b:plumedDictionary\[.*$")
-    with open(syntax_file) as fin:
+    # the Vim files are UTF-8 (not the locale encoding, e.g. on Windows)
+    with open(syntax_file, encoding="utf-8") as fin:
         for line in fin:
             if pattern.match(line):
                 line = re.sub("^let b:", "", line)
@@ -178,7 +180,7 @@ def _readvimdict(plumedroot=None, kernel=None):
         ret[action] = {}
         doc[action] = {}
         # read documentation
-        with open(help_dir + "/" + action + ".txt") as fin:
+        with open(help_dir + "/" + action + ".txt", encoding="utf-8") as fin:
             thisdoc = ""
             for line in fin:
                 thisdoc += line

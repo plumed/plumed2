@@ -12,6 +12,11 @@ import unittest
 import plumed
 from plumed.runtime import kernel_path, package_root, resource_root
 
+# On Windows the runtime is built with CMake (see build_backend.py): the kernel
+# is a DLL next to plumed.exe, and the Unix tools (bash scripts, mklib/LOAD,
+# compile_options.sh, pkg-config of the wrapper) are not part of it.
+WINDOWS = sys.platform == "win32"
+
 
 # Normal make installs a wrapper using an external kernel. The wheel smoke
 # test separately requires a bundle, so a broken wheel cannot silently skip it.
@@ -60,50 +65,63 @@ class TestRuntimeResources(unittest.TestCase):
     def test_installed_files(self):
         """Resources and real headers occupy the normal installation locations."""
         self.assertEqual(self.root, self.prefix / "lib" / "plumed")
-        self.assertTrue(
-            (self.prefix / "share/bash-completion/completions/plumed").is_file()
-        )
         self.assertFalse((self.root / "src" / "include").exists())
-        self.assertEqual(kernel_path().parent, self.prefix / "lib")
+        self.assertEqual(
+            kernel_path().parent, self.prefix / ("bin" if WINDOWS else "lib")
+        )
         self.assertEqual(Path(plumed._bundled_kernel_path()).resolve(), kernel_path())
-        for relative in (
+        resources = [
             "scripts/mklib.sh",
             "scripts/mkmpi.sh",
             "src/config/config.txt",
-            "src/config/compile_options.sh",
-            "src/colvar/Template.cpp",
-            "src/main/main.cpp",
             "vim/syntax/plumed.vim",
+            "vim/scripts.vim",
             "build-info.txt",
             "json/syntax.json",
             "fortran/plumed.f90",
             "fortran/plumed_f08.f90",
             "src/lib/Plumed.cmake",
             "src/lib/Plumed.inc",
-            "modulefile",
-            "plumed-runtime",
-            "plumed-mklib",
-        ):
+        ]
+        installed = ["lib/pkgconfig/plumed.pc"]
+        if WINDOWS:
+            installed += [
+                "bin/plumed.exe",
+                "bin/plumedKernel.dll",
+                "lib/plumedKernel.lib",
+            ]
+        else:
+            resources += [
+                "src/config/compile_options.sh",
+                "src/colvar/Template.cpp",
+                "src/main/main.cpp",
+                "modulefile",
+                "plumed-runtime",
+                "plumed-mklib",
+            ]
+            installed += [
+                "share/bash-completion/completions/plumed",
+                "bin/plumed-patch",
+                "bin/plumed-config",
+                "lib/libplumedWrapper.a",
+                "lib/pkgconfig/plumedWrapper.pc",
+                "lib/pkgconfig/plumedInternals.pc",
+            ]
+        for relative in resources:
             with self.subTest(resource=relative):
                 self.assertTrue((self.root / relative).is_file())
         for relative in ("patches", "vim/templates", "vim/help"):
             self.assertTrue(any((self.root / relative).iterdir()), relative)
-        for relative in (
-            "bin/plumed-patch",
-            "bin/plumed-config",
-            "lib/libplumedWrapper.a",
-            "lib/pkgconfig/plumed.pc",
-            "lib/pkgconfig/plumedWrapper.pc",
-            "lib/pkgconfig/plumedInternals.pc",
-        ):
+        for relative in installed:
             with self.subTest(installed_file=relative):
                 self.assertTrue((self.prefix / relative).is_file())
         header = self.prefix / "include" / "plumed" / "wrapper" / "Plumed.h"
         self.assertTrue(header.is_file())
         self.assertFalse(header.is_symlink())
-        options = (self.root / "src/config/compile_options.sh").read_text()
-        self.assertNotIn("link_uninstalled=", options)
-        self.assertNotIn("link_libs_uninstalled=", options)
+        if not WINDOWS:
+            options = (self.root / "src/config/compile_options.sh").read_text()
+            self.assertNotIn("link_uninstalled=", options)
+            self.assertNotIn("link_libs_uninstalled=", options)
 
     def test_python_and_native_discovery(self):
         """Kernel discovery works without environment help from the launcher."""
@@ -143,6 +161,7 @@ class TestRuntimeResources(unittest.TestCase):
                 self.prefix / "include",
             )
 
+    @unittest.skipIf(WINDOWS, "the script commands need bash")
     def test_script_resources(self):
         """A native command finds installed scripts and their configuration data."""
         result = subprocess.run(
@@ -156,6 +175,7 @@ class TestRuntimeResources(unittest.TestCase):
             result.stdout, (self.root / "src/config/config.txt").read_text()
         )
 
+    @unittest.skipIf(WINDOWS, "LOAD is not supported on Windows")
     def test_load_from_python(self):
         """LOAD finds installed scripts, headers and link flags from Python."""
         options = (self.root / "src/config/compile_options.sh").read_text()
@@ -192,6 +212,7 @@ with plumed.Plumed() as instance:
                 text=True,
             )
 
+    @unittest.skipIf(WINDOWS, "builds the client with a Unix C compiler")
     def test_native_client(self):
         """The installed main and headers build a host using the bundled kernel."""
         compiler = shlex.split(os.environ.get("CC", "cc"))

@@ -8,10 +8,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import numpy as np
-import pandas as pd
 import plumed
-from pandas.testing import assert_frame_equal
+
+# pandas (and numpy) may be missing in the wheel tests of new Python versions
+try:
+    import numpy as np
+    import pandas as pd
+    from pandas.testing import assert_frame_equal
+except ModuleNotFoundError as exc:
+    if exc.name not in ("numpy", "pandas"):
+        raise
+    np = pd = None
 
 try:
     import h5py
@@ -21,6 +28,7 @@ except ModuleNotFoundError as exc:
     h5py = None
 
 
+@unittest.skipIf(pd is None, "pandas is not installed")
 class TextIO(unittest.TestCase):
     def test_borrowed_stream_and_nondefault_index(self):
         source = io.StringIO("#! FIELDS time value\n0 2\n1 3\n")
@@ -66,6 +74,7 @@ class TextIO(unittest.TestCase):
             )
 
 
+@unittest.skipIf(pd is None, "pandas is not installed")
 @unittest.skipIf(h5py is None, "h5py is optional")
 class HDF5IO(unittest.TestCase):
     def setUp(self):

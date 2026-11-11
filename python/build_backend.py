@@ -1,4 +1,8 @@
-"""PEP 517 backend that builds and stages a small Unix PLUMED runtime."""
+"""PEP 517 backend that builds and stages a private PLUMED runtime.
+
+The kernel is built with configure/make on Linux and macOS, and with CMake
+(CMakeLists.txt) on Windows.
+"""
 
 from __future__ import annotations
 
@@ -25,6 +29,7 @@ RUNTIME_DIRS = ("lib", "bin", "include", "share", "licenses")
 
 # files and directories of the PLUMED source tree needed to build the kernel
 BUILD_INPUT_FILES = (
+    "CMakeLists.txt",
     "configure",
     "configure.ac",
     "Makefile",
@@ -35,7 +40,15 @@ BUILD_INPUT_FILES = (
     "sourceme.sh.in",
     "stamp-h.in",
 )
-BUILD_INPUT_DIRS = ("src", "json", "scripts", "patches", "vim", "fortran")
+BUILD_INPUT_DIRS = (
+    "src",
+    "json",
+    "scripts",
+    "patches",
+    "vim",
+    "fortran",
+    "cmake-msvc",
+)
 # build products that might be present in a developer tree
 BUILD_PRODUCTS = ("*.o", "*.d", "*.on", "*.off")
 
@@ -115,8 +128,11 @@ def _copy_build_inputs(source: Path, destination: Path) -> None:
             symlinks=True,
             ignore=shutil.ignore_patterns(*BUILD_PRODUCTS),
         )
-    # the source distribution does not contain this link (see _copy_sdist_source)
+    # the source distribution does not contain this link (see _copy_sdist_source);
+    # the CMake build (Windows, where links may need privileges) does not use it
     include_link = destination / "src" / "include" / "plumed"
+    if sys.platform == "win32":
+        return
     if not include_link.is_symlink() and not include_link.exists():
         include_link.parent.mkdir(parents=True, exist_ok=True)
         include_link.symlink_to("../")
@@ -216,23 +232,39 @@ def _install_runtime(source: Path, modules: list[str], env: dict[str, str]) -> N
     destination = source.parent / "install"
     _run(["make", "install", f"DESTDIR={destination}"], cwd=source, env=env)
     installed = destination / "plumed_runtime"
-    for name in RUNTIME_DIRS:
-        shutil.rmtree(RUNTIME_PACKAGE / name, ignore_errors=True)
-    shutil.copytree(installed, RUNTIME_PACKAGE, dirs_exist_ok=True, symlinks=True)
+    _stage_runtime(installed)
     runtime_lib = RUNTIME_PACKAGE / "lib"
     runtime_bin = RUNTIME_PACKAGE / "bin"
-    runtime_root = runtime_lib / "plumed"
 
     # Loader repair and plugin linking are wheel-specific; file selection and
     # installation layout belong entirely to make install.
-    _relocate_compile_options(runtime_root / "src" / "config" / "compile_options.sh")
+    _relocate_compile_options(
+        runtime_lib / "plumed" / "src" / "config" / "compile_options.sh"
+    )
+    _finish_runtime(source, modules, "configure/make")
 
+    if sys.platform == "darwin":
+        _fix_macos_load_paths(runtime_lib, runtime_bin)
+    else:
+        _check_linux_run_paths(runtime_lib, runtime_bin)
+
+
+def _stage_runtime(installed: Path) -> None:
+    """Copy an installation prefix to plumed/runtime."""
+    for name in RUNTIME_DIRS:
+        shutil.rmtree(RUNTIME_PACKAGE / name, ignore_errors=True)
+    shutil.copytree(installed, RUNTIME_PACKAGE, dirs_exist_ok=True, symlinks=True)
+
+
+def _finish_runtime(source: Path, modules: list[str], build_system: str) -> None:
+    """Licenses and build information, common to all the build systems."""
+    runtime_root = RUNTIME_PACKAGE / "lib" / "plumed"
     license_dir = RUNTIME_PACKAGE / "licenses"
     license_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source / "COPYING.LESSER", license_dir / "COPYING.LESSER")
     build_info = [
         f"PLUMED version: {_plumed_version(source)}",
-        "Build system: configure/make",
+        f"Build system: {build_system}",
         "Shared kernel: enabled",
         "MPI: disabled",
         "OpenMP: disabled",
@@ -246,11 +278,6 @@ def _install_runtime(source: Path, modules: list[str], env: dict[str, str]) -> N
     links = [path for path in RUNTIME_PACKAGE.rglob("*") if path.is_symlink()]
     if links:
         raise RuntimeError(f"unexpected symbolic links in the runtime: {links[:5]}")
-
-    if sys.platform == "darwin":
-        _fix_macos_load_paths(runtime_lib, runtime_bin)
-    else:
-        _check_linux_run_paths(runtime_lib, runtime_bin)
 
 
 def _relocate_compile_options(path: Path) -> None:
@@ -366,9 +393,9 @@ def _fix_macos_load_paths(runtime_lib: Path, runtime_bin: Path) -> None:
 
 
 def _build_runtime() -> None:
-    if sys.platform not in {"linux", "darwin"}:
+    if sys.platform not in {"linux", "darwin", "win32"}:
         raise RuntimeError(
-            "Bundled PLUMED kernels are currently supported on Linux and macOS only"
+            "Bundled PLUMED kernels are supported on Linux, macOS and Windows only"
         )
     source_root = _source_root()
     modules = _default_modules(source_root)
@@ -385,7 +412,10 @@ def _build_runtime() -> None:
             return
 
     with _captured_output("building the PLUMED kernel"):
-        _compile_runtime(source_root, modules)
+        if sys.platform == "win32":
+            _compile_runtime_cmake(source_root, modules)
+        else:
+            _compile_runtime(source_root, modules)
     if cached:
         _store_runtime(cached)
 
@@ -441,6 +471,65 @@ def _compile_runtime(source_root: Path, modules: list[str]) -> None:
         _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source, env=link_env)
 
         _install_runtime(source, modules, link_env)
+
+
+def _compile_runtime_cmake(source_root: Path, modules: list[str]) -> None:
+    """Build the kernel with CMake (Windows, MSVC).
+
+    Without CMAKE_GENERATOR, CMake uses the newest Visual Studio, which needs no
+    developer command prompt. The C and C++ runtime is linked statically (/MT),
+    so that the kernel and plumed.exe do not depend on the Visual C++
+    redistributable (msvcp140.dll), whose version in the process is decided by
+    whoever loads it first. The kernel exposes a C interface only, so no C
+    runtime object crosses the boundary with the python module.
+    """
+    cmake = shutil.which("cmake")
+    if cmake is None:
+        raise RuntimeError("cmake is needed to build the PLUMED kernel on Windows")
+    # MSBuild processes left running might still hold files of the build
+    with tempfile.TemporaryDirectory(
+        prefix="plumed-wheel-build-", ignore_cleanup_errors=True
+    ) as temporary:
+        source = Path(temporary) / "plumed"
+        build = Path(temporary) / "build"
+        installed = Path(temporary) / "install"
+        _copy_build_inputs(source_root, source)
+        jobs = str(max(1, min(4, os.cpu_count() or 1)))
+        _run(
+            [
+                cmake,
+                "-S",
+                str(source),
+                "-B",
+                str(build),
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DPLUMED_SHARED_KERNEL=ON",
+                "-DPLUMED_PIP_BUNDLE=ON",
+                "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded",
+                # the path compiled in the kernel, which finds its resources
+                # relative to itself (as /plumed_runtime with configure)
+                "-DCMAKE_INSTALL_PREFIX=C:/plumed_runtime",
+            ],
+            cwd=Path(temporary),
+        )
+        _run(
+            [cmake, "--build", str(build), "--config", "Release", "--parallel", jobs],
+            cwd=Path(temporary),
+        )
+        _run(
+            [
+                cmake,
+                "--install",
+                str(build),
+                "--config",
+                "Release",
+                "--prefix",
+                str(installed),
+            ],
+            cwd=Path(temporary),
+        )
+        _stage_runtime(installed)
+        _finish_runtime(source, modules, "CMake")
 
 
 def _copy_sdist_source(destination: Path) -> None:
