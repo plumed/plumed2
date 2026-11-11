@@ -195,9 +195,9 @@ void ReweightTemperaturePressure::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );
   keys.addInputKeyword("optional","ENERGY","scalar","Energy");
   keys.addInputKeyword("optional","VOLUME","scalar","Volume");
-  keys.add("optional","REWEIGHT_PRESSURE","Reweighting pressure");
-  keys.add("optional","PRESSURE","The system pressure");
-  keys.add("optional","REWEIGHT_TEMP","Reweighting temperature");
+  keys.add("optional","REWEIGHT_PRESSURE","the pressure at which the weights are computed");
+  keys.add("optional","PRESSURE","the pressure of the simulation that is being reweighted");
+  keys.add("optional","REWEIGHT_TEMP","the temperature at which the weights are computed");
   keys.setValueDescription("scalar","the weight to use for this frame to determine its contribution at a different temperature/pressure");
   keys.addDOI("10.1103/PhysRevLett.86.2050");
   keys.addDOI("10.1103/PhysRevLett.92.170601");

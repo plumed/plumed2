@@ -292,6 +292,15 @@ Generate the PLUMED Vim syntax plugin and per-action help files from the live ac
 
 The command writes `syntax/plumed.vim`, `syntax/plumedf.vim`, and `help/<ACTION>.txt` below `--outdir`. The static Vim templates are read from `--template-dir`; by default they are loaded from the installed PLUMED root.
 
+This tool is run automatically when PLUMED is compiled, so users do not normally need to call it.
+The following command writes the Vim files in the directory `myvim`:
+
+```plumed
+plumed gen_vim --outdir myvim
+```
+
+The directory can then be added to the Vim runtime path as explained in [the page on the Vim syntax file](vim.md).
+
 */
 //+ENDPLUMEDOC
 

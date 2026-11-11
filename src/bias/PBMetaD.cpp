@@ -438,7 +438,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("DIFF_FROM_SCRATCH",false,"with ADAPTIVE=DIFF, when restarting accumulate the statistics of the CV fluctuations from scratch, instead of initializing them from the last hills of the hills files");
   keys.addInputKeyword("numbered","PF", "scalar", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
-  keys.add("optional","SELECTOR_ID", "value of SELECTOR");
+  keys.add("optional","SELECTOR_ID", "the value of SELECTOR for which this bias is active");
   MetaDWalkers::registerKeywords(keys);
   keys.add("optional","INTERVAL_MIN","one dimensional lower limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");
   keys.add("optional","INTERVAL_MAX","one dimensional upper limits (one for each family), outside the limits the system will not feel the biasing force (METAD: INTERVAL).");

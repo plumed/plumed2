@@ -114,9 +114,9 @@ void UpdateIf::registerKeywords(Keywords& keys) {
   ActionWithArguments::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","scalar","the labels of values that should be used to make the decision on whether to update or not");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
-  keys.addFlag("END",false,"end");
-  keys.add("optional","LESS_THAN","upper bound");
-  keys.add("optional","MORE_THAN","lower bound");
+  keys.addFlag("END",false,"end the if block that was started by a previous UPDATE_IF action");
+  keys.add("optional","LESS_THAN","the upper bounds for the arguments: the update is done only if all the arguments are smaller than these values");
+  keys.add("optional","MORE_THAN","the lower bounds for the arguments: the update is done only if all the arguments are larger than these values");
 }
 
 UpdateIf::UpdateIf(const ActionOptions&ao):

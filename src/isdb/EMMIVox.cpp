@@ -68,19 +68,43 @@ namespace isdb {
 /*
 Bayesian single-structure and ensemble refinement with cryo-EM maps.
 
-This action implements the Bayesian approach for single-structure and ensemble refinement from cryo-EM maps introduced <a href="https://doi.org/10.1371/journal.pcbi.1012180">here</a>.
+This action implements the Bayesian approach for single-structure and ensemble refinement from cryo-EM maps introduced in the first paper cited below.
 EMMIVox does not require fitting the cryo-EM map with a Gaussian Mixture Model, as done in [EMMI](EMMI.md), but uses directly the voxels in the deposited map.
 
 When run in single-replica mode, this action allows atomistic, flexible refinement (and B-factors inference) of an individual structure into a density map.
 A coarse-grained forward model can also be used in combination with the MARTINI force field.
 Combined with a multi-replica framework (such as the -multi option in GROMACS), the user can model an ensemble of structures using
-the Metainference approach that is introduced in the paper  cited below. The approach can be used to model continous dynamics of flexible regions as well as semi-ordered waters, lipids, and ions.
+the Metainference approach that is introduced in the second paper cited below. The approach can be used to model continous dynamics of flexible regions as well as semi-ordered waters, lipids, and ions.
 
 !!! note "installing libtorch"
 
     To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb.md).
 
 ## Examples
+
+In the following example the density of the model built from atoms 1-234 is compared with the experimental map in `map.dat`
+and the resulting Bayesian score is applied as a bias. The status of the calculation is written every 1000 steps in `emvstatus`.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/isdb/rt-emmivox/structure.pdb,regtest/isdb/rt-emmivox/map.dat
+MOLINFO STRUCTURE=regtest/isdb/rt-emmivox/structure.pdb
+
+EMMIVOX ...
+  LABEL=emv
+  ATOMS=1-234
+  DATA_FILE=regtest/isdb/rt-emmivox/map.dat
+  NORM_DENSITY=6.3034
+  RESOLUTION=0.2
+  SIGMA_MIN=0.2
+  NL_DIST_CUTOFF=0.6 NL_GAUSS_CUTOFF=3.0 NL_STRIDE=50
+  WRITE_STRIDE=1000 STATUS_FILE=emvstatus
+  TEMP=300.0
+  CORRELATION
+...
+
+BIASVALUE ARG=emv.scoreb
+PRINT ARG=emv.* FILE=colvar STRIDE=1000
+```
 
 Complete tutorials for single-structure and ensemble refinement can be found <a href="https://github.com/COSBlab/EMMIVox">here</a>.
 
@@ -254,22 +278,22 @@ PLUMED_REGISTER_ACTION(EMMIVOX,"EMMIVOX")
 void EMMIVOX::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms used in the calculation of the density map, typically all heavy atoms");
-  keys.add("compulsory","DATA_FILE","file with cryo-EM map");
-  keys.add("compulsory","RESOLUTION", "cryo-EM map resolution");
-  keys.add("compulsory","NORM_DENSITY","integral of experimental density");
+  keys.add("compulsory","DATA_FILE","file with the voxels of the experimental cryo-EM map");
+  keys.add("compulsory","RESOLUTION", "resolution of the experimental cryo-EM map, used to set the width of the Gaussian functions of the forward model");
+  keys.add("compulsory","NORM_DENSITY","integral of the experimental density, used to normalize the map");
   keys.add("compulsory","WRITE_STRIDE","stride for writing status file");
   keys.add("optional","NL_DIST_CUTOFF","neighbor list distance cutoff");
   keys.add("optional","NL_GAUSS_CUTOFF","neighbor list Gaussian sigma cutoff");
   keys.add("optional","NL_STRIDE","neighbor list update frequency");
-  keys.add("optional","SIGMA_MIN","minimum density error");
-  keys.add("optional","DBFACT","Bfactor MC step");
-  keys.add("optional","BFACT_MAX","Bfactor maximum value");
-  keys.add("optional","MCBFACT_STRIDE", "Bfactor MC stride");
-  keys.add("optional","BFACT_SIGMA","Bfactor sigma prior");
+  keys.add("optional","SIGMA_MIN","minimum value of the error on the density of each voxel");
+  keys.add("optional","DBFACT","maximum displacement of the Monte Carlo moves on the residue B-factors; B-factors are sampled only if this is larger than zero");
+  keys.add("optional","BFACT_MAX","maximum value allowed for the residue B-factors");
+  keys.add("optional","MCBFACT_STRIDE", "stride for the Monte Carlo sampling of the residue B-factors");
+  keys.add("optional","BFACT_SIGMA","sigma of the prior that keeps the B-factors of neighboring residues similar");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart");
-  keys.add("optional","SCALE","scale factor");
-  keys.add("optional","OFFSET","offset");
-  keys.add("optional","TEMP","temperature");
+  keys.add("optional","SCALE","scale factor applied to the model density before comparing it with the experimental one");
+  keys.add("optional","OFFSET","offset added to the model density before comparing it with the experimental one");
+  keys.add("optional","TEMP","temperature of the system in kelvin, by default the one passed by the MD engine");
   keys.add("optional","WRITE_MAP","file with model density");
   keys.add("optional","WRITE_MAP_STRIDE","stride for writing model density to file");
   keys.addFlag("NO_AVER",false,"no ensemble averaging in multi-replica mode");
@@ -286,6 +310,7 @@ void EMMIVOX::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("accB",  "default","scalar", "Bfactor MC acceptance");
   keys.addOutputComponent("kbt",   "default","scalar", "temperature in energy unit");
   keys.addOutputComponent("corr",  "CORRELATION","scalar", "correlation coefficient");
+  keys.addDOI("10.1371/journal.pcbi.1012180");
   keys.addDOI("10.1126/sciadv.1501177");
 }
 

@@ -129,7 +129,7 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   if constexpr ( needsBondLength /*keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
   }
-  keys.add("numbered","STRUCTURE","the reference structure");
+  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure to be used instead of the default ideal one. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
              "For more details on the OPTIMAL and SIMPLE methods see RMSD.");

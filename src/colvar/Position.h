@@ -49,7 +49,7 @@ template <typename T>
 void Position<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("POSITION");
-  keys.add("atoms","ATOM","the atom number");
+  keys.add("atoms","ATOM","the atom whose position is computed");
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
