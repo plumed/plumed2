@@ -351,8 +351,9 @@ void Value::resizeDerivatives(int n) {
 
 inline
 void Value::addDerivative(unsigned i,double d) {
-  // Constant scalars store only their value. Grid derivatives remain valid.
-  if(valtype==constant && shape.empty()) {
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
     return;
   }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
@@ -361,8 +362,9 @@ void Value::addDerivative(unsigned i,double d) {
 
 inline
 void Value::setDerivative(unsigned i, double d) {
-  // Constant scalars store only their value. Grid derivatives remain valid.
-  if(valtype==constant && shape.empty()) {
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
     return;
   }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
