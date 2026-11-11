@@ -1,0 +1,20 @@
+UNITS LENGTH=A
+
+# per-atom values of model.py for all atoms, an unordered selection and a single
+# atom. Pairs cross the periodic boundaries of the triclinic cell.
+all: METATOMIC MODEL=model.py PLUGIN=python SPECIES1=1-3 SPECIES_TO_TYPES=1
+selected: METATOMIC MODEL=model.py PLUGIN=python SPECIES1=1-3 SPECIES_TO_TYPES=1 SELECTED_ATOMS=3,1
+single: METATOMIC MODEL=model.py PLUGIN=python SPECIES1=1-3 SPECIES_TO_TYPES=1 SELECTED_ATOMS=2
+
+PRINT ARG=all,selected,single FILE=colvar FMT=%10.6f
+
+# x^2 gives each per-atom value a different bias derivative, so the forces
+# depend on which atom each value belongs to
+all2: CUSTOM ARG=all FUNC=x*x PERIODIC=NO
+selected2: CUSTOM ARG=selected FUNC=x*x PERIODIC=NO
+single2: CUSTOM ARG=single FUNC=x*x PERIODIC=NO
+all_sum: SUM ARG=all2 PERIODIC=NO
+selected_sum: SUM ARG=selected2 PERIODIC=NO
+single_sum: SUM ARG=single2 PERIODIC=NO
+
+BIASVALUE ARG=all_sum,selected_sum,single_sum
