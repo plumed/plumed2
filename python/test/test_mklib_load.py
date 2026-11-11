@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
         # out of the source tree, headers are included as "module/header.h"
         code = template.read_text().replace('"Colvar.h"', '"colvar/Colvar.h"')
         code = code.replace('"ActionRegister.h"', '"core/ActionRegister.h"')
-        code = code.replace("TEMPLATE", "LOADTEST")
+        code = code.replace("TEMPLATE", "MKLIBLOADTEST")
 
         current = os.getcwd()
         with tempfile.TemporaryDirectory() as temporary:
@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
                 p.cmd("setLogFile", "test.log")
                 p.cmd("init")
                 p.cmd("readInputLine", "LOAD FILE=LoadTest.cpp")
-                p.cmd("readInputLine", "d: LOADTEST ATOMS=1,2")
+                p.cmd("readInputLine", "d: MKLIBLOADTEST ATOMS=1,2")
                 p.cmd("readInputLine", "RESTRAINT ARG=d AT=0 KAPPA=1")
 
                 box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
