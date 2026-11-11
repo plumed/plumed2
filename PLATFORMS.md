@@ -13,6 +13,35 @@ The tables below summarize which features are available in each case. A feature
 marked as "no" is not compiled in, and the related actions or command line tools
 report an error when they are used.
 
+Standard builds
+---------------
+
+| | Linux | macOS | Windows |
+|---|---|---|---|
+| Build system | `./configure` and `make` | `./configure` and `make` | CMake and Visual Studio (experimental, see `CMakeLists.txt`) |
+| Libraries | shared kernel, static archive, wrapper library | same | static kernel (to be linked into an MD code), or shared kernel with `-DPLUMED_SHARED_KERNEL=ON` |
+| Modules (see [README.md](README.md#modules-and-plugins)) | any (`--enable-modules`) | any | `always` and `default-on` ones; VES with `-DPLUMED_ENABLE_VES=ON` |
+| MPI | external MPI library, or embedded thread-MPI | same | embedded thread-MPI only |
+| OpenMP | yes | yes (with Apple clang, needs libomp) | no |
+| Expressions compiled with asmjit | yes (x86_64 and 64 bit ARM) | yes | yes |
+| Optional libraries (BLAS/LAPACK, zlib, HDF5, FFTW, chemfiles, LibTorch, metatomic, ...) | yes, if found or requested | same | no (internal BLAS and LAPACK only) |
+| Plugins and your own actions (`LOAD`, `plumed --load`, `plumed mklib`), `PLUMED` action with `KERNEL` | yes | yes | no |
+| Shared kernel loaded at run time (`PLUMED_KERNEL`, Python package) | yes | yes | yes, with `-DPLUMED_SHARED_KERNEL=ON` |
+| Patching MD codes (`plumed patch`) | yes | yes | no |
+| Tools written as shell scripts | yes | yes | no |
+| Running external programs | yes | yes | no |
+| Python package compiled from the sources | yes | yes | yes |
+| Stack trace in error messages | yes | yes | yes (function names need the debug information, e.g. `-DPLUMED_MSVC_DEBUG_INFO=ON`) |
+| File names with non-ASCII characters | yes | yes | yes (passed to the kernel as UTF-8; some contributed modules only support the system code page) |
+| Regression tests (`make test`) | all | all | a subset, run with a script (`.ci/windows-regtests`) |
+
+Building on Windows:
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release --parallel
+    cmake --install build --prefix <prefix>
+
+
 Python wheels
 -------------
 
@@ -46,30 +75,3 @@ Alpine) have no wheels: there, `pip` builds the package from the sources.
 The Python package can also be installed without its kernel and used with a
 kernel from a standard build (see [python/README.rst](python/README.rst)).
 
-Standard builds
----------------
-
-| | Linux | macOS | Windows |
-|---|---|---|---|
-| Build system | `./configure` and `make` | `./configure` and `make` | CMake and Visual Studio (experimental, see `CMakeLists.txt`) |
-| Libraries | shared kernel, static archive, wrapper library | same | static kernel (to be linked into an MD code), or shared kernel with `-DPLUMED_SHARED_KERNEL=ON` |
-| Modules (see [README.md](README.md#modules-and-plugins)) | any (`--enable-modules`) | any | `always` and `default-on` ones; VES with `-DPLUMED_ENABLE_VES=ON` |
-| MPI | external MPI library, or embedded thread-MPI | same | embedded thread-MPI only |
-| OpenMP | yes | yes (with Apple clang, needs libomp) | no |
-| Expressions compiled with asmjit | yes (x86_64 and 64 bit ARM) | yes | yes |
-| Optional libraries (BLAS/LAPACK, zlib, HDF5, FFTW, chemfiles, LibTorch, metatomic, ...) | yes, if found or requested | same | no (internal BLAS and LAPACK only) |
-| Plugins and your own actions (`LOAD`, `plumed --load`, `plumed mklib`), `PLUMED` action with `KERNEL` | yes | yes | no |
-| Shared kernel loaded at run time (`PLUMED_KERNEL`, Python package) | yes | yes | yes, with `-DPLUMED_SHARED_KERNEL=ON` |
-| Patching MD codes (`plumed patch`) | yes | yes | no |
-| Tools written as shell scripts | yes | yes | no |
-| Running external programs | yes | yes | no |
-| Python package compiled from the sources | yes | yes | yes |
-| Stack trace in error messages | yes | yes | yes (function names need the debug information, e.g. `-DPLUMED_MSVC_DEBUG_INFO=ON`) |
-| File names with non-ASCII characters | yes | yes | yes (passed to the kernel as UTF-8; some contributed modules only support the system code page) |
-| Regression tests (`make test`) | all | all | a subset, run with a script (`.ci/windows-regtests`) |
-
-Building on Windows:
-
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-    cmake --build build --config Release --parallel
-    cmake --install build --prefix <prefix>

@@ -102,8 +102,8 @@ Here's a description of the content of each file and directory in the root PLUME
 Required software
 -----------------
 
-The following applies to the standard build on Linux and macOS. The experimental
-CMake build for Windows is described in [PLATFORMS.md](PLATFORMS.md).
+The following applies to the standard build on Linux and macOS. The features available 
+on different architectures are described in: [PLATFORMS.md](PLATFORMS.md).
 
 Required software:
 
