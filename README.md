@@ -128,7 +128,7 @@ and enabled if available):
 * [Zlib library](https://zlib.net/) to use compressed data files.
 * [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
 * [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
-* [Chemfiles library](https://chemfiles.org/) to read more trajectory formats in `plumed driver` (only used if requested with `--enable-libchemfiles`).
+* [Chemfiles library](https://chemfiles.org/) to read more file formats in `plumed driver` and in the MOLINFO action (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
 * [Doxygen](https://www.doxygen.nl) to build the developer manual. Doxygen might need:
   * [Graphviz](https://www.graphviz.org) to show class hierarchy in
