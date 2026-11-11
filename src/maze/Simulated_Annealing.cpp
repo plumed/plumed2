@@ -140,7 +140,7 @@ void Simulated_Annealing::registerKeywords(Keywords& keys) {
   keys.add(
     "compulsory",
     "COOLING_SCHEME",
-    "Cooling scheme: geometric."
+    "Cooling scheme used to reduce PROBABILITY_DECREASER: linear, exponential, geometric, logarithmic or hoffman."
   );
 }
 
