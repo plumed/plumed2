@@ -37,8 +37,8 @@ $$
 
 Here $\mathbf{x}$ is the configuration at time t, $\mathbf{\mu}$ is the reference and $\mathbf{\Sigma}^{-1}$ is the $N \times N$ precision matrix.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference
-$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM), which is discussed in the paper cited below, is a probabilistic clustering technique that is used to perform structural clustering on ensemble of molecular configurations and to obtain reference
+$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please check out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
 ## Examples
 In the following example, a group is defined with atom indices of selected atoms and then Mahalanobis distance is calculated with respect to the given reference and precision. Each file is a space separated list of 3N floating point numbers.
@@ -96,10 +96,11 @@ PLUMED_REGISTER_ACTION(position_maha_dist,"SIZESHAPE_POSITION_MAHA_DIST")
 void position_maha_dist::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("compulsory", "PRECISION", "Precision Matrix (inverse of covariance)" );
-  keys.add("compulsory", "REFERENCE", "Reference structure.");
+  keys.add("compulsory", "REFERENCE", "File with the coordinates of the reference structure.");
   keys.add("atoms","GROUP","The group of atoms being used");
   keys.addFlag("SQUARED",false,"Returns the square of distance.");
   keys.setValueDescription("scalar","the Mahalanobis distance between the instantaneous configuration and a given reference distribution in size-and-shape space");
+  keys.addDOI("10.1021/acs.jctc.1c01290");
 }
 
 // constructor function
