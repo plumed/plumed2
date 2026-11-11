@@ -1,7 +1,7 @@
 <!--
 description: Tensor train metadynamics (TT-MetaD)
 authors: Nils E. Strand, Siyao Yang, Yuehaw Khoo, Aaron R. Dinner
-reference: https://arxiv.org/abs/2603.13549
+reference: https://doi.org/10.1021/acs.jctc.6c00487
 -->
 
 # Overview
@@ -12,8 +12,8 @@ as a sum of Gaussian hills. The accumulated Gaussian hills are periodically
 compressed into a low-rank TT approximation using the TT-Sketch algorithm,
 keeping memory and evaluation cost bounded throughout long simulations.
 
-For the full algorithmic details see the paper:
-<https://arxiv.org/abs/2603.13549>
+For the full algorithmic details and for guidance on the choice of the parameters see the paper cited below
+and the [TTMETAD](TTMETAD.md) page.
 
 
 # Installation
