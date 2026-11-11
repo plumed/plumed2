@@ -22,5 +22,5 @@ $$
 $$
 
 where $F(D_{ij})$ is some transformation of the distance between point $X^{i}$ and point $X^{j}$ and $f(d_{ij})$ is some transformation
-of the distance between the projection of $X^{i}$, \f$x^i\f$, and the projection of $X^{j}$, $x^j$.  $w_i$ and $w_j$ are the weights
-of configurations $X^i$ and $^j$ respectively. 
+of the distance between the projection of $X^{i}$, $x^i$, and the projection of $X^{j}$, $x^j$.  $w_i$ and $w_j$ are the weights
+of configurations $X^i$ and $X^j$ respectively.
