@@ -172,6 +172,11 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   link_libs="$link_libs_installed"
 fi
 
+# The libraries (PLUMED_MKLIB_LDFLAGS, the kernel and its dependencies) follow the objects:
+# linkers using --as-needed (the default on some distributions, e.g. Ubuntu) drop the
+# libraries listed before the objects using them. The kernel would then not be recorded
+# as a dependency, and LOAD would fail with undefined symbols when the kernel was loaded
+# with RTLD_LOCAL (as done by the python interface).
 eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmp_lib" || exit 1
 
 if test -n "$no_clobber" ; then

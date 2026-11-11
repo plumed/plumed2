@@ -67,23 +67,33 @@ Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
 
 # file to import compilation options inside a bash script
-compile_options.sh: ../../Makefile.conf
+compile_options.sh: ../../Makefile.conf Makefile
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
 	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS)"'" > $@
 # on osx, in order to use two-level namespace, we should back link the Kernel library
 # the path to the kernel is different for installed and not-installed plumed.
 # notice that $(DYNAMIC_LIBS) are needed as well in order to allow using functions
 # that are exported from plumed (e.g. blas/lapack/mpi functions).
-# The kernel must be an explicit dependency when loaded with RTLD_LOCAL (Python).
-# Libraries follow the objects so that --as-needed does not discard them.
+# on linux, the kernel is needed when it is loaded with RTLD_LOCAL (as done by
+# the python interface), since its symbols are then not visible to the libraries
+# loaded later. When the kernel is loaded globally (e.g. by the plumed executable)
+# it is not necessary, due to flat namespace.
+# As an alternative, on osx we could use -undefined dynamic_lookup. I prefer to use
+# the default option (two level namespace) since it should give linking errors in advance,
+# but we might change it later.
+# mklib uses link_shared, followed by the objects and then by link_libs_(un)installed:
+# the libraries must follow the objects using them, otherwise linkers using
+# --as-needed (the default on some distributions, e.g. Ubuntu) drop them.
 	@echo "link_shared='"$(LDSHARED)"'" >> $@
 	@echo "link_libs_installed='"$(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
-# Removed from the installed copy, like link_uninstalled (issue #408).
+# this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_libs_uninstalled='"$(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT)"'" >> $@
-# Preserve the legacy commands for external scripts.
+# kept for scripts written for previous versions (libraries before the objects, see above)
 	@echo "link_installed='"$(LDSHARED) $(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
 # this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_uninstalled='"$(LDSHARED) $(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT)"'" >> $@
+	@echo "mpi_provider_compile_flags='"$(CFLAGS)"'" >> $@
+	@echo "mpi_provider_link_flags='"$(filter-out $(CXX),$(LDSHARED)) $(LDFLAGS)"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
 .PHONY: clean
