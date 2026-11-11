@@ -70,6 +70,7 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
+    PLATFORMS.md     : features available on each platform and in the Python package
     README.md        : this file
     VERSION.txt      : version file
     astyle           : a local version of astyle, used to format code
@@ -85,19 +86,24 @@ Here's a description of the content of each file and directory in the root PLUME
     new-manual       : user manual (MkDocs)
     patches          : patch scripts
     plugins          : optional plugins (e.g. pycv)
-    python           : python stuff
+    python           : python package (wrappers and pip packaging)
+    pythonformatter.sh : formats the python code (as astyle for C++)
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
     ruff.toml        : configuration for the ruff Python linter
     scripts          : shell tools
     sourceme.sh.in   : template configuration script
     src              : source code
+    stamp-h.in       : timestamp file used by autoconf
     test             : examples
     user-doc         : old tutorials and pages from the Doxygen manual, not part of the current manual
     vim              : directory where vim syntax is generated
 
 Required software
 -----------------
+
+The following applies to the standard build on Linux and macOS. The experimental
+CMake build for Windows is described in [PLATFORMS.md](PLATFORMS.md).
 
 Required software:
 
@@ -110,6 +116,9 @@ Suggested software (libraries are checked by `./configure` and enabled if availa
 * An external MPI library for distributed-memory parallel simulations, matching the MPI implementation used by your MD code. Serial builds can instead use embedded thread-MPI for local ranks; see [MPI runtime selection](src/mpiwrap/README.md).
 * Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
 * [Zlib library](https://zlib.net/) to use compressed data files.
+* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
+* [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
+* [Chemfiles library](https://chemfiles.org/) to read more trajectory formats in `plumed driver` (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
 * [Doxygen](https://www.doxygen.nl) to build the developer manual. Doxygen might need:
   * [Graphviz](https://www.graphviz.org) to show class hierarchy in
@@ -128,6 +137,22 @@ This also allows one base `plumed` conda package with small optional
 `plumed-mpi` variants for MPICH and Open MPI, rather than separate full PLUMED
 builds. Our [conda recipes](conda/README.md) prototype and test that layout;
 this does not change conda-forge's current packages.
+
+Python package and other packages
+---------------------------------
+
+The Python package, including a basic PLUMED kernel and the `plumed` command,
+can be installed with
+
+    python -m pip install plumed
+
+Wheels are available for Linux (x86_64 and aarch64), macOS (Intel and Apple
+Silicon) and Windows (x86_64). They are compiled without MPI libraries, OpenMP
+and optional libraries; see [PLATFORMS.md](PLATFORMS.md) for the features
+available on each platform and [python/README.rst](python/README.rst) for the
+package itself.
+PLUMED is also distributed by several package managers (see the badges above),
+e.g. `conda install -c conda-forge plumed`.
 
 Quick compilation instructions
 ------------------------------
