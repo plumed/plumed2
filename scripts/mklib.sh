@@ -38,14 +38,14 @@ cleanup() {
 trap cleanup EXIT
 
 if test "$PLUMED_IS_INSTALLED" = yes ; then
-  link="$link_installed"
+  link_libs="$link_libs_installed"
 else
-  link="$link_uninstalled"
+  link_libs="$link_libs_uninstalled"
 fi
 
 tmpobj="$tmpdir/$(basename "$obj")"
 tmplib="$tmpdir/$(basename "$lib")"
-if eval "$compile" "$tmpobj" "$file" && eval "$link" "$tmplib" "$tmpobj" ; then
+if eval "$compile" "$tmpobj" "$file" && eval "$link_shared" "$tmpobj" "$link_libs" -o "$tmplib" ; then
   mv "$tmplib" "$lib"
 else
   echo "ERROR: compiling or linking $file" >&2
