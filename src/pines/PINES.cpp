@@ -240,6 +240,8 @@ void PINES::registerKeywords(Keywords &keys) {
   keys.add("numbered", "BLOCK", "Each block of the PIV");
   keys.add("compulsory", "REF_FILE", "PDB file name that contains the information about system connectivity and labels.");
   keys.add("compulsory", "N_BLOCKS", "Number of blocks in PIV");
+  keys.add("optional", "G1", "The first group of atoms of a BLOCK, selected using ATOMID, RESID and/or NAME (used only inside BLOCK)");
+  keys.add("optional", "G2", "The second group of atoms of a BLOCK, selected using ATOMID, RESID and/or NAME (used only inside BLOCK)");
   keys.add("compulsory", "BUFFER", "Number of additional pairwise distances to include as a buffer for each PIV block");
   keys.add("compulsory", "PL_REFRESH", "Upper limit refresh rate for each block pair list");
   keys.add("compulsory", "SIZE", "Length of each PIV Block");
