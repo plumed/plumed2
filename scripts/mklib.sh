@@ -166,13 +166,13 @@ do
 
 done
 
-link_command="$link_uninstalled"
+link_libs="$link_libs_uninstalled"
 
 if test "$PLUMED_IS_INSTALLED" = yes; then
-  link_command="$link_installed"
+  link_libs="$link_libs_installed"
 fi
 
-eval "$link_command" "$PLUMED_MKLIB_LDFLAGS" $objs -o "$tmp_lib" || exit 1
+eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmp_lib" || exit 1
 
 if test -n "$no_clobber" ; then
   # Another caller may have finished compiling these inputs while we linked.
