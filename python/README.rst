@@ -125,8 +125,9 @@ stored. It also preserves the historical ability to read without a kernel;
 it is not needed for HDF5 reading in a normal wheel installation. Writing
 HDF5 files needs no kernel.
 
-PLUMED itself must be built with ``--enable-libhdf5`` to read/write these files
-in native tools and simulations. Python HDF5 I/O uses ``h5py`` independently
+The kernel of the wheels reads and writes these files in native tools and
+simulations (a kernel built from the sources needs ``--enable-libhdf5``).
+Python HDF5 I/O uses ``h5py`` independently
 of whether the selected PLUMED kernel was built with HDF5 support. If a
 compatible h5py binary wheel is unavailable, building h5py from source requires
 HDF5 development headers and libraries; see the `h5py installation instructions

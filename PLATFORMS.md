@@ -28,7 +28,7 @@ Standard builds
 | MPI | external MPI library, or embedded thread-MPI | same | embedded thread-MPI only |
 | OpenMP | yes | yes (with Apple clang, needs libomp) | no |
 | Expressions compiled with asmjit | yes (x86_64 and 64 bit ARM) | yes | yes |
-| Optional libraries (BLAS/LAPACK, zlib, HDF5, FFTW, chemfiles, LibTorch, metatomic, ...) | yes, if found or requested | same | no (internal BLAS and LAPACK only) |
+| Optional libraries (BLAS/LAPACK, zlib, HDF5, FFTW, chemfiles, LibTorch, metatomic, ...) | yes, if found or requested | same | HDF5 and chemfiles (`-DPLUMED_ENABLE_HDF5=ON`, `-DPLUMED_ENABLE_CHEMFILES=ON`); internal BLAS and LAPACK |
 | Plugins and your own actions (`LOAD`, `plumed --load`, `plumed mklib`), `PLUMED` action with `KERNEL` | yes | yes | no |
 | Shared kernel loaded at run time (`PLUMED_KERNEL`, Python package) | yes | yes | yes, with `-DPLUMED_SHARED_KERNEL=ON` |
 | Patching MD codes (`plumed patch`) | yes | yes | no |
@@ -44,7 +44,9 @@ Python wheels
 -------------
 
 All the wheels are built from the same sources with the same choice of modules
-and libraries, so that a simulation input gives the same results on every
+and libraries (HDF5 and chemfiles are linked statically and their symbols are
+not exported, so that they do not interfere with other copies of them loaded in
+the same process, e.g. by h5py or by an MD code), so that a simulation input gives the same results on every
 platform. They are meant to analyze data from Python and to run small
 simulations; for production runs coupled to an MD code, use a standard build
 (or a conda package) configured for your machine.
@@ -58,7 +60,8 @@ simulations; for production runs coupled to an MD code, use a standard build
 | Expressions compiled with asmjit | yes | yes | yes |
 | Parallelism | embedded thread-MPI (`--tmpi-threads N`); no MPI library, no OpenMP | same | same |
 | BLAS and LAPACK | internal | internal | internal |
-| Compressed files (zlib), FFTW, HDF5 files, chemfiles | no | no | no |
+| HDF5 files (`.h5`), more trajectory formats with chemfiles (driver `--itraj`, GROMACS `.tpr` files) | yes | yes | yes |
+| Compressed files (zlib), FFTW | no | no | no |
 | Python interface (`Plumed`, `InputBuilder`, I/O helpers) | yes | yes | yes |
 | `plumed` command line tools written in C++ (`driver`, `sum_hills`, ...) | yes | yes | yes |
 | Tools written as shell scripts (`plumed patch`, `config`, `mklib`, `newcv`, ...) | yes | yes | no |
