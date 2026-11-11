@@ -60,6 +60,11 @@ public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
   void apply() override;
+/// Biases may depend on time/history even when all arguments are constant.
+/// Evaluate them during the simulation, after derived-class construction.
+  bool calculateConstantValues(const bool&) override {
+    return false;
+  }
 /// Also resets the forces on the arguments, so that a bias that does not call
 /// setOutputForce for an argument at this step applies no force to it
   void clearDerivatives(const bool& force=false) override;
