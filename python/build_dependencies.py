@@ -80,6 +80,10 @@ def extract(archive: Path, destination: Path) -> Path:
         if sys.version_info >= (3, 12):
             tar.extractall(destination, filter="data")
         else:
+            for member in tar.getmembers():
+                member_path = Path(member.name)
+                if member_path.is_absolute() or ".." in member_path.parts:
+                    raise RuntimeError(f"illegal path in tar archive: {member.name!r}")
             tar.extractall(destination)
     (top,) = [path for path in destination.iterdir() if path.is_dir()]
     return top
