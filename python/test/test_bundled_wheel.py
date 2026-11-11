@@ -14,6 +14,53 @@ import tempfile
 import plumed
 from plumed.runtime import kernel_path, package_root, resource_root
 
+# On Windows the runtime is built with CMake: plumed.exe and plumedKernel.dll in
+# bin, no LOAD (no dlopen, no mklib), and the copies of the kernel loaded by the
+# tests may still be mapped when their temporary directories are removed.
+WINDOWS = sys.platform == "win32"
+EXECUTABLE = package_root() / "bin" / ("plumed.exe" if WINDOWS else "plumed")
+
+
+def temporary_directory(**kwargs):
+    if WINDOWS:
+        kwargs["ignore_cleanup_errors"] = True
+    return tempfile.TemporaryDirectory(**kwargs)
+
+
+def windows_imports(binary):
+    """Names of the DLLs imported by a PE (x64) executable or DLL."""
+    data = Path(binary).read_bytes()
+
+    def u16(offset):
+        return int.from_bytes(data[offset : offset + 2], "little")
+
+    def u32(offset):
+        return int.from_bytes(data[offset : offset + 4], "little")
+
+    pe = u32(0x3C)
+    assert data[pe : pe + 4] == b"PE\0\0", binary
+    sections = u16(pe + 6)
+    optional = pe + 24
+    assert u16(optional) == 0x20B, "not a PE32+ (64 bit) image"
+    import_rva = u32(optional + 112 + 8)  # data directory 1 (imports)
+    table = optional + u16(pe + 20)
+
+    def offset(rva):
+        for i in range(sections):
+            header = table + 40 * i
+            size, address, raw = u32(header + 8), u32(header + 12), u32(header + 20)
+            if address <= rva < address + max(size, u32(header + 16)):
+                return rva - address + raw
+        raise ValueError(f"RVA {rva:#x} outside the sections of {binary}")
+
+    names = []
+    descriptor = offset(import_rva)
+    while u32(descriptor + 12):
+        start = offset(u32(descriptor + 12))
+        names.append(data[start : data.index(b"\0", start)].decode())
+        descriptor += 20
+    return names
+
 
 def check_package_layout():
     """The public interface and bundled runtime share one import namespace."""
@@ -74,6 +121,23 @@ with alternate.Plumed() as instance:
         subprocess.run([sys.executable, "-c", script], cwd=root, check=True)
 
 
+def run_python(script, **kwargs):
+    """Run a script in a new interpreter, showing its output if it fails."""
+    command = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+        **kwargs,
+    )
+    if command.returncode != 0:
+        raise AssertionError(
+            f"{script!r} failed with exit status {command.returncode}\n"
+            f"stdout:\n{command.stdout}\nstderr:\n{command.stderr}"
+        )
+    return command
+
+
 def check_package_relocation():
     """Both Python kernel discovery and the command follow a moved package."""
     with tempfile.TemporaryDirectory(prefix="plumed relocated package ") as temporary:
@@ -85,31 +149,20 @@ def check_package_relocation():
             if not name.startswith(("PLUMED_", "LD_", "DYLD_"))
         }
         env["PYTHONPATH"] = str(root)
+        # both sides resolved: on Windows the temporary directory may be
+        # given with 8.3 short names (e.g. C:\Users\RUNNER~1)
         discovery_script = (
             "import plumed; from pathlib import Path; "
-            "assert Path(plumed.__file__).resolve().parent.parent == Path.cwd(); "
+            "root = Path(plumed.__file__).resolve().parent.parent; "
+            "assert root == Path.cwd().resolve(); "
             "assert 'DISTANCE' in plumed.InputBuilder()._vimdict"
         )
-        subprocess.run(
-            [sys.executable, "-c", discovery_script],
-            cwd=root,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        run_python(discovery_script, cwd=root, env=env)
         cli_script = (
             "import sys; from plumed.runtime.cli import main; "
             "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()"
         )
-        command = subprocess.run(
-            [sys.executable, "-c", cli_script],
-            cwd=root,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        command = run_python(cli_script, cwd=root, env=env)
         assert (
             Path(command.stdout.strip()).resolve()
             == (root / "plumed" / "runtime" / "lib" / "plumed").resolve()
@@ -207,7 +260,7 @@ def check_actions(source_tree):
 def check_external_kernel(bundled):
     """InputBuilder reads the metadata from an explicitly selected new kernel
     located elsewhere (a copy of the bundled one)."""
-    with tempfile.TemporaryDirectory() as temporary:
+    with temporary_directory() as temporary:
         kernel = str(Path(temporary) / ("external-" + bundled.name))
         shutil.copy2(bundled, kernel)
         assert plumed._readkernelmetadata(kernel=kernel) is not None
@@ -283,6 +336,8 @@ def check_vim_generation(executable):
                 check=True,
                 capture_output=True,
             ).stdout
+            # the standard output of plumed.exe is in text mode
+            manual = manual.replace(b"\r\n", b"\n")
             first_line, separator, help_text = manual.partition(b"\n")
             assert separator, f"manual output for {action} has no first line"
             tokens = first_line.decode("utf-8").split(",")
@@ -578,6 +633,9 @@ def check_inputbuilder_load():
 
 def check_load():
     """Compile an action at runtime with LOAD, as users do with their own CVs."""
+    if WINDOWS:
+        print("skipping the LOAD test: LOAD is not supported on Windows")
+        return
     options = (resource_root() / "src" / "config" / "compile_options.sh").read_text()
     compiler = shlex.split(re.search(r"^compile='(.*?) -c ", options, re.M).group(1))
     if shutil.which(compiler[0]) is None:
@@ -620,6 +678,9 @@ def check_load():
 
 def check_dynamic_cltool_module(executable):
     """A dynamically loaded CLTool alone still has a defined module entry."""
+    if WINDOWS:
+        print("skipping the dynamic CLTool test: LOAD is not supported on Windows")
+        return
     options = (resource_root() / "src" / "config" / "compile_options.sh").read_text()
     compiler = shlex.split(re.search(r"^compile='(.*?) -c ", options, re.M).group(1))
     if shutil.which(compiler[0]) is None:
@@ -703,7 +764,7 @@ def main():
     assert builder._vimdict["MOVINGRESTRAINT"]["KAPPA"] == "(numbered)"
     assert "DISTANCE" in builder._vimdict
 
-    with tempfile.TemporaryDirectory() as temporary:
+    with temporary_directory() as temporary:
         override = Path(temporary) / bundled.name
         shutil.copy2(bundled, override)
         os.environ["PLUMED_KERNEL"] = str(override)
@@ -730,12 +791,12 @@ def main():
 
     check_external_kernel(bundled)
     check_json_matches_vim()
-    check_cli_json_matches_kernel(bundled, package_root() / "bin" / "plumed")
+    check_cli_json_matches_kernel(bundled, EXECUTABLE)
     check_metadata_transfer_errors(bundled)
-    check_vim_generation(package_root() / "bin" / "plumed")
+    check_vim_generation(EXECUTABLE)
     check_vim_fallback()
     check_load()
-    check_dynamic_cltool_module(package_root() / "bin" / "plumed")
+    check_dynamic_cltool_module(EXECUTABLE)
 
     source_tree = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
     hidden_source = (
@@ -745,8 +806,8 @@ def main():
     hidden_vim = vim_tree.with_name("vim.hidden")
     json_tree = resource_root() / "json"
     hidden_json = json_tree.with_name("json.hidden")
-    executable = package_root() / "bin" / "plumed"
-    hidden_executable = executable.with_name("plumed.hidden")
+    executable = EXECUTABLE
+    hidden_executable = executable.with_name(executable.name + ".hidden")
     if source_tree and source_tree.is_dir():
         check_actions(source_tree)
     with tempfile.TemporaryDirectory() as empty_path:
@@ -782,7 +843,15 @@ def main():
     elif sys.platform == "darwin":
         dependencies = subprocess.check_output(["otool", "-L", str(bundled)], text=True)
     else:
-        dependencies = ""
+        # the C++ runtime is linked statically (see build_backend.py): no
+        # Visual C++ redistributable DLL is needed, nor added to the wheel
+        forbidden += ("msvcp", "vcruntime", "concrt", "api-ms-win-crt")
+        dependencies = "\n".join(
+            f"{binary.name}: {name}"
+            for binary in (bundled, EXECUTABLE)
+            for name in windows_imports(binary)
+        )
+        print(dependencies)
     lowered = dependencies.lower()
     assert not any(name in lowered for name in forbidden), dependencies
     print((resource_root() / "build-info.txt").read_text())

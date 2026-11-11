@@ -137,15 +137,25 @@ function(plumed_generate_config src_root out_dir)
   plumed_read_version("${src_root}")
 
   # Config.inc: the substitutions that src/config/Makefile does with sed for
-  # the non-installed build. configure_file() is the CMake equivalent.
-  get_filename_component(_root "${src_root}" ABSOLUTE)
-  file(TO_CMAKE_PATH "${_root}" _root)
-  set(PLUMED_ROOT "${_root}")
+  # the non-installed build (Config.inc) or, with INSTALLED, for the installed
+  # one (ConfigInstall.inc, with the paths under PREFIX as make install does).
+  # configure_file() is the CMake equivalent.
   set(SOEXT "dll")
-  set(ISINSTALLED "false")
-  set(htmldir "xxxxNAxxxx")
-  set(includedir "xxxxNAxxxx")
   set(program_name "plumed")
+  if(INSTALLED)
+    file(TO_CMAKE_PATH "${PREFIX}" _prefix)
+    set(PLUMED_ROOT "${_prefix}/lib/plumed")
+    set(ISINSTALLED "true")
+    set(htmldir "${_prefix}/share/doc/plumed")
+    set(includedir "${_prefix}/include")
+  else()
+    get_filename_component(_root "${src_root}" ABSOLUTE)
+    file(TO_CMAKE_PATH "${_root}" _root)
+    set(PLUMED_ROOT "${_root}")
+    set(ISINSTALLED "false")
+    set(htmldir "xxxxNAxxxx")
+    set(includedir "xxxxNAxxxx")
+  endif()
   configure_file("${src_root}/src/config/Config.inc.in" "${out_dir}/Config.inc" @ONLY)
 
   # version.h (update-version.sh)

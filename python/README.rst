@@ -5,11 +5,14 @@ Install using the following command::
 
      python -m pip install plumed
 
-The package supports CPython 3.11 through 3.15. The Linux and macOS wheels
-include a basic PLUMED kernel and the ``plumed`` command. Linux wheels target
+The package supports CPython 3.11 through 3.15. The Linux, macOS and Windows
+wheels include a basic PLUMED kernel and the ``plumed`` command. Linux wheels target
 the manylinux2014 baseline (glibc 2.17). The macOS deployment target is 10.15
 for Intel and at least 11.0 for Apple Silicon; the wheel tag records the actual
-minimum, which also depends on the Python version. The bundled kernel is used
+minimum, which also depends on the Python version. Windows wheels are built for
+x86_64 (AMD64); there, the ``LOAD`` action, ``plumed mklib`` and the commands
+implemented as shell scripts (e.g. ``plumed config``, ``plumed patch``) are not
+available. The bundled kernel is used
 by default. You
 can select another kernel for a process with ``PLUMED_KERNEL`` or for one
 object with ``Plumed(kernel=...)``.
@@ -36,7 +39,8 @@ Finally, notice that you can set the path to the plumed library directly when de
 
 This allows you to mix different PLUMED versions in the same Python script.
 
-Source builds bundle a kernel by default. Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
+Source builds bundle a kernel by default (built with ``configure`` and ``make``,
+or with CMake and Visual Studio on Windows). Set ``PLUMED_BUILD_KERNEL=0`` when building the package to produce a wrapper-only distribution.
 
 Package layout
 --------------

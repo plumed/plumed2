@@ -81,7 +81,14 @@ jobs:
             arch: x86_64
           - os: macos-15
             arch: arm64
+          # kernel built with CMake and Visual Studio (see python/build_backend.py)
+          - os: windows-latest
+            arch: AMD64
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # Git Bash on Windows
+        shell: bash
     steps:
       - uses: actions/checkout@v6
 
@@ -99,7 +106,9 @@ jobs:
           mkdir source
           tar -xzf dist/*.tar.gz -C source
           archive_root="$(tar -tzf dist/*.tar.gz | sed -n '1s,/.*,,p')"
-          echo "PROJECT_DIR=$PWD/source/$archive_root" >> "$GITHUB_ENV"
+          # a native path, also for the Windows python (Git Bash $PWD is /d/a/...)
+          workdir="$(python -c 'import os; print(os.getcwd())')"
+          echo "PROJECT_DIR=$workdir/source/$archive_root" >> "$GITHUB_ENV"
 
       - name: Build and test wheels
         env:
