@@ -27,7 +27,7 @@ simulations; for production runs coupled to an MD code, use a standard build
 | Minimum OS | glibc 2.17 (manylinux2014) | macOS 10.15 (Intel), 11.0 (Apple Silicon) | 64 bit Windows |
 | Python | CPython 3.11 and later | CPython 3.11 and later | CPython 3.11 and later |
 | Kernel built with | `./configure` and `make`, GCC | `./configure` and `make`, Apple clang | CMake, Visual Studio (static C/C++ runtime) |
-| Modules | default ones (`always` and `default-on`) | same | same |
+| Modules (see [README.md](README.md#modules-and-plugins)) | `always` and `default-on` ones | same | same |
 | Expressions compiled with asmjit | yes | yes | yes |
 | Parallelism | embedded thread-MPI (`--tmpi-threads N`); no MPI library, no OpenMP | same | same |
 | BLAS and LAPACK | internal | internal | internal |
@@ -35,7 +35,7 @@ simulations; for production runs coupled to an MD code, use a standard build
 | Python interface (`Plumed`, `InputBuilder`, I/O helpers) | yes | yes | yes |
 | `plumed` command line tools written in C++ (`driver`, `sum_hills`, ...) | yes | yes | yes |
 | Tools written as shell scripts (`plumed patch`, `config`, `mklib`, `newcv`, ...) | yes | yes | no |
-| `LOAD` of plugins, `plumed mklib` (need a C++ compiler at run time) | yes | yes | no |
+| Plugins and your own actions (`LOAD`, `plumed mklib`; compiling them needs a C++ compiler) | yes | yes | no |
 | Running external programs (e.g. `MOLINFO` selections with `PYTHON_BIN`) | yes | yes | no |
 | Stack trace in error messages | yes | yes | without function names (no debug information) |
 | File names with non-ASCII characters | yes | yes | yes |
@@ -53,12 +53,12 @@ Standard builds
 |---|---|---|---|
 | Build system | `./configure` and `make` | `./configure` and `make` | CMake and Visual Studio (experimental, see `CMakeLists.txt`) |
 | Libraries | shared kernel, static archive, wrapper library | same | static kernel (to be linked into an MD code), or shared kernel with `-DPLUMED_SHARED_KERNEL=ON` |
-| Modules | any (`--enable-modules`) | any | default ones; VES with `-DPLUMED_ENABLE_VES=ON` |
+| Modules (see [README.md](README.md#modules-and-plugins)) | any (`--enable-modules`) | any | `always` and `default-on` ones; VES with `-DPLUMED_ENABLE_VES=ON` |
 | MPI | external MPI library, or embedded thread-MPI | same | embedded thread-MPI only |
 | OpenMP | yes | yes (with Apple clang, needs libomp) | no |
 | Expressions compiled with asmjit | yes (x86_64 and 64 bit ARM) | yes | yes |
 | Optional libraries (BLAS/LAPACK, zlib, HDF5, FFTW, chemfiles, LibTorch, metatomic, ...) | yes, if found or requested | same | no (internal BLAS and LAPACK only) |
-| `LOAD`, `plumed --load`, `PLUMED` action with `KERNEL` | yes | yes | no |
+| Plugins and your own actions (`LOAD`, `plumed --load`, `plumed mklib`), `PLUMED` action with `KERNEL` | yes | yes | no |
 | Shared kernel loaded at run time (`PLUMED_KERNEL`, Python package) | yes | yes | yes, with `-DPLUMED_SHARED_KERNEL=ON` |
 | Patching MD codes (`plumed patch`) | yes | yes | no |
 | Tools written as shell scripts | yes | yes | no |

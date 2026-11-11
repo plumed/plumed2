@@ -138,6 +138,51 @@ This also allows one base `plumed` conda package with small optional
 builds. Our [conda recipes](conda/README.md) prototype and test that layout;
 this does not change conda-forge's current packages.
 
+Modules and plugins
+-------------------
+
+The source code is organized in modules, one for each directory of `src`.
+The `module.type` file of each module says when it is compiled:
+
+* `always`: the basic infrastructure (e.g. `core`, `tools`), always compiled;
+* `default-on`: the common actions (e.g. `bias`, `colvar`, `function`,
+  `generic`, `multicolvar`, `secondarystructure`), compiled unless they are
+  disabled;
+* `default-off`: specialized methods and modules that need external libraries
+  (e.g. `opes`, `ves`, `funnel`, `sasa`, `pytorch`, `metatomic`), compiled only
+  when they are requested.
+
+Modules are selected when PLUMED is configured, with a `:`-separated list:
+
+    ./configure --enable-modules=+opes:+ves   # add modules to the default ones
+    ./configure --enable-modules=-isdb        # remove a default-on module
+    ./configure --enable-modules=all          # all the modules
+    ./configure --enable-modules=none:+opes   # only the always modules and opes
+
+A module that needs an external library provides its actions only if PLUMED
+is also configured with that library (see `./configure --help`, e.g.
+`--enable-libtorch` for `pytorch`). The modules of an installed PLUMED are listed by
+`plumed config show`, and `plumed config module opes` tells if a module is
+enabled. The Python wheels (`pip install plumed`) and the CMake build for
+Windows include only the `always` and `default-on` modules
+(see [PLATFORMS.md](PLATFORMS.md)).
+
+Plugins are compiled separately, against an installed PLUMED, and loaded at
+run time with the `LOAD` action (`LOAD FILE=plugin.so` in the input, or
+`plumed --load plugin.so` for the command line tools). This also works with the
+Python wheels on Linux and macOS, but not on Windows. Plugins can be:
+
+* your own actions: a C++ file with an action can be compiled with
+  `plumed mklib MyCV.cpp`, or loaded directly with `LOAD FILE=MyCV.cpp`, which
+  compiles it when PLUMED starts (a C++ compiler is needed in both cases);
+* the plugins in the [plugins](plugins) directory, each with its own README and
+  build instructions: [pycv](plugins/pycv/README.md) (collective variables and
+  functions written in Python, installed with `pip`),
+  [cudaCoord](plugins/cudaCoord/README.md) (coordination number on GPUs with
+  CUDA) and [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
+  GPUs with OpenACC, including SAXS and SANS). cudaCoord and openaccPTM are
+  compiled with `./configure` and `make` in their directory.
+
 Python package and other packages
 ---------------------------------
 
