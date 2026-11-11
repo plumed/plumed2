@@ -6,6 +6,6 @@ $$
 s = \sum_i w(\{X\}_i) g[f(\{X\}_i)]
 $$
 
-In this expression, $g$ is a function with one argument and $g$ is a function of a set of atomic positions, $\{X\}_i$.  
-Meanwhile, \f$w\f$ is a weight that is also a function of the set of atomic positions. This weight varies between zero and one.  You can 
-thus use expressions like the one above to determine the average value of a quanitty in a particular part of the simulation box.
+In this expression, $g$ is a function with one argument and $f$ is a function of a set of atomic positions, $\{X\}_i$.
+Meanwhile, $w$ is a weight that is also a function of the set of atomic positions. This weight varies between zero and one.  You can
+thus use expressions like the one above to determine the average value of a quantity in a particular part of the simulation box.
