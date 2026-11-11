@@ -148,8 +148,10 @@ public:
 /// Set all the derivatives to zero
   void clearDerivatives( const bool force=false );
 /// Add some derivative to the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void setDerivative(unsigned i, double d);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
@@ -323,12 +325,20 @@ void Value::resizeDerivatives(int n) {
 
 inline
 void Value::addDerivative(unsigned i,double d) {
+  // Constant scalars store only their value. Grid derivatives remain valid.
+  if(valtype==constant && shape.empty()) {
+    return;
+  }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
   data[1+i]+=d;
 }
 
 inline
 void Value::setDerivative(unsigned i, double d) {
+  // Constant scalars store only their value. Grid derivatives remain valid.
+  if(valtype==constant && shape.empty()) {
+    return;
+  }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
   data[1+i]=d;
 }

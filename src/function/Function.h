@@ -54,10 +54,7 @@ public:
 
 inline
 void Function::setDerivative(Value*v,int i,double d) {
-  // Constant evaluation keeps only the value, without derivative storage.
-  if(!v->isConstant()) {
-    v->addDerivative(i,d);
-  }
+  v->addDerivative(i,d);
 }
 
 inline
