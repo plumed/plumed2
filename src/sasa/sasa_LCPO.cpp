@@ -53,7 +53,7 @@ Different properties can be calculated and selected using the TYPE keyword:
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
 
-\verbatim
+````
 ----------------Sample DeltaG.dat file---------------------
 ALA	0.711019999999962
 ARG	-2.24832799999996
@@ -77,7 +77,7 @@ TYR	0.775547999999958
 VAL	2.12779200000011
 BACKBONE	1.00066920000002
 -----------------------------------------------------------
-\endverbatim
+````
 
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
