@@ -1,5 +1,6 @@
 #include "plumed/core/Value.h"
 #include <fstream>
+#include <exception>
 int main() {
   PLMD::Value scalar(nullptr,"scalar",true);
   scalar.resizeDerivatives(2);
@@ -15,9 +16,23 @@ int main() {
   // Constant grids retain spatial derivatives for interpolation.
   PLMD::Value grid(nullptr,"grid",true,{2});
   grid.setConstant();
-  grid.setDerivative(0,2);
-  grid.addDerivative(0,3);
+  grid.setGridDerivatives(0,0,2);
+  grid.addGridDerivatives(0,0,3);
   ok=ok && grid.getGridDerivative(0,0)==5;
+#ifndef NDEBUG
+  bool rejected_set=false, rejected_add=false;
+  try {
+    grid.setDerivative(0,1);
+  } catch(const std::exception&) {
+    rejected_set=true;
+  }
+  try {
+    grid.addDerivative(0,1);
+  } catch(const std::exception&) {
+    rejected_add=true;
+  }
+  ok=ok && rejected_set && rejected_add;
+#endif
   std::ofstream("output") << (ok ? "PASS" : "FAIL") << "\n";
   return ok ? 0 : 1;
 }
