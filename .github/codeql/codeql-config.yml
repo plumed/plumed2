@@ -22,4 +22,3 @@ paths-ignore:
   - python/test
   - plugins/*/regtest
   - plugins/pycv/pythontests
-  - user-doc/tutorials
