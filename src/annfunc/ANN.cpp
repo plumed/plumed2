@@ -119,6 +119,7 @@ ANN::~ANN() {
 void ANN::registerKeywords( Keywords& keys ) {
   Function::registerKeywords(keys);
   keys.use("PERIODIC");
+  keys.addDOI("10.1002/jcc.25520");
   keys.add("compulsory", "NUM_LAYERS", "number of layers of the neural network");
   keys.add("compulsory", "NUM_NODES", "numbers of nodes in each layer of the neural network");
   keys.add("compulsory", "ACTIVATIONS", "activation functions for the neural network");
