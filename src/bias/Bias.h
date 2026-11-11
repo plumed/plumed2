@@ -57,6 +57,11 @@ public:
   explicit Bias(const ActionOptions&ao);
   void apply() override;
   unsigned getNumberOfDerivatives() override;
+/// Biases may depend on time/history even when all arguments are constant.
+/// Evaluate them during the simulation, after derived-class construction.
+  bool calculateConstantValues(const bool&) override {
+    return false;
+  }
 };
 
 inline

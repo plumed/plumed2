@@ -1,0 +1,1 @@
+Constant-only STATS exercises Function::setDerivative(Value*,...) without action-specific guards. CUSTOM covers the shared scalar-function wrapper. Mixed constant/distance inputs retain derivatives: at distance 2 the sum of STATS and CUSTOM biases is 19 and the forces are +7 and -7 along x. Both constant STATS output modes and analytic forces are checked.
