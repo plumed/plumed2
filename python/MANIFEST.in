@@ -5,6 +5,7 @@ include plumed.pyx
 include cplumed.pxd
 include LICENSE
 include build_backend.py
+include build_dependencies.py
 #this should be refined
 include test/*
 recursive-include plumed *

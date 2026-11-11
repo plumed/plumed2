@@ -202,8 +202,8 @@ can be installed with
     python -m pip install plumed
 
 Wheels are available for Linux (x86_64 and aarch64), macOS (Intel and Apple
-Silicon) and Windows (x86_64). They are compiled without MPI libraries, OpenMP
-and optional libraries; see [PLATFORMS.md](PLATFORMS.md) for the features
+Silicon) and Windows (x86_64). They are compiled without MPI libraries and
+OpenMP, and include HDF5 and chemfiles; see [PLATFORMS.md](PLATFORMS.md) for the features
 available on each platform and [python/README.rst](python/README.rst) for the
 package itself.
 PLUMED is also distributed by several package managers (see the badges above),

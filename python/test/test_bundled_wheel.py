@@ -1,6 +1,7 @@
 """Smoke checks run against the repaired wheel in cibuildwheel's test environment."""
 
 import array
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -205,6 +206,100 @@ def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
     assert abs(bias[0] - 7.0) < 1.0e-12
     assert abs(forces[0] - 1.0) < 1.0e-12
     p.finalize()
+
+
+def check_optional_libraries(bundled, executable):
+    """HDF5 and chemfiles, linked statically in the kernel, and the opes module."""
+    config = (resource_root() / "src" / "config" / "config.txt").read_text()
+    for entry in ("has libhdf5 on", "has libchemfiles on", "module opes on"):
+        assert re.search(rf"^{entry}\b", config, re.M), entry
+    if not WINDOWS:
+        # their symbols are not exported (Linux: --exclude-libs, Windows: only
+        # the C entry points of the kernel are exported); macOS uses two-level
+        # namespaces, so that exported copies cannot clash with other ones
+        if sys.platform.startswith("linux"):
+            kernel = ctypes.CDLL(str(bundled))
+            for symbol in ("H5Fopen", "chfl_version", "deflate", "lzma_code"):
+                assert not hasattr(kernel, symbol), symbol
+    else:
+        kernel = ctypes.WinDLL(str(bundled))
+        for symbol in ("H5Fopen", "chfl_version", "deflate"):
+            assert not hasattr(kernel, symbol), symbol
+    try:
+        # the HDF5 library of h5py, loaded in the same process
+        import h5py
+    except ImportError:
+        h5py = None
+    with temporary_directory() as temporary:
+        directory = Path(temporary)
+        table = directory / "colvar.h5"
+        p = plumed.Plumed()
+        p.cmd("setMDEngine", "python")
+        p.cmd("setNatoms", 2)
+        p.cmd("setLogFile", str(directory / "log"))
+        p.cmd("init")
+        p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
+        p.cmd("readInputLine", f"PRINT ARG=d FILE={table.as_posix()}")
+        box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+        for step in range(3):
+            positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
+            p.cmd("setStep", step)
+            p.cmd("setBox", box)
+            p.cmd("setPositions", positions)
+            p.cmd("setForces", array.array("d", [0] * 6))
+            p.cmd("setVirial", array.array("d", [0] * 9))
+            p.cmd("calc")
+        p.finalize()
+        if h5py is not None:
+            with h5py.File(table, "r") as f:
+                assert list(f["block_0"]["d"][:]) == [1.0, 2.0, 3.0]
+        text = directory / "colvar.txt"
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "h5convert",
+                "--input",
+                str(table),
+                "--output",
+                str(text),
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in text.read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [1.0, 2.0, 3.0], rows
+        # a trajectory read by chemfiles
+        trajectory = directory / "traj.xyz"
+        trajectory.write_text(
+            "".join(f"2\nframe {i}\nAr 0 0 0\nAr 0 0 {i + 1}\n" for i in range(2))
+        )
+        (directory / "plumed.dat").write_text(
+            "d: DISTANCE ATOMS=1,2 NOPBC\nPRINT ARG=d FILE=colvar\n"
+        )
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "driver",
+                "--plumed",
+                "plumed.dat",
+                "--itraj",
+                "traj.xyz",
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in (directory / "colvar").read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [0.1, 0.2], rows
 
 
 def enabled_modules():
@@ -797,6 +892,7 @@ def main():
     check_vim_fallback()
     check_load()
     check_dynamic_cltool_module(EXECUTABLE)
+    check_optional_libraries(bundled, EXECUTABLE)
 
     source_tree = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
     hidden_source = (
@@ -837,7 +933,19 @@ def main():
             if hidden_source and hidden_source.exists():
                 hidden_source.rename(source_tree)
 
-    forbidden = ("mpi", "gomp", "openblas", "blas", "lapack", "fftw")
+    # (zlib, HDF5 and chemfiles are linked statically)
+    forbidden = (
+        "mpi",
+        "gomp",
+        "openblas",
+        "blas",
+        "lapack",
+        "fftw",
+        "hdf5",
+        "chemfiles",
+        "libz.",
+        "zlib",
+    )
     if sys.platform.startswith("linux"):
         dependencies = subprocess.check_output(["ldd", str(bundled)], text=True)
     elif sys.platform == "darwin":
