@@ -102,16 +102,28 @@ Here's a description of the content of each file and directory in the root PLUME
 Required software
 -----------------
 
-The following applies to the standard build on Linux and macOS. The features available 
-on different architectures are described in: [PLATFORMS.md](PLATFORMS.md).
+The following applies to the standard build from the sources. The features
+available on each platform, and with the Python and conda packages, are
+described in [PLATFORMS.md](PLATFORMS.md).
 
-Required software:
+Required software on Linux and macOS:
 
 * GNU make.
 * C/c++ compiler (c++17 support is required as of version 2.10).
 * A modern version of the `patch` command line tool.
 
-Suggested software (libraries are checked by `./configure` and enabled if available):
+Required software on Windows (experimental CMake build):
+
+* [CMake](https://cmake.org) 3.18 or later.
+* Visual Studio 2022, or the Build Tools for Visual Studio, with the
+  "Desktop development with C++" workload (MSVC with C++17 support).
+
+No other library is needed on Windows: BLAS and LAPACK are replaced by the
+internal version, and parallel runs use the embedded thread-MPI. Running the
+regression tests also needs a bash shell (e.g. Git Bash).
+
+Suggested software on Linux and macOS (libraries are checked by `./configure`
+and enabled if available):
 
 * An external MPI library for distributed-memory parallel simulations, matching the MPI implementation used by your MD code. Serial builds can instead use embedded thread-MPI for local ranks; see [MPI runtime selection](src/mpiwrap/README.md).
 * Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
@@ -197,13 +209,14 @@ and optional libraries; see [PLATFORMS.md](PLATFORMS.md) for the features
 available on each platform and [python/README.rst](python/README.rst) for the
 package itself.
 PLUMED is also distributed by several package managers (see the badges above),
-e.g. `conda install -c conda-forge plumed`.
+e.g. `conda install -c conda-forge plumed` on Linux and macOS; the features of
+the conda packages are also described in [PLATFORMS.md](PLATFORMS.md).
 
 Quick compilation instructions
 ------------------------------
 
 Extensive installation instructions are in the [user documentation](https://www.plumed.org/doc).
-Quick instructions:
+Quick instructions for Linux and macOS (for Windows, see [below](#windows)):
 
     ./configure --prefix=$HOME/opt
     make
@@ -232,3 +245,29 @@ A sample modulefile with environment variable will be placed in
 `$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
 install multiple PLUMED versions side by side and select them with env modules.
 
+### Windows
+
+On Windows, PLUMED is compiled with the experimental CMake build
+(`CMakeLists.txt`), from a command prompt or PowerShell where `cmake` is
+available (e.g. the Developer PowerShell for Visual Studio):
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release --parallel
+    cmake --install build --prefix <prefix>
+
+Then `<prefix>\bin\plumed.exe help` runs PLUMED. Useful options, passed to the
+first command:
+
+* `-DPLUMED_SHARED_KERNEL=ON`: build a shared kernel (`plumedKernel.dll`) that
+  can be loaded at run time (`PLUMED_KERNEL`, Python package), instead of a
+  static one to be linked into an MD code;
+* `-DPLUMED_ENABLE_VES=ON`: also compile the VES module;
+* `-DPLUMED_MSVC_DEBUG_INFO=ON`: function names in the stack trace of error
+  messages.
+
+A subset of the regression tests is run from Git Bash with
+`.ci/windows-regtests serial` (and `mpi`, with the embedded thread-MPI). The
+script expects `build/plumed.exe`, as produced by the Ninja generator (add
+`-G Ninja` to the first command, in the Developer PowerShell). If you only need
+PLUMED from Python or the `plumed` command line tools, `python -m pip install plumed`
+is simpler.
