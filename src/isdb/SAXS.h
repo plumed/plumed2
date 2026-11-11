@@ -23,6 +23,7 @@
 #define __PLUMED_isdb_SAXS_h
 
 #include "MetainferenceBase.h"
+#include "OnebeadMapping.h"
 #include "SAXSDebyeBackend.h"
 #include "tools/PDB.h"
 #include "tools/Random.h"
@@ -43,23 +44,22 @@ namespace isdb {
 /// The member functions are split over several files:
 /// - SAXS.cpp: setup, ATOMISTIC form factors, Debye sum, metainference;
 /// - SAXSMartini.cpp: MARTINI form factors and bead mapping;
-/// - SAXSOnebead.cpp: ONEBEAD mapping, form factors (SAXS/SANS) and glycan/ion helpers;
+/// - SAXSOnebead.cpp: ONEBEAD form factors (SAXS/SANS);
 /// - SAXSLCPO.cpp: LCPO parameters used for the SASA-based solvation correction.
+/// The ONEBEAD mapping (atoms to beads, bead types) is in OnebeadMapping.
 class SAXS :
-  public MetainferenceBase {
+  public MetainferenceBase,
+  private OnebeadTypes {
 private:
   // ATOMISTIC X-ray/neutron form-factor slots. The first six are the original
   // biological elements; the AFF_* entries are monoatomic ions whose Cromer-Mann
-  // and neutron parameters are supplied by getIonData().
+  // and neutron parameters are supplied by getIonData(). The AFF_* slots are in the
+  // order of the ION_* ids of OnebeadTypes, so that affSlot() maps an ion id to its slot;
+  // the ONEBEAD bead types (TRP, ..., OB_MN, NONEBEAD) are also in OnebeadTypes.
   enum { H, C, N, O, P, S,
          AFF_NA, AFF_K, AFF_CL, AFF_CA, AFF_MG, AFF_ZN, AFF_FE2, AFF_FE3, AFF_MN,
          NTT
        };
-  // Canonical ion identifiers, shared by the ATOMISTIC and ONEBEAD routes.
-  // getIonData() and ionTypeFromResname() are keyed on these values. The AFF_*
-  // (atomistic) slots above and the OB_* (onebead) slots below MUST be listed in
-  // this same order so that affSlot()/obSlot() can map an ion id to its slot.
-  enum { ION_NA, ION_K, ION_CL, ION_CA, ION_MG, ION_ZN, ION_FE2, ION_FE3, ION_MN, NIONS };
   enum { ALA_BB, ARG_BB, ARG_SC1, ARG_SC2, ASN_BB, ASN_SC1, ASP_BB, ASP_SC1, CYS_BB, CYS_SC1,
          GLN_BB, GLN_SC1, GLU_BB, GLU_SC1, GLY_BB, HIS_BB, HIS_SC1, HIS_SC2, HIS_SC3, ILE_BB,
          ILE_SC1, LEU_BB, LEU_SC1, LYS_BB, LYS_SC1, LYS_SC2, MET_BB, MET_SC1, PHE_BB, PHE_SC1,
@@ -76,52 +76,6 @@ private:
          // Extra protein beads present only in the Martini 3 topology (MARTINI_FF=3)
          ALA_SC1, TRP_SC5, TYR_SC4,
          NMARTINI
-       };
-  enum { TRP,
-         TYR,
-         PHE,
-         HIS,
-         HIP,
-         ARG,
-         LYS,
-         CYS,
-         CYX,
-         ASP,
-         GLU,
-         ILE,
-         LEU,
-         MET,
-         ASN,
-         PRO,
-         GLN,
-         SER,
-         THR,
-         VAL,
-         ALA,
-         GLY,
-         BB_PO2,
-         BB_PO3,
-         BB_DNA,
-         BB_DNA_5,
-         BB_DNA_3,
-         BB_RNA,
-         BB_RNA_5,
-         BB_RNA_3,
-         BASE_A,
-         BASE_C,
-         BASE_T,
-         BASE_G,
-         BASE_U,
-         // Monosaccharide bead types (one bead per residue, exactly as for the
-         // amino acids). GLYC_NAG/GLYC_NGA are the N-acetylated hexosamines
-         // (GlcNAc/GalNAc); see getOnebeadparam() for the provenance of the
-         // corresponding 21-parameter sets.
-         GLYC_FUC, GLYC_MAN, GLYC_BMA, GLYC_GAL, GLYC_GLC, GLYC_NAG, GLYC_NGA, GLYC_SIA,
-         // Monoatomic-ion bead types (one atom per bead). Their vac/solv/mix terms are
-         // filled analytically by getOnebeadIonparam_*(); see ionTypeFromResname() for
-         // residue-name detection. This list MUST stay in the same order as ION_*/AFF_*.
-         OB_NA, OB_K, OB_CL, OB_CA, OB_MG, OB_ZN, OB_FE2, OB_FE3, OB_MN,
-         NONEBEAD
        };
   struct SplineCoeffs {
     double a;
@@ -155,8 +109,6 @@ private:
   bool isFirstStep;
   unsigned nres;
   std::vector<unsigned> atoi;
-  std::vector<unsigned> atoms_per_bead;
-  std::vector<double>   atoms_masses;
   std::vector<double>   q_list;
   std::vector<double>   expint;
   std::vector<double>   experr;
@@ -173,20 +125,8 @@ private:
   std::vector<std::vector<double> > FF_value_mixed_D;
 
   std::vector<std::vector<double> > LCPOparam;
-  std::vector<unsigned> residue_atom;
-  // ONEBEAD: atoms of each bead (CSR, increasing order), 1/mass of each bead and
-  // mass of each atom / mass of its bead
-  std::vector<unsigned> bead_off_;
-  std::vector<unsigned> bead_atoms_;
-  std::vector<double> bead_inv_mass_;
-  std::vector<double> atom_weight_;
-  // ONEBEAD glycans. glyc_type[i] is the bead type (GLYC_*) of atom i, or -1 when
-  // atom i does not belong to a monosaccharide. glyc_bridge[i] flags the glycan
-  // oxygens that carry a glycosidic bond in the TEMPLATE, so that the LCPO SASA
-  // treats them as ethers rather than as free hydroxyls. Both are filled by
-  // getOnebeadMapping() and are indexed exactly like LCPOparam.
-  std::vector<int>  glyc_type;
-  std::vector<bool> glyc_bridge;
+  // ONEBEAD: the beads of the atoms
+  std::unique_ptr<OnebeadMapping> mapping_;
 
   double rho, rho_corr, sasa_cutoff;
   double deuter_conc;
@@ -307,11 +247,10 @@ private:
   void sincos_q(const double r, double *s, double *c) const;
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atoms);
-  unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
+  void getOnebeadparam(std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
-  void readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms);
+  void readLCPOparam();
   // LCPO: atoms with LCPO parameters, those with an area, Verlet list of the
   // candidate neighbours (CSR) with the positions at which it was built, and the
   // neighbours (CSR) with the overlap term A(i,j) of each directed pair
@@ -328,33 +267,17 @@ private:
   void lcpoUpdateList();
   void sasa_calculate(std::vector<bool> &solv_res);
   // SANS:
-  void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
-  void getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
+  void getOnebeadparam_sansH(std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
+  void getOnebeadparam_sansD(std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
   // Ions (shared by ATOMISTIC and ONEBEAD).
   // getIonData returns, for a canonical ION_* id: Cromer-Mann a[4]/b[4]/c (X-ray),
   // the displaced-solvent volume vol (A^3), the bound coherent neutron scattering
   // length neutron_b (10^-12 cm), and the atomic mass (g/mol).
   void getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<double> &cm_b, double &cm_c, double &vol, double &neutron_b, double &mass) const;
-  // Returns the canonical ION_* id for a residue name, or -1 if it is not a known ion.
-  int ionTypeFromResname(const std::string &resname) const;
-  // True for monosaccharides that are recognised but not parameterised.
-  bool isUnsupportedGlycan(const std::string &resname) const;
-  // Canonical name of a residue whose name encodes a glycosylation site.
-  std::string onebeadResidueAlias(const std::string &resname) const;
-  // True when the residue is represented by a single bead (amino acids, incl. CYX).
-  bool isOnebeadProteinResidue(const PDB &pdb, const std::string &resname) const;
-  // Returns the GLYC_* bead type for a monosaccharide residue name, or -1 if the
-  // residue is not a supported glycan. hasN must be true when the residue carries
-  // an amide nitrogen: that is what distinguishes GlcNAc from Glc and GalNAc from
-  // Gal when the input file names an N-acetylhexosamine after its parent hexose.
-  int glycanTypeFromResname(const std::string &resname, bool hasN) const;
-  // Map a canonical ion id to its atomistic / onebead form-factor slot.
+  // Map a canonical ion id to its atomistic form-factor slot (the onebead one is OnebeadTypes::obSlot).
   inline unsigned affSlot(unsigned ion) const {
     return AFF_NA + ion;
-  }
-  inline unsigned obSlot(unsigned ion) const {
-    return OB_NA + ion;
   }
   // Fill the onebead vac/solv/mix terms (and q=0 Iq0 values) for every ion bead.
   void getOnebeadIonparam_saxs(std::vector<std::vector<long double> > &FF_tmp_vac, std::vector<std::vector<long double> > &FF_tmp_mix, std::vector<std::vector<long double> > &FF_tmp_solv, std::vector<double> &iq0_vac, std::vector<double> &iq0_mix, std::vector<double> &iq0_solv) const;
