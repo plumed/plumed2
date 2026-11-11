@@ -38,6 +38,7 @@ class Function:
   public ActionWithValue,
   public ActionWithArguments {
 protected:
+  /// Store a partial derivative; writes to constant outputs are ignored.
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);
 //overriding explicitly the two functions avoids the [-Woverloaded-virtual] warning
@@ -56,7 +57,10 @@ public:
 
 inline
 void Function::setDerivative(Value*v,int i,double d) {
-  v->addDerivative(i,d);
+  // Constant evaluation keeps only the value, without derivative storage.
+  if(!v->isConstant()) {
+    v->addDerivative(i,d);
+  }
 }
 
 inline

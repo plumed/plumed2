@@ -312,22 +312,17 @@ void Ensemble::calculate() {
     // set mean
     Value* v=getPntrToComponent(i);
     v->set(mean[i]);
-    // Constant evaluation stores only values, with no derivative storage.
-    if(!v->isConstant()) {
-      setDerivative(v, i, dmean[i]);
-      if(do_reweight) {
-        setDerivative(v, narg, dmean_bias[i]);
-      }
+    setDerivative(v, i, dmean[i]);
+    if(do_reweight) {
+      setDerivative(v, narg, dmean_bias[i]);
     }
     if(do_moments) {
       // set moments
       Value* u=getPntrToComponent(i+narg);
       u->set(v_moment[i]);
-      if(!u->isConstant()) {
-        setDerivative(u, i, dv_moment[i]);
-        if(do_reweight) {
-          setDerivative(u, narg, dmoment_bias[i]);
-        }
+      setDerivative(u, i, dv_moment[i]);
+      if(do_reweight) {
+        setDerivative(u, narg, dmoment_bias[i]);
       }
     }
   }
