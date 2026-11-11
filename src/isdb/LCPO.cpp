@@ -20,13 +20,25 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "SAXS.h"
-#include "tools/Tools.h"
+#include "LCPO.h"
+#include "OnebeadMapping.h"
+#include "tools/Exception.h"
+#include "tools/OpenMP.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 namespace PLMD {
 namespace isdb {
 
-std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
+std::map<std::string, std::vector<double> > LCPO::getParameterTable() {
   std::map<std::string, std::vector<double> > lcpomap;
 
   // We arbitrarily set OC1/OT1 as the charged oxygen.
@@ -1245,7 +1257,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   //
   // The one genuinely context-dependent case is a hydroxyl oxygen, which becomes a
   // bridging ether when it carries a glycosidic bond. Both variants are tabulated
-  // and readLCPOparam() picks the "_L" entry for the oxygens that
+  // and the constructor picks the "_L" entry for the oxygens that
   // OnebeadMapping found to be two-coordinate in the TEMPLATE.
   {
     const std::vector<double> gC1 = { 1.7,  0.77887,  -0.28063,   -1.2968e-03, 3.9328e-04}; // C sp3, 1 heavy neighbour
@@ -1353,46 +1365,58 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   return lcpomap;
 }
 
+namespace {
+// reports an invalid input: the handler is expected to throw
+[[noreturn]] void fail(const LCPO::ErrorHandler &error, const std::string &msg) {
+  error(msg);
+  plumed_merror(msg);
+}
+}
+
 // assigns LCPO parameters to each atom reading from database
-void SAXS::readLCPOparam() {
-  const unsigned natoms = mapping_->getNumberOfAtoms();
-  std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
+LCPO::LCPO(const std::vector<std::string> &atomNames, const std::vector<std::string> &residueNames,
+           const std::vector<bool> &glycan, const std::vector<bool> &bridge, const ErrorHandler &error) {
+  const unsigned natoms = atomNames.size();
+  plumed_massert(residueNames.size()==natoms && glycan.size()==natoms && bridge.size()==natoms,
+                 "LCPO: the per-atom inputs must have the same size");
+  param_.assign(natoms, std::vector<double>());
+  std::map<std::string, std::vector<double> > lcpomap = getParameterTable();
 
   for(unsigned i=0; i<natoms; ++i) {
     // ions are excluded from the SASA calculation: skip so they keep an empty
-    // LCPOparam (this also avoids a spurious lookup, e.g. for Cl/Ca whose names start with C)
-    if (ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
+    // param_ (this also avoids a spurious lookup, e.g. for Cl/Ca whose names start with C)
+    if (OnebeadTypes::ionTypeFromResname(residueNames[i]) >= 0) {
       continue;
     }
-    if ((mapping_->getAtomName(i)[0]=='O') || (mapping_->getAtomName(i)[0]=='N') || (mapping_->getAtomName(i)[0]=='C') || (mapping_->getAtomName(i)[0]=='S' || (mapping_->getAtomName(i)[0]=='P'))) {
-      std::string identifier = mapping_->getResidueName(i)+"_"+mapping_->getAtomName(i);
+    if ((atomNames[i][0]=='O') || (atomNames[i][0]=='N') || (atomNames[i][0]=='C') || (atomNames[i][0]=='S' || (atomNames[i][0]=='P'))) {
+      std::string identifier = residueNames[i]+"_"+atomNames[i];
       // a glycan oxygen that carries a glycosidic bond is an ether, not a hydroxyl
-      if(mapping_->isGlycanBridge(i) && lcpomap.count(identifier+"_L")>0) {
+      if(bridge[i] && lcpomap.count(identifier+"_L")>0) {
         identifier += "_L";
       }
       std::map<std::string, std::vector<double> >::const_iterator lcpoit = lcpomap.find(identifier);
       if(lcpoit==lcpomap.end()) {
-        error("Could not find LCPO parameters for atom "+mapping_->getAtomName(i)+
-              " of residue "+mapping_->getResidueName(i)+". Check the PDB.");
+        fail(error, "Could not find LCPO parameters for atom "+atomNames[i]+
+             " of residue "+residueNames[i]+". Check the PDB.");
       }
       const std::vector<double> &LCPOparamVector = lcpoit->second;
       double rs = 0.14;
-      LCPOparam[i].push_back(LCPOparamVector[0]+rs*10.);
-      LCPOparam[i].push_back(LCPOparamVector[1]);
-      LCPOparam[i].push_back(LCPOparamVector[2]);
-      LCPOparam[i].push_back(LCPOparamVector[3]);
-      LCPOparam[i].push_back(LCPOparamVector[4]);
+      param_[i].push_back(LCPOparamVector[0]+rs*10.);
+      param_[i].push_back(LCPOparamVector[1]);
+      param_[i].push_back(LCPOparamVector[2]);
+      param_[i].push_back(LCPOparamVector[3]);
+      param_[i].push_back(LCPOparamVector[4]);
     }
   }
 
   for(unsigned i=0; i<natoms; ++i) {
-    if (ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
+    if (OnebeadTypes::ionTypeFromResname(residueNames[i]) >= 0) {
       continue;
     }
-    if (LCPOparam[i].size()==0 ) {
-      if ((mapping_->getAtomName(i)[0]=='O') || (mapping_->getAtomName(i)[0]=='N') || (mapping_->getAtomName(i)[0]=='C') || (mapping_->getAtomName(i)[0]=='S') || (mapping_->getAtomName(i)[0]=='P')) {
-        std::cout << "Could not find LCPO parameters for atom " << mapping_->getAtomName(i) << " of residue " << mapping_->getResidueName(i) << std::endl;
-        error ("missing LCPO parameters\n");
+    if (param_[i].size()==0 ) {
+      if ((atomNames[i][0]=='O') || (atomNames[i][0]=='N') || (atomNames[i][0]=='C') || (atomNames[i][0]=='S') || (atomNames[i][0]=='P')) {
+        std::cout << "Could not find LCPO parameters for atom " << atomNames[i] << " of residue " << residueNames[i] << std::endl;
+        fail(error, "missing LCPO parameters\n");
       }
     }
   }
@@ -1405,10 +1429,10 @@ void SAXS::readLCPOparam() {
   unsigned ifirst = 0, ilast = natoms-1;
   bool have_first = false, have_last = false;
   for(unsigned i=0; i<natoms; ++i) {
-    if(mapping_->getGlycanType(i)>=0) {
+    if(glycan[i]) {
       continue;
     }
-    if(ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
+    if(OnebeadTypes::ionTypeFromResname(residueNames[i]) >= 0) {
       continue;
     }
     if(!have_first) {
@@ -1419,18 +1443,234 @@ void SAXS::readLCPOparam() {
     have_last = true;
   }
 
-  if (have_first && mapping_->getAtomName(ifirst) == "N" && LCPOparam[ifirst].size()>4) {
-    LCPOparam[ifirst][1] = 7.3511e-01;
-    LCPOparam[ifirst][2] = -2.2116e-01;
-    LCPOparam[ifirst][3] = -8.9148e-04;
-    LCPOparam[ifirst][4] = 2.5230e-04;
+  if (have_first && atomNames[ifirst] == "N" && param_[ifirst].size()>4) {
+    param_[ifirst][1] = 7.3511e-01;
+    param_[ifirst][2] = -2.2116e-01;
+    param_[ifirst][3] = -8.9148e-04;
+    param_[ifirst][4] = 2.5230e-04;
   }
 
-  if (have_last && mapping_->getAtomName(ilast) == "O" && LCPOparam[ilast].size()>4) {
-    LCPOparam[ilast][1] = 8.8857e-01;
-    LCPOparam[ilast][2] = -3.3421e-01;
-    LCPOparam[ilast][3] = -1.8683e-03;
-    LCPOparam[ilast][4] = 4.9372e-04;
+  if (have_last && atomNames[ilast] == "O" && param_[ilast].size()>4) {
+    param_[ilast][1] = 8.8857e-01;
+    param_[ilast][2] = -3.3421e-01;
+    param_[ilast][3] = -1.8683e-03;
+    param_[ilast][4] = 4.9372e-04;
+  }
+}
+
+// LCPO areas.
+// Two atoms with LCPO parameters are neighbours if d_ij < r_i + r_j (Angstrom).
+// A Verlet list of candidates (d_ij < r_i + r_j + skin) is kept between the calls
+// and rebuilt only when an atom has moved by more than about skin/2 since it was
+// built; at every call the exact test is applied to the candidates, so the
+// neighbours are the same as with a new search. The rows are sorted, so all the
+// sums are done in the same order as with an all-pairs search.
+namespace {
+// skin of the candidate list (Angstrom)
+constexpr double lcpo_skin = 2.0;
+}
+
+void LCPO::buildCandidates(const std::vector<Vector> &pos) {
+  const unsigned natoms = getNumberOfAtoms();
+  double maxr = 0.0;
+  for(const auto i : atoms_) {
+    maxr = std::max(maxr, param_[i][0]);
+  }
+  // cell size (nm) not smaller than the largest cutoff
+  const double rc = (2.0*maxr+lcpo_skin)/10.;
+  Vector lo = pos[atoms_[0]], hi = lo;
+  for(const auto i : atoms_) {
+    for(unsigned k=0; k<3; ++k) {
+      lo[k] = std::min(lo[k], pos[i][k]);
+      hi[k] = std::max(hi[k], pos[i][k]);
+    }
+  }
+  int ncell[3];
+  double csize[3];
+  for(unsigned k=0; k<3; ++k) {
+    const double len = hi[k]-lo[k];
+    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
+    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
+  }
+  auto cell=[&](const unsigned i, int *c) {
+    for(unsigned k=0; k<3; ++k) {
+      c[k] = std::min(ncell[k]-1, std::max(0, static_cast<int>(std::floor((pos[i][k]-lo[k])/csize[k]))));
+    }
+  };
+  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
+  const unsigned nlcpo = atoms_.size();
+  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(nlcpo), atom_cell(nlcpo);
+  for(unsigned a=0; a<nlcpo; ++a) {
+    int c[3];
+    cell(atoms_[a],c);
+    atom_cell[a] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
+    cell_start[atom_cell[a]+1]++;
+  }
+  for(unsigned ic=0; ic<ncells; ++ic) {
+    cell_start[ic+1] += cell_start[ic];
+  }
+  {
+    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
+    for(unsigned a=0; a<nlcpo; ++a) {
+      cell_atoms[fill[atom_cell[a]]++] = atoms_[a];
+    }
+  }
+  std::vector<std::vector<unsigned> > rows(natoms);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned a=0; a<nlcpo; ++a) {
+    const unsigned i = atoms_[a];
+    int c[3];
+    cell(i,c);
+    for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
+      for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
+        for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
+          const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
+          for(unsigned jj=cell_start[ic]; jj<cell_start[ic+1]; ++jj) {
+            const unsigned j = cell_atoms[jj];
+            if(j==i) {
+              continue;
+            }
+            const double cut = (param_[i][0]+param_[j][0]+lcpo_skin)/10.;
+            if(modulo2(delta(pos[i], pos[j])) < cut*cut) {
+              rows[i].push_back(j);
+            }
+          }
+        }
+      }
+    }
+    std::sort(rows[i].begin(), rows[i].end());
+  }
+  cand_off_.assign(natoms+1,0);
+  for(unsigned i=0; i<natoms; ++i) {
+    cand_off_[i+1] = cand_off_[i]+rows[i].size();
+  }
+  cand_idx_.resize(cand_off_[natoms]);
+  for(unsigned i=0; i<natoms; ++i) {
+    std::copy(rows[i].begin(), rows[i].end(), cand_idx_.begin()+cand_off_[i]);
+  }
+  ref_pos_.resize(nlcpo);
+  for(unsigned a=0; a<nlcpo; ++a) {
+    ref_pos_[a] = pos[atoms_[a]];
+  }
+}
+
+void LCPO::updateList(const std::vector<Vector> &pos) {
+  const unsigned natoms = getNumberOfAtoms();
+  if(ref_pos_.empty()) {
+    for(unsigned i = 0; i < natoms; ++i) {
+      if(param_[i].size()>0) {
+        atoms_.push_back(i);
+        if(param_[i].size()>1 && param_[i][1]>0.0) {
+          area_atoms_.push_back(i);
+        }
+      }
+    }
+    if(atoms_.empty()) {
+      off_.assign(natoms+1,0);
+      return;
+    }
+    buildCandidates(pos);
+  } else {
+    // rebuild when an atom has moved by more than 0.45*skin (0.05*skin of margin
+    // for the rounding of the candidate test)
+    const double maxd = 0.45*lcpo_skin/10.;
+    const unsigned nlcpo = atoms_.size();
+    bool moved = false;
+    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) reduction(||:moved)
+    for(unsigned a=0; a<nlcpo; ++a) {
+      if(modulo2(delta(ref_pos_[a], pos[atoms_[a]])) >= maxd*maxd) {
+        moved = true;
+      }
+    }
+    if(moved) {
+      buildCandidates(pos);
+    }
+  }
+  // the neighbours among the candidates, and the overlap term A(i,j) of each
+  // directed pair, with the same expressions as in the original LCPO loop
+  cand_d_.resize(cand_idx_.size());
+  off_.assign(natoms+1,0);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned i=0; i<natoms; ++i) {
+    std::size_t n = 0;
+    for(std::size_t e=cand_off_[i]; e<cand_off_[i+1]; ++e) {
+      const unsigned j = cand_idx_[e];
+      const double d_ij = modulo(delta(pos[i], pos[j]))*10.;
+      cand_d_[e] = d_ij;
+      if(d_ij < param_[i][0]+param_[j][0]) {
+        n++;
+      }
+    }
+    off_[i+1] = n;
+  }
+  for(unsigned i=0; i<natoms; ++i) {
+    off_[i+1] += off_[i];
+  }
+  idx_.resize(off_[natoms]);
+  term_.resize(off_[natoms]);
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
+  for(unsigned i=0; i<natoms; ++i) {
+    std::size_t n = off_[i];
+    for(std::size_t e=cand_off_[i]; e<cand_off_[i+1]; ++e) {
+      const unsigned j = cand_idx_[e];
+      const double d_ij = cand_d_[e];
+      if(d_ij < param_[i][0]+param_[j][0]) {
+        const double ri = param_[i][0];
+        const double rj = param_[j][0];
+        idx_[n] = j;
+        term_[n] = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
+        n++;
+      }
+    }
+  }
+}
+
+// calculates SASA according to LCPO algorithm
+void LCPO::computeAreas(const std::vector<Vector> &pos, unsigned first, unsigned stride, std::vector<double> &atom_area) {
+  const unsigned natoms = getNumberOfAtoms();
+  updateList(pos);
+  atom_area.assign(natoms, 0.);
+  const unsigned narea = area_atoms_.size();
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    // all bits set for the neighbours of atom i, 0 otherwise
+    std::vector<std::uint64_t> is_neighbor(natoms, 0);
+    #pragma omp for schedule(dynamic,64)
+    for (unsigned a = first; a < narea; a += stride) {
+      const unsigned i = area_atoms_[a];
+      double Aij = 0.0;
+      double Aijk = 0.0;
+      double Ajk = 0.0;
+      const double ri = param_[i][0];
+      const double S1 = 4.*M_PI*ri*ri;
+      for (std::size_t e = off_[i]; e < off_[i+1]; ++e) {
+        is_neighbor[idx_[e]] = ~std::uint64_t(0);
+      }
+      for (std::size_t e = off_[i]; e < off_[i+1]; ++e) {
+        const unsigned j = idx_[e];
+        const double Aijt = term_[e];
+        // sum of A(j,k) over the neighbours k of j that are also neighbours of i,
+        // in the order of the list of j. The mask selects A(j,k) or +0 without a
+        // branch (about half of the k are neighbours of i, so a branch is
+        // mispredicted often); adding +0 does not change the sum.
+        double Ajkt = 0.0;
+        for (std::size_t f = off_[j]; f < off_[j+1]; ++f) {
+          std::uint64_t bits;
+          std::memcpy(&bits, &term_[f], sizeof(bits));
+          bits &= is_neighbor[idx_[f]];
+          double term;
+          std::memcpy(&term, &bits, sizeof(term));
+          Ajkt += term;
+        }
+        Aijk += (Aijt * Ajkt);
+        Aij += Aijt;
+        Ajk += Ajkt;
+      }
+      for (std::size_t e = off_[i]; e < off_[i+1]; ++e) {
+        is_neighbor[idx_[e]] = 0;
+      }
+      atom_area[i] = (param_[i][1]*S1+param_[i][2]*Aij+param_[i][3]*Ajk+param_[i][4]*Aijk);
+    }
   }
 }
 

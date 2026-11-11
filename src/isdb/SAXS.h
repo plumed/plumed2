@@ -22,6 +22,7 @@
 #ifndef __PLUMED_isdb_SAXS_h
 #define __PLUMED_isdb_SAXS_h
 
+#include "LCPO.h"
 #include "MetainferenceBase.h"
 #include "OnebeadMapping.h"
 #include "SAXSDebyeBackend.h"
@@ -45,8 +46,8 @@ namespace isdb {
 /// - SAXS.cpp: setup, ATOMISTIC form factors, Debye sum, metainference;
 /// - SAXSMartini.cpp: MARTINI form factors and bead mapping;
 /// - SAXSOnebead.cpp: ONEBEAD form factors (SAXS/SANS);
-/// - SAXSLCPO.cpp: LCPO parameters used for the SASA-based solvation correction.
-/// The ONEBEAD mapping (atoms to beads, bead types) is in OnebeadMapping.
+/// The ONEBEAD mapping (atoms to beads, bead types) is in OnebeadMapping, and the
+/// LCPO surface areas used for the solvation correction are computed by LCPO.
 class SAXS :
   public MetainferenceBase,
   private OnebeadTypes {
@@ -124,9 +125,9 @@ private:
   std::vector<std::vector<double> > FF_value_vacuum_D;
   std::vector<std::vector<double> > FF_value_mixed_D;
 
-  std::vector<std::vector<double> > LCPOparam;
-  // ONEBEAD: the beads of the atoms
+  // ONEBEAD: the beads of the atoms, and the LCPO areas of the atoms
   std::unique_ptr<OnebeadMapping> mapping_;
+  std::unique_ptr<LCPO> lcpo_;
 
   double rho, rho_corr, sasa_cutoff;
   double deuter_conc;
@@ -249,22 +250,7 @@ private:
   void getMartiniFFparam_v3(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
   void getOnebeadparam(std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
-  std::map<std::string, std::vector<double> > setupLCPOparam();
-  void readLCPOparam();
-  // LCPO: atoms with LCPO parameters, those with an area, Verlet list of the
-  // candidate neighbours (CSR) with the positions at which it was built, and the
-  // neighbours (CSR) with the overlap term A(i,j) of each directed pair
-  std::vector<unsigned> lcpo_atoms_;
-  std::vector<unsigned> lcpo_area_atoms_;
-  std::vector<Vector> lcpo_ref_pos_;
-  std::vector<std::size_t> lcpo_cand_off_;
-  std::vector<unsigned> lcpo_cand_idx_;
-  std::vector<double> lcpo_cand_d_;
-  std::vector<std::size_t> lcpo_off_;
-  std::vector<unsigned> lcpo_idx_;
-  std::vector<double> lcpo_term_;
-  void lcpoBuildCandidates();
-  void lcpoUpdateList();
+  // the residues (beads) whose SASA is larger than sasa_cutoff
   void sasa_calculate(std::vector<bool> &solv_res);
   // SANS:
   void getOnebeadparam_sansH(std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
