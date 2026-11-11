@@ -227,7 +227,7 @@ jobs:
         working-directory: ./python
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest numpy pandas
+          python -m pip install pytest numpy pandas h5py
           Copy-Item ../VERSION.txt PLUMED_VERSION
           $env:plumed_default_kernel = "${{ runner.temp }}\plumed python\bin\plumedKernel.dll"
           python -m pip install .
