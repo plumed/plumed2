@@ -264,9 +264,17 @@ for step in range(2):
     p.cmd("calc")
 p.finalize()
 """
+    env = dict(os.environ)
+    if sys.platform.startswith("linux"):
+        # the libraries that it needs (e.g. libsz) are next to it, and found by
+        # the module of h5py through its run path
+        libraries = str(candidates[0].parent)
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(
+            filter(None, (libraries, env.get("LD_LIBRARY_PATH")))
+        )
     with temporary_directory() as temporary:
         directory = Path(temporary)
-        run_python(script, cwd=directory)
+        run_python(script, cwd=directory, env=env)
         subprocess.run(
             [
                 str(executable),

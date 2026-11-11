@@ -90,7 +90,12 @@ def extract(archive: Path, destination: Path) -> Path:
 
 
 def cmake_build(
-    cmake: str, source: Path, build: Path, prefix: Path, options: list[str]
+    cmake: str,
+    source: Path,
+    build: Path,
+    prefix: Path,
+    options: list[str],
+    after_configure=None,
 ) -> None:
     common = [
         "-DCMAKE_BUILD_TYPE=Release",
@@ -117,6 +122,8 @@ def cmake_build(
         [cmake, "-S", str(source), "-B", str(build), *common, *options],
         cwd=build.parent,
     )
+    if after_configure:
+        after_configure(build)
     run(
         [cmake, "--build", str(build), "--config", "Release", "--parallel", jobs],
         cwd=build.parent,
@@ -168,20 +175,39 @@ def build_hdf5(cmake: str, source: Path, build: Path, prefix: Path) -> None:
     )
 
 
+def patch_fmt(build: Path) -> None:
+    """Make the copy of fmt 6.1 in chemfiles 0.10.4 work with recent MSVC.
+
+    It uses stdext::checked_array_iterator when _SECURE_SCL is defined, also as
+    0, and recent versions of the MSVC library do not have it any more: the
+    same test as in fmt 7 (the archive is unpacked when chemfiles is configured).
+    """
+    header = build / "external" / "fmt" / "include" / "fmt" / "format.h"
+    text = header.read_text()
+    old = "#ifdef _SECURE_SCL\n"
+    if old in text:
+        header.write_text(
+            text.replace(old, "#if defined(_SECURE_SCL) && _SECURE_SCL\n")
+        )
+
+
 def build_chemfiles(cmake: str, source: Path, build: Path, prefix: Path) -> None:
-    cmake_build(
-        cmake,
-        source,
-        build,
-        prefix,
-        [
-            "-DCHFL_BUILD_TESTS=OFF",
-            # the zlib built above, the copies of lzma and bzip2 in chemfiles
-            "-DCHFL_SYSTEM_ZLIB=ON",
-            f"-DZLIB_INCLUDE_DIR={prefix / 'include'}",
-            f"-DZLIB_LIBRARY={zlib_library(prefix)}",
-        ],
-    )
+    options = [
+        "-DCHFL_BUILD_TESTS=OFF",
+        # the zlib built above, the copies of lzma and bzip2 in chemfiles
+        "-DCHFL_SYSTEM_ZLIB=ON",
+        f"-DZLIB_INCLUDE_DIR={prefix / 'include'}",
+        f"-DZLIB_LIBRARY={zlib_library(prefix)}",
+    ]
+    if sys.platform == "darwin":
+        # chemfiles asks zlib.h for the 64-bit functions (_LARGEFILE64_SOURCE),
+        # declared with off64_t, which macOS does not have (off_t is 64-bit);
+        # its own copy of zlib takes care of it, an external one does not
+        options += [
+            "-DCMAKE_C_FLAGS=-Doff64_t=off_t",
+            "-DCMAKE_CXX_FLAGS=-Doff64_t=off_t",
+        ]
+    cmake_build(cmake, source, build, prefix, options, after_configure=patch_fmt)
     # licenses of the libraries included in chemfiles (all of them are also
     # reproduced in external/README.md)
     licenses = prefix / "licenses" / "chemfiles" / "external"
