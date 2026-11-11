@@ -1,0 +1,11 @@
+c: CONSTANT VALUE=3
+d: DISTANCE ATOMS=1,2 NOPBC
+fixed: RESTRAINT ARG=c AT=0 KAPPA=2
+mixed: RESTRAINT ARG=c,d AT=0,0 KAPPA=2,2
+nested: RESTRAINT ARG=mixed.bias AT=0 KAPPA=2
+moving: MOVINGRESTRAINT ARG=c STEP0=0 AT0=0 KAPPA0=2 STEP1=2 AT1=2
+moving_mixed: MOVINGRESTRAINT ARG=c,d STEP0=0 AT0=0,0 KAPPA0=2,2 STEP1=2 AT1=2,2
+upper: UPPER_WALLS ARG=c AT=2 KAPPA=2
+lower: LOWER_WALLS ARG=c AT=4 KAPPA=2
+adaptive: METAD ARG=c SIGMA=1 HEIGHT=1 PACE=1 FILE=HILLS
+PRINT ARG=fixed.bias,fixed.force2,mixed.bias,mixed.force2,nested.bias,moving.bias,moving.c_cntr,moving_mixed.bias,upper.bias,lower.bias,adaptive.bias FILE=COLVAR FMT=%8.3f

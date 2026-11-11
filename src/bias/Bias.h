@@ -64,6 +64,11 @@ public:
 /// setOutputForce for an argument at this step applies no force to it
   void clearDerivatives(const bool& force=false) override;
   unsigned getNumberOfDerivatives() override;
+/// Biases may depend on time/history even when all arguments are constant.
+/// Evaluate them during the simulation, after derived-class construction.
+  bool calculateConstantValues(const bool&) override {
+    return false;
+  }
 };
 
 inline
