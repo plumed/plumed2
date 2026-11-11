@@ -1365,6 +1365,7 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
 
 void TTMetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
+  keys.addDOI("10.48550/arXiv.2603.13549");
   keys.addFlag("KERNEL_BASIS", false, "Specifies that local kernel basis should be used instead of Fourier basis");
   keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
   keys.add("compulsory", "PACE", "the frequency for hill addition");
