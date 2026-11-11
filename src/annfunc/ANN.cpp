@@ -60,10 +60,13 @@ Bias for layer 1 and 2 are [10, 11, 12] and [13], respectively.
 
 All activation functions are Tanh.
 
-Then if input variables are l_0_out_0, l_0_out_1, the corresponding ANN function object can be defined using
-following plumed script:
+The inputs of the network are the outputs of layer 0, which are labelled l_0_out_0 and l_0_out_1 below.
+They can be any PLUMED values; in the following script they are two distances.
+The corresponding ANN function object can be defined using the following plumed script:
 
 ```plumed
+l_0_out_0: DISTANCE ATOMS=1,2
+l_0_out_1: DISTANCE ATOMS=3,4
 ann: ANN ...
 ARG=l_0_out_0,l_0_out_1
 NUM_LAYERS=3
@@ -74,6 +77,7 @@ WEIGHTS1=7,8,9
 BIASES0=10,11,12
 BIASES1=13
 ...
+PRINT ARG=ann.node-0 FILE=colvar
 ```
 
 To access its components, we use "ann.node-0", "ann.node-1", ..., which represents the components of neural network outputs.
