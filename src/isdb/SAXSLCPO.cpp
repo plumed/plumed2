@@ -1246,7 +1246,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   // The one genuinely context-dependent case is a hydroxyl oxygen, which becomes a
   // bridging ether when it carries a glycosidic bond. Both variants are tabulated
   // and readLCPOparam() picks the "_L" entry for the oxygens that
-  // getOnebeadMapping() found to be two-coordinate in the TEMPLATE.
+  // OnebeadMapping found to be two-coordinate in the TEMPLATE.
   {
     const std::vector<double> gC1 = { 1.7,  0.77887,  -0.28063,   -1.2968e-03, 3.9328e-04}; // C sp3, 1 heavy neighbour
     const std::vector<double> gC2 = { 1.7,  0.56482,  -0.19608,   -1.0219e-03, 2.658e-04 }; // C sp3, 2
@@ -1354,25 +1354,26 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
 }
 
 // assigns LCPO parameters to each atom reading from database
-void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResidueName, unsigned natoms) {
+void SAXS::readLCPOparam() {
+  const unsigned natoms = mapping_->getNumberOfAtoms();
   std::map<std::string, std::vector<double> > lcpomap = setupLCPOparam();
 
   for(unsigned i=0; i<natoms; ++i) {
     // ions are excluded from the SASA calculation: skip so they keep an empty
     // LCPOparam (this also avoids a spurious lookup, e.g. for Cl/Ca whose names start with C)
-    if (ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+    if (ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
       continue;
     }
-    if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S' || (AtomResidueName[0][i][0]=='P'))) {
-      std::string identifier = AtomResidueName[1][i]+"_"+AtomResidueName[0][i];
+    if ((mapping_->getAtomName(i)[0]=='O') || (mapping_->getAtomName(i)[0]=='N') || (mapping_->getAtomName(i)[0]=='C') || (mapping_->getAtomName(i)[0]=='S' || (mapping_->getAtomName(i)[0]=='P'))) {
+      std::string identifier = mapping_->getResidueName(i)+"_"+mapping_->getAtomName(i);
       // a glycan oxygen that carries a glycosidic bond is an ether, not a hydroxyl
-      if(i<glyc_bridge.size() && glyc_bridge[i] && lcpomap.count(identifier+"_L")>0) {
+      if(mapping_->isGlycanBridge(i) && lcpomap.count(identifier+"_L")>0) {
         identifier += "_L";
       }
       std::map<std::string, std::vector<double> >::const_iterator lcpoit = lcpomap.find(identifier);
       if(lcpoit==lcpomap.end()) {
-        error("Could not find LCPO parameters for atom "+AtomResidueName[0][i]+
-              " of residue "+AtomResidueName[1][i]+". Check the PDB.");
+        error("Could not find LCPO parameters for atom "+mapping_->getAtomName(i)+
+              " of residue "+mapping_->getResidueName(i)+". Check the PDB.");
       }
       const std::vector<double> &LCPOparamVector = lcpoit->second;
       double rs = 0.14;
@@ -1385,12 +1386,12 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
   }
 
   for(unsigned i=0; i<natoms; ++i) {
-    if (ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+    if (ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
       continue;
     }
     if (LCPOparam[i].size()==0 ) {
-      if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S') || (AtomResidueName[0][i][0]=='P')) {
-        std::cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << std::endl;
+      if ((mapping_->getAtomName(i)[0]=='O') || (mapping_->getAtomName(i)[0]=='N') || (mapping_->getAtomName(i)[0]=='C') || (mapping_->getAtomName(i)[0]=='S') || (mapping_->getAtomName(i)[0]=='P')) {
+        std::cout << "Could not find LCPO parameters for atom " << mapping_->getAtomName(i) << " of residue " << mapping_->getResidueName(i) << std::endl;
         error ("missing LCPO parameters\n");
       }
     }
@@ -1404,10 +1405,10 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
   unsigned ifirst = 0, ilast = natoms-1;
   bool have_first = false, have_last = false;
   for(unsigned i=0; i<natoms; ++i) {
-    if(i<glyc_type.size() && glyc_type[i]>=0) {
+    if(mapping_->getGlycanType(i)>=0) {
       continue;
     }
-    if(ionTypeFromResname(AtomResidueName[1][i]) >= 0) {
+    if(ionTypeFromResname(mapping_->getResidueName(i)) >= 0) {
       continue;
     }
     if(!have_first) {
@@ -1418,14 +1419,14 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
     have_last = true;
   }
 
-  if (have_first && AtomResidueName[0][ifirst] == "N" && LCPOparam[ifirst].size()>4) {
+  if (have_first && mapping_->getAtomName(ifirst) == "N" && LCPOparam[ifirst].size()>4) {
     LCPOparam[ifirst][1] = 7.3511e-01;
     LCPOparam[ifirst][2] = -2.2116e-01;
     LCPOparam[ifirst][3] = -8.9148e-04;
     LCPOparam[ifirst][4] = 2.5230e-04;
   }
 
-  if (have_last && AtomResidueName[0][ilast] == "O" && LCPOparam[ilast].size()>4) {
+  if (have_last && mapping_->getAtomName(ilast) == "O" && LCPOparam[ilast].size()>4) {
     LCPOparam[ilast][1] = 8.8857e-01;
     LCPOparam[ilast][2] = -3.3421e-01;
     LCPOparam[ilast][3] = -1.8683e-03;

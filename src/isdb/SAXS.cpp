@@ -550,8 +550,12 @@ SAXS::SAXS(const ActionOptions&ao):
 
   // preliminary mapping for onebead representation
   if(onebead) {
+    mapping_ = std::make_unique<OnebeadMapping>(pdb, atoms, log, [this](const std::string &msg) {
+      error(msg);
+    });
+    nres = mapping_->getNumberOfBeads();
     LCPOparam.resize(size);
-    nres = getOnebeadMapping(pdb, atoms);
+    readLCPOparam();
     bead_sign.assign(nres, 1.);
     if(saxs) {
       Iq0_vac.resize(nres);
@@ -565,6 +569,9 @@ SAXS::SAXS(const ActionOptions&ao):
       Iq0_mix_D.resize(nres);
     }
     atoi.resize(nres);
+    for(unsigned i=0; i<nres; ++i) {
+      atoi[i] = mapping_->getBeadType(i);
+    }
   } else {
     atoi.resize(size);
   }
@@ -728,7 +735,7 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv, residue_atom);
+      getOnebeadparam(parameter_vac, parameter_mix, parameter_solv);
       // ion bead types carry no polynomial coefficients; insert a q=0 placeholder so the
       // expansion and Iq0 loops below stay valid. Their ion entries are overwritten with
       // analytic values by getOnebeadIonparam_saxs just afterwards.
@@ -774,8 +781,8 @@ SAXS::SAXS(const ActionOptions&ao):
       std::vector<std::vector<long double> > parameter_solv_H(NONEBEAD);
       std::vector<std::vector<long double> > parameter_vac_D(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix_D(NONEBEAD);
-      getOnebeadparam_sansH(pdb, atoms, parameter_vac_H, parameter_mix_H, parameter_solv_H);
-      getOnebeadparam_sansD(pdb, atoms, parameter_vac_D, parameter_mix_D);
+      getOnebeadparam_sansH(parameter_vac_H, parameter_mix_H, parameter_solv_H);
+      getOnebeadparam_sansD(parameter_vac_D, parameter_mix_D);
       // q=0 placeholders for ion bead types (overwritten by getOnebeadIonparam_sans below)
       for(unsigned s=OB_NA; s<NONEBEAD; ++s) {
         parameter_vac_H[s].assign(1, 0.0);
@@ -1156,33 +1163,6 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   setDerivatives();
   checkRead();
-
-  if(onebead) {
-    // the atoms of each bead, in increasing order, with their weights in the centre
-    // of mass of the bead (the masses are summed in the order of the atoms)
-    bead_off_.assign(nres+1,0);
-    for(unsigned a=0; a<size; ++a) {
-      bead_off_[residue_atom[a]+1]++;
-    }
-    for(unsigned r=0; r<nres; ++r) {
-      bead_off_[r+1] += bead_off_[r];
-    }
-    bead_atoms_.resize(size);
-    std::vector<unsigned> fill(bead_off_.begin(), bead_off_.end()-1);
-    std::vector<double> bead_mass(nres,0.);
-    for(unsigned a=0; a<size; ++a) {
-      bead_atoms_[fill[residue_atom[a]]++] = a;
-      bead_mass[residue_atom[a]] += atoms_masses[a];
-    }
-    bead_inv_mass_.resize(nres);
-    for(unsigned r=0; r<nres; ++r) {
-      bead_inv_mass_[r] = 1.0/bead_mass[r];
-    }
-    atom_weight_.resize(size);
-    for(unsigned a=0; a<size; ++a) {
-      atom_weight_[a] = atoms_masses[a]*bead_inv_mass_[residue_atom[a]];
-    }
-  }
 }
 
 // LCPO SASA of the atoms (ONEBEAD only).
@@ -1423,7 +1403,7 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
       if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
         const double sasai = atom_area[i];
         if (sasai > 0) {
-          private_sasares[residue_atom[i]] += sasai / 100.0;
+          private_sasares[mapping_->getBead(i)] += sasai / 100.0;
         }
       }
     }
@@ -1644,16 +1624,8 @@ void SAXS::calculate() {
   std::vector<Vector> beads_pos(beads_size);
   if(onebead) {
     // centres of mass of the beads; the derivative of a bead position with respect
-    // to one of its atoms is atom_weight_ (mass of the atom / mass of the bead)
-    #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(static)
-    for(unsigned r=0; r<nres; ++r) {
-      Vector sum_pos(0,0,0);
-      for(unsigned e=bead_off_[r]; e<bead_off_[r+1]; ++e) {
-        const unsigned a = bead_atoms_[e];
-        sum_pos += atoms_masses[a] * getPosition(a);
-      }
-      beads_pos[r] = sum_pos*bead_inv_mass_[r];
-    }
+    // to one of its atoms is the weight of the atom (mass of the atom / mass of the bead)
+    mapping_->getBeadPositions(getPositions(), beads_pos);
     // SASA
     std::vector<bool> solv_res(nres, 0);
     if(saxs) {
@@ -1883,13 +1855,13 @@ void SAXS::calculate() {
   Tensor chi2_box_deriv;
 
   // the derivative with respect to an atom is the derivative with respect to its bead
-  // times atom_weight_ (1 without ONEBEAD); the box derivatives are computed from the
+  // times the weight of the atom in its bead (1 without ONEBEAD); the box derivatives are computed from the
   // beads, since sum_atoms x_a (x) w_a d = (sum_atoms w_a x_a) (x) d = x_bead (x) d
   auto weight=[&](const unsigned atom_id) {
-    return onebead ? atom_weight_[atom_id] : 1.0;
+    return onebead ? mapping_->getAtomWeight(atom_id) : 1.0;
   };
   auto bead_of=[&](const unsigned atom_id) {
-    return onebead ? residue_atom[atom_id] : atom_id;
+    return onebead ? mapping_->getBead(atom_id) : atom_id;
   };
 
   // derivatives of each intensity (without DOSCORE), the atoms split over the threads
@@ -2028,7 +2000,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 0.404;
     vol = 4.445;
     neutron_b = 0.363;
-    mass = 22.990;
     break;
   case ION_K: // K1+
     cm_a = {7.9578, 7.4917, 6.359, 1.1915};
@@ -2036,7 +2007,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = -4.9978;
     vol = 11.008;
     neutron_b = 0.367;
-    mass = 39.098;
     break;
   case ION_CL: // Cl1-
     cm_a = {18.2915, 7.2084, 6.5337, 2.3386};
@@ -2044,7 +2014,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = -16.378;
     vol = 24.838;
     neutron_b = 0.9577;
-    mass = 35.453;
     break;
   case ION_CA: // Ca2+
     cm_a = {15.6348, 7.9518, 8.4372, 0.8537};
@@ -2052,7 +2021,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = -14.875;
     vol = 4.189;
     neutron_b = 0.47;
-    mass = 40.078;
     break;
   case ION_MG: // Mg2+
     cm_a = {3.4988, 3.8378, 1.3284, 0.8497};
@@ -2060,7 +2028,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 0.4853;
     vol = 1.563;
     neutron_b = 0.5375;
-    mass = 24.305;
     break;
   case ION_ZN: // Zn2+
     cm_a = {11.9719, 7.3862, 6.4668, 1.394};
@@ -2068,7 +2035,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 0.7807;
     vol = 1.697;
     neutron_b = 0.568;
-    mass = 65.38;
     break;
   case ION_FE2: // Fe2+
     cm_a = {11.0424, 7.374, 4.1346, 0.4399};
@@ -2076,7 +2042,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 1.0097;
     vol = 1.988;
     neutron_b = 0.945;
-    mass = 55.845;
     break;
   case ION_FE3: // Fe3+
     cm_a = {11.1764, 7.3863, 3.3948, 0.0724};
@@ -2084,7 +2049,6 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 0.9707;
     vol = 1.124;
     neutron_b = 0.945;
-    mass = 55.845;
     break;
   case ION_MN: // Mn2+
     cm_a = {10.8061, 7.362, 3.5268, 0.2184};
@@ -2092,49 +2056,13 @@ void SAXS::getIonData(unsigned ion, std::vector<double> &cm_a, std::vector<doubl
     cm_c = 1.0874;
     vol = 2.395;
     neutron_b = -0.373;
-    mass = 54.938;
     break;
   default:
     plumed_merror("getIonData called with an unknown ion id");
   }
+  mass = ionMass(ion);
 }
 
-// Detect a monoatomic ion from its residue name. Detection is by RESIDUE name only.
-// The protein/nucleic-acid branches are matched before this is reached.
-// Accepted aliases follow the RCSB PDB het codes plus the AMBER and CHARMM ion residue names.
-int SAXS::ionTypeFromResname(const std::string &resname) const {
-  std::string r = resname;
-  r.erase(std::remove_if(r.begin(), r.end(), ::isspace), r.end());
-  std::transform(r.begin(), r.end(), r.begin(), ::toupper);
-  if(r=="NA"  || r=="SOD" || r=="NA+") {
-    return ION_NA;
-  }
-  if(r=="K"   || r=="POT" || r=="K+") {
-    return ION_K;
-  }
-  if(r=="CL"  || r=="CLA" || r=="CL-") {
-    return ION_CL;
-  }
-  if(r=="CA"  || r=="CAL" || r=="CA2+") {
-    return ION_CA;
-  }
-  if(r=="MG"  || r=="MG2+") {
-    return ION_MG;
-  }
-  if(r=="ZN"  || r=="ZN2" || r=="ZN2+") {
-    return ION_ZN;
-  }
-  if(r=="FE2") {
-    return ION_FE2;
-  }
-  if(r=="FE3") {
-    return ION_FE3;
-  }
-  if(r=="MN"  || r=="MN2+") {
-    return ION_MN;
-  }
-  return -1;
-}
 
 
 double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double Rho) {
