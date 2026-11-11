@@ -39,6 +39,15 @@ manylinux-aarch64-image = "manylinux2014"
 # Set PLUMED_BUILD_VERBOSE=1 to see the full output of the build.
 environment = { PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache", PIP_ONLY_BINARY = "numpy,pandas,h5py" }
 
+[tool.cibuildwheel.linux]
+# the manylinux2014 container (glibc 2.17) has no binary numpy, pandas and h5py
+# for Python 3.14 (their wheels require manylinux_2_28)
+test-requires = [
+    "numpy; python_version < '3.14'",
+    "pandas; python_version < '3.14'",
+    "h5py; python_version < '3.14'",
+]
+
 [tool.cibuildwheel.macos]
 # the macos environment replaces the global one, so the cache is set again here
 environment = { MACOSX_DEPLOYMENT_TARGET = "10.15", PLUMED_RUNTIME_CACHE = "/tmp/plumed-runtime-cache", PIP_ONLY_BINARY = "numpy,pandas,h5py" }

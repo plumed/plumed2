@@ -121,6 +121,23 @@ with alternate.Plumed() as instance:
         subprocess.run([sys.executable, "-c", script], cwd=root, check=True)
 
 
+def run_python(script, **kwargs):
+    """Run a script in a new interpreter, showing its output if it fails."""
+    command = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+        **kwargs,
+    )
+    if command.returncode != 0:
+        raise AssertionError(
+            f"{script!r} failed with exit status {command.returncode}\n"
+            f"stdout:\n{command.stdout}\nstderr:\n{command.stderr}"
+        )
+    return command
+
+
 def check_package_relocation():
     """Both Python kernel discovery and the command follow a moved package."""
     with tempfile.TemporaryDirectory(prefix="plumed relocated package ") as temporary:
@@ -132,31 +149,20 @@ def check_package_relocation():
             if not name.startswith(("PLUMED_", "LD_", "DYLD_"))
         }
         env["PYTHONPATH"] = str(root)
+        # both sides resolved: on Windows the temporary directory may be
+        # given with 8.3 short names (e.g. C:\Users\RUNNER~1)
         discovery_script = (
             "import plumed; from pathlib import Path; "
-            "assert Path(plumed.__file__).resolve().parent.parent == Path.cwd(); "
+            "root = Path(plumed.__file__).resolve().parent.parent; "
+            "assert root == Path.cwd().resolve(); "
             "assert 'DISTANCE' in plumed.InputBuilder()._vimdict"
         )
-        subprocess.run(
-            [sys.executable, "-c", discovery_script],
-            cwd=root,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        run_python(discovery_script, cwd=root, env=env)
         cli_script = (
             "import sys; from plumed.runtime.cli import main; "
             "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()"
         )
-        command = subprocess.run(
-            [sys.executable, "-c", cli_script],
-            cwd=root,
-            env=env,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        command = run_python(cli_script, cwd=root, env=env)
         assert (
             Path(command.stdout.strip()).resolve()
             == (root / "plumed" / "runtime" / "lib" / "plumed").resolve()
