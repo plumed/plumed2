@@ -519,9 +519,64 @@ jobs:
         cmake --build "$RUNNER_TEMP/thread-mpi-tests" -j 4
         ctest --test-dir "$RUNNER_TEMP/thread-mpi-tests" --output-on-failure
 
+  # Regtests (no MPI, no optional libraries) on configurations that the jobs above do not cover:
+  # - clang-noopenmp: the configuration built in the gate (build job of checksWF.yml, where its warnings
+  #   are checked). Run with PLUMED_NUM_THREADS=2 like the other jobs, so the code paths of OpenMP builds
+  #   that do not depend on OpenMP are tested without it. It restores the ccache saved by the gate, so it
+  #   does not compile again: keep the cache key and the configure options in sync with checksWF.yml.
+  # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
+  checks:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - variant: clang-noopenmp
+          cc: clang
+          cxx: clang++
+          config: --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter"
+        - variant: nodlopen
+          cc: gcc
+          cxx: g++
+          config: --disable-dlopen
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      PLUMED_CCACHE_SIZE: 100M
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all ${{ matrix.config }} --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail
+
   # AddressSanitizer and UndefinedBehaviorSanitizer: a memory error or undefined behaviour stops the
-  # regtest that triggers it. Regtests without MPI and optional libraries, as in checksWF.yml (it is
-  # here and not there because it is too slow to be part of the quick checks that run first).
+  # regtest that triggers it. Regtests without MPI and optional libraries, as in the checks job above
+  # (it is not in the gate of checksWF.yml because its build is too slow).
   sanitizers:
     runs-on: ubuntu-24.04
     env:

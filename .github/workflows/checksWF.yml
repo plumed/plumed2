@@ -1,8 +1,9 @@
 name: checksCI
 
 # Quick checks that run first: in pull requests and manual runs the rest of the CI (see ci.yml) waits
-# for these and for codecheck, so that a commit that does not build or breaks the regtests does not
-# take the macOS runners and the long Linux builds.
+# for these and for codecheck, so that a commit that does not build, has compiler warnings or breaks
+# the python interface does not take the macOS runners and the long Linux builds.
+# No regtests run here: they run after the gate, in parallel with the other jobs.
 
 on:
   workflow_call:
@@ -12,38 +13,21 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
-# default compilers (the checks job sets its own)
+# default compilers (the build job sets its own)
   CC: gcc
   CXX: g++
-# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
-  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 
 jobs:
-  # Builds that check the code rather than the results. Each one runs the regtests (no MPI, no optional
-  # libraries) on a configuration that the jobs of linuxWF.yml do not cover (the sanitizers build, which
-  # is slower, is there):
-  # - clang-noopenmp: clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which flags
-  #   hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
-  #   embedded third-party libraries) fails the job. Run with PLUMED_NUM_THREADS=2 like the other jobs,
-  #   so the code paths of OpenMP builds that do not depend on OpenMP are tested without it.
-  # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
-  checks:
+  # Build of all modules with clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which
+  # flags hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
+  # embedded third-party libraries) fails the job. Build only, to keep the gate short: the regtests of
+  # this configuration run after the gate, in the checks job of linuxWF.yml, which reuses the ccache
+  # saved here (same cache key) so that it does not compile again.
+  build:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - variant: clang-noopenmp
-          cc: clang
-          cxx: clang++
-          config: --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter"
-        - variant: nodlopen
-          cc: gcc
-          cxx: g++
-          config: --disable-dlopen
     env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
+      CC: clang
+      CXX: clang++
       PLUMED_CCACHE_SIZE: 100M
     steps:
     - uses: actions/checkout@v6
@@ -53,8 +37,9 @@ jobs:
     - uses: actions/cache@v5
       with:
         path: ~/.ccache
-        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-${{ github.sha }}
-        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-
+        # keep in sync with the checks job of linuxWF.yml
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-clang-noopenmp-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-clang-noopenmp-hash-
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:
@@ -62,7 +47,9 @@ jobs:
     - name: Configure PLUMED
       run: |
         ccache -s -M "$PLUMED_CCACHE_SIZE"
-        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all ${{ matrix.config }} --prefix="$HOME/opt"
+        # keep in sync with the clang-noopenmp variant of the checks job of linuxWF.yml
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all \
+          --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter" --prefix="$HOME/opt"
     - name: Config Log
       if: failure()
       run: cat config.log
@@ -75,12 +62,7 @@ jobs:
         make install
         ccache -s -M "$PLUMED_CCACHE_SIZE"
     - name: Check warnings
-      if: matrix.variant == 'clang-noopenmp'
       run: .ci/check-warnings build.log
-    - name: Run tests
-      run: |
-         make --no-print-directory -j 2 -C regtest testclean
-         make -C regtest checkfail
 
   # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
   # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
