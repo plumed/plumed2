@@ -1634,8 +1634,6 @@ An alternative reference partition can accidentally give the same linear
 `sp` scalar when coefficients and total references cancel.  That does not
 make it equivalent for VORONOI_DISTANCE, POWER=2, or sign filtering.  Use one
 physically declared reference vector consistently across the coupled Actions.
-The coordinate files, runnable inputs, commands, and expected outputs are in
-`user-doc/tutorials/others/reactive-voronoi`.
 The complete application is available in the
 [GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling).
 
