@@ -1,0 +1,11 @@
+plumed_needs=libmetatomic
+plumed_modules=metatomic
+type=driver
+arg="--plumed plumed.dat --ixyz structure.xyz --length-units A --dump-forces forces --dump-full-virial --dump-forces-fmt %10.6f --debug-forces forces.num"
+
+function plumed_regtest_after(){
+  # forces.num has the derivatives of the bias with respect to the positions and
+  # the cell, computed by PLUMED and with finite differences
+  awk '!/^#/ { d = $2 - $3; s = $2 > 0 ? $2 : -$2; if ((d > 0 ? d : -d) > 1e-5 * (1 + s)) bad++ }
+       END { print bad ? bad " derivatives differ from finite differences" : "derivatives match finite differences" }' forces.num > derivatives
+}
