@@ -1,0 +1,34 @@
+#! /usr/bin/env bash
+
+set -euo pipefail
+set -x
+
+# Install metatomic-core and metatomic-torch, which contains the plugin running
+# TorchScript models, in the active Python environment.
+#
+# metatomic-core is not released on PyPI yet, so both are built from a pinned
+# commit, which needs Python >= 3.11, Rust >= 1.88 and CMake. torch and
+# metatensor-torch must already be installed, since metatomic-torch is compiled
+# against them.
+#
+# The metatomic-torch plugin is added by metatensor/metatomic#379: until it is
+# merged, this is the head of that pull request.
+METATOMIC_COMMIT=09e2c98e4a3838c79d2cf3e630dd231247a856b7
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+
+cd "$(mktemp -dt plumed.XXXXXX)"
+
+# blobless rather than shallow, the packages compute their version from git tags
+git clone --quiet --filter=blob:none https://github.com/metatensor/metatomic.git metatomic
+cd metatomic
+git fetch --quiet origin "$METATOMIC_COMMIT"
+git checkout --quiet "$METATOMIC_COMMIT"
+
+"$PYTHON_BIN" -m pip install "setuptools>=77" "packaging>=26" cmake setuptools-scm \
+  "metatensor-core>=0.2.0,<0.3" "metatensor-operations>=0.5.0,<0.6" \
+  "metatensor-learn>=0.6.0,<0.7" "wigners>=0.4.0"
+
+"$PYTHON_BIN" -m pip install --no-deps --no-build-isolation ./python/metatomic_core
+"$PYTHON_BIN" -m pip install --no-deps --no-build-isolation ./python/metatomic_torch
+
+"$PYTHON_BIN" -c "import metatomic_torch; print(metatomic_torch.utils.plugin_path)"
