@@ -26,7 +26,8 @@ excluded: PLUMED uses the scalar API and does not expose the separate upstream
 
 - Additional functions and derivatives, including `nandelta` and the extended
   trigonometric functions.
-- PLUMED's delta/step semantics and mathematical constants.
+- PLUMED's delta/nandelta values and mathematical constants. The derivatives of
+  step and delta follow upstream Lepton: zero everywhere, including at zero.
 - Thread-safe initialization of the parser's operation map.
 - The `PLUMED_USE_ASMJIT=yes/no` runtime switch (JIT is enabled by default when
   compiled in).

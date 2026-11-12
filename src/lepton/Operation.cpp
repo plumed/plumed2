@@ -333,11 +333,11 @@ ExpressionTreeNode Operation::Erfc::differentiate(const std::vector<ExpressionTr
 }
 
 ExpressionTreeNode Operation::Step::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
-    return ExpressionTreeNode(new Operation::Delta(),children[0]);
+    return ExpressionTreeNode(new Operation::Constant(0.0));
 }
 
 ExpressionTreeNode Operation::Delta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
-    return ExpressionTreeNode(new Operation::Nandelta(), children[0]);
+    return ExpressionTreeNode(new Operation::Constant(0.0));
 }
 
 ExpressionTreeNode Operation::Nandelta::differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const {
