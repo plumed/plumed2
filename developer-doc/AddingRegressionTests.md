@@ -12,7 +12,7 @@ make tests
 
 command.  Furthermore, they are also executed every time one of the core developers pushes commits to the main plumed2 fork
 on github.  In fact these tests are executed across multiple architectures whenever a push is performed.  To do this we use 
-a web-app called travis-ci.  The current status of the code on travis-ci can be viewed here: https://travis-ci.org/plumed/plumed2
+GitHub Actions.  The current status of the code can be viewed here: https://github.com/plumed/plumed2/actions
 <b> We take code testing various seriously and will not consider including contributions from developers unless appropriate 
 regression tests are included. </b> 
 

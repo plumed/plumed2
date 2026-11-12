@@ -20,13 +20,6 @@ set -x
 BRANCH=""
 PULL_REQUEST=false
 
-if test "$TRAVIS" == true ; then
-  BRANCH="$TRAVIS_BRANCH"
-  GIT_OWNER=$(  echo $TRAVIS_REPO_SLUG | sed "s/\/.*$//" )
-  GIT_REPO=$(   echo $TRAVIS_REPO_SLUG | sed "s/^.*\///" )
-  PULL_REQUEST="$TRAVIS_PULL_REQUEST"
-fi
-
 if test "$GITHUB_ACTIONS" == true ; then
   if [[ "$GITHUB_REF" == "refs/heads/"* ]] ; then
     BRANCH="${GITHUB_REF#refs/heads/}"
@@ -166,7 +159,7 @@ git init
 git config user.email "${GIT_BOT_EMAIL}"
 git config user.name "${GIT_BOT}"
 git checkout -b gh-pages
-# this is not to show the GIT_TOKEN on Travis log
+# this is not to show the GIT_TOKEN in the CI log
 set +x
 git remote add doc https://${GIT_BOT}:$GIT_TOKEN@github.com/$GIT_OWNER/${WHAT}-${BRANCH}.git
 set -x
@@ -235,7 +228,7 @@ set -x
 esac
 
 git add --all .
-# >/dev/null to avoid excessive noise on travis log
+# >/dev/null to avoid excessive noise in the CI log
 git commit -m "Update to ${GIT_OWNER}/${GIT_REPO}@$hash" >/dev/null
 # The output of git push is kept and shown if the push fails, since it is the only way to know why it failed.
 # GIT_TOKEN is masked by GitHub Actions, but it is removed here too, so that it does not leak on other CI systems.
