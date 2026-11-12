@@ -49,7 +49,7 @@ struct AdjacencyMatrixData {
   void update() {
     nlist_three=nlist_three_v.data();
   }
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],usepbc,components,no_thread_gather,gatherForceOnColumns,fbsize, \
                               nlists,natoms_per_three_list, \
@@ -64,7 +64,7 @@ struct AdjacencyMatrixData {
                              natoms_per_three_list,nlists, \
                              fbsize,gatherForceOnColumns,no_thread_gather,components,usepbc,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 struct AdjacencyMatrixInput {

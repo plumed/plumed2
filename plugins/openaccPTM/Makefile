@@ -24,7 +24,7 @@ OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS)
 # ACCTARGET selects what the OpenACC code is compiled for: "gpu" (default), "multicore" or "host".
 # "host" runs the kernels serially on the CPU and needs no GPU nor OpenMP runtime (used by the CI to run the regtests).
 ACCTARGET ?= gpu
-ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$(ACCTARGET)
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -acc=$(ACCTARGET)
 # -static-nvidia is needed for every target: it keeps the OpenACC runtime private to the plugin. Otherwise
 # a PLUMED built with GCC and OpenMP resolves the acc_* calls of the plugin to libgomp ("libgomp: TODO").
 ADDCLDFLAGS=-acc=$(ACCTARGET) -static-nvidia

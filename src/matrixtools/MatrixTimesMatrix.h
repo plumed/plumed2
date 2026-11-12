@@ -47,7 +47,7 @@ struct MatrixTimesMatrixInput {
   void update() {
     locations=locations_v.data();
   }
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],no_thread_gather,gatherForceOnColumns,secondMatrixIsSparse,locations[0:locations_v.size()])
     funcinput.toACCDevice();
@@ -58,7 +58,7 @@ struct MatrixTimesMatrixInput {
     outmat.removeFromACCDevice();
 #pragma acc exit data delete(locations[0:locations_v.size()],secondMatrixIsSparse,gatherForceOnColumns,no_thread_gather,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 class InputVectors {

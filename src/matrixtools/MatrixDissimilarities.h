@@ -41,7 +41,7 @@ struct Dissimilarities {
                          const Dissimilarities& actdata,
                          const InputVectors& vectors,
                          MatrixElementOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], squared, periodic, min, max, \
                               max_minus_min, inv_max_minus_min)
@@ -51,7 +51,7 @@ struct Dissimilarities {
 #pragma acc exit data delete(inv_max_minus_min, max_minus_min, max, \
                              min, periodic, squared, this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 

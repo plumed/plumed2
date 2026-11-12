@@ -94,14 +94,14 @@ public:
                     bool noderiv,
                     const View<const double>& args,
                     FunctionOutput& funcout );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], ncomponents, cmps[0:ncomponents])
   }
   void removeFromACCDevice() const {
 #pragma acc exit data delete(cmps[0:ncomponents], ncomponents, this[0:1])
   }
-#endif // __PLUMED_HAS_OPENACC
+#endif // _OPENACC
 };
 
 void Combine::registerKeywords(Keywords& keys) {

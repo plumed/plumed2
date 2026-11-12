@@ -37,11 +37,11 @@ namespace function {
 class MoreThan {
 public:
   bool squared;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
   static void registerKeywords( Keywords& keys );
   static void read( MoreThan& func,
                     ActionWithArguments* action,
@@ -50,7 +50,7 @@ public:
                     bool noderiv,
                     const View<const double>& args,
                     FunctionOutput& funcout );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],squared)
     switchingFunction.toACCDevice();
@@ -59,7 +59,7 @@ public:
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(squared,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void MoreThan::registerKeywords(Keywords& keys) {

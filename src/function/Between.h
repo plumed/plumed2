@@ -42,7 +42,7 @@ struct Between {
                     bool noderiv,
                     const View<const double> args,
                     FunctionOutput& funcout );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     hist.toACCDevice();
@@ -51,7 +51,7 @@ struct Between {
     hist.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
-#endif // __PLUMED_HAS_OPENACC
+#endif // _OPENACC
 };
 
 void Between::registerKeywords(Keywords& keys) {
