@@ -8,6 +8,11 @@ prefix="$task/environment"
 conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed=$VERSION"
 kernel=$(find "$prefix/lib" -maxdepth 1 -name 'libplumedKernel.*' -type f | head -n 1)
 cp "$kernel" "$task/kernel-before"
+# Compatibility packages contain no plugin: the module moved into the kernel.
+conda install -y -p "$prefix" --override-channels -c local -c conda-forge "plumed-ext-opes=$VERSION"
+"$prefix/bin/plumed" config module opes -q
+test ! -e "$prefix/lib/plumed/plugins/opes.plumed"
+cmp "$kernel" "$task/kernel-before"
 ! "$prefix/bin/plumed" modules -q --has ves
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "plumed-ext-ves=$VERSION" "plumed-ext-pamm=$VERSION"
@@ -17,6 +22,8 @@ cmp "$kernel" "$task/kernel-before"
 for record in "$prefix"/conda-meta/{libtorch,libboost,libmetatomic-torch}-*.json; do
   test ! -e "$record"
 done
+python extensions/tests/requirements.py
+python extensions/tests/module_features.py --base "$prefix"
 python extensions/tests/installed.py --base "$prefix" --extensions "$prefix"
 # The public C wrapper permits a host compiler to exercise several independent
 # objects against the same installed kernel, including concurrent activation.

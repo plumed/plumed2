@@ -1,0 +1,30 @@
+{% set version = environ['VERSION'] %}
+package:
+  name: plumed-mklib
+  version: {{ version }}
+source:
+  path: ../..
+build:
+  number: 0
+  skip: true  # [win]
+requirements:
+  host:
+    - plumed {{ version }}
+  run:
+    - {{ pin_compatible('plumed', exact=True) }}
+    - {{ compiler('cxx') }}
+test:
+  requires:
+    - python
+    - py-plumed
+  source_files:
+    - extensions/tests/mklib.py
+    - regtest/basic/rt15/Distance2.cpp
+    - regtest/basic/rt15/trajectory.xyz
+  commands:
+    - python extensions/tests/mklib.py --prefix "$PREFIX"
+about:
+  home: https://www.plumed.org/
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+  summary: Runtime C++ compilation tools for the exact installed PLUMED kernel

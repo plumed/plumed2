@@ -154,7 +154,7 @@ class FeatureProbes:
 def feature_identity(name, features):
     """Export actual compiled features instead of trusting installed metadata."""
     code = f'extern "C" const char* plumed_module_{name}_features() {{ return ""\n'
-    for feature in sorted(features):
+    for feature in sorted(set(features)):
         code += f"#if defined(__PLUMED_HAS_{feature}) && __PLUMED_HAS_{feature}\n"
         code += '  "' + feature.lower() + ' "\n#endif\n'
     return code + "; }\n"

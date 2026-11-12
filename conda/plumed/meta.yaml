@@ -23,6 +23,7 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}  # [linux]
     - llvm-openmp  # [osx]
     - make
   host:
@@ -33,13 +34,13 @@ requirements:
     - chemfiles-lib 0.10.*
     - hdf5
     - fftw * nompi_*
-    - libblas
-    - liblapack
+    - libopenblas
     - llvm-openmp  # [osx]
     - zlib
   run:
     - fftw * nompi_*
     - chemfiles-lib >=0.10.3,<0.11
+    - {{ pin_compatible('libopenblas', max_pin='x.x') }}
     - gawk
     - llvm-openmp  # [osx]
 

@@ -9,3 +9,9 @@ python:
   - "3.15"
 numpy:
   - "2"
+
+# Use a declared sysroot rather than the build runner glibc.
+c_stdlib:  # [linux]
+  - sysroot  # [linux]
+c_stdlib_version:  # [linux]
+  - "2.28"  # [linux]

@@ -12,13 +12,7 @@ cp "$sdk/cuda/$openacc_cuda_version/EULA.txt" "$SRC_DIR/nvhpc-licenses/CUDA-EULA
 python extensions/register.py --plumed "$PREFIX/bin/plumed" --module openacc_ptm \
   --library ../../plumedOpenACC.so --variant "nvhpc${nvhpc_version}_cuda${openacc_cuda_version}" \
   --features OPENACC EXTERNAL_LAPACK --output "$SRC_DIR/openacc-registration"
-lapack_flag=
-if "$PREFIX/bin/plumed" config has external_lapack -q; then
-  lapack_flag=-D__PLUMED_HAS_EXTERNAL_LAPACK=1
-fi
-"$CXX" $CXXFLAGS $CPPFLAGS $lapack_flag -std=c++17 -fPIC -D__PLUMED_HAS_OPENACC=1 \
-  -I"$PREFIX/include/plumed" -c "$SRC_DIR/openacc-registration/module_identity.cpp" \
-  -o "$SRC_DIR/openacc-registration/module_identity.o"
+cp "$SRC_DIR/openacc-registration/module_identity.cpp" "$SRC_DIR/plugins/openaccPTM/src/ModuleIdentity.cpp"
 # NVHPC needs explicit GNU compiler locations: conda activation exports names,
 # not an installation root containing unprefixed gcc/g++ binaries. Generate a
 # private profile; never rewrite the externally supplied SDK configuration.
@@ -42,7 +36,6 @@ make clean
 make -j"${CPU_COUNT:-4}" NVCXX="$nvcxx" ACCTARGET=gpu,host \
   CXXFLAGS="-O2 -std=c++17 -fPIC -tp=px -gpu=ccall,cuda${openacc_cuda_version}" \
   NVLDSHARED="$nvcxx -shared $sysroot_link -tp=px -gpu=ccall,cuda${openacc_cuda_version} -Xlinker --no-undefined" \
-  EXTRA_OBJS="$SRC_DIR/openacc-registration/module_identity.o" \
   DYNAMIC_LIBS="-L$PREFIX/lib $PREFIX/lib/libopenblas.so.0"
 readelf -d plumedOpenACC.so
 python - <<'PYCODE'

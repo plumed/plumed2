@@ -450,17 +450,24 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   std::string command(argv[i]);
   // Configuration remains build-time provenance. Runtime availability has its
   // own command and follows this invocation's automatic/explicit load context.
+  if(command=="mklib" && std::find(availableShell.begin(),availableShell.end(),command)==availableShell.end()) {
+    std::fprintf(stderr,"ERROR: runtime C++ compilation tools are not installed; for conda install plumed-mklib\n");
+    return 1;
+  }
   if(command=="modules") {
     bool query=false,featureQuery=false,list=false,quiet=false;
     std::vector<std::string> names;
+    std::string module;
     for(int j=i+1; j<argc; ++j) {
       const std::string option=argv[j];
       if(option=="--help" || option=="-h") {
-        std::fprintf(out,"Usage: plumed modules [--list | --has NAME... | --has-feature NAME...] [-q]\n"
+        std::fprintf(out,"Usage: plumed modules [--module NAME] [--list | --has NAME... | --has-feature NAME...] [-q]\n"
                      "List visible runtime modules (default), or check that all requested modules/features are available.\n"
-                     "Features include the kernel and visible extensions; config describes the base build only.\n"
+                     "Without --module, features include the kernel and visible extensions; --module selects one build.\n"
                      "Presence checks return 0 when all names are available, otherwise 1. -q suppresses output.\n");
         return 0;
+      } else if(option=="--module" && module.empty() && j+1<argc) {
+        module=argv[++j];
       } else if(option=="-q" || option=="--quiet") {
         quiet=true;
       } else if(option=="--list" && !query && !list) {
@@ -479,7 +486,17 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       std::fprintf(stderr,"ERROR: modules presence checks require at least one name\n");
       return 1;
     }
-    const auto available=featureQuery?ModuleLoader::features(dlloader):ModuleLoader::modules(dlloader);
+    if(!module.empty() && query && !featureQuery) {
+      std::fprintf(stderr,"ERROR: --module selects features, use --has-feature\n");
+      return 1;
+    }
+    if(!module.empty() && !ModuleLoader::available(module,dlloader)) {
+      if(!quiet) {
+        std::fprintf(out,"%s not available\n",module.c_str());
+      }
+      return 1;
+    }
+    const auto available=(featureQuery || !module.empty())?ModuleLoader::features(dlloader,module):ModuleLoader::modules(dlloader);
     if(!query) {
       if(quiet) {
         std::fprintf(stderr,"ERROR: modules -q requires a presence check\n");

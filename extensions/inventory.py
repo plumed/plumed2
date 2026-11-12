@@ -11,7 +11,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def conda_requirements(directory):
     """Read developer-owned requirements; preserve conda platform selectors."""
-    result = {"host": [], "run": [], "unavailable_libraries": []}
+    result = {
+        "host": [],
+        "run": [],
+        "unavailable_libraries": [],
+        "dummy_package": False,
+    }
     declaration = directory / "conda.mk"
     if not declaration.exists():
         return result
@@ -21,6 +26,12 @@ def conda_requirements(directory):
         "UNAVAILABLE_LIBRARIES": "unavailable_libraries",
     }
     for line in declaration.read_text().splitlines():
+        dummy = re.fullmatch(r"CONDA_DUMMY_PACKAGE\s*=\s*(yes|no)\s*(?:#.*)?", line)
+        if dummy:
+            result["dummy_package"] = dummy[1] == "yes"
+            continue
+        if line.startswith("CONDA_DUMMY_PACKAGE"):
+            raise ValueError(f"{declaration}: CONDA_DUMMY_PACKAGE must be yes or no")
         match = re.match(
             r"^CONDA_(HOST_REQUIREMENTS|RUN_REQUIREMENTS|UNAVAILABLE_LIBRARIES)\s*(\+?=)\s*(.*)",
             line,

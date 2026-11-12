@@ -189,14 +189,20 @@ for name in order:
     directory.mkdir(exist_ok=True)
     sources = sorted((root / "src" / name).glob("*.cpp"))
     identity = directory / "module_identity.cpp"
+    feature_flags, native_flags, enabled_features = probes.module_flags(
+        catalog["modules"][name]["feature_guards"]
+    )
     identity.write_text(
         '#include "config/Config.h"\n'
         + f'extern "C" const char* plumed_module_{name}() {{ return "{build_id}"; }}\n'
         + f'extern "C" const void* plumed_module_{name}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
-        + feature_identity(name, catalog["modules"][name]["feature_guards"])
-    )
-    feature_flags, native_flags, enabled_features = probes.module_flags(
-        catalog["modules"][name]["feature_guards"]
+        + feature_identity(
+            name,
+            re.findall(
+                r"-D__PLUMED_HAS_([A-Z0-9_]+)",
+                " ".join([*cppflags, *cxxflags, *feature_flags]),
+            ),
+        )
     )
     objects = []
     tasks = []

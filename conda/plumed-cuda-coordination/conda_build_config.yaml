@@ -5,3 +5,9 @@ cuda_compiler_version:
   - "13.0"
 cxx_compiler_version:
   - "14"
+
+# Use a declared sysroot rather than the build runner glibc.
+c_stdlib:  # [linux]
+  - sysroot  # [linux]
+c_stdlib_version:  # [linux]
+  - "2.28"  # [linux]

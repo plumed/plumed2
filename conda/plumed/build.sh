@@ -30,7 +30,13 @@ fi
 
 # libraries are explicitly listed here due to --disable-libsearch
 # (hdf5 for the HDF5 tables, files with extension .h5: the same library as h5py and other packages in the environment)
-export LIBS="-lchemfiles -lfftw3 -llapack -lblas -lz -lhdf5 $LIBS"
+# Link the actual provider SONAME, not a switchable BLAS/LAPACK symlink.
+if [[ $(uname) == Darwin ]]; then
+  blas_library="$PREFIX/lib/libopenblas.0.dylib"
+else
+  blas_library="$PREFIX/lib/libopenblas.so.0"
+fi
+export LIBS="-lchemfiles -lfftw3 $blas_library -lz -lhdf5 $LIBS"
 
 # python is disabled since it should be provided as a separate package
 # --disable-libsearch forces to link only explicitely requested libraries
@@ -42,3 +48,5 @@ export LIBS="-lchemfiles -lfftw3 -llapack -lblas -lz -lhdf5 $LIBS"
 
 make -j${CPU_COUNT}
 make install
+# Runtime compilation is supplied by the optional plumed-mklib package.
+rm -f "$PREFIX/lib/plumed/scripts/mklib.sh" "$PREFIX/lib/plumed/plumed-mklib"

@@ -45,6 +45,7 @@ requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}  # [linux]
     - make
     - python
   host:
@@ -95,6 +96,39 @@ for name, module in modules.items():
         for path in module["about"]["license_file"]
     )
     outputs.append(output)
+# Compatibility names for methods that moved into the kernel. These packages
+# deliberately install no files and depend only on the exact main package.
+for name, module in catalog["modules"].items():
+    if not module["conda"]["dummy_package"]:
+        continue
+    if name in modules:
+        raise ValueError(f"{name}: CONDA_DUMMY_PACKAGE requires a kernel-built module")
+    output = f"""  - name: plumed-ext-{name}
+    build:
+      string: builtin_{{{{ base_build }}}}_0
+    files: []
+    requirements:
+      host:
+        - plumed {{{{ version }}}}
+      run:
+        - {{{{ pin_compatible('plumed', exact=True) }}}}
+    test:
+      commands:
+        - plumed config module {name} -q
+        - test ! -f "$PREFIX/lib/plumed/plugins/{name}.plumed"
+    about:
+      home: https://www.plumed.org/
+      license: {module["about"]["license"]}
+      license_family: {module["about"]["license_family"]}
+      license_file:
+"""
+    output += "".join(
+        "        - " + json.dumps(path) + "\n"
+        for path in module["about"]["license_file"]
+    )
+    output += f"      summary: Compatibility package; {name} is provided by the main PLUMED kernel\n"
+    outputs.append(output)
+
 footer = """
 about:
   home: https://www.plumed.org/
@@ -125,6 +159,7 @@ build:
 requirements:
   build:
     - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}  # [linux]
     - cmake
     - ninja
   host:
@@ -179,6 +214,7 @@ build:
 requirements:
   build:
     - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}  # [linux]
     - {{ compiler('cuda') }}
     - make
     - python

@@ -10,6 +10,8 @@ else
   make=make
 fi
 
+regtest_scripts_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 export valgrind=env
 
 for opt in ${*}
@@ -45,6 +47,7 @@ plumed_thread_mpi=auto
 
 plumed_needs=
 plumed_modules=
+plumed_has=
 plumed_long=
 # Optional filename:absolute-tolerance entries. Other files use exact diffs.
 plumed_tolerance=()
@@ -205,10 +208,11 @@ fi
 if [[ ${PLUMED_REGTEST_FORCE_REQUIREMENTS:-no} = yes ]]; then
   echo "Module/library prerequisites asserted by the package test selection"
 else
-for need in $plumed_needs
+source "$regtest_scripts_dir/requirements.sh"
+for need in $plumed_needs $plumed_has
 do
   echo "Checking for $need dependency"
-  if ! $plumed_nompi modules -q --has-feature $need
+  if ! plumed_check_feature "$need"
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -226,7 +230,7 @@ done
 for module in $plumed_modules
 do
   echo "Checking for $module module"
-  if ! $plumed_nompi modules -q --has $module
+  if ! plumed_check_module "$module"
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then

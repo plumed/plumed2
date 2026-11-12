@@ -41,12 +41,20 @@ build_id = subprocess.check_output(
     text=True,
     env=dict(os.environ, PLUMED_AUTOLOAD="0"),
 ).strip()
+configuration = subprocess.check_output(
+    [args.plumed, "config", "makefile_conf"],
+    text=True,
+    env=dict(os.environ, PLUMED_AUTOLOAD="0"),
+)
+feature_names = set(args.features) | set(
+    re.findall(r"-D__PLUMED_HAS_([A-Z0-9_]+)", configuration)
+)
 args.output.mkdir(parents=True, exist_ok=True)
 (args.output / "module_identity.cpp").write_text(
     '#include "config/Config.h"\n'
     + f'extern "C" const char* plumed_module_{args.module}() {{ return "{build_id}"; }}\n'
     + f'extern "C" const void* plumed_module_{args.module}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
-    + feature_identity(args.module, args.features)
+    + feature_identity(args.module, feature_names)
 )
 (args.output / f"{args.module}.plumed").write_text(
     f"module {args.module}\nbuild {build_id}\nvariant {args.variant}\nlibrary {args.library}\n"

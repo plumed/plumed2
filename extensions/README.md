@@ -255,3 +255,45 @@ so CPU fallback cannot count as a GPU test. Host results do not validate device
 code or transfers. `bash conda/run-openacc-test.sh` separately checks fresh
 installation/removal, absence of runtime compiler dependencies, and unchanged
 main kernel bytes.
+
+### Modules moved into the kernel
+
+Set `CONDA_DUMMY_PACKAGE = yes` in a kernel-built module's `conda.mk` to retain
+its historical `plumed-ext-<name>` package as an empty compatibility output.
+The generated package pins the exact main kernel and installs no module library
+or registration. Its test requires the module in the static kernel config.
+OPES uses this setting so existing `plumed-ext-opes` installations can upgrade
+when OPES is supplied by the main package. No shortcut dependencies are added.
+
+### Per-module build features and regression prerequisites
+
+`plumed modules --module drr --has-feature boost_serialization -q` tests a
+feature in DRR's build. Kernel-built modules report the kernel feature vector;
+separate modules report their own final enabled compile-time features. Features
+from other modules or dependencies are not unioned into a scoped query. Without
+`--module`, the existing aggregate inquiry remains available. `--module NAME
+--list` lists that visible module's enabled features. Queries do not activate a
+module: use normal autoloading or pre-query `--load-module=NAME` when needed.
+
+Regression configs can declare `plumed_has="drr:boost_serialization"`. The runner
+uses scoped inquiries when supported, otherwise checks both static module
+presence and the feature through `plumed config`. A false modern inquiry never
+falls back to kernel-wide flags. Requirements are checked before reading the
+input, so a `LOAD MODULE` only inside that input cannot satisfy a prerequisite.
+The canonical feature is `boost_serialization`; there is no `boost` alias.
+
+### Optional runtime C++ tools
+
+`conda install plumed-mklib` adds the runtime compiler toolchain, `plumed mklib`
+and `LOAD FILE=MyAction.cpp` support to the exact main package. The base keeps
+its development headers/build settings but does not ship the mklib script or
+launcher. The tooling package adds no PLUMED module. Activate the environment
+to select its compiler/SDK, or use `PLUMED_MKLIB_CXX` for an explicit compatible
+compiler. Additional native module/library links use `PLUMED_MKLIB_LDFLAGS`.
+
+Generated libraries link the kernel and compiler runtimes; imported inline
+BLAS/LAPACK calls additionally link their actual provider. Other private kernel
+libraries do not require development linker files just to compile a basic
+action. C++ LOAD cache filenames include the kernel build ID; direct mklib -n
+also records kernel identity and compiler flags. Existing atomic publication
+and simultaneous-builder handling are retained.

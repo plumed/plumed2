@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 : "${VERSION:?set VERSION to the version built by run-conda-build.sh}"
 
 bash run-extension-test.sh
+bash run-hdf5-variant-test.sh
+bash run-mklib-test.sh
 bash run-pycv-test.sh
 bash run-cuda-coordination-test.sh
 
