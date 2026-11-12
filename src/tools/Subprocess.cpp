@@ -22,6 +22,9 @@
 #include "Subprocess.h"
 #include "Exception.h"
 #include "Tools.h"
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+#include <dlfcn.h>
+#endif
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
@@ -31,6 +34,13 @@
 #include <sys/wait.h>
 #include <spawn.h>
 #include <cstring>
+extern char **environ;
+#endif
+
+#if defined(__PLUMED_HAS_SUBPROCESS) || defined(__PLUMED_HAS_DLOPEN)
+#include <spawn.h>
+#include <sys/wait.h>
+#include <cerrno>
 extern char **environ;
 #endif
 
@@ -127,6 +137,65 @@ public:
   }
 #endif
 };
+
+int Subprocess::run(const std::string& executable,
+                    const std::vector<std::string>& arguments,
+                    const std::map<std::string,std::string>& overrides) {
+#if defined(__PLUMED_HAS_SUBPROCESS) || defined(__PLUMED_HAS_DLOPEN)
+  std::vector<char*> argv {const_cast<char*>(executable.c_str())};
+  for(const auto& argument : arguments) {
+    argv.push_back(const_cast<char*>(argument.c_str()));
+  }
+  argv.push_back(nullptr);
+
+  char** inherited=environ;
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+  // RTLD_DEEPBIND can resolve environ to libc's stale/empty data symbol
+  // instead of the executable's copy relocation (notably in Python hosts).
+  // Look it up in the main program's scope, without modifying either copy.
+  if(void* process=dlopen(nullptr,RTLD_LAZY)) {
+    if(auto address=static_cast<char***>(dlsym(process,"environ"))) {
+      inherited=*address;
+    }
+    dlclose(process);
+  }
+#endif
+  std::vector<std::string> environment;
+  for(char** entry=inherited; entry && *entry; ++entry) {
+    const std::string setting(*entry);
+    if(overrides.count(setting.substr(0,setting.find('=')))==0) {
+      environment.push_back(setting);
+    }
+  }
+  for(const auto& entry : overrides) {
+    if(entry.first.empty() || entry.first.find('=')!=std::string::npos) {
+      errno=EINVAL;
+      return -1;
+    }
+    environment.push_back(entry.first+"="+entry.second);
+  }
+  std::vector<char*> envp;
+  for(auto& entry : environment) {
+    envp.push_back(entry.data());
+  }
+  envp.push_back(nullptr);
+
+  pid_t child;
+  const int error=posix_spawn(&child,executable.c_str(),nullptr,nullptr,argv.data(),envp.data());
+  if(error!=0) {
+    errno=error;
+    return -1;
+  }
+  int status=0;
+  pid_t result;
+  do {
+    result=waitpid(child,&status,0);
+  } while(result<0 && errno==EINTR);
+  return result<0 ? -1 : status;
+#else
+  plumed_error()<<"Subprocess execution not supported";
+#endif
+}
 
 Subprocess::Subprocess(const std::string & cmd) {
 #ifdef __PLUMED_HAS_SUBPROCESS

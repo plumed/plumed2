@@ -203,13 +203,19 @@ with plumed.Plumed() as instance:
     instance.cmd('readInputLine', 'LOAD FILE=ResourceTest.cpp')
     assert 'RESOURCETEST' in plumed.InputBuilder(toplumed=instance)._vimdict
 """
-            subprocess.run(
+            result = subprocess.run(
                 [sys.executable, "-c", script],
                 cwd=tmp,
                 env=self.env,
-                check=True,
+                check=False,
                 capture_output=True,
                 text=True,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"Compiler found by test: {shutil.which(compiler[0])}\n"
+                f"Test PATH: {self.env.get('PATH')}\n" + result.stdout + result.stderr,
             )
 
     @unittest.skipIf(WINDOWS, "builds the client with a Unix C compiler")

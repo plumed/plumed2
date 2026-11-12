@@ -1,2 +1,8 @@
 type=make
 plumed_needs=subprocess
+
+function plumed_regtest_before(){
+  export SUBPROCESS_RUN_VALUE=parent
+  export SUBPROCESS_RUN_INHERITED=inherited
+  export SUBPROCESS_RUN_EMPTY=parent
+}

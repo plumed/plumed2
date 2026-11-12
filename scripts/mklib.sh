@@ -18,6 +18,10 @@ Options:
                          Name of the output library. If missing, the name
                          of the first input file will me used, with its
                          suffix properly adjusted.
+  -I DIR, --include DIR   Add a header search directory (repeatable).
+                         Relative to the working directory; quote paths with spaces.
+                         Cannot be combined with -n (include paths and headers
+                         are not tracked by the timestamp cache).
   -n                     Reuse a library newer than all input files.
                          Otherwise build a replacement, keeping the old library
                          available until linking succeeds. If another builder
@@ -28,7 +32,7 @@ Environment variables:
   PLUMED_MKLIB_LDFLAGS   Extra link time flags (and libraries) to be used
 '
 
-OPTIONS="--description --options -h --help -o --out -n"
+OPTIONS="--description --options -h --help -o --out -I --include -n"
 
 if [ $# == 0 ]
 then
@@ -41,12 +45,21 @@ prefix=""
 lib=""
 no_clobber=""
 files=() # empty array
+includes=()
 for opt
 do
   prefixopt="$prefix$opt"
   prefix=""
   case "$prefixopt" in
     (-o|--out) prefix="--out=";;
+    (-I|--include) prefix="--include=";;
+    (--include=*)
+      dir="${prefixopt#--include=}"
+      if [[ -z "$dir" ]]; then
+        echo "ERROR: --include requires a nonempty directory"
+        exit 1
+      fi
+      includes+=("-I$dir");;
     (-h|--help) echo "$MANUAL" ; exit ;;
     (--options) echo "$OPTIONS" ; exit ;;
     (--out=*) lib="${prefixopt#--out=}";;
@@ -58,6 +71,15 @@ do
       files+=("${prefixopt}");;
   esac
 done
+
+if [[ -n "$prefix" ]]; then
+  echo "ERROR: missing argument for ${prefix%=}"
+  exit 1
+fi
+if [[ ${#includes[@]} -gt 0 && -n "$no_clobber" ]]; then
+  echo "ERROR: --include cannot be combined with -n"
+  exit 1
+fi
 
 if [ ${#files[@]} = 0 ] ; then
   echo ERROR
@@ -93,21 +115,21 @@ if test $recompile = no ; then
   exit 0
 fi
 
-toRemove=""
+toRemove=()
 remover() {
   #if compilation fails or crashes the trap will delete the temporary files
-  for f in $toRemove; do
+  for f in "${toRemove[@]}"; do
     rm -rf "${f}"
   done
 }
 trap "remover" EXIT
-objs=""
+objs=()
 nobj=0
 
 tmpdir=$(mktemp -d "$(dirname "$lib")/plumed_mklib.XXXXXX") || exit 1
 tmp_lib="$tmpdir/$(basename "$lib")"
 
-toRemove="${toRemove} $tmpdir"
+toRemove+=("$tmpdir")
 
 for file in "${files[@]}"
 do
@@ -137,7 +159,7 @@ do
   mv "${tmpfile}" "${tmpfile}.cpp"
   tmpfile=${tmpfile}.cpp
   cp "${file}" "${tmpfile}"
-  toRemove="${toRemove} ${tmpfile} ${tmpfile}.bak"
+  toRemove+=("$tmpfile" "${tmpfile}.bak")
   #this deprecates the shortcut to action register
   if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
      >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
@@ -157,12 +179,15 @@ do
   fi
   rm -f "$tmpdir/$obj"
 
-  eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$tmpdir/$obj" "$tmpfile" || {
+  # Keep configured command/flag evaluation, but expand user paths only in
+  # the evaluated command, as array arguments, never as shell program text.
+  eval "$compile" "$PLUMED_MKLIB_CFLAGS" '"${includes[@]}" -o "$tmpdir/$obj" "$tmpfile"' || {
     echo "ERROR: compiling $file"
+    printf '%s\n' "Compiler search PATH: $PATH" >&2
     exit 1
   }
 
-  objs="$objs $tmpdir/$obj"
+  objs+=("$tmpdir/$obj")
 
 done
 
@@ -177,7 +202,7 @@ fi
 # libraries listed before the objects using them. The kernel would then not be recorded
 # as a dependency, and LOAD would fail with undefined symbols when the kernel was loaded
 # with RTLD_LOCAL (as done by the python interface).
-eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmp_lib" || exit 1
+eval "$link_shared" '"${objs[@]}"' "$PLUMED_MKLIB_LDFLAGS" "$link_libs" '-o "$tmp_lib"' || exit 1
 
 if test -n "$no_clobber" ; then
   # Another caller may have finished compiling these inputs while we linked.

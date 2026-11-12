@@ -450,7 +450,9 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     plumed_massert(out==stdout,"shell tools can only work on stdin");
     std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1; j<argc; j++) {
-      cmd+=std::string(" ")+argv[j];
+      // mklib accepts literal paths, including spaces and shell metacharacters.
+      // Preserve the legacy argument handling of the other shell tools here.
+      cmd+=" "+(command=="mklib" ? Tools::quoteForShell(argv[j]) : std::string(argv[j]));
     }
     int r=std::system(cmd.c_str());
 // this is necessary since system seems to return numbers which are multiple

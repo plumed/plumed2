@@ -1,0 +1,31 @@
+type=make
+plumed_needs=dlopen
+plumed_src=main.cpp
+plumed_link=shared
+
+function plumed_regtest_before(){
+  export PLUMED_MKLIB_CFLAGS="$PLUMED_MKLIB_CFLAGS -DMKLIB_INCLUDE_FIXTURE=7"
+  mkdir -p 'first headers' 'second headers' "special ' \$(touch injected)" 'source dir'
+  printf '#define INCLUDE_VALUE 10\n' > 'first headers/value.h'
+  printf '#define INCLUDE_VALUE 20\n' > 'second headers/value.h'
+  printf '#define EXTRA_VALUE 3\n' > "special ' \$(touch injected)/extra.h"
+  mv Extension.cpp 'source dir/Extension.cpp'
+  source "$root/src/config/compile_options.sh"
+  $plumed_nompi mklib -I 'first headers' \
+    --include "special ' \$(touch injected)" -o "prebuilt.$soext" 'source dir/Extension.cpp' || return 1
+  for option in --include --include=; do
+    if $plumed_nompi mklib "$option" > invalid-option.log 2>&1; then
+      echo "FAILURE: mklib accepted an empty include option"
+      return 1
+    fi
+  done
+  if $plumed_nompi mklib -n --include 'first headers' 'source dir/Extension.cpp' > invalid-cache.log 2>&1; then
+    echo "FAILURE: mklib accepted include paths with its timestamp cache"
+    return 1
+  fi
+  # Exercise LOAD with environment-derived paths that must stay literal.
+  # Set this after the CLI tests so it specifically covers LOAD's child setup.
+  ln -s "$root" "root ' \$(touch injected_root)"
+  export PLUMED_ROOT="$PWD/root ' \$(touch injected_root)"
+  export PLUMED_IS_INSTALLED='parent sentinel'
+}

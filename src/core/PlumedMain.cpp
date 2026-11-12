@@ -49,6 +49,7 @@
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/Subprocess.h"
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
@@ -78,6 +79,8 @@
 #include <variant>
 #include <filesystem>
 #include <limits>
+#include <random>
+#include <atomic>
 
 namespace PLMD {
 
@@ -1746,7 +1749,16 @@ void PlumedMain::update() {
   checkpointing.atStepEnd();
 }
 
-void PlumedMain::load(const std::string& fileName) {
+void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
+  struct BuildDirectory {
+    std::filesystem::path path;
+    ~BuildDirectory() {
+      if(!path.empty()) {
+        std::error_code ec;
+        std::filesystem::remove_all(path,ec);
+      }
+    }
+  } buildDirectory;
   if(DLLoader::installed()) {
     std::string libName=fileName;
     size_t n=libName.find_last_of(".");
@@ -1764,7 +1776,54 @@ void PlumedMain::load(const std::string& fileName) {
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh -n -o "+libName+" "+fileName;
+      if(!includeDirs.empty()) {
+        // Separate output paths also prevent dlopen from returning an older
+        // image when another Plumed object still owns a previous compilation.
+        int created=0;
+        if(comm.Get_rank()==0) {
+          try {
+            std::random_device random;
+            // Never reuse a path in this process, even after its directory was
+            // removed: an earlier image can still be held by another object.
+            static std::atomic<unsigned long long> sequence{0};
+            for(unsigned attempt=0; attempt<100; ++attempt) {
+              auto candidate=std::filesystem::absolute(base+".load-"+std::to_string(random())+"-"+std::to_string(sequence++));
+              if(std::filesystem::create_directory(candidate)) {
+                buildDirectory.path=candidate;
+                break;
+              }
+            }
+            if(!buildDirectory.path.empty()) {
+              libName=(buildDirectory.path/("extension."+config::getSoExt())).string();
+              created=1;
+            }
+          } catch(const std::exception& e) {
+            log<<"Cannot create LOAD build directory: "<<e.what()<<"\n";
+          }
+        }
+        // Report root failures on every rank before broadcasting the path.
+        comm.Bcast(created,0);
+        plumed_massert(created,"Cannot create LOAD build directory next to "+fileName);
+        unsigned length=libName.size();
+        comm.Bcast(length,0);
+        libName.resize(length);
+        comm.Bcast(libName,0);
+      }
+      std::vector<std::string> options;
+      if(includeDirs.empty()) {
+        options.push_back("-n");
+      }
+      for(const auto& dir : includeDirs) {
+        options.push_back("--include");
+        options.push_back(dir);
+      }
+      options.insert(options.end(), {"-o",libName,fileName});
+      // Keep a readable command for logging and the per-command build lock.
+      // This string is not executed.
+      std::string cmd=config::getEnvCommand()+" "+Tools::quoteForShell(config::getPlumedRoot()+"/scripts/mklib.sh");
+      for(const auto& option : options) {
+        cmd+=" "+Tools::quoteForShell(option);
+      }
 
       if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) {
         log<<"Executing: "<<cmd;
@@ -1779,6 +1838,7 @@ void PlumedMain::load(const std::string& fileName) {
 
       // On MPI process (intracomm), we use Get_rank to make sure a single process does the compilation
       // Processes from multiple replicas might simultaneously do the compilation.
+      int ret=0;
       if(comm.Get_rank()==0) {
         static Tools::CriticalSectionWithKey<std::string> section;
         // This is only locking commands that are running with identical arguments.
@@ -1786,13 +1846,24 @@ void PlumedMain::load(const std::string& fileName) {
         // the library is already there, even if running simultaneously).
         // It however decreases the system load if many threads are used.
         auto s=section.startStop(cmd);
-        int ret=std::system(cmd.c_str());
-        if(ret!=0) {
-          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
-        }
+        std::vector<std::string> arguments{"--",config::getPlumedRoot()+"/scripts/mklib.sh"};
+        arguments.insert(arguments.end(),options.begin(),options.end());
+        ret=Subprocess::run("/bin/bash",arguments, {
+          {"PLUMED_ROOT",config::getPlumedRoot()},
+          {"PLUMED_VERSION",config::getVersionLong()},
+          {"PLUMED_HTMLDIR",config::getPlumedHtmldir()},
+          {"PLUMED_INCLUDEDIR",config::getPlumedIncludedir()},
+          {"PLUMED_PROGRAM_NAME",config::getPlumedProgramName()},
+          {"PLUMED_IS_INSTALLED",config::isInstalled() ? "yes" : "no"}
+        });
+      }
+      comm.Bcast(ret,0);
+      if(ret!=0) {
+        plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
     } else {
+      plumed_massert(includeDirs.empty(),"INCLUDE_PATH requires a .cpp source file");
       libName=base+"."+config::getSoExt();
     }
 
@@ -1800,6 +1871,10 @@ void PlumedMain::load(const std::string& fileName) {
     // will load the library, but each of them will only see actions registered
     // from the owned library
     auto *p=dlloader.load(libName);
+    if(!includeDirs.empty()) {
+      // Every rank must finish dlopen before the root removes the library.
+      comm.Barrier();
+    }
     log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
     log<<"Here is the list of new actions\n";
     log<<"\n";

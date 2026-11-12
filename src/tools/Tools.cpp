@@ -272,6 +272,14 @@ bool Tools::convertNoexcept(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
+std::string Tools::quoteForShell(const std::string& value) {
+  std::string result="'";
+  for(const char c : value) {
+    result += c=='\'' ? "'\\''" : std::string(1,c);
+  }
+  return result+"'";
+}
+
 bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   t=str;
   return true;

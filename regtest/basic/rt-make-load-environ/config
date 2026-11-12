@@ -1,0 +1,16 @@
+type=make
+plumed_src=main.cpp
+plumed_link=runtime
+plumed_needs=dlopen
+plumed_modules=setup
+
+function plumed_regtest_before(){
+  mkdir -p mock-root/scripts mock-root/patches
+  cat > mock-root/scripts/mklib.sh <<'SCRIPT'
+#!/usr/bin/env bash
+printf '%s\n' "$PLUMED_ENVIRON_PROBE" > child-environment
+exit 7
+SCRIPT
+  export PLUMED_ROOT="$PWD/mock-root"
+  export PLUMED_ENVIRON_PROBE='inherited through a deep-bound kernel'
+}
