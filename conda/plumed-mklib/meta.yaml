@@ -5,7 +5,7 @@ package:
 source:
   path: ../..
 build:
-  number: 1
+  number: 2
   skip: true  # [win]
 requirements:
   host:
@@ -22,6 +22,9 @@ test:
     - extensions/tests/mklib.py
     - regtest/basic/rt15/Distance2.cpp
     - regtest/basic/rt15/trajectory.xyz
+    - regtest/basic/rt-make-load-cltool/main.cpp
+    - regtest/basic/rt-make-load-cltool/kT10.cpp
+    - regtest/basic/rt-make-load-cltool/kT20.cpp
   commands:
     - python extensions/tests/mklib.py --prefix "$PREFIX"
 about:

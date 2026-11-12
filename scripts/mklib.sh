@@ -216,6 +216,14 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
   # Inline matrix helpers can import BLAS/LAPACK directly. Preserve those actual
   # imports without requiring every private kernel dependency's linker files.
   if [[ -n ${mklib_link_libs_installed:-} ]]; then
+    # configure records these flags in DYNAMIC_LIBS, not make's LDFLAGS.
+    # Keep local definitions when an action/CLTool intentionally overrides a
+    # kernel class, without bringing its private development libraries back.
+    for flag in $link_libs_installed; do
+      case "$flag" in
+        -rdynamic|-Wl,-Bsymbolic|-Wl,-Bsymbolic-functions) link_libs+=" $flag" ;;
+      esac
+    done
     for header in blas/blas.h lapack/lapack.h; do
       sed -n -E 's/.*PLUMED_BLAS_F77_FUNC\( *([a-z0-9_]+) *,.*/\1/p' \
         "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/$header"

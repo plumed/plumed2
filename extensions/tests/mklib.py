@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -153,4 +154,36 @@ p.finalize()
         x for x in (work / "PYCOLVAR").read_text().splitlines() if not x.startswith("#")
     ]
     assert len(row) == 1 and abs(float(row[0].split()[1]) - 1.0) < 1e-12, row
+    # Replacement CLTools use the same C++ class name as the kernel. On ELF,
+    # dropping its configured symbol-binding flags silently calls the original.
+    tools_environment = dict(environment)
+    if args.extension:
+        tools_environment.pop("PLUMED_MKLIB_LDFLAGS", None)
+    fixture = source / "regtest/basic/rt-make-load-cltool"
+    for filename in ("kT10.cpp", "kT20.cpp", "main.cpp"):
+        shutil.copy2(fixture / filename, work / filename)
+    for filename in ("kT10.cpp", "kT20.cpp"):
+        run([program, "mklib", filename], tools_environment)
+    compiler = shlex.split(os.environ.get("CXX", "c++"))
+    run(
+        [
+            *compiler,
+            "-std=c++17",
+            "-pthread",
+            "-I" + str(prefix / "include"),
+            '-D__PLUMED_SOEXT="' + soext + '"',
+            "main.cpp",
+            str(prefix / "lib/libplumedWrapper.a"),
+            "-ldl",
+            "-o",
+            "cltool-host",
+        ],
+        tools_environment,
+    )
+    run([str(work / "cltool-host")], tools_environment)
+    for index in range(16):
+        value = float((work / f"output_threads{index}").read_text().split()[-2])
+        assert value == (2.5, 25.0, 50.0)[index % 3], (index, value)
+    print("Installed concurrent CLTool overrides match all 16 reference values")
+
 print("Installed mklib direct, C++ LOAD, cache and Python-host numerical checks passed")
