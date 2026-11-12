@@ -5,14 +5,15 @@ package:
 source:
   path: ../..
 build:
-  number: 0
+  number: 1
   skip: true  # [win]
 requirements:
   host:
     - plumed {{ version }}
+    - {{ compiler('cxx') }}
   run:
     - {{ pin_compatible('plumed', exact=True) }}
-    - {{ compiler('cxx') }}
+    - {{ pin_compatible(compiler('cxx').split()[0], exact=True) }}
 test:
   requires:
     - python

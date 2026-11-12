@@ -11,6 +11,7 @@ conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed
 cp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge "plumed-ext-openacc-ptm=$VERSION"
 cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
+python extensions/tests/abi.py --prefix "$prefix"
 NVCOMPILER_ACC_DEVICE_TYPE=HOST "$prefix/bin/plumed" modules -q --has openacc_ptm
 PLUMED_AUTOLOAD=0 NVCOMPILER_ACC_DEVICE_TYPE=HOST \
   "$prefix/bin/plumed" --load-module=openacc_ptm modules -q --has-feature openacc

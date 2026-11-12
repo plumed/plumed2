@@ -18,7 +18,10 @@ prefix = args.prefix.resolve()
 records = [json.loads(p.read_text()) for p in (prefix / "conda-meta").glob("*.json")]
 packages = {r["name"] for r in records}
 count = 0
-for path in sorted((prefix / "lib").glob("libplumed*.so*")):
+libraries = set((prefix / "lib").glob("libplumed*.so*"))
+libraries.update((prefix / "lib").glob("*Coordination.so"))
+libraries.update((prefix / "lib").glob("*OpenACC.so"))
+for path in sorted(libraries):
     if path.is_symlink() or not path.is_file():
         continue
     versions = subprocess.check_output(

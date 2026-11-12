@@ -15,6 +15,7 @@ for cuda_version in 12.9 13.0; do
   conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
     "plumed-ext-cuda-coordination=$VERSION" "cuda-version=$cuda_version"
   cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
+  python extensions/tests/abi.py --prefix "$prefix"
   "$prefix/bin/plumed" modules -q --has cuda_coordination
   PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" --load-module=cuda_coordination modules -q --has-feature cuda
   grep -qx "variant cuda$cuda_version" "$prefix/lib/plumed/plugins/cuda_coordination.plumed"
