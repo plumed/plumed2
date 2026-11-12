@@ -31,6 +31,8 @@
 #include "tools/ColvarOutput.h"
 #include "tools/OpenACC.h"
 
+#include <exception>
+
 namespace PLMD {
 
 template<typename precision>
@@ -581,23 +583,36 @@ void ParallelTaskManager<T>::runAllTasks() {
       nt=1;
     }
 
+    // an exception must not leave an OpenMP parallel region (it calls std::terminate):
+    // the first one thrown by a task is stored and thrown again after the region
+    std::exception_ptr exception;
     #pragma omp parallel num_threads(nt)
     {
       std::vector<precision> buffer( workspace_size );
       std::vector<precision> derivatives( nderivatives_per_task );
       #pragma omp for nowait
       for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        std::size_t task_index = partialTaskList[i];
-        std::size_t val_pos = task_index*myinput.nscalars;
-        auto myout = ParallelActionsOutput::create ( myinput.nscalars,
-                     value_stash.data()+val_pos,
-                     nderivatives_per_task,
-                     derivatives.data(),
-                     workspace_size,
-                     buffer.data() );
-        // Calculate the stuff in the loop for this action
-        T::performTask( task_index, actiondata, myinput, myout );
+        try {
+          std::size_t task_index = partialTaskList[i];
+          std::size_t val_pos = task_index*myinput.nscalars;
+          auto myout = ParallelActionsOutput::create ( myinput.nscalars,
+                       value_stash.data()+val_pos,
+                       nderivatives_per_task,
+                       derivatives.data(),
+                       workspace_size,
+                       buffer.data() );
+          // Calculate the stuff in the loop for this action
+          T::performTask( task_index, actiondata, myinput, myout );
+        } catch(...) {
+          #pragma omp critical(ptm_exception)
+          if( !exception ) {
+            exception = std::current_exception();
+          }
+        }
       }
+    }
+    if( exception ) {
+      std::rethrow_exception( exception );
     }
     // MPI Gather everything
     if( !serial ) {
