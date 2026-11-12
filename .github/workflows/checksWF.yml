@@ -1,0 +1,103 @@
+name: checksCI
+
+# Quick checks that run first: in pull requests and manual runs the rest of the CI (see ci.yml) waits
+# for these and for codecheck, so that a commit that does not build, has compiler warnings or breaks
+# the python interface does not take the macOS runners and the long Linux builds.
+# No regtests run here: they run after the gate, in parallel with the other jobs.
+
+on:
+  workflow_call:
+
+env:
+# on CI, better dump stack trace in case there is an error
+  PLUMED_STACK_TRACE: yes
+# use two threads for openMP tests
+  PLUMED_NUM_THREADS: 2
+# default compilers (the build job sets its own)
+  CC: gcc
+  CXX: g++
+
+jobs:
+  # Build of all modules with clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which
+  # flags hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
+  # embedded third-party libraries) fails the job. Build only, to keep the gate short: the regtests of
+  # this configuration run after the gate, in the checks job of linuxWF.yml, which reuses the ccache
+  # saved here (same cache key) so that it does not compile again.
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+      CXX: clang++
+      PLUMED_CCACHE_SIZE: 100M
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        # keep in sync with the checks job of linuxWF.yml
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-clang-noopenmp-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-clang-noopenmp-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        # keep in sync with the clang-noopenmp variant of the checks job of linuxWF.yml
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all \
+          --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter" --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        # --output-sync keeps the output of each file together, so that warnings are attributed to the right module
+        # (ccache replays the warnings of the files it takes from the cache)
+        make -j 4 --output-sync=target 2>&1 | tee build.log
+        test ${PIPESTATUS[0]} -eq 0
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Check warnings
+      run: .ci/check-warnings build.log
+
+  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
+  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
+  # which are in cltools.
+  modules-none:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Build PLUMED with --enable-modules=none
+      run: |
+        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
+        make -j 4
+        make install
+
+  # python/plumed.c is generated from plumed.pyx and cplumed.pxd and it is committed,
+  # so that building the python interface does not require cython.
+  # Here we check that it is consistent with the sources.
+  check-plumed-c:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.14"
+    - name: Check that python/plumed.c is up to date
+      working-directory: ./python
+      run: |
+        # keep the version consistent with CYTHON_VERSION in python/Makefile
+        pip install cython==3.2.4
+        python -m cython --module-name plumed._plumed plumed.pyx -o "$RUNNER_TEMP/plumed.c"
+        # the compressed copies of the strings depend on the python running cython
+        # (version and compression libraries), so they are ignored in the comparison
+        if ! ./compare_plumed_c.sh plumed.c "$RUNNER_TEMP/plumed.c" ; then
+          echo "::error file=python/plumed.c::python/plumed.c is not consistent with plumed.pyx and cplumed.pxd. Regenerate it with 'make -C python cythonize' using cython 3.2.4 and commit it."
+          exit 1
+        fi

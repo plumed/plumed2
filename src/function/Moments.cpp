@@ -93,9 +93,9 @@ PLUMED_REGISTER_ACTION(VectorMoments,"MOMENTS_VECTOR")
 
 void Moments::registerKeywords(Keywords& keys) {
   keys.add("compulsory","POWERS","calculate the central moments of the distribution of collective variables. "
-           "The \\f$m\\f$th central moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
-           "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
-           "calculated values can be referenced using moment-\\f$m\\f$.");
+           "The $m$th central moment of a distribution is calculated using $\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m$, where $\\overline{s}$ is "
+           "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of $m$. The final "
+           "calculated values can be referenced using moment-$m$.");
   keys.addOutputComponent("moment","default","scalar","the central moments of the distribution of values. The second central moment "
                           "would be referenced elsewhere in the input file using "
                           "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");

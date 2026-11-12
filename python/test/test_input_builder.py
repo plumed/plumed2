@@ -1,5 +1,6 @@
 import unittest
 import os
+from unittest.mock import patch
 import plumed
 
 try:
@@ -26,6 +27,49 @@ ib = plumed.InputBuilder()
 class TestInputBuilder(unittest.TestCase):
     def check(self, s1, s2):
         self.assertEqual(s1, s2)
+
+    def test_root_discovery_ordinary_failure_uses_legacy_command(self):
+        module = plumed._inputbuilder
+        for error in (RuntimeError("cannot load kernel"), OSError("cannot open log")):
+            with self.subTest(error=type(error).__name__):
+                with (
+                    patch.object(module, "Plumed", side_effect=error),
+                    patch(
+                        "subprocess.check_output", return_value=b"/legacy/root\n"
+                    ) as command,
+                ):
+                    self.assertEqual(
+                        module._guessplumedroot("selected-kernel"), "/legacy/root"
+                    )
+                command.assert_called_once_with(
+                    ["plumed", "--no-mpi", "info", "--root"]
+                )
+
+    def test_root_discovery_command_failure_uses_legacy_command(self):
+        module = plumed._inputbuilder
+        with (
+            patch.object(module, "Plumed") as constructor,
+            patch("subprocess.check_output", return_value=b"/legacy/root\n") as command,
+        ):
+            constructor.return_value.__enter__.return_value.cmd.side_effect = (
+                ValueError("initialization failed")
+            )
+            self.assertEqual(module._guessplumedroot("selected-kernel"), "/legacy/root")
+        constructor.assert_called_once_with("selected-kernel")
+        command.assert_called_once_with(["plumed", "--no-mpi", "info", "--root"])
+
+    def test_root_discovery_interrupts_propagate_without_fallback(self):
+        module = plumed._inputbuilder
+        for error in (KeyboardInterrupt(), SystemExit(7)):
+            with self.subTest(error=type(error).__name__):
+                with (
+                    patch.object(module, "Plumed", side_effect=error),
+                    patch("subprocess.check_output") as command,
+                ):
+                    with self.assertRaises(type(error)) as raised:
+                        module._guessplumedroot("selected-kernel")
+                self.assertIs(raised.exception, error)
+                command.assert_not_called()
 
     def test_generated_docstring_safely_quotes_backslashes_and_triple_quotes(self):
         doc = 'quotes "here", backslash \\ and triple """'

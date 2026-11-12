@@ -30,6 +30,8 @@ namespace sizeshape {
 /*
 Calculates a linear projection in the space of a given reference configurational distribution in size-and-shape space.
 
+This CV can be used, for example, to bias along the linear discriminant that separates two conformational states, as discussed in the first paper cited below.
+
 The linear projection is given by:
 
 $$
@@ -46,10 +48,10 @@ $$
 
 where, $\mathbf{\Sigma}^{-1}$ is the $N\times N$ precision matrix. See also [SIZESHAPE_POSITION_MAHA_DIST](SIZESHAPE_POSITION_MAHA_DIST.md) for information about calculating Mahalanobis distance in size-and-shape space.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
-Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM), which is discussed in the second paper cited below, is a probabilistic clustering technique that is used to perform structural clustering on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
+Please check out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
-##Examples
+## Examples
 
 In the following example, a group is defined with atom indices of selected atoms and then linear projection is calculated for the given reference, precision and coefficients. Each file is a space separated list of 3N floating point numbers.
 
@@ -116,6 +118,8 @@ void position_linear_proj::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "COEFFS", "Vector of linear coefficients.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial, for debug purposes only.");
   keys.setValueDescription("scalar","the linear projection");
+  keys.addDOI("10.1021/acs.jctc.3c00051");
+  keys.addDOI("10.1021/acs.jctc.1c01290");
 }
 
 // constructor function

@@ -7,6 +7,7 @@
 # Modules: "always" + "default-on" sets, mirroring upstream module.type files.
 cmake_minimum_required(VERSION 3.18)
 project(PlumedMSVC LANGUAGES CXX)
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,22 +20,39 @@ set(PLUMED_GEN ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
-set(ALWAYS_MODULES asmjit blas core lapack lepton mpiwrap small_vector tools valtools)
-set(DEFAULT_ON_MODULES bias cltools colvar function generic gridtools isdb
-    liquid_crystal matrixtools multicolvar refdist secondarystructure
-    setup vatom xdrfile)
-set(MODULES ${ALWAYS_MODULES} ${DEFAULT_ON_MODULES})
+# The "always" and "default-on" modules, as listed by the src/*/module.type
+# files (the same set that ./configure enables by default)
+set(MODULES)
+file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
+list(SORT _module_type_files)
+foreach(_mt ${_module_type_files})
+    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    if(_type STREQUAL "always" OR _type STREQUAL "default-on")
+        get_filename_component(_dir ${_mt} DIRECTORY)
+        get_filename_component(_mod ${_dir} NAME)
+        list(APPEND MODULES ${_mod})
+    endif()
+endforeach()
 # The Windows CMake build uses the imported Win32 thread backend by default.
 # Keep the wrapper frontend enabled when this option is off so the fully
 # serial build still provides the communicator compatibility layer.
 option(PLUMED_ENABLE_THREAD_MPI "Compile the embedded thread-MPI backend" ON)
-if(PLUMED_ENABLE_THREAD_MPI)
-    list(APPEND MODULES thread_mpi)
+if(NOT PLUMED_ENABLE_THREAD_MPI)
+    list(REMOVE_ITEM MODULES thread_mpi)
 endif()
 # Optional default-off modules (upstream: enabled by touching <mod>.on)
 option(PLUMED_ENABLE_VES "Compile the VES module (variational enhanced sampling)" OFF)
 if(PLUMED_ENABLE_VES)
     list(APPEND MODULES ves)
+endif()
+
+# Kernel for the python package (python/build_backend.py): it finds its
+# resources (scripts, vim and json files, headers) relative to its own location
+# (__PLUMED_PIP_BUNDLE, see src/config/Config.inc.in), and it is configured as
+# installed, as the kernel that `make install` links with ConfigInstall.
+option(PLUMED_PIP_BUNDLE "Build the kernel bundled in the python package" OFF)
+if(PLUMED_PIP_BUNDLE AND NOT PLUMED_SHARED_KERNEL)
+    message(FATAL_ERROR "PLUMED_PIP_BUNDLE requires PLUMED_SHARED_KERNEL=ON")
 endif()
 
 # ------------------------------------------------- build-time .inc generation
@@ -59,6 +77,7 @@ add_custom_command(
     OUTPUT ${PPM_INC} ${CONFIG_OUT} ${COMPLETION_XXD}
     COMMAND ${CMAKE_COMMAND}
             "-DSRC=${PLUMED_SRC}" "-DOUT=${PLUMED_GEN}"
+            "-DINSTALLED=${PLUMED_PIP_BUNDLE}" "-DPREFIX=${CMAKE_INSTALL_PREFIX}"
             -P ${GEN_SCRIPT}
     DEPENDS ${GEN_SCRIPT} ${GEN_MODULE}
             ${PLUMED_SRC}/src/config/Config.inc.in
@@ -75,6 +94,8 @@ add_custom_command(
 set(PLUMED_SOURCES)
 set(PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src)
 foreach(m ${MODULES} config wrapper main)
+    # aux_source_directory appends to the variable
+    set(_srcs)
     aux_source_directory(${PLUMED_SRC}/src/${m} _srcs)
     list(APPEND PLUMED_SOURCES ${_srcs})
     list(APPEND PLUMED_INCLUDE_DIRS ${PLUMED_SRC}/src/${m})
@@ -91,7 +112,19 @@ list(FILTER PLUMED_SOURCES EXCLUDE REGEX "config/ConfigInstall\\.cpp$")
 # conflict-free for MD-engine hosts (GROMACS provides its own main()).
 list(FILTER PLUMED_SOURCES EXCLUDE REGEX "main/main\\.cpp$")
 
-add_library(plumedKernel STATIC ${PLUMED_SOURCES} ${PPM_INC} ${COMPLETION_XXD} ${CONFIG_OUT})
+# Shared kernel (plumedKernel.dll on Windows), loadable with PLUMED_KERNEL and
+# plumed_create_dlopen (e.g. by the python interface). Only its C entry points are
+# exported (cmake-msvc/plumedKernel.def); the plumed executable is linked to it.
+option(PLUMED_SHARED_KERNEL "Build plumedKernel as a shared library and link plumed to it" OFF)
+if(PLUMED_SHARED_KERNEL)
+    set(_kernel_type SHARED)
+else()
+    set(_kernel_type STATIC)
+endif()
+add_library(plumedKernel ${_kernel_type} ${PLUMED_SOURCES} ${PPM_INC} ${COMPLETION_XXD} ${CONFIG_OUT})
+if(PLUMED_SHARED_KERNEL AND MSVC)
+    target_sources(plumedKernel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/plumedKernel.def)
+endif()
 target_compile_features(plumedKernel PUBLIC cxx_std_17)
 
 target_compile_definitions(plumedKernel PRIVATE
@@ -104,6 +137,29 @@ target_compile_definitions(plumedKernel PRIVATE
     # (no __PLUMED_HAS_DLOPEN, __PLUMED_HAS_DLADDR, __PLUMED_HAS_MPI,
     #  __PLUMED_HAS_ZLIB, __PLUMED_HAS_MATHEVAL)
 )
+if(PLUMED_PIP_BUNDLE)
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_PIP_BUNDLE)
+endif()
+# Embedded asmjit, used by lepton to compile expressions (CUSTOM, MATHEVAL,
+# switching functions...) to machine code. As in ./configure, only on x86-64
+# and on 64 bit ARM; PLUMED_USE_ASMJIT=no disables it at run time.
+option(PLUMED_ENABLE_ASMJIT "Compile expressions with the embedded asmjit" ON)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _processor)
+if(PLUMED_ENABLE_ASMJIT AND _processor MATCHES "^(x86_64|amd64|aarch64|arm64)$"
+   AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_ASMJIT)
+    if(UNIX AND NOT APPLE)
+        # clock_gettime, shm_open and shm_unlink are in librt on older Linux systems
+        find_library(PLUMED_RT_LIBRARY rt)
+        if(PLUMED_RT_LIBRARY)
+            target_link_libraries(plumedKernel PRIVATE ${PLUMED_RT_LIBRARY})
+        endif()
+    endif()
+    set(PLUMED_HAS_ASMJIT ON)
+else()
+    set(PLUMED_HAS_ASMJIT OFF)
+endif()
+message(STATUS "PLUMED asmjit: ${PLUMED_HAS_ASMJIT} (${CMAKE_SYSTEM_PROCESSOR})")
 if(PLUMED_ENABLE_THREAD_MPI)
     target_compile_definitions(plumedKernel PRIVATE
         __PLUMED_HAS_THREAD_MPI=1
@@ -139,19 +195,140 @@ if(MSVC)
         /EHsc
         /utf-8
         /Zc:__cplusplus   # MSVC reports real __cplusplus; Plumed.h relies on it
-        /W1)
+        /W1
+        /wd4068)          # unknown pragma (#pragma acc); same as -Wno-unknown-pragmas in configure
+    # the C runtime (/MD by default) follows CMAKE_MSVC_RUNTIME_LIBRARY
+    # (static, /MT, for the python package: see python/build_backend.py)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(plumedKernel PRIVATE /O2 /MD)
+        target_compile_options(plumedKernel PRIVATE /O2)
+    endif()
+    # the Visual Studio generators compile the files of a target one at a time
+    # unless cl is told to use several processes
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+        target_compile_options(plumedKernel PRIVATE /MP)
+    endif()
+endif()
+# debug information in an optimized build, to get stack traces of crashes
+# (CI: plumed.exe run under cdb). /Z7 keeps it in the objects of the static
+# kernel library, the linker collects it in plumed.pdb.
+option(PLUMED_MSVC_DEBUG_INFO "MSVC: debug information also in Release builds" OFF)
+if(MSVC AND PLUMED_MSVC_DEBUG_INFO)
+    target_compile_options(plumedKernel PRIVATE /Z7)
+    if(PLUMED_SHARED_KERNEL)
+        target_link_options(plumedKernel PRIVATE /DEBUG /OPT:REF /OPT:ICF)
     endif()
 endif()
 
+# --------------------------------------------------- optional libraries
+# HDF5 tables (.h5 files) and more trajectory formats in the driver (chemfiles).
+# The python package links static copies of them, built by
+# python/build_dependencies.py and found with CMAKE_PREFIX_PATH.
+option(PLUMED_ENABLE_HDF5 "HDF5 tables (.h5 files), with the HDF5 library" OFF)
+option(PLUMED_ENABLE_CHEMFILES "More trajectory formats in the driver, with chemfiles" OFF)
+if(PLUMED_ENABLE_HDF5 OR PLUMED_ENABLE_CHEMFILES)
+    # a static HDF5 or chemfiles may need the zlib they were built with
+    set(ZLIB_USE_STATIC_LIBS ON)
+    find_package(ZLIB)
+endif()
+if(PLUMED_ENABLE_HDF5)
+    find_package(HDF5 REQUIRED NAMES hdf5 CONFIG)
+    foreach(_target hdf5::hdf5-static hdf5-static hdf5::hdf5-shared hdf5-shared)
+        if(TARGET ${_target})
+            target_link_libraries(plumedKernel PRIVATE ${_target})
+            break()
+        endif()
+    endforeach()
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_LIBHDF5)
+endif()
+if(PLUMED_ENABLE_CHEMFILES)
+    find_package(chemfiles REQUIRED CONFIG)
+    target_link_libraries(plumedKernel PRIVATE chemfiles)
+    target_compile_definitions(plumedKernel PRIVATE __PLUMED_HAS_LIBCHEMFILES)
+endif()
+if((PLUMED_ENABLE_HDF5 OR PLUMED_ENABLE_CHEMFILES) AND PLUMED_SHARED_KERNEL
+   AND UNIX AND NOT APPLE)
+    # the shared kernel does not export the symbols of static libraries (e.g.
+    # HDF5), so that it can be loaded with other copies of them
+    target_link_options(plumedKernel PRIVATE "LINKER:--exclude-libs,ALL")
+endif()
+
+# ------------------------------------------------------------ config.txt
+# Read by "plumed config" (scripts/config.sh) from PLUMED_ROOT/src/config:
+# regtests use it to check for features (plumed_needs) and modules
+# (plumed_modules). Same format as src/maketools/update-config-txt.sh,
+# restricted to what this build can enable.
+set(_has cregex)
+if(PLUMED_HAS_ASMJIT)
+    list(APPEND _has asmjit)
+endif()
+if(PLUMED_ENABLE_THREAD_MPI)
+    list(APPEND _has mpi thread_mpi)
+endif()
+if(PLUMED_ENABLE_HDF5)
+    list(APPEND _has libhdf5)
+endif()
+if(PLUMED_ENABLE_CHEMFILES)
+    list(APPEND _has libchemfiles)
+endif()
+set(_config_txt "# generated by the CMake build (CMakeLists.txt)\n\n")
+string(APPEND _config_txt "python_bin \n\nmpiexec \n\n")
+foreach(_h ${_has})
+    string(APPEND _config_txt "has ${_h} on\n")
+endforeach()
+string(APPEND _config_txt "\n")
+file(GLOB _module_types ${PLUMED_SRC}/src/*/module.type)
+list(SORT _module_types)
+foreach(_mt ${_module_types})
+    get_filename_component(_dir ${_mt} DIRECTORY)
+    get_filename_component(_mod ${_dir} NAME)
+    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    if(_mod IN_LIST MODULES)
+        string(APPEND _config_txt "module ${_mod} on (${_type})\n")
+    else()
+        string(APPEND _config_txt "module ${_mod} off (${_type})\n")
+    endif()
+endforeach()
+file(CONFIGURE OUTPUT ${PLUMED_SRC}/src/config/config.txt CONTENT "${_config_txt}" @ONLY)
+
 # ---------------------------------------------------------------- main tool
-add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
+if(PLUMED_SHARED_KERNEL)
+    # main.cpp uses the C interface only: give it its own wrapper, which gets
+    # the kernel functions from the shared kernel (see cmake-msvc/PlumedLinked.cpp)
+    add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp
+                          ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/PlumedLinked.cpp)
+    if(APPLE)
+        set_target_properties(plumed PROPERTIES INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+    elseif(UNIX)
+        set_target_properties(plumed PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+    endif()
+else()
+    add_executable(plumed ${PLUMED_SRC}/src/main/main.cpp)
+endif()
+if(MSVC)
+    # UTF-8 as the code page of plumed.exe (file names on the command line)
+    target_sources(plumed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cmake-msvc/plumed.manifest)
+endif()
 # Registration objects in a static lib are dropped unless referenced:
 # every RegisterMe global object is unreferenced by design, so pull in the
 # whole library (upstream links all kernel objects directly, not an archive).
-if(MSVC)
+# A shared kernel contains all its objects anyway.
+if(PLUMED_SHARED_KERNEL)
+    if(MSVC)
+        target_link_options(plumed PRIVATE "/STACK:8388608")
+        if(PLUMED_MSVC_DEBUG_INFO)
+            target_compile_options(plumed PRIVATE /Z7)
+            target_link_options(plumed PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+        endif()
+    endif()
+elseif(MSVC)
     target_link_options(plumed PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:plumedKernel>")
+    # 8 MB main-thread stack, as on Linux (the MSVC default is 1 MB): nested
+    # cmd() calls (DEBUG logRequestedAtoms, the PLUMED action) overflowed it
+    target_link_options(plumed PRIVATE "/STACK:8388608")
+    if(PLUMED_MSVC_DEBUG_INFO)
+        target_compile_options(plumed PRIVATE /Z7)
+        target_link_options(plumed PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+    endif()
 elseif(APPLE)
     target_link_options(plumed PRIVATE "LINKER:-force_load,$<TARGET_FILE:plumedKernel>")
 else()
@@ -162,7 +339,7 @@ target_link_libraries(plumed PRIVATE plumedKernel)
 target_include_directories(plumed PRIVATE
     ${PLUMED_SRC}/src ${PLUMED_GEN} ${PLUMED_SRC}/src/config)
 if(MSVC)
-    target_compile_options(plumed PRIVATE /permissive- /EHsc /utf-8 /Zc:__cplusplus /W1)
+    target_compile_options(plumed PRIVATE /permissive- /EHsc /utf-8 /Zc:__cplusplus /W1 /wd4068)
 endif()
 
 set(_compilable ${PLUMED_SOURCES})
@@ -182,7 +359,15 @@ set(PLUMED_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
 set(PLUMED_INSTALL_PROGRAM_DIR "${CMAKE_INSTALL_LIBDIR}/plumed")
 
 install(TARGETS plumed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES $<TARGET_FILE:plumedKernel> DESTINATION ${PLUMED_INSTALL_LIBDIR})
+if(PLUMED_SHARED_KERNEL)
+    # Windows: plumedKernel.dll next to plumed.exe, import library plumedKernel.lib in lib
+    install(TARGETS plumedKernel
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            LIBRARY DESTINATION ${PLUMED_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${PLUMED_INSTALL_LIBDIR})
+else()
+    install(FILES $<TARGET_FILE:plumedKernel> DESTINATION ${PLUMED_INSTALL_LIBDIR})
+endif()
 
 # headers, with the same include rewrite as maketools/install.headers
 install(CODE "
@@ -205,3 +390,23 @@ install(CODE "
 ")
 install(DIRECTORY ${PLUMED_SRC}/patches ${PLUMED_SRC}/scripts DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR})
 install(FILES ${PLUMED_SRC}/fortran/plumed.f90 ${PLUMED_SRC}/fortran/plumed_f08.f90 DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/fortran)
+# features and modules, read by "plumed config" (as make install does)
+install(FILES ${PLUMED_SRC}/src/config/config.txt DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/src/config)
+# Vim syntax and help files and the JSON syntax file, generated by the
+# installed plumed as the vim/ and json/ Makefiles do (used by editors and by
+# the InputBuilder of the python package with kernels without metadata)
+install(DIRECTORY ${PLUMED_SRC}/vim/templates DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
+install(FILES ${PLUMED_SRC}/vim/scripts.vim DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
+install(CODE "
+  set(_plumed \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/plumed${CMAKE_EXECUTABLE_SUFFIX}\")
+  set(_root \"\${CMAKE_INSTALL_PREFIX}/${PLUMED_INSTALL_PROGRAM_DIR}\")
+  message(STATUS \"Generating the vim and json syntax files\")
+  execute_process(COMMAND \"\${_plumed}\" --no-mpi gen_vim --outdir \"\${_root}/vim\" --template-dir \"${PLUMED_SRC}/vim/templates\"
+                  RESULT_VARIABLE _rc_vim)
+  file(MAKE_DIRECTORY \"\${_root}/json\")
+  execute_process(COMMAND \"\${_plumed}\" --no-mpi gen_json
+                  OUTPUT_FILE \"\${_root}/json/syntax.json\" RESULT_VARIABLE _rc_json)
+  if(NOT _rc_vim EQUAL 0 OR NOT _rc_json EQUAL 0)
+    message(FATAL_ERROR \"cannot generate the vim and json syntax files with \${_plumed}\")
+  endif()
+")

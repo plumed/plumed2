@@ -41,26 +41,28 @@ import plumed
 
 
 def read_xyz(filename):
-    xyz = open(filename)
-    n_atoms = int(xyz.readline())
-    xyz.readline()  # skip line
-    trajectory = []
-    while True:
-        atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms, 3])
-        for i in range(0, n_atoms):
-            line = xyz.readline()
-            atom, x, y, z = line.split()
-            atom_type[i] = atom
-            coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
-        trajectory.append(coordinates)
-        nextline = xyz.readline()
-        if nextline == "":
-            break
-        c_atoms = int(nextline)
-        if c_atoms != n_atoms:
-            break
+    with open(filename) as xyz:
+        n_atoms = int(xyz.readline())
         xyz.readline()  # skip line
-    xyz.close()
+        trajectory = []
+        while True:
+            atom_type, coordinates = (
+                np.zeros(n_atoms).astype(str),
+                np.zeros([n_atoms, 3]),
+            )
+            for i in range(0, n_atoms):
+                line = xyz.readline()
+                atom, x, y, z = line.split()
+                atom_type[i] = atom
+                coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
+            trajectory.append(coordinates)
+            nextline = xyz.readline()
+            if nextline == "":
+                break
+            c_atoms = int(nextline)
+            if c_atoms != n_atoms:
+                break
+            xyz.readline()  # skip line
     return trajectory
 
 
@@ -117,29 +119,28 @@ rg = np.loadtxt("grid.inpt")[:, 2]
 # Read in the correct answers that were calculated directly using PLUMED
 # correct_torsions = np.loadtxt("colvar.ref")
 # Open an output file
-of = open("logfile", "w+")
+with open("logfile", "w+") as of:
+    total_g = np.zeros(g.shape)
 
-total_g = np.zeros(g.shape)
+    # Now analyze the trajectory
+    for step in range(0, num_frames):
+        of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
+        p.cmd("setStep", step)
+        p.cmd("setBox", box)
+        p.cmd("setMasses", masses)
+        p.cmd("setCharges", charges)
+        p.cmd("setPositions", traj[step])
+        p.cmd("setForces", forces)
+        p.cmd("setVirial", virial)
+        p.cmd("calc")
+        if step > 0:
+            total_g = total_g + g
 
-# Now analyze the trajectory
-for step in range(0, num_frames):
-    of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
-    p.cmd("setStep", step)
-    p.cmd("setBox", box)
-    p.cmd("setMasses", masses)
-    p.cmd("setCharges", charges)
-    p.cmd("setPositions", traj[step])
-    p.cmd("setForces", forces)
-    p.cmd("setVirial", virial)
-    p.cmd("calc")
-    if step > 0:
-        total_g = total_g + g
-
-zeros = rg - total_g.flatten()
-for z in zeros:
-    if abs(z) > 1e-4:
-        of.write(
-            "MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON " + str(z) + " \n"
-        )
-
-of.close()
+    zeros = rg - total_g.flatten()
+    for z in zeros:
+        if abs(z) > 1e-4:
+            of.write(
+                "MISMATCH BETWEEN VALUE FROM PLUMED AND VALUE FROM PYTHON "
+                + str(z)
+                + " \n"
+            )

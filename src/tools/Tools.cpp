@@ -22,6 +22,7 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Exception.h"
+#include "FileTools.h"
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cctype>
@@ -706,8 +707,8 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 
 std::vector<std::string> Tools::ls(const std::string&d) {
   std::vector<std::string> result;
-  for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
-    result.push_back(dir_entry.path().filename().string());
+  for (auto const& dir_entry : std::filesystem::directory_iterator{pathFromUTF8(d)}) {
+    result.push_back(pathToUTF8(dir_entry.path().filename()));
   }
   return result;
 }
@@ -775,7 +776,7 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path):
     return;
   }
   try {
-    std::filesystem::current_path(path);
+    std::filesystem::current_path(pathFromUTF8(path));
   } catch(std::filesystem::filesystem_error & e) {
     plumed_error() << "cannot change directory to " << path << ": " << e.code().message();
   }
@@ -785,7 +786,7 @@ Tools::DirectoryChanger::~DirectoryChanger() {
   try {
     std::filesystem::current_path(originalpath);
   } catch(std::filesystem::filesystem_error & e) {
-    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",originalpath.c_str());
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",pathToUTF8(originalpath).c_str());
   }
 }
 

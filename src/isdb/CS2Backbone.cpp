@@ -41,6 +41,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
+#include "tools/FileTools.h"
 #include "tools/Torsion.h"
 #include "tools/Communicator.h"
 
@@ -248,7 +249,7 @@ public:
 
   void parse(const std::string &file, const double dscale) {
     std::ifstream in;
-    in.open(file.c_str());
+    in.open(pathFromUTF8(file));
     if(!in) {
       plumed_merror("Unable to open DB file: " + file);
     }
@@ -759,7 +760,7 @@ void CS2Backbone::init_cs(const std::string &file, const std::string &nucl, cons
   unsigned ichain=0;
 
   std::ifstream in;
-  in.open(file.c_str());
+  in.open(pathFromUTF8(file));
   if(!in) {
     return;
   }

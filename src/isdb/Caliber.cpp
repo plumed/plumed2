@@ -23,6 +23,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Communicator.h"
+#include "tools/FileTools.h"
 #include <fstream>
 #include <algorithm>
 #include <cmath>
@@ -196,7 +197,7 @@ Caliber::Caliber(const ActionOptions&ao):
   }
 
   log.printf("  Time resolved data from file %s\n",filename.c_str());
-  std::ifstream varfile(filename.c_str());
+  std::ifstream varfile(pathFromUTF8(filename));
   if(varfile.fail()) {
     error("Cannot open "+filename);
   }

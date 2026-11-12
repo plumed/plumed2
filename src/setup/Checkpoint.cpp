@@ -23,7 +23,9 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Checkpointing.h"
+#include "tools/Checkpoint.h"
 #include "tools/Exception.h"
+#include "tools/FileTools.h"
 #include <filesystem>
 
 namespace PLMD {
@@ -103,6 +105,26 @@ Actions that keep an internal state but do not store it in the checkpoint
 yet are listed in a warning in the log: for them the restart is the usual
 file-based one and an exact continuation is not guaranteed.
 
+When the MD engine never sends the `doCheckPoint` signal (e.g. [driver](driver.md),
+[simplemd](simplemd.md), [pesmd](pesmd.md)), a checkpoint is also written at the end of
+the run, with the suffix `_final` (`plumed_final.cpt` for `plumed.cpt`). It stores the
+state after the last step, so it is the checkpoint of the step that follows it, and
+the MD engine must restart from that step. It is written when the MD engine calls the
+`runFinalJobs` command of the interface or, if it does not, when PLUMED is finalized,
+provided that the last step was completed (calculation and update) and that PLUMED is not
+finalized because of an error. An MD engine that does not send the signal should
+preferably call `runFinalJobs`; in any case, it must finalize PLUMED on all the processes,
+and before MPI. The engines that send the signal (GROMACS) write their own restart files
+at the steps of the signals (GROMACS also at the last step), and no final checkpoint is
+written for them, since it would not match those files.
+
+With `RESTART_FROM=AUTO` the final checkpoint, when it exists, is read instead of FILE,
+unless the MD engine tells PLUMED that it restarts from another step (`setRestartStep`
+command of the interface, sent by the GROMACS patches and by [driver](driver.md)).
+It is backed up once the restart is done (and by a new run), so it exists only when the
+previous run ended normally. With an MD engine that does not give the restart step and
+restarts from an earlier step, give the checkpoint of that step with RESTART_FROM.
+
 The content of a checkpoint can be inspected with `plumed checkpoint --dump`.
 Compressed (`.gz`) output files cannot be truncated and are not allowed
 together with CHECKPOINT.
@@ -123,7 +145,7 @@ void Checkpoint::registerKeywords( Keywords& keys ) {
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","FILE","plumed.cpt","the name of the checkpoint file");
   keys.add("compulsory","STRIDE","0","write a checkpoint every STRIDE steps, in addition to those requested by the MD engine. 0 means only on request of the MD engine");
-  keys.add("compulsory","RESTART_FROM","AUTO","the checkpoint to restart from: AUTO (FILE, if the MD engine is restarting), NO (never restart from a checkpoint), or the name of a checkpoint file");
+  keys.add("compulsory","RESTART_FROM","AUTO","the checkpoint to restart from: AUTO (if the MD engine is restarting: the final checkpoint of FILE if it exists and is for the restart step, FILE otherwise), NO (never restart from a checkpoint), or the name of a checkpoint file");
 }
 
 Checkpoint::Checkpoint(const ActionOptions&ao):
@@ -143,7 +165,17 @@ Checkpoint::Checkpoint(const ActionOptions&ao):
   if(restartFrom=="AUTO") {
     if(plumed.getRestart()) {
       restartFrom=file;
-      log<<"  the MD engine is restarting: reading the checkpoint\n";
+      // the final checkpoint exists only if the previous run ended normally without the signal of the MD engine;
+      // it is read unless the MD engine says that it restarts from another step
+      const std::string finalFile=Checkpointing::finalName(file);
+      const std::string finalPath=cpt.suffixedPath(finalFile);
+      if(std::filesystem::exists(pathFromUTF8(finalPath))) {
+        const long long int engineStep=cpt.getEngineRestartStep();
+        if(engineStep<0 || CheckpointReader(CheckpointReader::readFile(finalPath)).get<long long int>("step")==engineStep) {
+          restartFrom=finalFile;
+        }
+      }
+      log<<"  the MD engine is restarting: reading the checkpoint "<<cpt.suffixedPath(restartFrom)<<"\n";
     } else {
       restartFrom="NO";
       log<<"  new run: not reading any checkpoint\n";
@@ -151,7 +183,7 @@ Checkpoint::Checkpoint(const ActionOptions&ao):
   }
   if(restartFrom!="NO") {
     const std::string fname=cpt.suffixedPath(restartFrom);
-    if(!std::filesystem::exists(fname)) {
+    if(!std::filesystem::exists(pathFromUTF8(fname))) {
       error("checkpoint file "+fname+" not found. Use RESTART_FROM=NO to restart without a checkpoint");
     }
     cpt.restartFrom(restartFrom);

@@ -40,7 +40,6 @@
 #include <atomic>
 #include <csignal>
 #include <cstdio>
-#include <random>
 #include <algorithm>
 #include <chrono>
 #include <string_view>
@@ -177,9 +176,6 @@ are calculated using bootstrapping and the warm-up phase is discarded in the ana
 // We use an anonymous namespace here to avoid clashes with variables
 // declared in other parts of the code
 namespace {
-
-//this is a sugar for changing idea faster about the rng
-using generator = std::mt19937;
 
 std::atomic<bool> signalReceived(false);
 
@@ -331,10 +327,17 @@ public:
         //let the "main"
         return std::nullopt;
       }
+      std::string trajFormat;
+      parse("--traj-format",trajFormat);
+      if(trajFormat.length()>0 && trajectory_fmt!="traj") {
+        std::fprintf(stderr,"ERROR: --traj-format can only be used with --itraj\n");
+        return std::nullopt;
+      }
       if (nn==1) {
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
-                 trajectoryFile
+                 trajectoryFile,
+                 trajFormat
                );
       }
     }
@@ -395,7 +398,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
-  generator rng;
+  Random rng;
   PLMD::Random atomicGenerator;
 
   struct FileDeleter {
@@ -406,7 +409,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     }
   };
 
-  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen("/dev/null","w")};
+  // "r+": the null device exists, nothing is created
+  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen(FileBase::nullDevice,"r+")};
 
   Log log;
   if(pc.Get_rank()==0) {
@@ -462,7 +466,7 @@ same syntax of --atom-distribution
     if(f->empty()) {
       return;
     }
-    generator bootstrapRng;
+    Random bootstrapRng;
 
     const auto size=f->back().timings.size();
     //B are the bootstrap iterations
@@ -485,7 +489,6 @@ same syntax of --atom-distribution
         log<<"Running comparative analysis, "<<numblocks<<" blocks with size "<<blocksize<<"\n";
 
         std::vector<std::size_t> choice(size);
-        std::uniform_int_distribution<> distrib(0, numblocks-1);
         std::vector<std::vector<long long int>> blocks(f->size());
 
         {
@@ -512,7 +515,7 @@ same syntax of --atom-distribution
         //B are the bootstrap iterations
         for(unsigned b=0; b<B; b++) {
           for(auto & c : choice) {
-            c=distrib(bootstrapRng);
+            c=bootstrapRng.RandUInt64(numblocks);
           }
           long long int reference=0;
           for(const auto & c : choice) {
@@ -521,7 +524,7 @@ same syntax of --atom-distribution
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice){c=distrib(bootstrapRng);}
+            // for(auto & c : choice){c=bootstrapRng.RandUInt64(numblocks);}
             for(const auto & c : choice) {
               estimate+=blocks[i][c];
             }
@@ -721,7 +724,7 @@ same syntax of --atom-distribution
     for(unsigned i=0; i<natoms; i++) {
       shuffled_indexes[i]=i;
     }
-    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
+    rng.Shuffle(shuffled_indexes);
     pos_shuffled.resize(natoms);
   }
 
@@ -742,7 +745,7 @@ same syntax of --atom-distribution
   SignalHandlerGuard sigTermGuard(SIGTERM, signalHandler);
 
   for(int step=0; nf<0 || step<nf; ++step) {
-    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
+    rng.Shuffle(kernels_ptr);
     distribution->frame(pos,cell,step,atomicGenerator);
     if(shuffled) {
       // atom shuffled_indexes[k] is passed in place k, so its position is copied there:

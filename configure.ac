@@ -379,6 +379,7 @@ PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
 PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, files with extension .h5)],[yes])
 PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
+PLUMED_CONFIG_ENABLE([libchemfiles],[search for chemfiles, to read more trajectory formats in driver and benchmark],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
 PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
@@ -861,10 +862,13 @@ fi
 
 if test $subprocess = true ; then
   PLUMED_CHECK_CXX_PACKAGE([subprocess],[
-/* random program calling all the functions needed to manage a subprocess */
+/* Check the functions used to spawn, communicate with and reap a subprocess. */
 #include <cstdio>
 #include <unistd.h>
 #include <csignal>
+#include <spawn.h>
+#include <sys/wait.h>
+extern char **environ;
 
 int
 main ()
@@ -872,22 +876,30 @@ main ()
 // notice that [[]] is required to cheat autoconf
   int cp[[2]];
   FILE* fp;
-  char* arr[[3]];
-  arr[[0]]=NULL;
-  arr[[1]]=NULL;
-  arr[[2]]=NULL;
-  arr[[3]]=NULL;
-  if(pipe(cp)>=0)
-  if(fork()>=0)
-  if(close(1)>=0)
-  if(dup(cp[[1]])>=0) {
-    fp=fdopen(cp[[0]],"w");
-    execv(arr[[0]],arr);
-  }
-  auto p=fork();
+  char* arr[[4]]={nullptr,nullptr,nullptr,nullptr};
+  posix_spawn_file_actions_t actions;
+  posix_spawnattr_t attributes;
+  posix_spawn_file_actions_init(&actions);
+  posix_spawnattr_init(&attributes);
+  pipe(cp);
+  posix_spawn_file_actions_adddup2(&actions,cp[[0]],STDIN_FILENO);
+  posix_spawn_file_actions_addclose(&actions,cp[[1]]);
+  posix_spawnattr_setpgroup(&attributes,0);
+  posix_spawnattr_setflags(&attributes,POSIX_SPAWN_SETPGROUP);
+  pid_t p;
+  posix_spawn(&p,"/bin/sh",&actions,&attributes,arr,environ);
+  posix_spawnattr_destroy(&attributes);
+  posix_spawn_file_actions_destroy(&actions);
+  fp=fdopen(cp[[0]],"w");
+  fclose(fp);
+  close(cp[[1]]);
   kill(p,SIGINT);
   kill(p,SIGCONT);
   kill(p,SIGSTOP);
+  siginfo_t info;
+  waitid(P_PID,p,&info,WEXITED|WNOHANG|WNOWAIT);
+  int status;
+  waitpid(p,&status,0);
   return 0;
 }
 
@@ -1326,6 +1338,19 @@ int main() { return 0; }
       return 0;
     }
   ], [__PLUMED_HAS_LIBHDF5], [ hdf5_hl hdf5 ], [true])
+fi
+
+if test $libchemfiles = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libchemfiles],[
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+  ], [__PLUMED_HAS_LIBCHEMFILES], [chemfiles])
 fi
 
 if test $libitensor = true ; then

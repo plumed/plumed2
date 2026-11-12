@@ -34,7 +34,13 @@ echo "LDSHARED += --gcc-toolchain=$GCCROOT" >> Makefile.conf
 It is worth running these commands more than once if the compilation doesn't work the first time. If they complete correctly a dynamic libarary called `plumedOpenACC.so` 
 will be created in the plumed2/plugins/openaccPTM directory.
 
-We have tested this module with the [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads) version of the NVIDIA HPC SDK compiler and found that it works.
+We have tested this module with the following versions of the NVIDIA HPC SDK compiler and found that it works:
+
+- [24.3](https://developer.nvidia.com/nvidia-hpc-sdk-243-downloads);
+- 24.5, on GPUs (Leonardo Booster nodes, A100);
+- 25.11, on the CPU (`ACCTARGET=host`), which is the version we used to run the regression tests in the GitHub Actions CI.
+- 26.9, on the CPU (`ACCTARGET=host`), which is the version we use to run the regression tests in the GitHub Actions CI.
+
 It currently does not work with NVHPC 26.5 compiler.
 
 Note that we recommend running the test suite after compilation.  You can do this by issuing the following commands:

@@ -1063,11 +1063,10 @@ the amount, separation, and location of coordination defects without
 hard-coding water, glycine, a catalyst, or an atom-list position.
 
 The construction follows the descriptors introduced for acid-base equilibria
-\cite Grifoni2019AcidBase and condensed-phase tautomerism
-\cite Grifoni2020Tautomeric.  Applications to solvated glycine, interfacial
+and condensed-phase tautomerism in the first two papers cited below.
+Applications to solvated glycine (third paper cited below), interfacial
 water ions, electric-field effects, and electrocatalytic nitrogen reduction
-are discussed in \cite Zhang2024Glycine, \cite Zhang2025Interfaces,
-\cite Zhang2025ElectricField, and \cite Zhang2026NRR.
+are discussed in Zhang et al. (2024, 2025, 2026).
 
 An illustrated bilingual guide with downloadable teaching structures,
 application examples, performance data, and additional references is
@@ -1409,6 +1408,9 @@ PLUMED_REGISTER_ACTION(VoronoiCoordination,"VORONOI_COORDINATION")
 
 void VoronoiCoordination::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.addDOI("10.1073/pnas.1819771116");
+  keys.addDOI("10.1021/acs.jctc.0c00519");
+  keys.addDOI("10.1021/acs.jcim.4c00273");
   registerCommonKeywords(keys);
   keys.add("atoms","SELECT","Subset of CENTERS included in the scalar reduction; the default is all centers");
   keys.add("optional","COEFFICIENTS","One coefficient, or one value per atom in SELECT");
@@ -1594,7 +1596,7 @@ matching REFERENCE entry.  No C++ change is required.
 
 ## Worked example 3: solvated glycine
 
-The glycine distance used in \cite Zhang2024Glycine contains a water-glycine
+The glycine distance used in the paper cited below contains a water-glycine
 cross term and an internal N-O term.  Writing them separately removes the
 legacy `NRX` and last-three-atoms convention.  The numbered fixture below
 contains zwitterionic [Z] glycine, one complete water near its ammonium group,
@@ -1634,15 +1636,13 @@ An alternative reference partition can accidentally give the same linear
 `sp` scalar when coefficients and total references cancel.  That does not
 make it equivalent for VORONOI_DISTANCE, POWER=2, or sign filtering.  Use one
 physically declared reference vector consistently across the coupled Actions.
-The coordinate files, runnable inputs, commands, and expected outputs are in
-`user-doc/tutorials/others/reactive-voronoi`.
 The complete application is available in the
 [GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling).
 
 ## Worked example 4: nitrogen-reduction proton transfer
 
 The published Ru single-atom nitrogen-reduction input in
-\cite Zhang2026NRR uses water oxygen atoms and one reactive nitrogen as the
+Zhang et al. (2026) uses water oxygen atoms and one reactive nitrogen as the
 active Voronoi centers.  Catalyst and other adsorbate groups may appear in the
 full simulation input, but they are not automatically active in these Actions.
 
@@ -1695,6 +1695,7 @@ PLUMED_REGISTER_ACTION(VoronoiDistance,"VORONOI_DISTANCE")
 
 void VoronoiDistance::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.addDOI("10.1021/acs.jcim.4c00273");
   registerCommonKeywords(keys);
   keys.add("atoms","GROUP1","First explicit subset of CENTERS");
   keys.add("atoms","GROUP2","Optional disjoint second subset of CENTERS; if omitted, unique pairs within GROUP1 are used");
@@ -1946,7 +1947,7 @@ PRINT ARG=water_positive_z FILE=COLVAR
 
 The air-water and oil-water applications are available in the
 [OilWaterInterface repository](https://github.com/Zhang-pchao/OilWaterInterface/tree/main)
-and are described in \cite Zhang2025Interfaces.  Historical NL_CUTOFF,
+and are described in Zhang et al. (2025).  Historical NL_CUTOFF,
 NL_STRIDE, and ORIGIN values are system-specific and should not be copied
 without new full-pair and reference-frame validation.
 

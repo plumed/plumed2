@@ -70,6 +70,7 @@ Here's a description of the content of each file and directory in the root PLUME
     Makefile         : makefile
     Makefile.conf.in : template configuration makefile
     PEOPLE           : list of authors
+    PLATFORMS.md     : features available on each platform and in the Python package
     README.md        : this file
     VERSION.txt      : version file
     astyle           : a local version of astyle, used to format code
@@ -85,31 +86,49 @@ Here's a description of the content of each file and directory in the root PLUME
     new-manual       : user manual (MkDocs)
     patches          : patch scripts
     plugins          : optional plugins (e.g. pycv)
-    python           : python stuff
+    python           : python package (wrappers and pip packaging)
+    pythonformatter.sh : formats the python code (as astyle for C++)
     regtest          : regression tests, including reference results
     release.sh       : developer utility to publish releases
     ruff.toml        : configuration for the ruff Python linter
     scripts          : shell tools
     sourceme.sh.in   : template configuration script
     src              : source code
-    test             : examples
-    user-doc         : old tutorials and pages from the Doxygen manual, not part of the current manual
+    stamp-h.in       : timestamp file used by autoconf
     vim              : directory where vim syntax is generated
 
 Required software
 -----------------
 
-Required software:
+The following applies to the standard build from the sources. The features
+available on each platform, and with the Python and conda packages, are
+described in [PLATFORMS.md](PLATFORMS.md).
+
+Required software on Linux and macOS:
 
 * GNU make.
 * C/c++ compiler (c++17 support is required as of version 2.10).
 * A modern version of the `patch` command line tool.
 
-Suggested software (libraries are checked by `./configure` and enabled if available):
+Required software on Windows (experimental CMake build):
+
+* [CMake](https://cmake.org) 3.18 or later.
+* Visual Studio 2022, or the Build Tools for Visual Studio, with the
+  "Desktop development with C++" workload (MSVC with C++17 support).
+
+No other library is needed on Windows: BLAS and LAPACK are replaced by the
+internal version, and parallel runs use the embedded thread-MPI. Running the
+regression tests also needs a bash shell (e.g. Git Bash).
+
+Suggested software on Linux and macOS (libraries are checked by `./configure`
+and enabled if available):
 
 * An external MPI library for distributed-memory parallel simulations, matching the MPI implementation used by your MD code. Serial builds can instead use embedded thread-MPI for local ranks; see [MPI runtime selection](src/mpiwrap/README.md).
 * Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
 * [Zlib library](https://zlib.net/) to use compressed data files.
+* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
+* [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
+* [Chemfiles library](https://chemfiles.org/) to read more file formats in `plumed driver` and in the MOLINFO action (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
 * [Doxygen](https://www.doxygen.nl) to build the developer manual. Doxygen might need:
   * [Graphviz](https://www.graphviz.org) to show class hierarchy in
@@ -129,11 +148,73 @@ This also allows one base `plumed` conda package with small optional
 builds. Our [conda recipes](conda/README.md) prototype and test that layout;
 this does not change conda-forge's current packages.
 
+Modules and plugins
+-------------------
+
+The source code is organized in modules, one for each directory of `src`.
+The `module.type` file of each module says when it is compiled:
+
+* `always`: the basic infrastructure (e.g. `core`, `tools`), always compiled;
+* `default-on`: the common actions (e.g. `bias`, `colvar`, `function`,
+  `generic`, `multicolvar`, `opes`, `secondarystructure`), compiled unless they are
+  disabled;
+* `default-off`: specialized methods and modules that need external libraries
+  (e.g. `ves`, `funnel`, `drr`, `sasa`, `pytorch`, `metatomic`), compiled only
+  when they are requested.
+
+Modules are selected when PLUMED is configured, with a `:`-separated list:
+
+    ./configure --enable-modules=+ves:+drr    # add modules to the default ones
+    ./configure --enable-modules=-isdb        # remove a default-on module
+    ./configure --enable-modules=all          # all the modules
+    ./configure --enable-modules=none:+bias   # only the always modules and bias
+
+A module that needs an external library provides its actions only if PLUMED
+is also configured with that library (see `./configure --help`, e.g.
+`--enable-libtorch` for `pytorch`). The modules of an installed PLUMED are listed by
+`plumed config show`, and `plumed config module ves` tells if a module is
+enabled. The Python wheels (`pip install plumed`) and the CMake build for
+Windows include only the `always` and `default-on` modules
+(see [PLATFORMS.md](PLATFORMS.md)).
+
+Plugins are compiled separately, against an installed PLUMED, and loaded at
+run time with the `LOAD` action (`LOAD FILE=plugin.so` in the input, or
+`plumed --load plugin.so` for the command line tools). This also works with the
+Python wheels on Linux and macOS, but not on Windows. Plugins can be:
+
+* your own actions: a C++ file with an action can be compiled with
+  `plumed mklib MyCV.cpp`, or loaded directly with `LOAD FILE=MyCV.cpp`, which
+  compiles it when PLUMED starts (a C++ compiler is needed in both cases);
+* the plugins in the [plugins](plugins) directory, each with its own README and
+  build instructions: [pycv](plugins/pycv/README.md) (collective variables and
+  functions written in Python, installed with `pip`),
+  [cudaCoord](plugins/cudaCoord/README.md) (coordination number on GPUs with
+  CUDA) and [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
+  GPUs with OpenACC, including SAXS and SANS). cudaCoord and openaccPTM are
+  compiled with `./configure` and `make` in their directory.
+
+Python package and other packages
+---------------------------------
+
+The Python package, including a basic PLUMED kernel and the `plumed` command,
+can be installed with
+
+    python -m pip install plumed
+
+Wheels are available for Linux (x86_64 and aarch64), macOS (Intel and Apple
+Silicon) and Windows (x86_64). They are compiled without MPI libraries and
+OpenMP, and include HDF5 and chemfiles; see [PLATFORMS.md](PLATFORMS.md) for the features
+available on each platform and [python/README.rst](python/README.rst) for the
+package itself.
+PLUMED is also distributed by several package managers (see the badges above),
+e.g. `conda install -c conda-forge plumed` on Linux and macOS; the features of
+the conda packages are also described in [PLATFORMS.md](PLATFORMS.md).
+
 Quick compilation instructions
 ------------------------------
 
 Extensive installation instructions are in the [user documentation](https://www.plumed.org/doc).
-Quick instructions:
+Quick instructions for Linux and macOS (for Windows, see [below](#windows)):
 
     ./configure --prefix=$HOME/opt
     make
@@ -162,3 +243,29 @@ A sample modulefile with environment variable will be placed in
 `$HOME/opt/lib/plumed/src/lib/modulefile`. This can be useful if you want to
 install multiple PLUMED versions side by side and select them with env modules.
 
+### Windows
+
+On Windows, PLUMED is compiled with the experimental CMake build
+(`CMakeLists.txt`), from a command prompt or PowerShell where `cmake` is
+available (e.g. the Developer PowerShell for Visual Studio):
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release --parallel
+    cmake --install build --prefix <prefix>
+
+Then `<prefix>\bin\plumed.exe help` runs PLUMED. Useful options, passed to the
+first command:
+
+* `-DPLUMED_SHARED_KERNEL=ON`: build a shared kernel (`plumedKernel.dll`) that
+  can be loaded at run time (`PLUMED_KERNEL`, Python package), instead of a
+  static one to be linked into an MD code;
+* `-DPLUMED_ENABLE_VES=ON`: also compile the VES module;
+* `-DPLUMED_MSVC_DEBUG_INFO=ON`: function names in the stack trace of error
+  messages.
+
+A subset of the regression tests is run from Git Bash with
+`.ci/windows-regtests serial` (and `mpi`, with the embedded thread-MPI). The
+script expects `build/plumed.exe`, as produced by the Ninja generator (add
+`-G Ninja` to the first command, in the Developer PowerShell). If you only need
+PLUMED from Python or the `plumed` command line tools, `python -m pip install plumed`
+is simpler.

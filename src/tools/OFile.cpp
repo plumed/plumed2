@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "OFile.h"
 #include "Exception.h"
+#include "FileTools.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
 #include "core/Checkpointing.h"
@@ -464,7 +465,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
     Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
   }
   if(maxbackup>0 && (!comm || comm->Get_rank()==0)) {
-    FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
+    FILE* ff=fopenUTF8(fname,"r");
     if(ff) {
       // no exception here
       std::fclose(ff);
@@ -479,7 +480,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
           plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
         }
         backup=directory+bstring +"."+num+"."+file;
-        FILE* fff=std::fopen(backup.c_str(),"r");
+        FILE* fff=fopenUTF8(backup,"r");
         // no exception here
         if(!fff) {
           break;
@@ -487,7 +488,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ) {
           std::fclose(fff);
         }
       }
-      int check=rename(fname.c_str(),backup.c_str());
+      int check=renameUTF8(fname,backup);
       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
     }
   }
@@ -499,8 +500,9 @@ OFile& OFile::open(const std::string&setpath) {
   err=false;
   fp=NULL;
   gzfp=NULL;
-  path=setpath;
-  path=appendSuffix(setpath,getSuffix());
+  // the null device must not be backed up (renamed) nor get a suffix
+  path=isWindowsNullDevice(setpath) ? std::string("/dev/null") : setpath;
+  path=appendSuffix(path,getSuffix());
   // this must be done before backing up the file, otherwise
   // the backup would rename the file that is being written by another OFile
   checkNotOpenElsewhere();
@@ -521,11 +523,7 @@ OFile& OFile::open(const std::string&setpath) {
         backupFile( backstring, path );
       }
     }
-#ifdef _WIN32
-    fp=std::fopen("NUL","r+");
-#else
-    fp=std::fopen("/dev/null","r+");
-#endif
+    fp=std::fopen(nullDevice,"r+");
     mode=restart ? "a" : "w";
     if(comm) {
       comm->Barrier();
@@ -662,7 +660,7 @@ std::vector<unsigned long long> OFile::getH5Rows() {
   }
   // nothing written yet by this run: the table as it is
   std::error_code ec;
-  if(isWriter() && h5append && std::filesystem::exists(path,ec)) {
+  if(isWriter() && h5append && std::filesystem::exists(pathFromUTF8(path),ec)) {
     return h5table::rows(path);
   }
   return {};
@@ -673,18 +671,21 @@ bool OFile::isWriter()const {
 }
 
 void OFile::openOnWriter(const char* fmode,const char* gzmode,bool reopenFp) {
-#ifdef _WIN32
-  constexpr const char* nullDevice="NUL";
-#else
-  constexpr const char* nullDevice="/dev/null";
-#endif
-  const char* p=isWriter() ? path.c_str() : nullDevice;
+  // "/dev/null" is a valid name on all platforms (on Windows fopen would fail,
+  // and a NULL fp crashed at the first write or flush: WALKERS_MPI hills files)
+  const std::string p=(isWriter() && path!="/dev/null") ? path : std::string(nullDevice);
   if(reopenFp) {
-    fp=std::fopen(p,fmode);
+#ifdef _WIN32
+    // binary mode: write LF line endings as on the other platforms
+    // (text mode would turn every \n into \r\n)
+    fp=fopenUTF8(p,(std::string(fmode)+"b").c_str());
+#else
+    fp=fopenUTF8(p,fmode);
+#endif
   }
   if(Tools::extension(path)=="gz") {
 #ifdef __PLUMED_HAS_ZLIB
-    gzfp=(void*)gzopen(p,gzmode);
+    gzfp=gzopenUTF8(p,gzmode);
 #else
     (void) gzmode;
     plumed_merror("file " + getPath() + ": trying to use a gz file without zlib being linked");
@@ -730,8 +731,8 @@ OFile& OFile::rewind() {
       size_t found=fname.find_last_of("/\\");
       std::string backup=fname.substr(0,found+1)+backstring+".last."+fname.substr(found+1);
       std::error_code ec;
-      if(std::filesystem::exists(fname,ec)) {
-        std::filesystem::rename(fname,backup,ec);
+      if(std::filesystem::exists(pathFromUTF8(fname),ec)) {
+        std::filesystem::rename(pathFromUTF8(fname),pathFromUTF8(backup),ec);
         plumed_massert(!ec,"renaming "+fname+" into "+backup+" failed: "+ec.message());
       }
       h5append=false;
@@ -742,29 +743,38 @@ OFile& OFile::rewind() {
     return *this;
   }
 
+  // close before renaming: on Windows an open file cannot be renamed
+  if(gzfp) {
+#ifdef __PLUMED_HAS_ZLIB
+    gzclose((gzFile)gzfp);
+#endif
+  } else {
+    std::fclose(fp);
+  }
+
   if(!comm || comm->Get_rank()==0) {
     std::string fname=this->path;
     size_t found=fname.find_last_of("/\\");
     std::string directory=fname.substr(0,found+1);
     std::string file=fname.substr(found+1);
     std::string backup=directory+backstring +".last."+file;
-    int check=rename(fname.c_str(),backup.c_str());
-    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+std::strerror(errno));
+    // std::filesystem::rename replaces an existing backup also on Windows,
+    // where std::rename fails if the target exists
+    std::error_code ec;
+    std::filesystem::rename(pathFromUTF8(fname),pathFromUTF8(backup),ec);
+    plumed_massert(!ec,"renaming "+fname+" into "+backup+" failed: "+ec.message());
   }
 
   if(comm) {
     comm->Barrier();
   }
 
+  // no exception here
   if(gzfp) {
 #ifdef __PLUMED_HAS_ZLIB
-    gzclose((gzFile)gzfp);
-    // no exception here
     openOnWriter("w","w9",false);
 #endif
   } else {
-    std::fclose(fp);
-    // no exception here
     openOnWriter("w","w9");
   }
   // see OFile::open

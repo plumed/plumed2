@@ -1,0 +1,28 @@
+{
+  "start_utc": "2026-11-09 04:48:05",
+  "deadline_utc": "2026-11-09 05:48:05",
+  "base_commit": "08a6de70c0820d5dfb7b3bc48a8b2f9d959a9684",
+  "streamed_commit": "7c53afefe",
+  "compiler": "MacPorts clang 18.1.8, -O3 -g -fopenmp",
+  "machine": "arm64 macOS, 8 logical CPUs, 24 GiB RAM",
+  "openmpi": "MacPorts Open MPI 5.0.11",
+  "kernels": {
+    "spatial.dylib": "2e909d0d4a66613cabdf44532c8bcb187cb3f51ddfca00b30fb127f521004c3a",
+    "baseline.dylib": "7acbb25f16e119c1d57adf9c052d941055532eb938cdbb1331732a5311110d44",
+    "direct.dylib": "9d99b5e2f6d78ceb60e38ecd26fc1dbabf0dbeb3901747578469f083ee8c13c8",
+    "direct-serial.dylib": "bf17b30c2003ac82804b377d1824ff4c6f3d15c71db932f72229db5f8d8013db"
+  },
+  "kernel_snapshots_final": {
+    "spatial-measured.dylib": "2e909d0d4a66613cabdf44532c8bcb187cb3f51ddfca00b30fb127f521004c3a",
+    "spatial.dylib": "33f832e1d9652a4defdde531c37bba4a2d4f39042a701c15e7ddd25cf58cf8d3",
+    "baseline.dylib": "7acbb25f16e119c1d57adf9c052d941055532eb938cdbb1331732a5311110d44",
+    "direct.dylib": "9d99b5e2f6d78ceb60e38ecd26fc1dbabf0dbeb3901747578469f083ee8c13c8",
+    "direct-serial.dylib": "bf17b30c2003ac82804b377d1824ff4c6f3d15c71db932f72229db5f8d8013db"
+  },
+  "measurement_kernel_mapping": {
+    "initial_serial_and_parallel": "spatial-measured.dylib",
+    "coverage_domain_confirmation_and_final_validation": "spatial.dylib",
+    "original": "baseline.dylib",
+    "first_optimization": "direct.dylib"
+  }
+}

@@ -8,8 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
-# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
-  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
+# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
@@ -108,9 +108,17 @@ jobs:
 
 # all modules on Apple Silicon with the default compiler (Apple clang) and optimization flags.
 # clang contracts a+b*c into fused multiply-adds by default on arm64, so this
-# catches numerical differences that the x86 Linux jobs and macsimple (default modules) do not see
-  macallmodules:
+# catches numerical differences that the x86 Linux jobs and macsimple (default modules) do not see.
+# This job also covers native MPI (Homebrew Open MPI, wrapping Apple clang) and OpenMP (Homebrew libomp),
+# while macsimple covers the build without them (internal thread-MPI, no OpenMP).
+  mac-all-modules:
     runs-on: macos-latest
+    env:
+      # Homebrew installs Open MPI 5, where oversubscription is set through PRRTE;
+      # the OMPI_ variable is kept for older versions. Several regtests use more ranks than the runner has cores.
+      PRTE_MCA_rmaps_default_mapping_policy: ":oversubscribe"
+      OMPI_MCA_rmaps_base_oversubscribe: "yes"
+      OMPI_MCA_btl_base_warn_component_unused: "0"
     steps:
     - uses: actions/checkout@v6
     - name: Set paths
@@ -122,19 +130,30 @@ jobs:
         echo "LD_LIBRARY_PATH=$HOME/opt/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
     - name: Install dependencies
       run: |
-        brew install gawk boost fftw
+        brew install gawk boost fftw open-mpi libomp
+        mpic++ --showme
     - name: Build PLUMED
       run: |
         BREW_PREFIX="$(brew --prefix)"
+        LIBOMP_PREFIX="$(brew --prefix libomp)"
+        # Apple clang rejects plain -fopenmp and ships no OpenMP runtime: pass it through the preprocessor and link the keg-only libomp.
+        # The flags go in CPPFLAGS/LIBS rather than CXXFLAGS, so that configure keeps its default optimization flags;
+        # configure's OpenMP check then passes with no extra option.
         ./configure --disable-dependency-tracking --prefix="$HOME/opt" \
           --enable-modules=all --enable-boost_serialization \
-          CPPFLAGS="-I$BREW_PREFIX/include" LDFLAGS="-L$BREW_PREFIX/lib"
+          CXX=mpic++ CC=mpicc \
+          CPPFLAGS="-Xpreprocessor -fopenmp -I$LIBOMP_PREFIX/include -I$BREW_PREFIX/include" \
+          LDFLAGS="-L$LIBOMP_PREFIX/lib -L$BREW_PREFIX/lib" \
+          LIBS="-lomp"
         make -j 4
         make install
     - name: Show configuration
       run: |
         uname -m
-        plumed config show
+        plumed --no-mpi config show
+        # fail early if MPI or OpenMP were silently disabled
+        plumed --no-mpi config has real_mpi
+        plumed --no-mpi config makefile_conf | grep -q -e '-fopenmp'
     - name: Run tests
       run: |
          make --no-print-directory -j 2 -C regtest

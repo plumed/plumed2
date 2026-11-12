@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "ActionWithValue.h"
 #include "tools/Checkpoint.h"
+#include "tools/FileTools.h"
 #include "tools/Communicator.h"
 #include "tools/Exception.h"
 #include "tools/OFile.h"
@@ -58,6 +59,23 @@ std::string Checkpointing::suffixedPath(const std::string& fileName) const {
   return FileBase::appendSuffix(fileName,plumed.getSuffix());
 }
 
+std::string Checkpointing::taggedName(const std::string& fileName,const std::string& tag) {
+  // plumed.cpt -> plumed_prev.cpt, plumed_final.cpt (the replica suffix, if any, goes after them)
+  std::string name=fileName;
+  const size_t slash=name.find_last_of("/\\");
+  const size_t dot=name.find_last_of('.');
+  if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
+    name.insert(dot,tag);
+  } else {
+    name+=tag;
+  }
+  return name;
+}
+
+std::string Checkpointing::finalName(const std::string& fileName) {
+  return taggedName(fileName,"_final");
+}
+
 void Checkpointing::setup(const std::string& fileName,long long int checkpointStride) {
   plumed_massert(!enabled(),"only one CHECKPOINT action is allowed");
   plumed_massert(!fileName.empty(),"CHECKPOINT: FILE cannot be empty");
@@ -66,22 +84,15 @@ void Checkpointing::setup(const std::string& fileName,long long int checkpointSt
   file=fileName;
   stride=checkpointStride;
   path=suffixedPath(file);
-  // plumed.cpt -> plumed_prev.cpt (the suffix, if any, stays at the end)
-  std::string prev=file;
-  const size_t slash=prev.find_last_of("/\\");
-  const size_t dot=prev.find_last_of('.');
-  if(dot!=std::string::npos && (slash==std::string::npos || dot>slash)) {
-    prev.insert(dot,"_prev");
-  } else {
-    prev+="_prev";
-  }
-  prevPath=suffixedPath(prev);
+  prevPath=suffixedPath(taggedName(file,"_prev"));
+  finalPath=suffixedPath(finalName(file));
   // a new run does not overwrite the checkpoints of a previous one
   if(!pending) {
     OFile f;
     f.link(plumed);
     f.backupFile("bck",path);
     f.backupFile("bck",prevPath);
+    f.backupFile("bck",finalPath);
   }
 }
 
@@ -103,7 +114,7 @@ void Checkpointing::registerOutputFile(OFile& f) {
   // devices and pipes (e.g. /dev/null, written by the processes or replicas that do not write a shared file)
   // have no size to record
   std::error_code ec;
-  if(std::filesystem::exists(fileName,ec) && !std::filesystem::is_regular_file(fileName,ec)) {
+  if(std::filesystem::exists(pathFromUTF8(fileName),ec) && !std::filesystem::is_regular_file(pathFromUTF8(fileName),ec)) {
     return;
   }
   if(enabled() && Tools::extension(fileName)=="gz") {
@@ -139,13 +150,13 @@ public:
       h5reader=std::make_unique<h5table::Reader>(fname);
     } else if(compressed) {
 #ifdef __PLUMED_HAS_ZLIB
-      gz=gzopen(fname.c_str(),"rb");
+      gz=(gzFile)gzopenUTF8(fname,"rb");
       if(!gz) {
         plumed_merror("cannot open "+fname+" to trim it at the restart step");
       }
 #endif
     } else {
-      in.open(fname,std::ios::binary);
+      in.open(pathFromUTF8(fname),std::ios::binary);
       if(!in) {
         plumed_merror("cannot open "+fname+" to trim it at the restart step");
       }
@@ -198,7 +209,7 @@ std::string trimmedBackupName(const std::string& fname) {
   for(int i=0;; i++) {
     const std::string b=directory+"bck.trimmed."+std::to_string(i)+"."+file;
     std::error_code ec;
-    if(!std::filesystem::exists(b,ec)) {
+    if(!std::filesystem::exists(pathFromUTF8(b),ec)) {
       return b;
     }
   }
@@ -235,7 +246,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   }
   auto& log=plumed.getLog();
   std::error_code ec;
-  if(!std::filesystem::exists(fname,ec)) {
+  if(!std::filesystem::exists(pathFromUTF8(fname),ec)) {
     return;
   }
   const bool compressed=Tools::extension(fname)=="gz";
@@ -353,15 +364,15 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     h5table::truncate(fname,keep,backup);
   } else if(!compressed) {
     {
-      std::ifstream in(fname,std::ios::binary);
-      std::ofstream out(backup,std::ios::binary);
+      std::ifstream in(pathFromUTF8(fname),std::ios::binary);
+      std::ofstream out(pathFromUTF8(backup),std::ios::binary);
       in.seekg(keepEnd);
       out<<in.rdbuf();
       if(!out) {
         plumed_merror("cannot write "+backup+" while trimming "+fname+" at the restart step");
       }
     }
-    std::filesystem::resize_file(fname,keepEnd,ec);
+    std::filesystem::resize_file(pathFromUTF8(fname),keepEnd,ec);
     if(ec) {
       plumed_merror("cannot trim "+fname+" at the restart step: "+ec.message());
     }
@@ -371,9 +382,9 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
     // which is then copied on the file (in place, so that the file is the same for whoever has it open)
     const std::string tmp=fname+".trim.tmp";
     {
-      gzFile in=gzopen(fname.c_str(),"rb");
-      gzFile kept=gzopen(tmp.c_str(),"wb9");
-      gzFile removed=gzopen(backup.c_str(),"wb9");
+      gzFile in=(gzFile)gzopenUTF8(fname,"rb");
+      gzFile kept=(gzFile)gzopenUTF8(tmp,"wb9");
+      gzFile removed=(gzFile)gzopenUTF8(backup,"wb9");
       if(!in || !kept || !removed) {
         plumed_merror("cannot open the files to trim "+fname+" at the restart step");
       }
@@ -385,14 +396,14 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
       }
     }
     {
-      std::ifstream in(tmp,std::ios::binary);
-      std::ofstream out(fname,std::ios::binary|std::ios::trunc);
+      std::ifstream in(pathFromUTF8(tmp),std::ios::binary);
+      std::ofstream out(pathFromUTF8(fname),std::ios::binary|std::ios::trunc);
       out<<in.rdbuf();
       if(!out) {
         plumed_merror("cannot write "+fname+" while trimming it at the restart step");
       }
     }
-    std::filesystem::remove(tmp,ec);
+    std::filesystem::remove(pathFromUTF8(tmp),ec);
 #endif
   }
   log<<"  file "<<fname<<": "<<ntail<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" moved to "<<backup<<"\n";
@@ -410,7 +421,7 @@ void Checkpointing::trimOutputFileAtRestart(Action& action,const std::string& na
 }
 
 std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long size) {
-  std::ifstream in(fname,std::ios::binary);
+  std::ifstream in(pathFromUTF8(fname),std::ios::binary);
   if(!in) {
     plumed_merror("checkpoint: cannot open "+fname+" for reading");
   }
@@ -424,7 +435,7 @@ std::string Checkpointing::crcOfTail(const std::string& fname,unsigned long long
   return std::to_string(CheckpointReader::checksum(tail));
 }
 
-void Checkpointing::write() {
+void Checkpointing::write(long long int step,const std::string& outPath,const std::string& outPrevPath) {
   plumed_assert(enabled());
   auto& log=plumed.getLog();
   auto& comm=plumed.comm;
@@ -441,7 +452,7 @@ void Checkpointing::write() {
     p->fflush();
   }
   CheckpointWriter w(config::getVersionLong());
-  w.write("step",plumed.getStep());
+  w.write("step",step);
   w.write("replica",plumed.getReplicaIndex());
   w.write("nreplicas",plumed.getNumberOfReplicas());
 
@@ -453,8 +464,8 @@ void Checkpointing::write() {
       const std::string num=std::to_string(i);
       std::error_code ec;
       unsigned long long size=0;
-      if(std::filesystem::exists(f,ec)) {
-        size=std::filesystem::file_size(f,ec);
+      if(std::filesystem::exists(pathFromUTF8(f),ec)) {
+        size=std::filesystem::file_size(pathFromUTF8(f),ec);
         if(ec) {
           plumed_merror("checkpoint: cannot get the size of "+f+": "+ec.message());
         }
@@ -515,11 +526,11 @@ void Checkpointing::write() {
   }
 
   if(comm.Get_rank()==0) {
-    w.writeFile(path,prevPath);
+    w.writeFile(outPath,outPrevPath);
   }
   comm.Barrier();
-  lastWrittenStep=plumed.getStep();
-  log<<"Checkpoint written to "<<path<<" at step "<<plumed.getStep()<<"\n";
+  lastWrittenStep=step;
+  log<<"Checkpoint written to "<<outPath<<" at step "<<step<<"\n";
 }
 
 void Checkpointing::restartFrom(const std::string& fileName) {
@@ -584,7 +595,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         // an HDF5 table: the blocks are cut to the rows they had
         std::vector<long long> rows;
         r.read("h5rows"+num,rows);
-        if(!std::filesystem::exists(f,ec)) {
+        if(!std::filesystem::exists(pathFromUTF8(f),ec)) {
           if(rows.empty()) {
             continue;
           }
@@ -609,13 +620,13 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         }
         continue;
       }
-      if(!std::filesystem::exists(f,ec)) {
+      if(!std::filesystem::exists(pathFromUTF8(f),ec)) {
         if(size==0) {
           continue;
         }
         plumed_merror("checkpoint: file "+f+" is missing, but it had "+std::to_string(size)+" bytes when the checkpoint was written");
       }
-      const unsigned long long current=std::filesystem::file_size(f,ec);
+      const unsigned long long current=std::filesystem::file_size(pathFromUTF8(f),ec);
       if(ec) {
         plumed_merror("checkpoint: cannot get the size of "+f+": "+ec.message());
       }
@@ -623,7 +634,7 @@ void Checkpointing::trimFiles(CheckpointReader& r) {
         plumed_merror("checkpoint: file "+f+" has "+std::to_string(current)+" bytes, fewer than the "+std::to_string(size)+" it had when the checkpoint was written");
       }
       if(current>size) {
-        std::filesystem::resize_file(f,size,ec);
+        std::filesystem::resize_file(pathFromUTF8(f),size,ec);
         if(ec) {
           plumed_merror("checkpoint: cannot truncate "+f+" to "+std::to_string(size)+" bytes: "+ec.message());
         }
@@ -689,6 +700,13 @@ void Checkpointing::restore() {
   }
   pending.reset();
   log<<"Checkpoint state restored at step "<<restartStep<<"\n";
+  // the final checkpoint of the previous run is out of date once the run continues
+  // (RESTART_FROM=AUTO reads it when it exists)
+  if(enabled()) {
+    OFile f;
+    f.link(plumed);
+    f.backupFile("bck",finalPath);
+  }
 }
 
 void Checkpointing::atStepStart(bool signal) {
@@ -705,12 +723,46 @@ void Checkpointing::atStepStart(bool signal) {
   if(!enabled()) {
     return;
   }
+  signalReceived=signalReceived || signal;
+  stepComplete=false;
+  if(step!=lastStep) {
+    if(lastStep>=0 && step>lastStep) {
+      stepIncrement=step-lastStep;
+    }
+    lastStep=step;
+  }
   if(step==lastWrittenStep || step==restartStep) {
     return;
   }
   if(signal || (stride>0 && step%stride==0)) {
-    write();
+    write(step,path,prevPath);
   }
+}
+
+void Checkpointing::atRunEnd(bool fromDestructor) {
+  if(runEndHandled) {
+    return;
+  }
+  runEndHandled=true;
+  // nothing can be written (nor logged) after MPI_Finalize; finalizing PLUMED after MPI is
+  // not allowed anyway (the communicators are freed)
+  if(fromDestructor && Communicator::initialized() && Communicator::finalized()) {
+    return;
+  }
+  // an MD engine that sends the checkpointing signal writes its own restart files
+  // at the steps of the signals (GROMACS also at the last step): a checkpoint
+  // after the last step would not match them
+  if(!enabled() || signalReceived || lastStep<0) {
+    return;
+  }
+  auto& log=plumed.getLog();
+  if(!stepComplete) {
+    log<<"Final checkpoint not written: the last step ("<<lastStep<<") was not completed\n";
+    return;
+  }
+  // the state after the update of the last step is the one at the start of the next step
+  write(lastStep+stepIncrement,finalPath,"");
+  plumed.getLog()<<"  (final checkpoint, read at restart with RESTART_FROM=AUTO: the MD engine must restart from step "<<lastStep+stepIncrement<<")\n";
 }
 
 }

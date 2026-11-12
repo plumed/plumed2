@@ -15,6 +15,9 @@ from unittest.mock import patch
 import plumed
 
 
+@unittest.skipIf(
+    sys.platform == "win32", "the test kernels are built with a Unix C++ compiler"
+)
 class TestMPIFlags(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

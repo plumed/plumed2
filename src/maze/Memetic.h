@@ -391,7 +391,7 @@ void Memetic::selection_roulette() {
   int chosen = -1;
 
   for (size_t j = 0; j < capacity_; ++j) {
-    double probability=rnd::next_double(sum);
+    double probability=rnd_.next_double(sum);
     for (size_t i = 0; i < cum_sum.size(); ++i) {
       if (cum_sum[i] > probability) {
         chosen = i;
@@ -406,7 +406,7 @@ void Memetic::selection_roulette() {
 }
 
 void Memetic::crossover(Member& s1, Member& s2) {
-  size_t i = rnd::next_int(1, coding_len_ - 1);
+  size_t i = rnd_.next_int(1, coding_len_ - 1);
 
   Member z1(s1);
   Member z2(s2);
@@ -423,8 +423,8 @@ void Memetic::crossover(Member& s1, Member& s2) {
 }
 
 void Memetic::mutation(Member& m) {
-  int which = rnd::next_int(coding_len_);
-  double v = rnd::next_cauchy(cauchy_mean_alpha_, cauchy_mean_beta_);
+  int which = rnd_.next_int(coding_len_);
+  double v = rnd_.next_cauchy(cauchy_mean_alpha_, cauchy_mean_beta_);
   m.translation[which] += v;
   if (out_of_bounds(m.translation.modulo())) {
     m.translation[which] -= v;
@@ -433,7 +433,7 @@ void Memetic::mutation(Member& m) {
 
 void Memetic::mutation(std::vector<Member>& m) {
   for (std::vector<Member>::iterator it = m.begin(), end = m.end(); it != end; ++it) {
-    double r = rnd::next_double();
+    double r = rnd_.next_double();
     if (r < mutation_rate_) {
       mutation(*it);
     }
@@ -493,7 +493,7 @@ void Memetic::annealing(
                            std::exp(-(score_n - m.score) / T)
                          );
 
-    double r = rnd::next_double();
+    double r = rnd_.next_double();
 
     if (r < probability) {
       m = n;
@@ -534,7 +534,7 @@ void Memetic::adaptive_random_search(
       rho_k *= ct;
     }
 
-    std::vector<double> chiv = rnd::next_double(-rho_k, rho_k, 3);
+    std::vector<double> chiv = rnd_.next_double(-rho_k, rho_k, 3);
     Vector chi = tls::vector2Vector(chiv);
     Vector tmp;
 
@@ -582,7 +582,7 @@ void Memetic::local_search(std::vector<Member>& m) {
 
   if (local_search_on_) {
     for (std::size_t i = 0; i < capacity_; ++i) {
-      double probability = rnd::next_double();
+      double probability = rnd_.next_double();
 
       if (probability < local_search_rate_) {
         if (local_search_type_ == "stochastic_hill_climbing") {
@@ -603,11 +603,11 @@ void Memetic::mating(std::vector<Member>& m) {
   std::vector<Member> offspring;
 
   while (m.size() != 0) {
-    int j = rnd::next_int(m.size());
-    int i = rnd::next_int(m.size());
+    int j = rnd_.next_int(m.size());
+    int i = rnd_.next_int(m.size());
 
     while (i == j) {
-      j=rnd::next_int(m.size());
+      j=rnd_.next_int(m.size());
     }
 
     Member m1 = m[i];
@@ -621,7 +621,7 @@ void Memetic::mating(std::vector<Member>& m) {
       m.erase(m.begin() + i);
     }
 
-    double probability = rnd::next_double();
+    double probability = rnd_.next_double();
     if (probability < mating_rate_) {
       crossover(m1, m2);
     }
@@ -636,9 +636,9 @@ void Memetic::mating(std::vector<Member>& m) {
 
 Vector Memetic::create_coding() {
   double s = sampling_radius();
-  double r = rnd::next_double(s);
+  double r = rnd_.next_double(s);
 
-  return rnd::next_plmd_vector(r);
+  return rnd_.next_plmd_vector(r);
 }
 
 bool Memetic::out_of_bounds(double v) {
@@ -649,7 +649,6 @@ bool Memetic::out_of_bounds(double v) {
 
 double Memetic::score_member(const Vector& coding) {
   double action = 0;
-  Vector distance;
   const unsigned nl_size = neighbor_list_->size();
   Vector dev = coding;
 
@@ -664,6 +663,8 @@ double Memetic::score_member(const Vector& coding) {
         continue;
       }
 
+      // declared inside the loop: each thread needs its own
+      Vector distance;
       if (pbc_) {
         distance = pbcDistance(getPosition(i0) + dev, getPosition(i1));
       } else {

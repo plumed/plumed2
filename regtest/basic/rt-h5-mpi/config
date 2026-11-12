@@ -21,6 +21,6 @@ function plumed_regtest_after() {
       $plumed_nompi h5convert --input restart/$f.h5 --output restart/$f.txt
       if cmp -s $f.txt restart/$f.txt ; then echo "restart/$f.h5 IDENTICAL" ; else echo "restart/$f.h5 DIFFERENT" ; fi
     done
-    grep -h "restart step" restart/log.* | sed 's/^PLUMED: *//' | sed 's@/[^ ]*/@@g' | LC_ALL=C sort
+    grep -h "restart step" restart/log.* | sed 's/^PLUMED: *//' | sed 's@[^ ]*[/\\]@@g' | LC_ALL=C sort
   } > restart_check
 }

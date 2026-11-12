@@ -1,0 +1,3 @@
+type=driver
+plumed_modules=opes
+arg="--plumed plumed.dat --ixyz trajectory.xyz"

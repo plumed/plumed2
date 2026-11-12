@@ -1,6 +1,8 @@
 """Smoke checks run against the repaired wheel in cibuildwheel's test environment."""
 
 import array
+import ctypes
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -12,7 +14,172 @@ import sys
 import tempfile
 
 import plumed
-from plumed_runtime import kernel_path, package_root, resource_root
+from plumed.runtime import kernel_path, package_root, resource_root
+
+# On Windows the runtime is built with CMake: plumed.exe and plumedKernel.dll in
+# bin, no LOAD (no dlopen, no mklib), and the copies of the kernel loaded by the
+# tests may still be mapped when their temporary directories are removed.
+WINDOWS = sys.platform == "win32"
+EXECUTABLE = package_root() / "bin" / ("plumed.exe" if WINDOWS else "plumed")
+
+
+def temporary_directory(**kwargs):
+    if WINDOWS:
+        kwargs["ignore_cleanup_errors"] = True
+    return tempfile.TemporaryDirectory(**kwargs)
+
+
+def windows_imports(binary):
+    """Names of the DLLs imported by a PE (x64) executable or DLL."""
+    data = Path(binary).read_bytes()
+
+    def u16(offset):
+        return int.from_bytes(data[offset : offset + 2], "little")
+
+    def u32(offset):
+        return int.from_bytes(data[offset : offset + 4], "little")
+
+    pe = u32(0x3C)
+    assert data[pe : pe + 4] == b"PE\0\0", binary
+    sections = u16(pe + 6)
+    optional = pe + 24
+    assert u16(optional) == 0x20B, "not a PE32+ (64 bit) image"
+    import_rva = u32(optional + 112 + 8)  # data directory 1 (imports)
+    table = optional + u16(pe + 20)
+
+    def offset(rva):
+        for i in range(sections):
+            header = table + 40 * i
+            size, address, raw = u32(header + 8), u32(header + 12), u32(header + 20)
+            if address <= rva < address + max(size, u32(header + 16)):
+                return rva - address + raw
+        raise ValueError(f"RVA {rva:#x} outside the sections of {binary}")
+
+    names = []
+    descriptor = offset(import_rva)
+    while u32(descriptor + 12):
+        start = offset(u32(descriptor + 12))
+        names.append(data[start : data.index(b"\0", start)].decode())
+        descriptor += 20
+    return names
+
+
+def check_package_layout():
+    """The public interface and bundled runtime share one import namespace."""
+    import importlib.util
+
+    root = Path(plumed.__file__).resolve().parent
+    assert root.name == "plumed", root
+    assert Path(plumed._plumed.__file__).resolve().parent == root
+    assert package_root() == root / "runtime"
+    assert importlib.util.find_spec("plumed_runtime") is None
+    for name in (
+        "Plumed",
+        "InputBuilder",
+        "PlumedError",
+        "LeptonError",
+        "FormatError",
+        "Constants",
+        "read_as_pandas",
+        "write_pandas",
+        "hills_time_average",
+    ):
+        assert getattr(plumed, name) is getattr(
+            sys.modules[getattr(plumed, name).__module__], name
+        ), name
+
+
+def check_native_exception_identity():
+    """Native errors use the same exception class exported by the Python package."""
+    with plumed.Plumed() as instance:
+        try:
+            instance.cmd("readInputLine", "NOT_AN_ACTION")
+        except plumed.PlumedError as error:
+            assert type(error) is plumed.PlumedError
+        else:
+            raise AssertionError("An invalid action must raise PlumedError")
+
+
+def check_alternate_package_import():
+    """A differently named package must not borrow the default package's helpers."""
+    with tempfile.TemporaryDirectory(prefix="plumed alternate package ") as directory:
+        root = Path(directory)
+        shutil.copytree(
+            Path(plumed.__file__).resolve().parent, root / "plumed_alternate"
+        )
+        script = """
+import plumed
+import plumed_alternate as alternate
+from pathlib import Path
+
+assert alternate._plumed.__package__ == 'plumed_alternate'
+assert alternate._plumed.PlumedError is alternate.PlumedError
+assert alternate.PlumedError is not plumed.PlumedError
+assert alternate._plumed._bundled_kernel_path.__module__ == 'plumed_alternate._runtime'
+assert Path(alternate._bundled_kernel_path()).parent.parent.parent == Path(alternate.__file__).parent
+with alternate.Plumed() as instance:
+    assert 'DISTANCE' in alternate.InputBuilder(toplumed=instance)._vimdict
+"""
+        subprocess.run([sys.executable, "-c", script], cwd=root, check=True)
+
+
+def run_python(script, **kwargs):
+    """Run a script in a new interpreter, showing its output if it fails."""
+    command = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+        **kwargs,
+    )
+    if command.returncode != 0:
+        raise AssertionError(
+            f"{script!r} failed with exit status {command.returncode}\n"
+            f"stdout:\n{command.stdout}\nstderr:\n{command.stderr}"
+        )
+    return command
+
+
+def check_package_relocation():
+    """Both Python kernel discovery and the command follow a moved package."""
+    with tempfile.TemporaryDirectory(prefix="plumed relocated package ") as temporary:
+        root = Path(temporary)
+        shutil.copytree(Path(plumed.__file__).resolve().parent, root / "plumed")
+        env = {
+            name: value
+            for name, value in os.environ.items()
+            if not name.startswith(("PLUMED_", "LD_", "DYLD_"))
+        }
+        env["PYTHONPATH"] = str(root)
+        # both sides resolved: on Windows the temporary directory may be
+        # given with 8.3 short names (e.g. C:\Users\RUNNER~1)
+        discovery_script = (
+            "import plumed; from pathlib import Path; "
+            "root = Path(plumed.__file__).resolve().parent.parent; "
+            "assert root == Path.cwd().resolve(); "
+            "assert 'DISTANCE' in plumed.InputBuilder()._vimdict"
+        )
+        run_python(discovery_script, cwd=root, env=env)
+        cli_script = (
+            "import sys; from plumed.runtime.cli import main; "
+            "sys.argv = ['plumed', '--no-mpi', 'info', '--root']; main()"
+        )
+        command = run_python(cli_script, cwd=root, env=env)
+        assert (
+            Path(command.stdout.strip()).resolve()
+            == (root / "plumed" / "runtime" / "lib" / "plumed").resolve()
+        )
+        # Repeat resource discovery and native-client compilation after moving
+        # the complete package, with no PLUMED or loader environment overrides.
+        subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("test_runtime_resources.py")),
+            ],
+            cwd=root,
+            env=env,
+            check=True,
+        )
 
 
 def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
@@ -40,6 +207,185 @@ def check_kernel(kernel=None, lines=("d: DISTANCE ATOMS=1,2",)):
     assert abs(bias[0] - 7.0) < 1.0e-12
     assert abs(forces[0] - 1.0) < 1.0e-12
     p.finalize()
+
+
+def check_other_hdf5(executable):
+    """The kernel uses its own HDF5 also when another one is in the global namespace.
+
+    As in an MD code linked to a shared HDF5 that loads the kernel: the HDF5
+    library of h5py (another version) is loaded first with RTLD_GLOBAL, then the
+    kernel, with RTLD_GLOBAL too and without RTLD_DEEPBIND.
+    """
+    if WINDOWS:
+        return  # DLLs have no global namespace
+    spec = importlib.util.find_spec("h5py")
+    if spec is None:
+        print("skipping the test with another HDF5: h5py is not installed")
+        return
+    package = Path(spec.origin).parent
+    candidates = [
+        path
+        for path in (
+            *(package.parent / "h5py.libs").glob("libhdf5-*.so*"),
+            *(package / ".dylibs").glob("libhdf5*.dylib"),
+        )
+        if "_hl" not in path.name
+    ]
+    if not candidates:
+        print("skipping the test with another HDF5: no HDF5 library in h5py")
+        return
+    script = f"""
+import array, ctypes, os, sys
+other = ctypes.CDLL({str(candidates[0])!r}, mode=ctypes.RTLD_GLOBAL)
+version = [ctypes.c_uint() for _ in range(3)]
+assert other.H5get_libversion(*[ctypes.byref(v) for v in version]) >= 0
+print("other HDF5:", ".".join(str(v.value) for v in version))
+os.environ["PLUMED_LOAD_NAMESPACE"] = "GLOBAL"
+os.environ["PLUMED_LOAD_NODEEPBIND"] = "yes"
+import plumed
+p = plumed.Plumed()
+p.cmd("setMDEngine", "python")
+p.cmd("setNatoms", 2)
+p.cmd("setLogFile", "log")
+p.cmd("init")
+p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
+p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5")
+# the arrays must stay alive until calc
+box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+forces = array.array("d", [0] * 6)
+virial = array.array("d", [0] * 9)
+for step in range(2):
+    positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
+    p.cmd("setStep", step)
+    p.cmd("setBox", box)
+    p.cmd("setPositions", positions)
+    p.cmd("setForces", forces)
+    p.cmd("setVirial", virial)
+    p.cmd("calc")
+p.finalize()
+"""
+    env = dict(os.environ)
+    if sys.platform.startswith("linux"):
+        # the libraries that it needs (e.g. libsz) are next to it, and found by
+        # the module of h5py through its run path
+        libraries = str(candidates[0].parent)
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(
+            filter(None, (libraries, env.get("LD_LIBRARY_PATH")))
+        )
+    with temporary_directory() as temporary:
+        directory = Path(temporary)
+        run_python(script, cwd=directory, env=env)
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "h5convert",
+                "--input",
+                "other.h5",
+                "--output",
+                "other.txt",
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in (directory / "other.txt").read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [1.0, 2.0], rows
+
+
+def check_optional_libraries(bundled, executable):
+    """HDF5 and chemfiles, linked statically in the kernel, and the opes module."""
+    config = (resource_root() / "src" / "config" / "config.txt").read_text()
+    for entry in ("has libhdf5 on", "has libchemfiles on", "module opes on"):
+        assert re.search(rf"^{entry}\b", config, re.M), entry
+    # their symbols are not exported (Linux: --exclude-libs, macOS: -load_hidden,
+    # Windows: only the C entry points of the kernel are exported), so that
+    # they cannot clash with other copies in the same process
+    kernel = ctypes.WinDLL(str(bundled)) if WINDOWS else ctypes.CDLL(str(bundled))
+    for symbol in ("H5Fopen", "chfl_version", "deflate", "lzma_code"):
+        assert not hasattr(kernel, symbol), symbol
+    check_other_hdf5(executable)
+    try:
+        # the HDF5 library of h5py, loaded in the same process
+        import h5py
+    except ImportError:
+        h5py = None
+    with temporary_directory() as temporary:
+        directory = Path(temporary)
+        table = directory / "colvar.h5"
+        p = plumed.Plumed()
+        p.cmd("setMDEngine", "python")
+        p.cmd("setNatoms", 2)
+        p.cmd("setLogFile", str(directory / "log"))
+        p.cmd("init")
+        p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
+        p.cmd("readInputLine", f"PRINT ARG=d FILE={table.as_posix()}")
+        # the arrays must stay alive until calc
+        box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+        forces = array.array("d", [0] * 6)
+        virial = array.array("d", [0] * 9)
+        for step in range(3):
+            positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
+            p.cmd("setStep", step)
+            p.cmd("setBox", box)
+            p.cmd("setPositions", positions)
+            p.cmd("setForces", forces)
+            p.cmd("setVirial", virial)
+            p.cmd("calc")
+        p.finalize()
+        if h5py is not None:
+            with h5py.File(table, "r") as f:
+                assert list(f["block_0"]["d"][:]) == [1.0, 2.0, 3.0]
+        text = directory / "colvar.txt"
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "h5convert",
+                "--input",
+                str(table),
+                "--output",
+                str(text),
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in text.read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [1.0, 2.0, 3.0], rows
+        # a trajectory read by chemfiles
+        trajectory = directory / "traj.xyz"
+        trajectory.write_text(
+            "".join(f"2\nframe {i}\nAr 0 0 0\nAr 0 0 {i + 1}\n" for i in range(2))
+        )
+        (directory / "plumed.dat").write_text(
+            "d: DISTANCE ATOMS=1,2 NOPBC\nPRINT ARG=d FILE=colvar\n"
+        )
+        subprocess.run(
+            [
+                str(executable),
+                "--no-mpi",
+                "driver",
+                "--plumed",
+                "plumed.dat",
+                "--itraj",
+                "traj.xyz",
+            ],
+            check=True,
+            cwd=directory,
+        )
+        rows = [
+            line.split()
+            for line in (directory / "colvar").read_text().splitlines()
+            if not line.startswith("#")
+        ]
+        assert [float(row[1]) for row in rows] == [0.1, 0.2], rows
 
 
 def enabled_modules():
@@ -95,7 +441,7 @@ def check_actions(source_tree):
 def check_external_kernel(bundled):
     """InputBuilder reads the metadata from an explicitly selected new kernel
     located elsewhere (a copy of the bundled one)."""
-    with tempfile.TemporaryDirectory() as temporary:
+    with temporary_directory() as temporary:
         kernel = str(Path(temporary) / ("external-" + bundled.name))
         shutil.copy2(bundled, kernel)
         assert plumed._readkernelmetadata(kernel=kernel) is not None
@@ -171,6 +517,8 @@ def check_vim_generation(executable):
                 check=True,
                 capture_output=True,
             ).stdout
+            # the standard output of plumed.exe is in text mode
+            manual = manual.replace(b"\r\n", b"\n")
             first_line, separator, help_text = manual.partition(b"\n")
             assert separator, f"manual output for {action} has no first line"
             tokens = first_line.decode("utf-8").split(",")
@@ -274,7 +622,7 @@ def check_vim_generation(executable):
 
 def check_json_matches_vim():
     """JSON-derived InputBuilder classifications match Vim, except LABEL."""
-    from plumed_runtime import resource_root
+    from plumed.runtime import resource_root
 
     json_dict, json_doc = plumed._readkernelmetadata()
     vim_dict, vim_doc = plumed._readvimdict(plumedroot=str(resource_root()))
@@ -346,12 +694,12 @@ def check_vim_fallback():
     """Emulate an older kernel without embedded metadata: InputBuilder must use
     the Vim files of the kernel installation, consistently with the metadata."""
     reference = plumed.InputBuilder()._vimdict
-    original = plumed._readkernelmetadata
-    plumed._readkernelmetadata = lambda kernel=None, instance=None: None
+    original = plumed._inputbuilder._readkernelmetadata
+    plumed._inputbuilder._readkernelmetadata = lambda kernel=None, instance=None: None
     try:
         legacy = plumed.InputBuilder()._vimdict
     finally:
-        plumed._readkernelmetadata = original
+        plumed._inputbuilder._readkernelmetadata = original
     assert legacy is not reference
     assert set(legacy) == set(reference)
     for action, keywords in reference.items():
@@ -466,6 +814,9 @@ def check_inputbuilder_load():
 
 def check_load():
     """Compile an action at runtime with LOAD, as users do with their own CVs."""
+    if WINDOWS:
+        print("skipping the LOAD test: LOAD is not supported on Windows")
+        return
     options = (resource_root() / "src" / "config" / "compile_options.sh").read_text()
     compiler = shlex.split(re.search(r"^compile='(.*?) -c ", options, re.M).group(1))
     if shutil.which(compiler[0]) is None:
@@ -508,6 +859,9 @@ def check_load():
 
 def check_dynamic_cltool_module(executable):
     """A dynamically loaded CLTool alone still has a defined module entry."""
+    if WINDOWS:
+        print("skipping the dynamic CLTool test: LOAD is not supported on Windows")
+        return
     options = (resource_root() / "src" / "config" / "compile_options.sh").read_text()
     compiler = shlex.split(re.search(r"^compile='(.*?) -c ", options, re.M).group(1))
     if shutil.which(compiler[0]) is None:
@@ -574,6 +928,10 @@ PLUMED_REGISTER_CLTOOL(WheelOnlyCLTool,"wheel_only_tool")
 
 
 def main():
+    check_package_layout()
+    check_native_exception_identity()
+    check_alternate_package_import()
+    check_package_relocation()
     os.environ.pop("PLUMED_KERNEL", None)
     os.environ.pop("PLUMED_ROOT", None)
     bundled = kernel_path()
@@ -587,7 +945,7 @@ def main():
     assert builder._vimdict["MOVINGRESTRAINT"]["KAPPA"] == "(numbered)"
     assert "DISTANCE" in builder._vimdict
 
-    with tempfile.TemporaryDirectory() as temporary:
+    with temporary_directory() as temporary:
         override = Path(temporary) / bundled.name
         shutil.copy2(bundled, override)
         os.environ["PLUMED_KERNEL"] = str(override)
@@ -614,12 +972,13 @@ def main():
 
     check_external_kernel(bundled)
     check_json_matches_vim()
-    check_cli_json_matches_kernel(bundled, package_root() / "bin" / "plumed")
+    check_cli_json_matches_kernel(bundled, EXECUTABLE)
     check_metadata_transfer_errors(bundled)
-    check_vim_generation(package_root() / "bin" / "plumed")
+    check_vim_generation(EXECUTABLE)
     check_vim_fallback()
     check_load()
-    check_dynamic_cltool_module(package_root() / "bin" / "plumed")
+    check_dynamic_cltool_module(EXECUTABLE)
+    check_optional_libraries(bundled, EXECUTABLE)
 
     source_tree = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else None
     hidden_source = (
@@ -629,8 +988,8 @@ def main():
     hidden_vim = vim_tree.with_name("vim.hidden")
     json_tree = resource_root() / "json"
     hidden_json = json_tree.with_name("json.hidden")
-    executable = package_root() / "bin" / "plumed"
-    hidden_executable = executable.with_name("plumed.hidden")
+    executable = EXECUTABLE
+    hidden_executable = executable.with_name(executable.name + ".hidden")
     if source_tree and source_tree.is_dir():
         check_actions(source_tree)
     with tempfile.TemporaryDirectory() as empty_path:
@@ -660,13 +1019,33 @@ def main():
             if hidden_source and hidden_source.exists():
                 hidden_source.rename(source_tree)
 
-    forbidden = ("mpi", "gomp", "openblas", "blas", "lapack", "fftw")
+    # (zlib, HDF5 and chemfiles are linked statically)
+    forbidden = (
+        "mpi",
+        "gomp",
+        "openblas",
+        "blas",
+        "lapack",
+        "fftw",
+        "hdf5",
+        "chemfiles",
+        "libz.",
+        "zlib",
+    )
     if sys.platform.startswith("linux"):
         dependencies = subprocess.check_output(["ldd", str(bundled)], text=True)
     elif sys.platform == "darwin":
         dependencies = subprocess.check_output(["otool", "-L", str(bundled)], text=True)
     else:
-        dependencies = ""
+        # the C++ runtime is linked statically (see build_backend.py): no
+        # Visual C++ redistributable DLL is needed, nor added to the wheel
+        forbidden += ("msvcp", "vcruntime", "concrt", "api-ms-win-crt")
+        dependencies = "\n".join(
+            f"{binary.name}: {name}"
+            for binary in (bundled, EXECUTABLE)
+            for name in windows_imports(binary)
+        )
+        print(dependencies)
     lowered = dependencies.lower()
     assert not any(name in lowered for name in forbidden), dependencies
     print((resource_root() / "build-info.txt").read_text())

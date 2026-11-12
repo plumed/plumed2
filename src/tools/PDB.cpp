@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PDB.h"
 #include "Tools.h"
+#include "FileTools.h"
 #include "Log.h"
 #include "h36.h"
 #include <cctype>
@@ -103,6 +104,21 @@ By default the serial number of an atom is the value of `_atom_site.id`, which m
 With ATOM_ID=order in \ref MOLINFO the atoms are numbered 1,2,3... in the order in which they are read (after skipping
 the other models and the alternate locations), for files where the ids do not match the numbering of the atoms in the simulation.
 The same numbering is then obtained from the PDB and the mmCIF file of a wwPDB entry (whose ids do not count the TER records).
+
+\par GROMACS TPR files
+
+When PLUMED is configured with `--enable-libchemfiles`, files with extension `.tpr` are read as GROMACS TPR files,
+with the [chemfiles](https://chemfiles.org) library (0.10.4 or later). The structure is that of the PDB file written by
+`gmx editconf -f topol.tpr -o reference.pdb`:
+- the atoms are numbered 1,2,3... in the order of the file, as in the simulation (ATOM_ID has no effect);
+- the atom names, the residue names, numbers and insertion codes, the elements and the coordinates are those of the TPR file;
+- a TPR file has no chain ids: the sequences of residues in which each residue is bonded to the next one (e.g. the protein and
+  nucleic acid chains) are the chains A, B, C... (then AA, AB...) in the order of the file, and keep their residue numbers;
+  the other residues (water, ions...) have no chain and are numbered after the largest residue number of the chains.
+  This is what `gmx editconf` does with the molecules of more than one residue: the result is the same, unless a molecule
+  of the topology has residues that are not bonded to each other (e.g. two chains in the same molecule, which are here two chains);
+- the occupancy and the beta factor of all the atoms are 1;
+- the box of the simulation is the unit cell (space group P 1).
 PLUMED parser is slightly more permissive than the official PDB format
 in the fact that the format of real numbers is not fixed. In other words,
 any real number that can be parsed is OK and the dot can be placed anywhere. However,
@@ -481,27 +497,44 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   return file_is_alive;
 }
 
-bool PDB::isCifFile(const std::string& file) {
+namespace {
+/// the extension of a file name, in lower case (empty if there is none)
+std::string lowerCaseExtension(const std::string& file) {
   const auto dot=file.find_last_of('.');
   if(dot==std::string::npos) {
-    return false;
+    return "";
   }
   std::string ext=file.substr(dot+1);
   for(auto & c : ext) {
     c=static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   }
+  return ext;
+}
+}
+
+bool PDB::isCifFile(const std::string& file) {
+  const std::string ext=lowerCaseExtension(file);
   return ext=="cif" || ext=="mmcif";
+}
+
+bool PDB::isTprFile(const std::string& file) {
+  return lowerCaseExtension(file)=="tpr";
 }
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering) {
   numbering=atomNumbering;
-  FILE* fp=std::fopen(file.c_str(),"r");
+  FILE* fp=fopenUTF8(file,"r");
   if(!fp) {
     return false;
   }
   if(isCifFile(file)) {
     std::fclose(fp);
     readCif(file,(naturalUnits ? 1.0 : scale));
+    return true;
+  }
+  if(isTprFile(file)) {
+    std::fclose(fp);
+    readTpr(file,(naturalUnits ? 1.0 : scale));
     return true;
   }
 // call fclose when exiting this function

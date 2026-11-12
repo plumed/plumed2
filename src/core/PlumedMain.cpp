@@ -42,6 +42,7 @@
 #include "../mpiwrap/internal.h"
 #endif
 #include "tools/DLLoader.h"
+#include "tools/FileTools.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
 #include "tools/Log.h"
@@ -478,6 +479,17 @@ PlumedMain::PlumedMain():
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
+  // final checkpoint, if the MD engine did not call runFinalJobs (and not while an exception
+  // is propagating, since the state of the run could be inconsistent)
+  if(initialized && std::uncaught_exceptions()==0) {
+    try {
+      checkpointing.atRunEnd(true);
+    } catch(const std::exception& e) {
+      log<<"Final checkpoint not written: "<<e.what()<<"\n";
+    } catch(...) {
+      log<<"Final checkpoint not written: unknown error\n";
+    }
+  }
   CountInstances::decrease();
 }
 
@@ -1083,6 +1095,8 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
+        // before the final jobs, whose output would be written again at the end of the continuation
+        checkpointing.atRunEnd();
         runJobsAtEndOfCalculation();
         break;
       case cmd_isEnergyNeeded: {
@@ -1679,6 +1693,7 @@ void PlumedMain::backwardPropagate() {
 
 void PlumedMain::update() {
   if(!active) {
+    checkpointing.atStepEnd();
     return;
   }
 
@@ -1731,6 +1746,7 @@ void PlumedMain::update() {
 // invalidate the checkpoint status
 // this fix issues like #1428
   doCheckPoint = false;
+  checkpointing.atStepEnd();
 }
 
 void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
@@ -1890,10 +1906,13 @@ double PlumedMain::getWork() const {
 FILE* PlumedMain::fopen(const char *path, const char *mode) {
   std::string mmode(mode);
   std::string ppath(path);
+  if(ppath=="/dev/null") {
+    ppath=FileBase::nullDevice;
+  }
   std::string ppathsuf=ppath+getSuffix();
-  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
+  FILE*fp=fopenUTF8(ppathsuf,mmode.c_str());
   if(!fp) {
-    fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
+    fp=fopenUTF8(ppath,mmode.c_str());
   }
   if(!fp) {
     plumed_error() << "file " << ppath << " cannot be found";

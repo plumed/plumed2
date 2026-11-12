@@ -36,7 +36,52 @@ Adaptive moment estimation (ADAM) optimizer.
 
 !!! attention ""
 
-    __This optimizer is still experimental and not fully documented. The syntax might change. Restarting does not work. We recommend to use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md)) for now__.
+    __This optimizer is still experimental. The syntax might change. Restarting does not work. We recommend to use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md)) for now__.
+
+This optimizer updates the coefficients of a VES bias using the ADAM algorithm discussed in the paper cited below.
+Running estimates of the first moment $m$ and of the second moment $v$ of the gradient $g$ are updated at every iteration $n$ as
+
+$$
+m_n = \beta_1 m_{n-1} + (1-\beta_1) g_n \qquad v_n = \beta_2 v_{n-1} + (1-\beta_2) g_n^2
+$$
+
+and each coefficient $c$ is then updated with
+
+$$
+c_n = c_{n-1} - \mu_n \frac{m_n}{\sqrt{v_n}+\epsilon} \qquad \mu_n = \mu \frac{\sqrt{1-\beta_2^n}}{1-\beta_1^n}
+$$
+
+where $\mu$ is given by STEPSIZE and $\beta_1$, $\beta_2$ and $\epsilon$ are given by BETA_1, BETA_2 and EPSILON.
+The AMSGRAD flag uses the maximum of all the past values of $v$ in place of $v_n$, while ADAMW_WEIGHT_DECAY enables the AdamW variant in which the coefficients are also decayed at each iteration.
+
+## Examples
+
+In the following example the coefficients of a VES bias acting on a torsion are optimized with ADAM every 1000 steps.
+
+```plumed
+phi:   TORSION ATOMS=5,7,9,15
+
+bf1: BF_FOURIER ORDER=5 MINIMUM=-pi MAXIMUM=pi
+
+VES_LINEAR_EXPANSION ...
+ ARG=phi
+ BASIS_FUNCTIONS=bf1
+ LABEL=ves1
+ TEMP=300.0
+ GRID_BINS=100
+... VES_LINEAR_EXPANSION
+
+OPT_ADAM ...
+  BIAS=ves1
+  STRIDE=1000
+  LABEL=o1
+  STEPSIZE=0.001
+  COEFFS_FILE=coefficients.data
+  COEFFS_OUTPUT=10
+  FES_OUTPUT=100
+  BIAS_OUTPUT=100
+... OPT_ADAM
+```
 
 */
 //+ENDPLUMEDOC
@@ -89,6 +134,7 @@ void Opt_Adam::registerKeywords(Keywords& keys) {
   keys.add("optional","EPSILON","Small parameter to avoid division by zero. Defaults to 1e-8");
   keys.add("optional","ADAMW_WEIGHT_DECAY","Weight decay parameter for the AdamW variant. Defaults to 0");
   keys.addFlag("AMSGRAD", false, "Use the AMSGrad variant");
+  keys.addDOI("10.48550/arXiv.1412.6980");
 }
 
 

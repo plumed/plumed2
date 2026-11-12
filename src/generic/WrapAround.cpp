@@ -193,8 +193,8 @@ void WrapAround::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
-  keys.add("atoms","AROUND","reference atoms");
-  keys.add("atoms","ATOMS","wrapped atoms");
+  keys.add("atoms","AROUND","the reference atoms: the atoms in ATOMS are moved to the periodic image that is closest to one of these atoms");
+  keys.add("atoms","ATOMS","the atoms that should be wrapped");
   keys.add("compulsory","GROUPBY","1","group atoms so as not to break molecules");
   keys.addFlag("PAIR", false, "Pair atoms in AROUND and ATOMS groups");
 }

@@ -19,14 +19,14 @@ class Test(unittest.TestCase):
     def test1(self):
         with cd("test/"):
             d = plumed.read_as_pandas("COLVAR", enable_constants="columns")
-            with open("dataframe", "wt") as f:
+            with open("dataframe", "wt", newline="\n") as f:
                 print(d, file=f)
             self.assertTrue(filecmp.cmp("dataframe", "dataframe.ref"))
 
     def test2(self):
         with cd("test/"):
             d = plumed.read_as_pandas("COLVAR_gzipped.gz", enable_constants="columns")
-            with open("dataframe", "wt") as f:
+            with open("dataframe", "wt", newline="\n") as f:
                 print(d, file=f)
             self.assertTrue(filecmp.cmp("dataframe", "dataframe.ref"))
 
@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
             for d in plumed.read_as_pandas(
                 "COLVAR", chunksize=4, enable_constants="columns"
             ):
-                with open("dataframe." + str(i), "wt") as f:
+                with open("dataframe." + str(i), "wt", newline="\n") as f:
                     print(d, file=f)
                 self.assertTrue(
                     filecmp.cmp("dataframe." + str(i), "dataframe." + str(i) + ".ref")
@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
             for d in plumed.read_as_pandas(
                 "COLVAR_gzipped.gz", chunksize=4, enable_constants="columns"
             ):
-                with open("dataframe." + str(i), "wt") as f:
+                with open("dataframe." + str(i), "wt", newline="\n") as f:
                     print(d, file=f)
                 self.assertTrue(
                     filecmp.cmp("dataframe." + str(i), "dataframe." + str(i) + ".ref")
@@ -59,7 +59,7 @@ class Test(unittest.TestCase):
     def test5(self):
         with cd("test/"):
             d = plumed.read_as_pandas("COLVAR", enable_constants="metadata")
-            with open("dataframe_noconst", "wt") as f:
+            with open("dataframe_noconst", "wt", newline="\n") as f:
                 print(d, file=f)
             self.assertTrue(filecmp.cmp("dataframe_noconst", "dataframe_noconst.ref"))
             self.assertEqual(d.plumed_constants[0][0], "a")
@@ -71,7 +71,7 @@ class Test(unittest.TestCase):
             for d in plumed.read_as_pandas(
                 "COLVAR", chunksize=4, enable_constants="metadata"
             ):
-                with open("dataframe_noconst." + str(i), "wt") as f:
+                with open("dataframe_noconst." + str(i), "wt", newline="\n") as f:
                     print(d, file=f)
                 self.assertTrue(
                     filecmp.cmp(
@@ -92,11 +92,8 @@ class Test(unittest.TestCase):
             plumed.write_pandas(d, "COLVAR_write2")
             self.assertTrue(filecmp.cmp("COLVAR_write2", "COLVAR_write.ref"))
             d = plumed.read_as_pandas("COLVAR", index_col=("time", "psi"))
-            try:
+            with self.assertRaises(TypeError):
                 plumed.write_pandas(d, "COLVAR_write3")
-                self.assertTrue(False)
-            except TypeError:
-                pass
 
 
 if __name__ == "__main__":

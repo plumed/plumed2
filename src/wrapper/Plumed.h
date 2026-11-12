@@ -4022,9 +4022,41 @@ __PLUMED_WRAPPER_ANONYMOUS_END /*}*/
 #define __PLUMED_WRAPPER_FORTRAN 0
 #endif /*}*/
 
-#ifdef __PLUMED_HAS_DLOPEN
-#include <dlfcn.h> /* dlopen dlerror dlsym */
+#ifdef __PLUMED_HAS_DLOPEN /*{*/
+#ifdef _WIN32 /*{*/
+/*
+  Windows has no dlopen: plumed_dlopen, plumed_dlsym, plumed_dlclose and plumed_dlerror
+  (see below) are implemented with LoadLibrary. windows.h is included without its min and
+  max macros, which would break std::min and std::max in the code including this file.
+*/
+#ifndef NOMINMAX
+#define NOMINMAX
+#define __PLUMED_WRAPPER_UNDEF_NOMINMAX
 #endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#define __PLUMED_WRAPPER_UNDEF_WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h> /* LoadLibraryExW GetProcAddress FreeLibrary FormatMessageA */
+#ifdef __PLUMED_WRAPPER_UNDEF_NOMINMAX
+#undef NOMINMAX
+#undef __PLUMED_WRAPPER_UNDEF_NOMINMAX
+#endif
+#ifdef __PLUMED_WRAPPER_UNDEF_WIN32_LEAN_AND_MEAN
+#undef WIN32_LEAN_AND_MEAN
+#undef __PLUMED_WRAPPER_UNDEF_WIN32_LEAN_AND_MEAN
+#endif
+/* dlopen modes have no equivalent with LoadLibrary and are ignored */
+#define __PLUMED_WRAPPER_RTLD_NOW 0
+#define __PLUMED_WRAPPER_RTLD_LOCAL 0
+#define __PLUMED_WRAPPER_RTLD_GLOBAL 0
+#else /*}{*/
+#include <dlfcn.h> /* dlopen dlerror dlsym */
+#define __PLUMED_WRAPPER_RTLD_NOW RTLD_NOW
+#define __PLUMED_WRAPPER_RTLD_LOCAL RTLD_LOCAL
+#define __PLUMED_WRAPPER_RTLD_GLOBAL RTLD_GLOBAL
+#endif /*}*/
+#endif /*}*/
 
 #if __PLUMED_WRAPPER_CXX_STD
 #include <cstdio>  /* fprintf */
@@ -4179,6 +4211,164 @@ __PLUMED_WRAPPER_EXTERN_C_END /*}*/
 #endif
 
 #if defined( __PLUMED_HAS_DLOPEN) /*{*/
+
+/*
+  Functions used to load the kernel: dlopen, dlsym, dlclose and dlerror,
+  or their equivalents on Windows.
+  They are declared static (internal linkage) so that they are not visible from outside.
+*/
+#ifdef _WIN32 /*{*/
+
+/**
+  Load a library with LoadLibraryExW. The path is interpreted as UTF-8 (as passed by
+  the python interface) and, if it is not valid UTF-8, in the ANSI code page (as
+  returned by getenv). mode is ignored.
+*/
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void* plumed_dlopen(const char*path,int mode) {
+  HMODULE handle;
+  wchar_t* wpath;
+  wchar_t* fullpath;
+  int n;
+  int i;
+  int separator;
+  DWORD length;
+  DWORD flags;
+  DWORD error;
+  (void) mode;
+  SetLastError(0);
+  n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,__PLUMED_WRAPPER_CXX_NULLPTR,0);
+  if(n<=0) {
+    return __PLUMED_WRAPPER_STATIC_CAST(void*, LoadLibraryA(path));
+  }
+  wpath=__PLUMED_WRAPPER_STATIC_CAST(wchar_t*, plumed_malloc(n*sizeof(wchar_t)));
+  if(!wpath) {
+    __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
+    __PLUMED_WRAPPER_STD abort();
+  }
+  MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wpath,n);
+  /* LoadLibraryEx requires backslashes */
+  separator=0;
+  for(i=0; i<n; i++) {
+    if(wpath[i]==L'/') {
+      wpath[i]=L'\\';
+    }
+    if(wpath[i]==L'\\' || wpath[i]==L':') {
+      separator=1;
+    }
+  }
+  /*
+    As with dlopen, a path containing a directory is a file, and a relative one is relative
+    to the current directory: LoadLibraryEx would look for it in the DLL search path instead,
+    which might not contain the current directory. The path is thus made absolute, which also
+    allows using LOAD_WITH_ALTERED_SEARCH_PATH, so that the libraries the kernel depends on are
+    searched in its directory. A name without directory is searched in the standard order.
+  */
+  flags=0;
+  if(separator) {
+    length=GetFullPathNameW(wpath,0,__PLUMED_WRAPPER_CXX_NULLPTR,__PLUMED_WRAPPER_CXX_NULLPTR);
+    if(length>0) {
+      fullpath=__PLUMED_WRAPPER_STATIC_CAST(wchar_t*, plumed_malloc(length*sizeof(wchar_t)));
+      if(!fullpath) {
+        __PLUMED_FPRINTF(stderr,"+++ Allocation error +++\n");
+        __PLUMED_WRAPPER_STD abort();
+      }
+      if(GetFullPathNameW(wpath,length,fullpath,__PLUMED_WRAPPER_CXX_NULLPTR)>0) {
+        plumed_free(wpath);
+        wpath=fullpath;
+        flags=LOAD_WITH_ALTERED_SEARCH_PATH;
+      } else {
+        plumed_free(fullpath);
+      }
+    }
+  }
+  handle=LoadLibraryExW(wpath,__PLUMED_WRAPPER_CXX_NULLPTR,flags);
+  /* keep the error of LoadLibraryExW for plumed_dlerror */
+  error=GetLastError();
+  plumed_free(wpath);
+  SetLastError(error);
+  return __PLUMED_WRAPPER_STATIC_CAST(void*, handle);
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void* plumed_dlsym(void*handle,const char*name) {
+  FARPROC function;
+  void* pointer;
+  function=GetProcAddress(__PLUMED_WRAPPER_STATIC_CAST(HMODULE, handle),name);
+  /* GetProcAddress returns a function pointer also for data (e.g. plumed_symbol_table) */
+  __PLUMED_WRAPPER_STD memcpy(&pointer,&function,sizeof(pointer));
+  return pointer;
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+int plumed_dlclose(void*handle) {
+  return FreeLibrary(__PLUMED_WRAPPER_STATIC_CAST(HMODULE, handle)) ? 0 : 1;
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+/**
+  Message describing the last error, as dlerror. Not thread safe, as dlerror on some systems.
+*/
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+const char* plumed_dlerror(void) {
+  static char message[512];
+  DWORD error;
+  DWORD length;
+  char digits[16];
+  int ndigits;
+  error=GetLastError();
+  length=FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,__PLUMED_WRAPPER_CXX_NULLPTR,
+                        error,0,message,sizeof(message),__PLUMED_WRAPPER_CXX_NULLPTR);
+  while(length>0 && (message[length-1]=='\n' || message[length-1]=='\r' || message[length-1]==' ')) {
+    message[--length]='\0';
+  }
+  if(length==0) {
+    /* "error code N", without sprintf (deprecated with MSVC) */
+    __PLUMED_WRAPPER_STD memcpy(message,"error code ",11);
+    ndigits=0;
+    do {
+      digits[ndigits++]=__PLUMED_WRAPPER_STATIC_CAST(char, '0'+error%10);
+      error/=10;
+    } while(error>0);
+    for(length=0; ndigits>0; length++) {
+      message[11+length]=digits[--ndigits];
+    }
+    message[11+length]='\0';
+  }
+  return message;
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+#else /*}{*/
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void* plumed_dlopen(const char*path,int mode) {
+  return dlopen(path,mode);
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+void* plumed_dlsym(void*handle,const char*name) {
+  return dlsym(handle,name);
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+int plumed_dlclose(void*handle) {
+  return dlclose(handle);
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+__PLUMED_WRAPPER_INTERNALS_BEGIN
+const char* plumed_dlerror(void) {
+  return dlerror();
+}
+__PLUMED_WRAPPER_INTERNALS_END
+
+#endif /*}*/
+
 /**
 Try to dlopen a path with a given mode.
 If the dlopen command fails, it tries to strip the `Kernel` part of the name.
@@ -4201,8 +4391,8 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
   strlenpath=0;
   pos=0;
   found=0;
-  dlerror();
-  p=dlopen(path,mode);
+  plumed_dlerror();
+  p=plumed_dlopen(path,mode);
   if(!p) {
     /*
       Something went wrong. We try to remove "Kernel" string from the PLUMED_KERNEL variable
@@ -4211,7 +4401,7 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       not visible. All the other cases (either PLUMED>=2.5 or symbols in the main executable visible)
       should work correctly without entering here.
     */
-    __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
+    __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",plumed_dlerror());
     strlenpath=__PLUMED_WRAPPER_STD strlen(path);
     pathcopy=__PLUMED_WRAPPER_STATIC_CAST(char*, plumed_malloc(strlenpath+1));
     if(!pathcopy) {
@@ -4235,10 +4425,10 @@ void* plumed_attempt_dlopen(const char*path,int mode) {
       __PLUMED_WRAPPER_STD memmove(pc, pc+6, __PLUMED_WRAPPER_STD strlen(pc)-5);
       __PLUMED_FPRINTF(stderr,"+++ This error is expected if you are trying to load a kernel <=2.4\n");
       __PLUMED_FPRINTF(stderr,"+++ Trying %s +++\n",pathcopy);
-      dlerror();
-      p=dlopen(pathcopy,mode);
+      plumed_dlerror();
+      p=plumed_dlopen(pathcopy,mode);
       if(!p) {
-        __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",dlerror());
+        __PLUMED_FPRINTF(stderr,"+++ An error occurred. Message from dlopen(): %s +++\n",plumed_dlerror());
       }
     }
     plumed_free(pathcopy);
@@ -4257,7 +4447,7 @@ __PLUMED_WRAPPER_INTERNALS_END
 #endif
 #define __PLUMED_SEARCH_FUNCTION(functype,tmpptr,handle,func,name,debug) \
   if(!func) { \
-    tmpptr=dlsym(handle,name); \
+    tmpptr=plumed_dlsym(handle,name); \
     if(tmpptr) { \
       __PLUMED_WRAPPER_SEARCHF_CAST(functype,func,tmpptr); \
       if(debug) __PLUMED_FPRINTF(stderr,"+++ %s found at %p +++\n",name,tmpptr); \
@@ -4291,7 +4481,7 @@ void plumed_search_symbols(void* handle, plumed_plumedmain_function_holder* f,pl
     unnecessary and might be removed at some point.
   */
   debug=__PLUMED_GETENV("PLUMED_LOAD_DEBUG");
-  table_ptr=__PLUMED_WRAPPER_STATIC_CAST(plumed_symbol_table_type*, dlsym(handle,"plumed_symbol_table"));
+  table_ptr=__PLUMED_WRAPPER_STATIC_CAST(plumed_symbol_table_type*, plumed_dlsym(handle,"plumed_symbol_table"));
   if(table_ptr) {
     functions=table_ptr->functions;
   }
@@ -4481,15 +4671,15 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
     if(debug) {
       __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     }
-    dlopenmode=RTLD_NOW;
+    dlopenmode=__PLUMED_WRAPPER_RTLD_NOW;
     load_namespace = __PLUMED_GETENV("PLUMED_LOAD_NAMESPACE");
     if(load_namespace && !__PLUMED_WRAPPER_STD strcmp(load_namespace,"GLOBAL")) {
-      dlopenmode=dlopenmode|RTLD_GLOBAL;
+      dlopenmode=dlopenmode|__PLUMED_WRAPPER_RTLD_GLOBAL;
       if(debug) {
         __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
       }
     } else {
-      dlopenmode=dlopenmode|RTLD_LOCAL;
+      dlopenmode=dlopenmode|__PLUMED_WRAPPER_RTLD_LOCAL;
       if(debug) {
         __PLUMED_FPRINTF(stderr,"|RTLD_LOCAL");
       }
@@ -4647,7 +4837,7 @@ plumed plumed_create_dlopen(const char*path) {
   int dlopenmode;
   /* plumed_create_dlopen always uses RTLD_LOCAL and, when possible, RTLD_DEEPBIND to allow multiple versions */
 #ifdef __PLUMED_HAS_DLOPEN
-  dlopenmode=RTLD_NOW|RTLD_LOCAL;
+  dlopenmode=__PLUMED_WRAPPER_RTLD_NOW|__PLUMED_WRAPPER_RTLD_LOCAL;
 #ifdef RTLD_DEEPBIND
 #if __PLUMED_WRAPPER_ENABLE_RTLD_DEEPBIND
   if(!__PLUMED_GETENV("PLUMED_LOAD_NODEEPBIND")) {
@@ -4888,7 +5078,7 @@ void plumed_finalize(plumed p) {
     if(__PLUMED_GETENV("PLUMED_LOAD_DEBUG")) {
       __PLUMED_FPRINTF(stderr,"+++ Unloading library\n");
     }
-    dlclose(pimpl->dlhandle);
+    plumed_dlclose(pimpl->dlhandle);
   }
 #endif
 #if __PLUMED_WRAPPER_DEBUG_REFCOUNT

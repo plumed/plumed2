@@ -78,12 +78,12 @@ bool FileBase::FileExist(const std::string& setpath) {
   path=appendSuffix(setpath,getSuffix());
   mode="r";
   // first try with suffix
-  unique_FILE ff(std::fopen(path.c_str(),"r"));
+  unique_FILE ff(fopenUTF8(path,"r"));
   if(!ff) {
     path=setpath;
     // then try without suffix
     // (the unique_FILE also closes this second file, which was leaked until v2.10)
-    ff.reset(std::fopen(path.c_str(),"r"));
+    ff.reset(fopenUTF8(path,"r"));
     mode="r";
   }
   if(ff) {
@@ -149,6 +149,18 @@ FileBase::~FileBase() {
 
 FileBase::operator bool()const {
   return !eof;
+}
+
+bool FileBase::isWindowsNullDevice(const std::string&path) {
+#ifdef _WIN32
+  return path.size()==3 &&
+         (path[0]=='N' || path[0]=='n') &&
+         (path[1]=='U' || path[1]=='u') &&
+         (path[2]=='L' || path[2]=='l');
+#else
+  (void) path;
+  return false;
+#endif
 }
 
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix) {

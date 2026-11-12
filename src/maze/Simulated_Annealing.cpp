@@ -140,7 +140,7 @@ void Simulated_Annealing::registerKeywords(Keywords& keys) {
   keys.add(
     "compulsory",
     "COOLING_SCHEME",
-    "Cooling scheme: geometric."
+    "Cooling scheme used to reduce PROBABILITY_DECREASER: linear, exponential, geometric, logarithmic or hoffman."
   );
 }
 
@@ -201,14 +201,12 @@ void Simulated_Annealing::optimize() {
   double rad_s;
   const unsigned nl_size = neighbor_list_->size();
 
-  Vector distance, distance_next;
-
   for (unsigned int iter=0; iter < get_n_iterations(); ++iter) {
     double action = 0;
     double action_next = 0;
 
-    rad_s = rnd::next_double(sampling_r_);
-    Vector dev = rnd::next_plmd_vector(rad_s);
+    rad_s = rnd_.next_double(sampling_r_);
+    Vector dev = rnd_.next_plmd_vector(rad_s);
 
     #pragma omp parallel num_threads(get_n_threads_openmp())
     {
@@ -221,6 +219,8 @@ void Simulated_Annealing::optimize() {
           continue;
         }
 
+        // declared inside the loop: each thread needs its own
+        Vector distance, distance_next;
         if (pbc_) {
           distance = pbcDistance(
                        getPosition(i0) + get_opt(),
@@ -253,7 +253,7 @@ void Simulated_Annealing::optimize() {
                  std::exp(-(action_next - action) / probability_decreaser_)
                );
 
-    double r = rnd::next_double();
+    double r = rnd_.next_double();
 
     if (r < p) {
       set_opt(dev);

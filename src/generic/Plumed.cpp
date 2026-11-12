@@ -356,10 +356,16 @@ API([&]() {
 
 void Plumed::prepare() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  // long, not int: steps above 2^31 overflowed (setStepLong is available in every kernel with API>3)
-  long int step=getStep();
+  // steps above 2^31 overflowed an int (setStepLong is available in every kernel with API>3)
   if(root) {
-    p.cmd("setStepLong",&step);
+    if constexpr(sizeof(long int)==sizeof(long long int)) {
+      long int step=getStep();
+      p.cmd("setStepLong",&step);
+    } else {
+      // Windows: long is 32 bits (setStepLongLong needs a guest kernel >= 2.10)
+      long long int step=getStep();
+      p.cmd("setStepLongLong",&step);
+    }
   }
   if(root) {
     p.cmd("prepareDependencies");

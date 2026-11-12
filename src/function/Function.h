@@ -38,6 +38,7 @@ class Function:
   public ActionWithValue,
   public ActionWithArguments {
 protected:
+  /// Store a partial derivative; writes to constant outputs are ignored.
   void setDerivative(int,double);
   void setDerivative(Value*,int,double);
 //overriding explicitly the two functions avoids the [-Woverloaded-virtual] warning

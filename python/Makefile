@@ -32,10 +32,10 @@ $(CONFIG): FORCE
 	@cmp -s $@~ $@ || cp $@~ $@
 	@rm -f $@~
 
-$(STAMP): plumed.c plumed.pyx cplumed.pxd setup.py build_backend.py pyproject.toml onlyBuild.sh README.rst MANIFEST.in \
+$(STAMP): plumed.c plumed.pyx cplumed.pxd setup.py build_backend.py pyproject.toml onlyBuild.sh README.rst MANIFEST.in $(wildcard plumed/*.py) plumed/runtime/__init__.py plumed/runtime/cli.py \
           ../src/wrapper/Plumed.h ../Makefile.conf PLUMED_VERSION $(CONFIG)
 	@echo Building python interface for PLUMED 
-	rm -fr dist build *.so plumed.egg-info
+	rm -fr dist build *.so plumed/*.so plumed.egg-info
 	unset CXX && unset CC && unset CFLAGS && unset CXXFLAGS && unset LDSHARED && \
 	  ./onlyBuild.sh -v $(VERSION) -p $(python_bin) \
           -k "$$PWD/../src/lib/libplumedKernel.$(SOEXT)"
@@ -76,14 +76,14 @@ CYTHON_VERSION := 3.2.4
 
 .PHONY: cythonize
 cythonize:
-	$(python_bin) -m cython plumed.pyx
+	$(python_bin) -m cython --module-name plumed._plumed plumed.pyx
 
 plumed.c: cplumed.pxd plumed.pyx
 	@if $(python_bin) -c "import Cython" 2>/dev/null ; then \
 	  v="$$($(python_bin) -c 'import Cython; print(Cython.__version__)')" ; \
 	  echo "Regenerating plumed.c with cython $$v" ; \
 	  test "$$v" = "$(CYTHON_VERSION)" || echo "WARNING: the reference cython version is $(CYTHON_VERSION), plumed.c will differ from the one generated in the CI" ; \
-	  $(python_bin) -m cython plumed.pyx ; \
+	  $(python_bin) -m cython --module-name plumed._plumed plumed.pyx ; \
 	else \
 	  echo "WARNING: plumed.pyx or cplumed.pxd are newer than plumed.c, but cython is not available with $(python_bin)" ; \
 	  echo "WARNING: using the existing plumed.c, which might be out of date" ; \
@@ -92,4 +92,4 @@ plumed.c: cplumed.pxd plumed.pyx
 	fi
 
 clean:
-	rm -fr dist build *.so plumed.egg-info PLUMED_VERSION *.log .python-build.stamp .python-build.config
+	rm -fr dist build *.so plumed/*.so plumed.egg-info PLUMED_VERSION *.log .python-build.stamp .python-build.config

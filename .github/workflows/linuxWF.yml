@@ -8,8 +8,8 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
-# long regtests (plumed_long=yes) run in the nightly and in manually started runs, not on every push
-  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'yes' || 'no' }}
+# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
@@ -134,6 +134,39 @@ jobs:
         echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
+    # chemfiles (--itraj of the driver, configure option --enable-libchemfiles): the 0.10.4 release in the -mpi- and
+    # -coverage-mpi- jobs, the development version (master) in the -intel- job. Built with g++ before the compiler steps below.
+    # Not in the debug jobs (_GLIBCXX_DEBUG changes the STL ABI of the std::string and std::vector of its API).
+    # As for KEnRef, the cache key names the commit, so that a new commit on master is built again.
+    - name: Resolve the chemfiles version
+      id: chemfiles
+      run: |
+        case "${{ matrix.variant }}" in
+        (-mpi-|-coverage-mpi-) ref=0.10.4 ;;
+        (-intel-) ref=master ;;
+        (*) ref= ;;
+        esac
+        sha=
+        if test -n "$ref" ; then
+          url=https://github.com/chemfiles/chemfiles
+          sha="$(git ls-remote "$url" "refs/tags/$ref^{}" | cut -f1)"
+          test -n "$sha" || sha="$(git ls-remote "$url" "refs/tags/$ref" "refs/heads/$ref" | head -n1 | cut -f1)"
+          test -n "$sha" || { echo "cannot resolve chemfiles ref '$ref' at $url" >&2 ; exit 1 ; }
+        fi
+        echo "ref=$ref" >> "$GITHUB_OUTPUT"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      if: steps.chemfiles.outputs.ref != ''
+      with:
+        path: ~/opt/chemfiles
+        key: chemfiles-${{ steps.image.outputs.os }}-${{ steps.chemfiles.outputs.sha }}-${{ hashFiles('.ci/install.chemfiles') }}
+    - name: Install chemfiles
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        .ci/install.chemfiles "${{ steps.chemfiles.outputs.ref }}"
+        echo "CPPFLAGS=$CPPFLAGS -I$HOME/opt/chemfiles/include" >> $GITHUB_ENV
+        echo "LDFLAGS=$LDFLAGS -L$HOME/opt/chemfiles/lib -Wl,-rpath,$HOME/opt/chemfiles/lib" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libchemfiles" >> $GITHUB_ENV
     # doxygen is built from source in its own prefix, so that it can be cached;
     # .ci/install.doxygen skips the build when the right version is already there
     - uses: actions/cache@v5
@@ -241,11 +274,16 @@ jobs:
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
         ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Check that chemfiles is enabled
+      # configure only warns when it cannot link chemfiles: the regtests that need it would then be skipped
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        ./src/lib/plumed --no-mpi config has libchemfiles
 
     - name: Install NVHPC compiler
       if: contains( matrix.variant, '-nvhpc-' )
       run: |
-        NVVER=25.11
+        NVVER=26.9
         curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
         echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
         sudo apt-get update -y
@@ -481,28 +519,11 @@ jobs:
         cmake --build "$RUNNER_TEMP/thread-mpi-tests" -j 4
         ctest --test-dir "$RUNNER_TEMP/thread-mpi-tests" --output-on-failure
 
-  # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
-  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
-  # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
-  # which are in cltools.
-  modules-none:
-    runs-on: ubuntu-24.04
-    steps:
-    - uses: actions/checkout@v6
-    - name: Build PLUMED with --enable-modules=none
-      run: |
-        ./configure --enable-modules=none --disable-dependency-tracking --prefix="$HOME/opt"
-        make -j 4
-        make install
-
-  # Builds that check the code rather than the results. Each one runs the regtests (no MPI, no optional
-  # libraries) on a configuration that the jobs above do not cover:
-  # - sanitizers: AddressSanitizer and UndefinedBehaviorSanitizer; a memory error or undefined behaviour
-  #   stops the regtest that triggers it.
-  # - clang-noopenmp: clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which flags
-  #   hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
-  #   embedded third-party libraries) fails the job. Run with PLUMED_NUM_THREADS=2 like the other jobs,
-  #   so the code paths of OpenMP builds that do not depend on OpenMP are tested without it.
+  # Regtests (no MPI, no optional libraries) on configurations that the jobs above do not cover:
+  # - clang-noopenmp: the configuration built in the gate (build job of checksWF.yml, where its warnings
+  #   are checked). Run with PLUMED_NUM_THREADS=2 like the other jobs, so the code paths of OpenMP builds
+  #   that do not depend on OpenMP are tested without it. It restores the ccache saved by the gate, so it
+  #   does not compile again: keep the cache key and the configure options in sync with checksWF.yml.
   # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
   checks:
     runs-on: ubuntu-24.04
@@ -510,10 +531,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - variant: sanitizers
-          cc: gcc
-          cxx: g++
-          config: --disable-external-blas --disable-external-lapack CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" LDFLAGS="-fsanitize=address,undefined"
         - variant: clang-noopenmp
           cc: clang
           cxx: clang++
@@ -525,16 +542,7 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
-      PLUMED_CCACHE_SIZE: ${{ matrix.variant == 'sanitizers' && '500M' || '100M' }}
-      # leaks are not checked: objects that live until the end of the program are not released
-      ASAN_OPTIONS: detect_leaks=0
-      UBSAN_OPTIONS: print_stacktrace=1
-      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
-      # without this the regtests that load the kernel at runtime fail in the sanitizers job
-      PLUMED_LOAD_NODEEPBIND: yes
-      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
-      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
-      PLUMED_FORTRAN_FLAGS: ${{ matrix.variant == 'sanitizers' && '-fsanitize=address,undefined' || '' }}
+      PLUMED_CCACHE_SIZE: 100M
     steps:
     - uses: actions/checkout@v6
     - name: Identify runner image
@@ -558,15 +566,59 @@ jobs:
       run: cat config.log
     - name: Build PLUMED
       run: |
-        # --output-sync keeps the output of each file together, so that warnings are attributed to the right module
-        # (ccache replays the warnings of the files it takes from the cache)
-        make -j 4 --output-sync=target 2>&1 | tee build.log
-        test ${PIPESTATUS[0]} -eq 0
+        make -j 4
         make install
         ccache -s -M "$PLUMED_CCACHE_SIZE"
-    - name: Check warnings
-      if: matrix.variant == 'clang-noopenmp'
-      run: .ci/check-warnings build.log
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail
+
+  # AddressSanitizer and UndefinedBehaviorSanitizer: a memory error or undefined behaviour stops the
+  # regtest that triggers it. Regtests without MPI and optional libraries, as in the checks job above
+  # (it is not in the gate of checksWF.yml because its build is too slow).
+  sanitizers:
+    runs-on: ubuntu-24.04
+    env:
+      PLUMED_CCACHE_SIZE: 500M
+      # leaks are not checked: objects that live until the end of the program are not released
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: print_stacktrace=1
+      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
+      # without this the regtests that load the kernel at runtime fail
+      PLUMED_LOAD_NODEEPBIND: yes
+      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
+      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
+      PLUMED_FORTRAN_FLAGS: -fsanitize=address,undefined
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all \
+          --disable-external-blas --disable-external-lapack \
+          CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" \
+          LDFLAGS="-fsanitize=address,undefined" --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
     - name: Run tests
       run: |
          make --no-print-directory -j 2 -C regtest testclean

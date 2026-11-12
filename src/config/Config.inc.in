@@ -22,10 +22,20 @@
 
 #include "Config.h"
 #include "version.h"
+#include "../tools/FileTools.h"
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#if defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
+#if defined(_WIN32)
+// GetModuleHandleExW and GetModuleFileNameW, for getLibraryPath()
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#elif defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR)
 #include <dlfcn.h>
 #endif
 
@@ -76,21 +86,24 @@ bool isInstalled() {
 }
 
 std::string getPlumedRoot() {
-  char *env = std::getenv("PLUMED_ROOT");
   std::string ss;
-  if( env == NULL) {
+  if(!getenvUTF8("PLUMED_ROOT",ss)) {
 #ifdef __PLUMED_PIP_BUNDLE
     const std::string library=getLibraryPath();
     if(!library.empty()) {
-      const std::filesystem::path candidate=std::filesystem::path(library).parent_path().parent_path()/"share"/"plumed";
-      if(std::filesystem::exists(candidate/"scripts")) {
-        return candidate.string();
+      // Wheels use a private installation prefix: <prefix>/lib/plumed.
+      // The kernel is in <prefix>/lib, or in <prefix>/bin on Windows, where DLLs are
+      // installed next to the executables.
+      const std::filesystem::path directory=pathFromUTF8(library).parent_path();
+      const std::filesystem::path candidates[]= {directory/"plumed",directory.parent_path()/"lib"/"plumed"};
+      for(const auto& candidate : candidates) {
+        if(std::filesystem::exists(candidate/"scripts")) {
+          return pathToUTF8(candidate);
+        }
       }
     }
 #endif
     ss=plumed_root();
-  } else {
-    ss=std::string( env );
   }
   return ss;
 }
@@ -99,12 +112,9 @@ std::string getPlumedHtmldir() {
   if(!isInstalled()) {
     return getPlumedRoot();
   }
-  char *env = std::getenv("PLUMED_HTMLDIR");
   std::string ss;
-  if( env == NULL) {
+  if(!getenvUTF8("PLUMED_HTMLDIR",ss)) {
     ss=plumed_htmldir();
-  } else {
-    ss=std::string( env );
   }
   return ss;
 }
@@ -113,12 +123,19 @@ std::string getPlumedIncludedir() {
   if(!isInstalled()) {
     return getPlumedRoot()+"/src/include";
   }
-  char *env = std::getenv("PLUMED_INCLUDEDIR");
   std::string ss;
-  if( env == NULL) {
+  if(!getenvUTF8("PLUMED_INCLUDEDIR",ss)) {
+#ifdef __PLUMED_PIP_BUNDLE
+    // Resolve headers independently of PLUMED_ROOT, as in a normal install.
+    const std::string library=getLibraryPath();
+    if(!library.empty()) {
+      const std::filesystem::path candidate=pathFromUTF8(library).parent_path().parent_path()/"include";
+      if(std::filesystem::exists(candidate/"plumed"/"wrapper"/"Plumed.h")) {
+        return pathToUTF8(candidate);
+      }
+    }
+#endif
     ss=plumed_includedir();
-  } else {
-    ss=std::string( env );
   }
   return ss;
 }
@@ -127,12 +144,9 @@ std::string getPlumedProgramName() {
   if(!isInstalled()) {
     return "plumed";
   }
-  char *env = std::getenv("PLUMED_PROGRAM_NAME");
   std::string ss;
-  if( env == NULL) {
+  if(!getenvUTF8("PLUMED_PROGRAM_NAME",ss)) {
     ss=plumed_program_name();
-  } else {
-    ss=std::string( env );
   }
   return ss;
 }
@@ -216,7 +230,28 @@ std::string getCompilationTime() {
 }
 
 std::string getLibraryPath() {
-#ifdef __PLUMED_HAS_DLADDR
+#if defined(_WIN32)
+  // the module (DLL, or executable for a static kernel) containing this function,
+  // in UTF-8 as the other file names in PLUMED
+  HMODULE module=nullptr;
+  if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         reinterpret_cast<LPCWSTR>(&getLibraryPath),&module)) {
+    return "";
+  }
+  std::wstring path(MAX_PATH,L'\0');
+  for(;;) {
+    const DWORD length=GetModuleFileNameW(module,path.data(),static_cast<DWORD>(path.size()));
+    if(length==0) {
+      return "";
+    }
+    if(length<path.size()) {
+      path.resize(length);
+      return pathToUTF8(std::filesystem::path(path));
+    }
+    // truncated
+    path.resize(2*path.size());
+  }
+#elif defined(__PLUMED_HAS_DLADDR)
   Dl_info info;
   if(dladdr((void*)getLibraryPath,&info) && info.dli_fname) {
     return info.dli_fname;

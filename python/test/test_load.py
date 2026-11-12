@@ -9,12 +9,14 @@ from pathlib import Path
 import re
 import shlex
 import shutil
+import sys
 import tempfile
 import unittest
 
 import plumed
 
 
+@unittest.skipIf(sys.platform == "win32", "LOAD is not supported on Windows")
 class Test(unittest.TestCase):
     def test_load_compiled_action(self):
         root = Path(plumed._guessplumedroot())

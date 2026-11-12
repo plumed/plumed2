@@ -26,7 +26,7 @@ function plumed_regtest_after(){
   cltools_check "info --include-dir" "/" $plumed_nompi info --include-dir
   cltools_check "info --configuration" "CXX" $plumed_nompi info --configuration
   cltools_check "info --soext" "^[a-z]" $plumed_nompi info --soext
-  cltools_check "info --user-doc" "user-doc" $plumed_nompi info --user-doc
+  cltools_check "info --user-doc" "index.html" $plumed_nompi info --user-doc
   cltools_check "info --developer-doc" "developer-doc" $plumed_nompi info --developer-doc
   cltools_check "gentemplate --action" "DISTANCE" $plumed_nompi gentemplate --action DISTANCE
   cltools_check "gentemplate --include-optional" "COMPONENTS" $plumed_nompi gentemplate --action DISTANCE --include-optional

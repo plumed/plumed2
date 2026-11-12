@@ -2,3 +2,9 @@ type=driver
 plumed_modules=dimred
 # this is to test a different name
 arg="--plumed plumed.dat --noatoms"
+
+# The projections are printed with 4 decimals and the last digit can round
+# differently with the Intel compiler. Allow one unit of the last decimal.
+plumed_tolerance=(
+  "colvar:2e-4"
+)

@@ -13,6 +13,11 @@ jobs:
   windows-build:
     runs-on: windows-latest
     steps:
+      # keep LF line endings in the checkout, so that regtest references
+      # match the (binary-mode) files written by PLUMED
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -20,7 +25,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLUMED_MSVC_DEBUG_INFO=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -36,3 +41,230 @@ jobs:
 
       - name: Smoke test (embedded thread-MPI)
         run: ./build/plumed.exe --tmpi-threads 2 kt --temp 300
+
+      # PLUMED_STACK_TRACE=yes (set for the whole workflow): the error message
+      # contains the stack, with names from plumed.pdb (PLUMED_MSVC_DEBUG_INFO)
+      - name: Stack trace of an error
+        shell: bash
+        run: |
+          mkdir -p stacktrace && cd stacktrace
+          echo "NOT_AN_ACTION" > plumed.dat
+          printf '1\n\nX 0 0 0\n' > traj.xyz
+          if ../build/plumed.exe --no-mpi driver --plumed plumed.dat --ixyz traj.xyz > out.log 2>&1 ; then
+            echo "an unknown action did not fail" ; exit 1
+          fi
+          sed -n '/STACK DUMP/,/END STACK DUMP/p' out.log | head -n 30
+          grep -q "STACK DUMP" out.log
+          grep -q "plumed.exe(PLMD::" out.log
+
+      # File names with non-ASCII characters (e acute and a CJK character, written
+      # with [char] to keep this file ASCII), in the arguments and in the input:
+      # plumed.exe uses UTF-8 as its code page (cmake-msvc/plumed.manifest)
+      - name: Non-ASCII file names
+        run: |
+          $name = "" + [char]0x00E9 + [char]0x4E2D
+          $dir = Join-Path $env:RUNNER_TEMP ("utf8-" + $name)
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $exe = (Resolve-Path build/plumed.exe).Path
+          $d = $dir.Replace('\','/')
+          Set-Content -Path (Join-Path $dir ("traj-" + $name + ".xyz")) -Value "2`n10 10 10`nX 0 0 0`nX 1 2 2" -Encoding utf8NoBOM
+          Set-Content -Path (Join-Path $dir ("plumed-" + $name + ".dat")) -Value "d: DISTANCE ATOMS=1,2`nPRINT ARG=d FILE=$d/colvar-$name" -Encoding utf8NoBOM
+          # twice: the second run backs up colvar (rename)
+          foreach ($run in 1, 2) {
+            & $exe --no-mpi driver --plumed "$d/plumed-$name.dat" --ixyz "$d/traj-$name.xyz"
+            if ($LASTEXITCODE -ne 0) { throw "driver failed with non-ASCII file names" }
+          }
+          foreach ($file in ("colvar-" + $name), ("bck.0.colvar-" + $name)) {
+            if (-not (Test-Path -LiteralPath (Join-Path $dir $file))) { throw "missing $file" }
+          }
+          $colvar = Get-Content -LiteralPath (Join-Path $dir ("colvar-" + $name))
+          $colvar
+          if (-not ($colvar -match " 3\.000000$")) { throw "wrong distance in colvar-$name" }
+
+      # PlumedMain::cmd is called from inside cmd by DEBUG logRequestedAtoms
+      # (rt73) and by the PLUMED action (rt-plumed-action-large-step). With
+      # MSVC these overflowed a 1 MB stack (the Windows default, e.g. for an MD
+      # code loading PLUMED) when every Exception object in cmd took more than
+      # 1 KB of its stack frame: run them with a 1 MB stack.
+      - name: Nested cmd calls with a 1 MB stack
+        run: |
+          Copy-Item build/plumed.exe build/plumed-1mb.exe
+          editbin /nologo /STACK:1048576 build/plumed-1mb.exe
+          if ($LASTEXITCODE -ne 0) { throw "editbin failed" }
+          $exe = (Resolve-Path build/plumed-1mb.exe).Path
+          $trajectory = (Resolve-Path regtest/trajectories/trajectory.xyz).Path
+          $tests = @(
+            @{ name = "rt73"; arguments = @("driver", "--plumed", "plumed.dat", "--trajectory-stride", "1", "--timestep", "0.005", "--ixyz", "trajectory.xyz") },
+            @{ name = "rt-plumed-action-large-step"; arguments = @("driver", "--plumed", "plumed.dat", "--ixyz", "traj.xyz", "--initial-step", "3000000000", "--timestep", "0.001") }
+          )
+          foreach ($test in $tests) {
+            $dir = Join-Path $env:RUNNER_TEMP ("stack-" + $test.name)
+            Copy-Item -Recurse ("regtest/basic/" + $test.name) $dir
+            Copy-Item $trajectory $dir
+            Push-Location $dir
+            $arguments = $test.arguments
+            & $exe @arguments
+            $code = $LASTEXITCODE
+            Pop-Location
+            if ($code -ne 0) {
+              throw ($test.name + " failed with a 1 MB stack (exit code " + $code + ")")
+            }
+            Write-Output ($test.name + ": OK")
+          }
+
+      # vim syntax files, as "make" does in vim/ (used by plumed vim2html,
+      # regtest basic/rt-vimsyntax)
+      - name: Generate vim syntax
+        run: ./build/plumed.exe --no-mpi gen_vim --outdir vim --template-dir vim/templates
+
+      # See .ci/windows-regtests for the selection. A failed, timed out or
+      # not run test fails the job.
+      # serial: tests without MPI (one in three from regtest/basic)
+      - name: Regtests (CLI subset)
+        id: regtest
+        timeout-minutes: 60
+        shell: bash
+        env:
+          TEST_TIMEOUT: 120   # seconds, per test
+          TIME_BUDGET: 2400   # seconds, no new test is started after this
+        run: .ci/windows-regtests serial
+
+      # MPI tests with the embedded thread-MPI, one at a time
+      # (run also when the serial tests failed, but not when the run is cancelled:
+      # always() would start them even then)
+      - name: Regtests (thread-MPI)
+        id: regtest-mpi
+        if: ${{ !cancelled() && steps.regtest.outcome != 'skipped' }}
+        timeout-minutes: 40
+        shell: bash
+        env:
+          TEST_TIMEOUT: 60    # seconds, per test
+          TIME_BUDGET: 1500   # seconds, no new test is started after this
+        run: .ci/windows-regtests mpi
+
+      - name: Upload regtest results
+        if: ${{ !cancelled() && steps.regtest.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-regtest-results
+          path: regtest-results
+
+  # Shared kernel (plumedKernel.dll), as needed by the python interface and by
+  # MD codes loading PLUMED at runtime (PLUMED_KERNEL): plumed.exe linked to the
+  # DLL, installation, a small host loading the DLL through Plumed.h, and the
+  # python interface (pip install python/) with its tests
+  windows-shared-kernel:
+    runs-on: windows-latest
+    steps:
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLUMED_SHARED_KERNEL=ON -DPLUMED_MSVC_DEBUG_INFO=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # only the C entry points listed in cmake-msvc/plumedKernel.def
+      - name: Exported symbols
+        run: dumpbin /nologo /exports build/plumedKernel.dll
+
+      - name: plumed --version (linked to the DLL)
+        run: ./build/plumed.exe info --version
+
+      - name: Smoke test (kt, embedded thread-MPI)
+        run: |
+          ./build/plumed.exe kt --temp 300
+          ./build/plumed.exe --tmpi-threads 2 kt --temp 300
+
+      - name: Install
+        run: cmake --install build --prefix install
+
+      - name: Installed plumed
+        run: |
+          ./install/bin/plumed.exe info --version
+          ./install/bin/plumed.exe --no-mpi kt --temp 300
+
+      # the same host compiled as C and as C++ (both code paths of Plumed.h)
+      - name: Build a host loading the DLL
+        run: |
+          cl /nologo /W3 /D__PLUMED_HAS_DLOPEN /D__PLUMED_WRAPPER_LINK_RUNTIME=1 /D__PLUMED_WRAPPER_IMPLEMENTATION=1 /Isrc\wrapper .ci\plumed-dlopen-host.c /Fe:host-c.exe
+          cl /nologo /W3 /TP /EHsc /Zc:__cplusplus /std:c++17 /D__PLUMED_HAS_DLOPEN /D__PLUMED_WRAPPER_LINK_RUNTIME=1 /D__PLUMED_WRAPPER_IMPLEMENTATION=1 /Isrc\wrapper .ci\plumed-dlopen-host.c /Fe:host-cxx.exe
+
+      - name: Load the DLL (plumed_create_dlopen and PLUMED_KERNEL)
+        run: |
+          $kernel = (Resolve-Path install\bin\plumedKernel.dll).Path
+          New-Item -ItemType Directory -Force host-run | Out-Null
+          Set-Location host-run
+          foreach ($host_exe in "..\host-c.exe", "..\host-cxx.exe") {
+            & $host_exe $kernel
+            if ($LASTEXITCODE -ne 0) { throw "$host_exe $kernel failed" }
+            $env:PLUMED_KERNEL = $kernel
+            & $host_exe --env
+            if ($LASTEXITCODE -ne 0) { throw "$host_exe --env failed" }
+            Remove-Item Env:PLUMED_KERNEL
+          }
+
+      # A second installation, in a directory with a space: its path is
+      # hardcoded in the python module (plumed_default_kernel, a macro that
+      # Plumed.h turns into a string)
+      - name: Install for the python interface
+        run: cmake --install build --prefix "${{ runner.temp }}/plumed python"
+
+      # Wrapper-only module, as with "make install" on Unix (no bundled kernel)
+      - name: Install the python interface
+        working-directory: ./python
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy pandas h5py
+          Copy-Item ../VERSION.txt PLUMED_VERSION
+          $env:plumed_default_kernel = "${{ runner.temp }}\plumed python\bin\plumedKernel.dll"
+          python -m pip install .
+          if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
+
+      # See python/test for the tests skipped on Windows (LOAD, MPI, Unix build tools)
+      - name: Run python tests
+        working-directory: ./python
+        run: pytest -v
+
+      # a kernel passed explicitly (also from a non-ASCII directory, as UTF-8),
+      # a missing one, and PLUMED_KERNEL
+      - name: Kernel selection from python
+        working-directory: ${{ runner.temp }}
+        run: |
+          $kernel = "${{ runner.temp }}\plumed python\bin\plumedKernel.dll"
+          $check = @'
+          import os, shutil, sys, tempfile
+          import plumed
+          kernel = sys.argv[1]
+          plumed.Plumed(kernel).finalize()
+          # the copy might still be mapped when the directory is removed
+          with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+              directory = os.path.join(tmp, "kernel-\u00e9")
+              os.mkdir(directory)
+              copy = shutil.copy(kernel, directory)
+              plumed.Plumed(copy).finalize()
+          try:
+              plumed.Plumed(kernel + ".missing")
+          except RuntimeError as error:
+              print("expected:", error)
+          else:
+              raise SystemExit("loading a missing kernel did not fail")
+          '@
+          Set-Content -Path check-kernel.py -Value $check -Encoding ascii
+          python check-kernel.py $kernel
+          if ($LASTEXITCODE -ne 0) { throw "kernel selection failed" }
+          $env:PLUMED_KERNEL = $kernel
+          python -c "import plumed; plumed.Plumed().finalize()"
+          if ($LASTEXITCODE -ne 0) { throw "PLUMED_KERNEL failed" }

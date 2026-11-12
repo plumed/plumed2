@@ -7,7 +7,8 @@ PLUMED_VERSION
 .python-build.stamp
 .python-build.config
 plumed_source/
-plumed_runtime/bin/
-plumed_runtime/lib/
-plumed_runtime/share/
-plumed_runtime/licenses/
+plumed/runtime/bin/
+plumed/runtime/lib/
+plumed/runtime/include/
+plumed/runtime/licenses/
+plumed/runtime/share/

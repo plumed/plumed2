@@ -25,7 +25,9 @@
 from setuptools import setup
 from setuptools import Extension
 from setuptools import find_namespace_packages
-import subprocess
+from setuptools.command.build_py import build_py
+from pathlib import Path
+import shutil
 import os
 import os.path
 import sys
@@ -56,11 +58,9 @@ plumedversion = os.getenv("plumed_version")
 if plumedversion is None:
     # TODO: if PLUMED_VERSION is not present copy the file from the
     # base directory (or use Unknown ?)
-    plumedversion = (
-        subprocess.check_output(["grep", "-v", "#", "./PLUMED_VERSION"])
-        .decode("utf-8")
-        .rstrip()
-    )
+    # as grep -v "#" PLUMED_VERSION, which is not available on Windows
+    with open("./PLUMED_VERSION") as f:
+        plumedversion = "".join(line for line in f if "#" not in line).rstrip()
 
 print("Module name " + plumedname)
 print("Version number " + plumedversion)
@@ -74,10 +74,14 @@ extra_compile_args = [
 
 defaultkernel = os.getenv("plumed_default_kernel")
 if defaultkernel is not None:
-    extra_compile_args.append(
-        "-D__PLUMED_DEFAULT_KERNEL=" + os.path.abspath(defaultkernel)
-    )
-    print("Hardcoded PLUMED_KERNEL " + os.path.abspath(defaultkernel))
+    defaultkernel = os.path.abspath(defaultkernel)
+    if sys.platform == "win32":
+        # Plumed.h turns the macro into a string with the # operator, which
+        # keeps backslashes as they are: "C:\Users\..." would then contain
+        # escape sequences. Windows accepts forward slashes as well.
+        defaultkernel = defaultkernel.replace("\\", "/")
+    extra_compile_args.append("-D__PLUMED_DEFAULT_KERNEL=" + defaultkernel)
+    print("Hardcoded PLUMED_KERNEL " + defaultkernel)
 
 plumed_disable_rtld_deepbind = os.getenv("plumed_disable_rtld_deepbind")
 if plumed_disable_rtld_deepbind is not None:
@@ -102,6 +106,21 @@ if is_platform_mac:
         )
         if python_target < (10, 9) and current_system >= (10, 9):
             os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.9"
+
+
+def include_dir():
+    """Return the directory containing Plumed.h.
+
+    include/Plumed.h is a symbolic link to ../../src/wrapper/Plumed.h. Git
+    without symbolic link support (the default on Windows) checks it out as a
+    small text file containing the path of the target: follow it by hand.
+    """
+    header = Path("include") / "Plumed.h"
+    if header.is_file() and header.stat().st_size < 1024:
+        target = Path("include") / header.read_text().strip()
+        if target.is_file():
+            return str(target.parent)
+    return "./include"
 
 
 def readme():
@@ -134,14 +153,25 @@ if not USE_CYTHON:
 
 ext_modules = [
     Extension(
-        name=plumedname,
+        name=plumedname + "._plumed",
         # without cython, compile the pregenerated plumed.c explicitly
         # (so that it is not regenerated even if cython is installed)
         sources=["plumed.pyx"] if USE_CYTHON else ["plumed.c"],
-        include_dirs=["./include"],
+        include_dirs=[include_dir()],
         extra_compile_args=extra_compile_args,
     )
 ]
+
+
+class BuildPy(build_py):
+    """Replace staged runtime files, including resources from older layouts."""
+
+    def run(self):
+        # setuptools otherwise keeps removed package data across builds. Clear
+        # only its output copy, also when switching to a wrapper-only wheel.
+        shutil.rmtree(Path(self.build_lib) / plumedname / "runtime", ignore_errors=True)
+        super().run()
+
 
 setup(
     name=plumedname,
@@ -166,16 +196,22 @@ setup(
     author_email="plumed-users@googlegroups.com",
     url="http://www.plumed.org",
     ext_modules=ext_modules,
-    # the directories of the runtime (bin, lib, share/...) are declared as
+    cmdclass={"build_py": BuildPy},
+    # the directories of the private runtime (bin, lib, include/...) are declared as
     # namespace packages, otherwise setuptools warns for each of them;
     # their files are selected by MANIFEST.in (include_package_data)
-    packages=find_namespace_packages(include=["plumed_runtime", "plumed_runtime.*"]),
+    packages=[
+        plumedname + name[len("plumed") :]
+        for name in find_namespace_packages(include=["plumed", "plumed.*"])
+    ],
+    package_dir={plumedname: "plumed"},
     include_package_data=True,
-    entry_points={"console_scripts": ["plumed=plumed_runtime.cli:main"]}
+    entry_points={"console_scripts": ["plumed=" + plumedname + ".runtime.cli:main"]}
     if bundle_kernel
     else {},
     license_files=["LICENSE"],
     setup_requires=["Cython"] if USE_CYTHON else None,
+    extras_require={"hdf5": ["pandas", "h5py"]},
     zip_safe=False,
     # this will be deprecated shortly
     # test_suite='nose.collector',

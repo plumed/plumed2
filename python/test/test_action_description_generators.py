@@ -4,6 +4,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -122,6 +123,9 @@ def compile_and_check_map(compiler, generated_include, directory, expected_summa
     subprocess.run([str(executable)], check=True)
 
 
+@unittest.skipIf(
+    sys.platform == "win32", "the Unix generator needs bash and a Unix C++ compiler"
+)
 class TestActionDescriptionGenerators(unittest.TestCase):
     def test_unix_and_cmake_generators_match(self):
         expected_summary = '  summary: "quoted", path \\\\root, tab:\t, Unicode café'

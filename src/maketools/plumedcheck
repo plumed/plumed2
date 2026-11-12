@@ -294,7 +294,7 @@ BEGINFILE{
     sub(".*/","",pyx_name)
 # cython stores the path of the source relative to the current directory:
 # run it from the directory of plumed.pyx, as done when plumed.c is generated
-    system("cd " pyx_dir " && cython " pyx_name " -o " tempfile)
+    system("cd " pyx_dir " && cython --module-name plumed._plumed " pyx_name " -o " tempfile)
 # the compressed copies of the strings depend on the python running cython, see compare_plumed_c.sh
     s=system(pyx_dir "/compare_plumed_c.sh " plumed_c " " tempfile ">/dev/null 2>/dev/null")
 # check if cython has been applied correctly

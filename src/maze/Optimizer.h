@@ -177,6 +177,9 @@ public:
   void set_nl_cutoff(double);
 
 protected:
+  //! Random numbers of this optimizer (seeded with SEED, or from the clock).
+  rnd rnd_;
+
   //! Optimizer label.
   std::string label_;
 

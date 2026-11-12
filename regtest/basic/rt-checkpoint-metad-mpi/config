@@ -22,5 +22,5 @@ function plumed_regtest_after() {
     if cmp -s $f restart/$f ; then echo "$f IDENTICAL" ; else echo "$f DIFFERENT" ; fi
   done > restart_check
   # Read replica-local logs rather than merged stdout.
-  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING" restart/driver.0.log restart/driver.1.log | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed "s|$(pwd)/restart/||" | LC_ALL=C sort >> restart_check
+  grep -h "truncated\|Checkpoint state restored\|Restarting from checkpoint\|WARNING" restart/driver.0.log restart/driver.1.log | sed 's/by PLUMED.*//' | sed 's/ from [0-9]* to [0-9]* bytes//' | sed 's|[^ ]*restart/||'  | LC_ALL=C sort >> restart_check
 }

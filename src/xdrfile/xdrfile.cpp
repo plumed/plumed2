@@ -84,6 +84,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xdrfile.h"
 
+#ifdef _WIN32
+/* PLUMED: file names in UTF-8 (as in the rest of PLUMED), converted to UTF-16
+   for _wfopen; a name that is not valid UTF-8 is opened with fopen, in the
+   ANSI code page, as before */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+static FILE* xdrfile_fopen(const char* path,const char* mode)
+{
+	int npath=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,NULL,0);
+	int nmode=MultiByteToWideChar(CP_UTF8,0,mode,-1,NULL,0);
+	wchar_t *wpath,*wmode;
+	FILE* fp=NULL;
+	if(npath<=0 || nmode<=0)
+		return fopen(path,mode);
+	wpath=(wchar_t*)malloc(npath*sizeof(wchar_t));
+	wmode=(wchar_t*)malloc(nmode*sizeof(wchar_t));
+	if(wpath && wmode) {
+		MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wpath,npath);
+		MultiByteToWideChar(CP_UTF8,0,mode,-1,wmode,nmode);
+		fp=_wfopen(wpath,wmode);
+	}
+	free(wpath);
+	free(wmode);
+	return fp;
+}
+#else
+#define xdrfile_fopen fopen
+#endif
+
 /* Default FORTRAN name mangling is: lower case name, append underscore */
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _
@@ -253,7 +287,7 @@ xdrfile_open(const char *path, const char *mode)
   
 	if((xfp=(XDRFILE *)malloc(sizeof(XDRFILE)))==NULL)
 		return NULL;
-	if((xfp->fp=fopen(path,newmode))==NULL)
+	if((xfp->fp=xdrfile_fopen(path,newmode))==NULL)
     {
 		free(xfp);
 		return NULL;

@@ -3,6 +3,7 @@
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -14,6 +15,7 @@ ROOT = (
 )
 
 
+@unittest.skipIf(sys.platform == "win32", "the Makefile build is not used on Windows")
 @unittest.skipUnless(shutil.which("make"), "make is unavailable")
 class TestVimMake(unittest.TestCase):
     def test_cross_compilation_does_not_run_generator(self):

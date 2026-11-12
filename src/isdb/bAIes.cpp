@@ -47,12 +47,50 @@ namespace isdb {
 /*
 Bayesian refinement of AF models.
 
-This action implements the Bayesian approach to refine AF models introduced here and here.
-It can be used to generate conformational ensembles of IDPs or refine AF models prior to small-molecule virtual screening.
+This action implements the Bayesian approach to refine AlphaFold (AF) models (bAIes) that is introduced in the papers cited below.
+It can be used to generate conformational ensembles of intrinsically disordered proteins (IDPs), as discussed in the first paper, or to refine AF models prior to small-molecule virtual screening, as discussed in the second paper.
+
+The distances $d_{ij}$ between the pairs of atoms listed in DATA_FILE are restrained to the distributions predicted by AF.
+For each pair, the AF distogram is fitted with either a Gaussian distribution, in which case the energy is
+
+$$
+E = \frac{k_B T}{2} \sum_{ij} \left( \frac{d_{ij} - \mu_{ij}}{\sigma_{ij}} \right)^2,
+$$
+
+or a log-normal distribution, in which case $d_{ij}$ is replaced by $\log d_{ij}$ in the expression above.
+When PRIOR=JEFFREYS or PRIOR=CAUCHY is used, the uncertainty of each restraint is treated as an unknown parameter that is marginalized
+using a Jeffreys or a Cauchy prior, with $\sigma_{ij}$ acting as its lower bound. This results in an energy that grows more slowly than the harmonic one for large deviations
+and is thus more tolerant of errors in the AF predictions. PRIOR=NONE gives the energy above.
+SIGMA_MIN sets a lower bound for all the $\sigma_{ij}$ read from DATA_FILE. The energy is stored in the `ene` component.
+
+DATA_FILE contains one line per restrained pair, with the serial numbers of the two atoms (which must be included in ATOMS), $\mu_{ij}$ and $\sigma_{ij}$ (in PLUMED length units, or of the logarithm of the distance for the log-normal model).
+The noise model is set with the `model` field in the header, which can be `gaussian` or `lognormal`, as in the following example:
+
+````
+#! FIELDS Id atom_i atom_j mu sigma
+#! SET model gaussian
+0 1 16 0.23321 0.07263
+1 1 23 0.56752 0.06087
+2 1 29 0.81512 0.10485
+````
 
 ## Examples
 
-Complete tutorials can be found <a href="https://github.com/COSBlab/bAIes-IDP">here</a> and here.
+The following input restrains the distances between the atoms listed in DATA_FILE and applies the resulting energy as a bias.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/isdb/rt-baies/gauss.dat
+baies: BAIES ...
+  ATOMS=1,5,7,16,18,20,23,25,27,29,33,35,37,39,43,45,47,49,67,69,71,73,77,79,81,83,87,89,91,93,98,102,104
+  DATA_FILE=regtest/isdb/rt-baies/gauss.dat
+  PRIOR=JEFFREYS
+  TEMP=300
+...
+BIASVALUE ARG=baies.ene
+PRINT ARG=baies.ene FILE=colvar STRIDE=100
+```
+
+A complete tutorial for IDPs can be found [here](https://github.com/COSBlab/bAIes-IDP).
 
 */
 //+ENDPLUMEDOC
@@ -103,11 +141,13 @@ PLUMED_REGISTER_ACTION(BAIES,"BAIES")
 void BAIES::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","atoms used in the calculation of bAIes energy");
-  keys.add("compulsory","DATA_FILE","file with AF2 fit parameters");
-  keys.add("compulsory","PRIOR", "type of prior to use (NONE, JEFFREYS, CAUCHY");
+  keys.add("compulsory","DATA_FILE","file with the list of atom pairs and the parameters of the fit of the AF distograms");
+  keys.add("compulsory","PRIOR", "type of prior to use (NONE, JEFFREYS, CAUCHY)");
   keys.add("optional","TEMP", "temperature of the system, by default the one passed by the MD engine");
-  keys.add("optional","SIGMA_MIN", "minimum value of sigma");
+  keys.add("optional","SIGMA_MIN", "lower bound for all the sigma values read from DATA_FILE");
   keys.addOutputComponent("ene","default","scalar","Bayesian bAIes energy");
+  keys.addDOI("10.1038/s41467-026-69172-y");
+  keys.addDOI("10.1101/2025.06.25.661454");
 }
 
 BAIES::BAIES(const ActionOptions&ao):
@@ -197,7 +237,7 @@ BAIES::BAIES(const ActionOptions&ao):
 
   // print bibliography
   log<<"  Bibliography "<<plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
-  log<<plumed.cite("Schnapka, Morozova, Sen, Bonomi, bioRxiv (2025) doi: XXX");
+  log<<plumed.cite("Schnapka, Morozova, Sen, Bonomi, Nat. Commun. 17, 2399 (2026)");
   log<<"\n";
 }
 

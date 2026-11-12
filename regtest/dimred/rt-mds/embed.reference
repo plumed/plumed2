@@ -1,400 +1,400 @@
-REMARK mom.moment-2=0.7340   mom.moment-3=1.2672   
+REMARK mom.moment-2=0.7268   mom.moment-3=1.2357   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0594   mds-2=0.0053   
+REMARK mds-1=0.7133   mds-2=0.0447   
 END
-REMARK mom.moment-2=0.7371   mom.moment-3=1.2758   
+REMARK mom.moment-2=0.7278   mom.moment-3=1.2402   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0683   mds-2=0.0034   
+REMARK mds-1=0.7173   mds-2=0.0469   
 END
-REMARK mom.moment-2=0.7401   mom.moment-3=1.2777   
+REMARK mom.moment-2=0.7349   mom.moment-3=1.2654   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0705   mds-2=0.0006   
+REMARK mds-1=0.7398   mds-2=0.0604   
 END
-REMARK mom.moment-2=0.7428   mom.moment-3=1.2796   
+REMARK mom.moment-2=0.7448   mom.moment-3=1.2847   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0729   mds-2=-0.0019  
+REMARK mds-1=0.7558   mds-2=0.0751   
 END
-REMARK mom.moment-2=0.7497   mom.moment-3=1.2934   
+REMARK mom.moment-2=0.7616   mom.moment-3=1.2851   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0874   mds-2=-0.0069  
+REMARK mds-1=0.7516   mds-2=0.0914   
 END
-REMARK mom.moment-2=0.7533   mom.moment-3=1.3018   
+REMARK mom.moment-2=0.7695   mom.moment-3=1.2594   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0961   mds-2=-0.0095  
+REMARK mds-1=0.7248   mds-2=0.0922   
 END
-REMARK mom.moment-2=0.7489   mom.moment-3=1.2928   
+REMARK mom.moment-2=0.7713   mom.moment-3=1.2695   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0867   mds-2=-0.0062  
+REMARK mds-1=0.7341   mds-2=0.0966   
 END
-REMARK mom.moment-2=0.7417   mom.moment-3=1.2788   
+REMARK mom.moment-2=0.7675   mom.moment-3=1.2949   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0719   mds-2=-0.0008  
+REMARK mds-1=0.7596   mds-2=0.0997   
 END
-REMARK mom.moment-2=0.7360   mom.moment-3=1.2651   
+REMARK mom.moment-2=0.7515   mom.moment-3=1.2819   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0575   mds-2=0.0031   
+REMARK mds-1=0.7513   mds-2=0.0808   
 END
-REMARK mom.moment-2=0.7354   mom.moment-3=1.2628   
+REMARK mom.moment-2=0.7236   mom.moment-3=1.2261   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0552   mds-2=0.0034   
+REMARK mds-1=0.7049   mds-2=0.0391   
 END
-REMARK mom.moment-2=0.7405   mom.moment-3=1.2753   
+REMARK mom.moment-2=0.7028   mom.moment-3=1.1735   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0682   mds-2=-0.0002  
+REMARK mds-1=0.6597   mds-2=0.0051   
 END
-REMARK mom.moment-2=0.7440   mom.moment-3=1.2847   
+REMARK mom.moment-2=0.7015   mom.moment-3=1.1737   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0781   mds-2=-0.0024  
+REMARK mds-1=0.6602   mds-2=0.0039   
 END
-REMARK mom.moment-2=0.7441   mom.moment-3=1.2852   
+REMARK mom.moment-2=0.7156   mom.moment-3=1.2111   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0785   mds-2=-0.0025  
+REMARK mds-1=0.6926   mds-2=0.0275   
 END
-REMARK mom.moment-2=0.7441   mom.moment-3=1.2829   
+REMARK mom.moment-2=0.7317   mom.moment-3=1.2483   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0763   mds-2=-0.0027  
+REMARK mds-1=0.7241   mds-2=0.0529   
 END
-REMARK mom.moment-2=0.7454   mom.moment-3=1.2820   
+REMARK mom.moment-2=0.7431   mom.moment-3=1.2627   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0755   mds-2=-0.0041  
+REMARK mds-1=0.7350   mds-2=0.0676   
 END
-REMARK mom.moment-2=0.7486   mom.moment-3=1.2853   
+REMARK mom.moment-2=0.7516   mom.moment-3=1.2745   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0792   mds-2=-0.0069  
+REMARK mds-1=0.7442   mds-2=0.0789   
 END
-REMARK mom.moment-2=0.7477   mom.moment-3=1.2840   
+REMARK mom.moment-2=0.7580   mom.moment-3=1.2995   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0778   mds-2=-0.0062  
+REMARK mds-1=0.7665   mds-2=0.0917   
 END
-REMARK mom.moment-2=0.7434   mom.moment-3=1.2795   
+REMARK mom.moment-2=0.7517   mom.moment-3=1.2931   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0727   mds-2=-0.0025  
+REMARK mds-1=0.7620   mds-2=0.0840   
 END
-REMARK mom.moment-2=0.7396   mom.moment-3=1.2798   
+REMARK mom.moment-2=0.7334   mom.moment-3=1.2502   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0726   mds-2=0.0014   
+REMARK mds-1=0.7255   mds-2=0.0550   
 END
-REMARK mom.moment-2=0.7384   mom.moment-3=1.2830   
+REMARK mom.moment-2=0.7184   mom.moment-3=1.2079   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0756   mds-2=0.0030   
+REMARK mds-1=0.6887   mds-2=0.0292   
 END
-REMARK mom.moment-2=0.7405   mom.moment-3=1.2893   
+REMARK mom.moment-2=0.7079   mom.moment-3=1.1671   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0821   mds-2=0.0017   
+REMARK mds-1=0.6521   mds-2=0.0083   
 END
-REMARK mom.moment-2=0.7420   mom.moment-3=1.2886   
+REMARK mom.moment-2=0.6986   mom.moment-3=1.1144   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0816   mds-2=0.0001   
+REMARK mds-1=0.6039   mds-2=-0.0147  
 END
-REMARK mom.moment-2=0.7407   mom.moment-3=1.2845   
+REMARK mom.moment-2=0.6836   mom.moment-3=1.0419   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0774   mds-2=0.0008   
+REMARK mds-1=0.5380   mds-2=-0.0484  
 END
-REMARK mom.moment-2=0.7407   mom.moment-3=1.2837   
+REMARK mom.moment-2=0.6580   mom.moment-3=0.9538   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0766   mds-2=0.0008   
+REMARK mds-1=0.4598   mds-2=-0.0965  
 END
-REMARK mom.moment-2=0.7429   mom.moment-3=1.2906   
+REMARK mom.moment-2=0.6363   mom.moment-3=0.8612   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0838   mds-2=-0.0005  
+REMARK mds-1=0.3763   mds-2=-0.1420  
 END
-REMARK mom.moment-2=0.7452   mom.moment-3=1.2997   
+REMARK mom.moment-2=0.6312   mom.moment-3=0.7820   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0931   mds-2=-0.0016  
+REMARK mds-1=0.3013   mds-2=-0.1679  
 END
-REMARK mom.moment-2=0.7446   mom.moment-3=1.3004   
+REMARK mom.moment-2=0.6383   mom.moment-3=0.7151   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0936   mds-2=-0.0010  
+REMARK mds-1=0.2349   mds-2=-0.1788  
 END
-REMARK mom.moment-2=0.7443   mom.moment-3=1.2990   
+REMARK mom.moment-2=0.6487   mom.moment-3=0.6713   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0923   mds-2=-0.0009  
+REMARK mds-1=0.1898   mds-2=-0.1804  
 END
-REMARK mom.moment-2=0.7440   mom.moment-3=1.2974   
+REMARK mom.moment-2=0.6608   mom.moment-3=0.6542   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0906   mds-2=-0.0008  
+REMARK mds-1=0.1701   mds-2=-0.1732  
 END
-REMARK mom.moment-2=0.7382   mom.moment-3=1.2780   
+REMARK mom.moment-2=0.6721   mom.moment-3=0.6447   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0706   mds-2=0.0025   
+REMARK mds-1=0.1580   mds-2=-0.1649  
 END
-REMARK mom.moment-2=0.7352   mom.moment-3=1.2741   
+REMARK mom.moment-2=0.6801   mom.moment-3=0.6415   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0664   mds-2=0.0050   
+REMARK mds-1=0.1528   mds-2=-0.1580  
 END
-REMARK mom.moment-2=0.7412   mom.moment-3=1.2972   
+REMARK mom.moment-2=0.6865   mom.moment-3=0.6302   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0901   mds-2=0.0019   
+REMARK mds-1=0.1402   mds-2=-0.1548  
 END
-REMARK mom.moment-2=0.7467   mom.moment-3=1.3125   
+REMARK mom.moment-2=0.7063   mom.moment-3=0.6092   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.1059   mds-2=-0.0015  
+REMARK mds-1=0.1147   mds-2=-0.1413  
 END
-REMARK mom.moment-2=0.7428   mom.moment-3=1.2986   
+REMARK mom.moment-2=0.7360   mom.moment-3=0.5818   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0917   mds-2=0.0006   
+REMARK mds-1=0.0804   mds-2=-0.1200  
 END
-REMARK mom.moment-2=0.7407   mom.moment-3=1.2948   
+REMARK mom.moment-2=0.7634   mom.moment-3=0.5420   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0876   mds-2=0.0021   
+REMARK mds-1=0.0347   mds-2=-0.1042  
 END
-REMARK mom.moment-2=0.7446   mom.moment-3=1.3076   
+REMARK mom.moment-2=0.7750   mom.moment-3=0.4896   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.1008   mds-2=-0.0001  
+REMARK mds-1=-0.0188  mds-2=-0.1068  
 END
-REMARK mom.moment-2=0.7452   mom.moment-3=1.3022   
+REMARK mom.moment-2=0.7743   mom.moment-3=0.4432   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0955   mds-2=-0.0014  
+REMARK mds-1=-0.0634  mds-2=-0.1198  
 END
-REMARK mom.moment-2=0.7444   mom.moment-3=1.2925   
+REMARK mom.moment-2=0.7746   mom.moment-3=0.4107   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0858   mds-2=-0.0018  
+REMARK mds-1=-0.0949  mds-2=-0.1281  
 END
-REMARK mom.moment-2=0.7436   mom.moment-3=1.2963   
+REMARK mom.moment-2=0.7759   mom.moment-3=0.3803   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0894   mds-2=-0.0005  
+REMARK mds-1=-0.1244  mds-2=-0.1350  
 END
-REMARK mom.moment-2=0.7420   mom.moment-3=1.2992   
+REMARK mom.moment-2=0.8066   mom.moment-3=0.3629   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0922   mds-2=0.0014   
+REMARK mds-1=-0.1494  mds-2=-0.1100  
 END
-REMARK mom.moment-2=0.7423   mom.moment-3=1.2987   
+REMARK mom.moment-2=0.8516   mom.moment-3=0.3618   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0917   mds-2=0.0010   
+REMARK mds-1=-0.1624  mds-2=-0.0670  
 END
-REMARK mom.moment-2=0.7477   mom.moment-3=1.2989   
+REMARK mom.moment-2=0.8962   mom.moment-3=0.3652   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0925   mds-2=-0.0043  
+REMARK mds-1=-0.1709  mds-2=-0.0230  
 END
-REMARK mom.moment-2=0.7541   mom.moment-3=1.3023   
+REMARK mom.moment-2=0.9312   mom.moment-3=0.3622   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0967   mds-2=-0.0102  
+REMARK mds-1=-0.1831  mds-2=0.0099   
 END
-REMARK mom.moment-2=0.7548   mom.moment-3=1.3129   
+REMARK mom.moment-2=0.9453   mom.moment-3=0.3557   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.1073   mds-2=-0.0096  
+REMARK mds-1=-0.1931  mds-2=0.0218   
 END
-REMARK mom.moment-2=0.7499   mom.moment-3=1.3126   
+REMARK mom.moment-2=0.9398   mom.moment-3=0.3448   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.1065   mds-2=-0.0047  
+REMARK mds-1=-0.2021  mds-2=0.0136   
 END
-REMARK mom.moment-2=0.7439   mom.moment-3=1.3003   
+REMARK mom.moment-2=0.9118   mom.moment-3=0.3321   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0935   mds-2=-0.0003  
+REMARK mds-1=-0.2070  mds-2=-0.0168  
 END
-REMARK mom.moment-2=0.7353   mom.moment-3=1.2745   
+REMARK mom.moment-2=0.8755   mom.moment-3=0.3304   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0668   mds-2=0.0049   
+REMARK mds-1=-0.1990  mds-2=-0.0522  
 END
-REMARK mom.moment-2=0.7284   mom.moment-3=1.2494   
+REMARK mom.moment-2=0.8410   mom.moment-3=0.3361   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0411   mds-2=0.0087   
+REMARK mds-1=-0.1844  mds-2=-0.0839  
 END
-REMARK mom.moment-2=0.7242   mom.moment-3=1.2352   
+REMARK mom.moment-2=0.8240   mom.moment-3=0.3504   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0264   mds-2=0.0110   
+REMARK mds-1=-0.1660  mds-2=-0.0965  
 END
-REMARK mom.moment-2=0.7226   mom.moment-3=1.2344   
+REMARK mom.moment-2=0.8234   mom.moment-3=0.3652   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0254   mds-2=0.0125   
+REMARK mds-1=-0.1516  mds-2=-0.0932  
 END
-REMARK mom.moment-2=0.7297   mom.moment-3=1.2586   
+REMARK mom.moment-2=0.8402   mom.moment-3=0.3719   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0503   mds-2=0.0085   
+REMARK mds-1=-0.1496  mds-2=-0.0753  
 END
-REMARK mom.moment-2=0.7419   mom.moment-3=1.2925   
+REMARK mom.moment-2=0.8741   mom.moment-3=0.3646   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0855   mds-2=0.0007   
+REMARK mds-1=-0.1657  mds-2=-0.0445  
 END
-REMARK mom.moment-2=0.7469   mom.moment-3=1.3039   
+REMARK mom.moment-2=0.9105   mom.moment-3=0.3456   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0975   mds-2=-0.0028  
+REMARK mds-1=-0.1937  mds-2=-0.0144  
 END
-REMARK mom.moment-2=0.7477   mom.moment-3=1.3047   
+REMARK mom.moment-2=0.9526   mom.moment-3=0.3115   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0983   mds-2=-0.0035  
+REMARK mds-1=-0.2377  mds-2=0.0171   
 END
-REMARK mom.moment-2=0.7487   mom.moment-3=1.3059   
+REMARK mom.moment-2=0.9849   mom.moment-3=0.2951   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0997   mds-2=-0.0044  
+REMARK mds-1=-0.2621  mds-2=0.0439   
 END
-REMARK mom.moment-2=0.7449   mom.moment-3=1.2944   
+REMARK mom.moment-2=1.0031   mom.moment-3=0.2997   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0877   mds-2=-0.0021  
+REMARK mds-1=-0.2625  mds-2=0.0627   
 END
-REMARK mom.moment-2=0.7328   mom.moment-3=1.2580   
+REMARK mom.moment-2=0.9875   mom.moment-3=0.2956   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0501   mds-2=0.0053   
+REMARK mds-1=-0.2623  mds-2=0.0465   
 END
-REMARK mom.moment-2=0.7192   mom.moment-3=1.2197   
+REMARK mom.moment-2=0.9551   mom.moment-3=0.2741   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0104   mds-2=0.0140   
+REMARK mds-1=-0.2745  mds-2=0.0096   
 END
-REMARK mom.moment-2=0.7074   mom.moment-3=1.1907   
+REMARK mom.moment-2=0.9462   mom.moment-3=0.2681   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0199  mds-2=0.0221   
+REMARK mds-1=-0.2779  mds-2=-0.0006  
 END
-REMARK mom.moment-2=0.6990   mom.moment-3=1.1698   
+REMARK mom.moment-2=0.9652   mom.moment-3=0.3002   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0416  mds-2=0.0277   
+REMARK mds-1=-0.2519  mds-2=0.0263   
 END
-REMARK mom.moment-2=0.6895   mom.moment-3=1.1436   
+REMARK mom.moment-2=0.9789   mom.moment-3=0.3353   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0688  mds-2=0.0338   
+REMARK mds-1=-0.2217  mds-2=0.0488   
 END
-REMARK mom.moment-2=0.6858   mom.moment-3=1.1269   
+REMARK mom.moment-2=0.9775   mom.moment-3=0.3519   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0858  mds-2=0.0354   
+REMARK mds-1=-0.2054  mds-2=0.0518   
 END
-REMARK mom.moment-2=0.6894   mom.moment-3=1.1226   
+REMARK mom.moment-2=0.9465   mom.moment-3=0.3495   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0897  mds-2=0.0313   
+REMARK mds-1=-0.1995  mds-2=0.0213   
 END
-REMARK mom.moment-2=0.6950   mom.moment-3=1.1195   
+REMARK mom.moment-2=0.8984   mom.moment-3=0.3299   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0920  mds-2=0.0254   
+REMARK mds-1=-0.2056  mds-2=-0.0302  
 END
-REMARK mom.moment-2=0.6945   mom.moment-3=1.0946   
+REMARK mom.moment-2=0.8546   mom.moment-3=0.3065   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1168  mds-2=0.0227   
+REMARK mds-1=-0.2165  mds-2=-0.0787  
 END
-REMARK mom.moment-2=0.6910   mom.moment-3=1.0669   
+REMARK mom.moment-2=0.8424   mom.moment-3=0.2909   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1447  mds-2=0.0227   
+REMARK mds-1=-0.2283  mds-2=-0.0946  
 END
-REMARK mom.moment-2=0.6892   mom.moment-3=1.0481   
+REMARK mom.moment-2=0.8654   mom.moment-3=0.2827   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1636  mds-2=0.0221   
+REMARK mds-1=-0.2423  mds-2=-0.0746  
 END
-REMARK mom.moment-2=0.6953   mom.moment-3=1.0650   
+REMARK mom.moment-2=0.9190   mom.moment-3=0.2697   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1461  mds-2=0.0182   
+REMARK mds-1=-0.2691  mds-2=-0.0263  
 END
-REMARK mom.moment-2=0.7027   mom.moment-3=1.0891   
+REMARK mom.moment-2=0.9728   mom.moment-3=0.2448   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1212  mds-2=0.0139   
+REMARK mds-1=-0.3074  mds-2=0.0189   
 END
-REMARK mom.moment-2=0.7164   mom.moment-3=1.1314   
+REMARK mom.moment-2=1.0182   mom.moment-3=0.2157   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0775  mds-2=0.0056   
+REMARK mds-1=-0.3475  mds-2=0.0549   
 END
-REMARK mom.moment-2=0.7358   mom.moment-3=1.2063   
+REMARK mom.moment-2=1.0355   mom.moment-3=0.1885   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0008  mds-2=-0.0041  
+REMARK mds-1=-0.3783  mds-2=0.0644   
 END
-REMARK mom.moment-2=0.7415   mom.moment-3=1.2537   
+REMARK mom.moment-2=1.0174   mom.moment-3=0.1839   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0469   mds-2=-0.0038  
+REMARK mds-1=-0.3779  mds-2=0.0457   
 END
-REMARK mom.moment-2=0.7419   mom.moment-3=1.2840   
+REMARK mom.moment-2=0.9836   mom.moment-3=0.1984   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0771   mds-2=-0.0004  
+REMARK mds-1=-0.3550  mds-2=0.0170   
 END
-REMARK mom.moment-2=0.7428   mom.moment-3=1.2986   
+REMARK mom.moment-2=0.9528   mom.moment-3=0.2127   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0917   mds-2=0.0005   
+REMARK mds-1=-0.3330  mds-2=-0.0090  
 END
-REMARK mom.moment-2=0.7359   mom.moment-3=1.2732   
+REMARK mom.moment-2=0.9377   mom.moment-3=0.2192   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0656   mds-2=0.0042   
+REMARK mds-1=-0.3227  mds-2=-0.0218  
 END
-REMARK mom.moment-2=0.7200   mom.moment-3=1.2057   
+REMARK mom.moment-2=0.9518   mom.moment-3=0.2184   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0034  mds-2=0.0115   
+REMARK mds-1=-0.3272  mds-2=-0.0083  
 END
-REMARK mom.moment-2=0.7064   mom.moment-3=1.1200   
+REMARK mom.moment-2=0.9926   mom.moment-3=0.2188   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0901  mds-2=0.0141   
+REMARK mds-1=-0.3376  mds-2=0.0310   
 END
-REMARK mom.moment-2=0.7024   mom.moment-3=1.0315   
+REMARK mom.moment-2=1.0493   mom.moment-3=0.2082   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1784  mds-2=0.0069   
+REMARK mds-1=-0.3630  mds-2=0.0830   
 END
-REMARK mom.moment-2=0.7109   mom.moment-3=0.9832   
+REMARK mom.moment-2=1.0945   mom.moment-3=0.1916   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2253  mds-2=-0.0077  
+REMARK mds-1=-0.3910  mds-2=0.1221   
 END
-REMARK mom.moment-2=0.7264   mom.moment-3=0.9692   
+REMARK mom.moment-2=1.1279   mom.moment-3=0.1797   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2372  mds-2=-0.0248  
+REMARK mds-1=-0.4113  mds-2=0.1511   
 END
-REMARK mom.moment-2=0.7456   mom.moment-3=0.9624   
+REMARK mom.moment-2=1.1365   mom.moment-3=0.1815   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2415  mds-2=-0.0448  
+REMARK mds-1=-0.4119  mds-2=0.1599   
 END
-REMARK mom.moment-2=0.7529   mom.moment-3=0.9466   
+REMARK mom.moment-2=1.1136   mom.moment-3=0.1898   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2562  mds-2=-0.0539  
+REMARK mds-1=-0.3978  mds-2=0.1401   
 END
-REMARK mom.moment-2=0.7381   mom.moment-3=0.9144   
+REMARK mom.moment-2=1.0724   mom.moment-3=0.2026   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2901  mds-2=-0.0433  
+REMARK mds-1=-0.3745  mds-2=0.1037   
 END
-REMARK mom.moment-2=0.7130   mom.moment-3=0.8902   
+REMARK mom.moment-2=1.0455   mom.moment-3=0.2145   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.3173  mds-2=-0.0215  
+REMARK mds-1=-0.3559  mds-2=0.0809   
 END
-REMARK mom.moment-2=0.6829   mom.moment-3=0.8996   
+REMARK mom.moment-2=1.0309   mom.moment-3=0.2315   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.3117  mds-2=0.0096   
+REMARK mds-1=-0.3356  mds-2=0.0714   
 END
-REMARK mom.moment-2=0.6651   mom.moment-3=0.9352   
+REMARK mom.moment-2=1.0445   mom.moment-3=0.2465   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2787  mds-2=0.0317   
+REMARK mds-1=-0.3248  mds-2=0.0885   
 END
-REMARK mom.moment-2=0.6656   mom.moment-3=0.9823   
+REMARK mom.moment-2=1.0860   mom.moment-3=0.2393   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.2319  mds-2=0.0372   
+REMARK mds-1=-0.3427  mds-2=0.1265   
 END
-REMARK mom.moment-2=0.6776   mom.moment-3=1.0233   
+REMARK mom.moment-2=1.1203   mom.moment-3=0.2175   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1897  mds-2=0.0305   
+REMARK mds-1=-0.3728  mds-2=0.1538   
 END
-REMARK mom.moment-2=0.6975   mom.moment-3=1.0515   
+REMARK mom.moment-2=1.1143   mom.moment-3=0.1996   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1592  mds-2=0.0142   
+REMARK mds-1=-0.3885  mds-2=0.1433   
 END
-REMARK mom.moment-2=0.7213   mom.moment-3=1.0868   
+REMARK mom.moment-2=1.0760   mom.moment-3=0.1771   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.1211  mds-2=-0.0049  
+REMARK mds-1=-0.4001  mds-2=0.1004   
 END
-REMARK mom.moment-2=0.7345   mom.moment-3=1.1105   
+REMARK mom.moment-2=1.0367   mom.moment-3=0.1553   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0960  mds-2=-0.0150  
+REMARK mds-1=-0.4106  mds-2=0.0567   
 END
-REMARK mom.moment-2=0.7372   mom.moment-3=1.1221   
+REMARK mom.moment-2=1.0183   mom.moment-3=0.1295   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0842  mds-2=-0.0162  
+REMARK mds-1=-0.4306  mds-2=0.0322   
 END
-REMARK mom.moment-2=0.7401   mom.moment-3=1.1246   
+REMARK mom.moment-2=1.0125   mom.moment-3=0.1013   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0813  mds-2=-0.0187  
+REMARK mds-1=-0.4563  mds-2=0.0191   
 END
-REMARK mom.moment-2=0.7406   mom.moment-3=1.1235   
+REMARK mom.moment-2=1.0242   mom.moment-3=0.0815   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0823  mds-2=-0.0193  
+REMARK mds-1=-0.4784  mds-2=0.0251   
 END
-REMARK mom.moment-2=0.7398   mom.moment-3=1.1287   
+REMARK mom.moment-2=1.0180   mom.moment-3=0.0731   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0773  mds-2=-0.0179  
+REMARK mds-1=-0.4849  mds-2=0.0169   
 END
-REMARK mom.moment-2=0.7440   mom.moment-3=1.1435   
+REMARK mom.moment-2=0.9923   mom.moment-3=0.0851   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0621  mds-2=-0.0202  
+REMARK mds-1=-0.4665  mds-2=-0.0047  
 END
-REMARK mom.moment-2=0.7475   mom.moment-3=1.1604   
+REMARK mom.moment-2=0.9625   mom.moment-3=0.1046   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0449  mds-2=-0.0215  
+REMARK mds-1=-0.4398  mds-2=-0.0283  
 END
-REMARK mom.moment-2=0.7589   mom.moment-3=1.1770   
+REMARK mom.moment-2=0.9462   mom.moment-3=0.1210   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0269  mds-2=-0.0307  
+REMARK mds-1=-0.4196  mds-2=-0.0397  
 END
-REMARK mom.moment-2=0.7673   mom.moment-3=1.1955   
+REMARK mom.moment-2=0.9384   mom.moment-3=0.1407   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=-0.0075  mds-2=-0.0368  
+REMARK mds-1=-0.3986  mds-2=-0.0419  
 END
-REMARK mom.moment-2=0.7690   mom.moment-3=1.2297   
+REMARK mom.moment-2=0.9348   mom.moment-3=0.1596   
 REMARK ff_logweights=0.0000   
-REMARK mds-1=0.0266   mds-2=-0.0342  
+REMARK mds-1=-0.3795  mds-2=-0.0404  
 END

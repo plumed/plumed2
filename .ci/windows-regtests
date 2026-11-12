@@ -1,0 +1,122 @@
+#! /usr/bin/env bash
+# Runs a subset of the regtests with the plumed.exe of the Windows CMake build
+# (Git Bash on the GitHub runner). Used by .github/workflows/windows.yml.
+#
+# usage: .ci/windows-regtests serial|mpi
+#
+# serial: tests without mpiprocs (one in three from regtest/basic, plus those
+#         that need asmjit), 4 at a time
+# mpi:    tests with mpiprocs>0, run with the embedded thread-MPI, one at a time
+#         (each one starts several threads, and a plumed.exe left behind by a
+#         timed-out test can then be killed without touching other tests)
+#
+# Only tests that run the plumed executable (driver, plumed, sum_hills,
+# simplemd) are selected: "make" tests need Plumed.inc and a Unix toolchain.
+# Each test has a timeout (TEST_TIMEOUT, seconds); no test is started after
+# TIME_BUDGET seconds and the remaining ones are reported as NOT_RUN, so that
+# the script always ends with a summary.
+#
+# Results (progress list, report.txt and tmp/ of failed tests) go to
+# regtest-results/<mode>; a summary is appended to $GITHUB_STEP_SUMMARY.
+# Exit code 1 if a test failed or timed out, or if the time budget was
+# exhausted (a slow or hanging build must not pass with untested tests).
+
+set -u
+
+mode=${1:-}
+case "$mode" in
+  (serial) jobs=4 ; title="Windows regtests (CLI subset)" ;;
+  (mpi)    jobs=1 ; title="Windows regtests (thread-MPI)" ;;
+  (*) echo "usage: $0 serial|mpi" >&2 ; exit 2 ;;
+esac
+
+root=$PWD
+export TEST_TIMEOUT=${TEST_TIMEOUT:-120}
+export TIME_BUDGET=${TIME_BUDGET:-2400}
+export DEADLINE=$(( $(date +%s) + TIME_BUDGET ))
+export MODE=$mode
+export PLUMED_PROGRAM_NAME="$root/build/plumed.exe"
+# some tests call "plumed" directly from their config hooks
+export PLUMED_PREPEND_PATH="$root/build"
+out="$root/regtest-results/$mode"
+progress="$out/progress.txt"
+mkdir -p "$out"
+: > "$progress"
+
+cd "$root/regtest"
+tests=()
+nbasic=0
+for d in basic gridtools isdb liquid_crystal multicolvar opes refdist secondarystructure; do
+  for t in "$d"/rt*/; do
+    t=${t%/}
+    [[ -f "$t/config" ]] || continue
+    case "$(sed -n 's/^type=//p' "$t/config" | head -n 1)" in
+      (driver|plumed|sum_hills|simplemd) ;;
+      (*) continue ;;
+    esac
+    mpiprocs=$(sed -n 's/^mpiprocs=//p' "$t/config" | head -n 1)
+    if [[ $mode = mpi ]]; then
+      (( ${mpiprocs:-0} > 0 )) || continue
+    else
+      (( ${mpiprocs:-0} > 0 )) && continue
+      if [[ $d = basic ]]; then
+        # one in three, plus the tests of the lepton JIT (asmjit)
+        (( nbasic++ % 3 == 0 )) || grep -q '^plumed_needs=.*asmjit' "$t/config" || continue
+      fi
+    fi
+    tests+=("$t")
+  done
+done
+echo "running ${#tests[@]} tests, $jobs at a time (timeout ${TEST_TIMEOUT}s each, budget ${TIME_BUDGET}s)"
+
+runone() {
+  local t=$1 start rc st
+  if (( $(date +%s) > DEADLINE )); then
+    echo "NOT_RUN (time budget exhausted)" > "$t/report.txt"
+    echo "NOT_RUN  $t"
+    return
+  fi
+  start=$(date +%s)
+  ( cd "$t" && timeout -k 10 "$TEST_TIMEOUT" ../../scripts/run > /dev/null 2>&1 )
+  rc=$?
+  if (( rc == 124 || rc == 137 )); then
+    echo "FAILURE: timeout after ${TEST_TIMEOUT}s" >> "$t/report.txt"
+    st=TIMEOUT
+    # the native plumed.exe survives the kill of the bash script: with one
+    # test at a time it is the only one running
+    if [[ $MODE = mpi ]]; then
+      taskkill //F //IM plumed.exe > /dev/null 2>&1 || true
+    fi
+  elif [[ ! -f "$t/report.txt" ]]; then st=FAIL
+  elif grep -q NOT_APPLICABLE "$t/report.txt"; then st=NA
+  elif grep -q '^DEFERRED (long test' "$t/report.txt"; then st=DEFERRED
+  elif grep -q FAILURE "$t/report.txt"; then st=FAIL
+  else st=OK
+  fi
+  printf '%-8s %-60s %4ds\n' "$st" "$t" $(( $(date +%s) - start ))
+}
+export -f runone
+printf '%s\n' "${tests[@]}" | xargs -P "$jobs" -I{} bash -c 'runone "$1"' _ {} | tee "$progress" || true
+# a timed out test may leave its plumed.exe behind
+taskkill //F //IM plumed.exe > /dev/null 2>&1 || true
+
+count() { grep -c "^$1 " "$progress" || true; }
+failed=$(grep -E '^(FAIL|TIMEOUT) ' "$progress" | awk '{print $2}' | sort)
+notrun=$(count NOT_RUN)
+for t in $failed; do
+  mkdir -p "$out/$t"
+  cp -r "$t/report.txt" "$t/tmp" "$out/$t/" 2>/dev/null || true
+done
+{
+  echo "### $title"
+  echo "selected: ${#tests[@]}, passed: $(count OK), failed: $(count FAIL), timed out: $(count TIMEOUT), not applicable: $(count NA), deferred: $(count DEFERRED), not run (time budget): $(count NOT_RUN)"
+  echo
+  echo "Failures:"
+  for t in $failed; do echo "- $t ($(grep -E "^(FAIL|TIMEOUT) +$t " "$progress" | awk '{print $1}'))"; done
+  echo
+  echo "Slowest tests:"
+  echo '```'
+  grep -vE '^NOT_RUN ' "$progress" | sort -k3 -n -r | head -n 15
+  echo '```'
+} | tee -a "${GITHUB_STEP_SUMMARY:-/dev/null}"
+[[ -z "$failed" && $notrun -eq 0 ]]

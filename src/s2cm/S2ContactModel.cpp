@@ -39,6 +39,34 @@ S2 contact model CV.
 
 This CV was used in the first paper cited below.  It is based on NH order parameter from the second paper cited below and the methyl order parameter from the third. Input parameters can be found in the relevant papers.
 
+The CV is an estimate of the NMR order parameter $S^2$ of a bond vector computed from the number of heavy atoms that are in contact with it:
+
+$$
+S^2 = \tanh\left( \frac{a}{n_i^b} \sum_{j} \exp\left(-\frac{r_{j} - r_{\textrm{shift}}}{r_{\textrm{eff}}}\right) \right) - c
+$$
+
+where the sum runs over the atoms given with HEAVY_ATOMS and $r_j$ is the distance between heavy atom $j$ and the atom(s) that define the bond.
+For a methyl group (METHYL_ATOM) this is the methyl carbon, while for a backbone NH group (NH_ATOMS) the contacts of both the amide hydrogen of residue $i$ and the carbonyl oxygen of residue $i-1$ are summed.
+$a$ (PREFACTOR_A), $b$ (EXPONENT_B), $c$ (OFFSET_C), $n_i$ (N_I) and $r_{\textrm{eff}}$ (R_EFF) are the parameters of the model and $r_{\textrm{shift}}$ is an optional shift of all distances (R_SHIFT).
+A neighbor list can be used to speed up the calculation with NLIST, NL_CUTOFF and NL_STRIDE.
+
+The following input computes the NH order parameter of a residue whose amide hydrogen is atom 87 and the carbonyl oxygen of the preceding residue is atom 85, using typical parameters for the NH model.
+
+```plumed
+heavy: GROUP ATOMS=1,5,7,10,11,13,15,16,18,20,22,23,24,26,28,31,32,34,36,37,39,41,43,44,45,47,49,52,53,54
+
+s2nh: S2CM ...
+  NH_ATOMS=87,85
+  HEAVY_ATOMS=heavy
+  R_EFF=0.10
+  PREFACTOR_A=0.80
+  EXPONENT_B=1.0
+  OFFSET_C=0.10
+  N_I=1
+...
+
+PRINT ARG=s2nh FILE=colvar STRIDE=100
+```
 
 */
 //+ENDPLUMEDOC
