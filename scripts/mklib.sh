@@ -183,6 +183,7 @@ do
   # the evaluated command, as array arguments, never as shell program text.
   eval "$compile" "$PLUMED_MKLIB_CFLAGS" '"${includes[@]}" -o "$tmpdir/$obj" "$tmpfile"' || {
     echo "ERROR: compiling $file"
+    printf '%s\n' "Compiler search PATH: $PATH" >&2
     exit 1
   }
 

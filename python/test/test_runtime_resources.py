@@ -211,7 +211,12 @@ with plumed.Plumed() as instance:
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(
+                result.returncode,
+                0,
+                f"Compiler found by test: {shutil.which(compiler[0])}\n"
+                f"Test PATH: {self.env.get('PATH')}\n" + result.stdout + result.stderr,
+            )
 
     @unittest.skipIf(WINDOWS, "builds the client with a Unix C compiler")
     def test_native_client(self):
