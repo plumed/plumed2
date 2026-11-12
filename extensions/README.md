@@ -158,7 +158,11 @@ and the extension packages that supply their native dependencies. The conda
 harness installs those packages at the base version before running the cases.
 The current selection covers VES static bias/forces, Fourier grids, DRR
 checkpoint/restart, PyTorch strided tensors/derivatives and EMMIVOX
-forces, derivatives and checkpoint/restart. Symfunc is declared
+fixed-B-factor forces/derivatives and B-factor checkpoint/restart.
+The full EMMIVOX fixture is retained for native tests; its sampled B-factor
+derivatives can differ across LibTorch backends because of single-precision
+cancellation near zero density residuals. The conda selection keeps strict
+reference checks for the stable calculation and bitwise restart checks for sampling. Symfunc is declared
 only for the Fourier test input, without becoming a Fourier package dependency.
 
 The selection can explicitly assert its prerequisites with `force_requirements`.

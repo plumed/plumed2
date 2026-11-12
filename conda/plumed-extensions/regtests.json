@@ -28,7 +28,7 @@
       ]
     },
     {
-      "regtest": "isdb-pytorch/rt-emmivox",
+      "regtest": "isdb-pytorch/rt-emmivox-fixed",
       "packages": [
         "plumed-ext-isdb-pytorch"
       ]

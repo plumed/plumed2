@@ -20,11 +20,10 @@ using the non-MPI FFTW variant. Adding/removing an extension must not replace
 its kernel. Optional source modules are delivered as `plumed-ext-<module>` packages,
 without an MPI variant dimension. See [extension builds and loading](../extensions/README.md).
 
-The base recipe explicitly selects the optional libraries enabled in built-in
-modules. In this draft, ISDB is built without LibTorch, so its Torch-dependent
-`EMMIVOX` action is omitted. A required follow-up is to move that part of ISDB
-into an optional module/package, with its own LibTorch requirement and build
-feature report, while keeping the main kernel independent of LibTorch.
+The base recipe inherits native requirements from the `conda.mk` declarations
+of modules enabled by default. ISDB remains in the kernel without LibTorch;
+its Torch-dependent `EMMIVOX` action is supplied by `plumed-ext-isdb-pytorch`.
+That optional module owns its LibTorch requirement and build feature report.
 
 Both MPI variants depend on the matching PLUMED version, use the installed
 `Plumed.h`/standard main via `plumed mkmpi`, and install only:
