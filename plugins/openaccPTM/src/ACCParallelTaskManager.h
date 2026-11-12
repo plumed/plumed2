@@ -24,7 +24,6 @@
 #include "plumed/core/ActionWithVector.h"
 #include "plumed/core/ActionWithMatrix.h"
 #include "plumed/core/ParallelTaskManager.h"
-#include "plumed/core/PlumedMain.h"
 #include "plumed/tools/Communicator.h"
 #include "plumed/tools/OpenMP.h"
 #include "plumed/tools/View.h"
@@ -163,12 +162,7 @@ private:
   std::unique_ptr<AccDeviceWorkspace<precision>> devws;
 /// The GPU of this action (chosen at the first call), -1 without GPUs
   int getDevice() {
-    const bool first = device.id()<0;
-    const int id=device.resolve(action->plumed.getGpuDeviceId());
-    if(first && id>=0) {
-      action->log.printf("  %s runs on GPU %d\n",action->getLabel().c_str(),id);
-    }
-    return id;
+    return device.resolve(*action);
   }
 public:
   static void registerKeywords( Keywords& keys ) {

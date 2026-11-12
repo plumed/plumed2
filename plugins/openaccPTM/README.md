@@ -80,11 +80,14 @@ several GPUs and do not interfere with an MD code that keeps its data on the GPU
 3. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM` (e.g. for [driver](driver.md), where there is no MD code).
    With `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU.
 
-The GPU of an action is chosen the first time it is computed (and written in the log), and it does not change afterwards.
-After each call the MD code finds its own GPU (its CUDA context) as it left it.
+The GPU of an action is chosen the first time it is computed, and it does not change afterwards. It is written in the log,
+in the same way for all the actions, e.g. `d runs on GPU 1` for an action labelled `d` (or `d runs on the host` when OpenACC
+sees no GPU). After each call the MD code finds its own GPU (its CUDA context) as it left it.
 
-For developers: every piece of code of the plugin that uses OpenACC (kernels, transfers, allocations, and the destructors that
-free device memory) must run inside an `ACC::DeviceScope` for the GPU of the action, see `src/ACCDevice.h`.
+For developers: new actions should follow the same behaviour, as described in `src/ACCDevice.h`. The actions that use the
+OpenACC task manager get it for free. Code that uses OpenACC outside of it (as the SAXS/SANS backend) keeps an `ACC::Device`,
+chooses the GPU with `resolve(action)` before using it, and runs every use of OpenACC (kernels, transfers, allocations,
+and the destructor that frees its device memory) inside an `ACC::DeviceScope`.
 
 The next section contains a list of the actions that can take the USEGPU command in input and that can thus be run on the GPU using this plugin.
 

@@ -35,7 +35,7 @@ must still be the current one and its buffer must still be usable.
   device_check plugin.so md       caller on the last GPU, setGpuDeviceId 0:
                                   the actions must run on GPU 0 (needs 2 GPUs)
 
-The GPU of the task manager is read from the PLUMED log ("runs on GPU n").
+The GPU of each action is read from the PLUMED log ("<label> runs on GPU <n>").
 Exit code 0 only if every check passes.
 */
 #include "plumed/wrapper/Plumed.h"
@@ -151,8 +151,12 @@ int main(int argc, char** argv) {
   std::ifstream log(logfile);
   std::stringstream text;
   text << log.rdbuf();
-  const std::string expected="d runs on GPU " + std::to_string(expectedGpu);
-  check(text.str().find(expected)!=std::string::npos, "log says \"" + expected + "\"");
+  for(const std::string label : {
+        "d","s"
+      }) {
+    const std::string expected=label + " runs on GPU " + std::to_string(expectedGpu);
+    check(text.str().find(expected)!=std::string::npos, "log says \"" + expected + "\"");
+  }
 
   cudaFree(buffer);
   std::printf("%s: %d failure(s)\n", mode.c_str(), failures);

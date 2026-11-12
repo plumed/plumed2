@@ -54,7 +54,7 @@ std::vector<std::string> SAXSDebyeBackendRegister::getBackendNames() const {
   return names;
 }
 
-std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::string& name, const int deviceid) const {
+std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::string& name, Action& action) const {
   const auto names=getBackendNames();
   std::string list;
   for(const auto & n : names) {
@@ -80,7 +80,7 @@ std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::st
   if(key.empty()) {
     throw ExceptionRegisterError()<<"GPU backend for SAXS/SANS \""<<selected<<"\" is not available, the available ones are:"<<(list.empty()?std::string(" none"):list);
   }
-  return get(key).create(deviceid);
+  return get(key).create(action);
 }
 
 }

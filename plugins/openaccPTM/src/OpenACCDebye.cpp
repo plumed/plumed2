@@ -202,8 +202,8 @@ void debyeRows(const double* dpos, const double* dff, const double* dq_list, con
 /// unchanged, see ACCDevice.h.
 class OpenACCDebye :
   public SAXSDebyeBackend {
-  /// the GPU assigned to PLUMED by the MD code, -1 if none
-  const int mdDevice_;
+  /// the action (SAXS or SANS) that uses this backend
+  const Action& action_;
   /// the GPU of this instance
   ACC::Device device_;
   /// the device memory, that must be freed on its GPU
@@ -235,7 +235,7 @@ class OpenACCDebye :
   std::size_t stride_=1;
   bool computed_=false;
 public:
-  explicit OpenACCDebye(int deviceid);
+  explicit OpenACCDebye(Action& action);
   ~OpenACCDebye() override;
   OpenACCDebye(const OpenACCDebye&)=delete;
   OpenACCDebye& operator=(const OpenACCDebye&)=delete;
@@ -249,8 +249,8 @@ public:
                 std::vector<Vector>& forces) override;
 };
 
-OpenACCDebye::OpenACCDebye(const int deviceid):
-  mdDevice_(deviceid),
+OpenACCDebye::OpenACCDebye(Action& action):
+  action_(action),
   buf_(std::make_unique<Buffers>()) {
 }
 
@@ -283,7 +283,7 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   if(nrows==0) {
     return;
   }
-  ACC::DeviceScope scope(device_.resolve(mdDevice_));
+  ACC::DeviceScope scope(device_.resolve(action_));
   auto & b=*buf_;
 
   // q values as a uniform grid q0+k*dq plus deviations eps_k (as in SAXS)

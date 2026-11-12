@@ -22,6 +22,10 @@
 #ifndef __PLUMED_openaccPTM_ACCDevice_h
 #define __PLUMED_openaccPTM_ACCDevice_h
 
+#include "plumed/core/Action.h"
+#include "plumed/core/PlumedMain.h"
+#include "plumed/tools/Log.h"
+
 #include <openacc.h>
 
 #if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
@@ -32,20 +36,28 @@
 GPU selection in the openaccPTM plugin.
 
 The plugin runs in the process of the MD code, which may itself be using a GPU
-(e.g. GROMACS with its data on the GPU). Two rules keep the two from interfering:
+(e.g. GROMACS with its data on the GPU). Two rules keep the two from interfering,
+and every part of the plugin follows them in the same way:
 
-1. Each action (or SAXS backend) works on one GPU, chosen the first time it
-   needs it and then fixed (see Device::resolve): the GPU assigned to PLUMED by
+1. Each action works on one GPU, held in an ACC::Device and chosen the first
+   time it is needed with Device::resolve(action), which also writes it in the
+   log of the action ("<label> runs on GPU <n>"): the GPU assigned to PLUMED by
    the MD code (cmd "setGpuDeviceId"), otherwise the GPU the MD code is using
    (the one of the CUDA context current in the calling thread), otherwise the
    current OpenACC device (by default the first GPU, see ACC_DEVICE_NUM and
-   CUDA_VISIBLE_DEVICES).
+   CUDA_VISIBLE_DEVICES). It is then fixed.
 
 2. Every piece of code that uses OpenACC (kernels, transfers, allocations, and
    the destructors that free device memory) runs inside a DeviceScope for that
    GPU. The scope makes the GPU and its context current, and gives back to the
    caller its own CUDA context when it ends: what an action leaves selected
    cannot affect the MD code or the next action.
+
+The actions that use the task manager (ACCParallelTaskManager.h) get both for
+free. Code that uses OpenACC outside of it (e.g. the SAXS/SANS backend in
+OpenACCDebye.cpp) keeps an ACC::Device, calls resolve(action) before its first
+use of the GPU, and puts every use, and the release of its device memory in
+the destructor, in a DeviceScope(device.id()).
 */
 
 namespace PLMD {
@@ -103,22 +115,26 @@ class Device {
   int id_=-1;
   bool resolved_=false;
 public:
-  /// The GPU to use (-1 without GPUs, when the kernels run on the host). It is
-  /// chosen at the first call and then fixed. mdDevice is the GPU assigned to
-  /// PLUMED by the MD code (PlumedMain::getGpuDeviceId), -1 if none.
-  int resolve(const int mdDevice) {
+  /// The GPU to use for an action (-1 without GPUs, when the kernels run on the
+  /// host). It is chosen at the first call, written in the log of the action,
+  /// and then fixed.
+  int resolve(const Action& action) {
     if(!resolved_) {
       resolved_=true;
       const int ndevices=acc_get_num_devices(acc_device_not_host);
       if(ndevices>0) {
+        const int md=action.plumed.getGpuDeviceId();
         const int caller=currentCudaDevice();
-        if(mdDevice>=0 && mdDevice<ndevices) {
-          id_=mdDevice;
+        if(md>=0 && md<ndevices) {
+          id_=md;
         } else if(caller>=0 && caller<ndevices) {
           id_=caller;
         } else {
           id_=acc_get_device_num(acc_device_not_host);
         }
+        action.log.printf("  %s runs on GPU %d\n",action.getLabel().c_str(),id_);
+      } else {
+        action.log.printf("  %s runs on the host (no GPU available to OpenACC)\n",action.getLabel().c_str());
       }
     }
     return id_;

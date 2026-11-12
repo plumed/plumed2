@@ -357,7 +357,7 @@ SAXS::SAXS(const ActionOptions&ao):
     std::string failure;
     if(has_rows_) {
       try {
-        backend_ = saxsDebyeBackendRegister().create(gpu_backend,plumed.getGpuDeviceId());
+        backend_ = saxsDebyeBackendRegister().create(gpu_backend,*this);
       } catch(const std::exception & e) {
         failure = e.what();
         if(failure.empty()) {
@@ -370,7 +370,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if(failed>0) {
       error("cannot use the GPU" + (failure.empty() ? std::string(" (failure on another rank)") : ": " + failure));
     }
-    log.printf("  using the GPU for the Debye sum\n");
+    log.printf("  using GPU to calculate the Debye sum\n");
   } else if(!gpu_backend.empty()) {
     error("GPU_BACKEND can only be used together with USEGPU");
   }

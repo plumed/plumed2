@@ -30,6 +30,9 @@
 #include <vector>
 
 namespace PLMD {
+
+class Action;
+
 namespace isdb {
 
 /// Interface of an accelerated (e.g. GPU) implementation of the Debye sum of SAXS/SANS.
@@ -69,9 +72,9 @@ public:
 
 /// Content of the register of the backends
 struct SAXSDebyeBackendPointers {
-  /// creates a backend; deviceid is the GPU assigned to PLUMED by the MD code
-  /// (PlumedMain::getGpuDeviceId, -1 if none)
-  typedef std::unique_ptr<SAXSDebyeBackend>(*creator_pointer)(int deviceid);
+  /// creates a backend for an action (SAXS or SANS), from which it can take e.g.
+  /// the GPU assigned to PLUMED by the MD code, the log and the label
+  typedef std::unique_ptr<SAXSDebyeBackend>(*creator_pointer)(Action& action);
   creator_pointer create;
 };
 
@@ -82,7 +85,7 @@ public:
   /// Names of the available backends
   std::vector<std::string> getBackendNames() const;
   /// Creates a backend. If name is empty and only one backend is available, that one is used.
-  std::unique_ptr<SAXSDebyeBackend> create(const std::string& name, int deviceid) const;
+  std::unique_ptr<SAXSDebyeBackend> create(const std::string& name, Action& action) const;
 };
 
 /// The register of the backends of SAXS/SANS
@@ -90,12 +93,13 @@ SAXSDebyeBackendRegister& saxsDebyeBackendRegister();
 
 /// Registers a backend while it is in scope: to be used in a plugin as
 /// `static SAXSDebyeBackendRegistration<MyBackend> reg("name");`
-/// where MyBackend has a constructor taking the device id.
+/// where MyBackend has a constructor taking the action (Action&) that uses it,
+/// which outlives the backend.
 template<typename Backend>
 class SAXSDebyeBackendRegistration {
   SAXSDebyeBackendRegister::ID id;
-  static std::unique_ptr<SAXSDebyeBackend> create(int deviceid) {
-    return std::make_unique<Backend>(deviceid);
+  static std::unique_ptr<SAXSDebyeBackend> create(Action& action) {
+    return std::make_unique<Backend>(action);
   }
 public:
   explicit SAXSDebyeBackendRegistration(const std::string& name):
