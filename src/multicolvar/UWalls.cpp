@@ -24,7 +24,7 @@
 
 //+PLUMEDOC MCOLVAR UWALLS
 /*
-Add lower walls to a vector of quantities
+Add upper walls to a vector of quantities
 
 Deprecated action: use [UPPER_WALLS](UPPER_WALLS.md)
 
@@ -46,7 +46,7 @@ void UWalls::registerKeywords(Keywords& keys) {
   ActionShortcut::registerKeywords( keys );
   keys.setDeprecated("UPPER_WALLS");
   keys.add("compulsory","DATA","the values you want to restrain");
-  keys.add("compulsory","AT","the radius of the sphere");
+  keys.add("compulsory","AT","the positions of the walls.  The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");

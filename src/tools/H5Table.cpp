@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <deque>
 #include <filesystem>
+#include <mutex>
 #include <utility>
 
 #ifdef __PLUMED_HAS_LIBHDF5
@@ -118,6 +119,17 @@ bool available() {
 
 namespace {
 
+/// The HDF5 library is thread safe only if compiled to be so (which is not
+/// possible for static libraries on Windows, as in the Python wheels), and the
+/// ranks of the embedded thread-MPI are threads of the same process: all the
+/// calls to HDF5 made here are serialized with this mutex.
+std::recursive_mutex& hdf5Mutex() {
+  static std::recursive_mutex m;
+  return m;
+}
+
+using Lock=std::lock_guard<std::recursive_mutex>;
+
 /// owns an HDF5 identifier
 class Id {
   hid_t id_=-1;
@@ -146,6 +158,7 @@ public:
   }
   void reset() {
     if(id_>=0 && close_) {
+      Lock lock(hdf5Mutex());
       close_(id_);
     }
     id_=-1;
@@ -475,6 +488,7 @@ struct Writer::Impl {
 
 Writer::Writer(const std::string& path,bool append):
   impl(std::make_unique<Impl>()) {
+  Lock lock(hdf5Mutex());
   impl->path=path;
   std::error_code ec;
   if(append && std::filesystem::exists(path,ec)) {
@@ -499,6 +513,7 @@ Writer::Writer(const std::string& path,bool append):
 }
 
 Writer::~Writer() {
+  Lock lock(hdf5Mutex());
   try {
     impl->writeBuffer();
   } catch(...) {
@@ -506,6 +521,7 @@ Writer::~Writer() {
 }
 
 void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& constants) {
+  Lock lock(hdf5Mutex());
   Signature s;
   for(const auto & f : fields) {
     s.names.push_back(f.name);
@@ -524,11 +540,13 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
 }
 
 void Writer::flush() {
+  Lock lock(hdf5Mutex());
   impl->writeBuffer();
   H5Fflush(impl->file,H5F_SCOPE_GLOBAL);
 }
 
 std::vector<unsigned long long> Writer::rows() {
+  Lock lock(hdf5Mutex());
   flush();
   std::vector<unsigned long long> r;
   for(int b=0; b<=impl->block; b++) {
@@ -575,6 +593,7 @@ struct Reader::Impl {
 
 Reader::Reader(const std::string& path):
   impl(std::make_unique<Impl>()) {
+  Lock lock(hdf5Mutex());
   impl->path=path;
   impl->file=openFile(path,H5F_ACC_RDONLY);
   impl->nblocks=countBlocks(impl->file);
@@ -583,6 +602,7 @@ Reader::Reader(const std::string& path):
 Reader::~Reader()=default;
 
 bool Reader::getline(std::string& line) {
+  Lock lock(hdf5Mutex());
   while(true) {
     if(!impl->pending.empty()) {
       line=impl->pending.front();
@@ -604,6 +624,7 @@ bool Reader::getline(std::string& line) {
 }
 
 std::vector<unsigned long long> rows(const std::string& path) {
+  Lock lock(hdf5Mutex());
   Id f=openFile(path,H5F_ACC_RDONLY);
   std::vector<unsigned long long> r;
   const unsigned nb=countBlocks(f);
@@ -617,6 +638,7 @@ std::vector<unsigned long long> rows(const std::string& path) {
 }
 
 void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
+  Lock lock(hdf5Mutex());
   std::unique_ptr<Writer> out;
   {
     Id f=openFile(path,H5F_ACC_RDWR);

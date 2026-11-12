@@ -128,7 +128,7 @@ and enabled if available):
 * [Zlib library](https://zlib.net/) to use compressed data files.
 * [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
 * [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
-* [Chemfiles library](https://chemfiles.org/) to read more trajectory formats in `plumed driver` (only used if requested with `--enable-libchemfiles`).
+* [Chemfiles library](https://chemfiles.org/) to read more file formats in `plumed driver` and in the MOLINFO action (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
 * [Doxygen](https://www.doxygen.nl) to build the developer manual. Doxygen might need:
   * [Graphviz](https://www.graphviz.org) to show class hierarchy in
@@ -156,23 +156,23 @@ The `module.type` file of each module says when it is compiled:
 
 * `always`: the basic infrastructure (e.g. `core`, `tools`), always compiled;
 * `default-on`: the common actions (e.g. `bias`, `colvar`, `function`,
-  `generic`, `multicolvar`, `secondarystructure`), compiled unless they are
+  `generic`, `multicolvar`, `opes`, `secondarystructure`), compiled unless they are
   disabled;
 * `default-off`: specialized methods and modules that need external libraries
-  (e.g. `opes`, `ves`, `funnel`, `sasa`, `pytorch`, `metatomic`), compiled only
+  (e.g. `ves`, `funnel`, `drr`, `sasa`, `pytorch`, `metatomic`), compiled only
   when they are requested.
 
 Modules are selected when PLUMED is configured, with a `:`-separated list:
 
-    ./configure --enable-modules=+opes:+ves   # add modules to the default ones
+    ./configure --enable-modules=+ves:+drr    # add modules to the default ones
     ./configure --enable-modules=-isdb        # remove a default-on module
     ./configure --enable-modules=all          # all the modules
-    ./configure --enable-modules=none:+opes   # only the always modules and opes
+    ./configure --enable-modules=none:+bias   # only the always modules and bias
 
 A module that needs an external library provides its actions only if PLUMED
 is also configured with that library (see `./configure --help`, e.g.
 `--enable-libtorch` for `pytorch`). The modules of an installed PLUMED are listed by
-`plumed config show`, and `plumed config module opes` tells if a module is
+`plumed config show`, and `plumed config module ves` tells if a module is
 enabled. The Python wheels (`pip install plumed`) and the CMake build for
 Windows include only the `always` and `default-on` modules
 (see [PLATFORMS.md](PLATFORMS.md)).
@@ -202,8 +202,8 @@ can be installed with
     python -m pip install plumed
 
 Wheels are available for Linux (x86_64 and aarch64), macOS (Intel and Apple
-Silicon) and Windows (x86_64). They are compiled without MPI libraries, OpenMP
-and optional libraries; see [PLATFORMS.md](PLATFORMS.md) for the features
+Silicon) and Windows (x86_64). They are compiled without MPI libraries and
+OpenMP, and include HDF5 and chemfiles; see [PLATFORMS.md](PLATFORMS.md) for the features
 available on each platform and [python/README.rst](python/README.rst) for the
 package itself.
 PLUMED is also distributed by several package managers (see the badges above),

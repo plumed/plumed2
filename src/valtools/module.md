@@ -1,4 +1,4 @@
-Each line in a PLUMED input file defines and action. The actions in the input file communicate through the passing of values.
+Each line in a PLUMED input file defines an action. The actions in the input file communicate through the passing of values.
 In early versions of PLUMED these values were scalars.  However, from PLUMED 2.10 onwards you can pass values that are scalars, 
 vectors, matrices or functions on grids.  
 

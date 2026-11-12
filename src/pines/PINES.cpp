@@ -163,9 +163,64 @@ public:
   // -- SD prepare to requestAtoms during simulation
   void prepare() override;
 };
-//+PLUMEDOC PINES
-//Documentation to be added.
-//+ENDPLUMEDOC PINES
+//+PLUMEDOC COLVAR PINES
+/*
+Calculate the permutationally invariant PINES features of a configuration.
+
+PINES is a variant of the [PIV](PIV.md) collective variable that is discussed in the paper cited below.
+The input is organized in N_BLOCKS blocks. For each block two groups of atoms, G1 and G2, are selected
+from the atoms in the PDB file given with REF_FILE using any combination of atom indices (ATOMID),
+residue numbers (RESID) and atom names (NAME). PINES then computes the distances between all the atoms in G1 and all the atoms in G2,
+keeps the SIZE shortest distances, transforms them with the switching function given with the corresponding SWITCH keyword
+and sorts them. The output of each block is thus independent of the order of atoms within the two groups.
+
+Each element of the resulting vector is stored in a component called `ELEMENT-n` (with $n$ starting from 0), with
+the elements of block 1 coming first, followed by those of block 2 and so on. These components are typically used as the input of a neural network CV.
+
+To make the calculation cheaper, a pair list containing the SIZE+BUFFER shortest pairs of each block is used and rebuilt every PL_REFRESH steps.
+Pairs that should never be included in a block can be listed in EXCLUDE_PAIRS. When analyzing a trajectory with [driver](driver.md) the
+DRIVERMODE flag should be used so that the pair list is rebuilt at every frame.
+
+The following input computes the PINES features for a solution of NaCl in water, using as features the closest Na-Cl distance,
+the closest Na-water oxygen distance and the two closest Cl-water hydrogen distances.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/pines/rt-pines/md.pdb
+PINES ...
+LABEL=pines
+REF_FILE=regtest/pines/rt-pines/md.pdb
+N_BLOCKS=3
+BLOCK1={
+    G1={NAME=NA}
+    G2={NAME=CL}
+    SIZE=1
+    BUFFER=0
+    PL_REFRESH=1
+}
+BLOCK2={
+    G1={NAME=NA}
+    G2={NAME=OW}
+    SIZE=1
+    BUFFER=20
+    PL_REFRESH=10
+}
+BLOCK3={
+    G1={NAME=CL}
+    G2={NAME={HW1 HW2}}
+    SIZE=2
+    BUFFER=10
+    PL_REFRESH=10
+}
+SWITCH1={RATIONAL R_0=0.38 MM=12 NN=6}
+SWITCH2={RATIONAL R_0=0.35 MM=12 NN=6}
+SWITCH3={RATIONAL R_0=0.28 MM=12 NN=6}
+... PINES
+
+PRINT ARG=pines.* FILE=colvar STRIDE=100
+```
+
+*/
+//+ENDPLUMEDOC
 PLUMED_REGISTER_ACTION(PINES, "PINES")
 constexpr int CACHE_LINE_SIZE = 64;
 
@@ -185,16 +240,19 @@ void PINES::registerKeywords(Keywords &keys) {
   keys.add("numbered", "BLOCK", "Each block of the PIV");
   keys.add("compulsory", "REF_FILE", "PDB file name that contains the information about system connectivity and labels.");
   keys.add("compulsory", "N_BLOCKS", "Number of blocks in PIV");
+  keys.add("optional", "G1", "The first group of atoms of a BLOCK, selected using ATOMID, RESID and/or NAME (used only inside BLOCK)");
+  keys.add("optional", "G2", "The second group of atoms of a BLOCK, selected using ATOMID, RESID and/or NAME (used only inside BLOCK)");
   keys.add("compulsory", "BUFFER", "Number of additional pairwise distances to include as a buffer for each PIV block");
   keys.add("compulsory", "PL_REFRESH", "Upper limit refresh rate for each block pair list");
   keys.add("compulsory", "SIZE", "Length of each PIV Block");
-  keys.add("optional", "ATOMID", "AtomIDs");
-  keys.add("optional", "RESID", "ResIDs");
-  keys.add("optional", "NAME", "Atom Names");
-  keys.add("optional", "EXCLUDE_PAIRS", "Excluded pairs");
+  keys.add("optional", "ATOMID", "Zero-based atom indices (ATOMID=0 is the first atom in REF_FILE) used to select the atoms in groups G1 and G2 of a BLOCK");
+  keys.add("optional", "RESID", "Residue numbers used to select the atoms in groups G1 and G2 of a BLOCK");
+  keys.add("optional", "NAME", "Atom names used to select the atoms in groups G1 and G2 of a BLOCK");
+  keys.add("optional", "EXCLUDE_PAIRS", "List of pairs of zero-based atom indices (given as consecutive numbers) whose distance should not be included in a BLOCK");
   keys.addFlag("DRIVERMODE", false, "Use when post-processing a trajectory. This will force the pair list to be rebuilt at every step (i.e. no pair list)");
   keys.addFlag("FREEZE_SELECTION", false, "Freeze top-K membership during derivative checks");
   keys.addOutputComponent("ELEMENT", "default", "scalar", "Elements of the PINES block");
+  keys.addDOI("10.1021/acs.jctc.3c00923");
   keys.reset_style("SWITCH", "compulsory");
 }
 

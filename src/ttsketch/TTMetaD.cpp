@@ -51,24 +51,38 @@ The hills that are not yet compressed into the TT are truncated as in [METAD](ME
 $\sqrt{2\cdot 6.25}$ widths, and stretched so that they go to zero there, so that the bias and the
 forces are continuous (the environment variable `PLUMED_DP2CUTOFF_NOSTRETCH` switches the stretching off).
 
+## Choosing the sketch parameters
+
+The method is discussed in the paper cited below. The values in parentheses are those used there for peptides biased along 2 to 14 backbone dihedral angles.
+
+- SKETCH_NBASIS sets the resolution of the bias. The Fourier basis (the default) contains harmonics up to $(n-1)/2$, so its shortest wavelength is $2L/(n-1)$, where $L$ is INTERVAL_MAX-INTERVAL_MIN. This should be comparable to SIGMA (31 basis functions on $[-\pi,\pi]$, i.e. a shortest wavelength of 0.42 rad, with SIGMA between 0.25 and 0.4 rad).
+- SKETCH_INITRANK is the rank of the random sketch and should be a few times larger than the final rank (60). The final rank is best chosen adaptively with SKETCH_CUTOFF ($10^{-4}$) rather than fixed with SKETCH_RANK. It grows when new minima are found and decreases as the bias converges, so final ranks (written in the log after every compression) that no longer change are a sign of convergence.
+- SKETCH_WIDTH smooths the bias at every compression, which removes high-frequency noise, but a value that is too large also smooths away the barriers. Use the largest value that does not delay the first barrier crossings in short test runs, between zero and SIGMA (0.05 rad with 6 or more CVs, zero with 2 CVs).
+- SKETCH_PACE: the hills deposited after the last compression are summed exactly, so the cost of the bias grows until the next compression, while every compression adds an approximation error. With PACE=500, the paper compresses every $5\cdot 10^5$ steps with 2 CVs and every $5\cdot 10^6$ steps (shared among 10 walkers) with more CVs.
+- SKETCH_ALPHA, KERNEL_BASIS, KERNEL_DX and NONINTRUSIVE are not used in the paper and can normally be left at their default values. Note that the Gaussian kernels of KERNEL_BASIS are also periodic over the interval, so they do not change how non-periodic arguments are treated.
+
 ## Examples
 
-The following input runs TT-MetaD on two distances. Hills are deposited every
-500 steps and compressed into a TT every 1e6 steps with target rank 10.
+The following input runs well-tempered TT-MetaD on the two backbone dihedral angles of alanine dipeptide,
+with the parameters used in the paper cited below. Hills are deposited every
+500 steps and compressed into a TT every $5\cdot 10^5$ steps.
 
 ```plumed
-d1: DISTANCE ATOMS=1,2
-d2: DISTANCE ATOMS=3,4
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
 TTMETAD ...
-  ARG=d1,d2
-  SIGMA=0.1,0.1
+  ARG=phi,psi
+  SIGMA=0.25,0.25
   HEIGHT=1.0
+  BIASFACTOR=8
+  TEMP=300
   PACE=500
-  SKETCH_PACE=1000000
-  SKETCH_RANK=10
-  SKETCH_INITRANK=50
-  INTERVAL_MIN=0.0,0.0
-  INTERVAL_MAX=3.0,3.0
+  SKETCH_PACE=500000
+  SKETCH_NBASIS=31
+  SKETCH_INITRANK=60
+  SKETCH_CUTOFF=1e-4
+  INTERVAL_MIN=-pi,-pi
+  INTERVAL_MAX=pi,pi
   FILE=HILLS
   LABEL=tt
 ... TTMETAD
@@ -445,7 +459,7 @@ TTMetaD::TTMetaD(const ActionOptions& ao):
   }
 
   log << "  TTs are stored in " << this->ttfilename_ << "\n";
-  log << "  Bibliography " << plumed.cite("Strand, Yang, Khoo, and Dinner, https://arxiv.org/abs/2603.13549 (2026)");
+  log << "  Bibliography " << plumed.cite("Strand, Yang, Khoo, and Dinner, J. Chem. Theory Comput. 22, 5420 (2026)");
   log << plumed.cite("Fishman, White, and Stoudenmire, https://arxiv.org/abs/2007.14822 (2020)");
   log << "\n";
 
@@ -1365,6 +1379,7 @@ std::tuple<MPS, std::vector<ITensor>, std::vector<ITensor>> TTMetaD::formTensorM
 
 void TTMetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
+  keys.addDOI("10.1021/acs.jctc.6c00487");
   keys.addFlag("KERNEL_BASIS", false, "Specifies that local kernel basis should be used instead of Fourier basis");
   keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
   keys.add("compulsory", "PACE", "the frequency for hill addition");
@@ -1378,16 +1393,16 @@ void TTMetaD::registerKeywords(Keywords& keys) {
   keys.addFlag("WALKERS_MPI", false, "To be used when gromacs + multiple walkers are used");
   keys.add("optional", "WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.use("RESTART");
-  keys.add("optional", "SKETCH_RANK", "Target rank for TTSketch algorithm - compulsory if SKETCH_CUTOFF is not specified");
-  keys.add("optional", "SKETCH_CUTOFF", "Truncation error cutoff for singular value decomposition - compulsory if SKETCH_RANK is not specified");
-  keys.add("compulsory", "SKETCH_INITRANK", "Initial rank for TTSketch algorithm");
-  keys.add("compulsory", "SKETCH_PACE", "1e6", "The frequency for TT Vbias updates");
+  keys.add("optional", "SKETCH_RANK", "Fixed rank of the TT after every compression - compulsory if SKETCH_CUTOFF is not specified");
+  keys.add("optional", "SKETCH_CUTOFF", "Relative truncation error of the singular value decompositions, which sets the rank of the TT adaptively - compulsory if SKETCH_RANK is not specified");
+  keys.add("compulsory", "SKETCH_INITRANK", "Rank of the random sketch, which should be a few times larger than the final rank of the TT");
+  keys.add("compulsory", "SKETCH_PACE", "1e6", "The frequency with which the hills are compressed into the TT");
   keys.add("compulsory", "INTERVAL_MIN", "Lower limits of the domain of the basis functions. Outside the limits the bias is the one at the closest limit and the system does not feel the biasing force along that argument");
   keys.add("compulsory", "INTERVAL_MAX", "Upper limits of the domain of the basis functions. Outside the limits the bias is the one at the closest limit and the system does not feel the biasing force along that argument");
   keys.add("compulsory", "SKETCH_NBASIS", "20", "Number of basis functions per dimension");
   keys.add("compulsory", "SKETCH_ALPHA", "0.05", "Weight coefficient for random tensor train construction");
   keys.add("optional", "SKETCH_UNTIL", "After this time, the hills deposited so far are compressed into the TT one last time and the bias potential freezes");
-  keys.add("optional", "SKETCH_WIDTH", "Width of Gaussian kernels for smoothing");
+  keys.add("optional", "SKETCH_WIDTH", "Width of the Gaussian used to smooth the bias at every compression, one per argument");
   keys.add("optional", "KERNEL_DX", "Width of basis function kernels");
   keys.addFlag("NONINTRUSIVE", false, "Sketching uses previous exact sum of Gaussians instead of TT approximation");
   keys.add("optional", "SEED", "Seed of the random numbers used to build the TT sketch: every sketch uses the same seed, so the results are reproducible. By default each sketch takes a new seed from the clock");

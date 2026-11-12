@@ -41,8 +41,8 @@ namespace PLMD {
 namespace bias {
 
 void MetaDWalkers::registerKeywords(Keywords& keys) {
-  keys.add("optional","WALKERS_ID", "walker id");
-  keys.add("optional","WALKERS_N", "number of walkers");
+  keys.add("optional","WALKERS_ID", "the index of this walker (from 0 to WALKERS_N-1) when using multiple walkers");
+  keys.add("optional","WALKERS_N", "the number of walkers when using multiple walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with WALKERS_* options other than WALKERS_DIR");

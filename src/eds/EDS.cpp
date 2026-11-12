@@ -79,7 +79,7 @@ The bias forces modify the virial and this can change your simulation density if
 One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
 is computed to minimize its contribution to the virial. This can also lead to smaller magnitude biases that are more robust if
 transferred to other systems.  VIRIAL=1.0 can be a reasonable starting point and increasing the value changes the balance between matching
-the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants
+the set-points and minimizing the virial. See the third paper cited below for details on the equations. Since the coupling constants
 are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
 which is almost always the case.
 

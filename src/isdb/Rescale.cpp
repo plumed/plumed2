@@ -177,18 +177,18 @@ PLUMED_REGISTER_ACTION(Rescale,"RESCALE")
 
 void Rescale::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  keys.add("compulsory","TEMP","temperature");
+  keys.add("compulsory","TEMP","temperature of the system in kelvin");
   keys.add("compulsory","SELECTOR", "name of the SELECTOR used for rescaling");
   keys.add("compulsory","MAX_RESCALE","maximum values for rescaling");
   keys.add("compulsory","NBIN","number of bins for gamma grid");
-  keys.add("compulsory","W0", "initial bias height");
-  keys.add("compulsory","BIASFACTOR", "bias factor");
+  keys.add("compulsory","W0", "initial height of the well-tempered bias on the rescaling parameter");
+  keys.add("compulsory","BIASFACTOR", "bias factor of the well-tempered bias on the rescaling parameter");
   keys.add("compulsory","BSTRIDE", "stride for writing bias");
   keys.add("compulsory","BFILE", "file name for bias");
   keys.add("optional","NOT_SHARED",   "list of arguments (from 1 to N) not summed across replicas");
   keys.add("optional","NOT_RESCALED", "these last N arguments will not be scaled");
-  keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_STRIDE","MC stride");
+  keys.add("optional","MC_STEPS","number of Monte Carlo steps performed every MC_STRIDE");
+  keys.add("optional","MC_STRIDE","stride for the Monte Carlo sampling of the rescaling parameter");
   keys.add("optional","PACE", "Pace for adding bias, in MC stride unit");
   keys.add("optional","SEED","seed of the random number generator used by the Monte Carlo sampling (by default it is taken from the clock at every run)");
   keys.addOutputComponent("igamma",  "default","scalar","gamma parameter");

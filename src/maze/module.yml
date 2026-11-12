@@ -1,7 +1,7 @@
 name: maze
 authors: Jakub Rydzewski
 description: enhanced sampling methods for studying ligand unbinding from protein tunnels
-dois: []
+dois: ["10.1063/1.5108638", "10.48550/arXiv.1904.03929"]
 tags:
   MAZE_BIAS: bias for the maze module
   MAZE_OPTIMIZER: optimizer for the maze module

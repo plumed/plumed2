@@ -45,33 +45,33 @@ std::string readBeta( const std::string& what, const std::string& spec, ActionSh
 
 void MultiColvarShortcuts::shortcutKeywords( Keywords& keys ) {
   keys.add("numbered","LESS_THAN","calculate the number of variables that are less than a certain target value. "
-           "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+           "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ "
            "is a switching function.");
   keys.linkActionInDocs("LESS_THAN","LESS_THAN");
   keys.reset_style("LESS_THAN","deprecated");
   keys.addOutputComponent("lessthan","LESS_THAN","scalar","the number of colvars that have a value less than a threshold");
   keys.add("numbered","MORE_THAN","calculate the number of variables that are more than a certain target value. "
-           "This quantity is calculated using \\f$\\sum_i 1 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+           "This quantity is calculated using $\\sum_i 1 - \\sigma(s_i)$, where $\\sigma(s)$ "
            "is a switching function.");
   keys.linkActionInDocs("MORE_THAN","MORE_THAN");
   keys.reset_style("MORE_THAN","deprecated");
   keys.addOutputComponent("morethan","MORE_THAN","scalar","the number of colvars that have a value more than a threshold");
   keys.add("optional","ALT_MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
-           "\\f$ \\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)  \\f$ "
-           "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$).");
+           "$\\textrm{min} = -\\frac{1}{\\beta} \\log \\sum_i \\exp\\left( -\\beta s_i \\right)$ "
+           "The value of $\\beta$ in this function is specified using (BETA=$\\beta$).");
   keys.reset_style("ALT_MIN","deprecated");
   keys.addOutputComponent("altmin","ALT_MIN","scalar","the minimum value of the cv");
   keys.add("optional","MIN","calculate the minimum value. "
            "To make this quantity continuous the minimum is calculated using "
-           "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
-           "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+           "$\\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) }$ "
+           "The value of $\\beta$ in this function is specified using (BETA=$\\beta$)");
   keys.reset_style("MIN","deprecated");
   keys.addOutputComponent("min","MIN","scalar","the minimum colvar");
   keys.add("optional","MAX","calculate the maximum value. "
            "To make this quantity continuous the maximum is calculated using "
-           "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
-           "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+           "$\\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right)$ "
+           "The value of $\\beta$ in this function is specified using (BETA=$\\beta$)");
   keys.reset_style("MAX","deprecated");
   keys.addOutputComponent("max","MAX","scalar","the maximum colvar");
   keys.add("numbered","BETWEEN","calculate the number of values that are within a certain range. "

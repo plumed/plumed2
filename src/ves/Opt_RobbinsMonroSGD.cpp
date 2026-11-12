@@ -37,6 +37,47 @@ Robbins-Monro stochastic gradient decent.
 
     __This optimizer is only included for reference. We recommend to use the averaged stochastic gradient decent optimizer ([OPT_AVERAGED_SGD](OPT_AVERAGED_SGD.md))__.
 
+This optimizer updates the coefficients $\boldsymbol{\alpha}$ of a VES bias with the stochastic gradient descent method of Robbins and Monro (see the paper cited below), using a step size that decreases with the iteration number $n$:
+
+$$
+\boldsymbol{\alpha}^{(n+1)} = \boldsymbol{\alpha}^{(n)} - \mu_n \nabla \Omega(\boldsymbol{\alpha}^{(n)}) \qquad \mu_n = \frac{\mu_0}{1+n/\tau}
+$$
+
+where $\mu_0$ is given by INITIAL_STEPSIZE and $\tau$ by DECAY_CONSTANT.
+The current step size is available as the `stepsize` component.
+
+## Examples
+
+In the following example the coefficients of a VES bias acting on a torsion are optimized every 1000 steps.
+
+```plumed
+phi:   TORSION ATOMS=5,7,9,15
+
+bf1: BF_FOURIER ORDER=5 MINIMUM=-pi MAXIMUM=pi
+
+VES_LINEAR_EXPANSION ...
+ ARG=phi
+ BASIS_FUNCTIONS=bf1
+ LABEL=ves1
+ TEMP=300.0
+ GRID_BINS=100
+... VES_LINEAR_EXPANSION
+
+OPT_ROBBINS_MONRO_SGD ...
+  BIAS=ves1
+  STRIDE=1000
+  LABEL=o1
+  INITIAL_STEPSIZE=0.1
+  DECAY_CONSTANT=2.0
+  COEFFS_FILE=coefficients.data
+  COEFFS_OUTPUT=10
+  FES_OUTPUT=100
+  BIAS_OUTPUT=100
+... OPT_ROBBINS_MONRO_SGD
+
+PRINT ARG=phi,ves1.bias,o1.stepsize FILE=colvar STRIDE=100
+```
+
 
 */
 //+ENDPLUMEDOC
@@ -62,6 +103,7 @@ void Opt_RobbinsMonroSGD::registerKeywords(Keywords& keys) {
   Optimizer::useRestartKeywords(keys);
   Optimizer::useDynamicTargetDistributionKeywords(keys);
   keys.add("optional","DECAY_CONSTANT","the decay constant used for the step size.");
+  keys.addDOI("10.1214/aoms/1177729586");
 }
 
 

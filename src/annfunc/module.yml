@@ -1,7 +1,7 @@
 name: annfunc
-authors: Wei Chan and Andrew Ferguson
+authors: Wei Chen and Andrew Ferguson
 description: an implementation of a fully-connected feedforward neural network 
-dois: []
+dois: ["10.1002/jcc.25520"]
 tags:
   ANNMOD_Function: function for computing a fully-connected feedforward neural network
  

@@ -285,7 +285,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
   keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ...");
-  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead");
+  keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the $i$th atom/bead");
   keys.add("optional","PARAMETERSFILE","Read the PARAMETERS from a file");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
   keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors");

@@ -97,12 +97,12 @@ void MetainferenceCore::registerKeywords( Keywords& keys ) {
   keys.add("optional","SIGMA_MAX_STEPS", "Number of steps used to optimise SIGMA_MAX, before that the SIGMA_MAX value is used");
   keys.add("optional","TEMP","the system temperature - this is only needed if code doesn't pass the temperature to plumed");
   keys.add("optional","MC_STEPS","number of MC steps");
-  keys.add("optional","MC_CHUNKSIZE","MC chunksize");
+  keys.add("optional","MC_CHUNKSIZE","number of uncertainty parameters that are changed together in each Monte Carlo move (by default all of them)");
   keys.add("optional","SEED","seed of the random number generators used by the Monte Carlo sampling (by default a different seed is taken from the clock at every run)");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference. With a CHECKPOINT the state is restored from the checkpoint and this file is not read");
   keys.add("optional","FMT","specify format for STATUS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
-  keys.add("optional","SELECTOR","name of selector");
+  keys.add("optional","SELECTOR","name of the [SELECTOR](SELECTOR.md) used to choose which set of parameters is active, e.g. in multiple-temperature simulations");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
   keys.use("RESTART");
   keys.addOutputComponent("sigma",        "default",      "scalar","uncertainty parameter");

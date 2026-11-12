@@ -125,7 +125,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.add("optional","PRESSURE_SET_ALL","manually set all the pressures");
 //other
   keys.add("optional","SET_ALL_TEMP_PRESSURE","manually set all the target temperature_pressure pairs. An underscore separates temperature and pressure, while different points are comma-separated, e.g.: temp1_pres1,temp1_pres2,...");
-  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: \\f$T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}\\f$");
+  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: $T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}$");
   keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 

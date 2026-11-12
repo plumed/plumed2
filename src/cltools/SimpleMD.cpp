@@ -102,8 +102,8 @@ public:
     keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units. With NVE there is no thermostat and the atoms start at rest");
     keys.add("compulsory","friction","off","The friction (in LJ units) for the Langevin thermostat that is used to keep the temperature constant");
     keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
-    keys.add("compulsory","epsilon","1.0","LJ parameter");
-    keys.add("compulsory","sigma","1.0","LJ parameter");
+    keys.add("compulsory","epsilon","1.0","the depth of the Lennard-Jones potential well");
+    keys.add("compulsory","sigma","1.0","the Lennard-Jones distance at which the potential is zero");
     keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");
     keys.add("compulsory","forcecutoff","2.5","the cutoff for the Lennard-Jones interactions in LJ units (the potential is shifted to zero at the cutoff)");
     keys.add("compulsory","listcutoff","3.0","the cutoff for the neighbor list in LJ units, should be larger than forcecutoff");

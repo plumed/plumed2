@@ -38,6 +38,34 @@ egg that is linked above you can see how we
 use the various actions that are in PLUMED to calculate the final quantity.  If you would like to implement some
 complicated CVs that are linear combinations of multiple RMSD calculations looking at how this shortcut works will help you start.
 
+The REFERENCE file is divided into domains by TER lines. For each domain $k$, the mean squared displacement $\textrm{MSD}_k$ between the instantaneous positions and the
+reference ones is computed after a separate alignment (using the occupancy and beta columns as alignment and displacement weights, as in [RMSD](RMSD.md)).
+The final value is
+
+$$
+s = \sqrt{ \sum_k \textrm{MSD}_k }
+$$
+
+or $\sum_k \textrm{MSD}_k$ if the SQUARED flag is used.
+
+The following input computes the multi-domain RMSD from the domains in the file `fulltest.pdb`, using an optimal alignment for each domain:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-multirmsd/fulltest.pdb
+rmsd: MULTI_RMSD TYPE=MULTI-OPTIMAL NOPBC REFERENCE=regtest/basic/rt-multirmsd/fulltest.pdb
+PRINT ARG=rmsd FILE=colvar
+```
+
+The same result can be obtained with the following input, where each domain is stored in a separate file:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-multirmsd/test0a.pdb,regtest/basic/rt-multirmsd/test0b.pdb
+rmsda: RMSD TYPE=OPTIMAL NOPBC REFERENCE=regtest/basic/rt-multirmsd/test0a.pdb SQUARED
+rmsdb: RMSD TYPE=OPTIMAL NOPBC REFERENCE=regtest/basic/rt-multirmsd/test0b.pdb SQUARED
+rmsd: CUSTOM ARG=rmsda,rmsdb FUNC=sqrt(x+y) PERIODIC=NO
+PRINT ARG=rmsd FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 

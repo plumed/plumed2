@@ -14,7 +14,7 @@ Depending on the kind of target distribution one wishes to sample, different the
 
 ## Installation 
 
-This module is not installed by default. Add `--enable-modules=opes` to your './configure' command when building PLUMED to enable these features.
+This module is compiled by default. It can be disabled with `--enable-modules=-opes` in the `./configure` command used to build PLUMED.
 
 ## Usage
 

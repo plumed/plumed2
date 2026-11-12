@@ -138,6 +138,24 @@ def _copy_build_inputs(source: Path, destination: Path) -> None:
         include_link.symlink_to("../")
 
 
+def _dependencies() -> Path | None:
+    """Prefix of the libraries built by build_dependencies.py, if any.
+
+    Set PLUMED_DEPENDENCIES to it to link the kernel to zlib, HDF5 and
+    chemfiles statically, as in the wheels (see pyproject.toml).
+    """
+    setting = os.environ.get("PLUMED_DEPENDENCIES")
+    if not setting:
+        return None
+    prefix = Path(setting).resolve()
+    if not (prefix / "plumed-dependencies.txt").is_file():
+        raise RuntimeError(
+            f"PLUMED_DEPENDENCIES={setting}: build the libraries first, with "
+            "python build_dependencies.py " + setting
+        )
+    return prefix
+
+
 def _runtime_cache_key(source: Path, modules: list[str]) -> str:
     """Identify a runtime build: sources, build recipe, platform and compiler settings.
 
@@ -155,6 +173,9 @@ def _runtime_cache_key(source: Path, modules: list[str]) -> str:
         "LDFLAGS",
     ):
         settings.append(f"{name}={os.environ.get(name, '')}")
+    dependencies = _dependencies()
+    if dependencies:
+        settings.append((dependencies / "plumed-dependencies.txt").read_text())
     for item in settings:
         digest.update(item.encode() + b"\0")
     digest.update(Path(__file__).read_bytes())
@@ -241,6 +262,13 @@ def _install_runtime(source: Path, modules: list[str], env: dict[str, str]) -> N
     _relocate_compile_options(
         runtime_lib / "plumed" / "src" / "config" / "compile_options.sh"
     )
+    _drop_dependency_paths(
+        [
+            runtime_lib / "plumed" / "src" / "config" / "compile_options.sh",
+            runtime_lib / "plumed" / "src" / "config" / "config.txt",
+            *sorted((runtime_lib / "pkgconfig").glob("*.pc")),
+        ]
+    )
     _finish_runtime(source, modules, "configure/make")
 
     if sys.platform == "darwin":
@@ -262,6 +290,15 @@ def _finish_runtime(source: Path, modules: list[str], build_system: str) -> None
     license_dir = RUNTIME_PACKAGE / "licenses"
     license_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source / "COPYING.LESSER", license_dir / "COPYING.LESSER")
+    dependencies = _dependencies()
+    if dependencies:
+        # the licenses of the libraries linked statically in the kernel
+        shutil.copytree(dependencies / "licenses", license_dir, dirs_exist_ok=True)
+        libraries = ", ".join(
+            (dependencies / "plumed-dependencies.txt").read_text().splitlines()
+        )
+    else:
+        libraries = "none"
     build_info = [
         f"PLUMED version: {_plumed_version(source)}",
         f"Build system: {build_system}",
@@ -270,6 +307,7 @@ def _finish_runtime(source: Path, modules: list[str], build_system: str) -> None
         "OpenMP: disabled",
         "External BLAS/LAPACK: disabled",
         "External FFTW: disabled",
+        f"Libraries linked statically: {libraries}",
         "Enabled modules: " + ", ".join(modules),
     ]
     (runtime_root / "build-info.txt").write_text("\n".join(build_info) + "\n")
@@ -278,6 +316,33 @@ def _finish_runtime(source: Path, modules: list[str], build_system: str) -> None
     links = [path for path in RUNTIME_PACKAGE.rglob("*") if path.is_symlink()]
     if links:
         raise RuntimeError(f"unexpected symbolic links in the runtime: {links[:5]}")
+
+
+def _drop_dependency_paths(paths: list[Path]) -> None:
+    """Remove the static libraries of PLUMED_DEPENDENCIES from the link commands.
+
+    They are in the kernel already, and their build paths do not exist where
+    the wheel is installed (plumed mklib and LOAD would fail).
+    """
+    dependencies = _dependencies()
+    if dependencies is None:
+        return
+    for path in paths:
+        if not path.is_file():
+            continue
+        lines = []
+        for line in path.read_text().splitlines():
+            words = []
+            for word in line.split(" "):
+                if str(dependencies) in word:
+                    # also as the first value of a variable (CPPFLAGS=-I...)
+                    key, equal, _ = word.partition("=")
+                    if not equal or str(dependencies) in key:
+                        continue
+                    word = key + equal
+                words.append(word)
+            lines.append(" ".join(words))
+        path.write_text("\n".join(lines) + "\n")
 
 
 def _relocate_compile_options(path: Path) -> None:
@@ -451,6 +516,7 @@ def _compile_runtime(source_root: Path, modules: list[str]) -> None:
         ]
         if sys.platform == "darwin":
             configure.append("--disable-absolute-install-name")
+        configure += _configure_dependencies()
         try:
             _run(configure, cwd=source)
         except subprocess.CalledProcessError:
@@ -471,6 +537,32 @@ def _compile_runtime(source_root: Path, modules: list[str]) -> None:
         _run(["make", "-C", "src/lib", "-j" + jobs], cwd=source, env=link_env)
 
         _install_runtime(source, modules, link_env)
+
+
+def _configure_dependencies() -> list[str]:
+    """configure options for the libraries of build_dependencies.py."""
+    dependencies = _dependencies()
+    if dependencies is None:
+        return []
+    lib = dependencies / "lib"
+    # full paths: the static libraries, not shared ones elsewhere in the paths
+    libs = [str(lib / name) for name in ("libchemfiles.a", "libhdf5.a", "libz.a")]
+    ldflags = os.environ.get("LDFLAGS", "")
+    # the kernel does not export their symbols, so that it can be loaded with
+    # other copies of these libraries (e.g. the HDF5 of h5py or of an MD code)
+    if sys.platform.startswith("linux"):
+        libs += ["-ldl", "-lm"]
+        ldflags += " -Wl,--exclude-libs,ALL"
+    elif sys.platform == "darwin":
+        libs = [f"-Wl,-load_hidden,{library}" for library in libs]
+    return [
+        "--enable-libhdf5",
+        "--enable-libchemfiles",
+        "CPPFLAGS="
+        + (os.environ.get("CPPFLAGS", "") + f" -I{dependencies / 'include'}").strip(),
+        "LDFLAGS=" + ldflags.strip(),
+        "LIBS=" + " ".join(libs),
+    ]
 
 
 def _compile_runtime_cmake(source_root: Path, modules: list[str]) -> None:
@@ -509,6 +601,7 @@ def _compile_runtime_cmake(source_root: Path, modules: list[str]) -> None:
                 # the path compiled in the kernel, which finds its resources
                 # relative to itself (as /plumed_runtime with configure)
                 "-DCMAKE_INSTALL_PREFIX=C:/plumed_runtime",
+                *_cmake_dependencies(),
             ],
             cwd=Path(temporary),
         )
@@ -530,6 +623,18 @@ def _compile_runtime_cmake(source_root: Path, modules: list[str]) -> None:
         )
         _stage_runtime(installed)
         _finish_runtime(source, modules, "CMake")
+
+
+def _cmake_dependencies() -> list[str]:
+    """CMake options for the libraries of build_dependencies.py."""
+    dependencies = _dependencies()
+    if dependencies is None:
+        return []
+    return [
+        "-DPLUMED_ENABLE_HDF5=ON",
+        "-DPLUMED_ENABLE_CHEMFILES=ON",
+        f"-DCMAKE_PREFIX_PATH={dependencies.as_posix()}",
+    ]
 
 
 def _copy_sdist_source(destination: Path) -> None:

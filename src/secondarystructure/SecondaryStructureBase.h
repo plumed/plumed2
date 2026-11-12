@@ -129,7 +129,7 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   if constexpr ( needsBondLength /*keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD"*/ ) {
     keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
   }
-  keys.add("numbered","STRUCTURE","the reference structure");
+  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure to be used instead of the default ideal one. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
              "For more details on the OPTIMAL and SIMPLE methods see RMSD.");
@@ -149,7 +149,7 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
              "As such if you define portions of the chain with fewer than N residues the code will crash.");
     keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ is a switching function.");
+             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is a switching function.");
     keys.add("optional","R_0","The r_0 parameter of the switching function.");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
