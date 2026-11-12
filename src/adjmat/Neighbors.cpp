@@ -24,7 +24,6 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 
-#include <limits>
 #include <string>
 
 //+PLUMEDOC MCOLVAR NEIGHBORS
@@ -32,10 +31,10 @@
 Build a matrix with ones in for the N nearest neighbours of an atom
 
 In each row of the output matrix the elements that correspond to the NLOWEST lowest (or the NHIGHEST highest) elements of the same row of the input
-matrix are equal to one, and all the other elements are zero. Only the positive elements of the input matrix are considered: elements that are zero, or
-that are not stored (e.g. those beyond the D_MAX of a [CONTACT_MATRIX](CONTACT_MATRIX.md)), are never selected. The input is thus typically a matrix of
-distances or of contact weights. If you want to use a matrix with negative elements, shift its values with [CUSTOM](CUSTOM.md) first.
-If a row has fewer positive elements than the number of neighbors requested, the calculation stops with an error.
+matrix are equal to one, and all the other elements are zero. The elements that are not stored (e.g. those beyond the D_MAX of a [CONTACT_MATRIX](CONTACT_MATRIX.md))
+are never selected. The input matrix should not have negative elements: it is typically a matrix of distances or of contact weights, and if you want to use a matrix
+with negative elements you should shift its values with [CUSTOM](CUSTOM.md) first. Each row must contain at least as many elements larger than zero as the number of
+neighbors requested, otherwise the calculation stops with an error.
 
 The following input illustrates how to use this action in tandem with [DISTANCE_MATRIX](DISTANCE_MATRIX.md) to find the six
 nearest atoms to each of the first 100 atoms in the input file:
@@ -182,8 +181,8 @@ public:
     }
     if( number>nind ) {
       plumed_merror("row " + std::to_string(task_index+1) + " of the input matrix has " + std::to_string(nind)
-                    + " positive elements, but " + std::to_string(number) + " neighbors were requested. NEIGHBORS only selects "
-                    "the positive elements of each row (e.g. distances, or the non-zero weights of a contact matrix)");
+                    + " elements larger than zero, but " + std::to_string(number) + " neighbors were requested. "
+                    "The input matrix of NEIGHBORS should not have negative elements (e.g. it should contain distances or the weights of a contact matrix)");
     }
   }
   void getSortedData( std::vector<std::pair<double,unsigned> >& rows ) const ;
@@ -209,11 +208,12 @@ public:
 };
 
 void OneLowInput::calculate( const NeighborCalcInput& input, View<double>& output ) {
-  // as in NLowInput, the elements that are not positive are not considered
-  unsigned nv = 0;
-  double min = std::numeric_limits<double>::max();
-  for(unsigned i=0; i<input.nbonds; ++i) {
-    if( input.matrow[i]>=epsilon && input.matrow[i]<min ) {
+  // all the stored elements are considered, including those that are zero
+  // (e.g. the dissimilarity between a landmark and itself in VORONOI)
+  unsigned nv = input.bookrow[0];
+  double min = input.matrow[0];
+  for(unsigned i=1; i<input.nbonds; ++i) {
+    if( input.matrow[i]<min ) {
       min = input.matrow[i];
       nv = input.bookrow[i];
     }
@@ -243,10 +243,10 @@ public:
 };
 
 void OneHighInput::calculate( const NeighborCalcInput& input, View<double>& output ) {
-  unsigned nv = 0;
-  double max = 0;
-  for(unsigned i=0; i<input.nbonds; ++i) {
-    if( input.matrow[i]>=epsilon && input.matrow[i]>max ) {
+  unsigned nv = input.bookrow[0];
+  double max = input.matrow[0];
+  for(unsigned i=1; i<input.nbonds; ++i) {
+    if( input.matrow[i]>max ) {
       max = input.matrow[i];
       nv = input.bookrow[i];
     }
