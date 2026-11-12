@@ -1,0 +1,14 @@
+type=driver
+plumed_needs=libtorch
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+
+function plumed_regtest_before() {
+  $plumed_nompi driver --plumed calibration.dat --ixyz traj.xyz > calibration.log 2>&1 || return 1
+  python3 check.py prepare
+}
+
+function plumed_regtest_after() {
+  python3 check.py check > result
+}
