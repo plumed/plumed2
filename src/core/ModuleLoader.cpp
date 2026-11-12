@@ -52,6 +52,7 @@ bool validName(const std::string& name) {
   return !name.empty() && name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_-")==std::string::npos;
 }
 
+#ifdef __PLUMED_HAS_DLOPEN
 std::string moduleSymbol(const std::string& name) {
   if(name.find('-')==std::string::npos) {
     return "plumed_module_"+name;
@@ -65,6 +66,7 @@ std::string moduleSymbol(const std::string& name) {
   }
   return result;
 }
+#endif
 
 struct State {
   std::recursive_mutex mutex;
