@@ -123,8 +123,10 @@ still follows the loader rules described in the extension documentation.
 
 [GPU validation notebook](gpu-validation.ipynb) installs final Linux x86-64 CI
 artifacts on an NVIDIA runtime, including Colab. Upload the ordinary conda and
-OpenACC artifact ZIPs from the same source revision, then run the notebook and
-save its result logs. It exercises CUDA 12.9 and 13.0 and the OpenACC NVIDIA
+OpenACC artifact ZIPs from the final validated shared-kernel artifact set, then run the notebook and
+save its result logs. Continuation jobs may supply different ZIPs, but both must
+contain the exact same kernel archive; the notebook rejects conflicting copies
+and pins its test fixtures to the validated implementation. It exercises CUDA 12.9 and 13.0 and the OpenACC NVIDIA
 target. It never overrides driver metadata: a driver too old for an output is
 an incomplete matrix, not a successful GPU test. Alternatively index the artifact
 packages as a local channel and run `run-gpu-test.sh` with `VERSION`,
