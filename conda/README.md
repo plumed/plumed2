@@ -127,6 +127,8 @@ still follows the loader rules described in the extension documentation.
 
 ## GPU validation and distribution handoff
 
+[Open the self-contained notebook in Colab](https://colab.research.google.com/github/GiovanniBussi/plumed2/blob/c823c9ca00f40367e46362d14c187dfc6200fabb/conda/gpu-validation.ipynb).
+
 [GPU validation notebook](gpu-validation.ipynb) runs directly in Colab: select a
 GPU runtime and choose **Run all**. It anonymously downloads both pinned Linux
 x86-64 CI artifact ZIPs through nightly.link, verifies their SHA256 checksums and
