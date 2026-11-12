@@ -148,9 +148,9 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
 
 The Debye sum can be computed on a GPU with the USEGPU flag. The GPU implementations are provided by
 plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/openaccPTM in the
-PLUMED sources). The GPU is selected with DEVICEID (by default the one assigned to PLUMED by the MD
-code, or the first one). With MPI each rank computes a share of the sum on its own GPU; with SERIAL
-only the first rank uses its GPU and the results are shared with the others.
+PLUMED sources). The GPU is the one assigned to PLUMED by the MD code, otherwise the one the MD code
+is using, or the first one (see the documentation of the plugin). With MPI each rank computes a share
+of the sum on its own GPU; with SERIAL only the first rank uses its GPU and the results are shared with the others.
 
 ````
 LOAD FILE=/path/to/plumedOpenACC.so
@@ -259,7 +259,7 @@ QVALUE10=0.30 EXPINT10=0.00880634
 PRINT ARG=(SANS\.q-.*),(SANS\.exp-.*) FILE=sansdata STRIDE=1
 ```
 
-As for [SAXS](SAXS.md), the Debye sum can be computed on a GPU with the USEGPU flag (with DEVICEID and
+As for [SAXS](SAXS.md), the Debye sum can be computed on a GPU with the USEGPU flag (and
 GPU_BACKEND), using a backend provided by a plugin loaded with [LOAD](LOAD.md) (see plugins/openaccPTM in the
 PLUMED sources). Everything else, including the deuteration and the solvation correction, is computed as usual.
 
@@ -275,7 +275,6 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose. With USEGPU only the first rank uses its GPU");
   keys.addFlag("USEGPU",false,"Calculate the Debye sum on the GPU, using a backend provided by a plugin that must be loaded with LOAD");
-  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used with USEGPU (-1: the one assigned by the MD code, or the first one)");
   keys.add("optional","GPU_BACKEND","The GPU backend to be used with USEGPU, needed only if more than one is loaded");
   keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
   keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
@@ -342,8 +341,6 @@ SAXS::SAXS(const ActionOptions&ao):
 
   parseFlag("USEGPU",usegpu_);
   const bool usegpu=usegpu_;
-  int deviceid=-1;
-  parse("DEVICEID",deviceid);
   std::string gpu_backend;
   parse("GPU_BACKEND",gpu_backend);
   // rows of the Debye sum of this rank: on the CPU, with SERIAL every rank computes
@@ -356,14 +353,11 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   reduce_ = (!serial || usegpu) && comm.Get_size()>1;
   if(usegpu) {
-    if(deviceid==-1) {
-      deviceid = plumed.getGpuDeviceId();
-    }
     // a rank that fails to create the backend must not leave the others waiting
     std::string failure;
     if(has_rows_) {
       try {
-        backend_ = saxsDebyeBackendRegister().create(gpu_backend,deviceid);
+        backend_ = saxsDebyeBackendRegister().create(gpu_backend,*this);
       } catch(const std::exception & e) {
         failure = e.what();
         if(failure.empty()) {
@@ -376,11 +370,7 @@ SAXS::SAXS(const ActionOptions&ao):
     if(failed>0) {
       error("cannot use the GPU" + (failure.empty() ? std::string(" (failure on another rank)") : ": " + failure));
     }
-    log.printf("  using the GPU for the Debye sum");
-    if(deviceid>=0) {
-      log.printf(" (device %d)",deviceid);
-    }
-    log.printf("\n");
+    log.printf("  using GPU to calculate the Debye sum\n");
   } else if(!gpu_backend.empty()) {
     error("GPU_BACKEND can only be used together with USEGPU");
   }

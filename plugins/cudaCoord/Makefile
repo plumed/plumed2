@@ -41,7 +41,7 @@ endif
 #this makes make search for files in src
 VPATH = src
 
-.PHONY: clean check all astyle
+.PHONY: clean check check-gpu all astyle
 
 all: CudaCoordination.$(SOEXT)
 
@@ -71,6 +71,11 @@ clean:
 check: all
 	$(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
+
+# on a node with GPUs: checks that the plugin leaves the GPU of the MD code alone
+# (the program is shared with the openaccPTM plugin, see ../openaccPTM/gpucheck)
+check-gpu: all
+	$(MAKE) -C ../openaccPTM/gpucheck PLUGINS=$(CURDIR)/CudaCoordination.$(SOEXT)
 
 astyle:
 	@../astyle.sh

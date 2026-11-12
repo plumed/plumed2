@@ -2479,7 +2479,11 @@ int Mdrunner::mdrunner()
         const bool haveDetectedOrForcedCudaAwareMpi =
                 (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
                  || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-        if (!haveDetectedOrForcedCudaAwareMpi)
+        // PLUMED: the GPU is not released when PLUMED is used. Like torch, the GPU runtimes of
+        // PLUMED plugins (e.g. the statically linked OpenACC runtime of plugins/openaccPTM) keep
+        // device allocations that are only freed at process exit: resetting the device first
+        // makes them fail with CUDA_ERROR_CONTEXT_IS_DESTROYED.
+        if (!haveDetectedOrForcedCudaAwareMpi && !opt2bSet("-plumed", filenames.size(), filenames.data()))
         {
             // Don't reset GPU in case of GPU-AWARE MPI
             // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()

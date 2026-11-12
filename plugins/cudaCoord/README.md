@@ -34,6 +34,16 @@ Assuming you are using this plugin from the plugin directory of a plumed source 
  - do not support the SWITCH keyword
  - new `THREADS` keyword to control the maximum number of threads per block used by the kernels (rounded down to a multiple of 32, the cell kernels use at most 256); there is no limit on the number of atoms per cell
 
+## Which GPU is used
+
+The GPU is chosen as in the openaccPTM plugin, so that the two behave in the same way on a node with several GPUs:
+the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
+the GPU the MD code is using (the current one of the CUDA runtime when the action is created, by default the first one;
+with `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log (e.g. `c runs on GPU 1` for an
+action labelled `c`). With MPI only the first rank uses the GPU.
+Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
+`make check-gpu` (on a node with GPUs) checks this, see `../openaccPTM/gpucheck`.
+
 ## Performance notes
 
 The plugin is designed to coexist with an MD code that keeps the GPU busy (e.g. GPU-resident GROMACS):
@@ -51,5 +61,4 @@ Since PLUMED receives the positions and returns the forces through host memory, 
 
 ## Current TODO
  
- - The GPU device needs to be explicitly selected
  - Integrate the CI

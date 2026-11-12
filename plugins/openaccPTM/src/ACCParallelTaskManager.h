@@ -32,6 +32,7 @@
 #include "plumed/tools/ColvarOutput.h"
 #include "plumed/tools/OpenACC.h"
 #include "plumed/tools/Pbc.h"
+#include "ACCDevice.h"
 
 #include <algorithm>
 #include <cstring>
@@ -155,16 +156,30 @@ public:
   typedef typename ParallelTaskManager<T>::ForceOutput ForceOutput;
   typedef typename ParallelTaskManager<T>::precision precision;
 private:
-/// Device buffers kept between steps
-  AccDeviceWorkspace<precision> devws;
+/// The GPU of this action (see ACCDevice.h)
+  ACC::Device device;
+/// Device buffers kept between steps, freed on their GPU
+  std::unique_ptr<AccDeviceWorkspace<precision>> devws;
+/// The GPU of this action (chosen at the first call), -1 without GPUs
+  int getDevice() {
+    return device.resolve(*action);
+  }
 public:
   static void registerKeywords( Keywords& keys ) {
     ParallelTaskManager<T>::registerKeywords(keys);
   }
   AccParallelTaskManager(ActionWithVector* av):
-    PLMD::ParallelTaskManager<T>(av) {
+    PLMD::ParallelTaskManager<T>(av),
+    devws(std::make_unique<AccDeviceWorkspace<precision>>()) {
     useacc=true;
   }
+  ~AccParallelTaskManager() {
+    // members are destroyed after the scope ends: the buffers are freed here
+    ACC::DeviceScope scope(device.id());
+    devws.reset();
+  }
+  AccParallelTaskManager(const AccParallelTaskManager&)=delete;
+  AccParallelTaskManager& operator=(const AccParallelTaskManager&)=delete;
 /// This runs all the tasks
   void runAllTasks();
 /// Apply the forces on the parallel object
@@ -340,6 +355,7 @@ void AccParallelTaskManager<T>::runAllTasks() {
     // Transfer all the bookeeping information about the arguments
     // (argumentsMap was filled by getInputData)
     myinput.setupArguments( argumentsMap );
+    ACC::DeviceScope scope(getDevice());
     runAllTasksACC<T>(
       actiondata,
       myinput,
@@ -348,7 +364,7 @@ void AccParallelTaskManager<T>::runAllTasks() {
       nactive_tasks,
       nderivatives_per_task,
       workspace_size,
-      devws
+      *devws
     );
   }
   // Rank 0 holds the complete result: it must be broadcast, not summed
@@ -606,6 +622,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   // Only rank 0 uses the GPU: it computes all the forces, overwriting the
   // whole array, which is then sent to the other ranks
   if (comm.Get_rank() == 0) {
+    ACC::DeviceScope scope(getDevice());
     // the force buffer is cleared (or not, if reset_forces is false) on the device
     forceData<precision> forces(forcesForApply);
     myinput.noderiv = false;
@@ -620,7 +637,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
       nactive_tasks,
       nderivatives_per_task,
       workspace_size,
-      devws,
+      *devws,
       reset_forces
     );
     forces.update();

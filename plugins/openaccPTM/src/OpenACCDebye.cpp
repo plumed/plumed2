@@ -22,6 +22,7 @@
 #include "plumed/isdb/SAXSDebyeBackend.h"
 #include "plumed/tools/OpenACC.h"
 #include "plumed/tools/Exception.h"
+#include "ACCDevice.h"
 
 #include <openacc.h>
 
@@ -29,6 +30,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 namespace PLMD {
@@ -195,21 +197,32 @@ void debyeRows(const double* dpos, const double* dff, const double* dq_list, con
 /// chunk on the uniform grid q0+k*dq, corrected for the deviations eps_k of the
 /// actual q values with a Taylor expansion (exact sin and cos, in another version of
 /// the kernel, when |eps_k r|>0.1 is possible for some pair or there are less than 4 q values).
+///
+/// Every call works on the GPU of the instance and leaves the GPU of the caller
+/// unchanged, see ACCDevice.h.
 class OpenACCDebye :
   public SAXSDebyeBackend {
-  CachedUpload ff_;
-  CachedUpload q_;
-  CachedUpload eps_;
-  OpenACC::memoryManager<double> pos_;
-  /// per row (m*numq+k): partial intensity and derivative
-  OpenACC::memoryManager<double> partial_;
-  OpenACC::memoryManager<double> grad_;
-  /// the same per tile, when the loop over j is split
-  OpenACC::memoryManager<double> tpartial_;
-  OpenACC::memoryManager<double> tgrad_;
-  OpenACC::memoryManager<double> sum_;
-  OpenACC::memoryManager<double> w_;
-  OpenACC::memoryManager<double> forces_;
+  /// the action (SAXS or SANS) that uses this backend
+  const Action& action_;
+  /// the GPU of this instance
+  ACC::Device device_;
+  /// the device memory, that must be freed on its GPU
+  struct Buffers {
+    CachedUpload ff;
+    CachedUpload q;
+    CachedUpload eps;
+    OpenACC::memoryManager<double> pos;
+    /// per row (m*numq+k): partial intensity and derivative
+    OpenACC::memoryManager<double> partial;
+    OpenACC::memoryManager<double> grad;
+    /// the same per tile, when the loop over j is split
+    OpenACC::memoryManager<double> tpartial;
+    OpenACC::memoryManager<double> tgrad;
+    OpenACC::memoryManager<double> sum;
+    OpenACC::memoryManager<double> w;
+    OpenACC::memoryManager<double> forces;
+  };
+  std::unique_ptr<Buffers> buf_;
   std::vector<double> heps_;
   std::vector<double> hsum_;
   std::vector<double> hgrad_;
@@ -222,7 +235,10 @@ class OpenACCDebye :
   std::size_t stride_=1;
   bool computed_=false;
 public:
-  explicit OpenACCDebye(int deviceid);
+  explicit OpenACCDebye(Action& action);
+  ~OpenACCDebye() override;
+  OpenACCDebye(const OpenACCDebye&)=delete;
+  OpenACCDebye& operator=(const OpenACCDebye&)=delete;
   void compute(const std::vector<Vector>& pos,
                const std::vector<double>& ff,
                const std::vector<double>& q,
@@ -233,15 +249,15 @@ public:
                 std::vector<Vector>& forces) override;
 };
 
-OpenACCDebye::OpenACCDebye(const int deviceid) {
-  const int ndevices=acc_get_num_devices(acc_device_not_host);
-  // with ACCTARGET=host there are no devices and the kernels run on the host
-  if(ndevices>0) {
-    if(deviceid>=0) {
-      plumed_massert(deviceid<ndevices, "DEVICEID does not identify an available GPU");
-      acc_set_device_num(deviceid, acc_device_not_host);
-    }
-  }
+OpenACCDebye::OpenACCDebye(Action& action):
+  action_(action),
+  buf_(std::make_unique<Buffers>()) {
+}
+
+OpenACCDebye::~OpenACCDebye() {
+  // the buffers are freed here, on their GPU (members are destroyed after the scope ends)
+  ACC::DeviceScope scope(device_.id());
+  buf_.reset();
 }
 
 void OpenACCDebye::compute(const std::vector<Vector>& pos,
@@ -267,6 +283,8 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   if(nrows==0) {
     return;
   }
+  ACC::DeviceScope scope(device_.resolve(action_));
+  auto & b=*buf_;
 
   // q values as a uniform grid q0+k*dq plus deviations eps_k (as in SAXS)
   const double q0=q[0];
@@ -296,26 +314,26 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   ntile=std::max<std::size_t>(1,std::min(ntile,std::min(maxTiles,n)));
   const std::size_t tilesize=(n+ntile-1)/ntile;
 
-  pos_.resize(3*n);
-  pos_.copyToDeviceAsync(&pos[0][0], saxsQueue);
-  const double* dpos=pos_.devicePtr();
-  const double* dff=ff_.update(ff);
-  const double* dq_list=q_.update(q);
-  const double* deps=eps_.update(heps_);
-  partial_.resize(nrows);
-  grad_.resize(3*nrows);
-  sum_.resize(numq);
-  double* dpartial=partial_.devicePtr();
-  double* dgrad=grad_.devicePtr();
-  double* dsum=sum_.devicePtr();
+  b.pos.resize(3*n);
+  b.pos.copyToDeviceAsync(&pos[0][0], saxsQueue);
+  const double* dpos=b.pos.devicePtr();
+  const double* dff=b.ff.update(ff);
+  const double* dq_list=b.q.update(q);
+  const double* deps=b.eps.update(heps_);
+  b.partial.resize(nrows);
+  b.grad.resize(3*nrows);
+  b.sum.resize(numq);
+  double* dpartial=b.partial.devicePtr();
+  double* dgrad=b.grad.devicePtr();
+  double* dsum=b.sum.devicePtr();
   // with a single tile the threads write the rows directly
   double* outpartial=dpartial;
   double* outgrad=dgrad;
   if(ntile>1) {
-    tpartial_.resize(ntile*nrows);
-    tgrad_.resize(3*ntile*nrows);
-    outpartial=tpartial_.devicePtr();
-    outgrad=tgrad_.devicePtr();
+    b.tpartial.resize(ntile*nrows);
+    b.tgrad.resize(3*ntile*nrows);
+    outpartial=b.tpartial.devicePtr();
+    outgrad=b.tgrad.devicePtr();
   }
   const std::size_t f=first;
   const std::size_t s=stride;
@@ -329,8 +347,8 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
 
   // sum of the tiles, in a fixed order
   if(ntile>1) {
-    const double* dtpartial=tpartial_.devicePtr();
-    const double* dtgrad=tgrad_.devicePtr();
+    const double* dtpartial=b.tpartial.devicePtr();
+    const double* dtgrad=b.tgrad.devicePtr();
 #pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dtpartial,dtgrad,dpartial,dgrad) \
   firstprivate(nrows,ntile) default(none)
     for(std::size_t r=0; r<nrows; ++r) {
@@ -365,10 +383,10 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   }
 
   hsum_.resize(numq);
-  sum_.copyFromDeviceAsync(hsum_.data(), saxsQueue);
+  b.sum.copyFromDeviceAsync(hsum_.data(), saxsQueue);
   if(deriv) {
     hgrad_.resize(3*nrows);
-    grad_.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
+    b.grad.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
   }
   acc_wait(saxsQueue);
 
@@ -397,12 +415,15 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   if(nmine==0) {
     return;
   }
-  w_.resize(numq);
-  w_.copyToDeviceAsync(w.data(), saxsQueue);
-  forces_.resize(3*nmine);
-  const double* dw=w_.devicePtr();
-  const double* dgrad=grad_.devicePtr();
-  double* dforces=forces_.devicePtr();
+  // compute has chosen the GPU
+  ACC::DeviceScope scope(device_.id());
+  auto & b=*buf_;
+  b.w.resize(numq);
+  b.w.copyToDeviceAsync(w.data(), saxsQueue);
+  b.forces.resize(3*nmine);
+  const double* dw=b.w.devicePtr();
+  const double* dgrad=b.grad.devicePtr();
+  double* dforces=b.forces.devicePtr();
 
 #pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dw,dgrad,dforces) firstprivate(numq,nmine) default(none)
   for(std::size_t m=0; m<nmine; ++m) {
@@ -422,7 +443,7 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   }
 
   hforces_.resize(3*nmine);
-  forces_.copyFromDeviceAsync(hforces_.data(), saxsQueue);
+  b.forces.copyFromDeviceAsync(hforces_.data(), saxsQueue);
   acc_wait(saxsQueue);
   for(std::size_t m=0; m<nmine; ++m) {
     forces[first_+m*stride_]+=Vector(hforces_[3*m],hforces_[3*m+1],hforces_[3*m+2]);

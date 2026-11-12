@@ -70,6 +70,29 @@ CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
 on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
 
+### Which GPU is used
+
+All the actions of the plugin (SAXS and SANS included) use the same GPU as the MD code, so that they work on a node with
+several GPUs and do not interfere with an MD code that keeps its data on the GPU:
+
+1. the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
+2. the GPU the MD code is using (the one whose CUDA context is current when PLUMED is called, as for GROMACS 2025 and 2026), otherwise
+3. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM` (e.g. for [driver](driver.md), where there is no MD code).
+   With `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU.
+
+The GPU of an action is chosen the first time it is computed, and it does not change afterwards. It is written in the log,
+in the same way for all the actions, e.g. `d runs on GPU 1` for an action labelled `d` (or `d runs on the host` when OpenACC
+sees no GPU). After each call the MD code finds its own GPU (its CUDA context) as it left it.
+
+The cudaCoord plugin chooses its GPU with the same rule. `make check-gpu` (on a node with GPUs) checks that the actions
+run on the expected GPU and that the MD code keeps its own; `make -C gpucheck PLUGINS="/path/plumedOpenACC.so /path/CudaCoordination.so"`
+checks the two plugins loaded together.
+
+For developers: new actions should follow the same behaviour, as described in `src/ACCDevice.h`. The actions that use the
+OpenACC task manager get it for free. Code that uses OpenACC outside of it (as the SAXS/SANS backend) keeps an `ACC::Device`,
+chooses the GPU with `resolve(action)` before using it, and runs every use of OpenACC (kernels, transfers, allocations,
+and the destructor that frees its device memory) inside an `ACC::DeviceScope`.
+
 The next section contains a list of the actions that can take the USEGPU command in input and that can thus be run on the GPU using this plugin.
 
 ## List of actions that can be called with the USEGPU option:
@@ -148,7 +171,7 @@ SAXS ...
 
 (This example is not highlighted only because the manual is built without the plugin.)
 
-- `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any) or the default OpenACC device.
+- The GPU is chosen as for the other actions (see above): there is no `DEVICEID` keyword.
 - Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.

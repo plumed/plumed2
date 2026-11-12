@@ -2520,7 +2520,11 @@ int Mdrunner::mdrunner()
 
         // Only release GPU when not using torch, as torch keeps some device handles that
         // only get cleaned up on process exit
-        if (GMX_GPU && !GMX_TORCH)
+        // PLUMED: the GPU is not released when PLUMED is used. Like torch, the GPU runtimes of
+        // PLUMED plugins (e.g. the statically linked OpenACC runtime of plugins/openaccPTM) keep
+        // device allocations that are only freed at process exit: resetting the device first
+        // makes them fail with CUDA_ERROR_CONTEXT_IS_DESTROYED.
+        if (GMX_GPU && !GMX_TORCH && !opt2bSet("-plumed", filenames.size(), filenames.data()))
         {
             const bool haveDetectedOrForcedCudaAwareMpi =
                     (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
