@@ -28,6 +28,10 @@ ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$
 # -static-nvidia is needed for every target: it keeps the OpenACC runtime private to the plugin. Otherwise
 # a PLUMED built with GCC and OpenMP resolves the acc_* calls of the plugin to libgomp ("libgomp: TODO").
 ADDCLDFLAGS=-acc=$(ACCTARGET) -static-nvidia
+# code that is only needed with GPUs (e.g. keeping the CUDA context of the MD code, see OpenACCDebye.cpp)
+ifneq (,$(findstring gpu,$(ACCTARGET)))
+  ADDCPPFLAGS+=-DPLUMED_OPENACC_GPU
+endif
 
 # The soname must be passed to the linker as a single token: nvc++ splits
 # "-Xlinker -soname,name" at the comma and then treats "name" as an input

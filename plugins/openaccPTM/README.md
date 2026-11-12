@@ -148,7 +148,7 @@ SAXS ...
 
 (This example is not highlighted only because the manual is built without the plugin.)
 
-- `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any) or the default OpenACC device.
+- `DEVICEID` selects the GPU; by default the one assigned to PLUMED by the MD code (if any), otherwise the one the MD code is using, or the default OpenACC device. Every call works on that GPU and then gives back to the MD code its own CUDA context, also when it is using another GPU.
 - Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.

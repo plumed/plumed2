@@ -29,7 +29,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <memory>
 #include <vector>
+
+#if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
+#include <dlfcn.h>
+#endif
 
 namespace PLMD {
 namespace isdb {
@@ -57,6 +62,92 @@ public:
     }
     return device.devicePtr();
   }
+};
+
+/// The few functions of the CUDA driver needed to save and restore the CUDA context
+/// of the caller (e.g. the MD code), see DeviceScope. They are taken from the
+/// driver library that is already loaded (by the caller or by the OpenACC runtime),
+/// so that the plugin does not depend on it at link time.
+struct CudaDriver {
+  typedef int (*getCurrent_t)(void**);
+  typedef int (*setCurrent_t)(void*);
+  typedef int (*getDevice_t)(int*);
+  getCurrent_t getCurrent=nullptr;
+  setCurrent_t setCurrent=nullptr;
+  getDevice_t getDevice=nullptr;
+  bool ok() const {
+    return getCurrent && setCurrent && getDevice;
+  }
+};
+
+/// The CUDA driver, or an empty one if it is not (yet) loaded or not available
+const CudaDriver& cudaDriver() {
+  static CudaDriver driver;
+#if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
+  if(!driver.ok()) {
+    // never released: the driver stays loaded until the end of the process anyway
+    if(void* lib=dlopen("libcuda.so.1",RTLD_LAZY|RTLD_NOLOAD)) {
+      CudaDriver d;
+      d.getCurrent=reinterpret_cast<CudaDriver::getCurrent_t>(dlsym(lib,"cuCtxGetCurrent"));
+      d.setCurrent=reinterpret_cast<CudaDriver::setCurrent_t>(dlsym(lib,"cuCtxSetCurrent"));
+      d.getDevice=reinterpret_cast<CudaDriver::getDevice_t>(dlsym(lib,"cuCtxGetDevice"));
+      if(d.ok()) {
+        driver=d;
+      }
+    }
+  }
+#endif
+  return driver;
+}
+
+/// The device of the CUDA context current in this thread, -1 if there is none
+int currentCudaDevice() {
+  const auto & cu=cudaDriver();
+  void* ctx=nullptr;
+  int dev=-1;
+  if(cu.ok() && cu.getCurrent(&ctx)==0 && ctx && cu.getDevice(&dev)==0) {
+    return dev;
+  }
+  return -1;
+}
+
+/// Makes a device the current one while in scope, and then gives back to the caller
+/// its current CUDA context: the MD code may be using another GPU, and it does not
+/// expect PLUMED to change it. The OpenACC runtime does not make its context current
+/// again before each operation, so this is done here too.
+/// The OpenACC device number is not restored: the runtime is linked statically in the
+/// plugin, so it is not shared with the caller (and selecting the previous device
+/// could create a context on a GPU that is not used at all). With device<0 nothing is done.
+class DeviceScope {
+  void* prevCtx_=nullptr;
+  bool restore_=false;
+public:
+  explicit DeviceScope(const int device) {
+    if(device<0) {
+      return;
+    }
+    const auto & cu=cudaDriver();
+    restore_ = cu.ok() && cu.getCurrent(&prevCtx_)==0;
+    if(acc_get_device_num(acc_device_not_host)!=device) {
+      acc_set_device_num(device,acc_device_not_host);
+    }
+    if(restore_) {
+      // null if the runtime has not initialized the device yet: it makes its
+      // context current when it does
+      void* ctx=acc_get_current_cuda_context();
+      void* cur=nullptr;
+      if(ctx && cu.getCurrent(&cur)==0 && cur!=ctx) {
+        cu.setCurrent(ctx);
+      }
+    }
+  }
+  ~DeviceScope() {
+    if(restore_) {
+      cudaDriver().setCurrent(prevCtx_);
+    }
+  }
+  DeviceScope(const DeviceScope&)=delete;
+  DeviceScope& operator=(const DeviceScope&)=delete;
 };
 
 /// Number of q values of a thread (its accumulators stay in registers)
@@ -195,21 +286,32 @@ void debyeRows(const double* dpos, const double* dff, const double* dq_list, con
 /// chunk on the uniform grid q0+k*dq, corrected for the deviations eps_k of the
 /// actual q values with a Taylor expansion (exact sin and cos, in another version of
 /// the kernel, when |eps_k r|>0.1 is possible for some pair or there are less than 4 q values).
+///
+/// Every call works on the device of the instance (DEVICEID, or by default the one
+/// the MD code is using) and leaves the device of the caller unchanged, see DeviceScope.
 class OpenACCDebye :
   public SAXSDebyeBackend {
-  CachedUpload ff_;
-  CachedUpload q_;
-  CachedUpload eps_;
-  OpenACC::memoryManager<double> pos_;
-  /// per row (m*numq+k): partial intensity and derivative
-  OpenACC::memoryManager<double> partial_;
-  OpenACC::memoryManager<double> grad_;
-  /// the same per tile, when the loop over j is split
-  OpenACC::memoryManager<double> tpartial_;
-  OpenACC::memoryManager<double> tgrad_;
-  OpenACC::memoryManager<double> sum_;
-  OpenACC::memoryManager<double> w_;
-  OpenACC::memoryManager<double> forces_;
+  /// device of this instance, -1 until it is known (or without GPUs)
+  int device_=-1;
+  /// whether there are GPUs (otherwise the kernels run on the host)
+  bool gpu_=false;
+  /// the device memory, that must be freed on its device
+  struct Buffers {
+    CachedUpload ff;
+    CachedUpload q;
+    CachedUpload eps;
+    OpenACC::memoryManager<double> pos;
+    /// per row (m*numq+k): partial intensity and derivative
+    OpenACC::memoryManager<double> partial;
+    OpenACC::memoryManager<double> grad;
+    /// the same per tile, when the loop over j is split
+    OpenACC::memoryManager<double> tpartial;
+    OpenACC::memoryManager<double> tgrad;
+    OpenACC::memoryManager<double> sum;
+    OpenACC::memoryManager<double> w;
+    OpenACC::memoryManager<double> forces;
+  };
+  std::unique_ptr<Buffers> buf_;
   std::vector<double> heps_;
   std::vector<double> hsum_;
   std::vector<double> hgrad_;
@@ -221,8 +323,13 @@ class OpenACCDebye :
   std::size_t first_=0;
   std::size_t stride_=1;
   bool computed_=false;
+  /// sets device_ to the device of the caller, if it has one
+  void followCaller();
 public:
   explicit OpenACCDebye(int deviceid);
+  ~OpenACCDebye() override;
+  OpenACCDebye(const OpenACCDebye&)=delete;
+  OpenACCDebye& operator=(const OpenACCDebye&)=delete;
   void compute(const std::vector<Vector>& pos,
                const std::vector<double>& ff,
                const std::vector<double>& q,
@@ -233,15 +340,32 @@ public:
                 std::vector<Vector>& forces) override;
 };
 
-OpenACCDebye::OpenACCDebye(const int deviceid) {
+OpenACCDebye::OpenACCDebye(const int deviceid):
+  buf_(std::make_unique<Buffers>()) {
   const int ndevices=acc_get_num_devices(acc_device_not_host);
   // with ACCTARGET=host there are no devices and the kernels run on the host
-  if(ndevices>0) {
+  gpu_ = ndevices>0;
+  if(gpu_) {
     if(deviceid>=0) {
       plumed_massert(deviceid<ndevices, "DEVICEID does not identify an available GPU");
-      acc_set_device_num(deviceid, acc_device_not_host);
+      device_=deviceid;
+    } else {
+      followCaller();
     }
   }
+}
+
+void OpenACCDebye::followCaller() {
+  const int dev=currentCudaDevice();
+  if(dev>=0 && dev<acc_get_num_devices(acc_device_not_host)) {
+    device_=dev;
+  }
+}
+
+OpenACCDebye::~OpenACCDebye() {
+  // the buffers are freed here, on their device (members are destroyed after the scope ends)
+  DeviceScope scope(device_);
+  buf_.reset();
 }
 
 void OpenACCDebye::compute(const std::vector<Vector>& pos,
@@ -267,6 +391,16 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   if(nrows==0) {
     return;
   }
+  if(gpu_ && device_<0) {
+    // the caller may have selected its device after creating this instance;
+    // if it has none, the current OpenACC device is used from now on
+    followCaller();
+    if(device_<0) {
+      device_=acc_get_device_num(acc_device_not_host);
+    }
+  }
+  DeviceScope scope(device_);
+  auto & b=*buf_;
 
   // q values as a uniform grid q0+k*dq plus deviations eps_k (as in SAXS)
   const double q0=q[0];
@@ -296,26 +430,26 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   ntile=std::max<std::size_t>(1,std::min(ntile,std::min(maxTiles,n)));
   const std::size_t tilesize=(n+ntile-1)/ntile;
 
-  pos_.resize(3*n);
-  pos_.copyToDeviceAsync(&pos[0][0], saxsQueue);
-  const double* dpos=pos_.devicePtr();
-  const double* dff=ff_.update(ff);
-  const double* dq_list=q_.update(q);
-  const double* deps=eps_.update(heps_);
-  partial_.resize(nrows);
-  grad_.resize(3*nrows);
-  sum_.resize(numq);
-  double* dpartial=partial_.devicePtr();
-  double* dgrad=grad_.devicePtr();
-  double* dsum=sum_.devicePtr();
+  b.pos.resize(3*n);
+  b.pos.copyToDeviceAsync(&pos[0][0], saxsQueue);
+  const double* dpos=b.pos.devicePtr();
+  const double* dff=b.ff.update(ff);
+  const double* dq_list=b.q.update(q);
+  const double* deps=b.eps.update(heps_);
+  b.partial.resize(nrows);
+  b.grad.resize(3*nrows);
+  b.sum.resize(numq);
+  double* dpartial=b.partial.devicePtr();
+  double* dgrad=b.grad.devicePtr();
+  double* dsum=b.sum.devicePtr();
   // with a single tile the threads write the rows directly
   double* outpartial=dpartial;
   double* outgrad=dgrad;
   if(ntile>1) {
-    tpartial_.resize(ntile*nrows);
-    tgrad_.resize(3*ntile*nrows);
-    outpartial=tpartial_.devicePtr();
-    outgrad=tgrad_.devicePtr();
+    b.tpartial.resize(ntile*nrows);
+    b.tgrad.resize(3*ntile*nrows);
+    outpartial=b.tpartial.devicePtr();
+    outgrad=b.tgrad.devicePtr();
   }
   const std::size_t f=first;
   const std::size_t s=stride;
@@ -329,8 +463,8 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
 
   // sum of the tiles, in a fixed order
   if(ntile>1) {
-    const double* dtpartial=tpartial_.devicePtr();
-    const double* dtgrad=tgrad_.devicePtr();
+    const double* dtpartial=b.tpartial.devicePtr();
+    const double* dtgrad=b.tgrad.devicePtr();
 #pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dtpartial,dtgrad,dpartial,dgrad) \
   firstprivate(nrows,ntile) default(none)
     for(std::size_t r=0; r<nrows; ++r) {
@@ -365,10 +499,10 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   }
 
   hsum_.resize(numq);
-  sum_.copyFromDeviceAsync(hsum_.data(), saxsQueue);
+  b.sum.copyFromDeviceAsync(hsum_.data(), saxsQueue);
   if(deriv) {
     hgrad_.resize(3*nrows);
-    grad_.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
+    b.grad.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
   }
   acc_wait(saxsQueue);
 
@@ -397,12 +531,14 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   if(nmine==0) {
     return;
   }
-  w_.resize(numq);
-  w_.copyToDeviceAsync(w.data(), saxsQueue);
-  forces_.resize(3*nmine);
-  const double* dw=w_.devicePtr();
-  const double* dgrad=grad_.devicePtr();
-  double* dforces=forces_.devicePtr();
+  DeviceScope scope(device_);
+  auto & b=*buf_;
+  b.w.resize(numq);
+  b.w.copyToDeviceAsync(w.data(), saxsQueue);
+  b.forces.resize(3*nmine);
+  const double* dw=b.w.devicePtr();
+  const double* dgrad=b.grad.devicePtr();
+  double* dforces=b.forces.devicePtr();
 
 #pragma acc parallel loop gang vector async(saxsQueue) deviceptr(dw,dgrad,dforces) firstprivate(numq,nmine) default(none)
   for(std::size_t m=0; m<nmine; ++m) {
@@ -422,7 +558,7 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   }
 
   hforces_.resize(3*nmine);
-  forces_.copyFromDeviceAsync(hforces_.data(), saxsQueue);
+  b.forces.copyFromDeviceAsync(hforces_.data(), saxsQueue);
   acc_wait(saxsQueue);
   for(std::size_t m=0; m<nmine; ++m) {
     forces[first_+m*stride_]+=Vector(hforces_[3*m],hforces_[3*m+1],hforces_[3*m+2]);

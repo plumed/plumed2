@@ -149,8 +149,9 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
 The Debye sum can be computed on a GPU with the USEGPU flag. The GPU implementations are provided by
 plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/openaccPTM in the
 PLUMED sources). The GPU is selected with DEVICEID (by default the one assigned to PLUMED by the MD
-code, or the first one). With MPI each rank computes a share of the sum on its own GPU; with SERIAL
-only the first rank uses its GPU and the results are shared with the others.
+code, otherwise the one the MD code is using, or the first one); the GPU in use by the MD code is left
+unchanged also when DEVICEID selects another one. With MPI each rank computes a share of the sum on
+its own GPU; with SERIAL only the first rank uses its GPU and the results are shared with the others.
 
 ````
 LOAD FILE=/path/to/plumedOpenACC.so
@@ -275,7 +276,7 @@ void SAXS::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose. With USEGPU only the first rank uses its GPU");
   keys.addFlag("USEGPU",false,"Calculate the Debye sum on the GPU, using a backend provided by a plugin that must be loaded with LOAD");
-  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used with USEGPU (-1: the one assigned by the MD code, or the first one)");
+  keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used with USEGPU (-1: the one assigned by the MD code, otherwise the one the MD code is using, or the first one)");
   keys.add("optional","GPU_BACKEND","The GPU backend to be used with USEGPU, needed only if more than one is loaded");
   keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
   keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
