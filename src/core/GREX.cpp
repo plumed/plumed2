@@ -220,6 +220,13 @@ void GREX::calculate() {
                   <<"): replicas must use PLUMED inputs that define the same values";
   }
   std::vector<char> rbuf(nn);
+  // performCalc() may have updated a time-dependent potential after caching
+  // its bias. Evaluate both configurations with that same current potential.
+  std::istringstream own(buffer);
+  plumedMain.readBinary(own);
+  plumedMain.setExchangeStep(true);
+  plumedMain.prepareDependencies();
+  plumedMain.justCalculate();
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
