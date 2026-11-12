@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <utility>
 #include "tools/Random.h"
+#include "tools/Tools.h"
 
 //this avoids nasty warnings on which we have no control
 //Here I am using the pragma for gcc/clang, for visual studio you'll need something different
@@ -56,10 +57,6 @@
 #include <torch/script.h>
 
 #pragma GCC diagnostic push
-
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
 
 namespace PLMD {
 namespace isdb {
@@ -326,8 +323,8 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   eps_(0.0001), mapstride_(0), gpu_(false) {
   // set constants
   inv_sqrt2_ = 1.0/sqrt(2.0);
-  sqrt2_pi_  = sqrt(2.0 / M_PI);
-  inv_pi2_   = 0.5 / M_PI / M_PI;
+  sqrt2_pi_  = sqrt(2.0 / pi);
+  inv_pi2_   = 0.5 / pi / pi;
 
   // list of atoms
   std::vector<AtomNumber> atoms;

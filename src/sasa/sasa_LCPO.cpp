@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
+#include "tools/Tools.h"
 #include <cstdio>
 #include <iostream>
 #include <string>
@@ -834,7 +835,7 @@ void SASA_LCPO::calculate() {
           Aijk = 0.0;
           Ajk = 0.0;
           double ri = LCPOparam[i][0];
-          S1 = 4*M_PI*ri*ri;
+          S1 = 4*pi*ri*ri;
           vector <double> dAijdc_2(3, 0);
           vector <double> dAijdc_4(3, 0);
 
@@ -844,10 +845,10 @@ void SASA_LCPO::calculate() {
             double d_ij = d_ij_vec.modulo()*10;
 
             double rj = LCPOparam[Nlist[i][j]][0];
-            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+            Aijt = (2*pi*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*pi*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
 
-            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
@@ -865,7 +866,7 @@ void SASA_LCPO::calculate() {
             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
-            dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
 
             dAijdc_2t[0] = dAdd * ddij_di[0];
@@ -881,11 +882,11 @@ void SASA_LCPO::calculate() {
                 double d_ik = d_ik_vec.modulo()*10;
 
                 double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                double sjk =  (2*pi*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
                 Ajkt += sjk;
-                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                Aikt += (2*pi*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
                 ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
@@ -896,7 +897,7 @@ void SASA_LCPO::calculate() {
                 dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
                 dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
                 dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
@@ -985,7 +986,7 @@ void SASA_LCPO::calculate() {
           Aijk = 0.0;
           Ajk = 0.0;
           double ri = LCPOparam[i][0];
-          S1 = 4*M_PI*ri*ri;
+          S1 = 4*pi*ri*ri;
           vector <double> dAijdc_2(3, 0);
           vector <double> dAijdc_4(3, 0);
 
@@ -995,10 +996,10 @@ void SASA_LCPO::calculate() {
             double d_ij = d_ij_vec.modulo()*10;
 
             double rj = LCPOparam[Nlist[i][j]][0];
-            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+            Aijt = (2*pi*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*pi*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
 
-            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
@@ -1015,7 +1016,7 @@ void SASA_LCPO::calculate() {
             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
-            dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
             dAijdc_2t[0] = dAdd * ddij_di[0];
             dAijdc_2t[1] = dAdd * ddij_di[1];
@@ -1030,11 +1031,11 @@ void SASA_LCPO::calculate() {
                 double d_ik = d_ik_vec.modulo()*10;
 
                 double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                double sjk =  (2*pi*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
                 Ajkt += sjk;
-                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                Aikt += (2*pi*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
                 ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
@@ -1045,7 +1046,7 @@ void SASA_LCPO::calculate() {
                 dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
                 dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
                 dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];

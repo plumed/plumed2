@@ -2,13 +2,15 @@
 # Runs a subset of the regtests with the plumed.exe of the Windows CMake build
 # (Git Bash on the GitHub runner). Used by .github/workflows/windows.yml.
 #
-# usage: .ci/windows-regtests serial|mpi
+# usage: .ci/windows-regtests serial|mpi|modules
 #
 # serial: tests without mpiprocs (one in three from regtest/basic, plus those
 #         that need asmjit), 4 at a time
 # mpi:    tests with mpiprocs>0, run with the embedded thread-MPI, one at a time
 #         (each one starts several threads, and a plumed.exe left behind by a
 #         timed-out test can then be killed without touching other tests)
+# modules: tests without mpiprocs of the default-off modules (a build with
+#         -DPLUMED_MODULES=all), 4 at a time
 #
 # Only tests that run the plumed executable (driver, plumed, sum_hills,
 # simplemd) are selected: "make" tests need Plumed.inc and a Unix toolchain.
@@ -27,7 +29,8 @@ mode=${1:-}
 case "$mode" in
   (serial) jobs=4 ; title="Windows regtests (CLI subset)" ;;
   (mpi)    jobs=1 ; title="Windows regtests (thread-MPI)" ;;
-  (*) echo "usage: $0 serial|mpi" >&2 ; exit 2 ;;
+  (modules) jobs=4 ; title="Windows regtests (default-off modules)" ;;
+  (*) echo "usage: $0 serial|mpi|modules" >&2 ; exit 2 ;;
 esac
 
 root=$PWD
@@ -44,9 +47,14 @@ mkdir -p "$out"
 : > "$progress"
 
 cd "$root/regtest"
+if [[ $mode = modules ]]; then
+  dirs=$(cd ../src && grep -l default-off */module.type | sed 's|/module.type||')
+else
+  dirs="basic gridtools isdb liquid_crystal multicolvar opes refdist secondarystructure"
+fi
 tests=()
 nbasic=0
-for d in basic gridtools isdb liquid_crystal multicolvar opes refdist secondarystructure; do
+for d in $dirs; do
   for t in "$d"/rt*/; do
     t=${t%/}
     [[ -f "$t/config" ]] || continue

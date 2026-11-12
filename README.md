@@ -173,9 +173,9 @@ A module that needs an external library provides its actions only if PLUMED
 is also configured with that library (see `./configure --help`, e.g.
 `--enable-libtorch` for `pytorch`). The modules of an installed PLUMED are listed by
 `plumed config show`, and `plumed config module ves` tells if a module is
-enabled. The Python wheels (`pip install plumed`) and the CMake build for
-Windows include only the `always` and `default-on` modules
-(see [PLATFORMS.md](PLATFORMS.md)).
+enabled. The Python wheels (`pip install plumed`) include only the `always`
+and `default-on` modules, and so does the CMake build for Windows unless
+`-DPLUMED_MODULES` says otherwise (see [PLATFORMS.md](PLATFORMS.md)).
 
 Plugins are compiled separately, against an installed PLUMED, and loaded at
 run time with the `LOAD` action (`LOAD FILE=plugin.so` in the input, or
@@ -259,12 +259,17 @@ first command:
 * `-DPLUMED_SHARED_KERNEL=ON`: build a shared kernel (`plumedKernel.dll`) that
   can be loaded at run time (`PLUMED_KERNEL`, Python package), instead of a
   static one to be linked into an MD code;
-* `-DPLUMED_ENABLE_VES=ON`: also compile the VES module;
+* `-DPLUMED_MODULES=...`: the modules to compile, with the syntax of
+  `./configure --enable-modules` (e.g. `+ves:+funnel`, or `all`). The modules
+  that need a library not supported by this build (`drr`, `fourier`,
+  `metatomic`, `pytorch`, `ttsketch`) are compiled without it, and their
+  actions are not available; `kenref` is not compiled;
 * `-DPLUMED_MSVC_DEBUG_INFO=ON`: function names in the stack trace of error
   messages.
 
 A subset of the regression tests is run from Git Bash with
-`.ci/windows-regtests serial` (and `mpi`, with the embedded thread-MPI). The
+`.ci/windows-regtests serial` (and `mpi`, with the embedded thread-MPI, and
+`modules`, for the `default-off` modules of a build with `-DPLUMED_MODULES=all`). The
 script expects `build/plumed.exe`, as produced by the Ninja generator (add
 `-G Ninja` to the first command, in the Developer PowerShell). If you only need
 PLUMED from Python or the `plumed` command line tools, `python -m pip install plumed`

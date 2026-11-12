@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
+#include "tools/Tools.h"
 #include <cstdio>
 #include <iostream>
 #include <string>
@@ -860,7 +861,7 @@ void SASA_HASEL::calculate() {
     for(unsigned i = 0; i < natoms; i++) {
       if(SASAparam[i].size() > 0) {
         double ri = SASAparam[i][0];
-        Si = 4*M_PI*ri*ri;
+        Si = 4*pi*ri*ri;
         sasai = 1.0;
 
         vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
@@ -889,7 +890,7 @@ void SASA_HASEL::calculate() {
           double d_ij = d_ij_vec.modulo()*10;
 
           double rj = SASAparam[Nlist[i][j]][0];
-          bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
+          bij = pi*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
 
           sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
 
@@ -897,9 +898,9 @@ void SASA_HASEL::calculate() {
           ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
           ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
 
-          dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
-          dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
-          dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[0] = -pi*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
+          dbij_di[1] = -pi*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[2] = -pi*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
 
           dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
           dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];
@@ -948,7 +949,7 @@ void SASA_HASEL::calculate() {
 
       if(SASAparam[i].size() > 0) {
         double ri = SASAparam[i][0];
-        Si = 4*M_PI*ri*ri;
+        Si = 4*pi*ri*ri;
         sasai = 1.0;
 
         vector <vector <double> > derTerm( Nlist[i].size(), vector <double>(3));
@@ -977,7 +978,7 @@ void SASA_HASEL::calculate() {
           double d_ij = d_ij_vec.modulo()*10;
 
           double rj = SASAparam[Nlist[i][j]][0];
-          bij = M_PI*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
+          bij = pi*ri*(ri+rj-d_ij)*(1+(rj-ri)/d_ij); //Angstrom2
 
           sasai = sasai*(1-SASAparam[i][1]*pij*bij/Si); //nondimensional
 
@@ -985,9 +986,9 @@ void SASA_HASEL::calculate() {
           ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
           ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
 
-          dbij_di[0] = -M_PI*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
-          dbij_di[1] = -M_PI*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
-          dbij_di[2] = -M_PI*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[0] = -pi*ri*ddij_di[0]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij)); //Angstrom
+          dbij_di[1] = -pi*ri*ddij_di[1]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
+          dbij_di[2] = -pi*ri*ddij_di[2]*(1+(ri+rj)*(rj-ri)/(d_ij*d_ij));
 
           dAijt_di[0] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[0]; //Angstrom-1
           dAijt_di[1] += -1/(Si/(SASAparam[i][1]*pij)-bij)*dbij_di[1];

@@ -4775,10 +4775,10 @@ void SAXS::getOnebeadIonparam_saxs(std::vector<std::vector<long double> > &FF_tm
     double c, v, bN, m;
     getIonData(t, a, b, c, v, bN, m);
     const unsigned slot = obSlot(t);
-    const double volr = std::pow(v, 2.0/3.0)/(4.*M_PI);
+    const double volr = std::pow(v, 2.0/3.0)/(4.*pi);
     for(unsigned k=0; k<numq; ++k) {
       const double q = q_list[k];
-      const double s = q/(4.*M_PI);
+      const double s = q/(4.*pi);
       double fa = c;
       for(unsigned j=0; j<4; ++j) {
         fa += a[j]*std::exp(-b[j]*s*s);
@@ -4815,7 +4815,7 @@ void SAXS::getOnebeadIonparam_sans(std::vector<std::vector<long double> > &FF_tm
     double c, v, bN, m;
     getIonData(t, a, b, c, v, bN, m);
     const unsigned slot = obSlot(t);
-    const double volr = std::pow(v, 2.0/3.0)/(4.*M_PI);
+    const double volr = std::pow(v, 2.0/3.0)/(4.*pi);
     for(unsigned k=0; k<numq; ++k) {
       const double q = q_list[k];
       const double fs = v*std::exp(-volr*q*q);

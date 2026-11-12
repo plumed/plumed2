@@ -1345,7 +1345,7 @@ void SAXS::lcpoUpdateList() {
         const double ri = LCPOparam[i][0];
         const double rj = LCPOparam[j][0];
         lcpo_idx_[n] = j;
-        lcpo_term_[n] = (2.*M_PI*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
+        lcpo_term_[n] = (2.*pi*ri*(ri-d_ij/2.-((ri*ri-rj*rj)/(2.*d_ij))));
         n++;
       }
     }
@@ -1374,7 +1374,7 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
       double Aijk = 0.0;
       double Ajk = 0.0;
       const double ri = LCPOparam[i][0];
-      const double S1 = 4.*M_PI*ri*ri;
+      const double S1 = 4.*pi*ri*ri;
       for (std::size_t e = lcpo_off_[i]; e < lcpo_off_[i+1]; ++e) {
         is_neighbor[lcpo_idx_[e]] = ~std::uint64_t(0);
       }
@@ -2254,11 +2254,11 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
   if( moldat ) {
     // cycle over the atom types
     for(unsigned i=0; i<NTT; ++i) {
-      const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
+      const double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * pi);
       // cycle over q
       for(unsigned k=0; k<q_list.size(); ++k) {
         const double q = q_list[k];
-        const double s = q / (4. * M_PI);
+        const double s = q / (4. * pi);
         FF_tmp[k][i] = param_c[i];
         // SUM [a_i * EXP( - b_i * (q/4pi)^2 )] Waasmaier and Kirfel (1995)
         for(unsigned j=0; j<4; ++j) {
@@ -2363,7 +2363,7 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
   if( moldat ) {
     // cycle over the atom types
     for(unsigned i=0; i<NTT; ++i) {
-      double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * M_PI);
+      double volr = std::pow(param_v[i], (2.0/3.0)) /(4. * pi);
       // cycle over q
       for(unsigned k=0; k<q_list.size(); ++k) {
         const double q = q_list[k];

@@ -20,6 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
+#include "tools/Tools.h"
 #include <cmath>
 #ifdef __PLUMED_HAS_OPENACC
 //there are some issues with nvc++ and the declaration of omp here
@@ -220,8 +221,8 @@ void memFusionP::calculate() {
 #endif
 #endif
   for (unsigned i = 0; i < UMEM.size(); i++) {
-    uMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
-    lMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
+    uMemAngle = 2.0 * pi * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
+    lMemAngle = 2.0 * pi * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
     ZuMemcos += cos(uMemAngle);
     ZuMemsin += sin(uMemAngle);
     ZlMemcos += cos(lMemAngle);
@@ -233,8 +234,8 @@ void memFusionP::calculate() {
   ZlMemcos = ZlMemcos / UMEM.size();
   ZlMemsin = ZlMemsin / UMEM.size();
 
-  ZuMem = Lz * (atan2(-ZuMemsin, -ZuMemcos) + M_PI) / (2.0 * M_PI);
-  ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + M_PI) / (2.0 * M_PI);
+  ZuMem = Lz * (atan2(-ZuMemsin, -ZuMemcos) + pi) / (2.0 * pi);
+  ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + pi) / (2.0 * pi);
 
   // Z center of the both membranes (upper and lower).
   double ZMems = (ZuMem + ZlMem) / 2.0;
@@ -333,28 +334,28 @@ void memFusionP::calculate() {
           if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
             faxial_Mem[i + TAILS.size() * s] = 1.0;
             Fs_Mem[s] += 1.0;
-            sx_Mem[s] += sin(2.0 * M_PI * TailPosition[0]);
-            sy_Mem[s] += sin(2.0 * M_PI * TailPosition[1]);
-            cx_Mem[s] += cos(2.0 * M_PI * TailPosition[0]);
-            cy_Mem[s] += cos(2.0 * M_PI * TailPosition[1]);
+            sx_Mem[s] += sin(2.0 * pi * TailPosition[0]);
+            sy_Mem[s] += sin(2.0 * pi * TailPosition[1]);
+            cx_Mem[s] += cos(2.0 * pi * TailPosition[0]);
+            cy_Mem[s] += cos(2.0 * pi * TailPosition[1]);
           } else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0]))) {
             aux = 0.5 - ((3.0 * x - 3.0) / (4.0 * HMEM[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             d_faxial_Mem_dz[i + TAILS.size() * s] = ((-3.0 / (4.0 * HMEM[0])) + ((3.0 * pow((x - 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * 2.0 / DSMEM[0];
             Fs_Mem[s] += aux;
-            sx_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[0]);
-            sy_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[1]);
-            cx_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[0]);
-            cy_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[1]);
+            sx_Mem[s] += aux * sin(2.0 * pi * TailPosition[0]);
+            sy_Mem[s] += aux * sin(2.0 * pi * TailPosition[1]);
+            cx_Mem[s] += aux * cos(2.0 * pi * TailPosition[0]);
+            cy_Mem[s] += aux * cos(2.0 * pi * TailPosition[1]);
           } else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0]))) {
             aux = 0.5 + ((3.0 * x + 3.0) / (4.0 * HMEM[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             d_faxial_Mem_dz[i + TAILS.size() * s] = ((3.0 / (4.0 * HMEM[0])) - ((3.0 * pow((x + 1), 2)) / (4.0 * pow(HMEM[0], 3)))) * 2.0 / DSMEM[0];
             Fs_Mem[s] += aux;
-            sx_Mem[s] += (aux * sin(2.0 * M_PI * TailPosition[0]));
-            sy_Mem[s] += (aux * sin(2.0 * M_PI * TailPosition[1]));
-            cx_Mem[s] += (aux * cos(2.0 * M_PI * TailPosition[0]));
-            cy_Mem[s] += (aux * cos(2.0 * M_PI * TailPosition[1]));
+            sx_Mem[s] += (aux * sin(2.0 * pi * TailPosition[0]));
+            sy_Mem[s] += (aux * sin(2.0 * pi * TailPosition[1]));
+            cx_Mem[s] += (aux * cos(2.0 * pi * TailPosition[0]));
+            cy_Mem[s] += (aux * cos(2.0 * pi * TailPosition[1]));
           }
         }
       }
@@ -388,8 +389,8 @@ void memFusionP::calculate() {
     Xcyl_Mem = XCYL[0];
     Ycyl_Mem = YCYL[0];
   } else {
-    Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + M_PI) * Lx / (2 * M_PI);
-    Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + M_PI) * Ly / (2 * M_PI);
+    Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + pi) * Lx / (2 * pi);
+    Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + pi) * Ly / (2 * pi);
   }
 
   // Eq. 25, 26 and 27 Hub & Awasthi JCTC 2017.
@@ -423,15 +424,15 @@ void memFusionP::calculate() {
   double auxX_Mem = (1 / (pow(Xsc_Mem, 2) + pow(Xcc_Mem, 2))), auxY_Mem = (1 / (pow(Ysc_Mem, 2) + pow(Ycc_Mem, 2)));
 
   if (auxX_Mem > ONEOVERS2C2CUTOFF[0]) {
-    auxX_Mem = Lx * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
+    auxX_Mem = Lx * ONEOVERS2C2CUTOFF[0] / (2 * pi);
   } else {
-    auxX_Mem = Lx * auxX_Mem / (2 * M_PI);
+    auxX_Mem = Lx * auxX_Mem / (2 * pi);
   }
 
   if (auxY_Mem > ONEOVERS2C2CUTOFF[0]) {
-    auxY_Mem = Ly * ONEOVERS2C2CUTOFF[0] / (2 * M_PI);
+    auxY_Mem = Ly * ONEOVERS2C2CUTOFF[0] / (2 * pi);
   } else {
-    auxY_Mem = Ly * auxY_Mem / (2 * M_PI);
+    auxY_Mem = Ly * auxY_Mem / (2 * pi);
   }
 
   // Number of lipid tails within the slice s of the membranes cylinder.
@@ -467,19 +468,19 @@ void memFusionP::calculate() {
       d_Ycc_Mem_dz = 0.0;
       for (unsigned s = s1_Mem[i]; s <= s2_Mem[i]; s++) {
         if (Fs_Mem[s] != 0.0) {
-          d_sx_Mem_dx = faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * cos(2.0 * M_PI * TailPosition[0]) / (Lx * Fs_Mem[s]);
-          d_sy_Mem_dy = faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * cos(2.0 * M_PI * TailPosition[1]) / (Ly * Fs_Mem[s]);
-          d_cx_Mem_dx = -faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * sin(2.0 * M_PI * TailPosition[0]) / (Lx * Fs_Mem[s]);
-          d_cy_Mem_dy = -faxial_Mem[i + TAILS.size() * s] * 2.0 * M_PI * sin(2.0 * M_PI * TailPosition[1]) / (Ly * Fs_Mem[s]);
+          d_sx_Mem_dx = faxial_Mem[i + TAILS.size() * s] * 2.0 * pi * cos(2.0 * pi * TailPosition[0]) / (Lx * Fs_Mem[s]);
+          d_sy_Mem_dy = faxial_Mem[i + TAILS.size() * s] * 2.0 * pi * cos(2.0 * pi * TailPosition[1]) / (Ly * Fs_Mem[s]);
+          d_cx_Mem_dx = -faxial_Mem[i + TAILS.size() * s] * 2.0 * pi * sin(2.0 * pi * TailPosition[0]) / (Lx * Fs_Mem[s]);
+          d_cy_Mem_dy = -faxial_Mem[i + TAILS.size() * s] * 2.0 * pi * sin(2.0 * pi * TailPosition[1]) / (Ly * Fs_Mem[s]);
           d_Xsc_Mem_dx += ws_Mem[s] * d_sx_Mem_dx / W_Mem;
           d_Xcc_Mem_dx += ws_Mem[s] * d_cx_Mem_dx / W_Mem;
           d_Ysc_Mem_dy += ws_Mem[s] * d_sy_Mem_dy / W_Mem;
           d_Ycc_Mem_dy += ws_Mem[s] * d_cy_Mem_dy / W_Mem;
 
-          d_sx_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (sin(2.0 * M_PI * TailPosition[0]) - sx_Mem[s]) / Fs_Mem[s];
-          d_sy_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (sin(2.0 * M_PI * TailPosition[1]) - sy_Mem[s]) / Fs_Mem[s];
-          d_cx_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (cos(2.0 * M_PI * TailPosition[0]) - cx_Mem[s]) / Fs_Mem[s];
-          d_cy_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (cos(2.0 * M_PI * TailPosition[1]) - cy_Mem[s]) / Fs_Mem[s];
+          d_sx_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (sin(2.0 * pi * TailPosition[0]) - sx_Mem[s]) / Fs_Mem[s];
+          d_sy_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (sin(2.0 * pi * TailPosition[1]) - sy_Mem[s]) / Fs_Mem[s];
+          d_cx_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (cos(2.0 * pi * TailPosition[0]) - cx_Mem[s]) / Fs_Mem[s];
+          d_cy_Mem_dz = d_faxial_Mem_dz[i + TAILS.size() * s] * (cos(2.0 * pi * TailPosition[1]) - cy_Mem[s]) / Fs_Mem[s];
           d_ws_Mem_dz = (1 - pow(ws_Mem[s], 2)) * d_faxial_Mem_dz[i + TAILS.size() * s];
           d_Xsc_Mem_dz += (ws_Mem[s] * d_sx_Mem_dz + d_ws_Mem_dz * (sx_Mem[s] - Xsc_Mem)) / W_Mem;
           d_Xcc_Mem_dz += (ws_Mem[s] * d_cx_Mem_dz + d_ws_Mem_dz * (cx_Mem[s] - Xcc_Mem)) / W_Mem;
