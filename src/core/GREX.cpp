@@ -243,7 +243,9 @@ void GREX::calculate() {
     // needs U_local(x_partner), already summed over local domains by caching.
     // Replace the value after deserialization; do not sum it a second time.
     for(auto* input : plumedMain.getActionSet().select<ActionToPutData*>()) {
-      if(input->getName()=="ENERGY") input->copyOutput(0)->set(localUSwap);
+      if(input->getName()=="ENERGY") {
+        input->copyOutput(0)->set(localUSwap);
+      }
     }
   }
   plumedMain.setExchangeStep(true);
@@ -251,7 +253,9 @@ void GREX::calculate() {
   plumedMain.justCalculate();
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
-  if(physicalEnergiesProvided) localDeltaBias+=localUSwap-localUNow;
+  if(physicalEnergiesProvided) {
+    localDeltaBias+=localUSwap-localUNow;
+  }
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
