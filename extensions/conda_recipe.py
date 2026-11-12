@@ -212,8 +212,8 @@ package:
 source:
   path: ../..
 build:
-  number: 0
-  string: cuda{{ cuda_compiler_version | replace('.', '') }}_base_{{ base_build }}_0
+  number: 1
+  string: cuda{{ cuda_compiler_version | replace('.', '') }}_base_{{ base_build }}_1
   skip: true  # [not linux]
 requirements:
   build:

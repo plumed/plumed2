@@ -5,7 +5,9 @@ export PLUMED_KERNEL="$PREFIX/lib/libplumedKernel.so"
 python extensions/register.py --plumed "$PREFIX/bin/plumed" --module cuda_coordination \
   --library ../../CudaCoordination.so --variant "cuda${cuda_compiler_version}" \
   --features CUDA --output "$SRC_DIR/cuda-registration"
-cp "$SRC_DIR/cuda-registration/module_identity.cpp" "$SRC_DIR/plugins/cudaCoord/src/ModuleIdentity.cpp"
+# configure.sh translates the kernel flags for NVCC. Use the plugin's explicit
+# CUDA rule; make's implicit C++ rule would pass -Xcompiler flags to plain g++.
+cp "$SRC_DIR/cuda-registration/module_identity.cpp" "$SRC_DIR/plugins/cudaCoord/src/ModuleIdentity.cu"
 cd plugins/cudaCoord
 bash configure.sh
 # Use the architecture matrix from conda-forge's compiler activation. For older
