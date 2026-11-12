@@ -147,4 +147,20 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
         check=True,
         timeout=30,
     )
+    # The same compiled modules must also be discoverable through eager loading,
+    # including their native dependency and distinct hyphen/underscore names.
+    subprocess.run(
+        [
+            program,
+            "modules",
+            "--has",
+            "feature-a",
+            "feature_a",
+            "feature_b",
+            "-q",
+        ],
+        env=dict(env, PLUMED_AUTOLOAD="1"),
+        check=True,
+        timeout=30,
+    )
 print("Per-module kernel/extension feature isolation passed")
