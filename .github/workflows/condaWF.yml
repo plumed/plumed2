@@ -30,6 +30,8 @@ jobs:
     - name: Build PLUMED
       run: |
         source activate base
+        # Native CI defaults must not override conda's activated compiler.
+        unset CC CXX
         export VERSION=none
         if [[ $GITHUB_REF == "refs/tags/"* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
@@ -41,6 +43,7 @@ jobs:
     - name: Test optional MPI packages
       run: |
         source activate base
+        unset CC CXX
         make -C conda test
     - name: Deploy
       env:
