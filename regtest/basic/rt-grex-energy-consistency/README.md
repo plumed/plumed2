@@ -11,3 +11,9 @@ Two replicas exercise GREX without an MD-engine acceptance calculation.
 The test calls no update during the foreign calculation. It is compatible with
 native MPI and the existing internal MPI test harness. A serial-only kernel
 with its MPI adapter can run the unchanged rank body through a native MPI host.
+
+The same analytic checks also run through the direct host evaluation path:
+`setExchangeStep` activates exchange dependencies, `prepareCalc` shares the
+host's current inputs and `performCalcNoForces` evaluates only the bias. Own and
+foreign configurations use the same updated potential, and force/virial arrays
+must remain unchanged. No extra deposition or update is requested.
