@@ -115,6 +115,7 @@ for name, module in catalog["modules"].items():
     test:
       commands:
         - plumed config module {name} -q
+        - test ! -f "$PREFIX/lib/plumed/plugins/{name}.json"
         - test ! -f "$PREFIX/lib/plumed/plugins/{name}.plumed"
     about:
       home: https://www.plumed.org/

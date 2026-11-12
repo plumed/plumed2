@@ -11,6 +11,7 @@ cp "$kernel" "$task/kernel-before"
 # Compatibility packages contain no plugin: the module moved into the kernel.
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge "plumed-ext-opes=$VERSION"
 "$prefix/bin/plumed" config module opes -q
+test ! -e "$prefix/lib/plumed/plugins/opes.json"
 test ! -e "$prefix/lib/plumed/plugins/opes.plumed"
 cmp "$kernel" "$task/kernel-before"
 ! "$prefix/bin/plumed" modules -q --has ves
