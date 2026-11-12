@@ -28,6 +28,7 @@ fi
 # Fat binaries include all configured GPU targets. Device LTO is left off so
 # each target carries normal device code through the separate link step.
 make -j"${CPU_COUNT:-4}" CXX="$CXX" NVCC="$nvcc" \
+  PLUMED_INCLUDE="-I$PREFIX/include -I$PREFIX/include/plumed" \
   EXTRA_OBJS=ModuleIdentity.o \
   DYNAMIC_LIBS="-L$PREFIX/lib" \
   NVCCCFLAGS="-dc --forward-unknown-to-host-compiler -Xcompiler -pthread $gencode" \
