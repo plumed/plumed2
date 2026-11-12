@@ -92,6 +92,8 @@ class FeatureProbes:
                     )
                 )
             except (OSError, subprocess.CalledProcessError):
+                # pkg-config is optional; the compile/link probe below still
+                # checks the conventional include paths and library names.
                 pass
         source = self.directory / (feature + ".cpp")
         output = self.directory / (feature + ".exe")

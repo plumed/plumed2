@@ -21,6 +21,12 @@ recipes = (
     "plumed-cuda-coordination",
     "plumed-openacc",
 )
+# Select escaping by filename: these recipes are YAML, so dependency operators
+# such as >= must stay literal. HTML/XML templates would still be escaped.
+templates = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(source / "conda"),
+    autoescape=jinja2.select_autoescape(),
+)
 for revision in (0, 201001):
 
     def compatible(name, **options):
@@ -44,9 +50,8 @@ for revision in (0, 201001):
         "nvhpc_version": "25.11",
     }
     for recipe in recipes:
-        path = source / "conda" / recipe / "meta.yaml"
         document = yaml.safe_load(
-            jinja2.Environment().from_string(path.read_text()).render(**context)
+            templates.get_template(recipe + "/meta.yaml").render(**context)
         )
         assert document["package"]["version"] == "2026.11.12"
         expected = revision + (
