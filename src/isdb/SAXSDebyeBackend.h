@@ -69,7 +69,8 @@ public:
 
 /// Content of the register of the backends
 struct SAXSDebyeBackendPointers {
-  /// creates a backend for a given device (-1: default device)
+  /// creates a backend; deviceid is the GPU assigned to PLUMED by the MD code
+  /// (PlumedMain::getGpuDeviceId, -1 if none)
   typedef std::unique_ptr<SAXSDebyeBackend>(*creator_pointer)(int deviceid);
   creator_pointer create;
 };

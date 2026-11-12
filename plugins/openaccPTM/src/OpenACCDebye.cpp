@@ -22,6 +22,7 @@
 #include "plumed/isdb/SAXSDebyeBackend.h"
 #include "plumed/tools/OpenACC.h"
 #include "plumed/tools/Exception.h"
+#include "ACCDevice.h"
 
 #include <openacc.h>
 
@@ -31,10 +32,6 @@
 #include <cstring>
 #include <memory>
 #include <vector>
-
-#if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
-#include <dlfcn.h>
-#endif
 
 namespace PLMD {
 namespace isdb {
@@ -62,92 +59,6 @@ public:
     }
     return device.devicePtr();
   }
-};
-
-/// The few functions of the CUDA driver needed to save and restore the CUDA context
-/// of the caller (e.g. the MD code), see DeviceScope. They are taken from the
-/// driver library that is already loaded (by the caller or by the OpenACC runtime),
-/// so that the plugin does not depend on it at link time.
-struct CudaDriver {
-  typedef int (*getCurrent_t)(void**);
-  typedef int (*setCurrent_t)(void*);
-  typedef int (*getDevice_t)(int*);
-  getCurrent_t getCurrent=nullptr;
-  setCurrent_t setCurrent=nullptr;
-  getDevice_t getDevice=nullptr;
-  bool ok() const {
-    return getCurrent && setCurrent && getDevice;
-  }
-};
-
-/// The CUDA driver, or an empty one if it is not (yet) loaded or not available
-const CudaDriver& cudaDriver() {
-  static CudaDriver driver;
-#if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
-  if(!driver.ok()) {
-    // never released: the driver stays loaded until the end of the process anyway
-    if(void* lib=dlopen("libcuda.so.1",RTLD_LAZY|RTLD_NOLOAD)) {
-      CudaDriver d;
-      d.getCurrent=reinterpret_cast<CudaDriver::getCurrent_t>(dlsym(lib,"cuCtxGetCurrent"));
-      d.setCurrent=reinterpret_cast<CudaDriver::setCurrent_t>(dlsym(lib,"cuCtxSetCurrent"));
-      d.getDevice=reinterpret_cast<CudaDriver::getDevice_t>(dlsym(lib,"cuCtxGetDevice"));
-      if(d.ok()) {
-        driver=d;
-      }
-    }
-  }
-#endif
-  return driver;
-}
-
-/// The device of the CUDA context current in this thread, -1 if there is none
-int currentCudaDevice() {
-  const auto & cu=cudaDriver();
-  void* ctx=nullptr;
-  int dev=-1;
-  if(cu.ok() && cu.getCurrent(&ctx)==0 && ctx && cu.getDevice(&dev)==0) {
-    return dev;
-  }
-  return -1;
-}
-
-/// Makes a device the current one while in scope, and then gives back to the caller
-/// its current CUDA context: the MD code may be using another GPU, and it does not
-/// expect PLUMED to change it. The OpenACC runtime does not make its context current
-/// again before each operation, so this is done here too.
-/// The OpenACC device number is not restored: the runtime is linked statically in the
-/// plugin, so it is not shared with the caller (and selecting the previous device
-/// could create a context on a GPU that is not used at all). With device<0 nothing is done.
-class DeviceScope {
-  void* prevCtx_=nullptr;
-  bool restore_=false;
-public:
-  explicit DeviceScope(const int device) {
-    if(device<0) {
-      return;
-    }
-    const auto & cu=cudaDriver();
-    restore_ = cu.ok() && cu.getCurrent(&prevCtx_)==0;
-    if(acc_get_device_num(acc_device_not_host)!=device) {
-      acc_set_device_num(device,acc_device_not_host);
-    }
-    if(restore_) {
-      // null if the runtime has not initialized the device yet: it makes its
-      // context current when it does
-      void* ctx=acc_get_current_cuda_context();
-      void* cur=nullptr;
-      if(ctx && cu.getCurrent(&cur)==0 && cur!=ctx) {
-        cu.setCurrent(ctx);
-      }
-    }
-  }
-  ~DeviceScope() {
-    if(restore_) {
-      cudaDriver().setCurrent(prevCtx_);
-    }
-  }
-  DeviceScope(const DeviceScope&)=delete;
-  DeviceScope& operator=(const DeviceScope&)=delete;
 };
 
 /// Number of q values of a thread (its accumulators stay in registers)
@@ -287,15 +198,15 @@ void debyeRows(const double* dpos, const double* dff, const double* dq_list, con
 /// actual q values with a Taylor expansion (exact sin and cos, in another version of
 /// the kernel, when |eps_k r|>0.1 is possible for some pair or there are less than 4 q values).
 ///
-/// Every call works on the device of the instance (DEVICEID, or by default the one
-/// the MD code is using) and leaves the device of the caller unchanged, see DeviceScope.
+/// Every call works on the GPU of the instance and leaves the GPU of the caller
+/// unchanged, see ACCDevice.h.
 class OpenACCDebye :
   public SAXSDebyeBackend {
-  /// device of this instance, -1 until it is known (or without GPUs)
-  int device_=-1;
-  /// whether there are GPUs (otherwise the kernels run on the host)
-  bool gpu_=false;
-  /// the device memory, that must be freed on its device
+  /// the GPU assigned to PLUMED by the MD code, -1 if none
+  const int mdDevice_;
+  /// the GPU of this instance
+  ACC::Device device_;
+  /// the device memory, that must be freed on its GPU
   struct Buffers {
     CachedUpload ff;
     CachedUpload q;
@@ -323,8 +234,6 @@ class OpenACCDebye :
   std::size_t first_=0;
   std::size_t stride_=1;
   bool computed_=false;
-  /// sets device_ to the device of the caller, if it has one
-  void followCaller();
 public:
   explicit OpenACCDebye(int deviceid);
   ~OpenACCDebye() override;
@@ -341,30 +250,13 @@ public:
 };
 
 OpenACCDebye::OpenACCDebye(const int deviceid):
+  mdDevice_(deviceid),
   buf_(std::make_unique<Buffers>()) {
-  const int ndevices=acc_get_num_devices(acc_device_not_host);
-  // with ACCTARGET=host there are no devices and the kernels run on the host
-  gpu_ = ndevices>0;
-  if(gpu_) {
-    if(deviceid>=0) {
-      plumed_massert(deviceid<ndevices, "DEVICEID does not identify an available GPU");
-      device_=deviceid;
-    } else {
-      followCaller();
-    }
-  }
-}
-
-void OpenACCDebye::followCaller() {
-  const int dev=currentCudaDevice();
-  if(dev>=0 && dev<acc_get_num_devices(acc_device_not_host)) {
-    device_=dev;
-  }
 }
 
 OpenACCDebye::~OpenACCDebye() {
-  // the buffers are freed here, on their device (members are destroyed after the scope ends)
-  DeviceScope scope(device_);
+  // the buffers are freed here, on their GPU (members are destroyed after the scope ends)
+  ACC::DeviceScope scope(device_.id());
   buf_.reset();
 }
 
@@ -391,15 +283,7 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
   if(nrows==0) {
     return;
   }
-  if(gpu_ && device_<0) {
-    // the caller may have selected its device after creating this instance;
-    // if it has none, the current OpenACC device is used from now on
-    followCaller();
-    if(device_<0) {
-      device_=acc_get_device_num(acc_device_not_host);
-    }
-  }
-  DeviceScope scope(device_);
+  ACC::DeviceScope scope(device_.resolve(mdDevice_));
   auto & b=*buf_;
 
   // q values as a uniform grid q0+k*dq plus deviations eps_k (as in SAXS)
@@ -531,7 +415,8 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   if(nmine==0) {
     return;
   }
-  DeviceScope scope(device_);
+  // compute has chosen the GPU
+  ACC::DeviceScope scope(device_.id());
   auto & b=*buf_;
   b.w.resize(numq);
   b.w.copyToDeviceAsync(w.data(), saxsQueue);

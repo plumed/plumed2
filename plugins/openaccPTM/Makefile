@@ -100,10 +100,15 @@ $(PLUGIN): $(OBJS)
 clean:
 	@rm -fv $(OBJS) $(PLUGIN)
 	@rm -rf .deps
+	@$(MAKE) -C gpucheck clean
 
 check: all
 	$(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
+
+# on a node with GPUs: checks that the plugin leaves the GPU of the MD code alone (see gpucheck/)
+check-gpu: all
+	$(MAKE) -C gpucheck
 
 astyle:
 	@../astyle.sh
