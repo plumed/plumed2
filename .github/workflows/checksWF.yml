@@ -18,6 +18,16 @@ env:
   CXX: g++
 
 jobs:
+
+  module-declarations:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Check default requirements and configure module selection
+      run: |
+        python3 extensions/tests/kernel_requirements.py
+        python3 extensions/tests/configure_selection.py
+        python3 extensions/tests/requirements.py
   # Build of all modules with clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which
   # flags hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
   # embedded third-party libraries) fails the job. Build only, to keep the gate short: the regtests of

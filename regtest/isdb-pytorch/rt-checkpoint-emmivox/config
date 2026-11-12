@@ -1,5 +1,5 @@
 type=driver
-plumed_needs=libtorch
+plumed_has="isdb-pytorch:libtorch"
 # Reference run: the whole trajectory (6 frames), with the checkpointing signal every 2 steps
 arg="--plumed plumed.dat --mf_pdb traj.pdb --checkpoint-stride 2"
 export PLUMED_NUM_THREADS=2
