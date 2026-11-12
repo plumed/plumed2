@@ -9,7 +9,6 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import os
-from pathlib import Path
 import platform
 import re
 import shlex
@@ -18,9 +17,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 from setuptools import build_meta as _setuptools_backend
-
 
 PYTHON_ROOT = Path(__file__).resolve().parent
 RUNTIME_PACKAGE = PYTHON_ROOT / "plumed" / "runtime"
@@ -368,7 +367,7 @@ def _relocate_compile_options(path: Path) -> None:
         if line.startswith(("link_uninstalled=", "link_libs_uninstalled=")):
             continue
         # Rewrite installed linking commands (link_shared has no kernel).
-        if line.startswith("link_") and "libplumedKernel." in line:
+        if line.startswith(("link_", "mklib_link_")) and "libplumedKernel." in line:
             line, count = re.subn(
                 r"\S*/(libplumedKernel\.(?:so|dylib))",
                 lambda match: f"{link_flags} {kernel_dir}/{match.group(1)}",
@@ -388,6 +387,7 @@ def _uses_old_cxx_abi(compile_line: str) -> bool:
     compiler = shlex.split(compile_line[len("compile='") :].split(" -c ")[0])
     probe = subprocess.run(
         [*compiler, "-x", "c++", "-E", "-"],
+        check=False,
         input="#include <string>\n_GLIBCXX_USE_CXX11_ABI\n",
         capture_output=True,
         text=True,
