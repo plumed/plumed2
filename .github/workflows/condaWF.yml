@@ -59,7 +59,7 @@ jobs:
         python extensions/conda_recipe.py
         python conda/tests/publication.py
         make -C conda
-    - name: Test optional MPI packages
+    - name: Validate extensions, MPI providers and Python plugins
       run: |
         source activate base
         unset CC CXX
