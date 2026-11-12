@@ -435,16 +435,12 @@ ParallelTaskManager<T>::ParallelTaskManager(ActionWithVector* av):
   nthreaded_forces(0),
   myinput(ParallelActionsInput::create(av->getPbc())),
   workspace_size(0) {
+  // the GPU versions are other actions, provided by the openaccPTM plugin, to which the
+  // shortcuts redirect the input with USEGPU: USEGPU never gets here for them
   action->parseFlag("USEGPU",useacc);
-#ifdef __PLUMED_USE_OPENACC
   if( useacc ) {
-    action->log.printf("  using GPU to calculate this action\n");
+    action->error("USEGPU can not be used here: the GPU versions of the actions are provided by the openaccPTM plugin, see its documentation");
   }
-#else
-  if( useacc ) {
-    action->error("cannot use USEGPU flag as PLUMED has not been compiled with openacc");
-  }
-#endif
   action->parseFlag("SERIAL",serial);
   if( serial ) {
     action->log.printf("  not using MPI to parallelise this action\n");

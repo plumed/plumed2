@@ -123,7 +123,8 @@ RESTRAINT ARG=dist AT=2.0 KAPPA=1.0
 
 PLUMED uses parallelism to improve the performance of many actions.  Within PLUMED parallelisation is done using a combination of
 [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface) and [OpenMP](https://en.wikipedia.org/wiki/OpenMP).  In addition, 
-we are starting to use [openACC](https://www.openacc.org) in some actions in order to write code than can run on GPUs.
+we are starting to use [openACC](https://www.openacc.org) in some actions in order to write code than can run on GPUs: with the `USEGPU` flag
+these actions are computed by the GPU versions provided by the [openaccPTM plugin](plugin_openaccPTM.md), that must be loaded with [LOAD](LOAD.md).
 
 Importantly, all parallelism within PLUMED is implemented within actions.  __We do not parallelise over actions.__  Consequently, if you run 
 this input with MPI or openMP:
