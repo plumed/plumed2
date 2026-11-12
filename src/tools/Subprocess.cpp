@@ -22,6 +22,9 @@
 #include "Subprocess.h"
 #include "Exception.h"
 #include "Tools.h"
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+#include <dlfcn.h>
+#endif
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
@@ -145,8 +148,20 @@ int Subprocess::run(const std::string& executable,
   }
   argv.push_back(nullptr);
 
+  char** inherited=environ;
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+  // RTLD_DEEPBIND can resolve environ to libc's stale/empty data symbol
+  // instead of the executable's copy relocation (notably in Python hosts).
+  // Look it up in the main program's scope, without modifying either copy.
+  if(void* process=dlopen(nullptr,RTLD_LAZY)) {
+    if(auto address=static_cast<char***>(dlsym(process,"environ"))) {
+      inherited=*address;
+    }
+    dlclose(process);
+  }
+#endif
   std::vector<std::string> environment;
-  for(char** entry=environ; entry && *entry; ++entry) {
+  for(char** entry=inherited; entry && *entry; ++entry) {
     const std::string setting(*entry);
     if(overrides.count(setting.substr(0,setting.find('=')))==0) {
       environment.push_back(setting);
