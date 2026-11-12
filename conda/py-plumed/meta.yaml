@@ -1,5 +1,6 @@
 {% set name = "py-plumed" %}
 {% set version = environ['VERSION'] %}
+{% set build_number = environ.get('PLUMED_CONDA_BUILD_NUMBER', '0') | int %}
 
 package:
   name: {{ name|lower }}
@@ -9,7 +10,7 @@ source:
   path: ../..
 
 build:
-  number: 0
+  number: {{ build_number }}
   skip: True  # [win or py<311]
 
 requirements:

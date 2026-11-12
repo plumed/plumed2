@@ -2,6 +2,12 @@ name: CI
 
 on:
   workflow_call:
+    inputs:
+      upload_test_packages:
+        description: Publish a dated test snapshot after successful package checks
+        type: boolean
+        required: false
+        default: false
 
 env:
 # on CI, better dump stack trace in case there is an error
@@ -33,18 +39,40 @@ jobs:
         # Native CI defaults must not override conda's activated compiler.
         unset CC CXX
         export VERSION=none
-        if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+        if [[ "${{ inputs.upload_test_packages }}" == true ]]; then
+          if [[ $GITHUB_EVENT_NAME != workflow_dispatch || $GITHUB_REF != refs/heads/master ]]; then
+            echo 'Test publication requires a manual run on master.' >&2
+            exit 1
+          fi
+          VERSION=$(date -u +%Y.%m.%d)
+          export CONDA_BLD_PATH="$RUNNER_TEMP/plumed-conda-bld"
+          echo "CONDA_BLD_PATH=$CONDA_BLD_PATH" >> "$GITHUB_ENV"
+          # Keep repeated snapshots on one date distinct, including reruns.
+          export PLUMED_CONDA_BUILD_NUMBER=$((GITHUB_RUN_NUMBER * 1000 + GITHUB_RUN_ATTEMPT))
+          echo "PLUMED_CONDA_BUILD_NUMBER=$PLUMED_CONDA_BUILD_NUMBER" >> "$GITHUB_ENV"
+        elif [[ $GITHUB_REF == "refs/tags/"* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION//-/_}
           VERSION=${VERSION#v}
         fi
         echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+        python extensions/conda_recipe.py
+        python conda/tests/publication.py
         make -C conda
     - name: Test optional MPI packages
       run: |
         source activate base
         unset CC CXX
         make -C conda test
+    - name: Publish dated packages to Anaconda test label
+      if: ${{ inputs.upload_test_packages && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' }}
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+        CONDA_LABEL: test
+      run: |
+        source activate base
+        conda install -y -c conda-forge anaconda-client
+        make -C conda upload
     - name: Deploy
       env:
         CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}

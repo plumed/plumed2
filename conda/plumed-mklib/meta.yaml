@@ -1,11 +1,12 @@
 {% set version = environ['VERSION'] %}
+{% set build_number = environ.get('PLUMED_CONDA_BUILD_NUMBER', '0') | int %}
 package:
   name: plumed-mklib
   version: {{ version }}
 source:
   path: ../..
 build:
-  number: 2
+  number: {{ build_number + 2 }}
   skip: true  # [win]
 requirements:
   host:

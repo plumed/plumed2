@@ -158,3 +158,28 @@ also capture the configured build. The focused CI shares one Linux kernel
 artifact between CPU/CUDA and OpenACC jobs. After restoring and indexing that
 archive, `PLUMED_CONDA_SKIP_BASE=yes` makes the build script use it; the script
 requires the matching local archive and `CONDA_BLD_PATH`/`VERSION` settings.
+
+## Dated test-channel publication
+
+After this workflow is present on the default branch, run **CI** manually on
+`master` and select **Publish dated conda packages to the test label**. The
+workflow builds every package with the UTC date as its conda version, for example
+`2026.11.12`, validates the installation, then uploads to `plumed/label/test`
+using the existing `CONDA_UPLOAD_TOKEN` secret. Ordinary builds do not publish;
+tag uploads keep their `tag` label. This option is rejected on other branches.
+
+A separate run/attempt build number makes repeated snapshots on one date
+distinct, including their exact kernel dependency pins. Test uploads do not
+overwrite earlier archives. `PLUMED_CONDA_BUILD_NUMBER` defaults to zero for
+ordinary/local builds and can be set explicitly by other snapshot builders.
+The optional libraries retain their existing package revision offsets.
+
+```sh
+conda create -n plumed-test -c plumed/label/test -c conda-forge \
+  plumed=2026.11.12 plumed-ext-isdb-pytorch=2026.11.12
+```
+
+The hosted workflow builds the supported CPU, MPI, Python and CUDA variants.
+OpenACC still requires a builder with the documented NVHPC SDK. Uploads include
+only archives for the selected version from `CONDA_BLD_PATH` (or the default
+conda-build directory). The upload helper reads its token from the environment.
