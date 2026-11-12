@@ -1,0 +1,23 @@
+plumed_modules=isdb
+type=driver
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"
+driver_args="--ixyz trajectory.xyz"
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail; the message is recorded
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver $driver_args --plumed bad.dat > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -e "^PLUMED: ERROR in input" bad.out | sed -e "s/^PLUMED: //" -e "s/with label [^ ]* //" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  # an atom listed twice is two particles at distance zero: the Debye sum would give nan
+  expect_error "SAXS with an atom listed twice" "SAXS ATOMS=1,2,1 NOPBC PARAMETERS1=1 PARAMETERS2=2 PARAMETERS3=1 QVALUE1=0.1 QVALUE2=0.2"
+  expect_error "SANS with an atom listed twice" "SANS ATOMS=3-5,4 NOPBC PARAMETERS1=1 PARAMETERS2=2 PARAMETERS3=1 PARAMETERS4=1 QVALUE1=0.1 QVALUE2=0.2"
+}
