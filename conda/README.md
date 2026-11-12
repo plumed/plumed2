@@ -12,6 +12,7 @@ covered by the [MPI wrapper documentation](../src/mpiwrap/README.md).
 | `plumed-mpi` (`mpi_openmpi_*` variant) | Open MPI provider library and `plumed-mpi` executable | Open MPI |
 | `plumed-ext-<module>` | Separately loaded optional module and registration | None |
 | `py-plumed` | Python wrapper, depending on the same `plumed` | None |
+| `plumed-mklib` | Runtime C++ compiler and compilation scripts for the exact kernel | None |
 
 `plumed` retains its name; there is no `plumed-kernel` package or `nompi`
 add-on. It is built once per platform, explicitly disabling native MPI and

@@ -121,7 +121,8 @@ Quote MatchSpecs containing spaces. Conda selectors are supported at the end of
 a declaration, for example `# [linux]`. These files are manually curated inputs and are never overwritten by the
 generators. They declare package policy;
 compiler probes only decide which feature macros and native links to enable.
-The current recipe selects all 35 default-off modules. DRR declares Boost;
+The recipe selects all default-off modules and opted-in empty compatibility
+packages for modules supplied by the kernel. DRR declares Boost;
 Fourier declares non-MPI FFTW; PyTorch and metatomic declare CPU LibTorch and
 native metatomic/metatensor libraries; TTsketch builds against non-MPI HDF5 but permits ABI-compatible MPI variants
 at runtime, while its
