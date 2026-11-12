@@ -81,6 +81,10 @@ for arguments in [
 run("modules", "--has", success=False)
 run("modules", "--list", "--has", "ves", success=False)
 run("modules", "--unknown", success=False)
+run("modules", "--module", success=False)
+run("modules", "--module", "tools", "--module", "tools", success=False)
+run("modules", "--has-feature", "thread_mpi", "--module", "tools", "-q")
+run("modules", "-q", "--module", "tools", "--has-feature", "thread_mpi")
 run("modules", "--has-feature", "zlib")
 run("modules", "--has-feature", "nonexistent", success=False)
 # Named loading has to reach driver-created PLUMED objects, not just CLI lookup.

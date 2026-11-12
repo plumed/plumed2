@@ -39,9 +39,18 @@
 #endif
 
 namespace PLMD {
+struct ModuleLoaderContextData {
+  std::vector<void*> images;
+  std::vector<std::string> modules;
+  explicit ModuleLoaderContextData(const DLLoader& loader):
+    images(loader.getHandles()), modules(loader.getModuleNames()) {}
+};
+
 namespace {
 namespace fs=std::filesystem;
-thread_local const DLLoader* contextLoader=nullptr;
+// Context owns this heap snapshot and restores its parent before freeing it.
+// Keep TLS trivial: a TLS destructor would pin the kernel on ELF.
+thread_local const ModuleLoaderContextData* contextData=nullptr;
 struct Module {
   std::string name, build, variant;
   fs::path library;
@@ -237,8 +246,8 @@ struct State {
       auto visible=loader.getHandles();
       visible.insert(visible.end(),staged.getHandles().begin(),staged.getHandles().end());
       visible.insert(visible.end(),retained.getHandles().begin(),retained.getHandles().end());
-      if(contextLoader) {
-        visible.insert(visible.end(),contextLoader->getHandles().begin(),contextLoader->getHandles().end());
+      if(contextData) {
+        visible.insert(visible.end(),contextData->images.begin(),contextData->images.end());
       }
       auto image=staged.load(pathToUTF8(fs::canonical(module.library)));
 #ifdef __PLUMED_HAS_DLOPEN
@@ -294,19 +303,20 @@ State& state() {
 }
 }
 
-ModuleLoader::Context::Context(const DLLoader& loader):previous(contextLoader) {
-  contextLoader=&loader;
-  Register::setContextImages(&loader.getHandles());
+ModuleLoader::Context::Context(const DLLoader& loader):
+  data(std::make_unique<ModuleLoaderContextData>(loader)), previous(contextData) {
+  contextData=data.get();
+  Register::setContextImages(&data->images);
 }
 
 ModuleLoader::Context::~Context() {
-  contextLoader=previous;
-  Register::setContextImages(previous?&previous->getHandles():nullptr);
+  contextData=previous;
+  Register::setContextImages(previous?&previous->images:nullptr);
 }
 
 void ModuleLoader::inheritContext(DLLoader& loader) {
-  if(contextLoader) {
-    for(const auto& name:contextLoader->getModuleNames()) {
+  if(contextData) {
+    for(const auto& name:contextData->modules) {
       load(name,loader);
     }
   }

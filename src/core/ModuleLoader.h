@@ -23,10 +23,12 @@
 #define __PLUMED_core_ModuleLoader_h
 
 #include <string>
+#include <memory>
 #include <vector>
 
 namespace PLMD {
 class DLLoader;
+struct ModuleLoaderContextData;
 
 /// Kernel-local discovery and activation of separately installed modules.
 /// Native dependencies are loaded by the system loader. Each caller retains
@@ -34,7 +36,8 @@ class DLLoader;
 class ModuleLoader {
 public:
   class Context {
-    const DLLoader* previous;
+    std::unique_ptr<ModuleLoaderContextData> data;
+    const ModuleLoaderContextData* previous;
   public:
     explicit Context(const DLLoader& loader);
     ~Context();

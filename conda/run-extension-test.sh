@@ -37,6 +37,12 @@ read -r -a host_compiler <<< "${CXX:-c++}"
   -L"$prefix/lib" -Wl,-rpath,"$prefix/lib" -ldl -o "$task/visibility"
 PLUMED_AUTOLOAD=0 PLUMED_KERNEL="$kernel" \
   PLUMED_PLUGIN_PATH="$prefix/lib/plumed/plugins" "$task/visibility"
+# Exercise nested CLI contexts directly, including exception unwinding and
+# independent threads. Link the same exact kernel that owns these modules.
+"${host_compiler[@]}" -std=c++17 -pthread -I"$prefix/include" \
+  extensions/tests/context.cpp -L"$prefix/lib" -Wl,-rpath,"$prefix/lib" \
+  -lplumedKernel -o "$task/context"
+PLUMED_AUTOLOAD=0 PLUMED_PLUGIN_PATH="$prefix/lib/plumed/plugins" "$task/context"
 
 # Available conda libraries must actually enable their module features; merely
 # loading an identity-only library would miss broken include/link probes.

@@ -458,16 +458,17 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     bool query=false,featureQuery=false,list=false,quiet=false;
     std::vector<std::string> names;
     std::string module;
-    for(int j=i+1; j<argc; ++j) {
-      const std::string option=argv[j];
+    int j=i+1;
+    while(j<argc) {
+      const std::string option=argv[j++];
       if(option=="--help" || option=="-h") {
         std::fprintf(out,"Usage: plumed modules [--module NAME] [--list | --has NAME... | --has-feature NAME...] [-q]\n"
                      "List visible runtime modules (default), or check that all requested modules/features are available.\n"
                      "Without --module, features include the kernel and visible extensions; --module selects one build.\n"
                      "Presence checks return 0 when all names are available, otherwise 1. -q suppresses output.\n");
         return 0;
-      } else if(option=="--module" && module.empty() && j+1<argc) {
-        module=argv[++j];
+      } else if(option=="--module" && module.empty() && j<argc) {
+        module=argv[j++];
       } else if(option=="-q" || option=="--quiet") {
         quiet=true;
       } else if(option=="--list" && !query && !list) {

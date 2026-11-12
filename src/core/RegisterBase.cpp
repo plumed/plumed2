@@ -31,7 +31,7 @@ namespace PLMD {
 
 namespace {
 // A nontrivial TLS destructor would pin an otherwise unloadable kernel on ELF.
-// Context owns the referenced loader and restores this pointer before it dies.
+// Context owns the heap snapshot and restores this pointer before freeing it.
 thread_local const std::vector<void*>* contextImages=nullptr;
 class Singleton {
 public:
