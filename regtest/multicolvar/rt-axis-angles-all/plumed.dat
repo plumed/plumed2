@@ -1,0 +1,41 @@
+# All the axis angles and torsions, checked against an independent calculation.
+# The torsions are measured around the first axis, starting from the second axis, for the vector from the second to the first atom
+d: DISTANCE ATOMS1=1,2 ATOMS2=5,4 COMPONENTS
+o: FIXEDATOM AT=0,0,0
+ex: FIXEDATOM AT=1,0,0
+ey: FIXEDATOM AT=0,1,0
+ez: FIXEDATOM AT=0,0,1
+
+ya: YANGLES ATOMS1=1,2 ATOMS2=5,4 SUM
+za: ZANGLES ATOMS1=1,2 ATOMS2=5,4 SUM
+ya_ref: ANGLE ATOMS1=2,1,o,ey ATOMS2=4,5,o,ey
+za_ref: ANGLE ATOMS1=2,1,o,ez ATOMS2=4,5,o,ez
+ya_refs: SUM ARG=ya_ref PERIODIC=NO
+za_refs: SUM ARG=za_ref PERIODIC=NO
+
+xy: XYTORSIONS ATOMS1=1,2 ATOMS2=5,4
+xz: XZTORSIONS ATOMS1=1,2 ATOMS2=5,4
+yx: YXTORSIONS ATOMS1=1,2 ATOMS2=5,4
+yz: YZTORSIONS ATOMS1=1,2 ATOMS2=5,4
+zx: ZXTORSIONS ATOMS1=1,2 ATOMS2=5,4
+xy_ref: CUSTOM ARG=d.x,d.y,d.z FUNC=atan2(-z,-y) PERIODIC=-pi,pi
+xz_ref: CUSTOM ARG=d.x,d.y,d.z FUNC=atan2(y,-z) PERIODIC=-pi,pi
+yx_ref: CUSTOM ARG=d.x,d.y,d.z FUNC=atan2(z,-x) PERIODIC=-pi,pi
+yz_ref: CUSTOM ARG=d.x,d.y,d.z FUNC=atan2(-x,-z) PERIODIC=-pi,pi
+zx_ref: CUSTOM ARG=d.x,d.y,d.z FUNC=atan2(-y,-x) PERIODIC=-pi,pi
+
+dang: CUSTOM ARG=ya.sum,ya_refs,za.sum,za_refs VAR=a1,a2,b1,b2 FUNC=abs(a1-a2)+abs(b1-b2) PERIODIC=NO
+dtor1: CUSTOM ARG=xy,xy_ref,xz,xz_ref VAR=a1,a2,b1,b2 FUNC=(sin(a1)-sin(a2))^2+(cos(a1)-cos(a2))^2+(sin(b1)-sin(b2))^2+(cos(b1)-cos(b2))^2 PERIODIC=NO
+dtor2: CUSTOM ARG=yx,yx_ref,yz,yz_ref,zx,zx_ref VAR=a1,a2,b1,b2,c1,c2 FUNC=(sin(a1)-sin(a2))^2+(cos(a1)-cos(a2))^2+(sin(b1)-sin(b2))^2+(cos(b1)-cos(b2))^2+(sin(c1)-sin(c2))^2+(cos(c1)-cos(c2))^2 PERIODIC=NO
+dtor: CUSTOM ARG=dtor1,dtor2 FUNC=x+y PERIODIC=NO
+dtors: SUM ARG=dtor PERIODIC=NO
+sdiff: CUSTOM ARG=dang,dtors FUNC=x+y PERIODIC=NO
+
+# functions of the angles, to get scalars and forces
+xys: SUM ARG=xy PERIODIC=NO
+xzs: SUM ARG=xz PERIODIC=NO
+yxs: SUM ARG=yx PERIODIC=NO
+yzs: SUM ARG=yz PERIODIC=NO
+zxs: SUM ARG=zx PERIODIC=NO
+PRINT ARG=ya.sum,za.sum,xys,xzs,yxs,yzs,zxs,sdiff FILE=colvar FMT=%8.4f
+BIASVALUE ARG=ya.sum,za.sum,xys,xzs,yxs,yzs,zxs

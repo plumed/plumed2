@@ -1,0 +1,6 @@
+type=driver
+plumed_modules=symfunc
+# LOCAL_Q3, LOCAL_Q4 and COORDINATION_SHELL_AVERAGE. The box derivatives in forces check the virial of the
+# (non rotationally invariant) shell average, which was transposed before the fix in AdjacencyMatrixBase
+arg="--plumed plumed.dat --ixyz 64.xyz --debug-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/64.xyz"

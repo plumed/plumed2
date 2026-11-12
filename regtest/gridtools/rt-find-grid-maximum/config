@@ -1,0 +1,4 @@
+type=driver
+# FIND_GRID_MAXIMUM, with and without interpolation, on the instantaneous KDE of a distance (diff must be zero)
+arg="--plumed plumed.dat --trajectory-stride 10 --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"

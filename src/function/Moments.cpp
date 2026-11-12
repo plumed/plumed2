@@ -64,8 +64,9 @@ PRINT ARG=mv.moment-2,mv.moment-3 FILE=colvar
 In this second case the four distances are passed to the MOMENTS action as a vector.  The MOMENTS action then outputs 2 components - the
 two central moments that were requested.
 
-These examples are representative the only two ways you can use this action.  In input it can accept either a list of scalars or a single vector.
-It does not accept matrices or a list of vectors in input.
+These examples are representative of the two main ways you can use this action: in input it can accept either a list of scalars or a single vector.
+It can also accept a list of vectors with the same number of elements, in which case the moments are computed element by element,
+i.e. the output components are vectors whose $i$th element is the moment of the $i$th elements of the input vectors.
 
 */
 //+ENDPLUMEDOC
@@ -96,7 +97,7 @@ void Moments::registerKeywords(Keywords& keys) {
            "The $m$th central moment of a distribution is calculated using $\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m$, where $\\overline{s}$ is "
            "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of $m$. The final "
            "calculated values can be referenced using moment-$m$.");
-  keys.addOutputComponent("moment","default","scalar","the central moments of the distribution of values. The second central moment "
+  keys.addOutputComponent("moment","default","scalar/vector","the central moments of the distribution of values. The second central moment "
                           "would be referenced elsewhere in the input file using "
                           "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");
 }

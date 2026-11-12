@@ -182,10 +182,13 @@ Below you can see a simple example that shows how this action can be used in pra
 
 ```plumed
 cv: COORDINATION_SHELL_AVERAGE SPECIES=1-64 D_0=3.0 R_0=1.5 FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
-PRINT ARG=cv FILE=colvar
+PRINT ARG=cv_n FILE=colvar
 ```
 
 The above input calculates 64 $s_i$ values - one $s_i$ values for each of the atoms specified using the SPECIES keyword.  These 64 numbers are then output to a file.
+Notice that the $s_i$ values are stored in the vector with label `cv_n`: the vector with label `cv` contains the numerators of the expression above,
+i.e. the sums that are not yet divided by the coordination numbers. The same holds for the shortcuts that compute a coordination shell average, such as
+[SIMPLECUBIC](SIMPLECUBIC.md), [TETRAHEDRAL](TETRAHEDRAL.md) and [FCCUBIC](FCCUBIC.md).
 The function of x, y, z and r to be evaluated is specified using the FUNCTION keyword.  Obviously, if your function does not depend on all four of these variables
 they can be excluded from your function.
 
@@ -199,7 +202,7 @@ cv: COORDINATION_SHELL_AVERAGE ...
    SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=7.0}
    FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
 ...
-PRINT ARG=cv FILE=colvar
+PRINT ARG=cv_n FILE=colvar
 ```
 
 Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
@@ -219,7 +222,7 @@ d: COORDINATION_SHELL_AVERAGE ...
    FUNCTION=((x+y+z)/r)^3+((x-y-z)/r)^3+((-x+y-z)/r)^3+((-x-y+z)/r)^3
    SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
 ...
-lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+lt: MORE_THAN ARG=d_n SWITCH={RATIONAL R_0=0.5}
 s: SUM ARG=lt PERIODIC=NO
 PRINT ARG=s FILE=colv
 ```
@@ -242,7 +245,7 @@ d: COORDINATION_SHELL_AVERAGE ...
    SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
 ...
 # Multiply fccubic parameters numbers by sphere vector
-prod: CUSTOM ARG=d,sphere FUNC=x*y PERIODIC=NO
+prod: CUSTOM ARG=d_n,sphere FUNC=x*y PERIODIC=NO
 # Sum of coordination numbers for atoms that are in the sphere of interest
 numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
@@ -279,6 +282,8 @@ In this expression $x_{ij}$, $y_{ij}$ and $z_{ij}$ are the $x$, $y$ and $z$ comp
 atom $j$ and $r_{ij}$ is the magnitude of this vector.  $\sigma(r_{ij})$ is a switching function that acts on the distance between atom $i$ and atom $j$ and its inclusion in the numerator and the denominator of the above expression as well as the fact that we are summing
 over all of the other atoms in the system ensures that we are calculating an average
 of the function of $x_{ij}$, $y_{ij}$ and $z_{ij}$ for the atoms in the first coordination sphere around atom $i$.
+The $s_i$ values are stored in the vector with label `label_n` (e.g. `sc_n` in the first input below), while the vector with the label of the action contains
+the numerators of the expression above, as explained for [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md).
 This quantity is once again a multicolvar so you can compute it for multiple atoms using a single PLUMED action and then compute
 the average value for the atoms in your system, the number of atoms that have an $s_i$ value that is more that some target and
 so on.  Notice also that you can rotate the reference frame if you are using a non-standard unit cell.
@@ -288,7 +293,7 @@ The mean value is then calculated.
 
 ```plumed
 sc: SIMPLECUBIC SPECIES=1-100 R_0=1.0
-sc_mean: MEAN ARG=sc PERIODIC=NO
+sc_mean: MEAN ARG=sc_n PERIODIC=NO
 PRINT ARG=sc_mean FILE=colvar
 ```
 
@@ -299,7 +304,7 @@ switching function as demonstrated below:
 
 ```plumed
 d: SIMPLECUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-dm: MEAN ARG=d PERIODIC=NO
+dm: MEAN ARG=d_n PERIODIC=NO
 PRINT ARG=dm FILE=colv
 ```
 
@@ -313,7 +318,7 @@ shown below:
 
 ```plumed
 d: SIMPLECUBIC SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+lt: MORE_THAN ARG=d_n SWITCH={RATIONAL R_0=0.5}
 s: SUM ARG=lt PERIODIC=NO
 PRINT ARG=s FILE=colv
 ```
@@ -335,7 +340,7 @@ cc: SIMPLECUBIC ...
   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
 ...
 # Multiply fccubic parameters numbers by sphere vector
-prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+prod: CUSTOM ARG=cc_n,sphere FUNC=x*y PERIODIC=NO
 # Sum of coordination numbers for atoms that are in the sphere of interest
 numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
@@ -385,13 +390,15 @@ Here $r_{ij}$ is the magnitude of the vector connecting atom $i$ to atom $j$ and
 are its three components.  The function  $\sigma( r_{ij} )$ is a switching function that acts on the distance between
 atoms $i$ and $j$.  The parameters of this function should be set so that the function is equal to one
 when atom $j$ is in the first coordination sphere of atom $i$ and is zero otherwise.
+The $s(i)$ values are stored in the vector with label `label_n` (e.g. `tt_n` in the first input below), while the vector with the label of the action contains
+the numerators of the expression above, as explained for [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md).
 
 The following command calculates the average value of the TETRAHEDRAL parameter for a set of 64 atoms all of the same type
 and outputs this quantity to a file called colvar.
 
 ```plumed
 tt: TETRAHEDRAL SPECIES=1-64 D_0=3.0 R_0=1.5 NN=6 MM=12
-tt_mean: MEAN ARG=tt PERIODIC=NO
+tt_mean: MEAN ARG=tt_n PERIODIC=NO
 PRINT ARG=tt_mean FILE=colvar
 ```
 
@@ -402,7 +409,7 @@ switching function as demonstrated below:
 
 ```plumed
 d: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-dm: MEAN ARG=d PERIODIC=NO
+dm: MEAN ARG=d_n PERIODIC=NO
 PRINT ARG=dm FILE=colv
 ```
 
@@ -416,7 +423,7 @@ shown below:
 
 ```plumed
 d: TETRAHEDRAL SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+lt: MORE_THAN ARG=d_n SWITCH={RATIONAL R_0=0.5}
 s: SUM ARG=lt PERIODIC=NO
 PRINT ARG=s FILE=colv
 ```
@@ -438,7 +445,7 @@ cc: TETRAHEDRAL ...
   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
 ...
 # Multiply fccubic parameters numbers by sphere vector
-prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+prod: CUSTOM ARG=cc_n,sphere FUNC=x*y PERIODIC=NO
 # Sum of coordination numbers for atoms that are in the sphere of interest
 numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
