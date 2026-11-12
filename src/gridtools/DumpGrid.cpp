@@ -23,7 +23,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "tools/OFile.h"
 
 namespace PLMD {

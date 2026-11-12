@@ -19,14 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_ActionWithGrid_h
-#define __PLUMED_gridtools_ActionWithGrid_h
+#ifndef __PLUMED_core_ActionWithGrid_h
+#define __PLUMED_core_ActionWithGrid_h
 
-#include "core/ActionWithVector.h"
-#include "GridCoordinatesObject.h"
+#include "ActionWithVector.h"
+#include "tools/GridCoordinatesObject.h"
 
 namespace PLMD {
-namespace gridtools {
 
 class ActionWithGrid : public ActionWithVector {
 public:
@@ -39,6 +38,5 @@ public:
   virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
 };
 
-}
 }
 #endif

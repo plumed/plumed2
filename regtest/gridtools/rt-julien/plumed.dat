@@ -21,7 +21,7 @@ dweights: OUTER_PRODUCT ARG=mtc,mtc MASK=dmat
 heights: CUSTOM ARG=dweights,dmat FUNC=x*step(8-y) PERIODIC=NO
 
 # Calculate the distribution of distances for distances that were calculated above
-kde: KDE ARG=dmat HEIGHTS=heights BANDWIDTH=0.2 KERNEL=gaussian GRID_BIN=20 GRID_MIN=0 GRID_MAX=8
+kde: KDE ARG=dmat HEIGHTS=heights BANDWIDTH=0.2 KERNEL=gaussian GRID_BIN=20 GRID_SIZE_LIMIT=20 GRID_MIN=0 GRID_MAX=8
 # This is a grid that holds the function y=x*x, which we use for normalising the RDF
 norm: REFERENCE_GRID PERIODIC=NO FUNC=x*x GRID_BIN=20 GRID_MIN=0 GRID_MAX=8 
 # Normalisation by grid volumes - we assume a density of 1.0 here

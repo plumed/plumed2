@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "core/ActionRegister.h"
 #include "lepton/Lepton.h"
 #include "tools/IFile.h"

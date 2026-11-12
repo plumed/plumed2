@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "ContourFindingObject.h"
-#include "gridtools/ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "gridtools/EvaluateGridFunction.h"
 #include "core/ParallelTaskManager.h"
 
@@ -127,7 +127,7 @@ public:
     action->parse("SEARCHDIR",dir);
     action->log.printf("  calculating location of contour on %d dimensional grid \n", (action->getPntrToArgument(0))->getRank()-1 );
     Value* gval=func.cf.function.function;
-    gridtools::ActionWithGrid* ag = gridtools::ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
+    ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
     if( !ag ) {
       action->error("input argument must be a grid");
     }
@@ -151,7 +151,7 @@ public:
   }
 };
 
-class FindContourSurface : public gridtools::ActionWithGrid {
+class FindContourSurface : public ActionWithGrid {
 public:
   using input_type = FindContourSurfaceObject;
   using PTM = ParallelTaskManager<FindContourSurface>;
@@ -162,15 +162,15 @@ private:
 /// The parallel task manager
   PTM taskmanager;
   std::vector<std::string> gnames;
-  gridtools::GridCoordinatesObject gridcoords;
+  GridCoordinatesObject gridcoords;
 /// Get the input grid object for the grid that we are finding the contour in
-  const gridtools::GridCoordinatesObject& getInputGridObject() const ;
+  const GridCoordinatesObject& getInputGridObject() const ;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindContourSurface(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
+  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
   void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
@@ -202,11 +202,11 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   Value* gval=getPntrToArgument(0);
   gnames.resize( getPntrToArgument(0)->getRank()-1 );
 
-  gridtools::ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
+  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
   if( !ag ) {
     error("input argument must be a grid");
   }
-  const gridtools::GridCoordinatesObject& mygridobj = ag->getGridCoordinatesObject();
+  const GridCoordinatesObject& mygridobj = ag->getGridCoordinatesObject();
   if( mygridobj.getGridType()=="fibonacci") {
     error("cannot search for contours in fibonacci grids");
   }
@@ -228,7 +228,7 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   taskmanager.setupParallelTaskManager( 0, 0 );
 }
 
-const gridtools::GridCoordinatesObject& FindContourSurface::getInputGridObject() const {
+const GridCoordinatesObject& FindContourSurface::getInputGridObject() const {
   return taskmanager.getActionInput().cf.function.getGridObject();
 }
 
@@ -271,7 +271,7 @@ std::vector<std::string> FindContourSurface::getGridCoordinateNames() const {
   return gnames;
 }
 
-const gridtools::GridCoordinatesObject& FindContourSurface::getGridCoordinatesObject() const {
+const GridCoordinatesObject& FindContourSurface::getGridCoordinatesObject() const {
   return gridcoords;
 }
 
@@ -297,7 +297,7 @@ void FindContourSurface::performTask( std::size_t task_index,
                                       ParallelActionsInput& input,
                                       ParallelActionsOutput& output ) {
   unsigned nfound=0;
-  const gridtools::GridCoordinatesObject& gridobj = actiondata.cf.function.getGridObject();
+  const GridCoordinatesObject& gridobj = actiondata.cf.function.getGridObject();
   std::size_t nbins = gridobj.getNbin(false)[actiondata.dir_n];
   std::size_t shiftn=task_index;
   std::vector<unsigned> ind( gridobj.getDimension() );

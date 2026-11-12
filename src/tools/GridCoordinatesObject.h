@@ -19,18 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_GridCoordinatesObject_h
-#define __PLUMED_gridtools_GridCoordinatesObject_h
+#ifndef __PLUMED_tools_GridCoordinatesObject_h
+#define __PLUMED_tools_GridCoordinatesObject_h
 
 #include <string>
 #include <cstring>
 #include <vector>
-#include "tools/Exception.h"
-#include "tools/Tools.h"
-#include "tools/View.h"
+#include "Exception.h"
+#include "Tools.h"
+#include "View.h"
 
 namespace PLMD {
-namespace gridtools {
 
 class GridCoordinatesObject {
 private:
@@ -176,6 +175,5 @@ std::string GridCoordinatesObject::getGridType() const {
   return "";
 }
 
-}
 }
 #endif

@@ -22,7 +22,7 @@
 #ifndef __PLUMED_gridtools_FunctionOfGrid_h
 #define __PLUMED_gridtools_FunctionOfGrid_h
 
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "core/ParallelTaskManager.h"
 #include "function/FunctionSetup.h"
 #include "function/FunctionOfVector.h"
@@ -42,8 +42,6 @@ public:
 private:
 /// The parallel task manager
   PTM taskmanager;
-//// Ensures we setup on first step
-  bool firststep;
 /// The number of scalars that appear in the input for this calculation
   unsigned nscalars;
 /// Set equal to one if we are doing EvaluateGridFunction
@@ -107,7 +105,6 @@ FunctionOfGrid<T>::FunctionOfGrid(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
   taskmanager(this),
-  firststep(true),
   nscalars(0),
   argstart(0) {
   if( getNumberOfArguments()==0 ) {
@@ -173,9 +170,16 @@ unsigned FunctionOfGrid<T>::getNumberOfDerivatives() {
 
 template <class T>
 void FunctionOfGrid<T>::calculate() {
-  if( firststep ) {
+  bool need_resize = false;
+  unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getPntrToComponent(i)->getRank()>0 && npoints!=getPntrToComponent(i)->getNumberOfValues() ) {
+      need_resize = true;
+      break;
+    }
+  }
+  if( need_resize ) {
     const GridCoordinatesObject& mygrid = getGridCoordinatesObject();
-    unsigned npoints = getPntrToArgument(0)->getNumberOfValues();
     if( mygrid.getGridType()=="flat" ) {
       std::vector<std::size_t> shape( mygrid.getNbin(true) );
       for(unsigned i=1; i<getNumberOfArguments(); ++i ) {
@@ -202,7 +206,6 @@ void FunctionOfGrid<T>::calculate() {
       }
     }
     taskmanager.setupParallelTaskManager( getNumberOfArguments()-argstart, nscalars );
-    firststep=false;
   }
   taskmanager.runAllTasks();
 }

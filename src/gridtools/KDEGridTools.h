@@ -30,9 +30,11 @@ namespace gridtools {
 template <class K, class P>
 class KDEGridTools {
 public:
+  bool canexpand;
   std::vector<double> gspacing;
   std::vector<std::size_t> nbin;
   std::vector<std::string> gmin, gmax;
+  std::vector<std::size_t> size_limits;
   static void registerKeywords( Keywords& keys );
   static void readHeightKeyword( bool canusevol, std::size_t nargs, const std::vector<std::string>& bw, ActionWithArguments* action );
   static void readBandwidth( std::size_t nargs, ActionWithArguments* action, std::vector<std::string>& bw );
@@ -40,7 +42,10 @@ public:
   static void readBandwidthAndHeight( const P& params, ActionWithArguments* action );
   static void convertHeightsToVolumes( const std::size_t& nargs, const std::vector<std::string>& bw, const std::string& volstr, ActionWithArguments* action );
   static void readGridParameters( KDEGridTools<K,P>& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
-  static void setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
+  static void setupGridBounds( KDEGridTools<K,P>& g, P& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
+  static void expandGridBounds( KDEGridTools<K,P>& g, P& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
+  static void getSupportForKernel( const unsigned& index, const unsigned& ndim, P& p, const std::vector<Value*>& args, std::vector<double>& myargs, std::vector<double>& support, View<double> kpview );
+  static void getExtentOfKernels( const unsigned& iarg, const unsigned& ndim, P& p, const std::vector<Value*>& args, double& lcoord, double& ucoord );
   static void getDiscreteSupport( const KDEGridTools<K,P>& g, P& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
   static void getNeighbors( const P& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };
@@ -54,8 +59,9 @@ void KDEGridTools<K,P>::registerKeywords( Keywords& keys ) {
            "are used as weights for the Gaussians.");
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
-  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the grid spacing");
+  keys.add("optional","GRID_BIN","the initial number of bins for the grid");
+  keys.add("compulsory","GRID_SIZE_LIMIT","100000000","the maximum number of grid points for a dimension");
 }
 
 template <class K, class P>
@@ -176,6 +182,7 @@ void KDEGridTools<K, P>::convertHeightsToVolumes( const std::size_t& nargs, cons
 
 template <class K, class P>
 void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape ) {
+  g.canexpand = true;
   g.gmin.resize( shape.size() );
   g.gmax.resize( shape.size() );
   action->parseVector("GRID_MIN",g.gmin);
@@ -194,17 +201,9 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
           std::string str_min, str_max;
           myarg->getDomain( str_min, str_max );
           if( str_min!=g.gmin[i] || str_max!=g.gmax[i] ) {
-            action->error("all periodic arguments should have the same domain");
+            action->error("KDE on segment of periodic domain not implemented. GRID_MIN/GRID_MAX should not be set or set equal to domain of input argument");
           }
         }
-      } else if( myarg->getName().find(".")!=std::string::npos ) {
-        std::size_t dot = myarg->getName().find_first_of(".");
-        std::string name = myarg->getName().substr(dot+1);
-        if( name!="x" && name!="y" && name!="z" ) {
-          action->error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
-        }
-      } else {
-        action->error("cannot set GRID_MIN and GRID_MAX automatically if input argument is not component of distance");
       }
     } else {
       action->log.printf("  for %dth coordinate min is set to %s and max is set to %s \n", (i+1), g.gmin[i].c_str(), g.gmax[i].c_str() );
@@ -212,18 +211,43 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
   }
 
   action->parseVector("GRID_BIN",g.nbin);
+  g.size_limits.resize( shape.size() );
+  action->parseVector("GRID_SIZE_LIMIT",g.size_limits);
   action->parseVector("GRID_SPACING",g.gspacing);
 
   if( g.nbin.size()!=shape.size() && g.gspacing.size()!=shape.size() ) {
     action->error("GRID_BIN or GRID_SPACING must be set");
+  } else if( g.gspacing.size()==0 ) {
+    g.canexpand = false;
+    for(unsigned i=0; i<g.nbin.size(); ++i) {
+      if( g.nbin[i]!=g.size_limits[i] ) {
+        g.canexpand=true;
+        break;
+      }
+    }
   }
   // Create a value
   std::vector<bool> ipbc( shape.size() );
   for(unsigned i=0; i<shape.size(); ++i) {
-    if( (action->getPntrToArgument( i ))->isPeriodic() || g.gmin[i]=="auto" ) {
+    if( (action->getPntrToArgument( i ))->isPeriodic() ) {
       ipbc[i]=true;
+      g.canexpand = false;
       if( g.nbin.size()==shape.size() ) {
         shape[i] = g.nbin[i];
+      }
+    } else if ( g.gmin[i]=="auto" ) {
+      std::size_t dot = (action->getPntrToArgument(i))->getName().find_first_of(".");
+      std::string name = (action->getPntrToArgument(i))->getName().substr(dot+1);
+      if( name=="x" || name=="y" || name=="z" ) {
+        ipbc[i]=true;
+        if( g.nbin.size()==shape.size() ) {
+          shape[i] = g.nbin[i];
+        }
+      } else {
+        ipbc[i]=false;
+        if( g.nbin.size()==shape.size() ) {
+          shape[i] = g.nbin[i]+1;
+        }
       }
     } else {
       ipbc[i]=false;
@@ -236,8 +260,9 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
 }
 
 template <class K, class P>
-void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
-  for(unsigned i=0; i<gridobject.getDimension(); ++i) {
+void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, P& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
+  unsigned ndim = gridobject.getDimension();
+  for(unsigned i=0; i<ndim; ++i) {
     if( g.gmin[i]=="auto" ) {
       double lcoord, ucoord;
       std::size_t dot = args[i]->getName().find_first_of(".");
@@ -252,7 +277,7 @@ void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box
         lcoord=-0.5*box(2,2);
         ucoord=0.5*box(2,2);
       } else {
-        plumed_error();
+        getExtentOfKernels( i, ndim, p, args, lcoord, ucoord );
       }
       // And convert to strings for bin and bmax
       Tools::convert( lcoord, g.gmin[i] );
@@ -262,6 +287,142 @@ void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, const Tensor& box
   // And setup the grid object
   gridobject.setBounds( g.gmin, g.gmax, g.nbin, g.gspacing );
   myval->setShape( gridobject.getNbin(true) );
+  // We resize these arrays so they can be used in expandGridBounds
+  g.nbin.resize(ndim);
+  g.gspacing.resize(ndim);
+}
+
+template <class K, class P>
+void KDEGridTools<K,P>::expandGridBounds( KDEGridTools<K,P>& g, P& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
+  if( !g.canexpand ) {
+    return;
+  }
+  bool reset_bounds = false;
+  unsigned ndim = gridobject.getDimension();
+  for(unsigned i=0; i<ndim; ++i) {
+    g.gspacing[i] = 0;
+    g.nbin[i] = gridobject.getNbin(false)[i];
+    double lcoord, ucoord, old_lcoord, old_ucoord;
+    Tools::convert( g.gmin[i], old_lcoord );
+    Tools::convert( g.gmax[i], old_ucoord );
+    std::size_t dot = args[i]->getName().find_first_of(".");
+    std::string name = args[i]->getName().substr(dot+1);
+    if( name=="x" ) {
+      lcoord=-0.5*box(0,0);
+      ucoord=0.5*box(0,0);
+      if( lcoord!=old_lcoord || ucoord!=old_ucoord ) {
+        reset_bounds = true;
+      }
+    } else if( name=="y" ) {
+      lcoord=-0.5*box(1,1);
+      ucoord=0.5*box(1,1);
+      if( lcoord!=old_lcoord || ucoord!=old_ucoord ) {
+        reset_bounds = true;
+      }
+    } else if( name=="z" ) {
+      lcoord=-0.5*box(2,2);
+      ucoord=0.5*box(2,2);
+      if( lcoord!=old_lcoord || ucoord!=old_ucoord ) {
+        reset_bounds = true;
+      }
+    } else {
+      getExtentOfKernels( i, ndim, p, args, lcoord, ucoord );
+      if( lcoord<old_lcoord ) {
+        reset_bounds = true;
+        unsigned extra = static_cast<unsigned>( ceil( (old_lcoord - lcoord)/gridobject.getGridSpacing()[i] ) );
+        g.nbin[i] += extra;
+        Tools::convert( old_lcoord - gridobject.getGridSpacing()[i]*extra, g.gmin[i] );
+      }
+      if( ucoord>old_ucoord ) {
+        reset_bounds = true;
+        Tools::convert( ucoord, g.gmax[i] );
+        unsigned extra = static_cast<unsigned>( ceil( (ucoord - old_ucoord)/gridobject.getGridSpacing()[i] ) );
+        g.nbin[i] += extra;
+        Tools::convert( old_ucoord + gridobject.getGridSpacing()[i]*extra, g.gmax[i] );
+      }
+      if( g.nbin[i]>g.size_limits[i] ) {
+        plumed_merror("Number of bins has expanded beyond maximum allowed size");
+      }
+    }
+  }
+  if( reset_bounds ) {
+    // And setup the grid object
+    gridobject.setBounds( g.gmin, g.gmax, g.nbin, g.gspacing );
+    myval->setShape( gridobject.getNbin(true) );
+  }
+}
+
+template <class K, class P>
+void KDEGridTools<K,P>::getExtentOfKernels( const unsigned& iarg, const unsigned& ndim, P& p, const std::vector<Value*>& args, double& lcoord, double& ucoord ) {
+  unsigned lindex, uindex;
+  lcoord = std::numeric_limits<double>::max();
+  ucoord = -std::numeric_limits<double>::max();
+  bool bandwidthsAllSame = K::bandwidthsAllSame( ndim, args );
+  std::vector<double> support( ndim ), myargs( args.size() ), kparams( K::getNumberOfParameters(ndim), 0.0 );
+  View<double> kpview( kparams.data(), kparams.size() );
+  if( args[iarg]->getRank()==2 ) {
+    const unsigned nrows = args[iarg]->getShape()[0];
+    const unsigned ncs = args[iarg]->getNumberOfColumns();
+    for(unsigned j=0; j<nrows; ++j) {
+      unsigned ncols = args[iarg]->getRowLength(j);
+      for(unsigned k=0; k<ncols; ++k) {
+        double height = args[args.size()-1]->get( j*ncs+ k, false );
+        if( fabs(height)<epsilon ) {
+          continue;
+        }
+        double buf = 0, val = args[iarg]->get( j*ncs+ k, false );
+        if( !bandwidthsAllSame ) {
+          getSupportForKernel( j*ncs + k, ndim, p, args, myargs, support, kpview );
+          buf = support[iarg];
+        }
+        if( (val+buf)>ucoord ) {
+          ucoord = val+buf;
+          uindex = j*ncs + k;
+        }
+        if( (val-buf)<lcoord ) {
+          lcoord = val-buf;
+          lindex = j*ncs + k;
+        }
+      }
+    }
+  } else {
+    const unsigned nvals = args[iarg]->getNumberOfStoredValues();
+    for(unsigned j=0; j<nvals; ++j) {
+      double height = args[args.size()-1]->get(j);
+      if( fabs(height)<epsilon ) {
+        continue;
+      }
+      double buf = 0, val = args[iarg]->get(j);
+      if( !bandwidthsAllSame ) {
+        getSupportForKernel( j, ndim, p, args, myargs, support, kpview );
+        buf = support[iarg];
+      }
+      if( (val+buf)>ucoord ) {
+        ucoord = val+buf;
+        uindex = j;
+      }
+      if( (val-buf)<lcoord ) {
+        lcoord = val-buf;
+        lindex = j;
+      }
+    }
+  }
+
+  if( bandwidthsAllSame ) {
+    getSupportForKernel( lindex, ndim, p, args, myargs, support, kpview );
+    lcoord = lcoord - support[iarg];
+    getSupportForKernel( uindex, ndim, p, args, myargs, support, kpview );
+    ucoord = ucoord + support[iarg];
+  }
+}
+
+template <class K, class P>
+void KDEGridTools<K,P>::getSupportForKernel( const unsigned& index, const unsigned& ndim, P& p, const std::vector<Value*>& args, std::vector<double>& myargs, std::vector<double>& support, View<double> kpview ) {
+  for(unsigned j=0; j<args.size(); ++j) {
+    myargs[j] = args[j]->get(index, false);
+  }
+  K::setKernelAndCheckHeight( kpview, ndim, myargs );
+  P::getSupport( p, View<const double>( kpview.data() + ndim, K::getNumberOfShapeParameters(ndim)), support );
 }
 
 template <> inline

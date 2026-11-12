@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "tools/ConjugateGradient.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "EvaluateGridFunction.h"
 #include "Interpolator.h"
 

@@ -22,7 +22,7 @@
 #ifndef __PLUMED_gridtools_KDE_h
 #define __PLUMED_gridtools_KDE_h
 
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "SumOfKernels.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
@@ -118,7 +118,7 @@ void KDEHelper<K,P,G>::read( KDEHelper<K,P,G>& func,
 template <class K, class P, class G>
 void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
   // Setup the grid boundaries on first step
-  G::setupGridBounds( func.g, box, gridobject, args, myval );
+  G::setupGridBounds( func.g, func.kernelsum.params, box, gridobject, args, myval );
   if( gridobject.getGridType()!="fibonacci" ) {
     // Set the periodicity of the parameters
     for(unsigned i=0; i<gridobject.getDimension(); ++i) {
@@ -244,6 +244,8 @@ void KDEHelper<K,P,G>::transferKernels( KDEHelper<K,P,G>& func, const std::vecto
   std::fill( func.nkernels_per_point_v.begin(), func.nkernels_per_point_v.end(), 0 );
   if( func.kernelsum.kernelParams_v.size()!=nkernels*nparams_per_kernel ) {
     func.kernelsum.kernelParams_v.resize( nkernels*nparams_per_kernel );
+  }
+  if( func.kernels_for_gridpoint_v.size()!=ngp*nkernels ) {
     func.kernels_for_gridpoint_v.resize( ngp*nkernels );
   }
 
@@ -429,14 +431,16 @@ void KDE<K,P,G,myPTM>::prepare() {
 
 template <class K, class P, class G, typename myPTM>
 void KDE<K,P,G,myPTM>::calculate() {
+  Tensor box;
+  PbcAction* bv = plumed.getActionSet().template selectWithLabel<PbcAction*>("Box");
+  if( bv ) {
+    box = bv->getPbc().getBox();
+  }
   if( firststep ) {
-    Tensor box;
-    PbcAction* bv = plumed.getActionSet().template selectWithLabel<PbcAction*>("Box");
-    if( bv ) {
-      box = bv->getPbc().getBox();
-    }
     KDEHelper<K,P,G>::setupGridBounds( taskmanager.getActionInput(), box, gridobject, getArguments(), getPntrToComponent(0) );
     firststep=false;
+  } else if( gridobject.getGridType()!="fibonacci" ) {
+    G::expandGridBounds( taskmanager.getActionInput().g, taskmanager.getActionInput().kernelsum.params, box, gridobject, getArguments(), getPntrToComponent(0) );
   }
   KDEHelper<K,P,G>::transferKernels( taskmanager.getActionInput(), getArguments(), gridobject );
   taskmanager.setupParallelTaskManager( getNumberOfArguments()*taskmanager.getActionInput().maxkernels, getNumberOfForceDerivatives() );

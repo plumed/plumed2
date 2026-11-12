@@ -585,4 +585,10 @@ std::size_t Value::getLengthOfLongestColumn() const {
   return maxcol;
 }
 
+void Value::backupGridData( std::vector<double>& copy ) const {
+  const auto nvals=data.size();
+  copy.resize( nvals );
+  copy = data;
+}
+
 }

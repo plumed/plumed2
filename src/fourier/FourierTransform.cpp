@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <iostream>
 #include <complex>
-#include "gridtools/ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "core/ActionRegister.h"
 #ifdef __PLUMED_HAS_FFTW
 #include <fftw3.h> // FFTW interface
@@ -76,18 +76,18 @@ $$
 //+ENDPLUMEDOC
 
 
-class FourierTransform : public gridtools::ActionWithGrid {
+class FourierTransform : public ActionWithGrid {
 private:
   bool firsttime;
   std::string output_type;
   bool real_output, store_norm;
   std::vector<int> fourier_params;
-  gridtools::GridCoordinatesObject gridcoords;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() override ;
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
+  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
   void calculate() override ;
 };
@@ -163,11 +163,11 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   }
 
   unsigned dimension = getPntrToArgument(0)->getRank();
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   if( !ag ) {
     error("input action should be a grid");
   }
-  const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
+  const GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
   if( gcoords.getGridType()=="fibonacci" ) {
     error("cannot fourier transform fibonacci grids");
   }
@@ -186,12 +186,12 @@ unsigned FourierTransform::getNumberOfDerivatives() {
   return 2;
 }
 
-const gridtools::GridCoordinatesObject& FourierTransform::getGridCoordinatesObject() const {
+const GridCoordinatesObject& FourierTransform::getGridCoordinatesObject() const {
   return gridcoords;
 }
 
 std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   // already checked in the constructor
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
@@ -199,10 +199,10 @@ std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
 
 void FourierTransform::calculate() {
   if( firsttime ) {
-    gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+    ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
     // already checked in the constructor
     plumed_assert( ag );
-    const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
+    const GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
     std::vector<double> fspacing;
     std::vector<std::size_t> snbins( getGridCoordinatesObject().getDimension() );
     std::vector<std::string> smin( gcoords.getDimension() ), smax( gcoords.getDimension() );

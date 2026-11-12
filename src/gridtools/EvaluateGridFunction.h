@@ -23,7 +23,7 @@
 #define __PLUMED_gridtools_EvaluateGridFunction_h
 
 #include "function/FunctionSetup.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "Interpolator.h"
 
 namespace PLMD {

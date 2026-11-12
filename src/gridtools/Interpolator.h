@@ -23,7 +23,7 @@
 #define __PLUMED_gridtools_Interpolator_h
 
 #include "core/Value.h"
-#include "GridCoordinatesObject.h"
+#include "tools/GridCoordinatesObject.h"
 
 namespace PLMD {
 namespace gridtools {

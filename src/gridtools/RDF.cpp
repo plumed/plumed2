@@ -209,7 +209,8 @@ RDF::RDF(const ActionOptions&ao):
     readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + shape_str[1] );
     readInputLine( getShortcutLabel() + "_index: CONSTANT VALUES=" + str_values );
     readInputLine( getShortcutLabel() + "_atno: OUTER_PRODUCT ARG=" + getShortcutLabel() + "_index," + getShortcutLabel() + "_ones" );
-    grid_setup = "GRID_MIN=0,0 GRID_MAX=" + maxr + "," + num + " GRID_BIN=" + nbins + "," + num;
+    nbins += "," + num;
+    grid_setup = "GRID_MIN=0,0 GRID_MAX=" + maxr + "," + num + " GRID_BIN=" + nbins;
     shape_str[0] = "1";
   }
   // Create grid with normalizing function on it
@@ -234,18 +235,18 @@ RDF::RDF(const ActionOptions&ao):
   parse("STRIDE",stride);
   if( clear==1 ) {
     if( noaverage ) {
-      readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_atno VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+      readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_atno VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data + " GRID_SIZE_LIMIT=" + nbins);
     } else {
-      readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+      readInputLine( getShortcutLabel() + "_kde: KDE ARG=" + getShortcutLabel() + "_mat VOLUMES=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data + " GRID_SIZE_LIMIT=" + nbins);
     }
   } else {
     std::string stridestr, clearstr;
     Tools::convert( stride, stridestr );
     Tools::convert( clear, clearstr );
     if( noaverage ) {
-      readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_atno HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+      readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat," + getShortcutLabel() + "_atno HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data + " GRID_SIZE_LIMIT=" + nbins);
     } else {
-      readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data);
+      readInputLine( getShortcutLabel() + "_okde: KDE ARG=" + getShortcutLabel() + "_mat HEIGHTS=" + getShortcutLabel() + "_wmat " + grid_setup + " " + kernel_data + " GRID_SIZE_LIMIT=" + nbins);
     }
     readInputLine( getShortcutLabel() + "_kde: ACCUMULATE ARG=" + getShortcutLabel() + "_okde STRIDE=" + stridestr + " CLEAR=" + clearstr );
     readInputLine( getShortcutLabel() + "_one: CONSTANT VALUE=1");

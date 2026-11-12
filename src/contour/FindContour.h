@@ -47,7 +47,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
-  const gridtools::GridCoordinatesObject& getInputGridObject() const ;
+  const GridCoordinatesObject& getInputGridObject() const ;
   unsigned getNumberOfDerivatives() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override;
@@ -60,7 +60,7 @@ public:
 };
 
 inline
-const gridtools::GridCoordinatesObject& FindContour::getInputGridObject() const {
+const GridCoordinatesObject& FindContour::getInputGridObject() const {
   return taskmanager.getActionInput().function.getGridObject();
 }
 

@@ -33,7 +33,8 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readBandwidthAndHeight( const UniversalVonMisses& params, ActionWithArguments* action );
   static void readGridParameters( SphericalKDEGridTools& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
-  static void setupGridBounds( SphericalKDEGridTools& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
+  static void setupGridBounds( SphericalKDEGridTools& g, UniversalVonMisses& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
+  static void expandGridBounds( SphericalKDEGridTools& g, UniversalVonMisses& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
   static void getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
   static void getNeighbors( const UniversalVonMisses& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };

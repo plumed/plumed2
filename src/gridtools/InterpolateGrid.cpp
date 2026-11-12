@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ParallelTaskManager.h"
 #include "EvaluateGridFunction.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*

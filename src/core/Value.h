@@ -270,6 +270,8 @@ public:
   void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
 ///
   void setGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
+/// Copy all the grid data to a vector
+  void backupGridData( std::vector<double>& copy ) const ;
 /// Add another value to the end of the data vector held by this value.  This is used in COLLECT
   void push_back( const double& val );
 /// Get the type of value that is stored here

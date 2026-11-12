@@ -22,7 +22,6 @@
 #include "ActionWithGrid.h"
 
 namespace PLMD {
-namespace gridtools {
 
 ActionWithGrid* ActionWithGrid::getInputActionWithGrid( Action* action ) {
   ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
@@ -72,5 +71,4 @@ void ActionWithGrid::transferStashToValues( const std::vector<unsigned>& partial
   }
 }
 
-}
 }

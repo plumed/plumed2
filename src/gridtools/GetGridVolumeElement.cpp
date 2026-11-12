@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS GET_VOLUME_ELEMENT
 /*
