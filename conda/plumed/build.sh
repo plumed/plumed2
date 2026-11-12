@@ -6,8 +6,9 @@ if [[ $(uname) == "Linux" ]]; then
   # LD_LIBRARY_PATH or encoded configuring with -rpath.
   # Conda does not use LD_LIBRARY_PATH and it is thus necessary to suggest where libraries are.
   export STATIC_LIBS=-Wl,-rpath-link,$PREFIX/lib
-  # -lrt is required to link clock_gettime
-  export LIBS="-lrt $LIBS"
+  # The 2.28 sysroot keeps pthreads separate from libc. Library search is
+  # disabled below, so both system libraries must be requested explicitly.
+  export LIBS="-lpthread -lrt $LIBS"
 fi
 
 # we also store path so that software linking libplumedWrapper.a knows where libplumedKernel can be found.
