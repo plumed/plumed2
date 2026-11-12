@@ -149,6 +149,50 @@ jobs:
           name: windows-regtest-results
           path: regtest-results
 
+  # All the modules (-DPLUMED_MODULES=all): the default-off ones compile with
+  # MSVC, and their regtests pass. The modules that need a library that the
+  # CMake build does not support (drr, fourier, metatomic, pytorch, ttsketch)
+  # compile without it, and their tests are not applicable (kenref is skipped).
+  windows-all-modules:
+    runs-on: windows-latest
+    steps:
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPLUMED_MODULES=all -DPLUMED_MSVC_DEBUG_INFO=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Enabled modules
+        shell: bash
+        run: |
+          ./build/plumed.exe info --version
+          grep "^module" src/config/config.txt
+
+      - name: Regtests (default-off modules)
+        id: regtest
+        timeout-minutes: 60
+        shell: bash
+        env:
+          TEST_TIMEOUT: 120   # seconds, per test
+          TIME_BUDGET: 2400   # seconds, no new test is started after this
+        run: .ci/windows-regtests modules
+
+      - name: Upload regtest results
+        if: ${{ !cancelled() && steps.regtest.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-all-modules-regtest-results
+          path: regtest-results
+
   # Shared kernel (plumedKernel.dll), as needed by the python interface and by
   # MD codes loading PLUMED at runtime (PLUMED_KERNEL): plumed.exe linked to the
   # DLL, installation, a small host loading the DLL through Plumed.h, and the

@@ -34,11 +34,7 @@
 #include <map>
 #include <ctime>
 #include "tools/Random.h"
-
-#ifndef M_PI
-//why do not use PLMD::pi?
-#define M_PI           3.14159265358979323846
-#endif
+#include "tools/Tools.h"
 
 namespace PLMD {
 namespace isdb {
@@ -155,8 +151,8 @@ BAIES::BAIES(const ActionOptions&ao):
   pbc_(true) {
   // set constants
   inv_sqrt2_ = 1.0/sqrt(2.0);
-  sqrt2_pi_  = sqrt(2.0 / M_PI);
-  inv_pi2_   = 0.5 / M_PI / M_PI;
+  sqrt2_pi_  = sqrt(2.0 / pi);
+  inv_pi2_   = 0.5 / pi / pi;
 
   // list of atoms
   std::vector<AtomNumber> atoms;

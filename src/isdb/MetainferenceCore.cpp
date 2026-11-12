@@ -27,16 +27,13 @@
 #include "tools/File.h"
 #include "tools/Keywords.h"
 #include "tools/Log.h"
+#include "tools/Tools.h"
 #include <chrono>
 #include <cmath>
 #include <iomanip>
 #include <limits>
 #include <numeric>
 #include <sstream>
-
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
 
 namespace PLMD {
 namespace isdb {
@@ -946,7 +943,7 @@ double MetainferenceCore::getEnergySP(const std::vector<double> &mean, const std
     }
   }
   // add one single Jeffrey's prior and one normalisation per data point
-  ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*M_PI*M_PI/ss2);
+  ene += 0.5*std::log(sss) + static_cast<double>(narg)*0.5*std::log(0.5*pi*pi/ss2);
   if(doscale_ || doregres_zero_) {
     ene += 0.5*std::log(sss);
   }
@@ -970,9 +967,9 @@ double MetainferenceCore::getEnergySPE(const std::vector<double> &mean, const st
       const double dev = scale*mean[i]-parameters[i]+offset;
       const double a2  = 0.5*dev*dev + ss2;
       if(sm2 > 0.0) {
-        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*pi*pi/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
       } else {
-        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2);
+        ene += 0.5*std::log(sss) + 0.5*std::log(0.5*pi*pi/ss2) + std::log(2.0*a2);
       }
       if(doscale_ || doregres_zero_) {
         ene += 0.5*std::log(sss);
@@ -1004,11 +1001,11 @@ double MetainferenceCore::getEnergyMIGEN(const std::vector<double> &mean, const 
       // deviation + normalisation + jeffrey
       double normb = 0.;
       if(gen_likelihood_==LIKE_GAUSS) {
-        normb = -0.5*std::log(0.5/M_PI*inv_sb2);
+        normb = -0.5*std::log(0.5/pi*inv_sb2);
       } else if(gen_likelihood_==LIKE_LOGN) {
-        normb = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
+        normb = -0.5*std::log(0.5/pi*inv_sb2/(parameters[i]*parameters[i]));
       }
-      const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
+      const double normm         = -0.5*std::log(0.5/pi*inv_sm2);
       const double jeffreys      = -0.5*std::log(2.*inv_sb2);
       ene += 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
       if(doscale_ || doregres_zero_) {
@@ -1037,7 +1034,7 @@ double MetainferenceCore::getEnergyGJ(const std::vector<double> &mean, const std
       ene += 0.5*dev*dev*inv_s2;
     }
   }
-  const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
+  const double normalisation = -0.5*std::log(0.5/pi*inv_s2);
   const double jeffreys = -0.5*std::log(2.*inv_sss);
   // add Jeffrey's prior in case one sigma for all data points + one normalisation per datapoint
   ene += jeffreys + static_cast<double>(narg)*normalisation;
@@ -1064,7 +1061,7 @@ double MetainferenceCore::getEnergyGJE(const std::vector<double> &mean, const st
       const double inv_sss = 1./(sigma[i]*sigma[i] + sigma_mean2_[i]);
       double dev = scale*mean[i]-parameters[i]+offset;
       // deviation + normalisation + jeffrey
-      const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
+      const double normalisation = -0.5*std::log(0.5/pi*inv_s2);
       const double jeffreys      = -0.5*std::log(2.*inv_sss);
       ene += 0.5*dev*dev*inv_s2 + normalisation + jeffreys;
       if(doscale_ || doregres_zero_) {
@@ -1091,7 +1088,7 @@ double MetainferenceCore::getEnergyTerm(const unsigned i, const double mean_i, c
     const double inv_s2  = 1./(sigma_i*sigma_i + scale2*sigma_mean2_[i]);
     const double inv_sss = 1./(sigma_i*sigma_i + sigma_mean2_[i]);
     const double dev = scale*mean_i-parameters[i]+offset;
-    const double normalisation = -0.5*std::log(0.5/M_PI*inv_s2);
+    const double normalisation = -0.5*std::log(0.5/pi*inv_s2);
     const double jeffreys      = -0.5*std::log(2.*inv_sss);
     ene = 0.5*dev*dev*inv_s2 + normalisation + jeffreys;
     if(doscale_ || doregres_zero_) {
@@ -1110,9 +1107,9 @@ double MetainferenceCore::getEnergyTerm(const unsigned i, const double mean_i, c
     const double dev = scale*mean_i-parameters[i]+offset;
     const double a2  = 0.5*dev*dev + ss2;
     if(sm2 > 0.0) {
-      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
+      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*pi*pi/ss2) + std::log(2.0*a2/(1.0-std::exp(-a2/sm2)));
     } else {
-      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*M_PI*M_PI/ss2) + std::log(2.0*a2);
+      ene = 0.5*std::log(sss) + 0.5*std::log(0.5*pi*pi/ss2) + std::log(2.0*a2);
     }
     if(doscale_ || doregres_zero_) {
       ene += 0.5*std::log(sss);
@@ -1134,11 +1131,11 @@ double MetainferenceCore::getEnergyTerm(const unsigned i, const double mean_i, c
     const double devm = mean_i - ftilde_[i];
     double normb = 0.;
     if(gen_likelihood_==LIKE_GAUSS) {
-      normb = -0.5*std::log(0.5/M_PI*inv_sb2);
+      normb = -0.5*std::log(0.5/pi*inv_sb2);
     } else if(gen_likelihood_==LIKE_LOGN) {
-      normb = -0.5*std::log(0.5/M_PI*inv_sb2/(parameters[i]*parameters[i]));
+      normb = -0.5*std::log(0.5/pi*inv_sb2/(parameters[i]*parameters[i]));
     }
-    const double normm         = -0.5*std::log(0.5/M_PI*inv_sm2);
+    const double normm         = -0.5*std::log(0.5/pi*inv_sm2);
     const double jeffreys      = -0.5*std::log(2.*inv_sb2);
     ene = 0.5*devb*devb*inv_sb2 + 0.5*devm*devm*inv_sm2 + normb + normm + jeffreys;
     if(doscale_ || doregres_zero_) {
@@ -1227,7 +1224,7 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
       // (no Hastings correction) samples the likelihood times this Gaussian, i.e. the Gaussian prior
       // of mean SCALE0 (OFFSET0) and width DSCALE (DOFFSET); D also sets the size of the moves.
       const double r1 = random[1].Gaussian();
-      const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*std::exp(1)/M_PI*r1;
+      const double ds1 = 0.5*(scale_mu_-new_scale)+Dscale_*std::exp(1)/pi*r1;
       new_scale += ds1;
     }
   }
@@ -1244,7 +1241,7 @@ void MetainferenceCore::moveScaleOffset(const std::vector<double> &mean_, double
     } else {
       // GAUSSIAN prior, see the scale above
       const double r1 = random[1].Gaussian();
-      const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*std::exp(1)/M_PI*r1;
+      const double ds1 = 0.5*(offset_mu_-new_offset)+Doffset_*std::exp(1)/pi*r1;
       new_offset += ds1;
     }
   }

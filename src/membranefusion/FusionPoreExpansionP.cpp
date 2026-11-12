@@ -20,6 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
+#include "tools/Tools.h"
 #include <cmath>
 #ifdef __PLUMED_HAS_OPENACC
 //there are some issues with nvc++ and the declaration of omp here
@@ -244,8 +245,8 @@ void fusionPoreExpansionP::calculate() {
 #endif
 #endif
   for (unsigned i = 0; i < UMEM.size(); i++) {
-    uMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
-    lMemAngle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
+    uMemAngle = 2.0 * pi * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
+    lMemAngle = 2.0 * pi * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i + UMEM.size())))[2];
     ZuMemcos += cos(uMemAngle);
     ZuMemsin += sin(uMemAngle);
     ZlMemcos += cos(lMemAngle);
@@ -253,10 +254,10 @@ void fusionPoreExpansionP::calculate() {
   }
   ZuMemcos = ZuMemcos / UMEM.size();
   ZuMemsin = ZuMemsin / UMEM.size();
-  ZuMem = Lz * (atan2(-ZuMemsin, -ZuMemcos) + M_PI) / (2.0 * M_PI);
+  ZuMem = Lz * (atan2(-ZuMemsin, -ZuMemcos) + pi) / (2.0 * pi);
   ZlMemcos = ZlMemcos / UMEM.size();
   ZlMemsin = ZlMemsin / UMEM.size();
-  ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + M_PI) / (2.0 * M_PI);
+  ZlMem = Lz * (atan2(-ZlMemsin, -ZlMemcos) + pi) / (2.0 * pi);
 
   // Z center of the both membranes (upper and lower).
   double ZMems = (ZuMem + ZlMem) / 2.0;
@@ -347,26 +348,26 @@ void fusionPoreExpansionP::calculate() {
           if (((-1.0 + HMEM[0]) <= x) && (x <= (1.0 - HMEM[0]))) {
             faxial_Mem[i + TAILS.size() * s] = 1.0;
             Fs_Mem[s] += 1.0;
-            sx_Mem[s] += sin(2.0 * M_PI * TailPosition[0]);
-            sy_Mem[s] += sin(2.0 * M_PI * TailPosition[1]);
-            cx_Mem[s] += cos(2.0 * M_PI * TailPosition[0]);
-            cy_Mem[s] += cos(2.0 * M_PI * TailPosition[1]);
+            sx_Mem[s] += sin(2.0 * pi * TailPosition[0]);
+            sy_Mem[s] += sin(2.0 * pi * TailPosition[1]);
+            cx_Mem[s] += cos(2.0 * pi * TailPosition[0]);
+            cy_Mem[s] += cos(2.0 * pi * TailPosition[1]);
           } else if (((1.0 - HMEM[0]) < x) && (x < (1.0 + HMEM[0]))) {
             aux = 0.5 - ((3.0 * x - 3.0) / (4.0 * HMEM[0])) + (pow((x - 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             Fs_Mem[s] += aux;
-            sx_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[0]);
-            sy_Mem[s] += aux * sin(2.0 * M_PI * TailPosition[1]);
-            cx_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[0]);
-            cy_Mem[s] += aux * cos(2.0 * M_PI * TailPosition[1]);
+            sx_Mem[s] += aux * sin(2.0 * pi * TailPosition[0]);
+            sy_Mem[s] += aux * sin(2.0 * pi * TailPosition[1]);
+            cx_Mem[s] += aux * cos(2.0 * pi * TailPosition[0]);
+            cy_Mem[s] += aux * cos(2.0 * pi * TailPosition[1]);
           } else if (((-1.0 - HMEM[0]) < x) && (x < (-1.0 + HMEM[0]))) {
             aux = 0.5 + ((3.0 * x + 3.0) / (4.0 * HMEM[0])) - (pow((x + 1.0), 3) / (4.0 * pow(HMEM[0], 3)));
             faxial_Mem[i + TAILS.size() * s] = aux;
             Fs_Mem[s] += aux;
-            sx_Mem[s] += (aux * sin(2.0 * M_PI * TailPosition[0]));
-            sy_Mem[s] += (aux * sin(2.0 * M_PI * TailPosition[1]));
-            cx_Mem[s] += (aux * cos(2.0 * M_PI * TailPosition[0]));
-            cy_Mem[s] += (aux * cos(2.0 * M_PI * TailPosition[1]));
+            sx_Mem[s] += (aux * sin(2.0 * pi * TailPosition[0]));
+            sy_Mem[s] += (aux * sin(2.0 * pi * TailPosition[1]));
+            cx_Mem[s] += (aux * cos(2.0 * pi * TailPosition[0]));
+            cy_Mem[s] += (aux * cos(2.0 * pi * TailPosition[1]));
           }
         }
       }
@@ -400,8 +401,8 @@ void fusionPoreExpansionP::calculate() {
     Xcyl_Mem = XCYL[0];
     Ycyl_Mem = YCYL[0];
   } else {
-    Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + M_PI) * Lx / (2 * M_PI);
-    Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + M_PI) * Ly / (2 * M_PI);
+    Xcyl_Mem = (atan2(-Xsc_Mem, -Xcc_Mem) + pi) * Lx / (2 * pi);
+    Ycyl_Mem = (atan2(-Ysc_Mem, -Ycc_Mem) + pi) * Ly / (2 * pi);
   }
 
   /*************************
@@ -467,7 +468,7 @@ void fusionPoreExpansionP::calculate() {
   MemCylDistances = pbcDistance(xyzCyl, pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)));
     x = sqrt(pow(MemCylDistances[0], 2) + pow(MemCylDistances[1], 2)) / RMAX[0];
     if (!((x <= -1.0 - H[0]) || (x >= 1.0 + H[0]))) {
-      angle = 2.0 * M_PI * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
+      angle = 2.0 * pi * getPbc().realToScaled(pbcDistance(Vector(0.0, 0.0, 0.0), getPosition(i)))[2];
       auxcos = cos(angle);
       auxsin = sin(angle);
       if (((-1.0 + H[0]) <= x) && (x <= (1.0 - H[0]))) {
@@ -488,7 +489,7 @@ void fusionPoreExpansionP::calculate() {
 
   ZMemRMAXcos = ZMemRMAXcos / countAux;
   ZMemRMAXsin = ZMemRMAXsin / countAux;
-  ZMemRMAX = Lz * (atan2(-ZMemRMAXsin, -ZMemRMAXcos) + M_PI) / (2.0 * M_PI);
+  ZMemRMAX = Lz * (atan2(-ZMemRMAXsin, -ZMemRMAXcos) + pi) / (2.0 * pi);
 
   xyzCyl = pbcDistance(Vector(0.0, 0.0, 0.0), Vector(Xcyl_Mem, Ycyl_Mem, ZMemRMAX));
 
@@ -536,7 +537,7 @@ void fusionPoreExpansionP::calculate() {
       }
     }
   }
-  poreR = sqrt(np * VO[0] / (M_PI * D[0]));
+  poreR = sqrt(np * VO[0] / (pi * D[0]));
 
   // This is the CV that describes the Pore Expansion.
   double Xi_Exp = (poreR - RO) / RO;
@@ -548,7 +549,7 @@ void fusionPoreExpansionP::calculate() {
   double fact2 = 0.0;
 
   if (poreR != 0.0) {
-  fact2 = VO[0] / (2.0 * M_PI * RO * D[0] * poreR);
+  fact2 = VO[0] / (2.0 * pi * RO * D[0] * poreR);
   }
 
   // Distances from the oxygens to center of the cylinder.

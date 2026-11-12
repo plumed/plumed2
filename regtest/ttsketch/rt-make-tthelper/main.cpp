@@ -5,6 +5,7 @@
 // - the HDF5 helpers (ttWrite/ttRead/ttCount/ttMomentsWrite/ttMomentsRead)
 // Only pass/fail is printed, so that the reference does not depend on rounding.
 #include "plumed/ttsketch/TTHelper.h"
+#include "plumed/tools/Tools.h"
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -129,7 +130,7 @@ int main() {
   for(int kernel = 0; kernel < 2; ++kernel) {
     for(int conv = 0; conv < 2 - kernel; ++conv) {
       std::vector<BasisFunc> basis;
-      basis.emplace_back(std::make_pair(-M_PI, M_PI), n, conv ? 0.2 : 0.0, kernel, 0.0);
+      basis.emplace_back(std::make_pair(-PLMD::pi, PLMD::pi), n, conv ? 0.2 : 0.0, kernel, 0.0);
       basis.emplace_back(std::make_pair(0.0, 3.0), n, conv ? 0.1 : 0.0, kernel, 0.0);
       basis.emplace_back(std::make_pair(-1.0, 1.0), n, conv ? 0.05 : 0.0, kernel, 0.0);
       const DenseTT dense(tt);

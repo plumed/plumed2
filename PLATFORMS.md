@@ -24,7 +24,7 @@ Standard builds
 |---|---|---|---|
 | Build system | `./configure` and `make` | `./configure` and `make` | CMake and Visual Studio (experimental) |
 | Libraries | shared kernel, static archive, wrapper library | same | static kernel (to be linked into an MD code), or shared kernel with `-DPLUMED_SHARED_KERNEL=ON` |
-| Modules (see [README.md](README.md#modules-and-plugins)) | any (`--enable-modules`) | any | `always` and `default-on` ones; VES with `-DPLUMED_ENABLE_VES=ON` |
+| Modules (see [README.md](README.md#modules-and-plugins)) | any (`--enable-modules`) | any | any (`-DPLUMED_MODULES`, same syntax); default: `always` and `default-on` ones |
 | MPI | external MPI library, or embedded thread-MPI | same | embedded thread-MPI only |
 | OpenMP | yes | yes (with Apple clang, needs libomp) | no |
 | Expressions compiled with asmjit | yes (x86_64 and 64 bit ARM) | yes | yes |

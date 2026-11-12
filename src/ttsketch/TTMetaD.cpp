@@ -17,6 +17,7 @@
 #include "tools/OFile.h"
 #include "tools/Random.h"
 #include "tools/IFile.h"
+#include "tools/Tools.h"
 #include <algorithm>
 #include <ctime>
 #include <filesystem>
@@ -1147,25 +1148,25 @@ std::vector<Matrix<double>> TTMetaD::intBasisSample() const {
         if(this->sketch_basis_[0].kernel()) {
           if(pos == 1) {
             // <1, g_j> = integral of 1D Gaussian = sqrt(2*pi)*sigma
-            result = h * sqrt(2 * M_PI) * w;
+            result = h * sqrt(2 * pi) * w;
           } else {
             // <kernel_c, g_j> = conv of two Gaussians (widths dx and w), with periodic images
             double c = this->sketch_basis_[i - 1].center(pos - 1);
             double dx = this->sketch_basis_[i - 1].dx();
             for(int k = -1; k <= 1; ++k) {
-              result += exp(-pow(x - c + 2 * k * L, 2) / (2 * (pow(dx, 2) + pow(w, 2)))) * h * sqrt(2 * M_PI) * w /
+              result += exp(-pow(x - c + 2 * k * L, 2) / (2 * (pow(dx, 2) + pow(w, 2)))) * h * sqrt(2 * pi) * w /
                         (sqrt(1 / pow(dx, 2) + 1 / pow(w, 2)) * w);
             }
           }
         } else {
           if(pos == 1) {
             // <1/sqrt(2L), g_j> = sqrt(pi/L) * sigma (Gaussian times constant)
-            result = h * sqrt(M_PI / L) * w;
+            result = h * sqrt(pi / L) * w;
           } else if(pos % 2 == 0) {
             // <cos harmonic, g_j>: Fourier transform of Gaussian times exponential damping
-            result = exp(-pow(M_PI * w * (pos / 2), 2) / (2 * pow(L, 2))) * h * sqrt(2 * M_PI / L) * w * cos(M_PI * (x - a) * (pos / 2) / L);
+            result = exp(-pow(pi * w * (pos / 2), 2) / (2 * pow(L, 2))) * h * sqrt(2 * pi / L) * w * cos(pi * (x - a) * (pos / 2) / L);
           } else {
-            result = exp(-pow(M_PI * w * (pos / 2), 2) / (2 * pow(L, 2))) * h * sqrt(2 * M_PI / L) * w * sin(M_PI * (x - a) * (pos / 2) / L);
+            result = exp(-pow(pi * w * (pos / 2), 2) / (2 * pow(L, 2))) * h * sqrt(2 * pi / L) * w * sin(pi * (x - a) * (pos / 2) / L);
           }
         }
         M[i - 1](j - 1, pos - 1) = result;

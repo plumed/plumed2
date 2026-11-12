@@ -4,7 +4,7 @@
 # so it can be linked directly into GROMACS.
 #
 # Status: experimental, probing -> production.
-# Modules: "always" + "default-on" sets, mirroring upstream module.type files.
+# Modules: selected with PLUMED_MODULES, as ./configure --enable-modules.
 cmake_minimum_required(VERSION 3.18)
 project(PlumedMSVC LANGUAGES CXX)
 include(GNUInstallDirs)
@@ -20,18 +20,73 @@ set(PLUMED_GEN ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
-# The "always" and "default-on" modules, as listed by the src/*/module.type
-# files (the same set that ./configure enables by default)
-set(MODULES)
+# PLUMED_MODULES has the syntax of ./configure --enable-modules: "reset" (the
+# default: the "always" and "default-on" modules of the src/*/module.type
+# files), "all", "none" (the "always" modules only), or a ":" separated list
+# such as "+ves:+funnel:-isdb". Modules that need a library this build does
+# not support (drr, fourier, metatomic, pytorch, ttsketch) compile without it,
+# as with ./configure when the library is missing; kenref, which ./configure
+# drops in that case, is never compiled.
+set(PLUMED_MODULES "reset" CACHE STRING
+    "Modules to compile, with the syntax of ./configure --enable-modules")
+set(_all_modules)
+set(_always_modules)
+set(_default_modules)
 file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
 list(SORT _module_type_files)
 foreach(_mt ${_module_type_files})
     file(STRINGS ${_mt} _type LIMIT_COUNT 1)
-    if(_type STREQUAL "always" OR _type STREQUAL "default-on")
-        get_filename_component(_dir ${_mt} DIRECTORY)
-        get_filename_component(_mod ${_dir} NAME)
-        list(APPEND MODULES ${_mod})
+    get_filename_component(_dir ${_mt} DIRECTORY)
+    get_filename_component(_mod ${_dir} NAME)
+    list(APPEND _all_modules ${_mod})
+    if(_type STREQUAL "always")
+        list(APPEND _always_modules ${_mod})
     endif()
+    if(_type STREQUAL "always" OR _type STREQUAL "default-on")
+        list(APPEND _default_modules ${_mod})
+    endif()
+endforeach()
+set(MODULES ${_default_modules})
+string(REGEX REPLACE "([+-])" ";\\1" _tokens "${PLUMED_MODULES}")
+string(REPLACE ":" ";" _tokens "${_tokens}")
+foreach(_tok ${_tokens})
+    if(_tok STREQUAL "reset")
+        set(MODULES ${_default_modules})
+    elseif(_tok STREQUAL "all")
+        set(MODULES ${_all_modules})
+    elseif(_tok STREQUAL "none")
+        set(MODULES ${_always_modules})
+    else()
+        string(REGEX REPLACE "^[+-]" "" _mod "${_tok}")
+        if(NOT _mod IN_LIST _all_modules)
+            message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} does not exist")
+        endif()
+        if(NOT _tok MATCHES "^-")
+            list(APPEND MODULES ${_mod})
+        elseif(_mod IN_LIST _always_modules)
+            message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} is always enabled")
+        else()
+            list(REMOVE_ITEM MODULES ${_mod})
+        endif()
+    endif()
+endforeach()
+list(REMOVE_DUPLICATES MODULES)
+list(SORT MODULES)
+if(kenref IN_LIST MODULES)
+    message(STATUS "PLUMED_MODULES: kenref needs the KEnRef library, not supported by this build: skipped")
+    list(REMOVE_ITEM MODULES kenref)
+endif()
+# As src/maketools/check_module.sh: the modules listed in the USE line of the
+# Makefile of an enabled module must be enabled
+foreach(_mod ${MODULES})
+    file(STRINGS ${PLUMED_SRC}/src/${_mod}/Makefile _use REGEX "^USE[ \t]*=")
+    string(REGEX REPLACE "^USE[ \t]*=" "" _use "${_use}")
+    separate_arguments(_use)
+    foreach(_dep ${_use})
+        if(_dep IN_LIST _all_modules AND NOT _dep IN_LIST MODULES)
+            message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} depends on ${_dep}, which is disabled")
+        endif()
+    endforeach()
 endforeach()
 # The Windows CMake build uses the imported Win32 thread backend by default.
 # Keep the wrapper frontend enabled when this option is off so the fully
@@ -40,11 +95,8 @@ option(PLUMED_ENABLE_THREAD_MPI "Compile the embedded thread-MPI backend" ON)
 if(NOT PLUMED_ENABLE_THREAD_MPI)
     list(REMOVE_ITEM MODULES thread_mpi)
 endif()
-# Optional default-off modules (upstream: enabled by touching <mod>.on)
-option(PLUMED_ENABLE_VES "Compile the VES module (variational enhanced sampling)" OFF)
-if(PLUMED_ENABLE_VES)
-    list(APPEND MODULES ves)
-endif()
+string(REPLACE ";" " " _modules_txt "${MODULES}")
+message(STATUS "PLUMED modules: ${_modules_txt}")
 
 # Kernel for the python package (python/build_backend.py): it finds its
 # resources (scripts, vim and json files, headers) relative to its own location
