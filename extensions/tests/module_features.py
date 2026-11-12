@@ -5,6 +5,7 @@ import argparse
 import os
 import shlex
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -14,6 +15,9 @@ args = parser.parse_args()
 base = args.base.resolve()
 program = str(base / "bin/plumed")
 source = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(source / "extensions"))
+from symbols import module_symbol
+
 env = dict(os.environ, PLUMED_AUTOLOAD="0")
 soext = subprocess.check_output(
     [program, "info", "--soext"], text=True, env=env
@@ -24,8 +28,9 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
     root = Path(scratch)
     env["PLUMED_PLUGIN_PATH"] = str(root)
     for name, feature, dependencies in (
-        ("feature_a", "TEST_ALPHA", []),
-        ("feature_b", "TEST_BETA", ["feature_a"]),
+        ("feature-a", "TEST_ALPHA", []),
+        ("feature_a", "TEST_UNDERSCORE", []),
+        ("feature_b", "TEST_BETA", ["feature-a"]),
     ):
         subprocess.run(
             [
@@ -52,7 +57,8 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
         if dependencies:
             with identity.open("a") as handle:
                 handle.write(
-                    'extern "C" const char* plumed_module_feature_a();\nextern "C" const void* feature_dependency() { return reinterpret_cast<const void*>(&plumed_module_feature_a); }\n'
+                    f'extern "C" const char* {module_symbol(dependencies[0])}();\n'
+                    f'extern "C" const void* feature_dependency() {{ return reinterpret_cast<const void*>(&{module_symbol(dependencies[0])}); }}\n'
                 )
         flags = ["-dynamiclib"] if soext == "dylib" else ["-shared", "-fPIC"]
         subprocess.run(
@@ -99,14 +105,34 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
     assert "tools" in aggregate.split()
     for feature in baseline.split():
         query("tools", feature, 0)
-        query("feature_a", feature, 1)
-    query("feature_a", "test_alpha", 0)
+        query("feature-a", feature, 1)
+    # A hyphenated name and its underscore spelling have distinct native symbols.
+    query("feature_a", "test_underscore", 1)
+    isolated = subprocess.run(
+        [
+            program,
+            "--load-module=feature-a",
+            "--load-module=feature_a",
+            "modules",
+            "--module",
+            "feature_a",
+            "--has-feature",
+            "test_underscore",
+            "-q",
+        ],
+        env=env,
+        check=False,
+        timeout=30,
+    )
+    assert isolated.returncode == 0
+    query("feature-a", "test_underscore", 1)
+    query("feature-a", "test_alpha", 0)
     query("feature_b", "test_beta", 0)
     query("feature_b", "test_alpha", 1)
-    query("feature_a", "test_beta", 1)
+    query("feature-a", "test_beta", 1)
     query("tools", "test_alpha", 1)
     query("missing", "test_alpha", 1)
-    query("feature_a", "test_alpha", 1, load=False)
+    query("feature-a", "test_alpha", 1, load=False)
     subprocess.run(
         [
             program,

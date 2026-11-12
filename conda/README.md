@@ -73,12 +73,15 @@ make -C conda
 make -C conda test
 ```
 
-The build script builds `plumed` once, generates the extension inventory and
-recipes, then builds matching Python/tooling, optional module, MPI provider and
+The build script generates the inventory and recipes, builds `plumed` once,
+then builds matching Python/tooling, optional module, MPI provider and
 plugin variants, including opted-in empty compatibility packages. Module-local `conda.mk` files declare
 native conda requirements; licenses come from module license files. Optional
 libraries that are unavailable do not exclude modules during this proof of concept.
-To invoke conda-build directly on extensions, first run
+The base requirements are inherited from the `conda.mk` files of the default
+modules and their hard dependencies. LibTorch is supplied only by optional
+outputs, including `plumed-ext-isdb-pytorch` for EMMIVOX.
+To invoke conda-build directly on any recipe, first run
 `python extensions/conda_recipe.py` from the repository root. Local packages take priority when building
 and testing dependents. No packages are uploaded by these commands; the
 existing upload target remains a separate, token-controlled release step.

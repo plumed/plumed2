@@ -4,19 +4,40 @@
   "tests": [
     {
       "regtest": "ves/rt-le-1d-static-bias",
-      "packages": ["plumed-ext-ves"]
+      "packages": [
+        "plumed-ext-ves"
+      ]
     },
     {
       "regtest": "fourier/rt-fftw",
-      "packages": ["plumed-ext-fourier", "plumed-ext-symfunc"]
+      "packages": [
+        "plumed-ext-fourier",
+        "plumed-ext-symfunc"
+      ]
     },
     {
       "regtest": "drr/rt-checkpoint-drr",
-      "packages": ["plumed-ext-drr"]
+      "packages": [
+        "plumed-ext-drr"
+      ]
     },
     {
       "regtest": "pytorch/rt-pytorch_model_strided",
-      "packages": ["plumed-ext-pytorch"]
+      "packages": [
+        "plumed-ext-pytorch"
+      ]
+    },
+    {
+      "regtest": "isdb-pytorch/rt-emmivox",
+      "packages": [
+        "plumed-ext-isdb-pytorch"
+      ]
+    },
+    {
+      "regtest": "isdb-pytorch/rt-checkpoint-emmivox",
+      "packages": [
+        "plumed-ext-isdb-pytorch"
+      ]
     }
   ]
 }

@@ -1,4 +1,1 @@
-# Optional native libraries used by this built-in module.
-# The base recipe independently selects the features enabled in the kernel.
-CONDA_HOST_REQUIREMENTS = "libtorch * cpu_generic*"
-CONDA_RUN_REQUIREMENTS = "libtorch * cpu_generic*"
+# Torch-dependent ISDB actions are packaged in the optional isdb-pytorch module.

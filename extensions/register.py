@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 from features import feature_identity
+from symbols import module_symbol
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--plumed", required=True)
@@ -31,8 +32,10 @@ for feature in args.features:
     if not re.fullmatch(r"[A-Z][A-Z0-9_]*", feature):
         parser.error("feature macro suffixes must be uppercase C identifiers")
 for name in [args.module, *args.requires]:
-    if not re.fullmatch(r"[a-z][a-z0-9_]*", name):
-        parser.error("module names must be lowercase C identifiers")
+    if not re.fullmatch(r"[a-z][a-z0-9_-]*", name):
+        parser.error(
+            "module names must start with a lowercase letter and use lowercase letters, digits, underscores or hyphens"
+        )
 for text in [args.library, args.variant]:
     if "\n" in text or "\r" in text:
         parser.error("registration values must be single lines")
@@ -52,8 +55,8 @@ feature_names = set(args.features) | set(
 args.output.mkdir(parents=True, exist_ok=True)
 (args.output / "module_identity.cpp").write_text(
     '#include "config/Config.h"\n'
-    + f'extern "C" const char* plumed_module_{args.module}() {{ return "{build_id}"; }}\n'
-    + f'extern "C" const void* plumed_module_{args.module}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+    + f'extern "C" const char* {module_symbol(args.module)}() {{ return "{build_id}"; }}\n'
+    + f'extern "C" const void* {module_symbol(args.module)}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
     + feature_identity(args.module, feature_names)
 )
 (args.output / f"{args.module}.plumed").write_text(

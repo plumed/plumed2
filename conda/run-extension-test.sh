@@ -25,6 +25,7 @@ for record in "$prefix"/conda-meta/{libtorch,libboost,libmetatomic-torch}-*.json
 done
 python extensions/tests/chemfiles.py --prefix "$prefix"
 python extensions/tests/abi.py --prefix "$prefix"
+python extensions/tests/kernel_requirements.py
 python extensions/tests/requirements.py
 python extensions/tests/module_features.py --base "$prefix"
 python extensions/tests/installed.py --base "$prefix" --extensions "$prefix"
@@ -55,7 +56,7 @@ from pathlib import Path
 reports = Path(sys.argv[1]) / "lib/plumed/plugins"
 for module, feature in [
     ("drr", "BOOST_SERIALIZATION"), ("fourier", "FFTW"),
-    ("pytorch", "LIBTORCH"), ("metatomic", "LIBMETATOMIC"),
+    ("isdb-pytorch", "LIBTORCH"), ("pytorch", "LIBTORCH"), ("metatomic", "LIBMETATOMIC"),
     ("metatomic", "LIBTORCH"), ("ttsketch", "LIBHDF5"),
 ]:
     report = json.loads((reports / (module + ".json")).read_text())
@@ -68,6 +69,7 @@ cmp "$kernel" "$task/kernel-before"
 ! PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" modules -q --has-feature libtorch
 PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" --load-module=pytorch modules -q --has-feature libtorch
 ! PLUMED_AUTOLOAD=0 "$prefix/bin/plumed" --load-module=pytorch modules -q --has-feature libmetatomic
+python extensions/tests/isdb_pytorch.py --prefix "$prefix"
 python extensions/tests/regressions.py --prefix "$prefix"
 
 conda remove -y -p "$prefix" --override-channels -c local -c conda-forge plumed-ext-ves

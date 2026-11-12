@@ -40,3 +40,5 @@ __pycache__
 /conda/plumed-cuda-coordination/meta.yaml
 
 /conda/plumed-openacc/meta.yaml
+
+/conda/plumed/meta.yaml

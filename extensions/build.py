@@ -14,6 +14,7 @@ from pathlib import Path
 
 from features import FeatureProbes, feature_identity
 from inventory import generate_catalog
+from symbols import module_symbol
 
 root = Path(__file__).resolve().parent.parent
 config = {}
@@ -194,8 +195,8 @@ for name in order:
     )
     identity.write_text(
         '#include "config/Config.h"\n'
-        + f'extern "C" const char* plumed_module_{name}() {{ return "{build_id}"; }}\n'
-        + f'extern "C" const void* plumed_module_{name}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+        + f'extern "C" const char* {module_symbol(name)}() {{ return "{build_id}"; }}\n'
+        + f'extern "C" const void* {module_symbol(name)}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
         + feature_identity(
             name,
             re.findall(

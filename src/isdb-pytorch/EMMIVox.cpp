@@ -59,9 +59,9 @@
 #pragma GCC diagnostic push
 
 namespace PLMD {
-namespace isdb {
+namespace isdb_pytorch {
 
-//+PLUMEDOC ISDB_COLVAR EMMIVOX
+//+PLUMEDOC ISDB_PYTORCH_COLVAR EMMIVOX
 /*
 Bayesian single-structure and ensemble refinement with cryo-EM maps.
 
@@ -75,7 +75,7 @@ the Metainference approach that is introduced in the second paper cited below. T
 
 !!! note "installing libtorch"
 
-    To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb.md).
+    To use EMMIVOX, PLUMED must be linked against the LibTorch library using the instructions [on the module page](module_isdb-pytorch.md).
 
 ## Examples
 
@@ -83,13 +83,13 @@ In the following example the density of the model built from atoms 1-234 is comp
 and the resulting Bayesian score is applied as a bias. The status of the calculation is written every 1000 steps in `emvstatus`.
 
 ```plumed
-#SETTINGS INPUTFILES=regtest/isdb/rt-emmivox/structure.pdb,regtest/isdb/rt-emmivox/map.dat
-MOLINFO STRUCTURE=regtest/isdb/rt-emmivox/structure.pdb
+#SETTINGS INPUTFILES=regtest/isdb-pytorch/rt-emmivox/structure.pdb,regtest/isdb-pytorch/rt-emmivox/map.dat
+MOLINFO STRUCTURE=regtest/isdb-pytorch/rt-emmivox/structure.pdb
 
 EMMIVOX ...
   LABEL=emv
   ATOMS=1-234
-  DATA_FILE=regtest/isdb/rt-emmivox/map.dat
+  DATA_FILE=regtest/isdb-pytorch/rt-emmivox/map.dat
   NORM_DENSITY=6.3034
   RESOLUTION=0.2
   SIGMA_MIN=0.2

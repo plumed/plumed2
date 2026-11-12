@@ -12,6 +12,8 @@ fi
 export CPU_COUNT=${CPU_COUNT:-4}
 # Resolve unpinned Python-wrapper tests against this CI build first.
 export CONDA_CHANNEL_PRIORITY=strict
+# Generate the base requirements before its first solve as well as extension outputs.
+python ../extensions/conda_recipe.py
 if [[ ${PLUMED_CONDA_SKIP_BASE:-no} == yes ]]; then
   : "${CONDA_BLD_PATH:?set CONDA_BLD_PATH for the shared kernel archive}"
   : "${VERSION:?set VERSION to the shared kernel package version}"
@@ -25,7 +27,6 @@ else
   conda-build -c conda-forge plumed
 fi
 # Prefer the exact package built or restored locally to conda-forge PLUMED.
-python ../extensions/conda_recipe.py
 # Exercise runtime compilation before the more expensive module/plugin builds.
 echo "#Building py-plumed for conda"
 conda-build -c local -c conda-forge py-plumed

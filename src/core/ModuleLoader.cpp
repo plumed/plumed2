@@ -52,6 +52,20 @@ bool validName(const std::string& name) {
   return !name.empty() && name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_-")==std::string::npos;
 }
 
+std::string moduleSymbol(const std::string& name) {
+  if(name.find('-')==std::string::npos) {
+    return "plumed_module_"+name;
+  }
+  // A disjoint prefix preserves existing symbols and avoids aliasing a-b/a_b.
+  std::string result="plumed_encoded_module_";
+  constexpr char digits[]="0123456789abcdef";
+  for(unsigned char c:name) {
+    result+=digits[c>>4];
+    result+=digits[c&15];
+  }
+  return result;
+}
+
 struct State {
   std::recursive_mutex mutex;
   std::once_flag discovery, automatic;
@@ -226,7 +240,7 @@ struct State {
       }
       auto image=staged.load(pathToUTF8(fs::canonical(module.library)));
 #ifdef __PLUMED_HAS_DLOPEN
-      const auto symbol="plumed_module_"+dep;
+      const auto symbol=moduleSymbol(dep);
       using Identity=const char*(*)();
       auto identity=reinterpret_cast<Identity>(dlsym(image,symbol.c_str()));
       plumed_assert(identity && identity()==module.build)
@@ -263,7 +277,7 @@ struct State {
         if(builtin(requirement)) {
           continue;
         }
-        const auto symbol="plumed_module_"+requirement;
+        const auto symbol=moduleSymbol(requirement);
         plumed_assert(dlsym(images.at(dep),symbol.c_str())==dlsym(images.at(requirement),symbol.c_str()))
             <<"Module "<<dep<<" resolved a different native variant of dependency "<<requirement;
       }
@@ -396,7 +410,7 @@ std::vector<std::string> ModuleLoader::features(const DLLoader& loader, const st
     if(!module.empty() && name!=module) {
       continue;
     }
-    const auto symbol="plumed_module_"+name+"_features";
+    const auto symbol=moduleSymbol(name)+"_features";
     using Features=const char*(*)();
     for(auto image:loader.getHandles()) {
       auto features=reinterpret_cast<Features>(dlsym(image,symbol.c_str()));

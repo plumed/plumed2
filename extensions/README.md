@@ -103,7 +103,7 @@ these conda variants are a subsequent stage, not supplied by the initial recipe.
 
 ## Dependency inventory
 
-The inventory and conda recipe are generated files and are not tracked. Run
+The inventory and conda recipes, including `conda/plumed/meta.yaml`, are generated files and are not tracked. Run
 `python3 extensions/conda_recipe.py` before invoking conda-build directly;
 `conda/run-conda-build.sh` does this automatically. Configure and extension builds
 regenerate the inventory themselves. The generators read `module.type`, exact
@@ -121,9 +121,13 @@ Quote MatchSpecs containing spaces. Conda selectors are supported at the end of
 a declaration, for example `# [linux]`. These files are manually curated inputs and are never overwritten by the
 generators. They declare package policy;
 compiler probes only decide which feature macros and native links to enable.
-The recipe selects all default-off modules and opted-in empty compatibility
+The base recipe is generated from `conda/plumed/meta.yaml.in` and the requirements
+of `always` and `default-on` modules, including their native `USE` closure.
+Platform selectors and explicit version/build constraints are retained; requirements
+from default-off modules stay in their own outputs.
+The extension recipe selects all default-off modules and opted-in empty compatibility
 packages for modules supplied by the kernel. DRR declares Boost;
-Fourier declares non-MPI FFTW; PyTorch and metatomic declare CPU LibTorch and
+Fourier declares non-MPI FFTW; `isdb-pytorch` (EMMIVOX), PyTorch and metatomic declare CPU LibTorch and
 native metatomic/metatensor libraries; TTsketch builds against non-MPI HDF5 but permits ABI-compatible MPI variants
 at runtime, while its
 unavailable ITensor dependency does not exclude it. KEnRef is also retained.
@@ -136,6 +140,14 @@ the base. Installed JSON reports beside each registration list enabled optional
 features, native libraries and direct hard module dependencies. The full report
 is `_extensions/native-dependencies.json`. No shortcut dependencies are inferred.
 
+`isdb` stays enabled in the default kernel without LibTorch. Its Torch-dependent
+EMMIVOX action lives in the default-off `isdb-pytorch` module, installed with
+`conda install plumed-ext-isdb-pytorch`. It can also be enabled in a source build
+with `./configure --enable-modules=reset:+isdb-pytorch --enable-libtorch`, or built
+separately with `--enable-extension-modules=isdb-pytorch`. Autoloading,
+`LOAD MODULE=isdb-pytorch` and per-module feature queries follow the same
+contract as other extensions. It does not depend on the PLUMED `pytorch` module.
+
 The three existing plugins use the common registration mechanism and have
 local conda declarations and generated recipes, described below.
 
@@ -145,7 +157,8 @@ local conda declarations and generated recipes, described below.
 and the extension packages that supply their native dependencies. The conda
 harness installs those packages at the base version before running the cases.
 The current selection covers VES static bias/forces, Fourier grids, DRR
-checkpoint/restart and PyTorch strided tensors/derivatives. Symfunc is declared
+checkpoint/restart, PyTorch strided tensors/derivatives and EMMIVOX
+forces, derivatives and checkpoint/restart. Symfunc is declared
 only for the Fourier test input, without becoming a Fourier package dependency.
 
 The selection can explicitly assert its prerequisites with `force_requirements`.

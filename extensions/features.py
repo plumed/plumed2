@@ -3,6 +3,8 @@
 import shlex
 import subprocess
 
+from symbols import module_symbol
+
 PROBES = {
     "BOOST_SERIALIZATION": {
         "source": "#include <boost/archive/text_oarchive.hpp>\n#include <sstream>\nint main(){std::ostringstream s; boost::archive::text_oarchive a(s); int n=0; a << n;}",
@@ -153,7 +155,7 @@ class FeatureProbes:
 
 def feature_identity(name, features):
     """Export actual compiled features instead of trusting installed metadata."""
-    code = f'extern "C" const char* plumed_module_{name}_features() {{ return ""\n'
+    code = f'extern "C" const char* {module_symbol(name)}_features() {{ return ""\n'
     for feature in sorted(set(features)):
         code += f"#if defined(__PLUMED_HAS_{feature}) && __PLUMED_HAS_{feature}\n"
         names = {"MPI": "mpi real_mpi", "THREAD_MPI": "thread_mpi mpi"}.get(

@@ -9,6 +9,39 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def default_modules(modules):
+    """Default kernel modules, including their hard native USE dependencies."""
+    selected = set()
+
+    def visit(name):
+        # Generated configuration support is a native USE target, not a module.
+        if name == "config":
+            return
+        if name in selected:
+            return
+        if name not in modules:
+            raise ValueError(f"Unknown native module dependency: {name}")
+        selected.add(name)
+        for dependency in modules[name]["source_use"]:
+            visit(dependency)
+
+    for name, module in modules.items():
+        if module["type"] in ("always", "default-on"):
+            visit(name)
+    return sorted(selected)
+
+
+def kernel_requirements(modules):
+    """Merge declarations without dropping variant constraints or selectors."""
+    result = {"host": [], "run": []}
+    for name in default_modules(modules):
+        for kind, requirements in result.items():
+            for entry in modules[name]["conda"][kind]:
+                if entry not in requirements:
+                    requirements.append(entry)
+    return result
+
+
 def conda_requirements(directory):
     """Read developer-owned requirements; preserve conda platform selectors."""
     result = {

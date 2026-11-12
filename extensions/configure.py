@@ -41,7 +41,7 @@ if not modules:
     parser.error("select at least one extension module")
 for name in modules:
     if (
-        not name.replace("_", "").isalnum()
+        not name.replace("_", "").replace("-", "").isalnum()
         or not (root / "src" / name / "module.type").is_file()
     ):
         parser.error(f"unknown module: {name}")

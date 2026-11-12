@@ -2456,7 +2456,20 @@ if test "${enable_modules+set}" = set; then :
    if test "${enableval}" = no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
+   # Preserve names containing hyphens while accepting legacy all-foo+bar syntax.
+   modules_words=""
+   for modules_word in `echo "${enableval}" | sed 's/:/ /g'`; do
+     modules_name=$modules_word
+     case "$modules_name" in
+       (+*|-*) modules_name=${modules_name#?} ;;
+     esac
+     if test -f "src/$modules_name/module.type"; then
+       modules_words="$modules_words $modules_word"
+     else
+       modules_words="$modules_words `echo "$modules_word" | sed 's/+/ +/g' | sed 's/-/ -/g'`"
+     fi
+   done
+   for modules_mod in $modules_words
    do
      case "$modules_mod" in
      (none)

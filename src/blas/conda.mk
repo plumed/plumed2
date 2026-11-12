@@ -1,4 +1,3 @@
-# Optional native libraries used by this built-in module.
-# The base recipe independently selects the features enabled in the kernel.
-CONDA_HOST_REQUIREMENTS = libblas
-CONDA_RUN_REQUIREMENTS = libblas
+# Link the actual OpenBLAS provider rather than switchable BLAS/LAPACK symlinks.
+CONDA_HOST_REQUIREMENTS = libopenblas
+CONDA_RUN_REQUIREMENTS = libopenblas
