@@ -3,6 +3,7 @@
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,12 @@ class Test(unittest.TestCase):
         )
         self.assertIsNotNone(match)
         compiler = shlex.split(match.group(1))
+        # Separate Python jobs reuse a kernel built with a compiler cache, but
+        # need not have that optional launcher installed themselves.
+        while compiler and Path(compiler[0]).name in {"ccache", "sccache"}:
+            compiler = compiler[1:]
+        if not compiler or shutil.which(compiler[0]) is None:
+            self.skipTest("configured C++ compiler is unavailable")
         # v2.9's compile/link commands consume the output name immediately.
         output_option = " -o" if shlex.split(match.group(2))[-1] == "-o" else ""
 
