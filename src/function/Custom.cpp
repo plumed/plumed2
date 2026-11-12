@@ -140,6 +140,10 @@ that you can use in the input to the `FUNC` keyword for CUSTOM.
 | asech(x)      | The inverse hyperbolic secant of $x$ is calculated as $\log\left( \sqrt{\frac{1}{x}-1}\sqrt{\frac{1}{x}+1} + \frac{1}{x}\right)$ |
 | acsch(x)      | The inverse hyperbolic cosecant of $x$ is calculated as $\log\left(\frac{1}{x}+\sqrt{\frac{1}{x^2}+1}\right)$ |
 
+The derivatives of `step(x)` and `delta(x)` are taken to be zero everywhere, including at $x=0$, following Lepton's convention.
+This convention ignores singular impulses at discontinuities and avoids infinities or NaNs in derivatives of expressions such as `x^2*step(x)` at zero.
+The explicit function values remain as listed above: `delta(0)` is infinite and `nandelta(0)` is NaN.
+
 Notice, that you can also incorporate the following constants in the expressions that are used in the input to FUNC:
 
 | Symbol | Description |

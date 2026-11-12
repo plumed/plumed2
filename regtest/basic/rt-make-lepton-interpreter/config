@@ -1,0 +1,6 @@
+type=make
+export PLUMED_USE_ASMJIT=no
+
+function plumed_regtest_before(){
+  cp ../../rt-make-lepton-jit/main.cpp .
+}
