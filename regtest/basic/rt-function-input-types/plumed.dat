@@ -1,0 +1,38 @@
+# scalar input: the _SCALAR variants are compared with the _VECTOR variants on a vector with one element
+d1: DISTANCE ATOMS=1,2
+d1v: DISTANCE ATOMS1=1,2
+lt: LESS_THAN ARG=d1 SWITCH={RATIONAL R_0=1.5}
+ltv: LESS_THAN ARG=d1v SWITCH={RATIONAL R_0=1.5}
+mt: MORE_THAN ARG=d1 SWITCH={RATIONAL R_0=1.5}
+mtv: MORE_THAN ARG=d1v SWITCH={RATIONAL R_0=1.5}
+bt: BETWEEN ARG=d1 SWITCH={GAUSSIAN LOWER=1.0 UPPER=2.0 SMEAR=0.5}
+btv: BETWEEN ARG=d1v SWITCH={GAUSSIAN LOWER=1.0 UPPER=2.0 SMEAR=0.5}
+bs: BESSEL ARG=d1 ORDER=0
+bsv: BESSEL ARG=d1v ORDER=0
+ltvs: SUM ARG=ltv PERIODIC=NO
+mtvs: SUM ARG=mtv PERIODIC=NO
+btvs: SUM ARG=btv PERIODIC=NO
+bsvs: SUM ARG=bsv PERIODIC=NO
+diff_scalar: CUSTOM ARG=lt,ltvs,mt,mtvs,bt,btvs,bs,bsvs VAR=a1,a2,b1,b2,c1,c2,d1,d2 FUNC=abs(a1-a2)+abs(b1-b2)+abs(c1-c2)+abs(d1-d2) PERIODIC=NO
+
+# list of vectors: element-wise HIGHEST and MOMENTS
+ds: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+dt: DISTANCE ATOMS1=7,8 ATOMS2=9,10 ATOMS3=11,12
+hv: HIGHEST ARG=ds,dt
+hvc: CUSTOM ARG=ds,dt FUNC=max(x,y) PERIODIC=NO
+mv: MOMENTS ARG=ds,dt POWERS=2
+mvc: CUSTOM ARG=ds,dt FUNC=((x-y)/2)^2 PERIODIC=NO
+hvd: CUSTOM ARG=hv,hvc,mv.moment-2,mvc VAR=a1,a2,b1,b2 FUNC=abs(a1-a2)+abs(b1-b2) PERIODIC=NO
+diff_vector: SUM ARG=hvd PERIODIC=NO
+
+# OUTER_PRODUCT with FUNC=min against the same function written as CUSTOM
+op: OUTER_PRODUCT ARG=ds,dt FUNC=min
+opc: OUTER_PRODUCT ARG=ds,dt FUNC=min(x,y)
+opd: CUSTOM ARG=op,opc FUNC=abs(x-y) PERIODIC=NO
+diff_outer: SUM ARG=opd PERIODIC=NO
+
+hvs: SUM ARG=hv PERIODIC=NO
+mvs: SUM ARG=mv.moment-2 PERIODIC=NO
+ops: SUM ARG=op PERIODIC=NO
+PRINT ARG=lt,mt,bt,bs,hvs,mvs,ops,diff_scalar,diff_vector,diff_outer FILE=colvar FMT=%8.4f
+BIASVALUE ARG=lt,mt,bt,hvs,mvs,ops
