@@ -91,7 +91,6 @@ with tempfile.TemporaryDirectory(prefix="plumed publication ") as temp:
         VERSION="2026.11.12",
         UPLOAD_RECORD=str(root / "record.json"),
     )
-    env.pop("TRAVIS_REPO_SLUG", None)
     env.pop("CONDA_USER", None)
     command = ["bash", str(source / "conda/run-conda-upload.sh")]
     subprocess.run(command, env=env, check=True)

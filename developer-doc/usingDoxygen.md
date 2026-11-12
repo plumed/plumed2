@@ -392,14 +392,14 @@ Precompiled versions of PLUMED manuals can be found on github at an address such
 (replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
 is shown as a webpage. In this example, the repository is located at https://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done
-from Travis CI automatically whenever a commit containing in its log the tag [makedoc] is pushed into the plumed2 github repository.
-Since version 2.3.3, manual is always updated, and tag [makedoc] is ignored.
-Notice that Travis CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
+automatically by the continuous integration (Travis CI at the time, GitHub Actions now) whenever commits are pushed into the plumed2 github repository.
+Notice that the CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
 this should work for all the future release branches as long as an appropriate repository is created on the github.com/plumed
 organization.
 We could even easily create repositories to host the documentation of temporary branches.
 Also notice that these repositories (plumed/doc-xxx) need to give write access to a dummy github account (PlumedBot). A token
-for that user enabling html access is stored in the environment variable GIT_TOKEN which is saved (not visible) on travis-ci.org.
+for that user enabling html access is stored in the GitHub Actions secret GIT_TOKEN_PLUMEDBOT, which the workflow passes to the
+.ci/push script as the environment variable GIT_TOKEN.
 In this way, any commit made in the plumed repository by one of the developers will have access to the variable and will trigger
 manual build and push. Conversely, pull requests by external users should not be able to
 access the token and won't update manual changes.
@@ -408,7 +408,7 @@ covered by the regtests. As of PLUMED 2.5, the coverage scan ends up on a separa
 http://github.com/plumed/coverage-NAMEOFTHEBRANCH.
 
 Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) as of PLUMED 2.3.2 the script that
-pushes the documentation to travis-ci adds special information to remove from search engine results pages from
+pushes the documentation adds special information to remove from search engine results pages from
 unofficial or unsupported branch (see .ci/push script).
 
 Bottom line: manual will always be updated after a commit that can pass the tests.
@@ -417,15 +417,12 @@ and to revert the commit if there are errors!
 
 It is possible to generate PLUMED manuals for your own personal forks 
 using a similar procedure as described above. 
-For this to work you need to enable Travis CI for your forked repository 
-and define appropriately the environment variables on Travis CI. 
-The github account used to automatically push the generated manuals 
-should be defined using the `GIT_BOT` variable, 
-preferably this should be a dummy account. A github token
-enabling html access for that account should be defined using the `GIT_TOKEN` variable. 
-Furthermore, you need to define an email address associated to the account using the `GIT_BOT_EMAIL` variable. 
-It is better to make all these environment variable hidden such that they are 
-not shown in the public logs on travis-ci.org. 
+For this to work you need to enable GitHub Actions for your forked repository.
+A github token enabling html access for the account used to push the generated manuals
+should be stored in the `GIT_TOKEN_PLUMEDBOT` secret of your fork, so that it is not shown in the public logs.
+That account is by default `plumedbot`: to use a different one (preferably a dummy account),
+set the `GIT_BOT` and `GIT_BOT_EMAIL` environment variables in the "Coverage" and "Push doc" steps
+of `.github/workflows/linuxWF.yml`.
 To generate a manual for a specific branch you need to create a repository 
 `USERNAME/doc-NAMEOFTHEBRANCH` and give write access to the account given in 
 `GIT_BOT`. The generated manuals will be accessible on 

@@ -40,9 +40,8 @@ I would like my code to appear in release __XXXXX__
 ##### Tests
 
 <!--
-  Make sure these boxes are checked. For Travis-CI tests, you can wait for them
-  to be completed monitoring this page after your pull request has been submitted:
-  http://travis-ci.org/plumed/plumed2/pull_requests
+  Make sure these boxes are checked. GitHub Actions tests are run automatically
+  and their results are shown at the bottom of your pull request.
 -->
 
 - [ ] I added a new regtest or modified an existing regtest to validate my changes.

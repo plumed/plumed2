@@ -4,9 +4,6 @@ set -euo pipefail
 : "${CONDA_UPLOAD_TOKEN:?CONDA_UPLOAD_TOKEN is required for publication}"
 : "${CONDA_LABEL:?CONDA_LABEL is required for publication}"
 CONDA_USER=${CONDA_USER:-plumed}
-if [[ -n ${TRAVIS_REPO_SLUG:-} ]]; then
-  CONDA_USER=${TRAVIS_REPO_SLUG%/*}
-fi
 build_root=${CONDA_BLD_PATH:-${CONDA_PREFIX:?}/conda-bld}
 version=${VERSION:-*}
 shopt -s nullglob
