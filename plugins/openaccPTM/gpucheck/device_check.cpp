@@ -20,19 +20,23 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
-Checks that the plugin leaves the GPU of the MD code alone (see src/ACCDevice.h).
-It needs a node with GPUs and is run by hand with "make check-gpu" (not by the CI).
+Checks that the GPU plugins (openaccPTM, cudaCoord) choose their GPU with the
+common rule and leave the GPU of the MD code alone (see src/ACCDevice.h here and
+src/cudaHelpers.cuh in cudaCoord). It needs a node with GPUs and is run by hand
+with "make check-gpu" in either plugin (not by the CI).
 
 The program plays the MD code: it selects a GPU with the CUDA runtime and keeps a
-buffer on it, as GROMACS does, then runs PLUMED with a DISTANCE (task manager,
-runAllTasks and applyForces) and a SAXS with CHI2 (backend compute and contract),
-both with USEGPU and biased, so that the forces are computed too.
+buffer on it, as GROMACS does, then runs PLUMED with the actions of the plugins it
+is given, biased so that the forces are computed too:
+- openaccPTM (plumedOpenACC.*): a DISTANCE (task manager, runAllTasks and
+  applyForces) and a SAXS with CHI2 (backend compute and contract), with USEGPU;
+- cudaCoord (CudaCoordination.*): a CUDACOORDINATION.
 After every call to PLUMED, and after PLUMED is destroyed, the GPU of the caller
 must still be the current one and its buffer must still be usable.
 
-  device_check plugin.so follow   caller on the last GPU, no setGpuDeviceId:
+  device_check follow plugin...   caller on the last GPU, no setGpuDeviceId:
                                   the actions must run on the caller's GPU
-  device_check plugin.so md       caller on the last GPU, setGpuDeviceId 0:
+  device_check md plugin...       caller on the last GPU, setGpuDeviceId 0:
                                   the actions must run on GPU 0 (needs 2 GPUs)
 
 The GPU of each action is read from the PLUMED log ("<label> runs on GPU <n>").
@@ -74,12 +78,12 @@ void checkCaller(const int device, void* buffer, const std::size_t bytes, const 
 }
 
 int main(int argc, char** argv) {
-  if(argc!=3) {
-    std::fprintf(stderr, "usage: %s plugin.so follow|md\n", argv[0]);
+  const std::string mode = argc>1 ? argv[1] : "";
+  if(argc<3 || (mode!="follow" && mode!="md")) {
+    std::fprintf(stderr, "usage: %s follow|md plugin.so [plugin.so...]\n", argv[0]);
     return 2;
   }
-  const std::string plugin=argv[1];
-  const std::string mode=argv[2];
+  const std::vector<std::string> plugins(argv+2, argv+argc);
   int ngpus=0;
   if(cudaGetDeviceCount(&ngpus)!=cudaSuccess || ngpus<1) {
     std::fprintf(stderr, "no GPU available\n");
@@ -98,6 +102,7 @@ int main(int argc, char** argv) {
   check(cudaMalloc(&buffer, bytes)==cudaSuccess, "caller allocates on GPU " + std::to_string(callerGpu));
 
   const std::string logfile="device_check_" + mode + ".log";
+  std::vector<std::string> labels;
   {
     PLMD::Plumed p;
     int natoms=4;
@@ -112,14 +117,26 @@ int main(int argc, char** argv) {
     }
     p.cmd("init");
     checkCaller(callerGpu, buffer, bytes, "after init");
-    p.cmd("readInputLine", ("LOAD FILE=" + plugin).c_str());
-    p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 USEGPU");
-    p.cmd("readInputLine", "RESTRAINT ARG=d AT=0.5 KAPPA=10");
-    p.cmd("readInputLine", "s: SAXS ATOMS=1-4 NOPBC USEGPU CHI2 "
-          "PARAMETERS1=1.0 PARAMETERS2=2.0 PARAMETERS3=1.5 PARAMETERS4=0.5 "
-          "QVALUE1=0.03 EXPINT1=8.3 EXPERR1=0.2 QVALUE2=0.12 EXPINT2=8.8 EXPERR2=0.25 "
-          "QVALUE3=0.25 EXPINT3=5.2 EXPERR3=0.15 QVALUE4=0.40 EXPINT4=2.0 EXPERR4=0.10");
-    p.cmd("readInputLine", "RESTRAINT ARG=s.chi2 AT=0 KAPPA=1");
+    for(const auto & plugin : plugins) {
+      p.cmd("readInputLine", ("LOAD FILE=" + plugin).c_str());
+      if(plugin.find("plumedOpenACC")!=std::string::npos) {
+        p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 USEGPU");
+        p.cmd("readInputLine", "RESTRAINT ARG=d AT=0.5 KAPPA=10");
+        p.cmd("readInputLine", "s: SAXS ATOMS=1-4 NOPBC USEGPU CHI2 "
+              "PARAMETERS1=1.0 PARAMETERS2=2.0 PARAMETERS3=1.5 PARAMETERS4=0.5 "
+              "QVALUE1=0.03 EXPINT1=8.3 EXPERR1=0.2 QVALUE2=0.12 EXPINT2=8.8 EXPERR2=0.25 "
+              "QVALUE3=0.25 EXPINT3=5.2 EXPERR3=0.15 QVALUE4=0.40 EXPINT4=2.0 EXPERR4=0.10");
+        p.cmd("readInputLine", "RESTRAINT ARG=s.chi2 AT=0 KAPPA=1");
+        labels.push_back("d");
+        labels.push_back("s");
+      } else if(plugin.find("CudaCoordination")!=std::string::npos) {
+        p.cmd("readInputLine", "c: CUDACOORDINATION GROUPA=1-4 R_0=0.3 D_MAX=1.0 NOPBC");
+        p.cmd("readInputLine", "RESTRAINT ARG=c AT=0 KAPPA=1");
+        labels.push_back("c");
+      } else {
+        check(false, "known plugin " + plugin);
+      }
+    }
     checkCaller(callerGpu, buffer, bytes, "after the input");
 
     std::vector<double> pos= {0,0,0, 0.3,0,0, 0,0.4,0, 0.2,0.2,0.3};
@@ -151,9 +168,7 @@ int main(int argc, char** argv) {
   std::ifstream log(logfile);
   std::stringstream text;
   text << log.rdbuf();
-  for(const std::string label : {
-        "d","s"
-      }) {
+  for(const auto & label : labels) {
     const std::string expected=label + " runs on GPU " + std::to_string(expectedGpu);
     check(text.str().find(expected)!=std::string::npos, "log says \"" + expected + "\"");
   }

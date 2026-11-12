@@ -84,6 +84,10 @@ The GPU of an action is chosen the first time it is computed, and it does not ch
 in the same way for all the actions, e.g. `d runs on GPU 1` for an action labelled `d` (or `d runs on the host` when OpenACC
 sees no GPU). After each call the MD code finds its own GPU (its CUDA context) as it left it.
 
+The cudaCoord plugin chooses its GPU with the same rule. `make check-gpu` (on a node with GPUs) checks that the actions
+run on the expected GPU and that the MD code keeps its own; `make -C gpucheck PLUGINS="/path/plumedOpenACC.so /path/CudaCoordination.so"`
+checks the two plugins loaded together.
+
 For developers: new actions should follow the same behaviour, as described in `src/ACCDevice.h`. The actions that use the
 OpenACC task manager get it for free. Code that uses OpenACC outside of it (as the SAXS/SANS backend) keeps an `ACC::Device`,
 chooses the GPU with `resolve(action)` before using it, and runs every use of OpenACC (kernels, transfers, allocations,

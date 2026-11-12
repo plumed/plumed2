@@ -39,6 +39,59 @@ inline void cudaCheck (cudaError_t const err, const char *what) {
   }
 }
 
+/// @brief chooses the GPU of an action, with the same rule as the openaccPTM
+/// plugin (see plugins/openaccPTM/src/ACCDevice.h): the GPU assigned to PLUMED
+/// by the MD code (cmd "setGpuDeviceId"), otherwise the GPU the MD code is
+/// using (the current one of the CUDA runtime, by default the first one)
+/// @param mdDevice the GPU assigned by the MD code (PlumedMain::getGpuDeviceId), -1 if none
+/// @return the GPU, -1 if there is none
+inline int chooseGPU (int const mdDevice) {
+  int ndevices = 0;
+  if (cudaGetDeviceCount (&ndevices) != cudaSuccess || ndevices == 0) {
+    return -1;
+  }
+  if (mdDevice >= 0 && mdDevice < ndevices) {
+    return mdDevice;
+  }
+  int current = 0;
+  cudaCheck (cudaGetDevice (&current), "cudaGetDevice");
+  return current;
+}
+
+/// @brief makes a GPU the current one, and then gives back to the caller (the MD
+/// code) its own GPU when destroyed: the MD code may be using another GPU, and it
+/// does not expect PLUMED to change it. With device<0 nothing is done.
+///
+/// Every use of the GPU of an action (kernels, transfers, allocations, and the
+/// release of its GPU memory) must run while a deviceGuard for its GPU is alive.
+class deviceGuard {
+  int previous_ = -1;
+public:
+  deviceGuard() = default;
+  explicit deviceGuard (int const device) {
+    enter (device);
+  }
+  deviceGuard (const deviceGuard &) = delete;
+  deviceGuard &operator= (const deviceGuard &) = delete;
+  /// makes device the current GPU (until the guard is destroyed)
+  void enter (int const device) {
+    if (device < 0 || previous_ >= 0) {
+      return;
+    }
+    int current = -1;
+    cudaCheck (cudaGetDevice (&current), "cudaGetDevice");
+    if (current != device) {
+      cudaCheck (cudaSetDevice (device), "cudaSetDevice");
+      previous_ = current;
+    }
+  }
+  ~deviceGuard() {
+    if (previous_ >= 0) {
+      cudaSetDevice (previous_);
+    }
+  }
+};
+
 /// @brief a minimal grow-only, uninitialized buffer in device memory
 ///
 /// Unlike thrust::device_vector this never launches initialization kernels and

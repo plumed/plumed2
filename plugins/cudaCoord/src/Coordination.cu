@@ -21,6 +21,7 @@
 
 #include "plumed/core/ActionRegister.h"
 #include "plumed/core/Colvar.h"
+#include "plumed/core/PlumedMain.h"
 #include "plumed/tools/Communicator.h"
 #include "plumed/tools/SwitchingFunction.h"
 #include "plumed/tools/LinkCells.h"
@@ -981,6 +982,12 @@ public:
 
 template <typename calculateFloat>
 class CudaCoordination : public Colvar {
+  /// Declared first, so that it is destroyed last: the destructor enters it, so
+  /// that all the GPU memory of the members is freed on its GPU, and the GPU of
+  /// the caller is given back only after that
+  CUDAHELPERS::deviceGuard destructorGuard;
+  /// the GPU of this action (only on the process that uses it, -1 on the others)
+  int gpu = -1;
   /// the number of atoms
   unsigned nat=0;
   /// the coordinates on the GPU (3*nat)
@@ -1184,6 +1191,7 @@ void CudaCoordination<calculateFloat>::registerKeywords (Keywords &keys) {
 
 template <typename calculateFloat>
 CudaCoordination<calculateFloat>::~CudaCoordination() {
+  destructorGuard.enter (gpu);
   if(mpiActive) {
     //wait for any pending work before releasing the resources
     if (stream) {
@@ -1348,6 +1356,8 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
 
 template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::calculate() {
+  // all the GPU work of the step is done on the GPU of the action
+  CUDAHELPERS::deviceGuard guard (gpu);
   if (needsListUpdate()) {
     updateNeighborLists();
     firstNLUpdate=false;
@@ -1560,6 +1570,15 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     //mpiActive is const
     mpiActive( comm.Get_rank()== 0),
     cells(comm) {
+  if (mpiActive) {
+    gpu = CUDAHELPERS::chooseGPU (plumed.getGpuDeviceId());
+    if (gpu < 0) {
+      error ("no GPU available");
+    }
+    log.printf ("  %s runs on GPU %d\n", getLabel().c_str(), gpu);
+  }
+  // all the GPU work of the constructor is done on the GPU of the action
+  CUDAHELPERS::deviceGuard guard (gpu);
 
   std::vector<AtomNumber> GroupA;
   parseAtomList ("GROUPA", GroupA);
