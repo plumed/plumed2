@@ -20,6 +20,12 @@ using the non-MPI FFTW variant. Adding/removing an extension must not replace
 its kernel. Optional source modules are delivered as `plumed-ext-<module>` packages,
 without an MPI variant dimension. See [extension builds and loading](../extensions/README.md).
 
+The base recipe explicitly selects the optional libraries enabled in built-in
+modules. In this draft, ISDB is built without LibTorch, so its Torch-dependent
+`EMMIVOX` action is omitted. A required follow-up is to move that part of ISDB
+into an optional module/package, with its own LibTorch requirement and build
+feature report, while keeping the main kernel independent of LibTorch.
+
 Both MPI variants depend on the matching PLUMED version, use the installed
 `Plumed.h`/standard main via `plumed mkmpi`, and install only:
 
@@ -121,13 +127,14 @@ still follows the loader rules described in the extension documentation.
 
 ## GPU validation and distribution handoff
 
-[GPU validation notebook](gpu-validation.ipynb) installs final Linux x86-64 CI
-artifacts on an NVIDIA runtime, including Colab. Upload the ordinary conda and
-OpenACC artifact ZIPs from the final validated shared-kernel artifact set, then run the notebook and
-save its result logs. Continuation jobs may supply different ZIPs, but both must
-contain the exact same kernel archive; the notebook rejects conflicting copies
-and pins its test fixtures to the validated implementation. It exercises CUDA 12.9 and 13.0 and the OpenACC NVIDIA
-target. It never overrides driver metadata: a driver too old for an output is
+[GPU validation notebook](gpu-validation.ipynb) runs directly in Colab: select a
+GPU runtime and choose **Run all**. It anonymously downloads both pinned Linux
+x86-64 CI artifact ZIPs through nightly.link, verifies their SHA256 checksums and
+common kernel, and installs an isolated conda plus pinned test fixtures. No laptop
+uploads or GitHub token are needed. It exercises CUDA 12.9 and 13.0 and the
+OpenACC NVIDIA target, reports each result and exports a small logs-only ZIP.
+Conda environments and binaries are excluded from that ZIP.
+It never overrides driver metadata: a driver too old for an output is
 an incomplete matrix, not a successful GPU test. Alternatively index the artifact
 packages as a local channel and run `run-gpu-test.sh` with `VERSION`,
 `GPU_CONDA_CHANNEL` and `GPU_TEST_ROOT` set. The notebook needs a user-owned GPU
