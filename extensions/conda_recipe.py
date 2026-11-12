@@ -61,8 +61,10 @@ outputs = []
 for name, module in modules.items():
     output = f"""  - name: plumed-ext-{name}
     build:
-      string: base_{{{{ base_build }}}}_0
+      number: 1
+      string: base_{{{{ base_build }}}}_1
     files:
+      - include/plumed/{name}/
       - lib/libplumed-ext-{name}.*
       - lib/plumed/plugins/{name}.plumed
       - lib/plumed/plugins/{name}.json
@@ -105,7 +107,8 @@ for name, module in catalog["modules"].items():
         raise ValueError(f"{name}: CONDA_DUMMY_PACKAGE requires a kernel-built module")
     output = f"""  - name: plumed-ext-{name}
     build:
-      string: builtin_{{{{ base_build }}}}_0
+      number: 1
+      string: builtin_{{{{ base_build }}}}_1
     files: []
     requirements:
       host:

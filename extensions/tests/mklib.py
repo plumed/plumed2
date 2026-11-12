@@ -11,6 +11,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--prefix", required=True, type=Path)
+parser.add_argument("--extension", action="store_true", help="require native VES links")
 args = parser.parse_args()
 prefix = args.prefix.resolve()
 source = Path(__file__).resolve().parents[2]
@@ -30,6 +31,27 @@ build_id = subprocess.check_output(
 with tempfile.TemporaryDirectory(prefix="plumed-mklib-test-") as scratch:
     work = Path(scratch)
     shutil.copy2(source / "regtest/basic/rt15/Distance2.cpp", work / "Distance2.cpp")
+    if args.extension:
+        action = work / "Distance2.cpp"
+        text = (
+            action.read_text()
+            .replace(
+                '#include "colvar/Colvar.h"',
+                '#include "colvar/Colvar.h"\n#include "ves/CoeffsBase.h"',
+            )
+            .replace(
+                "void Distance::calculate(){",
+                "void Distance::calculate(){\n"
+                '  ves::CoeffsBase coefficients("test", {"x"}, {2});\n'
+                '  coefficients.setLabel("linked-ves");\n'
+                '  if(coefficients.getLabel()!="linked-ves") error("VES call failed");',
+            )
+        )
+        action.write_text(text)
+        environment["PLUMED_MKLIB_LDFLAGS"] = str(
+            prefix / "lib" / ("libplumed-ext-ves." + soext)
+        )
+
     (work / "positions.xyz").write_text("2\n10 10 10\nH 0 0 0\nH 1 0 0\n")
 
     def run(command, env=environment):

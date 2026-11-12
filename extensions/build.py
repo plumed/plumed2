@@ -316,6 +316,38 @@ for name in order:
     metadata.write_text(json.dumps(installed_report, indent=2) + "\n")
     if sys.argv[1] == "install":
         (prefix / "lib/plumed/plugins").mkdir(parents=True, exist_ok=True)
+        include_root = prefix / "include/plumed"
+        for header in (root / "src" / name).rglob("*"):
+            if not header.is_file() or header.suffix not in (
+                ".h",
+                ".hpp",
+                ".inl",
+                ".tpp",
+            ):
+                continue
+            relative = header.relative_to(root / "src")
+            destination = include_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            text = header.read_text()
+
+            # Match ordinary installed headers: module-qualified includes are
+            # relative to this header, independent of the caller's include path.
+            def installed_include(
+                match, include_root=include_root, destination=destination
+            ):
+                module, rest = match.groups()
+                if module not in catalog["modules"]:
+                    return match[0]
+                target = os.path.relpath(include_root / module, destination.parent)
+                return '#include "' + target + "/" + rest
+
+            text = re.sub(
+                r'^#\s*include\s*"([^/"\n]+)/([^"\n]+)',
+                installed_include,
+                text,
+                flags=re.MULTILINE,
+            )
+            destination.write_text(text)
         shutil.copy2(metadata, prefix / "lib/plumed/plugins" / metadata.name)
         shutil.copy2(library, prefix / "lib" / library.name)
         shutil.copy2(registration, prefix / "lib/plumed/plugins" / registration.name)

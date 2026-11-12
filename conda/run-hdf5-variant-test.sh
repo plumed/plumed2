@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # A serial PLUMED kernel must coexist with an environment selecting MPI HDF5.
 set -euo pipefail
-[[ $(uname) == Linux ]] || exit 0
 : "${VERSION:?set VERSION to the built package version}"
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-hdf5-variant.XXXXXX")
 trap 'rm -rf "$task"' EXIT
 prefix="$task/environment"
 conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed=$VERSION"
-cp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
+kernel=$(find "$prefix/lib" -maxdepth 1 -name 'libplumedKernel.*' -type f | head -n 1)
+cp "$kernel" "$task/kernel-before"
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge 'hdf5=*=mpi_openmpi_*' openmpi
-cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
+cmp "$kernel" "$task/kernel-before"
 "$prefix/bin/plumed" --has-thread-mpi
 "$prefix/bin/plumed" config has libhdf5 -q
 cat > "$task/input.dat" <<'INPUT'

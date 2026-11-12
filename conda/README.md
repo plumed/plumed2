@@ -67,7 +67,7 @@ make -C conda test
 ```
 
 The build script builds `plumed` once, generates the extension inventory and
-recipe, builds all 35 default-off extension outputs, then both small `plumed-mpi`
+recipe, builds the default-off extension outputs and opted-in empty compatibility packages, then both small `plumed-mpi`
 variants and the existing Python variants. Module-local `conda.mk` files declare
 native conda requirements; licenses come from module license files. Optional
 libraries that are unavailable do not exclude modules during this proof of concept.
@@ -96,3 +96,44 @@ On macOS, the recipes mark the main executables as `no_link`: conda installs
 copies instead of hardlinks to its package cache. Otherwise dyld can resolve
 relative library paths through another hardlink, loading a kernel from the cache
 instead of the selected environment. Library installation is unchanged.
+
+## Optional runtime compilation
+
+The main `plumed` package has no runtime compiler dependency. Install
+`plumed-mklib` to use `plumed mklib` or `LOAD FILE=action.cpp`. It depends on
+that exact kernel build and a compatible C++ compiler. Activate the environment
+before compiling; `PLUMED_MKLIB_CXX` can override the compiler while preserving
+the kernel ABI flags. Cache entries include the kernel build ID and compiler
+flags, so a same-version kernel rebuild invalidates old compiled code.
+
+For code calling an optional module API, install that module and explicitly
+link its library, for example:
+
+```sh
+conda install -c CHANNEL plumed-mklib plumed-ext-ves
+export PLUMED_MKLIB_LDFLAGS="$CONDA_PREFIX/lib/libplumed-ext-ves.so"
+plumed mklib action.cpp
+```
+
+Use `.dylib` on macOS. The native dependency loads VES code; action visibility
+still follows the loader rules described in the extension documentation.
+
+## GPU validation and distribution handoff
+
+[GPU validation notebook](gpu-validation.ipynb) installs final Linux x86-64 CI
+artifacts on an NVIDIA runtime, including Colab. Upload the ordinary conda and
+OpenACC artifact ZIPs from the same source revision, then run the notebook and
+save its result logs. It exercises CUDA 12.9 and 13.0 and the OpenACC NVIDIA
+target. It never overrides driver metadata: a driver too old for an output is
+an incomplete matrix, not a successful GPU test. Alternatively index the artifact
+packages as a local channel and run `run-gpu-test.sh` with `VERSION`,
+`GPU_CONDA_CHANNEL` and `GPU_TEST_ROOT` set. The notebook needs a user-owned GPU
+session; CPU CI does not establish GPU numerical correctness.
+
+Generated recipes/catalogs are build products. Curate module requirements and
+compatibility-package choices in their `conda.mk` files, regenerate with
+`python extensions/conda_recipe.py`, and build the main package before its
+outputs. Publish the exact base and dependent outputs together. The current
+prototype is available as local/fork CI artifacts; public channel/feedstock
+publication and the upstream merge are separate maintainer actions. OpenACC
+release builders must provision the documented NVHPC SDK; users need no SDK.

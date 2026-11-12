@@ -23,6 +23,8 @@ cmp "$kernel" "$task/kernel-before"
 for record in "$prefix"/conda-meta/{libtorch,libboost,libmetatomic-torch}-*.json; do
   test ! -e "$record"
 done
+python extensions/tests/chemfiles.py --prefix "$prefix"
+python extensions/tests/abi.py --prefix "$prefix"
 python extensions/tests/requirements.py
 python extensions/tests/module_features.py --base "$prefix"
 python extensions/tests/installed.py --base "$prefix" --extensions "$prefix"

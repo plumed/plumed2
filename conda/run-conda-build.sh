@@ -32,5 +32,6 @@ if [[ $(uname) == Linux && $(uname -m) == x86_64 && -n ${NVHPC_HOME:-} ]]; then
   conda-build -c local -c conda-forge plumed-openacc
 fi
 
-ls -l $CONDA_PREFIX/conda-bld/
-ls -l $CONDA_PREFIX/conda-bld/*
+build_root=${CONDA_BLD_PATH:-$CONDA_PREFIX/conda-bld}
+ls -l "$build_root"
+ls -l "$build_root"/*
