@@ -95,7 +95,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-mklib-test-") as scratch:
 
     library = "explicit." + soext
     run([program, "mklib", "-o", library, "Distance2.cpp"])
-    calculate(library)
+    calculate("./" + library)
     calculate("Distance2.cpp")
     cached = list(work.glob("Distance2.*." + soext))
     assert len(cached) == 1 and build_id in cached[0].name, cached

@@ -25,6 +25,7 @@
 #include "config/Config.h"
 #include "tools/DLLoader.h"
 #include "tools/Exception.h"
+#include "tools/FileTools.h"
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
@@ -74,14 +75,19 @@ struct State {
       std::vector<fs::path> directories;
       const auto kernel=config::getLibraryPath();
       if(!kernel.empty()) {
-        directories.push_back(fs::canonical(kernel).parent_path()/"plumed"/"plugins");
+        directories.push_back(fs::canonical(pathFromUTF8(kernel)).parent_path()/"plumed"/"plugins");
       }
       if(const char* paths=std::getenv("PLUMED_PLUGIN_PATH")) {
         std::istringstream list(paths);
         std::string entry;
-        while(std::getline(list,entry,':')) {
+#ifdef _WIN32
+        const char separator=';';
+#else
+        const char separator=':';
+#endif
+        while(std::getline(list,entry,separator)) {
           if(!entry.empty()) {
-            directories.emplace_back(entry);
+            directories.emplace_back(pathFromUTF8(entry));
           }
         }
       }
@@ -94,7 +100,7 @@ struct State {
         while(std::getline(list,selection,';')) {
           auto equals=selection.find('=');
           plumed_assert(equals!=std::string::npos)<<"Expected module=/absolute/library in PLUMED_MODULE_OVERRIDE";
-          overrides[selection.substr(0,equals)]=fs::canonical(selection.substr(equals+1));
+          overrides[selection.substr(0,equals)]=fs::canonical(pathFromUTF8(selection.substr(equals+1)));
         }
       }
       std::map<std::string,Module> found;
@@ -132,7 +138,7 @@ struct State {
             } else if(key=="variant") {
               module.variant=value;
             } else if(key=="library") {
-              module.library=file.parent_path()/value;
+              module.library=file.parent_path()/pathFromUTF8(value);
             } else if(key=="requires") {
               std::istringstream deps(value);
               std::string dep;
@@ -218,7 +224,7 @@ struct State {
       if(contextLoader) {
         visible.insert(visible.end(),contextLoader->getHandles().begin(),contextLoader->getHandles().end());
       }
-      auto image=staged.load(fs::canonical(module.library).string());
+      auto image=staged.load(pathToUTF8(fs::canonical(module.library)));
 #ifdef __PLUMED_HAS_DLOPEN
       const auto symbol="plumed_module_"+dep;
       using Identity=const char*(*)();

@@ -3,6 +3,12 @@
 set -e
 cd "$(dirname "$0")"
 
+# macOS dyld can resolve hardlinked compiler paths through the package cache.
+# Copy toolchains into each build prefix so their relative dylibs stay together.
+if [[ $(uname) == Darwin ]]; then
+  export CONDA_ALWAYS_COPY=true
+fi
+
 export CPU_COUNT=${CPU_COUNT:-4}
 # Resolve unpinned Python-wrapper tests against this CI build first.
 export CONDA_CHANNEL_PRIORITY=strict
