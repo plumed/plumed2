@@ -1,0 +1,4 @@
+# This is copied from rt44b
+type=driver
+# this is to test a different name
+arg="--noatoms --initial-step 1" 
