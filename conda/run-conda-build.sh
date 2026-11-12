@@ -12,18 +12,29 @@ fi
 export CPU_COUNT=${CPU_COUNT:-4}
 # Resolve unpinned Python-wrapper tests against this CI build first.
 export CONDA_CHANNEL_PRIORITY=strict
-echo "#Building plumed for conda"
-conda-build -c conda-forge plumed
-# Prefer the package just built locally, not an existing conda-forge PLUMED.
-echo "#Building optional action modules"
+if [[ ${PLUMED_CONDA_SKIP_BASE:-no} == yes ]]; then
+  : "${CONDA_BLD_PATH:?set CONDA_BLD_PATH for the shared kernel archive}"
+  : "${VERSION:?set VERSION to the shared kernel package version}"
+  subdir=$(conda info --json | python -c 'import json,sys; print(json.load(sys.stdin)["platform"])')
+  if ! compgen -G "$CONDA_BLD_PATH/$subdir/plumed-$VERSION-*.conda" >/dev/null; then
+    echo "Missing shared kernel archive for $subdir/$VERSION" >&2
+    exit 1
+  fi
+else
+  echo "#Building plumed for conda"
+  conda-build -c conda-forge plumed
+fi
+# Prefer the exact package built or restored locally to conda-forge PLUMED.
 python ../extensions/conda_recipe.py
-conda-build -c local -c conda-forge plumed-extensions
-echo "#Building the MPICH and Open MPI add-ons"
-conda-build -c local -c conda-forge plumed-mpi
+# Exercise runtime compilation before the more expensive module/plugin builds.
 echo "#Building py-plumed for conda"
 conda-build -c local -c conda-forge py-plumed
 echo "#Building runtime C++ compilation tools"
 conda-build -c local -c conda-forge plumed-mklib
+echo "#Building optional action modules"
+conda-build -c local -c conda-forge plumed-extensions
+echo "#Building the MPICH and Open MPI add-ons"
+conda-build -c local -c conda-forge plumed-mpi
 echo "#Building Python collective-variable plugins"
 conda-build -c local -c conda-forge plumed-pycv
 if [[ $(uname) == Linux ]]; then

@@ -296,5 +296,5 @@ Generated libraries link the kernel and compiler runtimes; imported inline
 BLAS/LAPACK calls additionally link their actual provider. Other private kernel
 libraries do not require development linker files just to compile a basic
 action. C++ LOAD cache filenames include the kernel build ID; direct mklib -n
-also records kernel identity and compiler flags. Existing atomic publication
+also records kernel identity, compiler/link flags and the compiler helper content. Existing atomic publication
 and simultaneous-builder handling are retained.

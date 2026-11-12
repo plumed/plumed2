@@ -117,6 +117,23 @@ with tempfile.TemporaryDirectory(prefix="plumed-mklib-test-") as scratch:
     alternate.mkdir()
     shutil.copytree(prefix / "lib/plumed/scripts", alternate / "scripts")
     shutil.copytree(prefix / "lib/plumed/src/config", alternate / "src/config")
+    previous = (work / library).stat().st_mtime_ns
+    run(
+        [program, "mklib", "-n", "-o", library, "Distance2.cpp"],
+        dict(environment, PLUMED_ROOT=str(alternate)),
+    )
+    assert (work / library).stat().st_mtime_ns == previous, (
+        "Copied settings changed cache identity"
+    )
+    helper = alternate / "scripts/mklib.sh"
+    helper.write_text(helper.read_text() + "\n# Simulated tooling update\n")
+    run(
+        [program, "mklib", "-n", "-o", library, "Distance2.cpp"],
+        dict(environment, PLUMED_ROOT=str(alternate)),
+    )
+    assert (work / library).stat().st_mtime_ns != previous, (
+        "Tooling update reused stale code"
+    )
     (alternate / "src/config/module-build-id").write_text("changed-kernel-build\n")
     previous = (work / library).stat().st_mtime_ns
     run(

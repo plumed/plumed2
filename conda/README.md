@@ -68,8 +68,8 @@ make -C conda test
 ```
 
 The build script builds `plumed` once, generates the extension inventory and
-recipe, builds the default-off extension outputs and opted-in empty compatibility packages, then both small `plumed-mpi`
-variants and the existing Python variants. Module-local `conda.mk` files declare
+recipes, then builds matching Python/tooling, optional module, MPI provider and
+plugin variants, including opted-in empty compatibility packages. Module-local `conda.mk` files declare
 native conda requirements; licenses come from module license files. Optional
 libraries that are unavailable do not exclude modules during this proof of concept.
 To invoke conda-build directly on extensions, first run
@@ -138,3 +138,10 @@ outputs. Publish the exact base and dependent outputs together. The current
 prototype is available as local/fork CI artifacts; public channel/feedstock
 publication and the upstream merge are separate maintainer actions. OpenACC
 release builders must provision the documented NVHPC SDK; users need no SDK.
+
+Separate build jobs must reuse the exact kernel archive rather than rebuilding
+another kernel with the same conda version/build label: native module build IDs
+also capture the configured build. The focused CI shares one Linux kernel
+artifact between CPU/CUDA and OpenACC jobs. After restoring and indexing that
+archive, `PLUMED_CONDA_SKIP_BASE=yes` makes the build script use it; the script
+requires the matching local archive and `CONDA_BLD_PATH`/`VERSION` settings.

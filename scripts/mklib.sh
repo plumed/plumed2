@@ -105,7 +105,8 @@ if [[ -n ${mklib_cxx:-} ]]; then
 fi
 signature=$({
   cat "$PLUMED_ROOT/src/config/module-build-id" 2>/dev/null
-  printf '%s\n' "$compile" "$link_shared" "$PLUMED_MKLIB_CFLAGS" "$PLUMED_MKLIB_LDFLAGS"
+  cksum < "${BASH_SOURCE[0]}"
+  printf '%s\n' "$compile" "$link_shared" "${mklib_link_libs_installed:-}" "$link_libs_installed" "$PLUMED_MKLIB_CFLAGS" "$PLUMED_MKLIB_LDFLAGS"
 } | cksum)
 
 if [ -z "$lib" ]
