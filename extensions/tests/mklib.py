@@ -112,6 +112,41 @@ with tempfile.TemporaryDirectory(prefix="plumed-mklib-test-") as scratch:
         "Changed compiler flags reused stale code"
     )
 
+    # A later translation unit can be the only one importing native BLAS.
+    # Include a space in its filename to exercise object-array quoting too.
+    (work / "numeric-entry.cpp").write_text(
+        'extern "C" double mklib_dot_helper();\n'
+        'extern "C" double mklib_dot_value() { return mklib_dot_helper(); }\n'
+    )
+    (work / "numeric helper.cpp").write_text(
+        '#include "blas/blas.h"\n'
+        'extern "C" double mklib_dot_helper() {\n'
+        "  using namespace PLMD::blas;\n"
+        "  int n=2, stride=1; double x[2]={1,2}, y[2]={3,4};\n"
+        "  return PLUMED_BLAS_F77_FUNC(ddot, DDOT)(&n,x,&stride,y,&stride);\n"
+        "}\n"
+    )
+    numeric_library = "numeric." + soext
+    run(
+        [
+            program,
+            "mklib",
+            "-o",
+            numeric_library,
+            "numeric-entry.cpp",
+            "numeric helper.cpp",
+        ]
+    )
+    run(
+        [
+            str(prefix / "bin/python"),
+            "-c",
+            "import ctypes; library=ctypes.CDLL('./" + numeric_library + "'); "
+            "library.mklib_dot_value.restype=ctypes.c_double; "
+            "assert library.mklib_dot_value() == 11.0",
+        ]
+    )
+
     # Simulate a same-version kernel metadata update for direct mklib -n.
     alternate = work / "alternate-root"
     alternate.mkdir()

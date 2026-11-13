@@ -229,7 +229,7 @@ if test "$PLUMED_IS_INSTALLED" = yes; then
       sed -n -E 's/.*PLUMED_BLAS_F77_FUNC\( *([a-z0-9_]+) *,.*/\1/p' \
         "$PLUMED_INCLUDEDIR/$PLUMED_PROGRAM_NAME/$header"
     done | sort -u > "$tmpdir/numeric-symbols"
-    nm -u $objs | awk '{n=$NF;sub(/@.*/,"",n);gsub(/^_+|_+$/,"",n);print n}' > "$tmpdir/imports"
+    nm -u "${objs[@]}" | awk '{n=$NF;sub(/@.*/,"",n);gsub(/^_+|_+$/,"",n);print n}' > "$tmpdir/imports"
     if grep -q -F -x -f "$tmpdir/numeric-symbols" "$tmpdir/imports"; then
       for flag in $link_libs_installed; do
         case "$flag" in
