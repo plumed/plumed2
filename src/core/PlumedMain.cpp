@@ -490,6 +490,9 @@ PlumedMain::~PlumedMain() {
       log<<"Final checkpoint not written: unknown error\n";
     }
   }
+  if(numThreadsLocked) {
+    OpenMP::unlockNumThreads();
+  }
   CountInstances::decrease();
 }
 
@@ -1024,7 +1027,16 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           if(nt==0) {
             nt=1;
           }
-          OpenMP::setNumThreads(nt);
+          // while an initialized PLUMED instance exists the number of threads can only decrease
+          if(!OpenMP::setNumThreads(nt)) {
+            std::string msg="WARNING: setNumOMPthreads("+std::to_string(nt)+") ignored: the number of OpenMP threads cannot be increased "
+                            "after PLUMED has been initialized, "+std::to_string(OpenMP::getNumThreads())+" threads are used\n";
+            if(log.isOpen()) {
+              log<<msg;
+            } else {
+              std::fprintf(stderr,"PLUMED: %s",msg.c_str());
+            }
+          }
         }
         break;
       /* ADDED WITH API==10 */
@@ -1251,6 +1263,10 @@ void PlumedMain::init() {
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",passtools->getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  // the actions size their per-thread storage when they are created: from now on the
+  // number of threads can only decrease (see setNumOMPthreads)
+  OpenMP::lockNumThreads();
+  numThreadsLocked=true;
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {

@@ -678,6 +678,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     if( nt==0 ) {
       nt=1;
     }
+    // the per-thread buffers are sized at setup, and the number of threads cannot grow after init
+    plumed_massert( nt<=omp_forces.size(), "more OpenMP threads than when " + action->getLabel() + " was set up" );
     #pragma omp parallel num_threads(nt)
     {
       const unsigned t=OpenMP::getThreadNum();

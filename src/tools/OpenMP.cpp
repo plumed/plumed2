@@ -24,6 +24,7 @@
 #include "Tools.h"
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
@@ -72,6 +73,9 @@ struct OpenMPVars {
   bool cache_set=false;
   unsigned num_threads=1;
   bool nt_env_set=false;
+/// number of initialized PLUMED instances: while it is not zero the number of threads cannot grow
+  unsigned nlocks=0;
+  std::mutex locks_mutex;
   static OpenMPVars & get() {
     static OpenMPVars vars;
     return vars;
@@ -82,8 +86,29 @@ private:
   OpenMPVars& operator=(OpenMPVars&&)=delete;
 };
 
-void setNumThreads(const unsigned nt) {
-  OpenMPVars::get().num_threads=nt;
+bool setNumThreads(const unsigned nt) {
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  if(vars.nlocks>0 && nt>vars.num_threads) {
+    return false;
+  }
+  vars.num_threads=nt;
+  return true;
+}
+
+void lockNumThreads() {
+  // read PLUMED_NUM_THREADS now, if not done yet, so that it cannot change the number of threads later
+  getNumThreads();
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  vars.nlocks++;
+}
+
+void unlockNumThreads() {
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  plumed_assert(vars.nlocks>0);
+  vars.nlocks--;
 }
 
 unsigned getCachelineSize() {
