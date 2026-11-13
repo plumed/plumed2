@@ -79,6 +79,30 @@ Option getenvForceUnique() {
 
 PLUMED_REGISTER_ACTION(DomainDecomposition,"DOMAIN_DECOMPOSITION")
 
+DomainDecomposition::DomainComms::~DomainComms() {
+#ifdef __PLUMED_HAS_MPI
+  if((!mpi_request_positions.empty() || !mpi_request_index.empty()) &&
+      Communicator::initialized()) {
+    int finalized=0;
+    MPI_Finalized(&finalized);
+    if(!finalized) {
+      waitPending();
+    }
+  }
+#endif
+}
+
+void DomainDecomposition::DomainComms::waitPending() {
+  for(auto& request : mpi_request_positions) {
+    request.wait();
+  }
+  for(auto& request : mpi_request_index) {
+    request.wait();
+  }
+  mpi_request_positions.clear();
+  mpi_request_index.clear();
+}
+
 void DomainDecomposition::DomainComms::enable(Communicator& c) {
   on=true;
   Set_comm(c.Get_comm());
@@ -238,6 +262,10 @@ void DomainDecomposition::setAtomsNlocal(int n) {
       n++;
     }
     std::size_t nvals = inputs.size(), natoms = getNumberOfAtoms();
+    // Domain redistribution can resize buffers still used by the previous send.
+    if(dd.positionsToBeSent.size()!=n*nvals || dd.indexToBeSent.size()!=static_cast<std::size_t>(n)) {
+      dd.waitPending();
+    }
     dd.positionsToBeSent.resize(n*nvals,0.0);
     dd.positionsToBeReceived.resize(natoms*nvals,0.0);
     dd.indexToBeSent.resize(n,0);
@@ -458,12 +486,7 @@ void DomainDecomposition::share(const std::vector<AtomNumber>& unique) {
 
   if(dd && shuffledAtoms>0) {
     if(dd.async) {
-      for(unsigned i=0; i<dd.mpi_request_positions.size(); i++) {
-        dd.mpi_request_positions[i].wait();
-      }
-      for(unsigned i=0; i<dd.mpi_request_index.size(); i++) {
-        dd.mpi_request_index[i].wait();
-      }
+      dd.waitPending();
     }
 
     int count=0;
