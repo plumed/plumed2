@@ -1698,13 +1698,6 @@ void PlumedMain::backwardPropagate() {
     }
     iaction++;
   }
-
-// Stopwatch is stopped when sw goes out of scope.
-// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-  Stopwatch::Handler sw1;
-  if(detailedTimers) {
-    sw1=stopwatch.startStop("5B Update forces");
-  }
 }
 
 void PlumedMain::update() {

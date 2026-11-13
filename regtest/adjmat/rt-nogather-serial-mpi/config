@@ -1,0 +1,7 @@
+type=driver
+plumed_modules=adjmat
+mpiprocs=2
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.5f"
+extra_files="../../trajectories/trajectory.xyz"
+# AVOID_THREAD_GATHER is only used with more than one thread
+export PLUMED_NUM_THREADS=2
