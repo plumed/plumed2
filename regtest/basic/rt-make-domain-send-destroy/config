@@ -1,10 +1,12 @@
 type=make
 plumed_link=static
-plumed_needs="tools:thread_mpi"
+plumed_needs="tools:mpi"
 plumed_modules="colvar bias"
-function plumed_regtest_before(){
-  if ${PLUMED_PROGRAM_NAME:-plumed} --no-mpi --has-real-mpi; then
-    echo "NOT_APPLICABLE (requires a serial kernel with embedded thread-MPI)"
-    exit 0
-  fi
-}
+# Exercise the same buffer lifetime through the active MPI backend. A native
+# kernel cannot launch embedded thread-MPI; its profiling-interface fixture
+# verifies outstanding request completion without relying on eager buffering.
+if ${PLUMED_PROGRAM_NAME:-plumed} --no-mpi config -q has real_mpi; then
+  mpiprocs=2
+  extra_files="../rt-make-mpi-send-destroy/main.cpp
+               ../rt-make-mpi-send-destroy/result.reference"
+fi
