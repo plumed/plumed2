@@ -87,7 +87,7 @@ public:
     }
     return *this;
   }
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
     const auto num=tmom+1;
 #pragma acc enter data copyin(this[0:1], \
@@ -98,7 +98,7 @@ public:
 #pragma acc exit data delete(normaliz[0:num], \
   coeff_poly[0:num], tmom, this[0:1])
   }
-#endif // __PLUMED_HAS_OPENACC
+#endif // _OPENACC
 };
 
 void SphericalHarmonic::registerKeywords( Keywords& keys ) {

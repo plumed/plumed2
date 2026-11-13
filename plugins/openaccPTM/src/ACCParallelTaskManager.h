@@ -172,6 +172,7 @@ public:
     PLMD::ParallelTaskManager<T>(av),
     devws(std::make_unique<AccDeviceWorkspace<precision>>()) {
     useacc=true;
+    action->log.printf("  using GPU to calculate this action\n");
   }
   ~AccParallelTaskManager() {
     // members are destroyed after the scope ends: the buffers are freed here

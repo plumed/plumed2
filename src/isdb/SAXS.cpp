@@ -336,6 +336,16 @@ SAXS::SAXS(const ActionOptions&ao):
   if(size == 0) {
     error("SAXS/SANS requires at least one atom");
   }
+  {
+    // an atom listed twice would be two particles at the same position (distance zero):
+    // the Debye sum would give nan
+    std::vector<AtomNumber> sorted(atoms);
+    std::sort(sorted.begin(),sorted.end());
+    const auto dup=std::adjacent_find(sorted.begin(),sorted.end());
+    if(dup!=sorted.end()) {
+      error("ATOMS contains duplicate atoms (atom " + std::to_string(dup->serial()) + " is listed more than once)");
+    }
+  }
 
   parseFlag("SERIAL",serial);
 

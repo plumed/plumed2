@@ -32,11 +32,11 @@ struct VolumeInSphere {
   using precision=double;
   typedef VolumeIn<precision> VolumeInput;
   typedef VolumeOut<precision> VolumeOutput;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
   static void registerKeywords( Keywords& keys );
   template<typename TPM>
   void parseInput( ActionVolume<VolumeInSphere, TPM>* action );
@@ -50,7 +50,7 @@ struct VolumeInSphere {
   static void calculateNumberInside( const VolumeInput& input,
                                      const VolumeInSphere& actioninput,
                                      VolumeOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     switchingFunction.toACCDevice();
@@ -59,7 +59,7 @@ struct VolumeInSphere {
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void VolumeInSphere::registerKeywords( Keywords& keys ) {

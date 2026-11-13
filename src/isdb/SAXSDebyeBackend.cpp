@@ -63,7 +63,7 @@ std::unique_ptr<SAXSDebyeBackend> SAXSDebyeBackendRegister::create(const std::st
   std::string selected=name;
   if(selected.empty()) {
     if(names.empty()) {
-      throw ExceptionRegisterError()<<"no GPU backend for SAXS/SANS is available: LOAD a plugin that provides one (e.g. plugins/openaccPTM)";
+      throw ExceptionRegisterError()<<"no GPU backend for SAXS/SANS is available: it is provided by the plugin in plugins/openaccPTM of the PLUMED sources, please compile it and load it with LOAD before this action";
     }
     if(names.size()>1) {
       throw ExceptionRegisterError()<<"more than one GPU backend for SAXS/SANS is available, select one with GPU_BACKEND:"<<list;

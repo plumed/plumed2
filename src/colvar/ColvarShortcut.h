@@ -56,30 +56,35 @@ ColvarShortcut<T>::ColvarShortcut(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
   bool scalar=true;
+  // with USEGPU the vector is computed by the GPU version (provided by the openaccPTM plugin)
+  bool usegpuFLAG=false;
+  parseFlag("USEGPU",usegpuFLAG);
+  const std::string vector=getName() + "_VECTOR" + (usegpuFLAG ? "ACC " : " ");
   if( getName()=="MASS" || getName()=="CHARGE" || getName()=="POSITION" ) {
     std::string inpt;
     parse("ATOMS",inpt);
     if( inpt.length()>0 ) {
-      readInputLine( getShortcutLabel() + ": " + getName() + "_VECTOR ATOMS=" + inpt + " " + convertInputLineToString() );
+      readInputLine( getShortcutLabel() + ": " + vector + "ATOMS=" + inpt + " " + convertInputLineToString() );
       scalar=false;
     }
   }
-  for (auto& key : keywords.getKeys()) {
-    if( keywords.style( key, "atoms" ) ) {
-      std::string inpt;
-      parseNumbered( key, 1, inpt );
-      bool usegpuFLAG=false;
-      parseFlag("USEGPU",usegpuFLAG);
-      if( inpt.length()>0 ) {
-        readInputLine( getShortcutLabel() + ": "
-                       + getName()  + "_VECTOR" + (usegpuFLAG ? "ACC ":" ")
-                       + key + "1=" + inpt + " " + convertInputLineToString() );
-        scalar=false;
-        break;
+  if( scalar ) {
+    for (auto& key : keywords.getKeys()) {
+      if( keywords.style( key, "atoms" ) ) {
+        std::string inpt;
+        parseNumbered( key, 1, inpt );
+        if( inpt.length()>0 ) {
+          readInputLine( getShortcutLabel() + ": " + vector + key + "1=" + inpt + " " + convertInputLineToString() );
+          scalar=false;
+          break;
+        }
       }
     }
   }
   if( scalar ) {
+    if( usegpuFLAG ) {
+      log.printf("  USEGPU is ignored: a single %s is computed on the CPU\n",getName().c_str());
+    }
     readInputLine( getShortcutLabel() + ": " + getName() + "_SCALAR " + convertInputLineToString() );
   }
 }

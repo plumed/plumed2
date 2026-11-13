@@ -40,7 +40,7 @@ class MatrixTimesVectorData {
 public:
   std::size_t fshift;
   Matrix<std::size_t> pairs;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],fshift)
     pairs.toACCDevice();
@@ -49,7 +49,7 @@ public:
     pairs.removeFromACCDevice();
 #pragma acc exit data delete(fshift,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 class MatrixForceIndexInput {

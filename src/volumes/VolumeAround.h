@@ -53,7 +53,7 @@ public:
   static void calculateNumberInside( const VolumeInput& input,
                                      const VolumeAround& actioninput,
                                      VolumeOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],dox,doy,doz,sigma,\
   xlow,xhigh,ylow,yhigh,zlow,zhigh,kerneltype)
@@ -62,7 +62,7 @@ public:
 #pragma acc exit data delete(kerneltype,zhigh,zlow,yhigh,ylow,xhigh,xlow,\
   sigma,doz,doy,dox,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void VolumeAround::registerKeywords( Keywords& keys ) {

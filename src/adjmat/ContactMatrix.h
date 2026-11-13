@@ -28,7 +28,7 @@ namespace PLMD {
 namespace adjmat {
 
 struct ContactMatrix {
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
@@ -39,7 +39,7 @@ struct ContactMatrix {
   static void calculateWeight( const ContactMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     switchingFunction.toACCDevice();
@@ -48,7 +48,7 @@ struct ContactMatrix {
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
