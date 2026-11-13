@@ -77,8 +77,8 @@ int GenTemplate::main(FILE* in, FILE*out,Communicator& pc) {
   parseFlag("--list",list_templates);
 
   if(list_templates) {
-    for(const auto& name:actionRegister().getActionNames()) {
-      std::cerr<<"  "<<name<<"\n";
+    for(const auto& actionName:actionRegister().getActionNames()) {
+      std::cerr<<"  "<<actionName<<"\n";
     }
     std::cerr<<"\n";
     return 0;

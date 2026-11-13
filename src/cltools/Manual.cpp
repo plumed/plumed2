@@ -83,13 +83,13 @@ int Manual::main(FILE* in, FILE*out,Communicator& pc) {
     return 1;
   }
   std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
-  for(const auto& name:actionRegister().getActionNames()) {
-    std::cerr<<"  "<<name<<"\n";
+  for(const auto& actionName:actionRegister().getActionNames()) {
+    std::cerr<<"  "<<actionName<<"\n";
   }
   std::cerr<<"\n";
   std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
-  for(const auto& name:cltoolRegister().list()) {
-    std::cerr<<"  "<<name<<"\n";
+  for(const auto& toolName:cltoolRegister().list()) {
+    std::cerr<<"  "<<toolName<<"\n";
   }
   std::cerr<<"\n\n";
   bool vimout;
