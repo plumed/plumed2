@@ -22,6 +22,7 @@
 #include "GREX.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "ActionToPutData.h"
 #include "DomainDecomposition.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
@@ -146,6 +147,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
       break;
     case cmd_cacheLocalUSwap:
       CHECK_INIT(initialized,key);
+      physicalEnergiesProvided=true;
       CHECK_NOTNULL(val,key);
       {
         localUSwap=plumedMain.MDQuantityToPLUMED("energy",val);
@@ -220,6 +222,13 @@ void GREX::calculate() {
                   <<"): replicas must use PLUMED inputs that define the same values";
   }
   std::vector<char> rbuf(nn);
+  // performCalc() may have updated a time-dependent potential after caching
+  // its bias. Evaluate both configurations with that same current potential.
+  std::istringstream own(buffer);
+  plumedMain.readBinary(own);
+  plumedMain.setExchangeStep(true);
+  plumedMain.prepareDependencies();
+  plumedMain.justCalculate();
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -229,18 +238,31 @@ void GREX::calculate() {
   intracomm.Bcast(rbuf,0);
   std::istringstream i(std::string(rbuf.data(),rbuf.size()));
   plumedMain.readBinary(i);
+  if(physicalEnergiesProvided) {
+    // The partner's serialized ENERGY is U_partner(x_partner). General HREX
+    // needs U_local(x_partner), already summed over local domains by caching.
+    // Replace the value after deserialization; do not sum it a second time.
+    for(auto* input : plumedMain.getActionSet().select<ActionToPutData*>()) {
+      if(input->getName()=="ENERGY") {
+        input->copyOutput(0)->set(localUSwap);
+      }
+    }
+  }
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
-  localDeltaBias+=localUSwap-localUNow;
+  if(physicalEnergiesProvided) {
+    localDeltaBias+=localUSwap-localUNow;
+  }
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();
   }
   intracomm.Bcast(foreignDeltaBias,0);
+  physicalEnergiesProvided=false;
 }
 
 }

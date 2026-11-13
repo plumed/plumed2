@@ -50,6 +50,7 @@ class GREX:
   double foreignDeltaBias;
   double localUNow;
   double localUSwap;
+  bool physicalEnergiesProvided=false;
   std::vector<double> allDeltaBias;
   std::string buffer;
   int myreplica;
