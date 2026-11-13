@@ -77,7 +77,10 @@ int GenTemplate::main(FILE* in, FILE*out,Communicator& pc) {
   parseFlag("--list",list_templates);
 
   if(list_templates) {
-    std::cerr<<actionRegister()<<"\n";
+    for(const auto& name:actionRegister().getActionNames()) {
+      std::cerr<<"  "<<name<<"\n";
+    }
+    std::cerr<<"\n";
     return 0;
   } else if(parse("--action",action)) {
     bool include_optional;

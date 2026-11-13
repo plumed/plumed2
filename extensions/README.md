@@ -71,6 +71,15 @@ features exported by visible extension libraries. This reports availability in
 this invocation, including silently loaded dependencies, rather than installation
 alone. `PLUMED_AUTOLOAD=0` affects these queries normally.
 
+Action metadata commands (`manual`, `gentemplate --list`, `gen_json`, and
+`gen_vim`) use the same runtime selection. For example,
+`PLUMED_AUTOLOAD=0 plumed --load-module=ves gentemplate --list` lists the base
+and VES actions, with their logical names. Installed Bash completion also
+forwards explicit global `--load-module` selections into its inquiry, so commands
+provided by optional modules can be completed. The installed JSON and Vim files
+are build-time snapshots; use `gen_json` for a fresh JSON snapshot. Interactive
+Vim support updates its own cache as described in `new-manual/vim.md`.
+
 Both `plumed config` and standalone `plumed-config` describe the static base
 build, including module and library features. The standalone script can be used
 when cross compiling without executing the target kernel. For example, installing

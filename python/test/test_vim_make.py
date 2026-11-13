@@ -65,7 +65,7 @@ class TestVimCache(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="plumed vim ")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        self.root = Path(self.temporary.name).resolve()
         self.vim = self.root / "prefix/lib/plumed/vim"
         self.vim.mkdir(parents=True)
         shutil.copytree(ROOT / "vim/templates", self.vim / "templates")

@@ -83,9 +83,15 @@ int Manual::main(FILE* in, FILE*out,Communicator& pc) {
     return 1;
   }
   std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
-  std::cerr<<actionRegister()<<"\n";
+  for(const auto& name:actionRegister().getActionNames()) {
+    std::cerr<<"  "<<name<<"\n";
+  }
+  std::cerr<<"\n";
   std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
-  std::cerr<<cltoolRegister()<<"\n\n";
+  for(const auto& name:cltoolRegister().list()) {
+    std::cerr<<"  "<<name<<"\n";
+  }
+  std::cerr<<"\n\n";
   bool vimout;
   parseFlag("--vim",vimout);
   bool spellout;

@@ -45,6 +45,7 @@ export LIBS="-lchemfiles -lfftw3 $blas_library -lz -lhdf5 $LIBS"
 # --disable-static-archive makes package smaller
 # --disable-basic-warnings deactive the warning, compiling with the current compiler version (today is 28/10/2025) shows some false positives in ActionPilot
 # --enable-libchemfiles reads more trajectory formats in the driver (--itraj)
+BASH_COMPLETION_DIR="$PREFIX/share/bash-completion/completions" \
 ./configure --prefix=$PREFIX --disable-mpi --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings --enable-libchemfiles || { cat config.log; exit 1; }
 
 make -j${CPU_COUNT}

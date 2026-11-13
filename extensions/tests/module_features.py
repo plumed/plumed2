@@ -2,6 +2,7 @@
 """Check kernel/extension build-feature vectors without cross-module leakage."""
 
 import argparse
+import json
 import os
 import shlex
 import subprocess
@@ -69,6 +70,11 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
                 "-D__PLUMED_HAS_" + feature + "=1",
                 "-I" + str(base / "include/plumed"),
                 str(root / name / "module_identity.cpp"),
+                *(
+                    [str(source / "extensions/tests/metadata.cpp")]
+                    if name == "feature-a"
+                    else []
+                ),
                 *[
                     str(root / (dependency + "." + soext))
                     for dependency in dependencies
@@ -163,4 +169,89 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
         check=True,
         timeout=30,
     )
+
+    # All inquiry clients must reflect the selected runtime context, including
+    # native dependencies, with logical names rather than image-address keys.
+    def metadata(*arguments, load=True, eager=False):
+        return subprocess.run(
+            [
+                program,
+                "--no-mpi",
+                *(["--load-module=feature_b"] if load else []),
+                *arguments,
+            ],
+            env=dict(env, PLUMED_AUTOLOAD="1" if eager else "0"),
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+
+    before = metadata("gentemplate", "--list", load=False).stderr.split()
+    assert "METADATA_ACTION" not in before
+    for eager in (False, True):
+        listed = metadata(
+            "gentemplate", "--list", load=not eager, eager=eager
+        ).stderr.split()
+        assert "METADATA_ACTION" in listed, listed
+        assert not any(":" in name for name in listed), listed
+        manual = metadata(
+            "manual",
+            "--action",
+            "METADATA_ACTION",
+            "--vim",
+            load=not eager,
+            eager=eager,
+        )
+        assert manual.stdout.startswith("METADATA_ACTION,")
+        assert "metadata_tool" in manual.stderr.split()
+        assert not any(name.startswith("0x") for name in manual.stderr.split())
+        assert (
+            "[VALUE]"
+            in metadata(
+                "gentemplate",
+                "--action",
+                "METADATA_ACTION",
+                "--include-optional",
+                load=not eager,
+                eager=eager,
+            ).stdout
+        )
+        document = json.loads(metadata("gen_json", load=not eager, eager=eager).stdout)
+        assert "METADATA_ACTION" in document
+        assert "metadata_tool" in document["cltools"]
+        metadata("metadata_tool", "--probe", load=not eager, eager=eager)
+        destination = root / ("vim-eager" if eager else "vim-explicit")
+        metadata("gen_vim", "--outdir", str(destination), load=not eager, eager=eager)
+        assert (
+            'b:plumedDictionary["METADATA_ACTION"]'
+            in (destination / "syntax/plumed.vim").read_text()
+        )
+        assert (destination / "help/METADATA_ACTION.txt").is_file()
+    # Real Bash completion must carry explicit LOAD options into its metadata
+    # query, and expose the modules command and its presence/feature switches.
+    completion_env = dict(env, PATH=str(base / "bin") + os.pathsep + os.environ["PATH"])
+    for words, expected in (
+        (["plumed", "--"], "--load-module"),
+        (["plumed", "modules", "--"], "--has-feature"),
+        (["plumed", "--load-module", "feature_b", "metadata_tool", "--"], "--probe"),
+        (["plumed", "--load-module=feature_b", "metadata_tool", "--"], "--probe"),
+    ):
+        script = 'source "$1"\nshift\nCOMP_WORDS=("$@")\nCOMP_CWORD=$((${#COMP_WORDS[@]}-1))\n_plumed\nprintf "%s\\n" "${COMPREPLY[@]}"'
+        result = subprocess.run(
+            [
+                "bash",
+                "-c",
+                script,
+                "completion-test",
+                str(source / "src/lib/bash.completion"),
+                *words,
+            ],
+            env=completion_env,
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        assert expected in result.stdout.split(), (words, result.stdout, result.stderr)
 print("Per-module kernel/extension feature isolation passed")
