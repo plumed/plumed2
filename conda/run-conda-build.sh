@@ -41,7 +41,7 @@ conda-build -c local -c conda-forge plumed-pycv
 if [[ $(uname) == Linux ]]; then
   echo "#Building CUDA coordination variants"
   # CI has no GPU: override driver metadata for compilation/loading tests only.
-  CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-13.0} \
+  CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-$(python gpu-plan.py --max-cuda)} \
     conda-build -c local -c conda-forge plumed-cuda-coordination
 fi
 

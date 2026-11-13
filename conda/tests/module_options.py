@@ -3,6 +3,7 @@
 
 import argparse
 import copy
+import importlib
 import json
 import os
 import shutil
@@ -14,18 +15,19 @@ from pathlib import Path
 
 source = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(source / "extensions"))
-from conda_config import (
-    build_environment,
-    merge_policies,
-    regression_selection,
-    run_build,
-    skip_selector,
-    supported,
-    write_variants,
-)
-from conda_policy import read_policy, validate_backend
-from features import FeatureProbes
-from inventory import generate_catalog
+config_module = importlib.import_module("conda_config")
+build_environment = config_module.build_environment
+merge_policies = config_module.merge_policies
+regression_selection = config_module.regression_selection
+run_build = config_module.run_build
+skip_selector = config_module.skip_selector
+supported = config_module.supported
+write_variants = config_module.write_variants
+policy_module = importlib.import_module("conda_policy")
+read_policy = policy_module.read_policy
+validate_backend = policy_module.validate_backend
+FeatureProbes = importlib.import_module("features").FeatureProbes
+generate_catalog = importlib.import_module("inventory").generate_catalog
 
 arguments = argparse.ArgumentParser(add_help=False)
 arguments.add_argument("--base", type=Path)

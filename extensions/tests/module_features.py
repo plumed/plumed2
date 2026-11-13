@@ -2,6 +2,7 @@
 """Check kernel/extension build-feature vectors without cross-module leakage."""
 
 import argparse
+import importlib
 import json
 import os
 import shlex
@@ -17,7 +18,7 @@ base = args.base.resolve()
 program = str(base / "bin/plumed")
 source = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(source / "extensions"))
-from symbols import module_symbol
+module_symbol = importlib.import_module("symbols").module_symbol
 
 env = dict(os.environ, PLUMED_AUTOLOAD="0")
 soext = subprocess.check_output(

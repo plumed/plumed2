@@ -32,10 +32,10 @@ task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-gpu-coinstall.XXXXXX")
 trap 'rm -rf "$task"' EXIT
 prefix="$task/environment"
 # Override driver metadata solely to check solver selection and native loading.
-export CONDA_OVERRIDE_CUDA=13.0 NVCOMPILER_ACC_DEVICE_TYPE=HOST
+export CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-$(python conda/gpu-plan.py --max-cuda)} NVCOMPILER_ACC_DEVICE_TYPE=HOST
 conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed=$VERSION"
 cp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
-for cuda_version in 12.9 13.0; do
+for cuda_version in $(python conda/gpu-plan.py --cuda-versions); do
   conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
     "plumed-ext-cuda-coordination=$VERSION" "cuda-version=$cuda_version" "plumed-ext-openacc-ptm=$VERSION"
   cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"

@@ -33,6 +33,7 @@ __pycache__
 /_extensions/
 
 /extensions/catalog.json
+/extensions/conda-source.json
 
 # Generated recipes, variant matrices and selected regression inventories.
 /conda/*/meta.yaml

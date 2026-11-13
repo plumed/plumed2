@@ -50,6 +50,7 @@ python extensions/conda_config.py --module kernel -- ./configure --prefix=$PREFI
 
 python extensions/conda_config.py --module kernel -- make -j${CPU_COUNT}
 make install
+cp extensions/conda-source.json "$PREFIX/lib/plumed/conda-source.json"
 python extensions/conda_config.py --module kernel --check-features --prefix "$PREFIX"
 # Runtime compilation is supplied by the optional plumed-mklib package.
 rm -f "$PREFIX/lib/plumed/scripts/mklib.sh" "$PREFIX/lib/plumed/plumed-mklib"

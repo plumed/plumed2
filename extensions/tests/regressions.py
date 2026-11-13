@@ -2,10 +2,12 @@
 """Run representative existing numerical fixtures against installed packages."""
 
 import argparse
+import importlib
 import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -18,10 +20,9 @@ parser.add_argument(
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
 selection = json.loads((source / "conda/plumed-extensions/regtests.json").read_text())
-import sys
 
 sys.path.insert(0, str(source / "extensions"))
-from conda_config import supported
+supported = importlib.import_module("conda_config").supported
 
 fixtures = [
     case

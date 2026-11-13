@@ -51,6 +51,7 @@ test:
     - test -f "$PREFIX/share/bash-completion/completions/plumed"
     - test -f "$PREFIX/lib/plumed/vim/syntax/plumed.vim"
     - test -f "$PREFIX/lib/plumed/vim/autoload/plumed.vim"
+    - test -f "$PREFIX/lib/plumed/conda-source.json"
     - conda inspect linkages -p $PREFIX $PKG_NAME
     - conda inspect objects -p $PREFIX $PKG_NAME  # [osx]
 

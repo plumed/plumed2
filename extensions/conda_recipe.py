@@ -10,10 +10,14 @@ from conda_config import (
     skip_selector,
     write_variants,
 )
+from conda_provenance import source_record
 from inventory import default_modules, generate_catalog, kernel_requirements
 
 root = Path(__file__).resolve().parent.parent
 catalog = generate_catalog()
+(root / "extensions/conda-source.json").write_text(
+    json.dumps(source_record(root), indent=2) + "\n"
+)
 modules = {
     name: module
     for name, module in catalog["modules"].items()
@@ -424,7 +428,7 @@ source:
   path: ../..
 build:
   number: {{ build_number }}
-  string: nvhpc{{ nvhpc_version | replace('.', '') }}_base_{{ base_build }}_{{ PKG_HASH }}_{{ build_number }}
+  string: nvhpc{{ nvhpc_version | replace('.', '') }}_cuda{{ openacc_cuda_version | replace('.', '') }}_base_{{ base_build }}_{{ PKG_HASH }}_{{ build_number }}
   skip: true  # [not linux64]
   script_env:
     - NVHPC_HOME

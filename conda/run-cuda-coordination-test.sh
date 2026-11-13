@@ -5,13 +5,14 @@ cd "$(dirname "$0")/.."
 : "${VERSION:?set VERSION to the package version}"
 [[ $(uname) == Linux ]] || exit 0
 # These checks inspect loading and package selection, not GPU calculations.
-export CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-13.0}
+export CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-$(python conda/gpu-plan.py --max-cuda)}
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-cuda-install.XXXXXX")
 trap 'rm -rf "$task"' EXIT
 prefix="$task/environment"
 conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed=$VERSION"
 cp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
-for cuda_version in 12.9 13.0; do
+first_variant=yes
+for cuda_version in $(python conda/gpu-plan.py --cuda-versions); do
   conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
     "plumed-ext-cuda-coordination=$VERSION" "cuda-version=$cuda_version"
   cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
@@ -22,7 +23,8 @@ for cuda_version in 12.9 13.0; do
   for record in "$prefix"/conda-meta/{*nvcc*,cuda-compiler,python,py-plumed}-*.json; do
     test ! -e "$record"
   done
-  if [[ $cuda_version == 12.9 ]]; then
+  if [[ $first_variant == yes ]]; then
+    first_variant=no
     mkdir -p "$task/older/lib/plumed/plugins"
     cp "$prefix/lib/CudaCoordination.so" "$task/older/lib/"
     cp "$prefix/lib/plumed/plugins/cuda_coordination.plumed" "$task/older/lib/plumed/plugins/"

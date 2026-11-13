@@ -49,6 +49,7 @@ for revision in (0, 201001):
         "PKG_HASH": "example",
         "cuda_compiler_version": "13.0",
         "nvhpc_version": "25.11",
+        "openacc_cuda_version": "13.0",
     }
     for recipe in recipes:
         rendered = templates.get_template(recipe + "/meta.yaml").render(**context)
