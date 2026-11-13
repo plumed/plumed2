@@ -463,6 +463,7 @@ install(FILES ${PLUMED_SRC}/src/config/config.txt DESTINATION ${PLUMED_INSTALL_P
 # installed plumed as the vim/ and json/ Makefiles do (used by editors and by
 # the InputBuilder of the python package with kernels without metadata)
 install(DIRECTORY ${PLUMED_SRC}/vim/templates DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
+install(DIRECTORY ${PLUMED_SRC}/vim/autoload DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
 install(FILES ${PLUMED_SRC}/vim/scripts.vim DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
 install(CODE "
   set(_plumed \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/plumed${CMAKE_EXECUTABLE_SUFFIX}\")

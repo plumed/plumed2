@@ -75,6 +75,7 @@ class TestRuntimeResources(unittest.TestCase):
             "scripts/mkmpi.sh",
             "src/config/config.txt",
             "vim/syntax/plumed.vim",
+            "vim/autoload/plumed.vim",
             "vim/scripts.vim",
             "build-info.txt",
             "json/syntax.json",
