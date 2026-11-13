@@ -9,6 +9,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+# Hosted interpreters/editors can start slowly. Keep both waits bounded while
+# allowing generation callbacks time to complete on those machines.
+VIM_TIMEOUT = 60
+CACHE_WAIT_TRIES = 1000
+
 PACKAGE = Path(__file__).resolve().parents[1]
 ROOT = (
     PACKAGE / "plumed_source"
@@ -113,9 +118,15 @@ class TestVimCache(unittest.TestCase):
             "set nocompatible\nset nomore\n"
             + "function! WaitForCache()\n"
             + " let tries=0\n"
-            + " while !has_key(b:plumedDictionary,'CACHE_ACTION') && tries < 200\n"
+            + f" while !has_key(b:plumedDictionary,'CACHE_ACTION') && tries < {CACHE_WAIT_TRIES}\n"
             + "  sleep 20m\n let tries+=1\n endwhile\n"
             + " call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'),get(g:,'plumed_cache_error','timeout'))\n"
+            + "endfunction\n"
+            + "function! WaitForRefresh(previous)\n"
+            + " let tries=0\n"
+            + f" while get(b:,'plumed_cache_path','') ==# a:previous && tries < {CACHE_WAIT_TRIES}\n"
+            + "  sleep 20m\n let tries+=1\n endwhile\n"
+            + " call assert_notequal(a:previous,get(b:,'plumed_cache_path',''),get(g:,'plumed_cache_error','refresh timeout'))\n"
             + "endfunction\n"
             + settings
             + "\n"
@@ -146,7 +157,8 @@ class TestVimCache(unittest.TestCase):
             env={**self.env, **(env or {})},
             capture_output=True,
             text=True,
-            timeout=15,
+            stdin=subprocess.DEVNULL,
+            timeout=VIM_TIMEOUT,
         )
         errors = self.root / "errors"
         self.assertEqual(
@@ -242,10 +254,7 @@ class TestVimCache(unittest.TestCase):
             "call assert_equal(previous,b:plumed_cache_path)\n"
             "call assert_true(filereadable(previous . '/help/CACHE_ACTION.txt'))\n"
             "call assert_match('gen_vim failed',get(g:,'plumed_cache_error',''))\n"
-            "let $PLUMED_TEST_FAIL=''\nPlumedRefresh\nlet tries=0\n"
-            "while b:plumed_cache_path ==# previous && tries < 200\n"
-            " sleep 20m\nlet tries+=1\nendwhile\n"
-            "call assert_notequal(previous,b:plumed_cache_path)"
+            "let $PLUMED_TEST_FAIL=''\nPlumedRefresh\ncall WaitForRefresh(previous)"
         )
         self.assertEqual(len(self.calls()), 3)
 
@@ -262,10 +271,7 @@ class TestVimCache(unittest.TestCase):
     def test_concurrent_editors_publish_complete_generations(self):
         body = (
             "call WaitForCache()\nlet previous=b:plumed_cache_path\n"
-            "PlumedRefresh\nlet tries=0\n"
-            "while b:plumed_cache_path ==# previous && tries < 200\n"
-            " sleep 20m\nlet tries+=1\nendwhile\n"
-            "call assert_notequal(previous,b:plumed_cache_path)\n"
+            "PlumedRefresh\ncall WaitForRefresh(previous)\n"
             "call assert_true(filereadable(b:plumed_help_root . '/help/CACHE_ACTION.txt'))"
         )
         self.run_vim(body)
@@ -285,6 +291,7 @@ class TestVimCache(unittest.TestCase):
                 command,
                 cwd=self.root,
                 env=self.env,
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
@@ -292,13 +299,15 @@ class TestVimCache(unittest.TestCase):
         ]
         try:
             for process in processes:
-                stdout, stderr = process.communicate(timeout=15)
+                stdout, stderr = process.communicate(timeout=VIM_TIMEOUT)
                 self.assertEqual(process.returncode, 0, (stdout, stderr))
         finally:
             for process in processes:
                 if process.poll() is None:
                     process.kill()
-                    process.communicate()
+                # Close pipes even when this editor already exited while an
+                # assertion or timeout was being handled for the other one.
+                process.communicate()
         self.run_vim("call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'))")
         self.assertEqual(len(self.calls()), 4)
 
@@ -341,10 +350,7 @@ class TestVimCache(unittest.TestCase):
         library.write_text("rebuilt library with a different size")
         self.run_vim(
             "call WaitForCache()\nlet previous=b:plumed_cache_path\n"
-            "PlumedRefresh\nlet tries=0\n"
-            "while b:plumed_cache_path ==# previous && tries < 200\n"
-            " sleep 20m\nlet tries+=1\nendwhile\n"
-            "call assert_notequal(previous,b:plumed_cache_path)\n"
+            "PlumedRefresh\ncall WaitForRefresh(previous)\n"
             "call assert_true(isdirectory(previous . '/help'))"
         )
         self.assertEqual(len(self.calls()), 3)
