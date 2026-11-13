@@ -420,9 +420,8 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 //setup output file with Alpha values
   alphaOfile_.link(*this);
   if(NumWalkers_>1) {
-    int walker=(comm.Get_rank()==0 ? multi_sim_comm.Get_rank() : 0);
-    comm.Bcast(walker,0);
-    if(walker>0) {
+    // getReplicaIndex() is valid on every process, multi_sim_comm only on the first of each walker
+    if(getReplicaIndex()>0) {
       alphaFileName="/dev/null";  //only first walker writes on file
     }
     alphaOfile_.enforceSuffix("");
@@ -479,7 +478,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
     log.printf(" -- MULTIPLE_WALKERS: multiple simulations will combine statistics for the optimization\n");
     if(NumWalkers_>1) {
       log.printf("    number of walkers: %d\n",NumWalkers_);
-      log.printf("    walker rank: %d\n",multi_sim_comm.Get_rank()); //only comm.Get_rank()=0 prints, so this is fine
+      log.printf("    walker rank: %d\n",getReplicaIndex());
     } else {
       log.printf(" +++ WARNING +++ only one replica found: are you sure you are running MPI-connected simulations?\n");
     }
