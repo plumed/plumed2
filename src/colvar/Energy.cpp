@@ -48,6 +48,13 @@ is computed correctly only if all the replicas have the same
 potential energy function. This is for instance not true when
 using GROMACS with lambda replica exchange or with plumed-hrex branch.
 
+The GREX interface stops with an error if an ENERGY CV is defined when the MD
+engine supplies a foreign physical energy. Existing GROMACS `-hrex` patches
+already provide this signal, so GROMACS does not need to be patched again.
+Use a PLUMED 2.11 or newer kernel with HREX ENERGY support for this combination.
+This guard does not detect native GROMACS lambda replica exchange.
+
+
 \par Examples
 
 The following input instructs plumed to print the energy of the system

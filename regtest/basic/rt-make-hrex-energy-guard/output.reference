@@ -1,0 +1,4 @@
+ENERGY without HREX: supported
+HREX without ENERGY: supported
+HREX with biased ENERGY: rejected
+HREX with unused ENERGY: rejected

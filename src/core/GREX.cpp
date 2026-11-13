@@ -146,6 +146,15 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
     case cmd_cacheLocalUSwap:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
+      // Existing HREX patches signal the trial Hamiltonian through this command.
+      // These kernels cannot replace the partner's serialized ENERGY with it.
+      for(const auto& action : plumedMain.getActionSet()) {
+        if(action->getName()=="ENERGY") {
+          plumed_merror("HREX with ENERGY is not supported by this PLUMED kernel. "
+                        "Use PLUMED 2.11 or newer with HREX ENERGY support, or remove "
+                        "ENERGY from the HREX input (see issue #115).");
+        }
+      }
       {
         localUSwap=plumedMain.MDQuantityToPLUMED("energy",val);
         intracomm.Sum(localUSwap);
