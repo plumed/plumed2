@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from conda_config import (
+    force_use_keys,
     merge_policies,
     regression_selection,
     skip_selector,
@@ -69,15 +70,6 @@ def policy_commands(policy, indent):
     return "".join(
         indent + "- " + json.dumps(command) + "\n"
         for command in policy["test_commands"]
-    )
-
-
-def force_use_keys(policy, indent):
-    # Inline YAML lists can be mistaken for conda's [selector] syntax.
-    return (
-        indent
-        + "force_use_keys:\n"
-        + "".join(indent + "  - " + key + "\n" for key in policy["variants"])
     )
 
 

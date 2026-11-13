@@ -65,6 +65,30 @@ def supported(policy, subdir=None):
     return not policy["platforms"] or (subdir or target_subdir()) in policy["platforms"]
 
 
+def variant_selector(values):
+    """Select a dimension wherever at least one of its values is available."""
+    if not values or any("selector" not in entry for entry in values):
+        return ""
+    conditions = dict.fromkeys(entry["selector"] for entry in values)
+    return "  # [(" + ") or (".join(conditions) + ")]"
+
+
+def force_use_keys(policy, indent):
+    # Inline YAML lists can be mistaken for conda's [selector] syntax.
+    return (
+        indent
+        + "force_use_keys:"
+        + variant_selector(
+            [entry for values in policy["variants"].values() for entry in values]
+        )
+        + "\n"
+        + "".join(
+            indent + "  - " + key + variant_selector(values) + "\n"
+            for key, values in policy["variants"].items()
+        )
+    )
+
+
 def write_variants(path, policies):
     combined = merge_policies(policies)
     template = path.with_suffix(path.suffix + ".in")
@@ -78,17 +102,25 @@ def write_variants(path, policies):
             if keep:
                 text += line + "\n"
     for key, values in combined["variants"].items():
-        text += key + ":\n"
+        text += key + ":" + variant_selector(values) + "\n"
         for entry in values:
             text += "  - " + json.dumps(entry["spec"])
             if "selector" in entry:
                 text += "  # [" + entry["selector"] + "]"
             text += "\n"
     if combined["zip_keys"]:
-        text += "zip_keys:\n"
-        for group in combined["zip_keys"]:
-            text += "  -\n"
-            text += "".join("    - " + key + "\n" for key in group.split(","))
+        groups = [group.split(",") for group in combined["zip_keys"]]
+        text += (
+            "zip_keys:"
+            + variant_selector(
+                [entry for group in groups for entry in combined["variants"][group[0]]]
+            )
+            + "\n"
+        )
+        for group in groups:
+            selector = variant_selector(combined["variants"][group[0]])
+            text += "  -" + selector + "\n"
+            text += "".join("    - " + key + selector + "\n" for key in group)
     path.write_text(text)
 
 

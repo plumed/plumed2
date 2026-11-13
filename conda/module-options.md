@@ -63,7 +63,9 @@ CONDA_VARIANT_CONDA_BUILD_SYSROOT += /opt/MacOSX11.0.sdk  # [osx and arm64]
 ```
 
 All values are strings, including version numbers. Variant value lists support
-selectors, just like requirements. Different dimensions normally form a Cartesian
+selectors, just like requirements. Dimensions, their forced hash keys and zipped
+groups are included only where at least one value is selected.
+Different dimensions normally form a Cartesian
 product. `CONDA_ZIP_KEYS` declares comma-separated groups of dimensions that must
 advance together. For example, these declarations allow only two SDK/CUDA pairs:
 
