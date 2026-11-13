@@ -602,6 +602,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         calc();
         break;
+      case cmd_setExchangeStep:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        setExchangeStep(val.get<int>()!=0);
+        break;
       case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
         prepareDependencies();
