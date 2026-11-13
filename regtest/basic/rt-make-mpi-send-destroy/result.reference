@@ -1,0 +1,2 @@
+PASS destroy async=no
+PASS destroy async=yes
