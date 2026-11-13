@@ -28,6 +28,7 @@
 #include "View2D.h"
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 
 namespace PLMD {
@@ -77,6 +78,9 @@ class Pbc {
 /// Not really used, but could be used to optimize search in
 /// orthorhombic cells.
   Vector diag,hdiag,mdiag;
+/// Changes at every setBox, and is unique among all the Pbc objects: a copy of a Pbc
+/// has the same version as the original until one of the two is changed
+  std::uint64_t version=0;
 /// Build list of shifts.
 /// This is expensive, and must be called only when box is
 /// reset. It allows building a minimal set of shifts
@@ -112,6 +116,10 @@ public:
 /// Returns the box
 #pragma acc routine seq
   const Tensor& getBox()const;
+/// Version of the box (see version)
+  std::uint64_t getVersion()const {
+    return version;
+  }
 /// Returns the inverse matrix of box.
 /// Thus: pbc.getInvBox() == inverse(pbc.getBox()).
 #pragma acc routine seq

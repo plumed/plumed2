@@ -87,6 +87,8 @@ class ActionAtomistic :
 protected:
   bool                  massesWereSet;
   bool                  chargesWereSet;
+/// masses and charges are constant and were copied for the current list of atoms: they are not copied again
+  bool                  massesAndChargesRetrieved=false;
   void setExtraCV(const std::string &name);
 /// Used to interpret whether this index is a virtual atom or a real atom
   std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;

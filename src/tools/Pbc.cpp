@@ -25,6 +25,7 @@
 #include "LatticeReduction.h"
 #include "OpenMP.h"
 #include <array>
+#include <atomic>
 #include <cmath>
 
 namespace PLMD {
@@ -166,6 +167,8 @@ void Pbc::fullSearch(Vector&d)const {
 }
 
 void Pbc::setBox(const Tensor&b) {
+  static std::atomic<std::uint64_t> lastVersion{0};
+  version=++lastVersion;
   box=b;
 // detect type:
   constexpr double boxEpsilon=1e-28;
