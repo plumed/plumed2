@@ -420,7 +420,9 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 //setup output file with Alpha values
   alphaOfile_.link(*this);
   if(NumWalkers_>1) {
-    if(comm.Get_rank()==0 && multi_sim_comm.Get_rank()>0) {
+    int walker=(comm.Get_rank()==0 ? multi_sim_comm.Get_rank() : 0);
+    comm.Bcast(walker,0);
+    if(walker>0) {
       alphaFileName="/dev/null";  //only first walker writes on file
     }
     alphaOfile_.enforceSuffix("");
