@@ -1,0 +1,12 @@
+type=make
+plumed_link=static
+plumed_needs="tools:thread_mpi"
+plumed_modules="colvar bias"
+
+arg=resize
+function plumed_regtest_before(){
+  if ${PLUMED_PROGRAM_NAME:-plumed} --no-mpi --has-real-mpi; then
+    echo "NOT_APPLICABLE (requires a serial kernel with embedded thread-MPI)"
+    exit 0
+  fi
+}
