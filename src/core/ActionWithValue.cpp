@@ -57,10 +57,11 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   firststep(true),
   noderiv(true),
   numericalDerivatives(false) {
-  if( keywords.exists("NUMERICAL_DERIVATIVES") ) {
+  const Keywords& keys=getKeywords();
+  if( keys.exists("NUMERICAL_DERIVATIVES") ) {
     parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   }
-  if(!keywords.exists("NO_ACTION_LOG") && numericalDerivatives) {
+  if(!keys.exists("NO_ACTION_LOG") && numericalDerivatives) {
     log.printf("  using numerical derivatives\n");
   }
 }

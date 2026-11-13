@@ -158,6 +158,11 @@ void Action::resetStoredTimestep() {
   }
 }
 
+const Keywords& Action::getKeywords() const {
+  plumed_massert(keywordsAvailable,"keywords of action " + getLabel() + " are available only in the constructor");
+  return keywords;
+}
+
 Action::~Action() {
   if(files.size()!=0) {
     std::cerr<<"WARNING: some files open in action "+getLabel()+" where not properly closed. This could lead to data loss!!\n";
