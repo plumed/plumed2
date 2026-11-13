@@ -157,6 +157,8 @@ private:
   std::string inputBuilderMetadataJSON;
 /// Flag to avoid double initialization
   bool  initialized=false;
+/// True if OpenMP::lockNumThreads() was called at init (it is undone in the destructor)
+  bool numThreadsLocked=false;
 /// Name of MD engine
   std::string MDEngine{"mdcode"};
 

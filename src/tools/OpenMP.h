@@ -34,8 +34,19 @@ namespace OpenMP {
 /// to disable retention. Once retained, a runtime cannot be made unloadable again.
 void retainRuntime();
 
-/// Set number of threads that can be used by openMP
-void setNumThreads(const unsigned nt);
+/// Set number of threads that can be used by openMP.
+/// While an initialized PLUMED instance exists (see lockNumThreads()) the number can only be decreased:
+/// a larger value is ignored and false is returned.
+bool setNumThreads(const unsigned nt);
+
+/// Called when a PLUMED instance is initialized: until the matching unlockNumThreads() the number of threads
+/// cannot grow. The actions size their per-thread storage when they are created, so more threads later
+/// would access it out of bounds. The limit is process-wide, as the number of threads is shared by all
+/// the PLUMED instances in the process.
+void lockNumThreads();
+
+/// Called when a PLUMED instance that called lockNumThreads() is destroyed
+void unlockNumThreads();
 
 /// Get number of threads that can be used by openMP
 unsigned getNumThreads();
