@@ -16,7 +16,7 @@ endif
 
 # default target
 all:
-	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt
+	$(MAKE) PLUMED_FORCE=yes ConfigInstall.inc Config.inc version.h config.txt ModuleBuild.inc
 	$(MAKE) Config.o ConfigInstall.o compile_options.sh
 
 obj: all
@@ -31,6 +31,12 @@ config.txt: ../../Makefile.conf
 version.h:
 	@echo "Updating version.h"
 	@ ../maketools/update-version.sh version.h
+
+ModuleBuild.inc: FORCE
+	../maketools/module-build-info
+
+.PHONY: FORCE
+FORCE:
 
 ConfigInstall.inc: Config.inc.in
 	@echo "Updating ConfigInstall.inc"
@@ -60,8 +66,8 @@ links:
 	@echo Nothing to do in $(CURDIR)
 
 
-Config.o: Config.inc Makefile.conf.xxd version.h
-ConfigInstall.o: ConfigInstall.inc Makefile.conf.xxd version.h
+Config.o: ModuleBuild.inc Config.inc Makefile.conf.xxd version.h
+ConfigInstall.o: ModuleBuild.inc ConfigInstall.inc Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
@@ -69,7 +75,8 @@ Makefile.conf.xxd: ../../Makefile.conf
 # file to import compilation options inside a bash script
 compile_options.sh: ../../Makefile.conf Makefile
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
-	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS)"'" > $@
+	@echo "mklib_cxx='"$(CXX)"'" > $@
+	@echo "compile='"$(CXX) -c -I'"$$PLUMED_INCLUDEDIR/$$PLUMED_PROGRAM_NAME"'/ $(CPPFLAGS) $(CXXFLAGS)"'" >> $@
 # on osx, in order to use two-level namespace, we should back link the Kernel library
 # the path to the kernel is different for installed and not-installed plumed.
 # notice that $(DYNAMIC_LIBS) are needed as well in order to allow using functions
@@ -86,6 +93,7 @@ compile_options.sh: ../../Makefile.conf Makefile
 # --as-needed (the default on some distributions, e.g. Ubuntu) drop them.
 	@echo "link_shared='"$(LDSHARED)"'" >> $@
 	@echo "link_libs_installed='"$(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
+	@echo "mklib_link_libs_installed='"$(LDFLAGS) $(filter -fopenmp -qopenmp -pthread -stdlib=%,$(CXXFLAGS)) -L$(libdir) -Wl,-rpath,$(libdir) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
 # this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_libs_uninstalled='"$(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT)"'" >> $@
 # kept for scripts written for previous versions (libraries before the objects, see above)
@@ -98,7 +106,7 @@ compile_options.sh: ../../Makefile.conf Makefile
 
 .PHONY: clean
 clean:
-	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt
+	rm -f Config.inc compile_options.sh Makefile_conf version.h config.txt ModuleBuild.inc
 	rm -fr deps 
 	rm -f Config.inc ConfigInstall.inc compile_options.sh install.conf
 	rm -f $(CLEANLIST)

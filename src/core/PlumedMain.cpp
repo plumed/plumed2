@@ -43,6 +43,7 @@
 #endif
 #include "tools/DLLoader.h"
 #include "tools/FileTools.h"
+#include "ModuleLoader.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
 #include "tools/Log.h"
@@ -468,6 +469,8 @@ PlumedMain::PlumedMain():
   checkpointing_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
+  ModuleLoader::autoload(dlloader);
+  ModuleLoader::inheritContext(dlloader);
   OpenMP::retainRuntime();
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
@@ -1131,6 +1134,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         plumedQuantityToMD( "energy", getBias(), val );
         break;
+      case cmd_checkModule:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        val.set(int(ModuleLoader::available(std::string(words[1]),dlloader) ? 1:0));
+        break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
         plumed_assert(nw==2);
@@ -1758,6 +1766,10 @@ void PlumedMain::update() {
   checkpointing.atStepEnd();
 }
 
+void PlumedMain::loadModule(const std::string& name) {
+  ModuleLoader::load(name,dlloader);
+}
+
 void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
   struct BuildDirectory {
     std::filesystem::path path;
@@ -1781,7 +1793,10 @@ void PlumedMain::load(const std::string& fileName, const std::vector<std::string
     }
 
     if(extension=="cpp") {
-      libName="./"+base+"."+config::getVersionLong()+"."+config::getSoExt();
+      const auto script=config::getPlumedRoot()+"/scripts/mklib.sh";
+      plumed_massert(std::filesystem::is_regular_file(pathFromUTF8(script)),
+                     "LOAD of C++ source requires mklib; for conda install plumed-mklib");
+      libName="./"+base+"."+config::getVersionLong()+"."+config::getModuleBuildID()+"."+config::getSoExt();
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"

@@ -1,5 +1,5 @@
 type=make
-plumed_needs=dlopen
+plumed_needs="tools:dlopen"
 plumed_src=main.cpp
 plumed_link=shared
 

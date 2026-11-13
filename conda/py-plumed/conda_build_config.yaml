@@ -7,3 +7,9 @@ python:
     - "3.13"
     - "3.14"
     - "3.15"
+
+# Use a declared sysroot rather than the build runner glibc.
+c_stdlib:  # [linux]
+  - sysroot  # [linux]
+c_stdlib_version:  # [linux]
+  - "2.28"  # [linux]

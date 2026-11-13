@@ -42,6 +42,66 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
 
 See below for more detailed instructions.
 
+## Runtime syntax and cache
+
+The installed Vim syntax and help describe the actions compiled into that PLUMED
+build. When you set `ft=plumed`, the Vim support also runs `plumed --no-mpi gen_vim`
+to include actions from the selected installation's autoloaded modules. This works
+with source builds, ordinary installations and conda packages. The edited input
+is not executed. `LOAD MODULE` statements in the input are not interpreted by the
+editor; explicitly selected modules can be configured as shown below.
+
+Vim uses the installed syntax immediately. With Vim's job support, generation runs
+in the background and visible PLUMED buffers are refreshed when it finishes.
+Hidden buffers are refreshed when entered. Vim builds without job support generate
+synchronously on first use. A valid cache is reused across buffers and Vim
+sessions, without starting PLUMED. File paths, modification times, sizes and the
+small module registration files detect installation changes; large libraries are
+not read or hashed. Checks occur when entering a PLUMED buffer, not on keystrokes.
+
+The cache directory is selected in this order:
+
+1. `g:plumed_cache_dir`, if explicitly configured.
+2. `$XDG_CACHE_HOME/plumed/vim`, if `XDG_CACHE_HOME` is an absolute path.
+3. On macOS, `~/Library/Caches/plumed/vim`; on Windows,
+   `$LOCALAPPDATA/plumed/vim`; on other systems, `~/.cache/plumed/vim`.
+4. A private temporary directory for the Vim session if the cache cannot be
+   written. An existing valid cache can still be used when it is read-only.
+
+Nothing is written into the PLUMED installation or the working directory by
+default. Different installations and module selections have separate cache
+entries. Completed generations are published together, keeping syntax,
+completion and help consistent even when multiple Vim processes generate files.
+Older generations remain available for existing help windows. The cache can
+be deleted at any time; Vim will generate it again when needed.
+
+Use `:PlumedRefresh` to force regeneration, for example after rebuilding a library
+without changing its size or timestamp. If PLUMED cannot be run or generation
+fails, the installed syntax remains available; an already loaded cached version
+also remains usable. `:echo get(g:, 'plumed_cache_error', '')` reports the most
+recent generation error.
+
+Optional settings in `.vimrc`:
+
+```vim
+" Override the cache location (a project-local path is allowed explicitly).
+let g:plumed_cache_dir = '/path/to/my/cache/plumed-vim'
+" Normally the executable beside the selected installation is used.
+let g:plumed_executable = '/path/to/plumed/bin/plumed'
+" Explicit module selection, useful with PLUMED_AUTOLOAD=0.
+let g:plumed_modules = ['ves']
+" Set to 0 to use only the installed static syntax and help.
+let g:plumed_vim_dynamic = 1
+" Set to 0 to wait for generation instead of refreshing in the background.
+let g:plumed_vim_async = 1
+```
+
+The normal module environment, including `PLUMED_PLUGIN_PATH`, `PLUMED_AUTOLOAD`
+and `PLUMED_MODULE_OVERRIDE`, is respected. No Python support in Vim is required.
+If you copy Vim support files manually, copy the entire `vim` directory, including
+`autoload` and `templates`, to retain runtime generation. Copying only the
+generated syntax and help continues to work as static Vim support.
+
 ## Configuration
 
 When PLUMED is compiled, directories `help` and `syntax` will appear in `builddir/vim`.

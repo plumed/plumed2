@@ -1,4 +1,4 @@
-plumed_needs=libitensor
+plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
 plumed_modules=ttsketch
 type=driver
 # SKETCH_WIDTH smoothing, with and without NONINTRUSIVE. The TT rank is not truncated,

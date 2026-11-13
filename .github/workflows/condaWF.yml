@@ -2,6 +2,12 @@ name: CI
 
 on:
   workflow_call:
+    inputs:
+      upload_test_packages:
+        description: Publish a dated test snapshot after successful package checks
+        type: boolean
+        required: false
+        default: false
 
 env:
 # on CI, better dump stack trace in case there is an error
@@ -18,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
@@ -27,21 +33,57 @@ jobs:
         curl -fLO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
         source ./conda-ci install
         source ./conda-ci install-conda-build
+    - name: Provision NVHPC for the published OpenACC package
+      if: ${{ inputs.upload_test_packages && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && matrix.os == 'ubuntu-latest' }}
+      run: |
+        source activate base
+        python extensions/conda_recipe.py
+        mapfile -t nvhpc_versions < <(python -c 'import yaml; print("\n".join(str(v) for v in yaml.safe_load(open("conda/plumed-openacc/conda_build_config.yaml"))["nvhpc_version"]))')
+        test "${#nvhpc_versions[@]}" -gt 0
+        for nvhpc_version in "${nvhpc_versions[@]}"; do
+          bash conda/fetch-nvhpc.sh "$nvhpc_version" "$RUNNER_TEMP/plumed-nvhpc"
+        done
+        echo "NVHPC_HOME=$RUNNER_TEMP/plumed-nvhpc/opt/nvidia/hpc_sdk" >> "$GITHUB_ENV"
     - name: Build PLUMED
       run: |
         source activate base
+        # Native CI defaults must not override conda's activated compiler.
+        unset CC CXX
         export VERSION=none
-        if [[ $GITHUB_REF == "refs/tags/"* ]]; then
+        if [[ "${{ inputs.upload_test_packages }}" == true ]]; then
+          if [[ $GITHUB_EVENT_NAME != workflow_dispatch || $GITHUB_REF != refs/heads/master ]]; then
+            echo 'Test publication requires a manual run on master.' >&2
+            exit 1
+          fi
+          VERSION=$(date -u +%Y.%m.%d)
+          export CONDA_BLD_PATH="$RUNNER_TEMP/plumed-conda-bld"
+          echo "CONDA_BLD_PATH=$CONDA_BLD_PATH" >> "$GITHUB_ENV"
+          # Keep repeated snapshots on one date distinct, including reruns.
+          export PLUMED_CONDA_BUILD_NUMBER=$((GITHUB_RUN_NUMBER * 1000 + GITHUB_RUN_ATTEMPT))
+          echo "PLUMED_CONDA_BUILD_NUMBER=$PLUMED_CONDA_BUILD_NUMBER" >> "$GITHUB_ENV"
+        elif [[ $GITHUB_REF == "refs/tags/"* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
           VERSION=${VERSION//-/_}
           VERSION=${VERSION#v}
         fi
         echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+        python extensions/conda_recipe.py
+        python conda/tests/publication.py
         make -C conda
-    - name: Test optional MPI packages
+    - name: Validate extensions, MPI providers and Python plugins
       run: |
         source activate base
+        unset CC CXX
         make -C conda test
+    - name: Publish dated packages to Anaconda test label
+      if: ${{ inputs.upload_test_packages && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' }}
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+        CONDA_LABEL: test
+      run: |
+        source activate base
+        conda install -y -c conda-forge anaconda-client
+        make -C conda upload
     - name: Deploy
       env:
         CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}

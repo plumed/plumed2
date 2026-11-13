@@ -1,0 +1,13 @@
+type=make
+plumed_link=static
+plumed_needs="tools:mpi"
+plumed_modules="colvar bias"
+arg=resize
+# Exercise the same buffer lifetime through the active MPI backend. A native
+# kernel cannot launch embedded thread-MPI; its profiling-interface fixture
+# verifies outstanding request completion without relying on eager buffering.
+if ${PLUMED_PROGRAM_NAME:-plumed} --no-mpi config -q has real_mpi; then
+  mpiprocs=2
+  extra_files="../rt-make-mpi-send-resize/main.cpp
+               ../rt-make-mpi-send-resize/result.reference"
+fi

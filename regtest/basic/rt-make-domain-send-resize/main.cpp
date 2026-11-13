@@ -1,0 +1,1 @@
+../rt-make-domain-send-destroy/main.cpp

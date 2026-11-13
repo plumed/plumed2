@@ -1,5 +1,5 @@
 type=driver
-plumed_needs="libchemfiles"
+plumed_needs="tools:libchemfiles"
 # MOLINFO with a GROMACS TPR file, read with chemfiles (see plumed.dat). chemfiles 0.10.4 warns that the TPR file
 # of GROMACS 2023 (version 129) is from the future, and reads it.
 # A TPR file cannot give the masses and charges to the driver with --pdb: this must stop the driver with a message.

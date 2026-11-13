@@ -464,10 +464,15 @@ class HDF5IO(unittest.TestCase):
             check=True,
             capture_output=True,
         )
-        assert_frame_equal(
-            pd.DataFrame(plumed.read_as_pandas(output, enable_conversion=False)),
-            pd.DataFrame(typed),
-        )
+        actual = pd.DataFrame(plumed.read_as_pandas(output, enable_conversion=False))
+        try:
+            assert_frame_equal(actual, pd.DataFrame(typed))
+        except AssertionError as error:
+            raise AssertionError(
+                f"{error}\nNative text bytes: {output.read_bytes()!r}"
+                f"\nActual labels: {actual['label'].tolist()!r}"
+                f"\nExpected labels: {typed['label'].tolist()!r}"
+            ) from error
         self.assertIn("#! SET integer " + str(2**53 + 1), output.read_text())
 
     def test_python_written_table_can_be_restarted_by_plumed(self):
