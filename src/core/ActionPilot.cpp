@@ -28,15 +28,16 @@ void ActionPilot::registerKeywords(Keywords& keys) {}
 ActionPilot::ActionPilot(const ActionOptions&ao):
   Action(ao),
   performActionAtEnd(false) {
-  if( keywords.exists("STRIDE") ) {
+  const Keywords& keys=getKeywords();
+  if( keys.exists("STRIDE") ) {
     parse("STRIDE",actionStride);
-    if( !keywords.style("STRIDE","hidden") ) {
+    if( !keys.style("STRIDE","hidden") ) {
       log.printf("  with stride %d\n",actionStride);
     }
   } else {
     actionStride=0;
   }
-  if( keywords.exists("DO_AFTER_FINAL_STEP") ) {
+  if( keys.exists("DO_AFTER_FINAL_STEP") ) {
     parseFlag("DO_AFTER_FINAL_STEP",performActionAtEnd);
     if( performActionAtEnd ) {
       log.printf("  performing action at end of trajectory even if length of trajectory is not a multiple of the stride\n");

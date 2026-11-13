@@ -9,11 +9,13 @@
 SUBROUTINE plugin_initialization()
   !----------------------------------------------------------------------------
   !
-  USE io_global,        ONLY : stdout, ionode
+  USE io_global,        ONLY : stdout, ionode, ionode_id
+  USE mp,               ONLY : mp_bcast
+  USE mp_images,        ONLY : intra_image_comm
   USE kinds,            ONLY : DP
   USE io_files,         ONLY : tmp_dir
   !
-  USE plugin_flags,     ONLY : use_plumed
+  USE plugin_flags,     ONLY : use_plumed, plumed_virial
   !
   USE ions_base,        ONLY : amass, ityp, nat
   !
@@ -27,6 +29,7 @@ SUBROUTINE plugin_initialization()
   !
   INTEGER  :: na
   INTEGER  :: plumedavailable
+  INTEGER  :: envlen
   REAL*8   :: energyUnits,lengthUnits,timeUnits 
   !
   IF(use_plumed) then
@@ -55,8 +58,19 @@ SUBROUTINE plugin_initialization()
             call plumed_f_gcmd("setTimestep"//char(0),dt);
             call plumed_f_gcmd("init"//char(0),0);
 
+            ! the contribution of PLUMED to the stress is added only if the
+            ! environment variable PLUMED_QESPRESSO_VIRIAL is set (to any non empty value)
+            CALL get_environment_variable("PLUMED_QESPRESSO_VIRIAL",LENGTH=envlen)
+            plumed_virial=(envlen>0)
+            IF(plumed_virial) THEN
+               write(stdout,*)"  PLUMED_QESPRESSO_VIRIAL is set: the PLUMED virial is added to the stress"
+               write(stdout,*)"  The stress and pressure printed at each step do NOT include the PLUMED term,"
+               write(stdout,*)"  because it is added just after the printout."
+               write(stdout,*)"  The stress in the XML file and the cell dynamics do include it."
+            ENDIF
 
         ENDIF
+        CALL mp_bcast(plumed_virial, ionode_id, intra_image_comm)
      ENDIF
   ENDIF
   !

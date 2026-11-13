@@ -15,11 +15,11 @@ SUBROUTINE plugin_ext_forces()
   USE io_global,        ONLY : stdout, ionode, ionode_id
   USE kinds,            ONLY : DP
   !
-  USE plugin_flags,     ONLY : use_plumed
+  USE plugin_flags,     ONLY : use_plumed, plumed_sigma
   !
   USE cell_base,        ONLY : alat, at
   USE ions_base,        ONLY : tau, nat, amass, ityp
-  USE force_mod,        ONLY : force,sigma
+  USE force_mod,        ONLY : force
   USE control_flags,    ONLY : istep
   USE ener,             ONLY : etot 
 
@@ -46,7 +46,16 @@ SUBROUTINE plugin_ext_forces()
              -at_plumed(1,1)*at_plumed(3,2)*at_plumed(2,3) &
              -at_plumed(1,2)*at_plumed(3,3)*at_plumed(2,1) &
              -at_plumed(1,3)*at_plumed(3,1)*at_plumed(2,2) 
-      virial=-sigma*volume
+      ! NOTE on symmetry: this routine is called in forces() after the symmetrisation of the forces
+      ! (and before the mask for the fixed atoms), so the forces of PLUMED are not symmetrised.
+      ! Neither is its contribution to the stress, so that the two are consistent.
+      ! A bias that does not have the symmetry of the crystal thus breaks the symmetry assumed
+      ! by QE: use nosym=.true. unless the collective variables share the crystal symmetry.
+      !
+      ! PLUMED adds its contribution to the virial passed here.
+      ! The stress of this step is not available yet (it is computed after the forces),
+      ! so the contribution of PLUMED is stored and added later in run_pwscf
+      virial=0.0_DP
 
       ! the masses in QE are stored per type, see q-e//Modules/ions_base.f90
       do ia=1,nat
@@ -62,12 +71,12 @@ SUBROUTINE plugin_ext_forces()
       CALL plumed_f_gcmd("setEnergy"//char(0),etot)
       CALL plumed_f_gcmd("calc"//char(0),0)
 
-      sigma=-virial/volume
+      plumed_sigma=-virial/volume
 
       deallocate(tau_plumed)
     ENDIF
     CALL mp_bcast(force, ionode_id, intra_image_comm)
-    CALL mp_bcast(sigma, ionode_id, intra_image_comm)
+    CALL mp_bcast(plumed_sigma, ionode_id, intra_image_comm)
   ENDIF
   !
   !

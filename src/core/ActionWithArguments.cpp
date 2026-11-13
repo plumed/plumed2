@@ -352,7 +352,7 @@ void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &ex
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false) {
-  if( keywords.exists("ARG") ) {
+  if( getKeywords().exists("ARG") ) {
     std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
 

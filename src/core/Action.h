@@ -266,6 +266,12 @@ public:
   int getReplicaIndex() const;
 
   const Keywords& keywords;
+/// Same object as keywords, read through a call defined in Action.cpp.
+/// Constructors of classes that derive virtually from Action should use it when
+/// their first statement reads the keywords: GCC>=14 emits the never-called
+/// complete-object constructor of an abstract class without constructing the
+/// virtual base Action, and warns (-Wuninitialized) on a direct read of keywords there.
+  const Keywords& getKeywords() const;
 /// false after the constructor: keywords refers to an object that exists only while the action is constructed
   bool keywordsAvailable=true;
 /// Called by ActionRegister when the constructor has returned
