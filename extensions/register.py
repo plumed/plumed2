@@ -7,7 +7,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from features import feature_identity
+from features import dependency_identity, feature_identity
 from symbols import module_symbol
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -52,11 +52,21 @@ configuration = subprocess.check_output(
 feature_names = set(args.features) | set(
     re.findall(r"-D__PLUMED_HAS_([A-Z0-9_]+)", configuration)
 )
+builtin = set(
+    subprocess.check_output(
+        [args.plumed, "--list-modules"],
+        text=True,
+        env=dict(os.environ, PLUMED_AUTOLOAD="0"),
+    ).split()
+)
 args.output.mkdir(parents=True, exist_ok=True)
 (args.output / "module_identity.cpp").write_text(
     '#include "config/Config.h"\n'
     + f'extern "C" const char* {module_symbol(args.module)}() {{ return "{build_id}"; }}\n'
     + f'extern "C" const void* {module_symbol(args.module)}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+    + dependency_identity(
+        args.module, [name for name in args.requires if name not in builtin]
+    )
     + feature_identity(args.module, feature_names)
 )
 (args.output / f"{args.module}.plumed").write_text(

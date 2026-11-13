@@ -134,7 +134,7 @@ class FeatureProbes:
             native if enabled else [],
         )
         print(
-            f"Optional feature {feature}: {'enabled' if enabled else 'unavailable; module remains enabled'}",
+            f"Native feature {feature}: {'enabled' if enabled else 'unavailable'}",
             flush=True,
         )
         return self.results[feature]
@@ -165,6 +165,16 @@ class FeatureProbes:
         cpp += ["-U__PLUMED_HAS_" + feature for feature in disabled]
         enabled.update({feature: False for feature in disabled})
         return cpp, list(dict.fromkeys(libraries)), enabled
+
+
+def dependency_identity(name, dependencies):
+    """Keep declared native dependencies under --as-needed/dead_strip_dylibs."""
+    code = ""
+    for index, dependency in enumerate(dependencies):
+        symbol = module_symbol(dependency)
+        code += f'extern "C" const char* {symbol}();\n'
+        code += f'extern "C" const void* plumed_dependency_anchor_{module_symbol(name)}_{index}() {{ return reinterpret_cast<const void*>(&{symbol}); }}\n'
+    return code
 
 
 def feature_identity(name, features):

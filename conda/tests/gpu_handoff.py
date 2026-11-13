@@ -11,10 +11,9 @@ import subprocess
 import sys
 import tempfile
 import types
-import unittest
+import unittest.mock
 import zipfile
 from pathlib import Path
-from unittest import mock
 
 source = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(source / "extensions"))
@@ -118,10 +117,12 @@ class GpuHandoff(unittest.TestCase):
             google = types.ModuleType("google")
             google.colab = colab
             with (
-                mock.patch("platform.system", return_value="Linux"),
-                mock.patch("platform.machine", return_value="x86_64"),
-                mock.patch("shutil.which", return_value="nvidia-smi"),
-                mock.patch.dict(sys.modules, {"google": google, "google.colab": colab}),
+                unittest.mock.patch("platform.system", return_value="Linux"),
+                unittest.mock.patch("platform.machine", return_value="x86_64"),
+                unittest.mock.patch("shutil.which", return_value="nvidia-smi"),
+                unittest.mock.patch.dict(
+                    sys.modules, {"google": google, "google.colab": colab}
+                ),
             ):
                 for index in (2, 3, 4, 5, 7):
                     cell_file.write_text("".join(notebook["cells"][index]["source"]))
@@ -171,6 +172,26 @@ class GpuHandoff(unittest.TestCase):
             }
             (root / "extensions/conda-source.json").write_text(json.dumps(expected))
             self.assertEqual(source_record(root), expected)
+
+    def test_untracked_product_source_marks_snapshot_dirty(self):
+        with tempfile.TemporaryDirectory(prefix="plumed-provenance-") as scratch:
+            root = Path(scratch)
+            for untracked, dirty in (("", False), ("src/custom.cpp\n", True)):
+                responses = [
+                    str(root),
+                    "a" * 40,
+                    "",
+                    untracked,
+                    "https://github.com/plumed/plumed2.git",
+                ]
+                with (
+                    unittest.mock.patch(
+                        "conda_provenance.subprocess.check_output",
+                        side_effect=responses,
+                    ),
+                    unittest.mock.patch.dict(os.environ, GITHUB_REPOSITORY=""),
+                ):
+                    self.assertEqual(source_record(root)["dirty"], dirty)
 
     def test_installation_numeric_failures_and_exact_kernel_pin(self):
         plan = json.loads(

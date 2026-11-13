@@ -37,7 +37,8 @@ library links must independently resolve every dependency.
 ## Loading
 
 The directory beside the actual loaded kernel is discovered automatically.
-`PLUMED_PLUGIN_PATH` adds colon-separated registration directories, including
+`PLUMED_PLUGIN_PATH` adds colon-separated registration directories (semicolons
+on Windows), including
 separate HPC installations. HPC modulefiles must expose the registration
 directories of hard module dependencies too, typically through modulefile
 dependencies; native library search paths alone do not supply registration metadata.
@@ -100,15 +101,16 @@ identity translation unit and registration file before the plugin's own build:
 
 ```sh
 python3 extensions/register.py --plumed /path/to/base/bin/plumed \
-  --module cuda_coordination --variant cuda13 \
-  --library ../../libplumed-ext-cuda-coordination.so --output plugin-registration
+  --module cuda_coordination --variant cuda13.0 --features CUDA \
+  --library ../../CudaCoordination.so --output plugin-registration
 ```
 
 Compile `plugin-registration/module_identity.cpp` into the plugin library, link
 to the selected base kernel and its native dependencies, then install the library
 and `.plumed` file at the declared locations. Use the platform library suffix.
-CUDA/OpenACC numerical and variant validation requires suitable hardware/tools;
-these conda variants are a subsequent stage, not supplied by the initial recipe.
+Separate conda recipes provide the Python, CUDA and OpenACC variants described
+below. Ordinary CI validates compilation, loading and OpenACC host execution;
+GPU numerical validation uses the channel-based Colab notebook after publication.
 
 ## Dependency inventory
 

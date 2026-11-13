@@ -32,6 +32,29 @@ def source_record(root):
                 text=True,
             ).strip()
         )
+        # Root-level downloaded workflow helpers do not affect the product.
+        # Untracked source files cannot be reproduced from the recorded HEAD.
+        untracked = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(root),
+                "ls-files",
+                "--others",
+                "--exclude-standard",
+                "--",
+                "src",
+                "plugins",
+                "scripts",
+                "extensions",
+                "conda",
+                "python",
+                "vim",
+                "new-manual",
+            ],
+            text=True,
+        ).strip()
+        dirty = dirty or bool(untracked)
         repository = os.environ.get("GITHUB_REPOSITORY", "")
         if not repository:
             remote = subprocess.check_output(

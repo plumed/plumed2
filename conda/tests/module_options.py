@@ -51,6 +51,54 @@ class ModuleOptions(unittest.TestCase):
         self.assertEqual(policy["test_force_requirements"], "no")
         self.assertEqual(policy["required_features"], [])
 
+    def test_kernel_identity_changes_with_module_selection(self):
+        tree = self.root / "identity"
+        config = tree / "src/config"
+        config.mkdir(parents=True)
+        tools = tree / "src/maketools"
+        tools.mkdir()
+        for name in ("module-build-info", "find_modules.sh"):
+            shutil.copy2(source / "src/maketools" / name, tools / name)
+        (tree / "VERSION.txt").write_text("2.11\n")
+        (tree / "Makefile.conf").write_text("CXX=c++\n")
+        for module, kind in (("core", "always"), ("alpha", "default-off")):
+            directory = tree / "src" / module
+            directory.mkdir()
+            (directory / "module.type").write_text(kind + "\n")
+            (directory / "Source.cpp").write_text("int value;\n")
+
+        def identity():
+            subprocess.run(
+                ["bash", str(tools / "module-build-info")], cwd=config, check=True
+            )
+            return (config / "module-build-id").read_text()
+
+        baseline = identity()
+        marker = tree / "src/alpha.on"
+        marker.touch()
+        self.assertNotEqual(identity(), baseline)
+        marker.unlink()
+        self.assertEqual(identity(), baseline)
+
+    def test_complete_unavailable_action_catalogue(self):
+        output = self.root / "ModuleMap.inc"
+        subprocess.run(
+            ["bash", str(source / "src/maketools/makeModuleMap"), str(output)],
+            cwd=source / "src/core",
+            check=True,
+            capture_output=True,
+        )
+        text = output.read_text()
+        for action, module in (
+            ("EMMIVOX", "isdb-pytorch"),
+            ("DRR", "drr"),
+            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("PYCVINTERFACE", "plugins/pycv"),
+            ("PYFUNCTION", "plugins/pycv"),
+            ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
+        ):
+            self.assertIn('"' + action + '", "' + module + '"', text)
+
     def test_requirements_quoting_selectors_and_replace(self):
         policy = self.policy(
             'CONDA_HOST_REQUIREMENTS = old\nCONDA_HOST_REQUIREMENTS = "hdf5 * nompi_*"\nCONDA_HOST_REQUIREMENTS += libpython  # [py>=315]\nCONDA_BUILD_REQUIREMENTS = cmake ninja\n'
@@ -271,23 +319,42 @@ class ModuleOptions(unittest.TestCase):
         shutil.copy2(source / "COPYING.LESSER", tree / "COPYING.LESSER")
         for plugin in ("pycv", "cudaCoord", "openaccPTM"):
             (tree / "plugins" / plugin / "src").mkdir(parents=True)
-        for module, kind in (("tools", "always"), ("policy-fixture", "default-off")):
+        for module, kind in (
+            ("tools", "always"),
+            ("policy-fixture", "default-off"),
+            ("policy-dependency", "default-off"),
+        ):
             directory = tree / "src" / module
             directory.mkdir(parents=True)
             (directory / "module.type").write_text(kind + "\n")
             (directory / "Makefile").write_text(
-                "USE=tools\n" if module == "policy-fixture" else "USE=\n"
+                "USE=tools policy-dependency\n"
+                if module == "policy-fixture"
+                else "USE=\n"
             )
+        # USE must remain a native dependency even if ordinary code imports no
+        # symbols from B (e.g. a header-only use); linkers may discard unused DSOs.
+        (tree / "src/policy-dependency/Unused.cpp").write_text(
+            '#include "Value.hpp"\n#ifdef PLUMED_POLICY_TEST\n#error module-specific flag leaked\n#endif\nextern "C" int dependency_test(){return POLICY_VALUE;}\n'
+        )
+        value_header = tree / "src/policy-dependency/Value.hpp"
+        value_header.write_text("#define POLICY_VALUE 7\n")
         for component in ("blas", "lapack"):
             destination = tree / "src" / component
             destination.mkdir()
             shutil.copy2(source / "src" / component / (component + ".h"), destination)
         module = tree / "src/policy-fixture"
         (module / "Check.cpp").write_text(
-            '#ifndef PLUMED_POLICY_TEST\n#error conda flag missing\n#endif\n#ifdef __PLUMED_HAS_FFTW\n#error disabled feature still visible\n#endif\nextern "C" int policy_test(){return PLUMED_POLICY_TEST;}\n'
+            '#include "policy-dependency/Value.hpp"\n#ifndef PLUMED_POLICY_TEST\n#error conda flag missing\n#endif\n#ifdef __PLUMED_HAS_FFTW\n#error disabled feature still visible\n#endif\nextern "C" int policy_test(){return POLICY_VALUE+PLUMED_POLICY_TEST;}\n'
         )
         (module / "conda.mk").write_text(
-            "CONDA_CXXFLAGS = -DPLUMED_POLICY_TEST=1\nCONDA_DISABLED_FEATURES = FFTW\n"
+            "CONDA_CXXFLAGS = -DPLUMED_POLICY_TEST=1\nCONDA_DISABLED_FEATURES = FFTW\nCONDA_LDFLAGS = "
+            + (
+                "-Wl,-dead_strip_dylibs"
+                if sys.platform == "darwin"
+                else "-Wl,--as-needed"
+            )
+            + "\n"
         )
         prefix = self.root / "installed"
         program = base / "bin/plumed"
@@ -335,6 +402,22 @@ class ModuleOptions(unittest.TestCase):
             (prefix / "lib/plumed/plugins/policy-fixture.json").read_text()
         )
         self.assertFalse(report["optional_features"]["FFTW"])
+        presence = subprocess.run(
+            [
+                str(program),
+                "--load-module=policy-fixture",
+                "modules",
+                "--has",
+                "policy-fixture",
+                "policy-dependency",
+                "-q",
+            ],
+            env=dict(env, PLUMED_PLUGIN_PATH=str(prefix / "lib/plumed/plugins")),
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(presence.returncode, 0, presence.stderr)
         query = subprocess.run(
             [
                 str(program),
@@ -352,6 +435,38 @@ class ModuleOptions(unittest.TestCase):
             timeout=30,
         )
         self.assertEqual(query.returncode, 1, query.stderr)
+        library = next((prefix / "lib").glob("libplumed-ext-policy-fixture.*"))
+
+        def value():
+            return subprocess.check_output(
+                [
+                    sys.executable,
+                    "-c",
+                    "import ctypes,sys; print(ctypes.CDLL(sys.argv[1]).policy_test())",
+                    str(library),
+                ],
+                text=True,
+                env=env,
+            ).strip()
+
+        self.assertEqual(value(), "8")
+        value_header.write_text("#define POLICY_VALUE 41\n")
+        for target in ("build", "install"):
+            rebuilt = subprocess.run(
+                [sys.executable, "extensions/build.py", target],
+                cwd=tree,
+                env=dict(env, PLUMED_CONDA_BUILD="1"),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=120,
+            )
+            self.assertEqual(rebuilt.returncode, 0, rebuilt.stdout + rebuilt.stderr)
+        self.assertEqual(
+            value(),
+            "42",
+            "Rebuild used a cached object or stale installed dependency header",
+        )
 
 
 if __name__ == "__main__":

@@ -42,6 +42,27 @@ try:
                 expression,
                 selected,
             )
+        catalogue = Path(directory) / "ModuleMap.inc"
+        script = Path(directory) / "catalogue.cmake"
+        script.write_text(
+            f'include("{source}/cmake-msvc/PlumedGenerate.cmake")\nplumed_make_module_map("{source}" "{catalogue}")\n'
+        )
+        subprocess.run(
+            [os.environ.get("CMAKE", "cmake"), "-P", str(script)],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        text = catalogue.read_text()
+        for action, module in (
+            ("DRR", "drr"),
+            ("EMMIVOX", "isdb-pytorch"),
+            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("PYCVINTERFACE", "plugins/pycv"),
+            ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
+        ):
+            assert '"' + action + '", "' + module + '"' in text, (action, module)
 finally:
     if original_config is None:
         config_snapshot.unlink(missing_ok=True)

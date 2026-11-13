@@ -11,14 +11,16 @@ toPrint='  {"%s", "%s"}'
 regex='PLUMED_REGISTER_ACTION *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
 regex_cl='PLUMED_REGISTER_CLTOOL *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_-]+)" *\)'
 
-for module in ../*/module.type ../../plugins/*/module.type; do
-  moduledir=${module%%/module.type}
+for module in ../*/module.type ../../plugins/*/; do
+  moduledir=${module%/}
+  moduledir=${moduledir%%/module.type}
+  [[ -d $moduledir ]] || continue
   modulename=${moduledir##*/}
   # the actions of a plugin are recorded as provided by "plugins/<name>" (see ActionRegister::create)
   [[ $moduledir == ../../plugins/* ]] && modulename=plugins/$modulename
   {
     # plugins may keep their sources in a src subfolder (e.g. openaccPTM)
-    for file in "$moduledir"/*.cpp "$moduledir"/src/*.cpp; do
+    for file in "$moduledir"/*.cpp "$moduledir"/*.cu "$moduledir"/src/*.cpp "$moduledir"/src/*.cu; do
       # skip the unexpanded globs
       [[ -e "$file" ]] || continue
       if grep -q PLUMED_REGISTER_ACTION "${file}"; then

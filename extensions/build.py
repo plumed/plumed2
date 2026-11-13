@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from conda_config import build_environment, supported
-from features import FeatureProbes, feature_identity
+from features import FeatureProbes, dependency_identity, feature_identity
 from inventory import generate_catalog
 from symbols import module_symbol
 
@@ -42,6 +42,20 @@ current_id = subprocess.check_output(
 if current_id != build_id:
     raise SystemExit("The installed base changed: configure the extensions again")
 soext = config["SOEXT"]
+
+# Installed kernel headers are immutable, but an installed older extension must
+# not hide the source headers of another extension being rebuilt in this tree.
+module_headers = work / ("headers-" + build_id)
+module_headers.mkdir(exist_ok=True)
+for module in catalog["modules"]:
+    if module in builtin:
+        continue
+    link = module_headers / module
+    target = root / "src" / module
+    if link.is_symlink() and link.resolve() != target.resolve():
+        link.unlink()
+    if not link.exists():
+        link.symlink_to(target, target_is_directory=True)
 
 
 # Preserve literal quotes in -D flags: make passes these through a shell once.
@@ -126,7 +140,10 @@ def run(command):
 
 
 header_hash = hashlib.sha256()
-for header in sorted((root / "src").glob("*/*.h")):
+for header in sorted((root / "src").rglob("*")):
+    if not header.is_file() or header.suffix not in (".h", ".hpp", ".inl", ".tpp"):
+        continue
+    header_hash.update(str(header.relative_to(root / "src")).encode())
     header_hash.update(header.read_bytes())
 # Native headers/ABI can change independently of the immutable base package.
 for metadata in sorted((base / "conda-meta").glob("*.json")):
@@ -236,6 +253,7 @@ for name in order:
         '#include "config/Config.h"\n'
         + f'extern "C" const char* {module_symbol(name)}() {{ return "{build_id}"; }}\n'
         + f'extern "C" const void* {module_symbol(name)}_kernel() {{ return reinterpret_cast<const void*>(&PLMD::config::getModuleBuildID); }}\n'
+        + dependency_identity(name, dependencies(name))
         + feature_identity(
             name,
             re.findall(
@@ -259,6 +277,7 @@ for name in order:
                     *module_cppflags,
                     *module_cxxflags,
                     *feature_flags,
+                    "-I" + str(module_headers),
                     "-I" + str(base / "include/plumed"),
                     "-I" + str(root / "src"),
                     f'-DPLUMED_MODULE_DIR="{name}/"',
