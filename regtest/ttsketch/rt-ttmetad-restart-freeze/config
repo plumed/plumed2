@@ -1,4 +1,4 @@
-plumed_needs=libitensor
+plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
 plumed_modules=ttsketch
 type=driver
 # a first run (plumed0.dat) writes the TT files and the hills files, then the test restarts from them:

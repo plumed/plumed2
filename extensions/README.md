@@ -302,7 +302,8 @@ from other modules or dependencies are not unioned into a scoped query. Without
 --list` lists that visible module's enabled features. Queries do not activate a
 module: use normal autoloading or pre-query `--load-module=NAME` when needed.
 
-Regression configs can declare `plumed_has="drr:boost_serialization"`. The runner
+Regression configs declare `plumed_needs="drr:boost_serialization"`.
+The runner
 uses scoped inquiries when supported, otherwise checks both static module
 presence and the feature through `plumed config`. A false modern inquiry never
 falls back to kernel-wide flags. Requirements are checked before reading the

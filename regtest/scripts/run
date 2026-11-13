@@ -47,7 +47,6 @@ plumed_thread_mpi=auto
 
 plumed_needs=
 plumed_modules=
-plumed_has=
 plumed_long=
 # Optional filename:absolute-tolerance entries. Other files use exact diffs.
 plumed_tolerance=()
@@ -209,7 +208,7 @@ if [[ ${PLUMED_REGTEST_FORCE_REQUIREMENTS:-no} = yes ]]; then
   echo "Module/library prerequisites asserted by the package test selection"
 else
 source "$regtest_scripts_dir/requirements.sh"
-for need in $plumed_needs $plumed_has
+for need in $plumed_needs
 do
   echo "Checking for $need dependency"
   if ! plumed_check_feature "$need"

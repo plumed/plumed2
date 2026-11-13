@@ -1,4 +1,4 @@
-plumed_needs=boost_serialization
+plumed_needs="drr:boost_serialization"
 plumed_modules=drr
 type=driver
 export PLUMED_STACK_TRACE=no

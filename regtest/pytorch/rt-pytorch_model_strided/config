@@ -1,4 +1,4 @@
-plumed_needs=libtorch
+plumed_needs="pytorch:libtorch"
 plumed_modules=pytorch
 type=driver
 arg="--plumed plumed.dat --ixyz traj.xyz"

@@ -1,5 +1,5 @@
 type=driver
-plumed_needs="libchemfiles"
+plumed_needs="tools:libchemfiles"
 export PLUMED_STACK_TRACE=no
 # Trajectories read with chemfiles (--itraj). The files were written by make_files.py (chemfiles python 0.10.4):
 # the same 5 frames of 12 atoms in a triclinic cell, as xtc, trr, dcd, pdb (also read by the native readers),
