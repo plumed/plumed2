@@ -58,7 +58,9 @@ number of required replicas.
     interface supports this when the MD engine supplies the current and foreign
     physical energies, as the GROMACS `-hrex` patches do. This also works with older
     GROMACS patches when loading the 2.11 kernel. Older PLUMED kernels retain the
-    limitation, even when loaded by a newly patched GROMACS.
+    limitation, even when loaded by a newly patched GROMACS. Updated maintenance
+    kernels in the 2.9 and 2.10 series stop with an error when an ENERGY CV is
+    defined and the host supplies a foreign physical energy through GREX.
 
     Native GROMACS lambda replica exchange does not supply these energies through
     GREX and remains unsupported when ENERGY is biased. See \issue{115}.

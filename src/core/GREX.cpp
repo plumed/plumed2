@@ -147,6 +147,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
       break;
     case cmd_cacheLocalUSwap:
       CHECK_INIT(initialized,key);
+      // Maintenance kernels reject ENERGY here; calculate() supports it below.
       physicalEnergiesProvided=true;
       CHECK_NOTNULL(val,key);
       {
