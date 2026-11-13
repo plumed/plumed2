@@ -39,11 +39,11 @@ public:
   double min, max, sigma;
   HistogramBead::KernelType kerneltype;
   std::array<unsigned,3> dir;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
   static void registerKeywords( Keywords& keys );
   template<typename TPM>
   void parseInput( ActionVolume<VolumeInCylinder, TPM>* action );
@@ -57,7 +57,7 @@ public:
   static void calculateNumberInside( const VolumeInput& input,
                                      const VolumeInCylinder& actioninput,
                                      VolumeOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], \
 docylinder, min, max, sigma, kerneltype, dir[0:3])
@@ -68,7 +68,7 @@ docylinder, min, max, sigma, kerneltype, dir[0:3])
 #pragma acc exit data delete(dir[0:3], kerneltype, sigma, max, min, \
       docylinder, this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void VolumeInCylinder::registerKeywords( Keywords& keys ) {

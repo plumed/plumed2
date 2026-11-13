@@ -1,0 +1,27 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# USEGPU without the openaccPTM plugin: the GPU versions of the actions are provided by the plugin,
+# so each bad_NAME.dat must be rejected with an error message containing the text below
+function plumed_regtest_after(){
+  rm -f errors
+  # plumed.dat: a single DISTANCE with USEGPU is computed on the CPU, with a note in the log
+  if grep -q -F "USEGPU is ignored: a single DISTANCE is computed on the CPU" out ; then
+    echo "scalar: noted" >> errors
+  else
+    echo "scalar: NO NOTE" >> errors
+  fi
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+distances is provided by the plugin in plugins/openaccPTM of the PLUMED sources
+position_atoms is provided by the plugin in plugins/openaccPTM of the PLUMED sources
+saxs it is provided by the plugin in plugins/openaccPTM of the PLUMED sources
+vector USEGPU can not be used here: the GPU versions of the actions are provided by the openaccPTM plugin
+EOT
+}

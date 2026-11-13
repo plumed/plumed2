@@ -36,14 +36,14 @@ struct MatrixProduct {
                          const MatrixProduct& actdata,
                          const InputVectors& vectors,
                          MatrixElementOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
   }
   void removeFromACCDevice() const {
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 

@@ -132,11 +132,11 @@ class RegularKernel {
 public:
   bool canusevol;
   double cutoff;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
   std::vector<int> periodic_v;
   int* periodic{nullptr};
   std::vector<double> max_minus_min_v;
@@ -154,7 +154,7 @@ public:
     max_minus_min = max_minus_min_v.data();
     inv_max_minus_min = inv_max_minus_min_v.data();
   }
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],periodic[0:periodic_v.size()],max_minus_min[0:max_minus_min_v.size()],inv_max_minus_min[0:inv_max_minus_min_v.size()])
     switchingFunction.toACCDevice();
@@ -163,7 +163,7 @@ public:
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(inv_max_minus_min[0:inv_max_minus_min_v.size()],max_minus_min[0:max_minus_min_v.size()],periodic[0:periodic_v.size()],this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 template <class K>

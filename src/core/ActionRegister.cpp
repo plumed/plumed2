@@ -57,11 +57,24 @@ std::unique_ptr<Action> ActionRegister::create(const std::vector<void*> & images
   auto& actionName = e.getMissingKey();
   e <<"Action \"" << actionName << "\" is not known.";
   if (getModuleMap().count(actionName)>0) {
-    e << "\nAn Action named \""
-      <<actionName
-      <<"\" is available in module \""
-      << getModuleMap().at(actionName)
-      << "\".\nPlease consider installing PLUMED with that module enabled.";
+    const auto & module=getModuleMap().at(actionName);
+    if(module.rfind("plugins/",0)==0) {
+      // e.g. the GPU versions of the actions (USEGPU), provided by plugins/openaccPTM
+      e << "\nAn Action named \""
+        << actionName
+        << "\" is provided by the plugin in "
+        << module
+        << " of the PLUMED sources.\nPlease compile it and load it with LOAD before this action.";
+    } else {
+      e << "\nAn Action named \""
+        <<actionName
+        <<"\" is available in module \""
+        << module
+        << "\".\nPlease consider installing PLUMED with that module enabled.";
+    }
+  } else if(actionName.size()>3 && actionName.compare(actionName.size()-3,3,"ACC")==0) {
+    // the shortcuts redirect the input with USEGPU to these GPU versions
+    e << "\nThis is the GPU version of an action, requested with USEGPU: there is none for this action.";
   }
   throw e;
 }

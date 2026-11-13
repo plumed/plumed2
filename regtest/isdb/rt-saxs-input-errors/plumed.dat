@@ -1,0 +1,2 @@
+# the checks are in config (plumed_regtest_after): this input only runs the driver
+d: DISTANCE ATOMS=1,2

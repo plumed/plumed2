@@ -25,10 +25,10 @@
 #include <vector>
 #include "View.h"
 
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
 #include <openacc.h>
 #include "Exception.h"
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 
 namespace PLMD {
 
@@ -93,7 +93,7 @@ public:
     m.removeFromACCDevice();
   }
 };
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
 ///C++ wrapper around acc_malloc, allocates sizeof(T) bytes and return a typed pointer
 template <typename T> T *myAccMalloc(size_t size) {
   return reinterpret_cast<T *>(acc_malloc(size * sizeof(T)));
@@ -217,7 +217,7 @@ public:
     }
   }
 };
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 }//namespace OpenACC
 }//namespace PLMD
 

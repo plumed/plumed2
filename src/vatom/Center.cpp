@@ -66,7 +66,7 @@ another action as has been done in the input below.
 
 ```plumed
 fcc: FCCUBIC SPECIES=1-1000 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
-sfcc: MORE_THAN ARG=fcc SWITCH={RATIONAL R_0=0.5}
+sfcc: MORE_THAN ARG=fcc_n SWITCH={RATIONAL R_0=0.5}
 c: CENTER ATOMS=1-1000 WEIGHTS=sfcc
 DUMPATOMS ATOMS=c FILE=atom.xyz
 ```

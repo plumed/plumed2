@@ -49,7 +49,7 @@ struct AdjacencyMatrixData {
   void update() {
     nlist_three=nlist_three_v.data();
   }
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],usepbc,components,no_thread_gather,gatherForceOnColumns,fbsize, \
                               nlists,natoms_per_three_list, \
@@ -64,7 +64,7 @@ struct AdjacencyMatrixData {
                              natoms_per_three_list,nlists, \
                              fbsize,gatherForceOnColumns,no_thread_gather,components,usepbc,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 struct AdjacencyMatrixInput {
@@ -779,14 +779,16 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
       force_indices.threadsafe_derivatives_end[1] = 0;
       force_indices.threadsafe_derivatives_end[2] = 0;
       force_indices.threadsafe_derivatives_end[3] = 0;
+      // The box derivatives of component k of the bond vector r are -r_j for
+      // the virial element (j,k), i.e. they are stored in column k of the virial
       force_indices.indices[1][2] = virstart;
-      force_indices.indices[1][3] = virstart + 1;
-      force_indices.indices[1][4] = virstart + 2;
-      force_indices.indices[2][2] = virstart + 3;
+      force_indices.indices[1][3] = virstart + 3;
+      force_indices.indices[1][4] = virstart + 6;
+      force_indices.indices[2][2] = virstart + 1;
       force_indices.indices[2][3] = virstart + 4;
-      force_indices.indices[2][4] = virstart + 5;
-      force_indices.indices[3][2] = virstart + 6;
-      force_indices.indices[3][3] = virstart + 7;
+      force_indices.indices[2][4] = virstart + 7;
+      force_indices.indices[3][2] = virstart + 2;
+      force_indices.indices[3][3] = virstart + 5;
       force_indices.indices[3][4] = virstart + 8;
       force_indices.tot_indices[1] = 5;
       force_indices.tot_indices[2] = 5;
@@ -837,14 +839,15 @@ void AdjacencyMatrixBase<CV, myPTM>::getForceIndices( const std::size_t task_ind
       force_indices.threadsafe_derivatives_end[1] = 1;
       force_indices.threadsafe_derivatives_end[2] = 1;
       force_indices.threadsafe_derivatives_end[3] = 1;
+      // column k of the virial for component k (see above)
       force_indices.indices[1][1] = virstart;
-      force_indices.indices[1][2] = virstart + 1;
-      force_indices.indices[1][3] = virstart + 2;
-      force_indices.indices[2][1] = virstart + 3;
+      force_indices.indices[1][2] = virstart + 3;
+      force_indices.indices[1][3] = virstart + 6;
+      force_indices.indices[2][1] = virstart + 1;
       force_indices.indices[2][2] = virstart + 4;
-      force_indices.indices[2][3] = virstart + 5;
-      force_indices.indices[3][1] = virstart + 6;
-      force_indices.indices[3][2] = virstart + 7;
+      force_indices.indices[2][3] = virstart + 7;
+      force_indices.indices[3][1] = virstart + 2;
+      force_indices.indices[3][2] = virstart + 5;
       force_indices.indices[3][3] = virstart + 8;
       force_indices.tot_indices[1] = 4;
       force_indices.tot_indices[2] = 4;

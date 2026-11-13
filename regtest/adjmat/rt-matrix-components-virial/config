@@ -1,0 +1,21 @@
+type=driver
+plumed_modules=adjmat
+arg="--plumed plumed.dat --ixyz 64.xyz --debug-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/64.xyz"
+# The numerical derivatives are forward differences with a step of about 1e-8, so they amplify the
+# rounding of the bias (e.g. with fused multiply-add on arm64 the printed values change by up to 5e-4).
+# forces is accepted if the analytical derivatives are within 1e-4 and the numerical ones within 2e-3 of
+# the reference (the reference is then copied), otherwise the normal diff shows the differences.
+function plumed_regtest_after(){
+  f=forces
+  test $(wc -l < $f) -eq $(wc -l < $f.reference) || return 0
+  if paste -d'|' $f.reference $f | awk -F'|' '{
+      n=split($1,a," "); if(split($2,b," ")!=n) exit 1
+      for(i=1;i<=n;i++) if(a[i]!=b[i]) {
+        if(i==1 || a[i] !~ /^[-+]?[0-9.]+$/ || b[i] !~ /^[-+]?[0-9.]+$/) exit 1
+        d=a[i]-b[i]; if(d<0) d=-d; if(d>(i==2 ? 1e-4 : 2e-3)+1e-9) exit 1
+      }
+    }' ; then
+    cp $f.reference $f
+  fi
+}

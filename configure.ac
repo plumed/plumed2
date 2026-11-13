@@ -410,7 +410,6 @@ PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, 
 PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
 PLUMED_CONFIG_ENABLE([libchemfiles],[search for chemfiles, to read more trajectory formats in driver and benchmark],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
-PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
 # KEnRef find-or-fetch controls: with --enable-kenref, if kenref_core is not already installed, configure
 # clones the KEnRef repo and delegates the build to its own CMake. Override the source / coordinates here.
@@ -430,8 +429,6 @@ AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
 AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
-AC_ARG_VAR(PLUMED_ACC_TYPE,[with --enable-openacc this is the setting  ('host' or 'gpu') for determining the target of the OPENACC pragmas - default: 'gpu'])
-AC_ARG_VAR(PLUMED_ACC_GPU,[if PLUMED_ACC_TYPE is 'gpu', this is read as a space separated list of '-gpu' options for openacc (example "cc75 managed")])
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
 # include symbol information (obj files are huge)
@@ -496,9 +493,7 @@ if test $basic_warnings = true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  if ! test $openacc = true; then
-    PLUMED_CHECK_CXXFLAG([-Wno-unknown-pragmas])
-  fi
+  PLUMED_CHECK_CXXFLAG([-Wno-unknown-pragmas])
   if test $fussy = true
   then
     PLUMED_CHECK_CXXFLAG([-Wextra])
@@ -1405,32 +1400,6 @@ if test $libitensor = true ; then
   fi
 fi
 
-acc_found=ko
-if test $openacc = true; then
-  if test -z "$PLUMED_ACC_TYPE"; then
-    PLUMED_ACC_TYPE=gpu
-  fi
-# optional libraries follow
-  PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
-  if test "$__PLUMED_HAS_OPENACC" = yes; then
-    acc_found=ok
-    #test if we can compile with openacc
-    PLUMED_CHECK_CXXFLAG([-acc])
-    PLUMED_CHECK_CXXFLAG([-acc=$PLUMED_ACC_TYPE])
-    if test "$PLUMED_ACC_TYPE" = "gpu"; then
-      if test -n "$PLUMED_ACC_GPU"; then
-        for flag in $PLUMED_ACC_GPU; do
-          PLUMED_CHECK_CXXFLAG([-gpu=$flag])
-        done
-      fi
-    fi
-    LDSHARED="$LDSHARED -acc -static-nvidia"
-    AC_MSG_WARN([Please remember to personalize the openacc settings with  "PLUMED_ACC_GPU"])
-  fi
-else
-  acc_found=ko
-fi
-
 # in non-debug mode, add -DNDEBUG
 if test "$debug" = false ; then
   AC_MSG_NOTICE([Release mode, adding -DNDEBUG])
@@ -1994,16 +1963,6 @@ elif test $mpi_found = ok ; then
     AC_MSG_WARN([to patch an MD code use 'plumed --no-mpi patch'])
     AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
   fi
-fi
-
-if test $openacc = true; then
-  if test $acc_found = ok; then
-    AC_MSG_NOTICE([**** PLUMED will be compiled using OPENACC])
-  else
-    AC_MSG_WARN([**** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!])
-  fi
-else
-    AC_MSG_NOTICE([**** PLUMED will be compiled without OPENACC])
 fi
 
 AC_SUBST(build_dir)

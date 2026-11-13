@@ -122,7 +122,12 @@ MultiColvarTemplate<CV,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   wholemolecules(false),
   needs_charges(keywords.exists("NEEDS_CHARGES")) {
   std::vector<AtomNumber> all_atoms;
-  if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) {
+  // the GPU versions (provided by the openaccPTM plugin) have the same name with ACC at the end
+  std::string name=getName();
+  if( name.size()>3 && name.compare(name.size()-3,3,"ACC")==0 ) {
+    name.erase(name.size()-3);
+  }
+  if( name=="POSITION_VECTOR" || name=="MASS_VECTOR" || name=="CHARGE_VECTOR" ) {
     parseAtomList( "ATOMS", all_atoms );
   }
   if( all_atoms.size()>0 ) {

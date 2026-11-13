@@ -24,6 +24,9 @@ OBJS = $(CVS_OBJS:.cpp=.o) $(TOOLS_OBJS) $(EXTRA_OBJS)
 # ACCTARGET selects what the OpenACC code is compiled for: "gpu" (default), "multicore" or "host".
 # "host" runs the kernels serially on the CPU and needs no GPU nor OpenMP runtime (used by the CI to run the regtests).
 ACCTARGET ?= gpu
+# __PLUMED_HAS_OPENACC is not used by the code (which uses the standard _OPENACC): it declares that
+# the plugin provides the openacc feature, for the module tools that report the __PLUMED_HAS_ macros
+# of a compiled module (e.g. "plumed modules --has-feature openacc")
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -I$(CURDIR)/plumed -D__PLUMED_HAS_OPENACC=1 -acc=$(ACCTARGET)
 # -static-nvidia is needed for every target: it keeps the OpenACC runtime private to the plugin. Otherwise
 # a PLUMED built with GCC and OpenMP resolves the acc_* calls of the plugin to libgomp ("libgomp: TODO").

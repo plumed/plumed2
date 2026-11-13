@@ -660,8 +660,6 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
-PLUMED_ACC_GPU
-PLUMED_ACC_TYPE
 MPIEXEC
 BASH_COMPLETION_DIR
 PYTHON_BIN
@@ -757,7 +755,6 @@ enable_libhdf5
 enable_system_gemmi
 enable_libchemfiles
 enable_linuxperf
-enable_openacc
 enable_kenref
 with_kenref_src
 enable_openmp
@@ -774,8 +771,6 @@ LDSHARED
 PYTHON_BIN
 BASH_COMPLETION_DIR
 MPIEXEC
-PLUMED_ACC_TYPE
-PLUMED_ACC_GPU
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1471,9 +1466,6 @@ Optional Features:
                           formats in driver and benchmark, default: no
   --enable-linuxperf      enable activate the compile options for a more
                           accurate report with perf on linux, default: no
-  --enable-openacc        enable search for openacc (use PLUMED_ACC_TYPE and
-                          PLUMED_ACC_GPU for controlling the settings),
-                          default: no
   --enable-kenref         enable enable the KEnRef pathway (compile the kenref
                           module + find/link libkenref_core); equivalent to
                           --enable-modules=+kenref, default: no
@@ -1512,12 +1504,6 @@ Some influential environment variables:
   MPIEXEC     command to run mpi programs in tests - default not specified,
               which means use PLUMED_MPIRUN env var at runtime for backward
               compatibility
-  PLUMED_ACC_TYPE
-              with --enable-openacc this is the setting ('host' or 'gpu') for
-              determining the target of the OPENACC pragmas - default: 'gpu'
-  PLUMED_ACC_GPU
-              if PLUMED_ACC_TYPE is 'gpu', this is read as a space separated
-              list of '-gpu' options for openacc (example "cc75 managed")
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3286,24 +3272,6 @@ fi
 
 
 
-openacc=
-# Check whether --enable-openacc was given.
-if test "${enable_openacc+set}" = set; then :
-  enableval=$enable_openacc; case "${enableval}" in
-             (yes) openacc=true ;;
-             (no)  openacc=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-openacc" "$LINENO" 5 ;;
-  esac
-else
-  case "no" in
-             (yes) openacc=true ;;
-             (no)  openacc=false ;;
-  esac
-
-fi
-
-
-
 kenref=
 # Check whether --enable-kenref was given.
 if test "${enable_kenref+set}" = set; then :
@@ -3330,8 +3298,6 @@ if test "${with_kenref_src+set}" = set; then :
 else
   with_kenref_src=""
 fi
-
-
 
 
 
@@ -4678,7 +4644,6 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  if ! test $openacc = true; then
 
   save_CXXFLAGS="$CXXFLAGS"
   CXXFLAGS="$CXXFLAGS -Wno-unknown-pragmas"
@@ -4725,7 +4690,6 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  fi
   if test $fussy = true
   then
 
@@ -10253,303 +10217,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   fi
 fi
 
-acc_found=ko
-if test $openacc = true; then
-  if test -z "$PLUMED_ACC_TYPE"; then
-    PLUMED_ACC_TYPE=gpu
-  fi
-# optional libraries follow
-
-    found=ko
-    __PLUMED_HAS_OPENACC=no
-    ac_fn_cxx_check_header_mongrel "$LINENO" "openacc.h" "ac_cv_header_openacc_h" "$ac_includes_default"
-if test "x$ac_cv_header_openacc_h" = xyes; then :
-
-
-  if test "${libsearch}" = true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing acc_get_device_type" >&5
-$as_echo_n "checking for library containing acc_get_device_type... " >&6; }
-if ${ac_cv_search_acc_get_device_type+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char acc_get_device_type ();
-int
-main ()
-{
-return acc_get_device_type ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_acc_get_device_type=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_acc_get_device_type+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_acc_get_device_type+:} false; then :
-
-else
-  ac_cv_search_acc_get_device_type=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_acc_get_device_type" >&5
-$as_echo "$ac_cv_search_acc_get_device_type" >&6; }
-ac_res=$ac_cv_search_acc_get_device_type
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing acc_get_device_type" >&5
-$as_echo_n "checking for library containing acc_get_device_type... " >&6; }
-if ${ac_cv_search_acc_get_device_type+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char acc_get_device_type ();
-int
-main ()
-{
-return acc_get_device_type ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_acc_get_device_type=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_acc_get_device_type+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_acc_get_device_type+:} false; then :
-
-else
-  ac_cv_search_acc_get_device_type=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_acc_get_device_type" >&5
-$as_echo "$ac_cv_search_acc_get_device_type" >&6; }
-ac_res=$ac_cv_search_acc_get_device_type
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  found=ok
-fi
-
-  fi
-
-
-fi
-
-
-    if test $found = ok ; then
-       $as_echo "#define __PLUMED_HAS_OPENACC 1" >>confdefs.h
-
-       __PLUMED_HAS_OPENACC=yes
-    else
-       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_OPENACC" >&5
-$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_OPENACC" >&2;}
-    fi
-
-  if test "$__PLUMED_HAS_OPENACC" = yes; then
-    acc_found=ok
-    #test if we can compile with openacc
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -acc"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc" >&5
-$as_echo_n "checking whether $CXX accepts -acc... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -acc=$PLUMED_ACC_TYPE"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -acc=$PLUMED_ACC_TYPE" >&5
-$as_echo_n "checking whether $CXX accepts -acc=$PLUMED_ACC_TYPE... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-    if test "$PLUMED_ACC_TYPE" = "gpu"; then
-      if test -n "$PLUMED_ACC_GPU"; then
-        for flag in $PLUMED_ACC_GPU; do
-
-  save_CXXFLAGS="$CXXFLAGS"
-  CXXFLAGS="$CXXFLAGS -gpu=$flag"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CXX accepts -gpu=$flag" >&5
-$as_echo_n "checking whether $CXX accepts -gpu=$flag... " >&6; }
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
-$as_echo "not linking" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-        done
-      fi
-    fi
-    LDSHARED="$LDSHARED -acc -static-nvidia"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please remember to personalize the openacc settings with  \"PLUMED_ACC_GPU\"" >&5
-$as_echo "$as_me: WARNING: Please remember to personalize the openacc settings with  \"PLUMED_ACC_GPU\"" >&2;}
-  fi
-else
-  acc_found=ko
-fi
-
 # in non-debug mode, add -DNDEBUG
 if test "$debug" = false ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: Release mode, adding -DNDEBUG" >&5
@@ -11452,19 +11119,6 @@ $as_echo "$as_me: WARNING: to patch an MD code use 'plumed --no-mpi patch'" >&2;
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (notice that MPI will be available anyway in the patched code)" >&5
 $as_echo "$as_me: WARNING: (notice that MPI will be available anyway in the patched code)" >&2;}
   fi
-fi
-
-if test $openacc = true; then
-  if test $acc_found = ok; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using OPENACC" >&5
-$as_echo "$as_me: **** PLUMED will be compiled using OPENACC" >&6;}
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!" >&5
-$as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!" >&2;}
-  fi
-else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without OPENACC" >&5
-$as_echo "$as_me: **** PLUMED will be compiled without OPENACC" >&6;}
 fi
 
 

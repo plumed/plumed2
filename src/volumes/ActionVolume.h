@@ -34,7 +34,7 @@ struct VolumeData {
   bool not_in;
   std::size_t numberOfNonReferenceAtoms;
   CV voldata;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],not_in,numberOfNonReferenceAtoms)
     voldata.toACCDevice();
@@ -43,7 +43,7 @@ struct VolumeData {
     voldata.removeFromACCDevice();
 #pragma acc exit data delete(numberOfNonReferenceAtoms,not_in,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 template <typename precision>
