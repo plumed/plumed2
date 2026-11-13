@@ -134,6 +134,8 @@ class Atoms {
     DomainDecomposition():
       on(false), async(false)
     {}
+    ~DomainDecomposition() override;
+    void waitPending();
     void enable(Communicator& c);
   };
 

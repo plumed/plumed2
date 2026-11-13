@@ -89,6 +89,30 @@ Atoms::Atoms(PlumedMain&plumed):
   ddStep(0) {
 }
 
+Atoms::DomainDecomposition::~DomainDecomposition() {
+#ifdef __PLUMED_HAS_MPI
+  if((!mpi_request_positions.empty() || !mpi_request_index.empty()) &&
+      Communicator::initialized()) {
+    int finalized=0;
+    MPI_Finalized(&finalized);
+    if(!finalized) {
+      waitPending();
+    }
+  }
+#endif
+}
+
+void Atoms::DomainDecomposition::waitPending() {
+  for(auto& request : mpi_request_positions) {
+    request.wait();
+  }
+  for(auto& request : mpi_request_index) {
+    request.wait();
+  }
+  mpi_request_positions.clear();
+  mpi_request_index.clear();
+}
+
 Atoms::~Atoms() {
   if(actions.size()>0) {
     std::cerr<<"WARNING: there is some inconsistency in action added to atoms, as some of them were not properly destroyed. This might indicate an internal bug!!\n";
@@ -303,12 +327,7 @@ void Atoms::share(const std::vector<AtomNumber>& unique) {
 
   if(dd && shuffledAtoms>0) {
     if(dd.async) {
-      for(unsigned i=0; i<dd.mpi_request_positions.size(); i++) {
-        dd.mpi_request_positions[i].wait();
-      }
-      for(unsigned i=0; i<dd.mpi_request_index.size(); i++) {
-        dd.mpi_request_index[i].wait();
-      }
+      dd.waitPending();
     }
     int count=0;
     for(const auto & p : unique) {
@@ -491,6 +510,11 @@ void Atoms::setAtomsNlocal(int n) {
 // avoid errors when doing boundary check
     if(n==0) {
       n++;
+    }
+    // Outstanding sends still reference the old storage during redistribution.
+    const std::size_t count=static_cast<std::size_t>(n);
+    if(dd.positionsToBeSent.size()!=count*5 || dd.indexToBeSent.size()!=count) {
+      dd.waitPending();
     }
     dd.positionsToBeSent.resize(n*5,0.0);
     dd.positionsToBeReceived.resize(natoms*5,0.0);

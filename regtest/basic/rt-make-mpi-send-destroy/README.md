@@ -1,0 +1,1 @@
+Native MPI send-buffer lifetime regression. MPI profiling wrappers track domain send requests until MPI_Wait completes them. This detects missing completion even when eager copying conceals a use after free. Verify bias/forces in synchronous and asynchronous modes, then check completion before buffer resizing or destruction. The unchanged-size case preserves asynchronous overlap.
