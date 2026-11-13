@@ -335,7 +335,7 @@ void DomainDecomposition::setAtomsNlocal(int n) {
     }
     std::size_t nvals = inputs.size(), natoms = getNumberOfAtoms();
     // Domain redistribution can resize buffers still used by the previous send.
-    if(dd.positionsToBeSent.size()!=n*nvals || dd.indexToBeSent.size()!=n) {
+    if(dd.positionsToBeSent.size()!=n*nvals || dd.indexToBeSent.size()!=static_cast<std::size_t>(n)) {
       dd.waitPending();
     }
     dd.positionsToBeSent.resize(n*nvals,0.0);
