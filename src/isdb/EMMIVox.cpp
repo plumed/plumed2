@@ -198,7 +198,6 @@ private:
   // total energy and virial
   double ene_;
   Tensor virial_;
-  double eps_;
   // model density file
   unsigned int mapstride_;
   std::string       mapfilename_;
@@ -320,7 +319,7 @@ EMMIVOX::EMMIVOX(const ActionOptions&ao):
   bfactsig_(0.1), bfactnoc_(false), bfactread_(false),
   MCBstride_(1), MCBaccept_(0.), MCBtrials_(0.), bfactemin_(false),
   martini_(false), statusstride_(0), first_status_(true),
-  eps_(0.0001), mapstride_(0), gpu_(false) {
+  mapstride_(0), gpu_(false) {
   // set constants
   inv_sqrt2_ = 1.0/sqrt(2.0);
   sqrt2_pi_  = sqrt(2.0 / pi);
@@ -1768,25 +1767,29 @@ void EMMIVOX::calculate_score() {
 
   // calculate deviation model/data [1, nd]
   torch::Tensor dev = scale_ * ovmd_gpu_ + offset_ - ovdd_gpu_;
-  // error function [1, nd]
-  torch::Tensor errf = torch::erf( dev * inv_sqrt2_ * ismin_gpu_ );
-  // take care of dev = zero
-  torch::Tensor zeros_d = torch::ne(dev, 0.0);
-  // redefine dev
-  dev = dev * zeros_d + eps_ * torch::logical_not(zeros_d);
-  // take care of errf = zero
-  torch::Tensor zeros_e = torch::ne(errf, 0.0);
-  // redefine errf
-  errf = errf * zeros_e + eps_ * torch::logical_not(zeros_e);
-  // logical AND: both dev and errf different from zero
-  torch::Tensor zeros = torch::logical_and(zeros_d, zeros_e);
-  // energy - with limit dev going to zero
-  torch::Tensor ene = 0.5 * ( errf / dev * zeros + torch::logical_not(zeros) * sqrt2_pi_ *  ismin_gpu_);
-  // logarithm and sum
-  // the sum over the voxels is done in double precision
+  // For z=dev/sigma, the density is proportional to
+  // S(z)=integral_0^1 exp(-z*z*t*t/2) dt. Near zero, evaluating erf(z/sqrt(2))/z
+  // loses relative accuracy, and the derivative subtracts two terms of size
+  // 1/z to obtain a result of size z. Use Taylor series for both quantities.
+  // At |z|<0.5 the truncation errors are below single-precision roundoff.
+  torch::Tensor z = dev * ismin_gpu_;
+  torch::Tensor small = torch::abs(z) < 0.5;
+  torch::Tensor small_z = torch::where(small, z, torch::zeros_like(z));
+  torch::Tensor z2 = small_z * small_z;
+  torch::Tensor series = 1.0 + z2 * (-1.0/6.0 + z2 * (1.0/40.0 + z2 * (-1.0/336.0 + z2 * (1.0/3456.0 - z2/42240.0))));
+  // torch::where evaluates both branches: keep the unused regular branch
+  // finite at dev=0 instead of dividing by zero and masking it afterwards.
+  torch::Tensor regular_dev = torch::where(small, torch::ones_like(dev), dev);
+  torch::Tensor regular_z = torch::where(small, torch::ones_like(z), z);
+  torch::Tensor errf = torch::erf(regular_z * inv_sqrt2_);
+  torch::Tensor ene = torch::where(small, 0.5 * sqrt2_pi_ * ismin_gpu_ * series,
+                                   0.5 * errf / regular_dev);
+  // The sum over voxels remains in double precision.
   ene = -kbt_ * torch::sum(torch::log(ene).to(torch::kFloat64));
-  // and derivatives [1, nd]
-  torch::Tensor d_der = -kbt_ * zeros * ( sqrt2_pi_ * torch::exp( -0.5 * dev * dev * ismin_gpu_ * ismin_gpu_ ) * ismin_gpu_ / errf - 1.0 / dev );
+  // -S'(z)/S(z) = z/3 - 2*z^3/45 + 2*z^5/945 + 2*z^7/14175 - 2*z^9/93555 + ...
+  torch::Tensor derivative_series = 1.0/3.0 + z2 * (-2.0/45.0 + z2 * (2.0/945.0 + z2 * (2.0/14175.0 - z2 * (2.0/93555.0))));
+  torch::Tensor d_der = kbt_ * torch::where(small, ismin_gpu_ * small_z * derivative_series,
+                        1.0 / regular_dev - sqrt2_pi_ * torch::exp(-0.5 * regular_z * regular_z) * ismin_gpu_ / errf);
   // tensor for derivatives wrt atoms [1, nl_size]
   torch::Tensor der_gpu = torch::index_select(d_der,0,nl_id_gpu_);
   // multiply by ovmd_der_gpu_ and scale [3, nl_size]
