@@ -139,7 +139,13 @@ class FeatureProbes:
         )
         return self.results[feature]
 
-    def module_flags(self, features):
+    def module_flags(self, features, required=(), optional=(), disabled=()):
+        unknown = (set(required) | set(optional)) - PROBES.keys()
+        if unknown:
+            raise ValueError(
+                "No native compile/link probe for " + ", ".join(sorted(unknown))
+            )
+        features = (set(features) | set(required) | set(optional)) - set(disabled)
         cpp = []
         libraries = []
         enabled = {}
@@ -152,6 +158,12 @@ class FeatureProbes:
                 cpp += ["-D__PLUMED_HAS_" + feature + "=1", *includes]
                 libraries += native
             enabled[feature] = available
+            if feature in required and not available:
+                raise ValueError(
+                    "Required conda feature " + feature + " is unavailable"
+                )
+        cpp += ["-U__PLUMED_HAS_" + feature for feature in disabled]
+        enabled.update({feature: False for feature in disabled})
         return cpp, list(dict.fromkeys(libraries)), enabled
 
 

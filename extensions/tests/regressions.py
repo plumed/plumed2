@@ -12,10 +12,23 @@ from pathlib import Path
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--prefix", type=Path)
 parser.add_argument("--list-packages", action="store_true")
+parser.add_argument(
+    "--gpu", action="store_true", help="include explicitly hardware-dependent fixtures"
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
 selection = json.loads((source / "conda/plumed-extensions/regtests.json").read_text())
-fixtures = selection["tests"]
+import sys
+
+sys.path.insert(0, str(source / "extensions"))
+from conda_config import supported
+
+fixtures = [
+    case
+    for case in selection["tests"]
+    if (case.get("hardware", "none") == "none" or args.gpu)
+    and supported({"platforms": case.get("platforms", [])})
+]
 if not fixtures:
     parser.error("the conda regression selection must not be empty")
 packages = sorted({package for case in fixtures for package in case["packages"]})
@@ -38,9 +51,6 @@ environment = dict(
     PLUMED_AUTOLOAD="1",
     PLUMED_NUM_THREADS="2",
     OMP_NUM_THREADS="2",
-    PLUMED_REGTEST_FORCE_REQUIREMENTS="yes"
-    if selection.get("force_requirements")
-    else "no",
 )
 with tempfile.TemporaryDirectory(prefix="plumed-installed-regressions-") as scratch:
     regtest = Path(scratch) / "regtest"
@@ -59,6 +69,9 @@ with tempfile.TemporaryDirectory(prefix="plumed-installed-regressions-") as scra
         )
         # Keep original inputs, hooks and references; eligibility forcing is explicit.
         print(f"Running installed numerical regression: {name}", flush=True)
+        environment["PLUMED_REGTEST_FORCE_REQUIREMENTS"] = (
+            "yes" if case.get("force_requirements", False) else "no"
+        )
         result = subprocess.run(
             ["bash", str(source / "regtest/scripts/run")],
             cwd=fixture,

@@ -117,7 +117,9 @@ The inventory and conda recipes, including `conda/plumed/meta.yaml`, are generat
 `conda/run-conda-build.sh` does this automatically. Configure and extension builds
 regenerate the inventory themselves. The generators read `module.type`, exact
 Makefile `USE` dependencies, source `__PLUMED_HAS_*` guards, module license files,
-and module-local `conda.mk` declarations:
+and module-local `conda.mk` declarations. See the complete
+[configuration reference](../conda/module-options.md) for build tools, supported
+platforms, variants, flags, feature policy and tests:
 
 ```make
 CONDA_HOST_REQUIREMENTS = libboost-devel
@@ -191,7 +193,7 @@ contract as source modules.
 
 `conda install plumed-ext-pycv` installs the pycv plugin and its companion Python
 extension for the environment's Python minor version. The recipe builds Python
-3.11–3.15 variants from `conda/plumed-pycv/conda_build_config.yaml`. Every variant
+3.11–3.15 variants declared in `plugins/pycv/conda.mk`. Every variant
 links to and pins the same main `plumed` package, without bundling another kernel.
 Python and NumPy are plugin runtime requirements; pybind11 is needed only to build.
 

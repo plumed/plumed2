@@ -9,6 +9,7 @@ from pathlib import Path
 
 import jinja2
 import yaml
+from conda_build.metadata import select_lines
 
 source = Path(__file__).resolve().parents[2]
 recipes = (
@@ -50,9 +51,8 @@ for revision in (0, 201001):
         "nvhpc_version": "25.11",
     }
     for recipe in recipes:
-        document = yaml.safe_load(
-            templates.get_template(recipe + "/meta.yaml").render(**context)
-        )
+        rendered = templates.get_template(recipe + "/meta.yaml").render(**context)
+        document = yaml.safe_load(rendered)
         assert document["package"]["version"] == "2026.11.12"
         expected = revision + (
             2
@@ -65,6 +65,49 @@ for revision in (0, 201001):
         for output in document.get("outputs", []):
             assert output["build"]["number"] == revision + 1, output
             assert output["build"]["string"].endswith("_" + str(revision + 1)), output
+        if recipe in (
+            "plumed",
+            "plumed-extensions",
+            "plumed-pycv",
+            "plumed-cuda-coordination",
+            "plumed-openacc",
+        ):
+            for target in (
+                "linux-64",
+                "linux-aarch64",
+                "osx-64",
+                "osx-arm64",
+                "win-64",
+            ):
+                namespace = {
+                    "target_platform": target,
+                    "linux": target.startswith("linux"),
+                    "linux64": target == "linux-64",
+                    "osx": target.startswith("osx"),
+                    "win": target.startswith("win"),
+                    "x86_64": target.endswith("-64"),
+                    "arm64": target.endswith("arm64"),
+                    "aarch64": target.endswith("aarch64"),
+                    "py": context["py"],
+                }
+                selected = yaml.safe_load(select_lines(rendered, namespace, True))
+                if "force_use_keys" in selected["build"]:
+                    assert isinstance(selected["build"]["force_use_keys"], list), (
+                        recipe,
+                        target,
+                    )
+                variant_text = (
+                    source / "conda" / recipe / "conda_build_config.yaml"
+                ).read_text()
+                variants = (
+                    yaml.safe_load(select_lines(variant_text, namespace, True)) or {}
+                )
+                for group in variants.get("zip_keys", []):
+                    assert len({len(variants[key]) for key in group}) == 1, (
+                        recipe,
+                        target,
+                        group,
+                    )
 
 with tempfile.TemporaryDirectory(prefix="plumed publication ") as temp:
     root = Path(temp)

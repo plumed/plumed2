@@ -8,8 +8,9 @@ python extensions/register.py --plumed "$PREFIX/bin/plumed" --module cuda_coordi
 # configure.sh translates the kernel flags for NVCC. Use the plugin's explicit
 # CUDA rule; make's implicit C++ rule would pass -Xcompiler flags to plain g++.
 cp "$SRC_DIR/cuda-registration/module_identity.cpp" "$SRC_DIR/plugins/cudaCoord/src/ModuleIdentity.cu"
+policy="$SRC_DIR/extensions/conda_config.py"
 cd plugins/cudaCoord
-bash configure.sh
+python "$policy" --module cuda_coordination -- bash configure.sh
 # Use the architecture matrix from conda-forge's compiler activation. For older
 # activation packages, query NVCC rather than silently selecting one old GPU.
 nvcc=${CUDACXX:-nvcc}
@@ -27,7 +28,7 @@ if [[ -z $gencode ]]; then
 fi
 # Fat binaries include all configured GPU targets. Device LTO is left off so
 # each target carries normal device code through the separate link step.
-make -j"${CPU_COUNT:-4}" CXX="$CXX" NVCC="$nvcc" \
+python "$policy" --module cuda_coordination -- make -j"${CPU_COUNT:-4}" CXX="$CXX" NVCC="$nvcc" \
   PLUMED_INCLUDE="-I$PREFIX/include -I$PREFIX/include/plumed" \
   EXTRA_OBJS=ModuleIdentity.o \
   DYNAMIC_LIBS="-L$PREFIX/lib" \
@@ -36,3 +37,5 @@ make -j"${CPU_COUNT:-4}" CXX="$CXX" NVCC="$nvcc" \
 install -m 755 CudaCoordination.so "$PREFIX/lib/"
 mkdir -p "$PREFIX/lib/plumed/plugins"
 cp "$SRC_DIR/cuda-registration/cuda_coordination.plumed" "$PREFIX/lib/plumed/plugins/"
+
+python "$policy" --module cuda_coordination --check-features --prefix "$PREFIX"

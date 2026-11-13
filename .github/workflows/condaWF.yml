@@ -33,6 +33,17 @@ jobs:
         curl -fLO https://raw.githubusercontent.com/GiovanniBussi/conda-ci/master/conda-ci
         source ./conda-ci install
         source ./conda-ci install-conda-build
+    - name: Provision NVHPC for the published OpenACC package
+      if: ${{ inputs.upload_test_packages && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' && matrix.os == 'ubuntu-latest' }}
+      run: |
+        source activate base
+        python extensions/conda_recipe.py
+        mapfile -t nvhpc_versions < <(python -c 'import yaml; print("\n".join(str(v) for v in yaml.safe_load(open("conda/plumed-openacc/conda_build_config.yaml"))["nvhpc_version"]))')
+        test "${#nvhpc_versions[@]}" -gt 0
+        for nvhpc_version in "${nvhpc_versions[@]}"; do
+          bash conda/fetch-nvhpc.sh "$nvhpc_version" "$RUNNER_TEMP/plumed-nvhpc"
+        done
+        echo "NVHPC_HOME=$RUNNER_TEMP/plumed-nvhpc/opt/nvidia/hpc_sdk" >> "$GITHUB_ENV"
     - name: Build PLUMED
       run: |
         source activate base

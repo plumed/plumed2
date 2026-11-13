@@ -236,6 +236,19 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
         (["plumed", "modules", "--"], "--has-feature"),
         (["plumed", "--load-module", "feature_b", "metadata_tool", "--"], "--probe"),
         (["plumed", "--load-module=feature_b", "metadata_tool", "--"], "--probe"),
+        (["plumed", "driver", "--load", str(root / "missing.so"), "--"], "--plumed"),
+        (["plumed", "driver", "--load=" + str(root / "missing.so"), "--"], "--plumed"),
+        (["plumed", "driver", "--load-module", "missing-module", "--"], "--plumed"),
+        (
+            [
+                "plumed",
+                "--load-module=feature_b",
+                "driver",
+                "--load-module=missing-module",
+                "--",
+            ],
+            "--plumed",
+        ),
     ):
         script = 'source "$1"\nshift\nCOMP_WORDS=("$@")\nCOMP_CWORD=$((${#COMP_WORDS[@]}-1))\n_plumed\nprintf "%s\\n" "${COMPREPLY[@]}"'
         result = subprocess.run(

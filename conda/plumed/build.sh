@@ -46,9 +46,10 @@ export LIBS="-lchemfiles -lfftw3 $blas_library -lz -lhdf5 $LIBS"
 # --disable-basic-warnings deactive the warning, compiling with the current compiler version (today is 28/10/2025) shows some false positives in ActionPilot
 # --enable-libchemfiles reads more trajectory formats in the driver (--itraj)
 BASH_COMPLETION_DIR="$PREFIX/share/bash-completion/completions" \
-./configure --prefix=$PREFIX --disable-mpi --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings --enable-libchemfiles || { cat config.log; exit 1; }
+python extensions/conda_config.py --module kernel -- ./configure --prefix=$PREFIX --disable-mpi --disable-python --disable-libsearch --disable-static-patch --disable-static-archive --disable-basic-warnings || { cat config.log; exit 1; }
 
-make -j${CPU_COUNT}
+python extensions/conda_config.py --module kernel -- make -j${CPU_COUNT}
 make install
+python extensions/conda_config.py --module kernel --check-features --prefix "$PREFIX"
 # Runtime compilation is supplied by the optional plumed-mklib package.
 rm -f "$PREFIX/lib/plumed/scripts/mklib.sh" "$PREFIX/lib/plumed/plumed-mklib"

@@ -75,7 +75,8 @@ make -C conda test
 The build script generates the inventory and recipes, builds `plumed` once,
 then builds matching Python/tooling, optional module, MPI provider and
 plugin variants, including opted-in empty compatibility packages. Module-local `conda.mk` files declare
-native conda requirements; licenses come from module license files. Optional
+native conda requirements, variants, build options and tests; see the complete
+[conda.mk option reference](module-options.md). Licenses come from module license files. Optional
 libraries that are unavailable do not exclude modules during this proof of concept.
 The base requirements are inherited from the `conda.mk` files of the default
 modules and their hard dependencies. LibTorch is supplied only by optional
@@ -180,6 +181,10 @@ conda create -n plumed-test -c plumed/label/test -c conda-forge \
 ```
 
 The hosted workflow builds the supported CPU, MPI, Python and CUDA variants.
-OpenACC still requires a builder with the documented NVHPC SDK. Uploads include
+Manual test publication also provisions the declared NVHPC SDK versions in an
+isolated Linux x86-64 directory, builds OpenACC against that job's exact kernel,
+and runs its host tests before upload. GPU hardware validation is performed
+separately after installation from the test channel. Other OpenACC builders
+must supply the documented NVHPC SDK through `NVHPC_HOME`. Uploads include
 only archives for the selected version from `CONDA_BLD_PATH` (or the default
 conda-build directory). The upload helper reads its token from the environment.

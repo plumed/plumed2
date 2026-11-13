@@ -29,6 +29,7 @@ jobs:
         python3 extensions/tests/configure_selection.py
         python3 extensions/tests/cmake_selection.py
         python3 extensions/tests/requirements.py
+        python3 conda/tests/module_options.py
   # Build of all modules with clang without OpenMP, with -Wall -Wextra (but not -Wunused-parameter, which
   # flags hundreds of overrides that ignore some arguments). Any warning in PLUMED code (not in the
   # embedded third-party libraries) fails the job. Build only, to keep the gate short: the regtests of

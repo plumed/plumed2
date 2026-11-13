@@ -3,8 +3,9 @@
 
 import json
 import re
-import shlex
 from pathlib import Path
+
+from conda_policy import read_policy, validate_backend
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,7 +34,7 @@ def default_modules(modules):
 
 def kernel_requirements(modules):
     """Merge declarations without dropping variant constraints or selectors."""
-    result = {"host": [], "run": []}
+    result = {"build": [], "host": [], "run": []}
     for name in default_modules(modules):
         for kind, requirements in result.items():
             for entry in modules[name]["conda"][kind]:
@@ -43,53 +44,8 @@ def kernel_requirements(modules):
 
 
 def conda_requirements(directory):
-    """Read developer-owned requirements; preserve conda platform selectors."""
-    result = {
-        "host": [],
-        "run": [],
-        "unavailable_libraries": [],
-        "dummy_package": False,
-    }
-    declaration = directory / "conda.mk"
-    if not declaration.exists():
-        return result
-    fields = {
-        "HOST_REQUIREMENTS": "host",
-        "RUN_REQUIREMENTS": "run",
-        "UNAVAILABLE_LIBRARIES": "unavailable_libraries",
-    }
-    for line in declaration.read_text().splitlines():
-        dummy = re.fullmatch(r"CONDA_DUMMY_PACKAGE\s*=\s*(yes|no)\s*(?:#.*)?", line)
-        if dummy:
-            result["dummy_package"] = dummy[1] == "yes"
-            continue
-        if line.startswith("CONDA_DUMMY_PACKAGE"):
-            raise ValueError(f"{declaration}: CONDA_DUMMY_PACKAGE must be yes or no")
-        match = re.match(
-            r"^CONDA_(HOST_REQUIREMENTS|RUN_REQUIREMENTS|UNAVAILABLE_LIBRARIES)\s*(\+?=)\s*(.*)",
-            line,
-        )
-        if not match:
-            continue
-        field, operator, value = match.groups()
-        selector = None
-        selected = re.search(r"\s+#\s*\[([^]]+)\]\s*$", value)
-        if selected:
-            selector = selected[1]
-            value = value[: selected.start()]
-        values = shlex.split(value, comments=True)
-        key = fields[field]
-        if operator == "=":
-            result[key] = []
-        for spec in values:
-            if key == "unavailable_libraries":
-                result[key].append(spec)
-            else:
-                entry = {"spec": spec}
-                if selector:
-                    entry["selector"] = selector
-                result[key].append(entry)
-    return result
+    """Compatibility entry point used by inventory and external checks."""
+    return read_policy(directory)
 
 
 def module_license(directory):
@@ -176,6 +132,11 @@ def generate_catalog(write=True):
             "conda": conda_requirements(directory),
             "about": module_license(directory),
         }
+        validate_backend(
+            modules[directory.name]["conda"],
+            "native" if modules[directory.name]["type"] == "default-off" else "kernel",
+            directory,
+        )
     plugins = {}
     for name, path in {
         "cuda_coordination": "plugins/cudaCoord",
@@ -189,6 +150,7 @@ def generate_catalog(write=True):
             "conda": conda_requirements(directory),
             "about": module_license(directory),
         }
+        validate_backend(plugins[name]["conda"], name, directory)
     result = {"schema": 2, "modules": modules, "plugins": plugins}
     if write:
         (ROOT / "extensions/catalog.json").write_text(

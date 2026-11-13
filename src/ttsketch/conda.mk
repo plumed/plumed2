@@ -1,3 +1,4 @@
+# Options: see conda/module-options.md (repository root).
 # Build against serial HDF5, but allow ABI-compatible MPI variants at runtime.
 CONDA_HOST_REQUIREMENTS = "hdf5 * nompi_*"
 CONDA_RUN_REQUIREMENTS = hdf5

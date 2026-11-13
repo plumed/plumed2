@@ -27,6 +27,7 @@ python extensions/tests/chemfiles.py --prefix "$prefix"
 python extensions/tests/abi.py --prefix "$prefix"
 python extensions/tests/kernel_requirements.py
 python extensions/tests/requirements.py
+python conda/tests/module_options.py --base "$prefix"
 python extensions/tests/module_features.py --base "$prefix"
 python extensions/tests/installed.py --base "$prefix" --extensions "$prefix"
 # The public C wrapper permits a host compiler to exercise several independent

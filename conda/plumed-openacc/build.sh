@@ -26,14 +26,15 @@ test -d "$sysroot/usr/include"
 # NVHPC otherwise searches host glibc libraries even with conda's GCC profile.
 # Put the conda sysroot first and apply it to GNU ld's library scripts as well.
 sysroot_link="-L$sysroot/usr/lib64 -L$sysroot/lib64 -L$sysroot/usr/lib -L$sysroot/lib -Xlinker --sysroot=$sysroot"
+policy="$SRC_DIR/extensions/conda_config.py"
 cd plugins/openaccPTM
-bash configure
+python "$policy" --module openacc_ptm -- bash configure
 make clean
 # Include real GPU machine code for all supported architectures, and a serial
 # host target so ordinary CI can test the same installed artifact without a GPU.
 # Keep the vendor runtime private: the base uses GCC's OpenMP runtime.
 # Preserve the base CPPFLAGS, including MPIW and other public-header ABI macros.
-make -j"${CPU_COUNT:-4}" NVCXX="$nvcxx" ACCTARGET=gpu,host \
+python "$policy" --module openacc_ptm -- make -j"${CPU_COUNT:-4}" NVCXX="$nvcxx" ACCTARGET=gpu,host \
   CXXFLAGS="-O2 -std=c++17 -fPIC -tp=px -gpu=ccall,cuda${openacc_cuda_version}" \
   NVLDSHARED="$nvcxx -shared $sysroot_link -tp=px -gpu=ccall,cuda${openacc_cuda_version} -Xlinker --no-undefined" \
   DYNAMIC_LIBS="-L$PREFIX/lib $PREFIX/lib/libopenblas.so.0"
@@ -54,3 +55,5 @@ fi
 install -m 755 plumedOpenACC.so "$PREFIX/lib/"
 mkdir -p "$PREFIX/lib/plumed/plugins"
 cp "$SRC_DIR/openacc-registration/openacc_ptm.plumed" "$PREFIX/lib/plumed/plugins/"
+
+python "$policy" --module openacc_ptm --check-features --prefix "$PREFIX"

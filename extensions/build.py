@@ -12,6 +12,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from conda_config import build_environment, supported
 from features import FeatureProbes, feature_identity
 from inventory import generate_catalog
 from symbols import module_symbol
@@ -100,7 +101,22 @@ def visit(name):
     order.append(name)
 
 
+conda_build = os.environ.get("PLUMED_CONDA_BUILD") == "1"
+
+
+def available(name):
+    return supported(catalog["modules"][name]["conda"]) and all(
+        available(dep) for dep in dependencies(name)
+    )
+
+
 for module in selected:
+    if conda_build and not available(module):
+        print(
+            f"Skipping {module}: unsupported conda target or hard dependency",
+            flush=True,
+        )
+        continue
     visit(module)
 
 
@@ -190,9 +206,32 @@ for name in order:
     directory.mkdir(exist_ok=True)
     sources = sorted((root / "src" / name).glob("*.cpp"))
     identity = directory / "module_identity.cpp"
-    feature_flags, native_flags, enabled_features = probes.module_flags(
-        catalog["modules"][name]["feature_guards"]
+    policy = catalog["modules"][name]["conda"] if conda_build else {}
+    module_env = build_environment(
+        policy, dict(os.environ, CPPFLAGS="", CXXFLAGS="", LDFLAGS="")
     )
+    module_cppflags = cppflags + shlex.split(module_env.get("CPPFLAGS", ""))
+    module_cxxflags = cxxflags + shlex.split(module_env.get("CXXFLAGS", ""))
+    module_ldflags = flags("LDFLAGS") + shlex.split(module_env.get("LDFLAGS", ""))
+    module_probes = probes
+    if any(policy.get(key) for key in ("cppflags", "cxxflags", "ldflags")):
+        module_probes = FeatureProbes(
+            compiler,
+            module_cppflags,
+            module_cxxflags,
+            module_ldflags,
+            base,
+            work / "probes" / name,
+        )
+    try:
+        feature_flags, native_flags, enabled_features = module_probes.module_flags(
+            catalog["modules"][name]["feature_guards"],
+            policy.get("required_features", []),
+            policy.get("optional_features", []),
+            policy.get("disabled_features", []),
+        )
+    except ValueError as error:
+        raise SystemExit(f"{name}: {error}") from error
     identity.write_text(
         '#include "config/Config.h"\n'
         + f'extern "C" const char* {module_symbol(name)}() {{ return "{build_id}"; }}\n'
@@ -201,7 +240,7 @@ for name in order:
             name,
             re.findall(
                 r"-D__PLUMED_HAS_([A-Z0-9_]+)",
-                " ".join([*cppflags, *cxxflags, *feature_flags]),
+                " ".join([*module_cppflags, *module_cxxflags, *feature_flags]),
             ),
         )
     )
@@ -217,8 +256,8 @@ for name in order:
             (
                 [
                     *compiler,
-                    *cppflags,
-                    *cxxflags,
+                    *module_cppflags,
+                    *module_cxxflags,
                     *feature_flags,
                     "-I" + str(base / "include/plumed"),
                     "-I" + str(root / "src"),
@@ -273,7 +312,7 @@ for name in order:
     run(
         [
             *linker,
-            *flags("LDFLAGS"),
+            *module_ldflags,
             *search,
             "-L" + str(base / "lib"),
             "-o",
@@ -282,6 +321,22 @@ for name in order:
             *dependencies_libs,
             base_kernel,
             *runtime_flags,
+            *[
+                flag
+                for flag in module_cxxflags
+                if flag.startswith(
+                    (
+                        "-fopenmp",
+                        "-qopenmp",
+                        "-fiopenmp",
+                        "-openmp",
+                        "-mp",
+                        "-pthread",
+                        "-stdlib=",
+                    )
+                )
+                and flag not in runtime_flags
+            ],
             *native_flags,
             *numeric_flags,
         ]

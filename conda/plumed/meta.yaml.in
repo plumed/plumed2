@@ -28,7 +28,8 @@ requirements:
     - {{ stdlib('c') }}  # [linux]
     - llvm-openmp  # [osx]
     - make
-  host:
+    - python
+@MODULE_BUILD_REQUIREMENTS@  host:
 @MODULE_HOST_REQUIREMENTS@    - llvm-openmp  # [osx]
   run:
 @MODULE_RUN_REQUIREMENTS@    - gawk
