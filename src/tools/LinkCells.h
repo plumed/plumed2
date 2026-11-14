@@ -59,6 +59,12 @@ public:
       //return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
     }
   };
+/// A cell to be searched, with the lattice vector that brings the atoms stored in it
+/// (at the positions given by wrapPosition) to their image close to the central cell
+  struct ShiftedCell {
+    unsigned cell;
+    Vector shift;
+  };
 private:
 /// Minimum number of atoms per thread when finding the cells of the atoms
   static constexpr unsigned minAtomsPerThread=4096;
@@ -161,6 +167,24 @@ public:
                          unsigned& ncells_required,
                          std::vector<unsigned>& cells_required,
                          bool usePbc=true) const ;
+/// Returns true if the periodic image of an atom that is within the cutoff from an atom
+/// of another cell is fixed by the cells of the two atoms. This is the case when there are
+/// at least three cells in each direction (the box is at least three cutoffs wide), and
+/// without periodic boundary conditions. The minimum image can then be found without
+/// Pbc::distance: see getShiftedCells
+  bool cellsFixImages() const ;
+/// The position moved inside the box, as it is done to find the cell of an atom
+/// (the position itself without periodic boundary conditions)
+  Vector wrapPosition( const Vector& pos ) const ;
+/// Get the cells that surround a particular cell, in the same order as addRequiredCells,
+/// with the lattice vectors to be added to the wrapped positions of their atoms:
+/// if atom j is in cells[k].cell, the vector wrapPosition(pos_j)+cells[k].shift-wrapPosition(pos_i)
+/// connects an atom i of the cell celn to the image of j that is in that neighboring cell.
+/// It is the minimum image if the two atoms are within the cutoff.
+/// It must be used only if cellsFixImages() is true. Returns the number of cells
+  unsigned getShiftedCells( const std::array<unsigned,3>& celn,
+                            std::array<ShiftedCell,27>& cells,
+                            bool usePbc=true ) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( unsigned ncells_required,
                              View<const unsigned> cells_required,
