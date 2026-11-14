@@ -1,0 +1,7 @@
+type=driver
+# NLISTCELLS takes the periodic image of an atom from its cell when the box is at
+# least three cutoffs wide: it must find the same pairs as NLIST.
+# Frames: rhombic dodecahedron, orthorhombic, skewed, and a box with fewer than
+# three cells per direction (minimum image distances are used there).
+# One atom out of three is in another periodic image
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.3f"

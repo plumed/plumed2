@@ -26,6 +26,7 @@
 #include "Tensor.h"
 #include "View.h"
 #include "View2D.h"
+#include "Tools.h"
 #include <vector>
 #include <cstddef>
 #include <cstdint>
@@ -74,10 +75,6 @@ class Pbc {
   Vector shifts[2][2][2][maxshiftsize];
 /// Number of valid entries in each list of shifts
   unsigned nShiftsPerOctant[2][2][2];
-/// Alternative representation for orthorhombic cells.
-/// Not really used, but could be used to optimize search in
-/// orthorhombic cells.
-  Vector diag,hdiag,mdiag;
 /// Changes at every setBox, and is unique among all the Pbc objects: a copy of a Pbc
 /// has the same version as the original until one of the two is changed
   std::uint64_t version=0;
@@ -87,6 +84,16 @@ class Pbc {
 /// depending on the sign of the scaled coordinates representing
 /// a distance vector.
   void buildShifts();
+/// Minimum image of the vector d in a generic (not orthorhombic) box.
+/// It is the only implementation of the search: all the versions of distance and apply
+/// use it (it is defined and inlined in Pbc.cpp).
+/// If nshifts is not null, the number of attempted shifts is added to it
+  template <typename T>
+  VectorTyped<T,3> searchImage(const VectorTyped<T,3>& d, int* nshifts) const;
+/// Computes v2-v1, using minimal image convention, when the box is not orthorhombic
+/// (generic, or not set): the part of distance that is not inline
+#pragma acc routine seq
+  Vector distanceNotOrthorhombic(const Vector&, const Vector&)const;
 public:
 ///Helper function for moving the class to an openacc device
   void toACCDevice()const ;
@@ -96,14 +103,14 @@ public:
   Pbc();
 /// Compute modulo of (v2-v1), using or not pbc depending on bool pbc.
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
-/// Computes v2-v1, using minimal image convention
-/// if specified, also returns the number of attempted shifts
+/// Computes v2-v1, using minimal image convention.
+/// Orthorhombic boxes, the most common case, are done inline
 #pragma acc routine seq
   Vector distance(const Vector&, const Vector&)const;
 #pragma acc routine seq
   Vector3f distance(const Vector3f&, const Vector3f&)const;
-/// Computes v2-v1, using minimal image convention
-/// if specified, also returns the number of attempted shifts
+/// Computes v2-v1, using minimal image convention,
+/// and adds to nshifts (if not null) the number of attempted shifts
   Vector distance(const Vector&, const Vector&,int*nshifts)const;
 /// Apply PBC to a set of positions or distance vectors
 #pragma acc routine seq
@@ -155,6 +162,18 @@ public:
 /// Returns true if box is set and non zero
   bool isSet()const;
 };
+
+inline
+Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
+  if(type==orthorombic) {
+    Vector d=delta(v1,v2);
+    for(int i=0; i<3; i++) {
+      d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+    }
+    return d;
+  }
+  return distanceNotOrthorhombic(v1,v2);
+}
 
 inline
 bool Pbc::isSet()const {
