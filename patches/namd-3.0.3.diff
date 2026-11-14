@@ -34,7 +34,7 @@ EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -89,12 +89,172 @@
+@@ -89,12 +89,195 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
  #include "GlobalMasterSymmetry.h"
@@ -42,6 +42,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  #include "GlobalMasterMisc.h"
 +// PLUMED
 +#include "../Plumed.h"
++#include <cstdlib>
++#include <utility>
 +#include "ReductionMgr.h"
 +#include "Lattice.h"
 +#include "Tensor.h"
@@ -62,15 +64,36 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  SimParameters *spar;
 +  // used to pass to NAMD the part of the virial that it cannot compute by itself
 +  SubmitReduction *plumedReduction;
++  // NAMD does not destroy the GlobalMaster objects when it terminates.
++  // The PLUMED object is thus finalized (files are closed) at exit.
++  static GlobalMasterPlumed* & instance()
++  {
++    static GlobalMasterPlumed* p=NULL;
++    return p;
++  }
++  static void finalizeAtExit()
++  {
++    if(instance()){
++      // the temporary takes the ownership and finalizes PLUMED when it goes out of scope
++      PLMD::Plumed tmp(std::move(static_cast<PLMD::Plumed&>(*instance())));
++    }
++  }
 +public:
 +  GlobalMasterPlumed():
 +    GlobalMasterEasy("plumedScript")
 +  {
 +    plumedReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 +    easy_init(config);
++    // registered after PLUMED has been created, so that it is executed
++    // before the static objects of the PLUMED library are destroyed
++    if(!instance()){
++      instance()=this;
++      std::atexit(finalizeAtExit);
++    }
 +  }
 +  ~GlobalMasterPlumed()
 +  {
++    if(instance()==this) instance()=NULL;
 +    delete plumedReduction;
 +  }
 +  void easy_init(const char* config)
@@ -207,7 +230,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  #include "PatchData.h"
  #include "NamdEventsProfiling.h"
  #include "DeviceCUDA.h"
-@@ -1039,10 +1199,15 @@
+@@ -1039,10 +1222,15 @@
              masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());
