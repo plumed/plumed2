@@ -1,0 +1,8 @@
+dodecahedron-xy-square: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search yes
+dodecahedron-xy-hexagon: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search yes
+dodecahedron-float: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search yes
+dodecahedron-gro: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search yes
+fcc-other-vectors: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search yes
+almost-fcc: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search no
+truncated-octahedron: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search no
+equal-lengths: not minimal 0, apply differs from distance 0, wrong in single precision 0, found without search no
