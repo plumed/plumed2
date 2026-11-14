@@ -14,7 +14,7 @@ int run(MPI_Comm world, int, char**) {
   if(size!=2) {
     MPI_Abort(world,2);
   }
-  auto evaluate=[&](bool energy, bool direct, bool lambda=false, bool local=false, bool offStride=false) {
+  auto evaluate=[&](bool energy, bool direct, bool lambda=false, bool local=false, bool offStride=false, int inputPolicy=0) {
     Plumed p;
     MPI_Comm intra=MPI_COMM_SELF;
     p.cmd("GREX setMPIIntracomm",&intra);
@@ -28,10 +28,14 @@ int run(MPI_Comm world, int, char**) {
     p.cmd("init");
     p.cmd("readInputLine","d: DISTANCE ATOMS=1,2 NOPBC");
     if(local) {
-      p.cmd("readInputLine","l: EXTRACV NAME=lambda");
+      if(inputPolicy==1) {
+        p.cmd("readInputLine","lambda: PUT UNIT=number SHAPE=0 MUTABLE PERIODIC=NO NOEXCHANGE");
+        p.cmd("readInputLine","l: COMBINE ARG=lambda PERIODIC=NO");
+      } else {
+        p.cmd("readInputLine","l: EXTRACV NAME=lambda");
+      }
       p.cmd("readInputLine","c: CUSTOM ARG=l,d FUNC=x*y PERIODIC=NO");
       p.cmd("readInputLine","r: RESTRAINT ARG=c AT=0 KAPPA=2");
-      p.cmd("GREX setLocalInput lambda");
     }
     if(energy) {
       p.cmd("readInputLine","e: ENERGY");
@@ -55,7 +59,7 @@ int run(MPI_Comm world, int, char**) {
       p.cmd("setStep",&step);
       if(local) {
         parameterForce=0;
-        p.cmd("setExtraCV lambda",&parameter);
+        p.cmd(inputPolicy==0 ? "setValue lambda NOEXCHANGE" : "setExtraCV lambda",&parameter);
         p.cmd("setExtraCVForce lambda",&parameterForce);
       }
       p.cmd("setPositions",x.data());
@@ -99,22 +103,22 @@ int run(MPI_Comm world, int, char**) {
     } else {
       p.cmd("GREX savePositions");
       if(energy) {
-        if(lambda) {
-          p.cmd("GREX setForeignEnergy",&foreign);
-        } else {
-          p.cmd("GREX cacheLocalUNow",&own);
-          p.cmd("GREX cacheLocalUSwap",&foreign);
-        }
+        p.cmd("GREX cacheLocalUNow",&own);
+        p.cmd("GREX cacheLocalUSwap",&foreign);
       }
       int partner=rank^1;
       p.cmd("GREX setPartner",&partner);
       p.cmd("GREX calculate");
       p.cmd("GREX getLocalDeltaBias",&delta);
+      if(energy && lambda) {
+        delta-=foreign-own;
+      }
     }
     const double gaussian=(std::exp(-.5)-std::exp(-6.25))/(1-std::exp(-6.25));
     double expected=energy ? foreign*foreign-own*own+(lambda ? 0 : foreign-own) : .2*(rank+1)*(gaussian-1);
     if(local) {
-      expected+=parameter*parameter*(otherDistance*otherDistance-x[3]*x[3]);
+      const double foreignParameter=inputPolicy==2 ? 2-rank : parameter;
+      expected+=foreignParameter*foreignParameter*otherDistance*otherDistance-parameter*parameter*x[3]*x[3];
     }
     if(std::abs(delta-expected)>1e-10) {
       throw std::runtime_error("GREX energy mismatch");
@@ -126,6 +130,8 @@ int run(MPI_Comm world, int, char**) {
   evaluate(false,true);
   evaluate(true,false,true);
   evaluate(false,false,false,true);
+  evaluate(false,false,false,true,false,1); // PUT metadata retains lambda locally.
+  evaluate(false,false,false,true,false,2); // Default extra CVs follow the coordinates.
   evaluate(true,false,true,false,true);
   MPI_Barrier(world);
   if(rank==0) {

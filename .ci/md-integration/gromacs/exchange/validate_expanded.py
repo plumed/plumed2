@@ -139,6 +139,10 @@ def main():
     suite = module.Suite(args)
     results = []
     cases = cases_for(options.quick, options.skip_population)
+    if options.legacy:
+        # Native GROMACS disables legacy expanded-ensemble checkpoints (#4629).
+        # Restart equivalence belongs to the supported modular-simulator suite.
+        cases = [case for case in cases if not case.get("restart")]
     for case in cases:
         if options.filter and options.filter not in case["name"]:
             continue

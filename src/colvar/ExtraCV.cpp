@@ -52,12 +52,12 @@ changing the MD forces. Metadynamics can therefore bias lambda alone or together
 with configurational variables, as in alchemical metadynamics
 ([Hsu et al., JCTC 2023](https://doi.org/10.1021/acs.jctc.2c01258)).
 
-For native lambda replica exchange, the updated patch uses
-`GREX setLocalInput lambda` so that the parameter stays with its local Hamiltonian
-when the foreign coordinates are evaluated. This command must be issued on every
-rank of the replica; it marks a scalar MD input as local to that replica.
-This requires the corresponding PLUMED 2.11 kernel. ENERGY-dependent biases
-additionally require the foreign physical energy described in [ENERGY](ENERGY.md).
+For native lambda replica exchange, the updated patch registers lambda as a
+replica-local input using the generic `NOEXCHANGE` property of [PUT](PUT.md).
+The parameter therefore stays with its local Hamiltonian when foreign
+coordinates are evaluated. This requires the corresponding PLUMED 2.11 kernel.
+ENERGY-dependent biases additionally require the foreign physical energy
+described in [ENERGY](ENERGY.md).
 
 */
 //+ENDPLUMEDOC

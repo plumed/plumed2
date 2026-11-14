@@ -240,7 +240,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                   "-multidir option of mdrun?");
     }
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.hrex)
+    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex)
     {
         if (ir->efep != FreeEnergyPerturbationType::No)
             gmx_fatal(FARGS, "-hrex cannot be combined with native free-energy lambda exchange");
@@ -538,7 +538,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     re->patternStep = -1;
     re->nex = replExParams.numExchanges;
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.ptr && re->nex > 1)
+    if (gmx::plumedForceProvider && re->nex > 1)
     {
         gmx_fatal(FARGS, "PLUMED bias correction does not support multiple exchanges (-nex)");
     }
@@ -637,6 +637,9 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
     }
 }
 
+namespace gmx
+{
+
 void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
 {
     /* When t_state changes, this code should be updated. */
@@ -672,6 +675,8 @@ void copy_state_serial(const t_state* src, t_state* dest)
         GMX_RELEASE_ASSERT(false, "State copying is currently not implemented in replica exchange");
     }
 }
+
+} // namespace gmx
 
 static void scale_velocities(gmx::ArrayRef<gmx::RVec> velocities, real fac)
 {
@@ -887,7 +892,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.hrex)
+    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex)
         delta = 0; // physical cross energies are supplied through GREX
 #endif
     if (re->bNPT)
@@ -907,7 +912,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
 // Resolve a PLUMED pattern once per step, shared by trial energies and acceptance.
 static int select_plumed_partner(FILE* fplog, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step)
 {
-    PLMD::Plumed plumed(gmx::plumedContext.ptr);
+    PLMD::Plumed plumed(gmx::plumedForceProvider->plumedHandle());
     if (re->patternStep != step)
     {
         int custom = 0;
@@ -947,6 +952,9 @@ static int select_plumed_partner(FILE* fplog, const gmx_multisim_t* ms, gmx_repl
     return partner;
 }
 
+namespace gmx
+{
+
 int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step)
 {
     int partner = 0;
@@ -960,8 +968,9 @@ int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* 
 
 void plumed_hrex_cache_foreign(real* energy)
 {
-    PLMD::Plumed(gmx::plumedContext.ptr).cmd("GREX cacheLocalUSwap", energy);
+    PLMD::Plumed(gmx::plumedForceProvider->plumedHandle()).cmd("GREX cacheLocalUSwap", energy);
 }
+} // namespace gmx
 #endif
 
 static void test_for_replica_exchange(FILE*                 fplog,
@@ -986,7 +995,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
     gmx::UniformIntDistribution<int>   uniformNreplDist(0, re->nrepl - 1);
 
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.ptr && re->nex > 1)
+    if (gmx::plumedForceProvider && re->nex > 1)
     {
         gmx_fatal(FARGS, "PLUMED bias correction does not support multiple exchanges (-nex)");
     }
@@ -1150,38 +1159,10 @@ static void test_for_replica_exchange(FILE*                 fplog,
 
         m = (step / re->nst) % 2;
 #if GMX_LIB_MPI
-        if (gmx::plumedContext.ptr)
+        if (gmx::plumedForceProvider)
         {
-            PLMD::Plumed plumed(gmx::plumedContext.ptr);
+            PLMD::Plumed plumed(gmx::plumedForceProvider->plumedHandle());
             int          partner = select_plumed_partner(fplog, ms, re, step);
-            if (re->type == ReplicaExchangeType::Lambda
-                || re->type == ReplicaExchangeType::TemperatureLambda)
-            {
-                if (re->lambdaNeighbors >= 0
-                    && std::abs(re->q[ReplicaExchangeType::Lambda][partner]
-                                - re->q[ReplicaExchangeType::Lambda][re->repl])
-                               > re->lambdaNeighbors)
-                    gmx_fatal(FARGS,
-                              "The selected partner's lambda energy was not requested. Use "
-                              "calc-lambda-neighbors=-1 for arbitrary exchange patterns.");
-                int needsEnergy = 0;
-                plumed.cmd("isEnergyNeeded", &needsEnergy);
-#if GMX_MPI
-                MPI_Allreduce(MPI_IN_PLACE, &needsEnergy, 1, MPI_INT, MPI_MAX, ms->mainRanksComm_);
-#endif
-                if (needsEnergy)
-                {
-                    // Native deltaH remains responsible for physical acceptance.
-                    // Send U_partner(x_local), receive U_local(x_partner), for
-                    // the ENERGY-dependent bias only. Keep kinetic terms out.
-                    real foreignEnergy = enerd->term[InteractionFunction::PotentialEnergy]
-                            + enerd->foreignLambdaTerms.deltaPotentialEnergy(
-                                    static_cast<int>(re->q[ReplicaExchangeType::Lambda][partner]));
-                    if (partner != re->repl)
-                        exchange_reals(ms, partner, &foreignEnergy, 1);
-                    plumed.cmd("GREX setForeignEnergy", &foreignEnergy);
-                }
-            }
             plumed.cmd("GREX setPartner", &partner);
             plumed.cmd("GREX calculate");
             plumed.cmd("GREX shareAllDeltaBias");
@@ -1197,12 +1178,21 @@ static void test_for_replica_exchange(FILE*                 fplog,
             {
                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
 #if GMX_LIB_MPI
-                if (gmx::plumedContext.ptr)
+                if (gmx::plumedForceProvider)
                 {
-                    PLMD::Plumed plumed(gmx::plumedContext.ptr);
+                    PLMD::Plumed plumed(gmx::plumedForceProvider->plumedHandle());
                     real adb, bdb;
                     plumed.cmd(("GREX getDeltaBias " + std::to_string(a)).c_str(), &adb);
                     plumed.cmd(("GREX getDeltaBias " + std::to_string(b)).c_str(), &bdb);
+                    // Native lambda exchange already includes these physical potential
+                    // differences. GREX needs the true energies for the ENERGY CV, but
+                    // acceptance must count their contribution only once.
+                    const auto& physical = gmx::plumedForceProvider->context().nativePhysicalDeltas;
+                    if (!physical.empty())
+                    {
+                        adb -= physical[a];
+                        bdb -= physical[b];
+                    }
                     real correction = adb * re->beta[a] + bdb * re->beta[b];
                     delta += correction;
                     if (bPrint)
@@ -1440,9 +1430,48 @@ gmx_bool replica_exchange(FILE*                 fplog,
     gmx_bool bThisReplicaExchanged = FALSE;
 
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.ptr)
+    if (gmx::plumedForceProvider)
     {
-        PLMD::Plumed plumed(gmx::plumedContext.ptr);
+        auto&        context = gmx::plumedForceProvider->context();
+        PLMD::Plumed plumed(gmx::plumedForceProvider->plumedHandle());
+        // Workers enter the GREX collective in prepare(), so cache physical
+        // energies on every rank before that call. Native lambda exchange has
+        // already evaluated the other Hamiltonians at the local configuration.
+        int nativeLambda = isMainRank
+                           && (re->type == ReplicaExchangeType::Lambda
+                               || re->type == ReplicaExchangeType::TemperatureLambda);
+        MPI_Bcast(&nativeLambda, 1, MPI_INT, 0, cr->commMyGroup.comm());
+        context.nativePhysicalDeltas.clear();
+        if (nativeLambda)
+        {
+            real currentEnergy = 0, foreignEnergy = 0;
+            if (isMainRank)
+            {
+                int partner = select_plumed_partner(fplog, ms, re, step);
+                if (re->lambdaNeighbors >= 0
+                    && std::abs(re->q[ReplicaExchangeType::Lambda][partner]
+                                - re->q[ReplicaExchangeType::Lambda][re->repl])
+                               > re->lambdaNeighbors)
+                    gmx_fatal(FARGS,
+                              "The selected partner's lambda energy was not requested. Use "
+                              "calc-lambda-neighbors=-1 for arbitrary exchange patterns.");
+                currentEnergy = enerd->term[InteractionFunction::PotentialEnergy];
+                // Send U_partner(x_local), receive U_local(x_partner). Use the
+                // potential difference, excluding native kinetic/constraint terms.
+                foreignEnergy = currentEnergy
+                                + enerd->foreignLambdaTerms.deltaPotentialEnergy(
+                                        static_cast<int>(re->q[ReplicaExchangeType::Lambda][partner]));
+                if (partner != re->repl)
+                    exchange_reals(ms, partner, &foreignEnergy, 1);
+                context.nativePhysicalDeltas.assign(re->nrepl, 0);
+                context.nativePhysicalDeltas[re->repl] = foreignEnergy - currentEnergy;
+                gmx_sum_sim(re->nrepl, context.nativePhysicalDeltas.data(), ms);
+            }
+            // Global energies contribute on the main rank only; worker zeros
+            // avoid multiplying them by the number of ranks in the replica.
+            plumed.cmd("GREX cacheLocalUNow", &currentEnergy);
+            plumed.cmd("GREX cacheLocalUSwap", &foreignEnergy);
+        }
         plumed.cmd("GREX prepare");
     }
 #endif
@@ -1478,7 +1507,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
         }
         else
         {
-            copy_state_serial(state_local, state);
+            gmx::copy_state_serial(state_local, state);
         }
 
         if (isMainRank)
@@ -1498,7 +1527,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
                     {
                         fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
                     }
-                    exchange_state(ms, exchange_partner, state);
+                    gmx::exchange_state(ms, exchange_partner, state);
                 }
             }
             /* For temperature-type replica exchange, we need to scale
@@ -1516,7 +1545,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
         if (!haveDDAtomOrdering(*cr))
         {
             /* Copy the global state to the local state data structure */
-            copy_state_serial(state, state_local);
+            gmx::copy_state_serial(state, state_local);
         }
     }
 

@@ -194,16 +194,16 @@ template<bool doShellFC>
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
 #if GMX_LIB_MPI
-    if (plumedContext.ptr)
+    if (plumedForceProvider)
     {
-        plumedContext.lambdaState =
+        plumedForceProvider->context().lambdaState =
                 freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->currentFEPState() : 0;
         // Ask at execution time, not when tasks for future steps are queued.
         // The normal provider call performs sharing, forces and the one update.
-        PLMD::Plumed plumed(plumedContext.ptr);
+        PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
         long int     plumedStep = step;
         plumed.cmd("setStepLong", &plumedStep);
-        plumed.cmd("setExtraCV lambda", &plumedContext.lambdaState);
+        plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
         plumed.cmd("prepareDependencies");
         int needsEnergy = 0;
         plumed.cmd("isEnergyNeeded", &needsEnergy);

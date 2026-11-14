@@ -356,7 +356,7 @@ public:
         { "-hrex",
           FALSE,
           etBOOL,
-          { &plumedContext.hrex },
+          { &replExParams.plumedHrex },
           "Enable general Hamiltonian replica exchange with PLUMED" },
 #endif
 

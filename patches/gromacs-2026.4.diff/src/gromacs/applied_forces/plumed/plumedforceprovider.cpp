@@ -84,17 +84,21 @@ namespace gmx
 {
 
 #if GMX_LIB_MPI
-PlumedContext plumedContext;
+PlumedForceProvider* plumedForceProvider = nullptr;
+#endif
+
+#if GMX_LIB_MPI
+void* PlumedForceProvider::plumedHandle() const
+{
+    return plumed_->toVoid();
+}
 #endif
 
 PlumedForceProvider::~PlumedForceProvider()
 {
 #if GMX_LIB_MPI
-    if (plumedContext.ptr == plumed_->toVoid())
-    {
-        plumedContext.ptr          = nullptr;
-        plumedContext.exchangeStep = false;
-    }
+    if (plumedForceProvider == this)
+        plumedForceProvider = nullptr;
 #endif
 }
 PlumedForceProvider::PlumedForceProvider(const PlumedOptions& options)
@@ -114,7 +118,8 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
                 "are not supported. Run an MPI build, even for a single replica."));
     }
 #else
-    plumedContext.mainRank = options.mpiComm_->isMainRank();
+    context_.mainRank = options.mpiComm_->isMainRank();
+    context_.hrex     = options.hrex_;
 #endif
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
@@ -224,7 +229,9 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     plumed_->cmd("setTimestep", &options.simulationTimeStep_);
     plumed_->cmd("init", nullptr);
 #if GMX_LIB_MPI
-    plumedContext.ptr = plumed_->toVoid();
+    GMX_RELEASE_ASSERT(plumedForceProvider == nullptr,
+                       "Only one PLUMED provider per real-MPI process is supported");
+    plumedForceProvider = this;
 #endif
 }
 catch (const GromacsException&)
@@ -247,7 +254,7 @@ void PlumedForceProvider::writeCheckpointData()
 try
 {
 #if GMX_LIB_MPI
-    if (plumedContext.hrexTrial)
+    if (context_.hrexTrial)
         return;
 #endif
     if (!prepareStepIsCalled_)
@@ -271,7 +278,7 @@ void PlumedForceProvider::calculateForces(const ForceProviderInput& forceProvide
 try
 {
 #if GMX_LIB_MPI
-    if (plumedContext.hrexTrial)
+    if (context_.hrexTrial)
         return;
 #endif
     // setup: these instructions in the original patch are BEFORE do_force()
@@ -284,9 +291,10 @@ try
     calculatedStep_ = lstep;
     plumed_->cmd("setStepLong", &lstep);
 #if GMX_LIB_MPI
-    plumedContext.lambdaForce = 0;
-    plumed_->cmd("setExtraCV lambda", &plumedContext.lambdaState);
-    plumed_->cmd("setExtraCVForce lambda", &plumedContext.lambdaForce);
+    context_.lambdaForce = 0;
+    plumed_->cmd(replex_ && plumedAPIversion_ >= 13 ? "setExtraCV lambda NOEXCHANGE" : "setExtraCV lambda",
+                 &context_.lambdaState);
+    plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
 #endif
     if (globalAtomIndices_.has_value())
     {
@@ -301,7 +309,7 @@ try
     // GREX snapshots and lambda trials read the box after this callback's
     // short-lived input container has gone out of scope. Keep the binding alive.
     copy_mat(forceProviderInput.box_, plumedBox_);
-    plumed_->cmd("setBox", &plumedBox_[0][0]);
+    plumed_->cmd("setBox", plumedBox_);
 
     if (preparedStep_ == lstep)
     {
@@ -403,9 +411,10 @@ try
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
 #if GMX_LIB_MPI
-    plumedContext.lambdaForce = 0;
-    plumed_->cmd("setExtraCV lambda", &plumedContext.lambdaState);
-    plumed_->cmd("setExtraCVForce lambda", &plumedContext.lambdaForce);
+    context_.lambdaForce = 0;
+    plumed_->cmd(replex_ && plumedAPIversion_ >= 13 ? "setExtraCV lambda NOEXCHANGE" : "setExtraCV lambda",
+                 &context_.lambdaState);
+    plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
 #endif
     prepareStepIsCalled_ = true;
     currentStep_         = step;
@@ -440,16 +449,16 @@ bool PlumedForceProvider::applyAfterPotentialEnergy(bool           energyWasComp
 try
 {
 #if GMX_LIB_MPI
-    if (plumedContext.hrexTrial)
+    if (context_.hrexTrial)
         return false;
-    if (plumedContext.hrex && plumedContext.exchangeStep && energyWasComputed)
+    if (context_.hrex && context_.exchangeStep && energyWasComputed)
         plumed_->cmd("GREX cacheLocalUNow", potentialEnergy);
 #endif
 
     auto saveExchangeInputs = [&]()
     {
 #if GMX_LIB_MPI
-        if (replex_ && plumedContext.exchangeStep)
+        if (replex_ && context_.exchangeStep)
         {
             GMX_RELEASE_ASSERT(energyWasComputed && potentialEnergy != nullptr,
                                "Replica exchange requires the physical potential energy");
@@ -459,10 +468,6 @@ try
             plumed_->cmd("setStepLong", &savedStep);
             plumed_->cmd("setEnergy", potentialEnergy);
             plumed_->cmd("GREX savePositions");
-            int needsLambda = 0;
-            plumed_->cmd("isExtraCVNeeded lambda", &needsLambda);
-            if (needsLambda)
-                plumed_->cmd("GREX setLocalInput lambda");
         }
 #endif
     };

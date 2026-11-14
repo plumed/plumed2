@@ -16,7 +16,7 @@ without MPI/OpenMP link flags. This catches missing runtime dependencies that
 an OpenMP-enabled MD host could otherwise hide.
 
 All source versions are pinned in [`versions.json`](versions.json). The installed PLUMED patcher applies,
-reverts and reapplies the distributed `gromacs-2026.0` patch. The revert must
+reverts and reapplies the distributed `gromacs-2026.4` patch. The revert must
 restore the tracked GROMACS sources exactly and remove the top-level wrapper
 files. The patched build uses the installed current `Plumed.h`. GROMACS's bundled
 wrapper remains untouched. Each job installs/selects its own host MPI:

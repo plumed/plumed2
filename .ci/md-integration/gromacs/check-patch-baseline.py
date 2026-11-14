@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 source = Path(sys.argv[1]).resolve()
-patch = Path(__file__).resolve().parents[3] / "patches/gromacs-2026.0.diff"
+patch = Path(__file__).resolve().parents[3] / "patches/gromacs-2026.4.diff"
 originals = sorted(patch.rglob("*.preplumed"))
 if not originals:
     raise RuntimeError("No distributed GROMACS patch originals found")

@@ -655,8 +655,14 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_setValue: {
         CHECK_INIT(initialized,words[0]);
-        plumed_assert(nw==2);
+        plumed_massert(nw==2 || (nw==3 && words[2]=="NOEXCHANGE"),
+                       "setValue expects an input label and optionally NOEXCHANGE");
         setInputValue( std::string(words[1]), 0, 1, val );
+        if(nw==3) {
+          auto* input=actionSet.selectWithLabel<ActionToPutData*>(std::string(words[1]));
+          plumed_massert(input,"NOEXCHANGE requires a PUT input");
+          input->setReplicaLocal();
+        }
       }
       break;
       /* ADDED WITH API=7 */
@@ -1151,9 +1157,15 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_setExtraCV: {
         CHECK_NOTNULL(val,word);
-        plumed_assert(nw==2);
+        plumed_massert(nw==2 || (nw==3 && words[2]=="NOEXCHANGE"),
+                       "setExtraCV expects an input label and optionally NOEXCHANGE");
         if( valueExists(std::string(words[1])) ) {
           setInputValue( std::string(words[1]), 0, 1, val );
+          if(nw==3) {
+            auto* input=actionSet.selectWithLabel<ActionToPutData*>(std::string(words[1]));
+            plumed_massert(input,"NOEXCHANGE requires a PUT input");
+            input->setReplicaLocal();
+          }
         }
       }
       break;

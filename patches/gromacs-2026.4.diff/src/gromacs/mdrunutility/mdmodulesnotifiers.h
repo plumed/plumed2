@@ -308,6 +308,8 @@ struct PlumedInputFilename
     std::optional<std::string> plumedFilename_{};
     //! Whether replica exchange is active (-replex), needed by PLUMED's GREX setup
     bool replex_{};
+    //! Whether general Hamiltonian exchange was requested with -hrex.
+    bool hrex_{};
     //! The input record: after a restart from a checkpoint its init_step is the step from which
     //! the simulation continues, which PLUMED needs (it is read when the module is set up)
     const t_inputrec* inputrec_{};

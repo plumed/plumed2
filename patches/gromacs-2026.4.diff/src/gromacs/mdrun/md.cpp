@@ -550,16 +550,18 @@ void gmx::LegacySimulator::do_md()
                                 pullWork_);
 
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.hrex
+    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex
         && (inputRec_->useMts || shellfc || awh || pullWork_ || enforcedRotation_ || ed))
         gmx_fatal(FARGS,
                   "-hrex trial evaluation does not support MTS, shells, AWH, pulling, rotation or "
                   "essential dynamics");
-    if (gmx::plumedContext.hrex && fr_->forceProviders && fr_->forceProviders->numForceProviders() != 1)
+    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex && fr_->forceProviders
+        && fr_->forceProviders->numForceProviders() != 1)
         gmx_fatal(FARGS,
                   "-hrex prototype supports only the PLUMED force provider; other provider side "
                   "effects are not isolated");
-    if (gmx::plumedContext.hrex && (simulationWork.useGpuUpdate || simulationWork.useGpuDirectCommunication))
+    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex
+        && (simulationWork.useGpuUpdate || simulationWork.useGpuDirectCommunication))
         gmx_fatal(FARGS, "-hrex prototype requires -update cpu and no direct GPU communication");
 #endif
 
@@ -920,7 +922,8 @@ void gmx::LegacySimulator::do_md()
             /* find and set the current lambdas */
             state_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
 #if GMX_LIB_MPI
-            gmx::plumedContext.lambdaState = state_->fep_state;
+            if (gmx::plumedForceProvider)
+                gmx::plumedForceProvider->context().lambdaState = state_->fep_state;
 #endif
 
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
@@ -930,7 +933,8 @@ void gmx::LegacySimulator::do_md()
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
                      && do_per_step(step, replExParams_.exchangeInterval));
 #if GMX_LIB_MPI
-        gmx::plumedContext.exchangeStep = bDoReplEx;
+        if (gmx::plumedForceProvider)
+            gmx::plumedForceProvider->context().exchangeStep = bDoReplEx;
 #endif
 
         if (doSimulatedAnnealing)
@@ -1107,7 +1111,8 @@ void gmx::LegacySimulator::do_md()
 
         /* PLUMED HREX */
 #if GMX_LIB_MPI
-        const bool bHREX = bDoReplEx && gmx::plumedContext.hrex;
+        const bool bHREX =
+                bDoReplEx && gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex;
 #else
         const bool bHREX = false;
 #endif
@@ -1118,7 +1123,7 @@ void gmx::LegacySimulator::do_md()
                 && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep());
 
 #if GMX_LIB_MPI
-        if (gmx::plumedContext.ptr && bHREX)
+        if (gmx::plumedForceProvider && bHREX)
         {
             // gmx_enerdata_t *hrex_enerd;
             int            nlambda = enerd_->foreignLambdaTerms.numLambdas();
@@ -1188,8 +1193,8 @@ void gmx::LegacySimulator::do_md()
                calculate (and e.g. deposit or print) again for the previous step inside do_force() */
             struct TrialGuard
             {
-                TrialGuard() { gmx::plumedContext.hrexTrial = true; }
-                ~TrialGuard() { gmx::plumedContext.hrexTrial = false; }
+                TrialGuard() { gmx::plumedForceProvider->context().hrexTrial = true; }
+                ~TrialGuard() { gmx::plumedForceProvider->context().hrexTrial = false; }
             };
             {
                 TrialGuard trialGuard;

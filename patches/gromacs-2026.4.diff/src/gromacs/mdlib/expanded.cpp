@@ -1454,26 +1454,26 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
     }
 
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.ptr)
+    if (gmx::plumedForceProvider)
     {
-        PLMD::Plumed      plumed(gmx::plumedContext.ptr);
+        PLMD::Plumed      plumed(gmx::plumedForceProvider->plumedHandle());
         std::vector<real> biases(nlim);
         int               exchange = 1;
         plumed.cmd("setExchangeStep", &exchange);
         auto evaluate = [&](int lambdaState)
         {
             long int plumedStep      = step;
-            gmx::plumedContext.lambdaState = lambdaState;
-            gmx::plumedContext.trialEnergy =
-                    gmx::plumedContext.mainRank
+            gmx::plumedForceProvider->context().lambdaState = lambdaState;
+            gmx::plumedForceProvider->context().trialEnergy =
+                    gmx::plumedForceProvider->context().mainRank
                             ? enerd->term[InteractionFunction::PotentialEnergy]
                                       + enerd->foreignLambdaTerms.deltaPotentialEnergy(lambdaState)
                             : 0;
             // Reopen input bindings at the same MD step; do not update history,
             // propagate forces, or write ordinary output for a lambda trial.
             plumed.cmd("setStepLong", &plumedStep);
-            plumed.cmd("setExtraCV lambda", &gmx::plumedContext.lambdaState);
-            plumed.cmd("setEnergy", &gmx::plumedContext.trialEnergy);
+            plumed.cmd("setExtraCV lambda", &gmx::plumedForceProvider->context().lambdaState);
+            plumed.cmd("setEnergy", &gmx::plumedForceProvider->context().trialEnergy);
             plumed.cmd("prepareCalc");
             plumed.cmd("performCalcNoForces");
             real bias = 0;
@@ -1557,7 +1557,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
     lamnew = ChooseNewLambda(
             nlim, expand, dfhist, fep_state, weighted_lamee, p_k, ir->expandedvals->lmc_seed, step);
 #if GMX_LIB_MPI
-    if (gmx::plumedContext.ptr && log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
+    if (gmx::plumedForceProvider && log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
         fprintf(log, "PLUMED_LAMBDA_MOVE step=%" PRId64 " old=%d new=%d\n", step, fep_state, lamnew);
 #endif
 
