@@ -75,31 +75,39 @@ class Pbc {
   Vector shifts[2][2][2][maxshiftsize];
 /// Number of valid entries in each list of shifts
   unsigned nShiftsPerOctant[2][2][2];
-/// True if the lattice is face centered cubic (e.g. the rhombic dodecahedron box,
-/// which is the most compact one for a solute in solution), see fccLatticeVector
-  bool fcc=false;
-/// For an fcc lattice: half of the three edges of its cubic cell (rows), and the inverse.
-/// The lattice vectors are the combinations n of the rows with integer coefficients of even sum
-  Tensor fccHalf;
-  Tensor fccToCubic;
-/// The largest relative deviation of a lattice from fcc for which fccLatticeVector is used
-  static constexpr double fccTolerance=1e-5;
-/// fccLatticeVector leaves to the general search the vectors for which another image is longer by
-/// less than this (in squared length, units of 2 fccHalf^2): it is much larger than
-/// fccTolerance, so the image is the minimum one also for a lattice that is fcc only within
-/// the tolerance, and the vectors with two images at the same distance are treated as in other boxes
-  static constexpr double fccMargin=1e-3;
-/// Finds out if the lattice is fcc and sets fccHalf and fccToCubic. Called by setBox for generic boxes
-  void findFcc();
+/// The two lattices for which the minimum image is found without a search: face centered
+/// cubic (the rhombic dodecahedron box) and body centered cubic (the truncated octahedron box).
+/// They are the most compact boxes for a solute in solution. See fccLatticeVector and bccLatticeVector
+  enum {notCubic,fcc,bcc} cubic=notCubic;
+/// For the fcc and bcc lattices: half of the three edges of the cubic cell (rows), and the inverse.
+/// The lattice vectors are the combinations of the rows with integer coefficients that
+/// have an even sum (fcc) or are all even or all odd (bcc)
+  Tensor cubicHalf;
+  Tensor toCubic;
+/// The largest relative deviation of a lattice from fcc or bcc for which it is taken as such
+  static constexpr double cubicTolerance=1e-5;
+/// fccLatticeVector and bccLatticeVector leave to the general search the vectors for which
+/// another image is longer by less than this (in squared length, units of 2 cubicHalf^2).
+/// It is much larger than cubicTolerance, so the image is the minimum one also for a lattice
+/// that is cubic only within the tolerance, and the vectors with two images at the same
+/// distance are treated as in the other boxes
+  static constexpr double cubicMargin=1e-3;
+/// Finds out if the lattice is fcc or bcc and sets cubic, cubicHalf and toCubic. Called by setBox for generic boxes
+  void findCubic();
 /// Minimum image of a vector d in an fcc lattice, with the algorithm for the closest point
 /// of the lattice D3 (J. H. Conway and N. J. A. Sloane, IEEE Trans. Inf. Theory 28, 227 (1982)):
 /// in the coordinates of the cubic cell, round to the closest integers and, if their sum is
 /// odd, round the other way the coordinate that was farther from an integer. There is no
 /// search, so it is faster than searchImage for the vectors that are not short.
 /// This function finds the lattice vector to be subtracted, as the three coefficients of
-/// the rows of fccHalf. It returns false in the rare cases that must be left to searchImage
+/// the rows of cubicHalf. It returns false in the rare cases that must be left to searchImage
   template <typename T>
   bool fccLatticeVector(const VectorTyped<T,3>& d, int& n0, int& n1, int& n2) const;
+/// The same for a bcc lattice, where the closest lattice point is the closer of two:
+/// the one with the closest even integers and the one with the closest odd integers
+/// as coordinates in the cubic cell
+  template <typename T>
+  bool bccLatticeVector(const VectorTyped<T,3>& d, int& n0, int& n1, int& n2) const;
 /// Changes at every setBox, and is unique among all the Pbc objects: a copy of a Pbc
 /// has the same version as the original until one of the two is changed
   std::uint64_t version=0;

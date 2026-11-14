@@ -9,16 +9,17 @@
 using namespace PLMD;
 
 // The minimum image in a face centered cubic lattice (the rhombic dodecahedron box)
-// is found without a search. Here it is compared with the full search, for the
-// boxes written as GROMACS does (also with the precision of a float and of a gro file),
-// and it is checked that boxes that are not fcc are not taken for it.
+// and in a body centered cubic lattice (the truncated octahedron box) is found without
+// a search. Here it is compared with the full search, for the boxes written as GROMACS
+// does (also with the precision of a float and of a gro file), and it is checked that
+// boxes that are not fcc or bcc are not taken for them.
 
-static Tensor makeBox(int type,double d,bool& isfcc) {
+static Tensor makeBox(int type,double d) {
   const double s2=std::sqrt(2.0), s3=std::sqrt(3.0), s6=std::sqrt(6.0);
   const Tensor square(d,0,0,0,d,0,d/2,d/2,d*s2/2);
   const Tensor hexagon(d,0,0,d/2,d*s3/2,0,d/2,d*s3/6,d*s6/3);
+  const Tensor octahedron(d,0,0,d/3,2*s2*d/3,0,-d/3,s2*d/3,s6*d/3);
   Tensor box;
-  isfcc=true;
   switch(type) {
   case 0:
     box=square;
@@ -48,35 +49,54 @@ static Tensor makeBox(int type,double d,bool& isfcc) {
     // not fcc: one vector is longer by 0.01%
     box=hexagon;
     box[2][2]*=1.0001;
-    isfcc=false;
     break;
   case 6:
-    // not fcc: truncated octahedron (bcc)
-    box=Tensor(d,0,0,d/3,2*s2*d/3,0,-d/3,s2*d/3,s6*d/3);
-    isfcc=false;
+    box=octahedron;
+    break;
+  case 7:
+    // as stored in single precision
+    box=octahedron;
+    for(int i=0; i<3; i++) for(int j=0; j<3; j++) {
+        box[i][j]=static_cast<float>(box[i][j]);
+      }
+    break;
+  case 8:
+    // as written in a gro file
+    box=octahedron;
+    for(int i=0; i<3; i++) for(int j=0; j<3; j++) {
+        box[i][j]=std::round(box[i][j]*1e5)/1e5;
+      }
+    break;
+  case 9:
+    // other lattice vectors for the same lattice
+    box=matmul(Tensor(1,0,0,2,1,0,-3,1,1),octahedron);
+    break;
+  case 10:
+    // not bcc: one vector is longer by 0.01%
+    box=octahedron;
+    box[2][2]*=1.0001;
     break;
   default:
-    // not fcc: three vectors of the same length
+    // neither: three vectors of the same length
     box=Tensor(d,0,0,0.2*d,std::sqrt(0.96)*d,0,0,0,d);
-    isfcc=false;
   }
   return box;
 }
 
 int main() {
   const char* names[]= {"dodecahedron-xy-square","dodecahedron-xy-hexagon","dodecahedron-float","dodecahedron-gro",
-                        "fcc-other-vectors","almost-fcc","truncated-octahedron","equal-lengths"
+                        "fcc-other-vectors","almost-fcc","octahedron","octahedron-float","octahedron-gro",
+                        "bcc-other-vectors","almost-bcc","equal-lengths"
                        };
   std::ofstream ofs("logfile");
   Random r;
   r.setSeed(-20);
-  for(int type=0; type<8; type++) {
+  for(int type=0; type<12; type++) {
     int notminimal=0, applydiffers=0, floatwrong=0;
     long nosearch=0, nlong=0;
     for(int ibox=0; ibox<20; ibox++) {
       const double d=0.5+10.0*r.U01();
-      bool isfcc;
-      const Tensor box=makeBox(type,d,isfcc);
+      const Tensor box=makeBox(type,d);
       Pbc pbc;
       pbc.setBox(box);
       std::vector<Vector> list;

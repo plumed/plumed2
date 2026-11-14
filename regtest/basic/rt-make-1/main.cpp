@@ -90,9 +90,9 @@ int run(int boxtype,double* av_nshifts=NULL){
       Vector full(fast);
       pbc.fullSearch(full);
 // compare
-// in the fcc lattice the image is found by subtracting a lattice vector from v,
+// in the bcc and fcc lattices the image is found by subtracting a lattice vector from v,
 // and not from the vector brought inside the cell: the rounding is that of v
-      if(std::fabs(modulo2(fast)-modulo2(full))>(boxtype==4?1e-12:1e-15)) failures++;
+      if(std::fabs(modulo2(fast)-modulo2(full))>((boxtype==3 || boxtype==4)?1e-12:1e-15)) failures++;
     }
   }
   if(av_nshifts) *av_nshifts=double(nshifts)/double(nbox*nvec);
@@ -111,10 +111,10 @@ int main(){
     ofs<<"Box type "<<type<<"\n";
     ofs<<"Failures "<<err<<"\n";
     ofs.precision(1);
-    if(type!=4) {
+    if(type!=3 && type!=4) {
       ofs<<"Shifts   "<<nsh<<"\n\n";
     } else {
-      // in the fcc lattice the image is found without a search, but for the vectors
+      // in the bcc and fcc lattices the image is found without a search, but for the vectors
       // that are close to having two images at the same distance (many here, where
       // components are often zero): the number of shifts depends on the rounding
       ofs<<"Shifts below 0.1 ";

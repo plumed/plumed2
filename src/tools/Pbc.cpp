@@ -145,18 +145,18 @@ void Pbc::buildShifts() {
       }
 }
 
-void Pbc::findFcc() {
-  fcc=false;
-  // The three shortest vectors of an fcc lattice (the reduced ones) join nearest neighbours
+void Pbc::findCubic() {
+  cubic=notCubic;
+  // The three shortest vectors of an fcc or bcc lattice (the reduced ones) join nearest neighbours
   const double d2=modulo2(reduced.getRow(0));
-  const double tol=fccTolerance*d2;
+  const double tol=cubicTolerance*d2;
   if(std::fabs(modulo2(reduced.getRow(1))-d2)>tol || std::fabs(modulo2(reduced.getRow(2))-d2)>tol) {
     return;
   }
-  // There are 12 nearest neighbours, and the 6 second neighbours (at sqrt(2) times their
-  // distance) are at the ends of the edges of the cubic cell
-  unsigned nnearest=0, nedges=0;
-  Vector edges[6];
+  // The second neighbours are at the ends of the six edges of the cubic cell.
+  // fcc: 12 nearest neighbours, edges sqrt(2) times longer. bcc: 8, edges sqrt(4/3) times longer
+  unsigned nnearest=0, nfcc=0, nbcc=0;
+  Vector fccEdges[6], bccEdges[6];
   for(int i=-2; i<=2; ++i)
     for(int j=-2; j<=2; ++j)
       for(int k=-2; k<=2; ++k) {
@@ -165,13 +165,23 @@ void Pbc::findFcc() {
         if(std::fabs(v2-d2)<=tol) {
           ++nnearest;
         } else if(std::fabs(v2-2.0*d2)<=2.0*tol) {
-          if(nedges==6) {
-            return;
+          if(nfcc<6) {
+            fccEdges[nfcc]=v;
           }
-          edges[nedges++]=v;
+          ++nfcc;
+        } else if(std::fabs(v2-4.0/3.0*d2)<=2.0*tol) {
+          if(nbcc<6) {
+            bccEdges[nbcc]=v;
+          }
+          ++nbcc;
         }
       }
-  if(nnearest!=12 || nedges!=6) {
+  const Vector* edges=nullptr;
+  if(nnearest==12 && nfcc==6) {
+    edges=fccEdges;
+  } else if(nnearest==8 && nbcc==6) {
+    edges=bccEdges;
+  } else {
     return;
   }
   // three orthogonal edges
@@ -190,32 +200,37 @@ void Pbc::findFcc() {
   if(ib==6 || ic==6) {
     return;
   }
-  fccHalf.setRow(0,0.5*a);
-  fccHalf.setRow(1,0.5*edges[ib]);
-  fccHalf.setRow(2,0.5*edges[ic]);
-  fccToCubic=inverse(fccHalf);
+  cubicHalf.setRow(0,0.5*a);
+  cubicHalf.setRow(1,0.5*edges[ib]);
+  cubicHalf.setRow(2,0.5*edges[ic]);
+  toCubic=inverse(cubicHalf);
   // The lattice must be the set of the combinations of the half edges with integer
-  // coefficients of even sum: this is checked on the reduced vectors and on the volume
-  // (that set has one point every two cells of the half edges)
+  // coefficients of even sum (fcc), or all even or all odd (bcc): this is checked on the
+  // reduced vectors and on the volume (one lattice point every 2 or 4 cells of the half edges)
+  const bool isfcc=(edges==fccEdges);
   for(unsigned i=0; i<3; ++i) {
-    const Vector u=matmul(reduced.getRow(i),fccToCubic);
-    double sum=0.0;
+    const Vector u=matmul(reduced.getRow(i),toCubic);
+    int n[3];
     for(unsigned k=0; k<3; ++k) {
-      const double n=std::round(u[k]);
-      if(std::fabs(u[k]-n)>1e-8) {
+      const double r=std::round(u[k]);
+      if(std::fabs(u[k]-r)>1e-8) {
         return;
       }
-      sum+=n;
+      n[k]=static_cast<int>(r);
     }
-    if(std::fmod(std::fabs(sum),2.0)!=0.0) {
+    if(isfcc) {
+      if((n[0]+n[1]+n[2])%2!=0) {
+        return;
+      }
+    } else if((n[0]-n[1])%2!=0 || (n[0]-n[2])%2!=0) {
       return;
     }
   }
   const double volume=std::fabs(reduced.determinant());
-  if(std::fabs(2.0*std::fabs(fccHalf.determinant())-volume)>1e-8*volume) {
+  if(std::fabs((isfcc?2.0:4.0)*std::fabs(cubicHalf.determinant())-volume)>1e-8*volume) {
     return;
   }
-  fcc=true;
+  cubic=(isfcc?fcc:bcc);
 }
 
 void Pbc::fullSearch(Vector&d)const {
@@ -254,7 +269,7 @@ void Pbc::setBox(const Tensor&b) {
   constexpr double boxEpsilon=1e-28;
 
   type=unset;
-  fcc=false;
+  cubic=notCubic;
   double det=box.determinant();
   if(det*det<boxEpsilon) {
     return;
@@ -289,7 +304,7 @@ void Pbc::setBox(const Tensor&b) {
     LatticeReduction::reduce(reduced);
     invReduced=inverse(reduced);
     buildShifts();
-    findFcc();
+    findCubic();
   }
 
 }
@@ -315,7 +330,7 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
 
 template <typename T>
 PLUMED_PBC_INLINE bool Pbc::fccLatticeVector(const VectorTyped<T,3>& d, int& m0, int& m1, int& m2) const {
-  const VectorTyped<T,3> u=matmul(d,fccToCubic);
+  const VectorTyped<T,3> u=matmul(d,toCubic);
   {
     // round to nearest without branches or library calls. With this offset the conversion
     // to int is valid up to 2^30 (as in the other boxes, there is no check: a vector
@@ -328,22 +343,22 @@ PLUMED_PBC_INLINE bool Pbc::fccLatticeVector(const VectorTyped<T,3>& d, int& m0,
     const double f0=u[0]-n0, f1=u[1]-n1, f2=u[2]-n2;
     const double a0=std::fabs(f0), a1=std::fabs(f1), a2=std::fabs(f2);
     // The image is accepted if the second closest lattice point is farther by more than
-    // 2*fccMargin in squared length. No minimum or maximum is used, since compilers
+    // 2*cubicMargin in squared length. No minimum or maximum is used, since compilers
     // may turn them into branches that cannot be predicted
-    const double limit=1.0-fccMargin;
+    const double limit=1.0-cubicMargin;
     bool ok;
     if((n0+n1+n2)&1) {
       // odd sum: the worst coordinate is rounded the other way. The second closest point
       // has another coordinate, or all of them, rounded the other way
       if(a0>=a1 && a0>=a2) {
         n0+=(f0>=0?1:-1);
-        ok=(a0-a1>fccMargin) & (a0-a2>fccMargin) & (a1+a2<limit);
+        ok=(a0-a1>cubicMargin) & (a0-a2>cubicMargin) & (a1+a2<limit);
       } else if(a1>=a2) {
         n1+=(f1>=0?1:-1);
-        ok=(a1-a0>fccMargin) & (a1-a2>fccMargin) & (a0+a2<limit);
+        ok=(a1-a0>cubicMargin) & (a1-a2>cubicMargin) & (a0+a2<limit);
       } else {
         n2+=(f2>=0?1:-1);
-        ok=(a2-a0>fccMargin) & (a2-a1>fccMargin) & (a0+a1<limit);
+        ok=(a2-a0>cubicMargin) & (a2-a1>cubicMargin) & (a0+a1<limit);
       }
     } else {
       // even sum: the second closest point has two coordinates rounded the other way
@@ -358,15 +373,47 @@ PLUMED_PBC_INLINE bool Pbc::fccLatticeVector(const VectorTyped<T,3>& d, int& m0,
 }
 
 template <typename T>
+PLUMED_PBC_INLINE bool Pbc::bccLatticeVector(const VectorTyped<T,3>& d, int& m0, int& m1, int& m2) const {
+  const VectorTyped<T,3> u=matmul(d,toCubic);
+  // the closest even integers, rounding as in fccLatticeVector
+  constexpr double offset=1073741824.0;
+  int n0=2*(static_cast<int>(0.5*u[0]+(offset+0.5))-1073741824);
+  int n1=2*(static_cast<int>(0.5*u[1]+(offset+0.5))-1073741824);
+  int n2=2*(static_cast<int>(0.5*u[2]+(offset+0.5))-1073741824);
+  const double f0=u[0]-n0, f1=u[1]-n1, f2=u[2]-n2;
+  // distances from the even integers, between 0 and 1: those from the closest odd integers are 1-a
+  const double a0=std::fabs(f0), a1=std::fabs(f1), a2=std::fabs(f2);
+  const double sum=a0+a1+a2;
+  // The squared distance of the odd point is larger than that of the even one by 3-2*sum.
+  // The second closest lattice point is the other of the two, or the chosen one with a
+  // coordinate moved by two: the image is accepted as in fccLatticeVector
+  bool ok;
+  if(sum<1.5) {
+    const double limit=1.0-0.5*cubicMargin;
+    ok=(sum<1.5-cubicMargin) & (a0<limit) & (a1<limit) & (a2<limit);
+  } else {
+    n0+=(f0>=0?1:-1);
+    n1+=(f1>=0?1:-1);
+    n2+=(f2>=0?1:-1);
+    const double limit=0.5*cubicMargin;
+    ok=(sum>1.5+cubicMargin) & (a0>limit) & (a1>limit) & (a2>limit);
+  }
+  m0=n0;
+  m1=n1;
+  m2=n2;
+  return ok;
+}
+
+template <typename T>
 PLUMED_PBC_INLINE VectorTyped<T,3> Pbc::searchImage(const VectorTyped<T,3>& d, int* nshifts) const {
-  if(fcc) {
+  if(cubic!=notCubic) {
     int n0, n1, n2;
-    if(fccLatticeVector(d,n0,n1,n2)) {
+    if(cubic==fcc ? fccLatticeVector(d,n0,n1,n2) : bccLatticeVector(d,n0,n1,n2)) {
       // a vector that is already the minimum image, as most of the short ones, is not changed
       if((n0|n1|n2)==0) {
         return d;
       }
-      return d-matmul(VectorTyped<T,3>(n0,n1,n2),fccHalf);
+      return d-matmul(VectorTyped<T,3>(n0,n1,n2),cubicHalf);
     }
   }
   VectorTyped<T,3> s=matmul(d,invReduced);
