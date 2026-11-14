@@ -3,6 +3,11 @@ name: CI
 on:
   workflow_call:
     inputs:
+      full_matrix:
+        description: Build all platforms (nightly, manual and release runs)
+        type: boolean
+        required: false
+        default: true
       upload_test_packages:
         description: Publish a dated test snapshot after successful package checks
         type: boolean
@@ -24,7 +29,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15, macos-15-intel]
+        # Keep real module/plugin packaging coverage on every push and PR.
+        # Other architectures and macOS run nightly, manually and for releases.
+        os: ${{ fromJSON(inputs.full_matrix && '["ubuntu-latest", "ubuntu-24.04-arm", "macos-15", "macos-15-intel"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6

@@ -120,5 +120,6 @@ jobs:
     if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/condaWF.yml
     with:
+      full_matrix: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}
       upload_test_packages: ${{ github.event_name == 'workflow_dispatch' && inputs.conda_test_upload || false }}
     secrets: inherit
