@@ -1,0 +1,9 @@
+type=driver
+plumed_modules=adjmat
+# The link cells of CONTACT_MATRIX take the periodic image of an atom from its cell
+# when the box is at least three cutoffs wide: the result must be the same as COORDINATION.
+# Frames: rhombic dodecahedron, orthorhombic, skewed, a box that is just large enough
+# (five cells of half the cutoff per direction), and one that is too small
+# (minimum image distances are used there).
+# One atom out of three is in another periodic image
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.3f"

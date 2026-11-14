@@ -12,11 +12,11 @@ Shifts   0.4
 
 Box type 3
 Failures 0
-Shifts   0.7
+Shifts below 0.1 true
 
 Box type 4
 Failures 0
-Shifts in between 0.9 and 1.3 true
+Shifts below 0.1 true
 
 Box type 5
 Failures 0
