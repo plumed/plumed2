@@ -253,6 +253,54 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
 #undef LINKC_PBC
 }
 
+bool LinkCells::cellsFixImages() const {
+  return nopbc || ( ncells[0]>=3 && ncells[1]>=3 && ncells[2]>=3 );
+}
+
+Vector LinkCells::wrapPosition( const Vector& pos ) const {
+  if( nopbc ) {
+    return pos;
+  }
+  // the same operations used in findCellUnchecked
+  Vector fpos=mypbc.realToScaled( pos );
+  for(unsigned j=0; j<3; ++j) {
+    fpos[j]=Tools::pbc(fpos[j]);
+  }
+  return mypbc.scaledToReal( fpos );
+}
+
+unsigned LinkCells::getShiftedCells( const std::array<unsigned,3>& celn,
+                                     std::array<ShiftedCell,27>& cells,
+                                     const bool usePbc ) const {
+  plumed_dbg_assert( cellsFixImages() );
+  // the cell (wrapped in the box) and the number of boxes it was moved by
+  int first[3], last[3];
+  for(unsigned k=0; k<3; ++k) {
+    first[k]=min_cell(celn[k],ncells[k],usePbc);
+    last[k]=max_cell(celn[k],ncells[k],usePbc);
+  }
+  const Tensor& box=mypbc.getBox();
+  const int nc[3]= {static_cast<int>(ncells[0]),static_cast<int>(ncells[1]),static_cast<int>(ncells[2])};
+  unsigned n=0;
+  for(int nx=first[0]; nx<last[0]; ++nx) {
+    const int sx=(nx<0)?-1:((nx>=nc[0])?1:0);
+    for(int ny=first[1]; ny<last[1]; ++ny) {
+      const int sy=(ny<0)?-1:((ny>=nc[1])?1:0);
+      for(int nz=first[2]; nz<last[2]; ++nz) {
+        const int sz=(nz<0)?-1:((nz>=nc[2])?1:0);
+        cells[n].cell=(nx-sx*nc[0])*nstride[0]+(ny-sy*nc[1])*nstride[1]+(nz-sz*nc[2])*nstride[2];
+        if( nopbc ) {
+          cells[n].shift.zero();
+        } else {
+          cells[n].shift=double(sx)*box.getRow(0)+double(sy)*box.getRow(1)+double(sz)*box.getRow(2);
+        }
+        ++n;
+      }
+    }
+  }
+  return n;
+}
+
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos,
     std::vector<unsigned>& cell_list,
     unsigned& natomsper,
@@ -390,6 +438,17 @@ void LinkCells::createNeighborList( unsigned nat,
       posOfIndex[neigh_ind[j]] = j;
     }
   }
+  // When the cell of a candidate fixes its periodic image, the minimum image distance
+  // is not needed for each candidate (they are many more than the atoms within the cutoff):
+  // the candidates are wrapped in the box once, and stored in the order of the cells
+  const bool useShifts = useCutoff && cellsFixImages();
+  std::vector<Vector> cellpos;
+  if( useShifts ) {
+    cellpos.resize( innerCollection.lcell_lists.size() );
+    for(std::size_t j=0; j<cellpos.size(); ++j) {
+      cellpos[j] = wrapPosition( neigh_pos[posOfIndex[innerCollection.lcell_lists[j]]] );
+    }
+  }
   // Each central atom writes its own slots of nlist, so the loop is parallel
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
@@ -402,6 +461,33 @@ void LinkCells::createNeighborList( unsigned nat,
     std::vector<unsigned> cells_required( getNumberOfCells() );
     #pragma omp for schedule(static)
     for(unsigned i=0; i<pos.size(); ++i) {
+      const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
+      if( useShifts ) {
+        std::array<ShiftedCell,27> cells;
+        const unsigned ncells_found = getShiftedCells( findMyCell( pos[i] ), cells );
+        const Vector mypos = wrapPosition( pos[i] );
+        const unsigned myind = ind[i];
+        unsigned natoms=1;
+        indices[0] = myind;
+        for(unsigned k=0; k<ncells_found; ++k) {
+          const Vector shift = cells[k].shift - mypos;
+          const std::size_t start = innerCollection.lcell_starts[cells[k].cell];
+          const std::size_t end = start + innerCollection.lcell_tots[cells[k].cell];
+          for(std::size_t j=start; j<end; ++j) {
+            const Vector d = cellpos[j] + shift;
+            const unsigned myatom = innerCollection.lcell_lists[j];
+            if( d.modulo2()<=cutoff2 && myatom!=myind ) {
+              indices[natoms] = myatom;
+              natoms++;
+            }
+          }
+        }
+        nlist[tind[i]] = natoms;
+        std::copy(indices.begin(),
+                  indices.begin()+natoms,
+                  nlist.begin()+lstart);
+        continue;
+      }
       unsigned ncells_required=0;
       addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
       unsigned natoms=1;
@@ -411,7 +497,6 @@ void LinkCells::createNeighborList( unsigned nat,
                             natoms,
                             indices,
                             ind[i]);
-      const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
       if( natoms>neigh_ind.size() ) {
         // the cells wrap around the box: the same atom was found more than once,
         // use the whole list of candidates instead

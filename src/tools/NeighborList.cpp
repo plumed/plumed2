@@ -230,10 +230,22 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned cellsPerRank=(ncells+stride-1)/stride;
     const unsigned cstart=std::min(rank*cellsPerRank,ncells);
     const unsigned cend=std::min(cstart+cellsPerRank,ncells);
+    // When the cell of an atom fixes its periodic image, the minimum image distance is not
+    // needed for each candidate pair (they are many more than the pairs within the cutoff):
+    // the atoms are wrapped in the box once, and each cell comes with its lattice vector
+    const bool useShifts=cells.cellsFixImages();
+    std::vector<Vector> wrapped;
+    if(useShifts) {
+      wrapped.resize(positions.size());
+      for(std::size_t i=0; i<positions.size(); ++i) {
+        wrapped[i]=cells.wrapPosition(positions[i]);
+      }
+    }
     #pragma omp parallel num_threads(nt)
     {
       auto & private_flat_nl=thread_flat_nl[OpenMP::getThreadNum()];
       std::vector<unsigned> cells_required(27);
+      std::array<LinkCells::ShiftedCell,27> shifted;
       #pragma omp for schedule(static) nowait
       for(unsigned c=cstart; c<cend; ++c) {
         auto atomsInC= listA.getCellIndexes(c);
@@ -241,6 +253,24 @@ void NeighborList::update(const std::vector<Vector>& positions) {
           continue;
         }
         auto cell = cells.findMyCell(c);
+        if(useShifts) {
+          const unsigned nshifted=cells.getShiftedCells(cell,shifted,do_pbc_);
+          for (auto A : atomsInC) {
+            for (unsigned cb=0; cb<nshifted; ++cb) {
+              const Vector shift=shifted[cb].shift-wrapped[A];
+              for (auto B : candidates.getCellIndexes(shifted[cb].cell)) {
+                if(!twoLists && B<=A) {
+                  continue;
+                }
+                if(modulo2(wrapped[B]+shift)<=d2) {
+                  private_flat_nl.push_back(A);
+                  private_flat_nl.push_back(B);
+                }
+              }
+            }
+          }
+          continue;
+        }
         unsigned ncells_required=0;
         cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
         for (auto A : atomsInC) {
