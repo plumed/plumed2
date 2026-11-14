@@ -58,8 +58,6 @@ struct ColvarInput {
   }
   static ColvarInput createColvarInput( unsigned m, const std::vector<Vector>& p, const Colvar* colv );
   static void setBoxDerivativesNoPbc( const ColvarInput<T>& inpt, ColvarOutput<T>& out );
-  /// same as setBoxDerivativesNoPbc but with no extra memory allocations
-  static void setBoxDerivativesNoPbc_inplace( const ColvarInput<T>& inpt, ColvarOutput<T>& out );
 };
 
 template <typename T>
@@ -77,43 +75,29 @@ ColvarInput<T>  ColvarInput<T>::createColvarInput( unsigned m,
 
 template <typename T>
 void  ColvarInput<T>::setBoxDerivativesNoPbc( const ColvarInput<T>& inpt, ColvarOutput<T>& out ) {
-  //Both version passes the tests, we should discuss wicht onw might be better
-
-  unsigned nat=inpt.pos.size();
+  // the virial is accumulated in local variables: building a Tensor for each atom
+  // and subtracting it made the loop stall on the store-to-load forwarding of the temporary.
+  // The sums are in double, as before, also when T is float
+  const unsigned nat=inpt.pos.size();
   for(unsigned i=0; i<out.ncomponents; ++i) {
-    Tensor v;
-    v.zero();
+    double v00=0, v01=0, v02=0, v10=0, v11=0, v12=0, v20=0, v21=0, v22=0;
     for(unsigned j=0; j<nat; j++) {
-      v-=Tensor(Vector(inpt.pos[j][0],inpt.pos[j][1],inpt.pos[j][2]),
-                out.derivs.getAtomDerivatives(i,j));
+      const auto deriv=out.derivs.getView(i,j);
+      const double x=inpt.pos[j][0], y=inpt.pos[j][1], z=inpt.pos[j][2];
+      v00-=x*deriv[0];
+      v01-=x*deriv[1];
+      v02-=x*deriv[2];
+      v10-=y*deriv[0];
+      v11-=y*deriv[1];
+      v12-=y*deriv[2];
+      v20-=z*deriv[0];
+      v21-=z*deriv[1];
+      v22-=z*deriv[2];
     }
-    out.virial.set( i, v );
+    out.virial.set( i, Tensor(v00,v01,v02,v10,v11,v12,v20,v21,v22) );
   }
 }
 
-template <typename T>
-void  ColvarInput<T>::setBoxDerivativesNoPbc_inplace( const ColvarInput<T>& inpt, ColvarOutput<T>& out ) {
-  //now with no extra allocated memory:
-  unsigned nat=inpt.pos.size();
-  for(unsigned i=0; i<out.ncomponents; ++i) {
-    auto v = out.virial.getView(i);
-    LoopUnroller<9>::_zero(v.data());
-    for(unsigned j=0; j<nat; j++) {
-      const auto deriv =  out.derivs.getView(i,j);
-      v[0] -= inpt.pos[j][0]*deriv[0];
-      v[1] -= inpt.pos[j][0]*deriv[1];
-      v[2] -= inpt.pos[j][0]*deriv[2];
-
-      v[3] -= inpt.pos[j][1]*deriv[0];
-      v[4] -= inpt.pos[j][1]*deriv[1];
-      v[5] -= inpt.pos[j][1]*deriv[2];
-
-      v[6] -= inpt.pos[j][2]*deriv[0];
-      v[7] -= inpt.pos[j][2]*deriv[1];
-      v[8] -= inpt.pos[j][2]*deriv[2];
-    }
-  }
-}
 } // namespace colvar
 } //namespace PLMD
 #endif // __PLUMED_colvar_ColvarInput_h
