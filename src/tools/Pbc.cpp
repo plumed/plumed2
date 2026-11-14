@@ -27,6 +27,7 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 
@@ -35,6 +36,20 @@ Pbc::Pbc():
   nShiftsPerOctant{} {
   box.zero();
   invBox.zero();
+}
+
+namespace {
+/// Same value as Tools::pbc in double precision, without the branch on the sign of the
+/// shifted argument: a loop over many values can then be vectorized by the compiler.
+/// In scalar code (e.g. the scaled coordinates of generic boxes) the branch is faster.
+inline double pbcNoBranch(double x) {
+  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    x+=100.0;
+    return x-int(x+std::copysign(0.5,x));
+  } else {
+    return Tools::pbc(x);
+  }
+}
 }
 
 void Pbc::toACCDevice()const  {
@@ -267,7 +282,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
     for(unsigned k=0; k<max_index; ++k) {
       for(int i=0; i<3; i++) {
         double& value=values[std::size_t(k)*3+i];
-        value=Tools::pbc(value*inverseDiagonal[i])*diagonal[i];
+        value=pbcNoBranch(value*inverseDiagonal[i])*diagonal[i];
       }
     }
 #endif
