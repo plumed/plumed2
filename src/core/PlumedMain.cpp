@@ -1727,7 +1727,7 @@ void PlumedMain::update() {
   for(const auto & p : actionSet) {
     p->beforeUpdate();
     if(p->isActive() && p->checkUpdate() && updateFlagsTop()) {
-      ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+      ActionWithValue* av=p->castToActionWithValue();
       if( av && av->calculateOnUpdate() ) {
         p->prepare();
         if(!hasArgumentWithNoValues(p.get())) {

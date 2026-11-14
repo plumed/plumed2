@@ -25,6 +25,7 @@
 #include "LatticeReduction.h"
 #include "OpenMP.h"
 #include <array>
+#include <atomic>
 #include <cmath>
 
 namespace PLMD {
@@ -166,6 +167,8 @@ void Pbc::fullSearch(Vector&d)const {
 }
 
 void Pbc::setBox(const Tensor&b) {
+  static std::atomic<std::uint64_t> lastVersion{0};
+  version=++lastVersion;
   box=b;
 // detect type:
   constexpr double boxEpsilon=1e-28;
@@ -550,8 +553,10 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
   // shift of each link, in lattice vectors, from the original positions (a shift of the
   // parent does not change the minimum image); it is stored in the child
   std::vector<std::array<int,3> > shift(pos.size(), std::array<int,3> {0,0,0});
-  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pos))
-  for(std::size_t l=0; l<nlinks; ++l) {
+  // opening an OpenMP region costs microseconds even with one thread, and this is called
+  // for every action at every step: the loops are run in a region only with more than one thread
+  const unsigned nt=OpenMP::getGoodNumThreads(pos);
+  auto linkShift=[&](const std::size_t l) {
     const Vector & a = pos[par(l)];
     const Vector & b = pos[chi(l)];
     const double d0=b[0]-a[0], d1=b[1]-a[1], d2=b[2]-a[2];
@@ -578,6 +583,16 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
     sh[0]=-static_cast<int>(n0);
     sh[1]=-static_cast<int>(n1);
     sh[2]=-static_cast<int>(n2);
+  };
+  if(nt>1) {
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t l=0; l<nlinks; ++l) {
+      linkShift(l);
+    }
+  } else {
+    for(std::size_t l=0; l<nlinks; ++l) {
+      linkShift(l);
+    }
   }
   // total shift of each atom: exact integer sums, parents before children
   for(std::size_t l=0; l<nlinks; ++l) {
@@ -587,13 +602,22 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
     sc[1]+=sp[1];
     sc[2]+=sp[2];
   }
-  #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(pos))
-  for(std::size_t i=0; i<pos.size(); ++i) {
+  auto move=[&](const std::size_t i) {
     const auto & t = shift[i];
     if(t[0]!=0 || t[1]!=0 || t[2]!=0) {
       for(unsigned k=0; k<3; ++k) {
         pos[i][k]+=t[0]*box(0,k)+t[1]*box(1,k)+t[2]*box(2,k);
       }
+    }
+  };
+  if(nt>1) {
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<pos.size(); ++i) {
+      move(i);
+    }
+  } else {
+    for(std::size_t i=0; i<pos.size(); ++i) {
+      move(i);
     }
   }
 }

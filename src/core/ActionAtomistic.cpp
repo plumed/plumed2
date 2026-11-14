@@ -109,6 +109,7 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   }
 
   atom_value_ind_grouped.clear();
+  massesAndChargesRetrieved=false;
 
   if(atom_value_ind.size()>0) {
     auto prev_nn=atom_value_ind[0].first;
@@ -406,7 +407,10 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     plumed_assert(ptr); // needed for following calls, see #1046
     PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca );
-    actionPbc=pbca->pbc;
+    // the copy is needed only when the box changed (or when this action changed its copy, e.g. with changeBox)
+    if( actionPbc.getVersion()!=pbca->pbc.getVersion() ) {
+      actionPbc=pbca->pbc;
+    }
   }
   if( donotretrieve || indexes.size()==0 ) {
     return;
@@ -427,26 +431,42 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
   } else if( (chargev[0]->getPntrToAction())->getName()=="CONSTANT" ) {
     chargesWereSet=true;  // Read masses from PDB file
   }
+  // masses and charges are usually constant: copy them only when they can have changed
+  bool constantMassesAndCharges=true;
+  for(const auto & a : atom_value_ind_grouped) {
+    if( !masv[a.first]->isConstant() || !chargev[a.first]->isConstant() ) {
+      constantMassesAndCharges=false;
+      break;
+    }
+  }
+  const bool copyMassesAndCharges=!(massesAndChargesRetrieved && constantMassesAndCharges);
   unsigned j = 0;
-
-
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
     auto & xp=xpos[nn]->data;
     auto & yp=ypos[nn]->data;
     auto & zp=zpos[nn]->data;
-    auto & ch=chargev[nn]->data;
-    auto & ma=masv[nn]->data;
-    for(const auto & kk : a.second) {
-      actionPositions[j][0] = xp[kk];
-      actionPositions[j][1] = yp[kk];
-      actionPositions[j][2] = zp[kk];
-      charges[j] = ch[kk];
-      masses[j] = ma[kk];
-      j++;
+    if( copyMassesAndCharges ) {
+      auto & ch=chargev[nn]->data;
+      auto & ma=masv[nn]->data;
+      for(const auto & kk : a.second) {
+        actionPositions[j][0] = xp[kk];
+        actionPositions[j][1] = yp[kk];
+        actionPositions[j][2] = zp[kk];
+        charges[j] = ch[kk];
+        masses[j] = ma[kk];
+        j++;
+      }
+    } else {
+      for(const auto & kk : a.second) {
+        actionPositions[j][0] = xp[kk];
+        actionPositions[j][1] = yp[kk];
+        actionPositions[j][2] = zp[kk];
+        j++;
+      }
     }
   }
-
+  massesAndChargesRetrieved=constantMassesAndCharges;
 }
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
