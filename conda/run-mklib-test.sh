@@ -17,6 +17,16 @@ grep -q 'install plumed-mklib' "$task/missing.log"
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge "plumed-mklib=$VERSION"
 cmp "$kernel" "$task/kernel-before"
 conda install -y -p "$prefix" --override-channels -c local -c conda-forge "plumed-ext-ves=$VERSION" py-plumed python
+if [[ $(uname) == Darwin ]]; then
+  # conda hardlinks the toolchain executables to its package cache. dyld can then
+  # resolve ld64's @loader_path/../lib through the cache hardlink and miss
+  # libtapi.dylib (which lives in this environment, not in ld64's cache folder).
+  # Copy the exact toolchain packages selected above, as for openmpi in
+  # run-conda-test.sh.
+  toolchain=$(conda list --prefix "$prefix" --export | grep -E '^(ld64|cctools|clang)')
+  conda install -y --copy --force-reinstall --freeze-installed -p "$prefix" \
+    --override-channels -c local -c conda-forge $toolchain
+fi
 conda run --no-capture-output -p "$prefix" python extensions/tests/mklib.py --prefix "$prefix" --extension
 "$prefix/bin/plumed" mklib --help
 conda remove -y -p "$prefix" --override-channels -c local -c conda-forge plumed-mklib
