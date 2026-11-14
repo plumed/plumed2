@@ -23,6 +23,8 @@
 #include "Config.h"
 #include "version.h"
 #include "../tools/FileTools.h"
+#include "ModuleBuild.inc"
+#include <sstream>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -227,6 +229,20 @@ std::string getCompilationDate() {
 
 std::string getCompilationTime() {
   return __TIME__;
+}
+
+std::string getModuleBuildID() {
+  return PLUMED_MODULE_BUILD_ID;
+}
+
+std::vector<std::string> getBuiltInModules() {
+  std::istringstream input(PLUMED_BUILTIN_MODULES);
+  std::vector<std::string> modules;
+  std::string name;
+  while(input>>name) {
+    modules.push_back(name);
+  }
+  return modules;
 }
 
 std::string getLibraryPath() {

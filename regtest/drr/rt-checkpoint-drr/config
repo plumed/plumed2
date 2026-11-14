@@ -1,5 +1,5 @@
 type=driver
-plumed_needs=boost_serialization
+plumed_needs="drr:boost_serialization"
 plumed_modules=drr
 # Reference run: the whole trajectory, with the checkpointing signal every 10 steps
 arg="--plumed plumed.dat --timestep 0.005 --ixyz traj.xyz --checkpoint-stride 10"

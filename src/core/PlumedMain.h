@@ -157,6 +157,8 @@ private:
   std::string inputBuilderMetadataJSON;
 /// Flag to avoid double initialization
   bool  initialized=false;
+/// True if OpenMP::lockNumThreads() was called at init (it is undone in the destructor)
+  bool numThreadsLocked=false;
 /// Name of MD engine
   std::string MDEngine{"mdcode"};
 
@@ -458,6 +460,7 @@ public:
   void exit(int c=0);
 /// Load a shared library
   void load(const std::string&, const std::vector<std::string>& includeDirs = {});
+  void loadModule(const std::string&);
 /// Get the suffix string
   const std::string & getSuffix()const;
 /// Set the suffix string

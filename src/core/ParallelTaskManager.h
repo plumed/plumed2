@@ -248,23 +248,23 @@ public:
 //There is no need to pass this as reference:
 template <typename precision>
 struct ForcesOutput {
-  //I would suggest to invert the name or to be clearer
-// like something that recalls that "thread_safe" will be need to be reducted (hence it is NOT thread safe)
-  View<precision> thread_safe;
-  //these are the forces that we promise will not provoke races
-  View<precision> thread_unsafe;
+  // forces gathered by one thread for the elements that are shared among tasks (gatherThreadUnsafeForces):
+  // they are the last part of the forces of the action, and must be summed over the threads
+  View<precision> per_thread;
+  // all the forces of the action
+  View<precision> total;
   //const T* is a ptr to const T
   //T* const is a conts ptr to a modifiable T
-  static ForcesOutput create(std::vector<precision>& reduced, std::vector<precision>& notReduced) {
+  static ForcesOutput create(std::vector<precision>& perThread, std::vector<precision>& total) {
     return ForcesOutput{
-      View{reduced.data(),reduced.size()},      // thread_safe
-      View{notReduced.data(),notReduced.size()} // thread_unsafe
+      View{perThread.data(),perThread.size()},
+      View{total.data(),total.size()}
     };
   }
-  static ForcesOutput create(precision* reduced, size_t rs, precision* notReduce, size_t nrsz) {
+  static ForcesOutput create(precision* perThread, size_t ps, precision* total, size_t ts) {
     return ForcesOutput{
-      View{reduced,rs},    // thread_safe
-      View{notReduce,nrsz} // thread_unsafe
+      View{perThread,ps},
+      View{total,ts}
     };
   }
 };
@@ -678,6 +678,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     if( nt==0 ) {
       nt=1;
     }
+    // the per-thread buffers are sized at setup, and the number of threads cannot grow after init
+    plumed_massert( nt<=omp_forces.size(), "more OpenMP threads than when " + action->getLabel() + " was set up" );
     #pragma omp parallel num_threads(nt)
     {
       const unsigned t=OpenMP::getThreadNum();
@@ -790,8 +792,8 @@ template <class T>
 void ParallelTaskManager<T>::gatherThreads( ForceOutput forces ) {
   //Forceoutput is basically two spans, so it is ok to pass it by value
   unsigned k=0;
-  for(unsigned n=forces.thread_unsafe.size()-forces.thread_safe.size(); n<forces.thread_unsafe.size(); ++n) {
-    forces.thread_unsafe[n] += forces.thread_safe[k];
+  for(unsigned n=forces.total.size()-forces.per_thread.size(); n<forces.total.size(); ++n) {
+    forces.total[n] += forces.per_thread[k];
     ++k;
   }
 }

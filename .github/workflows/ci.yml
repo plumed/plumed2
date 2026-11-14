@@ -23,6 +23,10 @@ on:
         description: Also run the long regtests (plumed_long=yes)
         type: boolean
         default: false
+      conda_test_upload:
+        description: Publish dated conda packages to the test label (master only)
+        type: boolean
+        default: false
 
 # One group per workflow, event and ref, so that the nightly run never waits for a push or vice versa.
 # - pull requests, and manual runs on branches other than master: a new run cancels the one in progress;
@@ -115,4 +119,6 @@ jobs:
     needs: [policy, codecheck, checks]
     if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
     uses: ./.github/workflows/condaWF.yml
+    with:
+      upload_test_packages: ${{ github.event_name == 'workflow_dispatch' && inputs.conda_test_upload || false }}
     secrets: inherit

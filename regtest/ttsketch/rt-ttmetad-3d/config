@@ -1,4 +1,4 @@
-plumed_needs=libitensor
+plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
 plumed_modules=ttsketch
 type=driver
 # three arguments (the middle cores of the TT are used), SKETCH_CUTOFF, well-tempered,

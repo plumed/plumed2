@@ -54,6 +54,8 @@ private:
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
+/// Position in requestlist_ of each element of fullatomlist_ (only for the atoms in the list of pairs)
+  std::vector<unsigned> fullToRequest_{};
   //The size of this vectior is nallpairs_ if stride==0 (aka the NL is deactivated) or if the size is relatively small
   //In case neighbors_.size() != nallpairs_,
   std::vector<pairIDs > neighbors_{};
