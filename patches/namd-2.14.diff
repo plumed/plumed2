@@ -34,7 +34,7 @@ EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -91,12 +91,135 @@
+@@ -91,12 +91,169 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
  #include "GlobalMasterSymmetry.h"
@@ -42,6 +42,8 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  #include "GlobalMasterMisc.h"
 +// PLUMED
 +#include "../Plumed.h"
++#include <cstdlib>
++#include <utility>
 +// END PLUMED
  #include "GlobalMasterFreeEnergy.h"
  #include "GlobalMasterColvars.h"
@@ -56,12 +58,42 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  std::vector<double> charges;
 +  double box[3][3];
 +  SimParameters *spar;
++#if __cplusplus > 199711L
++  // NAMD does not destroy the GlobalMaster objects when it terminates.
++  // The PLUMED object is thus finalized (files are closed) at exit.
++  static GlobalMasterPlumed* & instance()
++  {
++    static GlobalMasterPlumed* p=NULL;
++    return p;
++  }
++  static void finalizeAtExit()
++  {
++    if(instance()){
++      // the temporary takes the ownership and finalizes PLUMED when it goes out of scope
++      PLMD::Plumed tmp(std::move(static_cast<PLMD::Plumed&>(*instance())));
++    }
++  }
++#endif
 +public:
 +  GlobalMasterPlumed():
 +    GlobalMasterEasy("plumedScript")
 +  {
 +    easy_init(config);
++#if __cplusplus > 199711L
++    // registered after PLUMED has been created, so that it is executed
++    // before the static objects of the PLUMED library are destroyed
++    if(!instance()){
++      instance()=this;
++      std::atexit(finalizeAtExit);
++    }
++#endif
 +  }
++#if __cplusplus > 199711L
++  ~GlobalMasterPlumed()
++  {
++    if(instance()==this) instance()=NULL;
++  }
++#endif
 +  void easy_init(const char* config)
 +  {
 +    int realPrecision=sizeof(double);
@@ -135,10 +167,12 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      charges[i]=Node::Object()->molecule->atomcharge(index[i]);
 +    };
 +
-+    if(spar->lattice.volume()>0.0){
-+      for(int i=0;i<3;i++) box[0][i]=spar->lattice.a()[i];
-+      for(int i=0;i<3;i++) box[1][i]=spar->lattice.b()[i];
-+      for(int i=0;i<3;i++) box[2][i]=spar->lattice.c()[i];
++    // use the lattice of the current step (GlobalMaster::lattice), since
++    // SimParameters::lattice is not updated by the barostats
++    if(lattice && lattice->volume()>0.0){
++      for(int i=0;i<3;i++) box[0][i]=lattice->a()[i];
++      for(int i=0;i<3;i++) box[1][i]=lattice->b()[i];
++      for(int i=0;i<3;i++) box[2][i]=lattice->c()[i];
 +      cmd("setBox",&box[0][0]);
 +    } 
 +
@@ -170,7 +204,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  
  #include "DeviceCUDA.h"
  #ifdef NAMD_CUDA
-@@ -1044,10 +1167,15 @@
+@@ -1044,10 +1201,15 @@
              masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());
