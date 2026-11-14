@@ -47,8 +47,19 @@ foreach(_mt ${_module_type_files})
     endif()
 endforeach()
 set(MODULES ${_default_modules})
-string(REGEX REPLACE "([+-])" ";\\1" _tokens "${PLUMED_MODULES}")
-string(REPLACE ":" ";" _tokens "${_tokens}")
+# Preserve known hyphenated names, as the configure parser does. Colon-separated
+# names can still be combined with legacy compact expressions such as all-ves.
+string(REPLACE ":" ";" _module_words "${PLUMED_MODULES}")
+set(_tokens)
+foreach(_word IN LISTS _module_words)
+    string(REGEX REPLACE "^[+-]" "" _candidate "${_word}")
+    if(_candidate IN_LIST _all_modules)
+        list(APPEND _tokens "${_word}")
+    else()
+        string(REGEX REPLACE "([+-])" ";\\1" _split "${_word}")
+        list(APPEND _tokens ${_split})
+    endif()
+endforeach()
 foreach(_tok ${_tokens})
     if(_tok STREQUAL "reset")
         set(MODULES ${_default_modules})
@@ -120,16 +131,22 @@ set(PPM_INC ${PLUMED_GEN}/PlumedMainEnum.inc ${PLUMED_GEN}/PlumedMainMap.inc
             ${PLUMED_GEN}/ModuleMap.inc
             ${PLUMED_GEN}/ActionDescriptions.inc)
 set(CONFIG_OUT ${PLUMED_GEN}/Config.inc ${PLUMED_GEN}/version.h
-               ${PLUMED_GEN}/Makefile.conf.xxd)
+               ${PLUMED_GEN}/Makefile.conf.xxd ${PLUMED_GEN}/ModuleBuild.inc)
 set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd)
 # The module map is built from every module source; make the generation
 # command depend on them so that it is rerun when actions are added/removed.
-file(GLOB _generator_inputs CONFIGURE_DEPENDS ${PLUMED_SRC}/src/*/*.cpp)
+file(GLOB _generator_inputs CONFIGURE_DEPENDS
+    ${PLUMED_SRC}/src/*/*.cpp ${PLUMED_SRC}/src/*/*.h ${PLUMED_SRC}/src/*/*.c
+    ${PLUMED_SRC}/plugins/*/*.cpp ${PLUMED_SRC}/plugins/*/*.cu
+    ${PLUMED_SRC}/plugins/*/src/*.cpp ${PLUMED_SRC}/plugins/*/src/*.cu)
 add_custom_command(
     OUTPUT ${PPM_INC} ${CONFIG_OUT} ${COMPLETION_XXD}
     COMMAND ${CMAKE_COMMAND}
             "-DSRC=${PLUMED_SRC}" "-DOUT=${PLUMED_GEN}"
             "-DINSTALLED=${PLUMED_PIP_BUNDLE}" "-DPREFIX=${CMAKE_INSTALL_PREFIX}"
+            "-DMODULES=${MODULES}"
+            "-DMODULE_DEFINITIONS=$<TARGET_PROPERTY:plumedKernel,COMPILE_DEFINITIONS>"
+            "-DMODULE_TOOLCHAIN=${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}-${CMAKE_CXX_FLAGS}-${CMAKE_BUILD_TYPE}"
             -P ${GEN_SCRIPT}
     DEPENDS ${GEN_SCRIPT} ${GEN_MODULE}
             ${PLUMED_SRC}/src/config/Config.inc.in
@@ -448,6 +465,7 @@ install(FILES ${PLUMED_SRC}/src/config/config.txt DESTINATION ${PLUMED_INSTALL_P
 # installed plumed as the vim/ and json/ Makefiles do (used by editors and by
 # the InputBuilder of the python package with kernels without metadata)
 install(DIRECTORY ${PLUMED_SRC}/vim/templates DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
+install(DIRECTORY ${PLUMED_SRC}/vim/autoload DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
 install(FILES ${PLUMED_SRC}/vim/scripts.vim DESTINATION ${PLUMED_INSTALL_PROGRAM_DIR}/vim)
 install(CODE "
   set(_plumed \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/plumed${CMAKE_EXECUTABLE_SUFFIX}\")

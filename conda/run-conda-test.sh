@@ -4,6 +4,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 : "${VERSION:?set VERSION to the version built by run-conda-build.sh}"
 
+bash run-extension-test.sh
+bash run-hdf5-variant-test.sh
+bash run-mklib-test.sh
+bash run-pycv-test.sh
+bash run-cuda-coordination-test.sh
+
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-conda-packaging.XXXXXX")
 trap 'rm -rf "$task"' EXIT
 export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
@@ -66,3 +72,8 @@ for mpi in mpich openmpi; do
   "$prefix/bin/plumed" --has-thread-mpi
   "$prefix/bin/plumed" info --root
 done
+
+# An externally supplied SDK enables the optional OpenACC build stage.
+if [[ $(uname) == Linux && $(uname -m) == x86_64 && -n ${NVHPC_HOME:-} ]]; then
+  bash run-openacc-test.sh
+fi

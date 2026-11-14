@@ -185,6 +185,7 @@ AdjacencyMatrixBase<CV, myPTM>::AdjacencyMatrixBase(const ActionOptions& ao):
   natoms_per_list(0),
   linkcells(comm),
   threecells(comm) {
+  checkThreadGatherWithMPI( taskmanager.runInSerial() );
   std::vector<std::size_t> shape(2);
   std::vector<AtomNumber> t;
   parseAtomList("GROUP", t );

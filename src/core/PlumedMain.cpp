@@ -43,6 +43,7 @@
 #endif
 #include "tools/DLLoader.h"
 #include "tools/FileTools.h"
+#include "ModuleLoader.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
 #include "tools/Log.h"
@@ -468,6 +469,8 @@ PlumedMain::PlumedMain():
   checkpointing_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
+  ModuleLoader::autoload(dlloader);
+  ModuleLoader::inheritContext(dlloader);
   OpenMP::retainRuntime();
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
@@ -489,6 +492,9 @@ PlumedMain::~PlumedMain() {
     } catch(...) {
       log<<"Final checkpoint not written: unknown error\n";
     }
+  }
+  if(numThreadsLocked) {
+    OpenMP::unlockNumThreads();
   }
   CountInstances::decrease();
 }
@@ -595,6 +601,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_calc:
         CHECK_INIT(initialized,word);
         calc();
+        break;
+      case cmd_setExchangeStep:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        setExchangeStep(val.get<int>()!=0);
         break;
       case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
@@ -1024,7 +1035,16 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           if(nt==0) {
             nt=1;
           }
-          OpenMP::setNumThreads(nt);
+          // while an initialized PLUMED instance exists the number of threads can only decrease
+          if(!OpenMP::setNumThreads(nt)) {
+            std::string msg="WARNING: setNumOMPthreads("+std::to_string(nt)+") ignored: the number of OpenMP threads cannot be increased "
+                            "after PLUMED has been initialized, "+std::to_string(OpenMP::getNumThreads())+" threads are used\n";
+            if(log.isOpen()) {
+              log<<msg;
+            } else {
+              std::fprintf(stderr,"PLUMED: %s",msg.c_str());
+            }
+          }
         }
         break;
       /* ADDED WITH API==10 */
@@ -1118,6 +1138,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         plumedQuantityToMD( "energy", getBias(), val );
+        break;
+      case cmd_checkModule:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        val.set(int(ModuleLoader::available(std::string(words[1]),dlloader) ? 1:0));
         break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
@@ -1251,6 +1276,10 @@ void PlumedMain::init() {
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",passtools->getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  // the actions size their per-thread storage when they are created: from now on the
+  // number of threads can only decrease (see setNumOMPthreads)
+  OpenMP::lockNumThreads();
+  numThreadsLocked=true;
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
@@ -1682,13 +1711,6 @@ void PlumedMain::backwardPropagate() {
     }
     iaction++;
   }
-
-// Stopwatch is stopped when sw goes out of scope.
-// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-  Stopwatch::Handler sw1;
-  if(detailedTimers) {
-    sw1=stopwatch.startStop("5B Update forces");
-  }
 }
 
 void PlumedMain::update() {
@@ -1749,6 +1771,10 @@ void PlumedMain::update() {
   checkpointing.atStepEnd();
 }
 
+void PlumedMain::loadModule(const std::string& name) {
+  ModuleLoader::load(name,dlloader);
+}
+
 void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
   struct BuildDirectory {
     std::filesystem::path path;
@@ -1772,7 +1798,10 @@ void PlumedMain::load(const std::string& fileName, const std::vector<std::string
     }
 
     if(extension=="cpp") {
-      libName="./"+base+"."+config::getVersionLong()+"."+config::getSoExt();
+      const auto script=config::getPlumedRoot()+"/scripts/mklib.sh";
+      plumed_massert(std::filesystem::is_regular_file(pathFromUTF8(script)),
+                     "LOAD of C++ source requires mklib; for conda install plumed-mklib");
+      libName="./"+base+"."+config::getVersionLong()+"."+config::getModuleBuildID()+"."+config::getSoExt();
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"

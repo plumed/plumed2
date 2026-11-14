@@ -1,13 +1,13 @@
 """Discover a wheel's private installation through Python and native clients."""
 
 import os
-from pathlib import Path
 import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import plumed
 from plumed.runtime import kernel_path, package_root, resource_root
@@ -75,6 +75,7 @@ class TestRuntimeResources(unittest.TestCase):
             "scripts/mkmpi.sh",
             "src/config/config.txt",
             "vim/syntax/plumed.vim",
+            "vim/autoload/plumed.vim",
             "vim/scripts.vim",
             "build-info.txt",
             "json/syntax.json",

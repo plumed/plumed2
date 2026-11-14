@@ -1,5 +1,5 @@
 type=driver
-plumed_needs="dlopen"
+plumed_needs="tools:dlopen"
 arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"
 
 # plumed mklib and LOAD with source files in another directory

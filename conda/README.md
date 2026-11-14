@@ -10,13 +10,20 @@ covered by the [MPI wrapper documentation](../src/mpiwrap/README.md).
 | `plumed` | One serial-built kernel, wrappers, headers, CLI, and embedded thread-MPI | None |
 | `plumed-mpi` (`mpi_mpich_*` variant) | MPICH provider library and `plumed-mpi` executable | MPICH |
 | `plumed-mpi` (`mpi_openmpi_*` variant) | Open MPI provider library and `plumed-mpi` executable | Open MPI |
+| `plumed-ext-<module>` | Separately loaded optional module and registration | None |
 | `py-plumed` | Python wrapper, depending on the same `plumed` | None |
+| `plumed-mklib` | Runtime C++ compiler and compilation scripts for the exact kernel | None |
 
 `plumed` retains its name; there is no `plumed-kernel` package or `nompi`
 add-on. It is built once per platform, explicitly disabling native MPI and
 using the non-MPI FFTW variant. Adding/removing an extension must not replace
-its kernel. The same naming scheme leaves room for future optional packages
-such as `plumed-cuda-extensions` with their own variants; none are added here.
+its kernel. Optional source modules are delivered as `plumed-ext-<module>` packages,
+without an MPI variant dimension. See [extension builds and loading](../extensions/README.md).
+
+The base recipe inherits native requirements from the `conda.mk` declarations
+of modules enabled by default. ISDB remains in the kernel without LibTorch;
+its Torch-dependent `EMMIVOX` action is supplied by `plumed-ext-isdb-pytorch`.
+That optional module owns its LibTorch requirement and build feature report.
 
 Both MPI variants depend on the matching PLUMED version, use the installed
 `Plumed.h`/standard main via `plumed mkmpi`, and install only:
@@ -65,8 +72,17 @@ make -C conda
 make -C conda test
 ```
 
-The build script builds `plumed` once, then both small `plumed-mpi` variants,
-then the existing Python variants. Local packages take priority when building
+The build script generates the inventory and recipes, builds `plumed` once,
+then builds matching Python/tooling, optional module, MPI provider and
+plugin variants, including opted-in empty compatibility packages. Module-local `conda.mk` files declare
+native conda requirements, variants, build options and tests; see the complete
+[conda.mk option reference](module-options.md). Licenses come from module license files. Optional
+libraries that are unavailable do not exclude modules during this proof of concept.
+The base requirements are inherited from the `conda.mk` files of the default
+modules and their hard dependencies. LibTorch is supplied only by optional
+outputs, including `plumed-ext-isdb-pytorch` for EMMIVOX.
+To invoke conda-build directly on any recipe, first run
+`python extensions/conda_recipe.py` from the repository root. Local packages take priority when building
 and testing dependents. No packages are uploaded by these commands; the
 existing upload target remains a separate, token-controlled release step.
 
@@ -90,3 +106,95 @@ On macOS, the recipes mark the main executables as `no_link`: conda installs
 copies instead of hardlinks to its package cache. Otherwise dyld can resolve
 relative library paths through another hardlink, loading a kernel from the cache
 instead of the selected environment. Library installation is unchanged.
+
+## Optional runtime compilation
+
+The main `plumed` package has no runtime compiler dependency. Install
+`plumed-mklib` to use `plumed mklib` or `LOAD FILE=action.cpp`. It depends on
+that exact kernel build and a compatible C++ compiler. Activate the environment
+before compiling; `PLUMED_MKLIB_CXX` can override the compiler while preserving
+the kernel ABI flags. Cache entries include the kernel build ID and compiler
+flags, so a same-version kernel rebuild invalidates old compiled code.
+
+For code calling an optional module API, install that module and explicitly
+link its library, for example:
+
+```sh
+conda install -c CHANNEL plumed-mklib plumed-ext-ves
+export PLUMED_MKLIB_LDFLAGS="$CONDA_PREFIX/lib/libplumed-ext-ves.so"
+plumed mklib action.cpp
+```
+
+Use `.dylib` on macOS. The native dependency loads VES code; action visibility
+still follows the loader rules described in the extension documentation.
+
+## GPU validation and distribution handoff
+
+[Open the self-contained notebook in Colab](https://colab.research.google.com/github/plumed/plumed2/blob/master/conda/gpu-validation.ipynb).
+
+After merging and completing a manual test publication, open the
+[GPU validation notebook](gpu-validation.ipynb), select a GPU runtime and choose
+**Run all**. It installs from `plumed/label/test` (optionally a requested dated
+version), reads the kernel's installed `conda-source.json`, and downloads the
+exact matching source revision for its fixtures and test harness. GPU alternatives
+come from that revision's module `conda.mk` files. No laptop upload, GitHub token,
+expiring CI artifact link or manually refreshed version list is needed.
+
+The notebook bootstraps the current official Miniforge release with checksum
+verification, pins the same exact kernel build for each alternative and exports
+logs, package checksums, provenance and a structured summary in a small ZIP.
+Environments and binaries are excluded. Only clean Git-derived package snapshots
+can supply reproducible source; older packages without provenance report a clear
+setup error. The numerical harness rejects skips and enforces GPU execution.
+A driver too old for an alternative is a failed/incomplete validation.
+
+The maintained runner also accepts a local indexed artifact channel: run
+`run-gpu-test.sh` with `VERSION`, `GPU_CONDA_CHANNEL` and `GPU_TEST_ROOT` set.
+`GPU_KERNEL_SPEC` can pin an explicit `plumed=VERSION=BUILD`; otherwise the first
+successful installation pins the exact build for subsequent alternatives.
+The notebook needs a user-owned GPU session; CPU CI checks orchestration using
+stubs and does not establish GPU numerical correctness.
+
+Generated recipes/catalogs are build products. Curate module requirements and
+compatibility-package choices in their `conda.mk` files, regenerate with
+`python extensions/conda_recipe.py`, and build the main package before its
+outputs. Publish the exact base and dependent outputs together. The current
+prototype is available as local/fork CI artifacts; public channel/feedstock
+publication and the upstream merge are separate maintainer actions. OpenACC
+release builders must provision the documented NVHPC SDK; users need no SDK.
+
+Separate build jobs must reuse the exact kernel archive rather than rebuilding
+another kernel with the same conda version/build label: native module build IDs
+also capture the configured build. The focused CI shares one Linux kernel
+artifact between CPU/CUDA and OpenACC jobs. After restoring and indexing that
+archive, `PLUMED_CONDA_SKIP_BASE=yes` makes the build script use it; the script
+requires the matching local archive and `CONDA_BLD_PATH`/`VERSION` settings.
+
+## Dated test-channel publication
+
+After this workflow is present on the default branch, run **CI** manually on
+`master` and select **Publish dated conda packages to the test label**. The
+workflow builds every package with the UTC date as its conda version, for example
+`2026.11.12`, validates the installation, then uploads to `plumed/label/test`
+using the existing `CONDA_UPLOAD_TOKEN` secret. Ordinary builds do not publish;
+tag uploads keep their `tag` label. This option is rejected on other branches.
+
+A separate run/attempt build number makes repeated snapshots on one date
+distinct, including their exact kernel dependency pins. Test uploads do not
+overwrite earlier archives. `PLUMED_CONDA_BUILD_NUMBER` defaults to zero for
+ordinary/local builds and can be set explicitly by other snapshot builders.
+The optional libraries retain their existing package revision offsets.
+
+```sh
+conda create -n plumed-test -c plumed/label/test -c conda-forge \
+  plumed=2026.11.12 plumed-ext-isdb-pytorch=2026.11.12
+```
+
+The hosted workflow builds the supported CPU, MPI, Python and CUDA variants.
+Manual test publication also provisions the declared NVHPC SDK versions in an
+isolated Linux x86-64 directory, builds OpenACC against that job's exact kernel,
+and runs its host tests before upload. GPU hardware validation is performed
+separately after installation from the test channel. Other OpenACC builders
+must supply the documented NVHPC SDK through `NVHPC_HOME`. Uploads include
+only archives for the selected version from `CONDA_BLD_PATH` (or the default
+conda-build directory). The upload helper reads its token from the environment.

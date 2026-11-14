@@ -1,0 +1,349 @@
+patch -u -l -b -F 5 -N --suffix=.preplumed "./Makefile" << \EOF_EOF
+--- ./Makefile.preplumed
++++ ./Makefile
+@@ -444,10 +444,16 @@
+ CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
+ CXXMICFLAGS = $(CXXBASEFLAGS) $(CXXOPTS) $(CXXMICOPTS)
+ CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
+ CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
+ CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
++
++include .rootdir/Plumed.inc
++PLUMED_PREFIX=-Wl,
++PLUMED_LOAD1=$(patsubst "%.so",$(PLUMED_PREFIX)"%.so",$(PLUMED_LOAD))
++PLUMED_LOAD2=$(patsubst "%.dylib",$(PLUMED_PREFIX)"%.dylib",$(PLUMED_LOAD1))
++
+ COLVARSCXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS) $(COPTI)$(LEPTONINCDIR) -DLEPTON -DLEPTON_USE_STATIC_LIBRARIES
+ GXXFLAGS = $(CXXBASEFLAGS) -DNO_STRSTREAM_H
+ CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
+ PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN
+ PLUGINCFLAGS = $(PLUGINGCCFLAGS) $(COPTS)
+@@ -491,10 +497,11 @@
+ 	$(CUDALIB) \
+ 	$(DPMTALIB) \
+ 	$(DPMELIB) \
+ 	$(FMMLIB) \
+ 	$(TCLLIB) \
++        $(PLUMED_LOAD2) \
+ 	$(PYTHONLIB) \
+ 	$(FFTLIB) \
+ 	$(PLUGINLIB) \
+ 	$(SBLIB) \
+ 	$(COLVARSLIB) \
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
+--- ./src/ComputeMgr.C.preplumed
++++ ./src/ComputeMgr.C
+@@ -89,12 +89,172 @@
+ #include "GlobalMasterSMD.h"
+ #include "GlobalMasterTMD.h"
+ #include "GlobalMasterSymmetry.h"
+ #include "GlobalMasterEasy.h"
+ #include "GlobalMasterMisc.h"
++// PLUMED
++#include "../Plumed.h"
++#include "ReductionMgr.h"
++#include "Lattice.h"
++#include "Tensor.h"
++// END PLUMED
+ #include "GlobalMasterFreeEnergy.h"
+ #include "GlobalMasterColvars.h"
++class GlobalMasterPlumed:
++  public  GlobalMasterEasy,
++  private PLMD::Plumed
++{
++  std::vector<int> index;
++  std::vector<double> positions;
++  std::vector<double> forces;
++  std::vector<double> masses;
++  std::vector<double> charges;
++  double box[3][3];
++  double virial[3][3];
++  SimParameters *spar;
++  // used to pass to NAMD the part of the virial that it cannot compute by itself
++  SubmitReduction *plumedReduction;
++public:
++  GlobalMasterPlumed():
++    GlobalMasterEasy("plumedScript")
++  {
++    plumedReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
++    easy_init(config);
++  }
++  ~GlobalMasterPlumed()
++  {
++    delete plumedReduction;
++  }
++  void easy_init(const char* config)
++  {
++    int realPrecision=sizeof(double);
++    cmd("setRealPrecision",&realPrecision);
++    spar=Node::Object()->simParameters;
++
++    double energyUnits=4.184;
++    double lengthUnits=0.1;
++    double timeUnits=0.001;
++    cmd("setMDEnergyUnits",&energyUnits);
++    cmd("setMDLengthUnits",&lengthUnits);
++    cmd("setMDTimeUnits",&timeUnits);
++
++    cmd("setPlumedDat",spar->plumedFilename);
++
++    int natoms=Node::Object()->molecule->numAtoms;
++    cmd("setNatoms",&natoms);
++
++    cmd("setMDEngine","namd");
++
++    cmd("setLog",stdout);
++
++    double dt=spar->dt;
++    cmd("setTimestep",&dt);
++    cmd("init");
++
++    int s=step+1;
++    cmd("setStep",&s);
++    share();
++
++  }
++
++  void share(){
++    const int* p;
++    int n;
++    bool redo=false;
++    cmd("prepareDependencies");
++    cmd("createFullList",&n);
++    cmd("getFullList",&p);
++    if(index.size()!=n)redo=true;
++    if(!redo) for(int i=0;i<n;i++) if(index[i]!=p[i]) { redo=true; break;};
++    if(redo){
++      index.resize(n);
++      masses.resize(n);
++      modifyRequestedAtoms().resize(0);
++      for(int i=0;i<n;i++){
++        requestAtom(p[i]);
++        masses[i]=getMass(p[i]);  
++        index[i]=p[i];
++      };
++      positions.resize(3*n);
++      forces.resize(3*n);
++      charges.resize(n);
++      
++      cmd("setAtomsNlocal",&n);
++      cmd("setAtomsGatindex",&index[0]);
++    }
++    cmd("clearFullList");
++  }
++
++  void easy_calc(){
++
++    for(int i=0;i<index.size();i++){
++      Vector coord;
++      getPosition(index[i],coord);
++      positions[3*i+0]=coord.x;
++      positions[3*i+1]=coord.y;
++      positions[3*i+2]=coord.z;
++      masses[i]=Node::Object()->molecule->atommass(index[i]);
++      charges[i]=Node::Object()->molecule->atomcharge(index[i]);
++    };
++
++    // use the lattice of the current step (GlobalMaster::lattice), since
++    // SimParameters::lattice is not updated by the barostats
++    const bool periodic=(lattice && lattice->volume()>0.0);
++    if(periodic){
++      for(int i=0;i<3;i++) box[0][i]=lattice->a()[i];
++      for(int i=0;i<3;i++) box[1][i]=lattice->b()[i];
++      for(int i=0;i<3;i++) box[2][i]=lattice->c()[i];
++      cmd("setBox",&box[0][0]);
++    } 
++
++    for(int i=0;i<forces.size();i++) forces[i]=0.0;
++    for(int i=0;i<3;i++) for(int j=0;j<3;j++) virial[i][j]=0.0;
++    cmd("setVirial",&virial[0][0]);
++
++    cmd("setMasses",&masses[0]); cmd("setCharges",&charges[0]);
++    cmd("setPositions",&positions[0]);
++    cmd("setForces",&forces[0]);
++
++    cmd("shareData");
++    cmd("performCalc");
++
++    // report the bias energy to NAMD (MISC column, included in the total energy)
++    double bias=0.0;
++    cmd("getBias",&bias);
++    addEnergy(bias);
++
++    // NAMD (ComputeGlobal::recvResults) adds to its virial sum_i outer(f_i,x_i)
++    // for the forces returned here, using the same positions passed to PLUMED.
++    // This misses the explicit dependence of the bias on the cell (periodic
++    // images chosen by PLUMED, collective variables that depend on the cell).
++    // Here we submit the difference with respect to the full PLUMED virial.
++    // PLUMED: virial[a][b] = - sum_i x_i[a] f_i[b]; NAMD: W.ab = sum_i f_i[a] x_i[b]
++    Tensor vcorr;
++    if(periodic){
++      vcorr.xx=-virial[0][0]; vcorr.xy=-virial[1][0]; vcorr.xz=-virial[2][0];
++      vcorr.yx=-virial[0][1]; vcorr.yy=-virial[1][1]; vcorr.yz=-virial[2][1];
++      vcorr.zx=-virial[0][2]; vcorr.zy=-virial[1][2]; vcorr.zz=-virial[2][2];
++    }
++
++    for(int i=0;i<index.size();i++){
++      Vector f;
++      f.x=forces[3*i+0];
++      f.y=forces[3*i+1];
++      f.z=forces[3*i+2];
++      int j=addForce(index[i],f);
++      if(periodic) vcorr-=outer(f,Vector(positions[3*i+0],positions[3*i+1],positions[3*i+2]));
++    };
++
++    ADD_TENSOR_OBJECT(plumedReduction,REDUCTION_VIRIAL_NORMAL,vcorr);
++    plumedReduction->submit();
++
++    int s=step+1;
++    cmd("setStep",&s);
++    share();
++ 
++  }
++};
+ 
+ #include "ComputeNonbondedMICKernel.h"
+ #include "PatchData.h"
+ #include "NamdEventsProfiling.h"
+ #include "DeviceCUDA.h"
+@@ -1039,10 +1199,15 @@
+             masterServerObject->addClient(new GlobalMasterSymmetry());    
+         if (simParams->TMDOn)
+             masterServerObject->addClient(new GlobalMasterTMD());
+         if (simParams->miscForcesOn)
+             masterServerObject->addClient(new GlobalMasterMisc());
++     // PLUMED
++        if (simParams->plumedOn){
++          masterServerObject->addClient(new GlobalMasterPlumed());
++        }
++     // END PLUMED
+         if ( simParams->freeEnergyOn )
+             masterServerObject->addClient(new GlobalMasterFreeEnergy());
+ 		if ( simParams->colvarsOn )
+ 			masterServerObject->addClient(new GlobalMasterColvars());
+ 
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
+--- ./src/SimParameters.C.preplumed
++++ ./src/SimParameters.C
+@@ -1893,10 +1893,17 @@
+    opts.optionalB("main", "GBIS", "Use GB implicit solvent?",
+       &GBISOn, FALSE);
+    opts.optionalB("main", "GBISSer", "Use GB implicit solvent?",
+       &GBISserOn, FALSE);
+ 
++
++     // PLUMED
++     //// plumed
++     opts.optionalB("main", "plumed", "Is PLUMED active?",&plumedOn,FALSE);
++     opts.require("plumed", "plumedfile","PLUMED script",PARSE_STRING);
++     // END PLUMED
++
+    opts.optional("GBIS", "solventDielectric",
+       "Solvent Dielectric", &solvent_dielectric, 78.5);
+    opts.optional("GBIS", "intrinsicRadiusOffset",
+       "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
+    opts.optional("GBIS", "ionConcentration",
+@@ -4832,10 +4839,19 @@
+     }
+     else {
+       CUDASOAintegrate = FALSE; // Don't leave uninitialized
+     }
+ 
++    // PLUMED
++    if (CUDASOAintegrateMode && plumedOn) {
++      NAMD_die(
++          "PLUMED is not supported in GPU-resident mode.\n"
++          "Set \"GPUresident off\" (GPU-offload or CPU-only mode) to use PLUMED."
++          );
++    }
++    // END PLUMED
++
+     if (CUDASOAintegrateMode && (minimizeOn || minimizeCGOn)) {
+       NAMD_die(
+           "GPUresident does not support \"minimization\" keyword.\n"
+           "Instead use \"minimize\" available through Tcl scripting interface."
+           );
+@@ -4887,10 +4903,11 @@
+           miscForcesOn ||
+           IMDon ||
+           TMDOn ||
+           symmetryOn ||
+           qmForcesOn ||
++          plumedOn ||
+           sphericalBCOn ||
+           cylindricalBCOn ||
+           extForcesOn ||
+           tabulatedEnergies ||
+           tclBCOn ||
+@@ -4989,10 +5006,11 @@
+ 	if(movDragOn) strncat(featuremsg,"  movDragOn\n",1023);
+         if(rotDragOn) strncat(featuremsg,"  rotDragOn\n",1023);
+         if(consTorqueOn) strncat(featuremsg,"  consTorqueOn\n",1023);
+         if(stirOn) strncat(featuremsg,"  stirOn\n",1023);
+ 	if(HydrogenBonds) strncat(featuremsg,"  HydrogenBonds\n",1023);
++	if(plumedOn) strncat(featuremsg,"  plumed\n",1023);
+ 	strncat(msg,featuremsg,2047);
+         if (CUDASOAintegrateMode) {
+           NAMD_die(msg);
+         }
+         else {
+@@ -6130,11 +6148,11 @@
+    
+    // Global forces configuration
+ 
+    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
+                       (IMDon && ! (IMDignore || IMDignoreForces)) || (SMDOn && !CUDASOAintegrateMode) || TMDOn || 
+-                      colvarsOn || symmetryOn || qmForcesOn );
++                      colvarsOn || symmetryOn || qmForcesOn || plumedOn );
+ 
+    if (globalForcesOn && monteCarloPressureOn) {
+      NAMD_die("Monte Carlo pressure control is not compatible with "
+          "global forces computations (Colvars, TclForces, TMD, IMD, "
+          "symmetryRestraints, and similar features)");
+@@ -6220,10 +6238,25 @@
+      }
+ 
+      iout << endi;
+    }
+ 
++   // PLUMED
++   if (plumedOn)
++   {
++       iout << iINFO << "PLUMED ACTIVE\n";
++
++       current = config->find("plumedfile");
++       iout << iINFO << "PLUMED CONFIG FILE   "<< current->data << "\n" << endi;
++       strcpy(plumedFilename,current->data);
++
++       ifstream plumedFile(current->data);
++       if ( ! plumedFile ) NAMD_die("Error reading PLUMED config file.\n");
++
++   }
++   // END PLUMED
++
+    if (IMDon)
+    {
+      iout << iINFO << "INTERACTIVE MD ACTIVE\n";
+      iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
+      iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SimParameters.h" << \EOF_EOF
+--- ./src/SimParameters.h.preplumed
++++ ./src/SimParameters.h
+@@ -595,10 +595,13 @@
+ 	char tclBCArgs[NAMD_FILENAME_BUFFER_SIZE];		//  Extra args for calcforces command
+ 	Bool freeEnergyOn;		//  Doing free energy perturbation?
+ 	Bool miscForcesOn;		//  Using misc forces?
+ 	Bool colvarsOn;         //  Using the colvars module?
+ 
++        Bool plumedOn;                  //  Using Plumed?
++        char plumedFilename[1024];      // Plumed filename
++
+ 	Bool fixedAtomsOn;		//  Are there fixed atoms?
+ 	Bool fixedAtomsForces;		//  Calculate forces anyway?
+ 	Bool fixedAtomsForceOutput; // Output fixed forces?
+ 
+ 	Bool langevinOnAtStartup;	//  Ensure that langevin is set up properly
+EOF_EOF

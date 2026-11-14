@@ -18,9 +18,9 @@ NVCC = nvcc
 #-dlto Perform link-time optimization of device code.
 NVCCCFLAGS = -dc -dlto
 NVCCLDFLAGS = -shared -dlto
-OBJS = Coordination.o cudaHelpers.o
+OBJS = Coordination.o cudaHelpers.o $(EXTRA_OBJS)
 
-ADDCPPFLAGS=$(PLUMED_INCLUDE)
+ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_CUDA=1
 ADDCLDFLAGS=
 
 ifeq ($(SOEXT),dylib)

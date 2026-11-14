@@ -23,6 +23,7 @@
 #define __PLUMED_config_Config_h
 
 #include <string>
+#include <vector>
 
 namespace PLMD {
 namespace config {
@@ -111,6 +112,9 @@ bool hasExternalMolfile();
 bool hasZlib();
 
 std::string getLibraryPath();
+
+std::string getModuleBuildID();
+std::vector<std::string> getBuiltInModules();
 
 }
 }

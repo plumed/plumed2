@@ -54,9 +54,9 @@ def _fix_file(file, mode):
     # files are written with \n line endings on all platforms, as PLUMED does
     newline = "\n" if "w" in mode else None
     if isinstance(name, str) and re.match(r".*\.gz", name) and not decoded:
-        return gzip.open(name, mode, newline=newline), True
+        return gzip.open(name, mode, newline=newline, encoding="utf-8"), True
     if isinstance(file, str):
-        return open(file, mode, newline=newline), True
+        return open(file, mode, newline=newline, encoding="utf-8"), True
     return file, False
 
 

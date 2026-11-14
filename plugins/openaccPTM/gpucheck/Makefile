@@ -12,11 +12,16 @@ all: check
 device_check: device_check.cpp
 	$(CUDACXX) -std=c++17 -I$(PLUMED_INCLUDE_DIR) -D__PLUMED_WRAPPER_IMPLEMENTATION=1 -D__PLUMED_HAS_DLOPEN -D__PLUMED_WRAPPER_LINK_RUNTIME=1 $< -o $@ -ldl
 
-# the kernel is loaded at runtime (PLUMED_KERNEL), as the MD codes do; the plugin
-# then needs the symbols of the kernel to be global
+# The kernel is loaded at runtime (PLUMED_KERNEL), as the MD codes do; the plugin
+# then needs the symbols of the kernel to be global.
+# Called by "make check-gpu" of a plugin, PLUMED_KERNEL is not the one of the environment
+# but the link flags of the Makefile.conf of the plugin ("-L/path/libplumedKernel.so" or
+# "/path/libplumedKernel.so -Xlinker ..."): the library is the kernel the plugin was built
+# against, that is the one to use.
+KERNEL_LIB = $(patsubst -L%,%,$(firstword $(PLUMED_KERNEL)))
 check: device_check
-	PLUMED_LOAD_NAMESPACE=GLOBAL ./device_check follow $(PLUGINS)
-	PLUMED_LOAD_NAMESPACE=GLOBAL ./device_check md $(PLUGINS)
+	PLUMED_KERNEL="$(KERNEL_LIB)" PLUMED_LOAD_NAMESPACE=GLOBAL ./device_check follow $(PLUGINS)
+	PLUMED_KERNEL="$(KERNEL_LIB)" PLUMED_LOAD_NAMESPACE=GLOBAL ./device_check md $(PLUGINS)
 
 clean:
 	rm -f device_check device_check_*.log

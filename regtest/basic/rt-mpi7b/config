@@ -1,4 +1,4 @@
-plumed_needs=zlib
+plumed_needs="tools:zlib"
 mpiprocs=3
 type=driver
 # this is to test a different name

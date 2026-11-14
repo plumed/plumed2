@@ -1,0 +1,8 @@
+# Same as rt-VesDeltaF-mwalkers, with two MPI processes for each of the two walkers.
+# Only the first walker writes the ALPHA file: all the processes of the other walkers must
+# open /dev/null instead, otherwise the collective operations of the file disagree.
+plumed_modules=ves
+mpiprocs=4
+type=driver
+extra_files="../rt-VesDeltaF-mwalkers/alanine.xtc ../rt-VesDeltaF-mwalkers/fesA.data ../rt-VesDeltaF-mwalkers/fesB.data ../rt-VesDeltaF-mwalkers/plumed.dat ../rt-VesDeltaF-mwalkers/ALPHA"
+arg="--plumed plumed.dat --ixtc alanine.xtc --dump-forces forces --dump-forces-fmt=%8.4f --multi 2"

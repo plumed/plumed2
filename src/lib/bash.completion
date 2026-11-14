@@ -1,7 +1,28 @@
 # generic bash completion for plumed
 # actual function is generated with current plumed version
 
-_plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
+_plumed() {
+    # Query the same explicitly selected modules as the command being edited.
+    # Only forward complete global load options before the command name.
+    local -a plumed_load_options=()
+    local plumed_word
+    local plumed_index
+    for ((plumed_index=1; plumed_index<COMP_CWORD; plumed_index++)); do
+        plumed_word=${COMP_WORDS[plumed_index]}
+        case "$plumed_word" in
+            --load|--load-module)
+                if ((plumed_index+1<COMP_CWORD)); then
+                    plumed_load_options+=("$plumed_word" "${COMP_WORDS[plumed_index+1]}")
+                    ((plumed_index+=1))
+                fi
+                ;;
+            --load=*|--load-module=*) plumed_load_options+=("$plumed_word") ;;
+            --*) ;;
+            *) break ;;
+        esac
+    done
+    eval "$(plumed --no-mpi "${plumed_load_options[@]}" completion 2>/dev/null)"
+}
 
 complete -F _plumed -o default plumed
 
