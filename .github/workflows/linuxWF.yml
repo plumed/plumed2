@@ -94,21 +94,34 @@ jobs:
         pip install --user -r ./python/requirements_run.txt
         pip install --user -r ./.ci/pytorch/requirements.txt
 
-    - name: Configure libmetatomic & libtorch
+    - name: Configure libtorch
       # the libraries on PyPI are not compiled with GLIBCXX_DEBUG.
       # -nvhpc- only builds PLUMED and the openacc plugin (multicore). The plugin is built with PLUMED's flags,
       # and with the C++20 these libraries need, nvc++ 24.3 stops with an internal compiler error.
       # Before C++20 was added here, configure could not enable them in this job anyway.
       if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
-        PIP_CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags)
-        PIP_LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags)
+        TORCH_PREFIX=$(python -c "import os, torch; print(os.path.realpath(os.path.join(torch.utils.cmake_prefix_path, '..', '..')))")
+        TORCH_ABI=$(python -c "import torch; print(int(torch.compiled_with_cxx11_abi()))")
 
-        echo "LDFLAGS=$PIP_LDFLAGS $LDFLAGS" >> $GITHUB_ENV
-        echo "CPPFLAGS=$PIP_CPPFLAGS $CPPFLAGS" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$TORCH_PREFIX/lib -Wl,-rpath,$TORCH_PREFIX/lib -Wl,--disable-new-dtags -ltorch -lc10 -ltorch_cpu $LDFLAGS" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I$TORCH_PREFIX/include -I$TORCH_PREFIX/include/torch/csrc/api/include -D_GLIBCXX_USE_CXX11_ABI=$TORCH_ABI $CPPFLAGS" >> $GITHUB_ENV
 
-        # the flags above enable the use of both libmetatomic and libtorch
-        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch --enable-cxx=20" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libtorch --enable-cxx=20" >> $GITHUB_ENV
+    - name: Install and configure libmetatomic
+      # metatomic-core is not on PyPI yet and is built from source (see .ci/install.metatomic), so only in the
+      # jobs that run all the regtests and the examples of the manual (PLUMED_ALL_TESTS=yes).
+      if: ${{ contains( matrix.variant, '-doc-' ) || contains( matrix.variant, '-coverage-' ) }}
+      run: |
+        # featomic computes the CVs of rt-soap and rt-perovskite
+        python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu \
+          "metatensor-torch>=0.10.0,<0.11" "featomic>=0.6.6,<0.7"
+        rustup toolchain install 1.88.0 --profile minimal
+        RUSTUP_TOOLCHAIN=1.88.0 bash .ci/install.metatomic
+
+        echo "LDFLAGS=$(python src/metatomic/flags-from-python.py --ldflags) $LDFLAGS" >> $GITHUB_ENV
+        echo "CPPFLAGS=$(python src/metatomic/flags-from-python.py --cppflags) $CPPFLAGS" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic" >> $GITHUB_ENV
     # ITensor is always built with g++ and options.mk.itensor, whatever the variant, so one cache is shared
     # by all the jobs that use it. .ci/install.itensor skips the build when the prefix was restored.
     # -nvhpc- is excluded since it does not configure ITensor (see below)

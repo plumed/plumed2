@@ -2,9 +2,24 @@ plumed_needs="metatomic:libmetatomic metatomic:libtorch"
 plumed_modules=metatomic
 type=driver
 
-# NOTE: to enable --debug-forces, also change the dtype of the models to float64
+# Models use float64, so --debug-forces can also check numerical derivatives.
 arg="--plumed plumed.dat --ixyz structure.xyz --length-units A --dump-forces forces --dump-forces-fmt %8.2f" # --debug-forces forces.num"
 
 function plumed_regtest_before(){
+  # TorchScript models run in the plugin of metatomic-torch
+  ln -s "$(python -c 'import metatomic_torch; print(metatomic_torch.utils.plugin_path)')" metatomic-torch-plugin.so &&
   python cv.py && echo Generated model using cv.py
+}
+
+function plumed_regtest_after(){
+  # a model without gradients, as exported for the TorchScript-only interface of
+  # PLUMED 2.10, can be printed but not biased
+  local cv="cv: METATOMIC MODEL=no-gradients.pt PLUGIN_LIBRARY=./metatomic-torch-plugin.so SPECIES1=1,4,7 SPECIES2=2,3,5,6,8,9 SPECIES_TO_TYPES=6,8"
+  rm -f no-gradients
+  for action in "PRINT ARG=cv FILE=no-gradients.colvar" "BIASVALUE ARG=cv" ; do
+    printf "%s\n%s\n" "$cv" "$action" > no-gradients.dat
+    $plumed_nompi driver --plumed no-gradients.dat --ixyz structure.xyz --length-units A > no-gradients.out 2>&1
+    echo "$action: exit code $?" >> no-gradients
+    grep -m1 "^forces were applied to this METATOMIC action" no-gradients.out >> no-gradients
+  done
 }
