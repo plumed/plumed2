@@ -66,14 +66,6 @@ void Pbc::removeFromACCDevice() const {
 #pragma acc exit data delete(type, this[0:1])
 }
 
-// Pbc::Pbc(const Pbc& other):
-//   type(other.type),
-//   box(other.box),
-//    invBox(other.invBox),
-//   reduced(other.reduced),
-//   invReduced(other.invReduced)
-// {}
-
 void Pbc::buildShifts() {
   const double small=1e-28;
 
@@ -218,11 +210,6 @@ void Pbc::setBox(const Tensor&b) {
   if(type==orthorombic) {
     reduced=box;
     invReduced=inverse(reduced);
-    for(unsigned i=0; i<3; i++) {
-      diag[i]=box[i][i];
-      hdiag[i]=0.5*box[i][i];
-      mdiag[i]=-0.5*box[i][i];
-    }
   } else {
     reduced=box;
     LatticeReduction::reduce(reduced);
@@ -240,6 +227,59 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
   }
 }
 
+// The search of the minimum image is written once and used by all the versions of
+// distance and by apply. It must be inlined in them: a call for each vector of apply
+// costs 5-10% (clang does not inline it by itself), and the results do not depend on it.
+#if defined(__GNUC__)
+#define PLUMED_PBC_INLINE inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define PLUMED_PBC_INLINE __forceinline
+#else
+#define PLUMED_PBC_INLINE inline
+#endif
+
+template <typename T>
+PLUMED_PBC_INLINE VectorTyped<T,3> Pbc::searchImage(const VectorTyped<T,3>& d, int* nshifts) const {
+  VectorTyped<T,3> s=matmul(d,invReduced);
+  // bring to -0.5,+0.5 region in scaled coordinates
+  // (also the vectors that are already there, and for which no shift is attempted:
+  // skipping them would change the results in the last digits)
+  for(int i=0; i<3; ++i) {
+    s[i]=Tools::pbc(s[i]);
+  }
+  VectorTyped<T,3> best(matmul(s,reduced));
+  // check if shifts have to be attempted:
+  if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+    // list of shifts is specific for that "octant" (depends on signs of s[i]):
+    const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+    const Vector* myshifts=shifts[o0][o1][o2];
+    const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
+    const VectorTyped<T,3> reference(best);
+    double lbest(modulo2(best));
+    if(nshifts) {
+      *nshifts+=nmyshifts;
+    }
+    // loop over possible shifts:
+    for(unsigned i=0; i<nmyshifts; ++i) {
+      const VectorTyped<T,3> trial=sumT(reference,myshifts[i]);
+      const double ltrial=modulo2(trial);
+      if(ltrial<lbest) {
+        lbest=ltrial;
+        best=trial;
+      }
+    }
+  }
+  return best;
+}
+
+Vector Pbc::distanceNotOrthorhombic(const Vector&v1,const Vector&v2) const {
+  Vector d=delta(v1,v2);
+  if(type==generic) {
+    d=searchImage(d,nullptr);
+  }
+  return d;
+}
+
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
   apply(VectorView(&dlist[0][0],dlist.size()),max_index);
 }
@@ -248,31 +288,7 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
   if (max_index==0) {
     max_index=dlist.size();
   }
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned k=0; k<max_index; ++k) {
-      while(dlist[k][0]>hdiag[0]) {
-        dlist[k][0]-=diag[0];
-      }
-      while(dlist[k][0]<=mdiag[0]) {
-        dlist[k][0]+=diag[0];
-      }
-      while(dlist[k][1]>hdiag[1]) {
-        dlist[k][1]-=diag[1];
-      }
-      while(dlist[k][1]<=mdiag[1]) {
-        dlist[k][1]+=diag[1];
-      }
-      while(dlist[k][2]>hdiag[2]) {
-        dlist[k][2]-=diag[2];
-      }
-      while(dlist[k][2]<=mdiag[2]) {
-        dlist[k][2]+=diag[2];
-      }
-    }
-#else
+  if(type==orthorombic) {
     // Keep invariant box values independent of writes through the distance view.
     const Vector inverseDiagonal(invBox(0,0),invBox(1,1),invBox(2,2));
     const Vector diagonal(box(0,0),box(1,1),box(2,2));
@@ -285,223 +301,38 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
         value=pbcNoBranch(value*inverseDiagonal[i])*diagonal[i];
       }
     }
-#endif
   } else if(type==generic) {
     for(unsigned k=0; k<max_index; ++k) {
-      //Inlining by hand this part of function from distance speeds up by about 20-30%
-      //against the previos version, and 60-80% agains this version non inlined.
-      //I do not think is the `if(nshifts) *nshifts+=nmyshifts;`,
-      //but that the compiler now see how we are juggling with the memory and it
-      //does its magic
-
-      //I tried writing VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
-      // by copy-pasting the original vector-tensor, but slows down this method by 10%... (on gcc9)
-      Vector s=matmul(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},invReduced);
-      // bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; ++i) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      Vector best(matmul(s,reduced));
-      // check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-        // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
-        const Vector* myshifts=shifts[o0][o1][o2];
-        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
-        Vector reference = best;
-        double lbest(modulo2(best));
-        // loop over possible shifts:
-        for(unsigned i=0; i<nmyshifts; ++i) {
-          Vector trial=reference+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-      }
+      const Vector best=searchImage(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},nullptr);
       dlist[k][0]  = best[0];
       dlist[k][1]  = best[1];
       dlist[k][2]  = best[2];
     }
   }
-  // throws are not compatible with GPUs
-  // so the `plumed_merror("unknown pbc type");` must be anticipated by
-  // a check before running the whole calculation
+  // nothing to do if the box is not set
 }
 
 Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
   Vector d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
+  if(type==orthorombic) {
     for(int i=0; i<3; i++) {
       d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
     }
-#endif
   } else if(type==generic) {
-    Vector s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
-        const Vector* myshifts=shifts[o0][o1][o2];
-        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
-        Vector best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        if(nshifts) {
-          *nshifts+=nmyshifts;
-        }
-        for(unsigned i=0; i<nmyshifts; i++) {
-          Vector trial=d+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-  } else {
-    plumed_merror("unknown pbc type");
+    d=searchImage(d,nshifts);
   }
-  return d;
-}
-
-Vector Pbc::distanceGeneric(const Vector&v1,const Vector&v2)const {
-  Vector d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
-    for(int i=0; i<3; i++) {
-      d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
-    }
-#endif
-  } else if(type==generic) {
-    Vector s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
-        const Vector* myshifts=shifts[o0][o1][o2];
-        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
-        Vector best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        for(unsigned i=0; i<nmyshifts; i++) {
-          Vector trial=d+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-    // no throws on the GPU
-  } //else plumed_merror("unknown pbc type");
   return d;
 }
 
 Vector3f Pbc::distance(const Vector3f&v1,const Vector3f&v2)const {
   Vector3f d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
+  if(type==orthorombic) {
     for(int i=0; i<3; i++) {
       d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
     }
-#endif
   } else if(type==generic) {
-    Vector3f s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
-        const Vector* myshifts=shifts[o0][o1][o2];
-        const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
-        Vector3f best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        for(unsigned i=0; i<nmyshifts; i++) {
-          Vector3f trial=sumT(d,myshifts[i]);
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-    // no throws on the GPU
-  } //else plumed_merror("unknown pbc type");
+    d=searchImage(d,nullptr);
+  }
   return d;
 }
 

@@ -417,11 +417,7 @@ void WrapAround::calculate() {
     distances.resize(nref);
   }
   const Pbc& pbc=getPbc();
-#ifdef __PLUMED_PBC_WHILE
-  const bool orthorombic=false;
-#else
   const bool orthorombic=pbc.isOrthorombic();
-#endif
   const Vector diag(pbc.getBox()(0,0),pbc.getBox()(1,1),pbc.getBox()(2,2));
   const Vector invdiag(pbc.getInvBox()(0,0),pbc.getInvBox()(1,1),pbc.getInvBox()(2,2));
   // with few reference atoms the loop over all of them is faster than the cells
