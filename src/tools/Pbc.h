@@ -26,6 +26,7 @@
 #include "Tensor.h"
 #include "View.h"
 #include "View2D.h"
+#include "Tools.h"
 #include <vector>
 #include <cstddef>
 #include <cstdint>
@@ -98,8 +99,12 @@ public:
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
 /// if specified, also returns the number of attempted shifts
+/// Orthorhombic boxes, the most common case, are done inline
 #pragma acc routine seq
   Vector distance(const Vector&, const Vector&)const;
+/// Computes v2-v1, using minimal image convention, for boxes that are not orthorhombic (or not set)
+#pragma acc routine seq
+  Vector distanceGeneric(const Vector&, const Vector&)const;
 #pragma acc routine seq
   Vector3f distance(const Vector3f&, const Vector3f&)const;
 /// Computes v2-v1, using minimal image convention
@@ -155,6 +160,25 @@ public:
 /// Returns true if box is set and non zero
   bool isSet()const;
 };
+
+#ifndef __PLUMED_PBC_WHILE
+inline
+Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
+  if(type==orthorombic) {
+    Vector d=delta(v1,v2);
+    for(int i=0; i<3; i++) {
+      d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+    }
+    return d;
+  }
+  return distanceGeneric(v1,v2);
+}
+#else
+inline
+Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
+  return distanceGeneric(v1,v2);
+}
+#endif
 
 inline
 bool Pbc::isSet()const {

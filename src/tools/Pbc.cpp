@@ -376,7 +376,7 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
   return d;
 }
 
-Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
+Vector Pbc::distanceGeneric(const Vector&v1,const Vector&v2)const {
   Vector d=delta(v1,v2);
   if(type==unset) {
     // do nothing

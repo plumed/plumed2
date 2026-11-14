@@ -564,13 +564,11 @@ inline double Tools::pbc(T x) {
     // At exact ties (x=+-0.5) the result can be +0.5 or -0.5 (both are valid images).
     return x-std::rint(x);
   } else if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    // same result as rounding x+offset half away from zero with a branch on its sign,
+    // but without the branch, so that loops calling this function can be vectorized
     constexpr T offset=100.0;
     x+=offset;
-    if(x>=0) {
-      return x-int(x+0.5);
-    } else {
-      return x-int(x-0.5);
-    }
+    return x-int(x+std::copysign(T(0.5),x));
   } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else {
