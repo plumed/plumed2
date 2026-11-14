@@ -59,12 +59,18 @@ public:
       //return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
     }
   };
-/// A cell to be searched, with the lattice vector that brings the atoms stored in it
-/// (at the positions given by wrapPosition) to their image close to the central cell
-  struct ShiftedCell {
-    unsigned cell;
+/// A set of consecutive cells to be searched: their atoms are the elements from begin to
+/// end (excluded) of lcell_lists of a CellCollection. The shift is the lattice vector that
+/// brings these atoms (at the positions given by wrapPosition) to their image close to the central atom
+  struct CellRun {
+    std::size_t begin;
+    std::size_t end;
     Vector shift;
   };
+/// The largest value accepted by setSubdivision
+  static constexpr unsigned maxSubdivision=2;
+/// The largest number of runs returned by getNeighborRuns
+  static constexpr unsigned maxRuns=2*(2*maxSubdivision+1)*(2*maxSubdivision+1);
 private:
 /// Minimum number of atoms per thread when finding the cells of the atoms
   static constexpr unsigned minAtomsPerThread=4096;
@@ -80,6 +86,21 @@ private:
   Pbc mypbc;
 /// The location of the origin if we are not using periodic boundary conditions
   Vector origin;
+/// The number of cells per cutoff that was asked for with setSubdivision
+  unsigned requestedSubdivision=1;
+/// The number of cells per cutoff in use: the cells within nsub cells from a cell, in each
+/// direction, contain all the atoms within the cutoff from its atoms. It is the requested one
+/// if there are enough cells (2*nsub+1 in each direction), otherwise 1
+  unsigned nsub=1;
+/// The width of the cells: the distance between their opposite faces
+  std::array<double,3> cellWidth{0.0,0.0,0.0};
+/// Two points whose distances along the normals to the three families of faces of the
+/// cells are (at least) p_k are farther than sqrt(sum_k p_k^2/skewFactor). It is the
+/// largest eigenvalue of the matrix of the cosines of the angles between the normals:
+/// 1 for orthorhombic boxes, and at most 3
+  double skewFactor=1.0;
+/// The lattice vectors of the box (zero without periodic boundary conditions)
+  std::array<Vector,3> lattice;
 /// The number of cells in each direction
   std::array<unsigned,3> ncells{0,0,0};
 /// The number of cells to stride through to get the link cells
@@ -98,6 +119,12 @@ public:
   explicit LinkCells( Communicator& comm );
 /// Have the link cells been enabled
   bool enabled() const ;
+/// Set the number of cells per cutoff (1 or 2, the default is 1) used by the next setupCells.
+/// With 2 the cells are smaller and those within two cells are searched: fewer atoms
+/// beyond the cutoff are visited. It is used only if there are at least five cells in
+/// each direction. The functions that work on the neighboring cells (addRequiredCells,
+/// getNeighborRuns, retrieveNeighboringAtoms) take it into account
+  void setSubdivision( unsigned n );
 /// Set the value of the cutoff
   void setCutoff( double lcut );
 /// Get the value of the cutoff
@@ -168,23 +195,26 @@ public:
                          std::vector<unsigned>& cells_required,
                          bool usePbc=true) const ;
 /// Returns true if the periodic image of an atom that is within the cutoff from an atom
-/// of another cell is fixed by the cells of the two atoms. This is the case when there are
-/// at least three cells in each direction (the box is at least three cutoffs wide), and
-/// without periodic boundary conditions. The minimum image can then be found without
-/// Pbc::distance: see getShiftedCells
+/// of another cell is fixed by the cells of the two atoms. This is the case when the cells
+/// to be searched in each direction are all different (the box is at least three cutoffs
+/// wide), and without periodic boundary conditions. The minimum image can then be found
+/// without Pbc::distance: see getNeighborRuns
   bool cellsFixImages() const ;
 /// The position moved inside the box, as it is done to find the cell of an atom
 /// (the position itself without periodic boundary conditions)
   Vector wrapPosition( const Vector& pos ) const ;
-/// Get the cells that surround a particular cell, in the same order as addRequiredCells,
-/// with the lattice vectors to be added to the wrapped positions of their atoms:
-/// if atom j is in cells[k].cell, the vector wrapPosition(pos_j)+cells[k].shift-wrapPosition(pos_i)
-/// connects an atom i of the cell celn to the image of j that is in that neighboring cell.
-/// It is the minimum image if the two atoms are within the cutoff.
-/// It must be used only if cellsFixImages() is true. Returns the number of cells
-  unsigned getShiftedCells( const std::array<unsigned,3>& celn,
-                            std::array<ShiftedCell,27>& cells,
-                            bool usePbc=true ) const ;
+/// Get the atoms of a collection that can be within the cutoff from the position pos, as
+/// runs of consecutive elements of collection.lcell_lists (the cells are consecutive along
+/// the first direction). The cells that are farther than the cutoff from pos are left out.
+/// If atom j is in runs[k], the vector wrapPosition(pos_j)+runs[k].shift-wrapped connects
+/// pos to the image of j that is in those cells: it is the minimum image if the two atoms
+/// are within the cutoff. wrapped is set to wrapPosition(pos).
+/// It must be used only if cellsFixImages() is true. Returns the number of runs
+  unsigned getNeighborRuns( const Vector& pos,
+                            const CellCollection& collection,
+                            bool usePbc,
+                            Vector& wrapped,
+                            std::array<CellRun,maxRuns>& runs ) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( unsigned ncells_required,
                              View<const unsigned> cells_required,
@@ -205,14 +235,18 @@ public:
 /// @param neigh_pos position of the candidate neighbors
 /// @param neigh_ind indexes of the candidate neighbors
 /// @param pbc
-/// @param natoms_per_list *output* number of atom per list (mapped on tind) `nlist[tind[i]]=natoms[i]`
-/// @param nlist *output* list of the central atoms plus their neighbors
+/// @param natoms_per_list *output* the number of neighbors in the longest list: each list has
+///        1+natoms_per_list slots in nlist (the first one is for the central atom)
+/// @param nlist *output* the number of atoms in each list, central atom included
+///        (`nlist[tind[i]]`), followed by the lists: the one of atom i starts at
+///        `nat+tind[i]*(1+natoms_per_list)`
 /// @param applyCutoff if true only the candidates whose (minimum image) distance from the
-///        central atom is not larger than the link cell cutoff are kept. The cells are at
-///        least as wide as the cutoff, so without this the lists hold all the atoms of the
-///        27 cells around the central atom, up to ~2-3 cutoffs away: with a short cutoff
-///        in a dense system most of them are beyond it. Use it only when the quantity
-///        computed from the list is exactly zero beyond the cutoff.
+///        central atom is not larger than the link cell cutoff are kept, and cells of half
+///        the cutoff are used when the box is large enough (fewer candidates are visited).
+///        Without it the cells are at least as wide as the cutoff and the lists hold all
+///        the atoms of the 27 cells around the central atom, up to ~2-3 cutoffs away: with
+///        a short cutoff in a dense system most of them are beyond it. Use it only when
+///        the quantity computed from the list is exactly zero beyond the cutoff.
   void createNeighborList( unsigned nat,
                            View<const Vector> pos,
                            View<const unsigned> ind,

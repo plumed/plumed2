@@ -201,6 +201,8 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
     LinkCells cells(comm);
     cells.setCutoff(distance_);
+    // smaller cells: fewer candidate pairs beyond the cutoff
+    cells.setSubdivision(LinkCells::maxSubdivision);
     if(do_pbc_) {
       cells.setupCells(make_const_view(positions),*pbc_);
     } else {
@@ -232,45 +234,61 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned cend=std::min(cstart+cellsPerRank,ncells);
     // When the cell of an atom fixes its periodic image, the minimum image distance is not
     // needed for each candidate pair (they are many more than the pairs within the cutoff):
-    // the atoms are wrapped in the box once, and each cell comes with its lattice vector
+    // the candidates are wrapped in the box once, in the order of the cells, and each run
+    // of cells comes with its lattice vector
     const bool useShifts=cells.cellsFixImages();
-    std::vector<Vector> wrapped;
+    std::vector<Vector> cellpos;
     if(useShifts) {
-      wrapped.resize(positions.size());
-      for(std::size_t i=0; i<positions.size(); ++i) {
-        wrapped[i]=cells.wrapPosition(positions[i]);
+      cellpos.resize(candidates.lcell_lists.size());
+      for(std::size_t j=0; j<cellpos.size(); ++j) {
+        cellpos[j]=cells.wrapPosition(positions[candidates.lcell_lists[j]]);
       }
     }
     #pragma omp parallel num_threads(nt)
     {
       auto & private_flat_nl=thread_flat_nl[OpenMP::getThreadNum()];
-      std::vector<unsigned> cells_required(27);
-      std::array<LinkCells::ShiftedCell,27> shifted;
+      std::vector<unsigned> cells_required(cells.getNumberOfCells());
+      std::array<LinkCells::CellRun,LinkCells::maxRuns> runs;
+      std::vector<unsigned> kept;
       #pragma omp for schedule(static) nowait
       for(unsigned c=cstart; c<cend; ++c) {
         auto atomsInC= listA.getCellIndexes(c);
         if(atomsInC.size()==0) {
           continue;
         }
-        auto cell = cells.findMyCell(c);
         if(useShifts) {
-          const unsigned nshifted=cells.getShiftedCells(cell,shifted,do_pbc_);
           for (auto A : atomsInC) {
-            for (unsigned cb=0; cb<nshifted; ++cb) {
-              const Vector shift=shifted[cb].shift-wrapped[A];
-              for (auto B : candidates.getCellIndexes(shifted[cb].cell)) {
-                if(!twoLists && B<=A) {
-                  continue;
-                }
-                if(modulo2(wrapped[B]+shift)<=d2) {
-                  private_flat_nl.push_back(A);
-                  private_flat_nl.push_back(B);
-                }
+            Vector posA;
+            const unsigned nruns=cells.getNeighborRuns(positions[A],candidates,do_pbc_,posA,runs);
+            std::size_t ncandidates=0;
+            for (unsigned r=0; r<nruns; ++r) {
+              ncandidates+=runs[r].end-runs[r].begin;
+            }
+            // one more element: a candidate is written before it is known if it is kept
+            if(kept.size()<ncandidates+1) {
+              kept.resize(ncandidates+1);
+            }
+            std::size_t nkept=0;
+            for (unsigned r=0; r<nruns; ++r) {
+              const Vector shift=runs[r].shift-posA;
+              for (std::size_t j=runs[r].begin; j<runs[r].end; ++j) {
+                const unsigned B=candidates.lcell_lists[j];
+                // no branch: whether a candidate is within the cutoff, and whether it
+                // comes after A in a single list, cannot be predicted
+                kept[nkept]=B;
+                nkept+=( (modulo2(cellpos[j]+shift)<=d2) & (twoLists | (B>A)) );
               }
+            }
+            const std::size_t first=private_flat_nl.size();
+            private_flat_nl.resize(first+2*nkept);
+            for (std::size_t k=0; k<nkept; ++k) {
+              private_flat_nl[first+2*k]=A;
+              private_flat_nl[first+2*k+1]=kept[k];
             }
           }
           continue;
         }
+        auto cell = cells.findMyCell(c);
         unsigned ncells_required=0;
         cells.addRequiredCells(cell,ncells_required, cells_required,do_pbc_);
         for (auto A : atomsInC) {
