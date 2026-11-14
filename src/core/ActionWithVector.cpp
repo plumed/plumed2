@@ -350,11 +350,12 @@ template <typename T>
 void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
   const std::size_t ntask = partialTaskList.size();
   const std::size_t ncomponents = getNumberOfComponents();
-#ifdef _OPENMP
-  // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt = OpenMP::getGoodNumThreads( stash );
-#endif
-  #pragma omp parallel for num_threads(nt) schedule(static)
+  // The stash holds the components of a task contiguously. The copy loops over the tasks and,
+  // for each task, over the components, so that the stash is read in order: looping over the
+  // components first read it with a stride of ncomponents, one cache line per element
+  std::vector<double*> data;
+  std::vector<std::size_t> comp;
+  std::vector<Value*> periodic;
   for(std::size_t i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
     if( myval->hasDeriv || myval->getRank()==0 ) {
@@ -364,19 +365,45 @@ void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTa
       continue;
     }
     myval->value_set=true;
-    double* d = myval->data.data();
     plumed_dbg_massert( ntask==0 || myval->data.size()>partialTaskList[ntask-1], "failing in " + myval->getName() );
+    data.push_back( myval->data.data() );
+    comp.push_back( i );
     if( myval->isPeriodic() ) {
-      for(std::size_t j=0; j<ntask; ++j) {
-        const std::size_t t = partialTaskList[j];
-        d[t] = stash[t*ncomponents+i];
-        myval->applyPeriodicity(t);
-      }
-    } else {
-      for(std::size_t j=0; j<ntask; ++j) {
-        const std::size_t t = partialTaskList[j];
-        d[t] = stash[t*ncomponents+i];
-      }
+      periodic.push_back( myval );
+    }
+  }
+  const std::size_t ncopy = comp.size();
+  if( ncopy==0 ) {
+    return;
+  }
+  if( ncomponents==1 && periodic.empty() ) {
+    // one component: a plain gather
+    double* d = data[0];
+    for(std::size_t j=0; j<ntask; ++j) {
+      const std::size_t t = partialTaskList[j];
+      d[t] = stash[t];
+    }
+    return;
+  }
+  auto copyTask=[&]( const std::size_t j ) {
+    const std::size_t t = partialTaskList[j];
+    const T* src = stash.data() + t*ncomponents;
+    for(std::size_t k=0; k<ncopy; ++k) {
+      data[k][t] = src[comp[k]];
+    }
+    for(Value* myval : periodic) {
+      myval->applyPeriodicity(t);
+    }
+  };
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  if( nt>1 ) {
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
+    }
+  } else {
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
     }
   }
 }
@@ -385,17 +412,38 @@ template <typename T>
 void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
   const std::size_t ntask = partialTaskList.size();
   const std::size_t ncomponents = getNumberOfComponents();
-#ifdef _OPENMP
-  // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt = OpenMP::getGoodNumThreads( stash );
-#endif
-  #pragma omp parallel for num_threads(nt) schedule(static)
-  for(std::size_t i=0; i<ncomponents; ++i) {
-    const double* f = getConstPntrToComponent(i)->inputForce.data();
-    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+  if( ncomponents==1 ) {
+    // one component: a plain scatter
+    const double* f = getConstPntrToComponent(0)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(0)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(0)->getName() );
     for(std::size_t j=0; j<ntask; ++j) {
       const std::size_t t = partialTaskList[j];
-      stash[t*ncomponents+i] = f[t];
+      stash[t] = f[t];
+    }
+    return;
+  }
+  // the stash is written in order, a task at a time (see stashToValuesImpl)
+  std::vector<const double*> force( ncomponents );
+  for(std::size_t i=0; i<ncomponents; ++i) {
+    force[i] = getConstPntrToComponent(i)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+  }
+  auto copyTask=[&]( const std::size_t j ) {
+    const std::size_t t = partialTaskList[j];
+    T* dst = stash.data() + t*ncomponents;
+    for(std::size_t i=0; i<ncomponents; ++i) {
+      dst[i] = force[i][t];
+    }
+  };
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  if( nt>1 ) {
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
+    }
+  } else {
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
     }
   }
 }

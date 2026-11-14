@@ -101,7 +101,12 @@ endfunction
 function! s:Current(entry) abort
   let pointer = a:entry . '/current'
   if filereadable(pointer)
-    let lines = readfile(pointer, '', 1)
+    try
+      let lines = readfile(pointer, '', 1)
+    catch /^Vim\%((\a\+)\)\=:E484:/
+      " Another editor can replace the hint between the check and the read.
+      let lines = []
+    endtry
     if !empty(lines) && lines[0] =~# '^generation-[0-9-]\+$'
       let path = a:entry . '/' . lines[0]
       if filereadable(path . '/syntax/plumed.vim') && isdirectory(path . '/help')
@@ -109,6 +114,15 @@ function! s:Current(entry) abort
       endif
     endif
   endif
+  " Vim's rename() unlinks an existing destination before renaming, even on
+  " Unix. During that gap use an immutable completed generation. Never pick a
+  " directory merely because its generator has already written syntax/help.
+  for marker in reverse(sort(globpath(escape(a:entry, ',*?[]{}'), 'generation-*/complete', 0, 1)))
+    let path = fnamemodify(marker, ':h')
+    if filereadable(path . '/syntax/plumed.vim') && isdirectory(path . '/help')
+      return path
+    endif
+  endfor
   return ''
 endfunction
 
@@ -141,7 +155,10 @@ function! s:RefreshBuffers(state) abort
   for buffer in getbufinfo()
     if getbufvar(buffer.bufnr, 'plumed_cache_key', '') ==# a:state.key
       for window in win_findbuf(buffer.bufnr)
-        call win_execute(window, 'call plumed#Update(0)')
+        " This editor just completed this generation. Do not reread a shared
+        " hint that another publisher can temporarily remove or replace.
+        let command = 'call ' . expand('<SID>') . 'Source(' . string(a:state.stage) . ')'
+        call win_execute(window, command)
       endfor
     endif
   endfor
@@ -161,14 +178,16 @@ function! s:Finished(state, job, code) abort
     if s:Describe(state.root).key !=# state.key
       throw 'installation changed while gen_vim was running; use :PlumedRefresh'
     endif
-    " Publish only a completed generation. Old generations stay valid for help
-    " windows already open, and simultaneous Vim processes never mix files.
+    " Publish the immutable completion marker first. The shared pointer is a
+    " fast lookup hint: readers can use completed generations while rename()
+    " temporarily removes it. Once marked, never delete this generation.
+    call writefile([], state.stage . '/complete')
+    let published = 1
     let pointer = state.stage . '/current.new'
     call writefile([fnamemodify(state.stage, ':t')], pointer)
     if rename(pointer, state.entry . '/current') != 0
       throw 'cannot publish generated Vim files'
     endif
-    let published = 1
     call s:RefreshBuffers(state)
   catch
     let s:failed[state.key] = 1

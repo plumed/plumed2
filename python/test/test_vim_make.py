@@ -300,7 +300,12 @@ class TestVimCache(unittest.TestCase):
         try:
             for process in processes:
                 stdout, stderr = process.communicate(timeout=VIM_TIMEOUT)
-                self.assertEqual(process.returncode, 0, (stdout, stderr))
+                errors = self.root / "errors"
+                self.assertEqual(
+                    process.returncode,
+                    0,
+                    (errors.read_text() if errors.exists() else "", stdout, stderr),
+                )
         finally:
             for process in processes:
                 if process.poll() is None:
@@ -310,6 +315,76 @@ class TestVimCache(unittest.TestCase):
                 process.communicate()
         self.run_vim("call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'))")
         self.assertEqual(len(self.calls()), 4)
+
+    def test_cache_pointer_disappears_before_read(self):
+        # Vim's rename() removes the destination before renaming. Model another
+        # editor doing so between our readability check and readfile().
+        loader = self.vim / "autoload/plumed.vim"
+        original = "let lines = readfile(pointer, '', 1)"
+        replacement = (
+            "      if $PLUMED_TEST_POINTER_RACE ==# '1'\n"
+            "        let $PLUMED_TEST_POINTER_RACE=''\n"
+            "        call delete(pointer)\n"
+            "      endif\n" + original
+        )
+        self.assertIn(original, loader.read_text())
+        loader.write_text(loader.read_text().replace(original, replacement))
+        self.run_vim("call WaitForCache()")
+        self.run_vim(
+            "call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'))\n"
+            "call assert_true(filereadable(b:plumed_help_root . '/help/CACHE_ACTION.txt'))",
+            env={"PLUMED_TEST_POINTER_RACE": "1"},
+        )
+        self.assertEqual(len(self.calls()), 1, "a publication gap started PLUMED")
+
+    def test_missing_cache_pointer_reuses_completed_generation(self):
+        self.run_vim("call WaitForCache()")
+        pointer = next((self.cache / "plumed/vim").glob("*/current"))
+        pointer.unlink()
+        self.run_vim("call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'))")
+        self.assertEqual(len(self.calls()), 1, "a publication gap started PLUMED")
+
+    def test_pointer_gap_does_not_load_an_incomplete_generation(self):
+        self.run_vim("call WaitForCache()")
+        pointer = next((self.cache / "plumed/vim").glob("*/current"))
+        incomplete = pointer.parent / "generation-999999999-999999999-1"
+        (incomplete / "syntax").mkdir(parents=True)
+        (incomplete / "help").mkdir()
+        (incomplete / "syntax/plumed.vim").write_text(
+            "let b:plumedDictionary={'INCOMPLETE':[]}\n"
+        )
+        pointer.unlink()
+        self.run_vim(
+            "call assert_true(has_key(b:plumedDictionary,'CACHE_ACTION'))\n"
+            "call assert_false(has_key(b:plumedDictionary,'INCOMPLETE'))"
+        )
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_refresh_uses_its_completed_generation_during_pointer_gap(self):
+        loader = self.vim / "autoload/plumed.vim"
+        original = "    call s:RefreshBuffers(state)"
+        replacement = (
+            "    if $PLUMED_TEST_REFRESH_GAP ==# '1'\n"
+            "      let $PLUMED_TEST_REFRESH_GAP=''\n"
+            "      call delete(state.entry . '/current')\n"
+            "    endif\n" + original
+        )
+        self.assertIn(original, loader.read_text())
+        loader.write_text(loader.read_text().replace(original, replacement))
+        self.run_vim("call WaitForCache()")
+        pointer = next((self.cache / "plumed/vim").glob("*/current"))
+        previous = pointer.parent / pointer.read_text().strip()
+        # PID reuse/wrap can make an older generation sort after this editor's.
+        older = pointer.parent / "generation-999999999-0-1"
+        previous.rename(older)
+        pointer.write_text(older.name + "\n")
+        self.run_vim(
+            "let previous=b:plumed_cache_path\n"
+            "PlumedRefresh\ncall WaitForRefresh(previous)\n"
+            "call assert_match('/generation-' . getpid() . '-',b:plumed_cache_path)",
+            env={"PLUMED_TEST_REFRESH_GAP": "1"},
+        )
+        self.assertEqual(len(self.calls()), 2)
 
     def test_kernel_and_environment_invalidate_cache(self):
         kernel = self.vim.parents[1] / "libplumedKernel.so"
