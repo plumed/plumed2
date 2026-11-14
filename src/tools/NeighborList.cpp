@@ -377,32 +377,38 @@ void NeighborList::setRequestList() {
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
   // so as now it is not necessary to add extra logic in this function
-  requestlist_.clear();
+  // The atoms are marked in fullToRequest_ (one entry per element of fullatomlist_) and only
+  // the atoms that are used are sorted, instead of the two atoms of every pair
+  constexpr unsigned unused=std::numeric_limits<unsigned>::max();
+  fullToRequest_.assign(fullatomlist_.size(),unused);
   for(unsigned int i=0; i<size(); ++i) {
-    requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
-    requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
+    fullToRequest_[neighbors_[i].first]=0;
+    fullToRequest_[neighbors_[i].second]=0;
+  }
+  requestlist_.clear();
+  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+    if(fullToRequest_[i]!=unused) {
+      requestlist_.push_back(fullatomlist_[i]);
+    }
   }
   Tools::removeDuplicates(requestlist_);
+  // position of each used atom in the sorted list, so that the pairs can be renumbered without searches
+  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+    if(fullToRequest_[i]!=unused) {
+      auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), fullatomlist_[i]);
+      plumed_dbg_assert(p!=requestlist_.end() && *p==fullatomlist_[i]);
+      fullToRequest_[i]=p-requestlist_.begin();
+    }
+  }
   reduced=false;
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
   if(stride_>1) {
     if(!reduced) {
+      // the pairs refer to fullatomlist_: renumber them with the positions in requestlist_
       for(unsigned int i=0; i<size(); ++i) {
-        AtomNumber index0=fullatomlist_[neighbors_[i].first];
-        AtomNumber index1=fullatomlist_[neighbors_[i].second];
-// I exploit the fact that requestlist_ is an ordered vector
-// And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
-// so I can use lower_bond that uses binary seach instead of find
-        plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
-        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex0=p-requestlist_.begin();
-        p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex1=p-requestlist_.begin();
-        neighbors_[i]=pairIDs(newindex0,newindex1);
+        neighbors_[i]=pairIDs(fullToRequest_[neighbors_[i].first],fullToRequest_[neighbors_[i].second]);
       }
     }
     reduced=true;
