@@ -841,9 +841,10 @@ checked an analytic distance restraint, PLUMED generalized forces, atom force
 increments against a no-PLUMED baseline, and rank-count consistency. This is a
 focused integration check, not the full GROMACS upstream test suite.
 
-The distributed patch now targets `v2026.4` only. Patch/revert checks restore
-every original source file byte for byte and remove the extra bridge header.
-Earlier patch revisions also supported older 2026 releases. Fresh patched and unpatched `v2026.4` thread-MPI builds passed:
+The distributed patch targets `v2026.4` directly, both with
+links and with `--include`. Patch/revert checks restore every original source
+file byte for byte and remove the extra bridge header. Fresh patched and
+unpatched `v2026.4` thread-MPI builds passed:
 after reverting, single-rank PLUMED use still worked and the original
 multi-rank thread-MPI rejection returned, confirming that injection was removed.
 

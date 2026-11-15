@@ -34,7 +34,7 @@ EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -89,12 +89,172 @@
+@@ -89,12 +89,219 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
  #include "GlobalMasterSymmetry.h"
@@ -42,16 +42,24 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  #include "GlobalMasterMisc.h"
 +// PLUMED
 +#include "../Plumed.h"
++#include <cstdlib>
++#include <utility>
++#include <vector>
++#include <algorithm>
 +#include "ReductionMgr.h"
 +#include "Lattice.h"
 +#include "Tensor.h"
++#include "Molecule.h"
++#include "PatchData.h"
 +// END PLUMED
  #include "GlobalMasterFreeEnergy.h"
  #include "GlobalMasterColvars.h"
 +class GlobalMasterPlumed:
-+  public  GlobalMasterEasy,
++  public  GlobalMaster,
 +  private PLMD::Plumed
 +{
++  // global indexes of the atoms requested by PLUMED, sorted.
++  // NAMD passes the positions in the same order
 +  std::vector<int> index;
 +  std::vector<double> positions;
 +  std::vector<double> forces;
@@ -60,24 +68,41 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  double box[3][3];
 +  double virial[3][3];
 +  SimParameters *spar;
-+  // used to pass to NAMD the part of the virial that it cannot compute by itself
-+  SubmitReduction *plumedReduction;
++  Molecule *mol;
++  // used to pass to NAMD the bias energy and the part of the virial
++  // that it cannot compute by itself
++  SubmitReduction *reduction;
++#ifdef NODEGROUP_FORCE_REGISTER
++  // used instead of reduction in GPU-resident mode
++  NodeReduction *nodeReduction;
++#endif
++  // NAMD does not destroy the GlobalMaster objects when it terminates.
++  // The PLUMED object is thus finalized (files are closed) at exit.
++  static GlobalMasterPlumed* & instance()
++  {
++    static GlobalMasterPlumed* p=NULL;
++    return p;
++  }
++  static void finalizeAtExit()
++  {
++    if(instance()){
++      // the temporary takes the ownership and finalizes PLUMED when it goes out of scope
++      PLMD::Plumed tmp(std::move(static_cast<PLMD::Plumed&>(*instance())));
++    }
++  }
 +public:
-+  GlobalMasterPlumed():
-+    GlobalMasterEasy("plumedScript")
++  GlobalMasterPlumed()
 +  {
-+    plumedReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-+    easy_init(config);
-+  }
-+  ~GlobalMasterPlumed()
-+  {
-+    delete plumedReduction;
-+  }
-+  void easy_init(const char* config)
-+  {
++    spar=Node::Object()->simParameters;
++    mol=Node::Object()->molecule;
++    reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
++#ifdef NODEGROUP_FORCE_REGISTER
++    CProxy_PatchData cpdata(CkpvAccess(BOCclass_group).patchData);
++    nodeReduction = cpdata.ckLocalBranch()->reduction;
++#endif
++
 +    int realPrecision=sizeof(double);
 +    cmd("setRealPrecision",&realPrecision);
-+    spar=Node::Object()->simParameters;
 +
 +    double energyUnits=4.184;
 +    double lengthUnits=0.1;
@@ -88,7 +113,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +
 +    cmd("setPlumedDat",spar->plumedFilename);
 +
-+    int natoms=Node::Object()->molecule->numAtoms;
++    int natoms=mol->numAtoms;
 +    cmd("setNatoms",&natoms);
 +
 +    cmd("setMDEngine","namd");
@@ -99,51 +124,65 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +    cmd("setTimestep",&dt);
 +    cmd("init");
 +
-+    int s=step+1;
++    int s=spar->firstTimestep;
 +    cmd("setStep",&s);
 +    share();
 +
++    // registered after PLUMED has been created, so that it is executed
++    // before the static objects of the PLUMED library are destroyed
++    if(!instance()){
++      instance()=this;
++      std::atexit(finalizeAtExit);
++    }
++  }
++  ~GlobalMasterPlumed()
++  {
++    if(instance()==this) instance()=NULL;
++    delete reduction;
 +  }
 +
++  // ask to NAMD the atoms needed by PLUMED at the next step
 +  void share(){
 +    const int* p;
 +    int n;
-+    bool redo=false;
 +    cmd("prepareDependencies");
 +    cmd("createFullList",&n);
 +    cmd("getFullList",&p);
-+    if(index.size()!=n)redo=true;
-+    if(!redo) for(int i=0;i<n;i++) if(index[i]!=p[i]) { redo=true; break;};
-+    if(redo){
-+      index.resize(n);
++    std::vector<int> sorted(p,p+n);
++    cmd("clearFullList");
++    std::sort(sorted.begin(),sorted.end());
++    if(sorted!=index){
++      index.swap(sorted);
 +      masses.resize(n);
-+      modifyRequestedAtoms().resize(0);
-+      for(int i=0;i<n;i++){
-+        requestAtom(p[i]);
-+        masses[i]=getMass(p[i]);  
-+        index[i]=p[i];
-+      };
++      charges.resize(n);
 +      positions.resize(3*n);
 +      forces.resize(3*n);
-+      charges.resize(n);
-+      
++      modifyRequestedAtoms().resize(0);
++      for(int i=0;i<n;i++){
++        if(index[i]<0 || index[i]>=mol->numAtoms) NAMD_die("PLUMED requested an atom that does not exist");
++        modifyRequestedAtoms().add(index[i]);
++        masses[i]=mol->atommass(index[i]);
++        charges[i]=mol->atomcharge(index[i]);
++      }
 +      cmd("setAtomsNlocal",&n);
-+      cmd("setAtomsGatindex",&index[0]);
++      cmd("setAtomsGatindex",index.data());
 +    }
-+    cmd("clearFullList");
 +  }
 +
-+  void easy_calc(){
++protected:
++  virtual void calculate(){
++    const int n=index.size();
 +
-+    for(int i=0;i<index.size();i++){
-+      Vector coord;
-+      getPosition(index[i],coord);
-+      positions[3*i+0]=coord.x;
-+      positions[3*i+1]=coord.y;
-+      positions[3*i+2]=coord.z;
-+      masses[i]=Node::Object()->molecule->atommass(index[i]);
-+      charges[i]=Node::Object()->molecule->atomcharge(index[i]);
-+    };
++    // the server passes the requested atoms sorted by index, as they are stored here
++    AtomIDList::const_iterator a_i=getAtomIdBegin();
++    PositionList::const_iterator p_i=getAtomPositionBegin();
++    if(getAtomIdEnd()-a_i!=n) NAMD_bug("PLUMED received a wrong number of atoms");
++    for(int i=0;i<n;i++){
++      if(a_i[i]!=index[i]) NAMD_bug("PLUMED received the atoms in an unexpected order");
++      positions[3*i+0]=p_i[i].x;
++      positions[3*i+1]=p_i[i].y;
++      positions[3*i+2]=p_i[i].z;
++    }
 +
 +    // use the lattice of the current step (GlobalMaster::lattice), since
 +    // SimParameters::lattice is not updated by the barostats
@@ -153,23 +192,22 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      for(int i=0;i<3;i++) box[1][i]=lattice->b()[i];
 +      for(int i=0;i<3;i++) box[2][i]=lattice->c()[i];
 +      cmd("setBox",&box[0][0]);
-+    } 
++    }
 +
-+    for(int i=0;i<forces.size();i++) forces[i]=0.0;
++    for(int i=0;i<3*n;i++) forces[i]=0.0;
 +    for(int i=0;i<3;i++) for(int j=0;j<3;j++) virial[i][j]=0.0;
-+    cmd("setVirial",&virial[0][0]);
 +
-+    cmd("setMasses",&masses[0]); cmd("setCharges",&charges[0]);
-+    cmd("setPositions",&positions[0]);
-+    cmd("setForces",&forces[0]);
++    cmd("setMasses",masses.data()); cmd("setCharges",charges.data());
++    cmd("setPositions",positions.data());
++    cmd("setForces",forces.data());
++    cmd("setVirial",&virial[0][0]);
 +
 +    cmd("shareData");
 +    cmd("performCalc");
 +
-+    // report the bias energy to NAMD (MISC column, included in the total energy)
++    // energy of the bias (MISC column, included in the total energy)
 +    double bias=0.0;
 +    cmd("getBias",&bias);
-+    addEnergy(bias);
 +
 +    // NAMD (ComputeGlobal::recvResults) adds to its virial sum_i outer(f_i,x_i)
 +    // for the forces returned here, using the same positions passed to PLUMED.
@@ -184,22 +222,31 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      vcorr.zx=-virial[0][2]; vcorr.zy=-virial[1][2]; vcorr.zz=-virial[2][2];
 +    }
 +
-+    for(int i=0;i<index.size();i++){
-+      Vector f;
-+      f.x=forces[3*i+0];
-+      f.y=forces[3*i+1];
-+      f.z=forces[3*i+2];
-+      int j=addForce(index[i],f);
++    modifyForcedAtoms().resize(0);
++    modifyAppliedForces().resize(0);
++    for(int i=0;i<n;i++){
++      const Vector f(forces[3*i+0],forces[3*i+1],forces[3*i+2]);
++      modifyForcedAtoms().add(index[i]);
++      modifyAppliedForces().add(f);
 +      if(periodic) vcorr-=outer(f,Vector(positions[3*i+0],positions[3*i+1],positions[3*i+2]));
-+    };
++    }
 +
-+    ADD_TENSOR_OBJECT(plumedReduction,REDUCTION_VIRIAL_NORMAL,vcorr);
-+    plumedReduction->submit();
++#ifdef NODEGROUP_FORCE_REGISTER
++    if(spar->CUDASOAintegrate){
++      // GPU-resident mode: the standard reductions are not used
++      nodeReduction->item(REDUCTION_MISC_ENERGY)+=bias;
++      ADD_TENSOR_OBJECT(nodeReduction,REDUCTION_VIRIAL_NORMAL,vcorr);
++    } else
++#endif
++    {
++      reduction->item(REDUCTION_MISC_ENERGY)+=bias;
++      ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,vcorr);
++      reduction->submit();
++    }
 +
 +    int s=step+1;
 +    cmd("setStep",&s);
 +    share();
-+ 
 +  }
 +};
  
@@ -207,7 +254,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  #include "PatchData.h"
  #include "NamdEventsProfiling.h"
  #include "DeviceCUDA.h"
-@@ -1039,10 +1199,15 @@
+@@ -1039,10 +1246,15 @@
              masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());
@@ -223,6 +270,148 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  		if ( simParams->colvarsOn )
  			masterServerObject->addClient(new GlobalMasterColvars());
  
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/HomePatch.C" << \EOF_EOF
+--- ./src/HomePatch.C.preplumed
++++ ./src/HomePatch.C
+@@ -2384,11 +2384,11 @@
+     p->maxAtoms = ((natoms + padding - 1) / padding) * padding;
+     // set numBytes to allow each array to have maxAtoms space
+     // count up total number of double, float, and int arrays
+     // XXX TODO : these magic numbers are bad for maintability
+     const SimParameters *simParams = Node::Object()->simParameters;
+-    int numdoubles = (simParams->colvarsOn || simParams->tclForcesOn) ? 34: 31; 
++    int numdoubles = (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn) ? 34: 31; 
+     p->numBytes = p->maxAtoms *
+       (numdoubles * sizeof(double) + 9*sizeof(float) + 17*sizeof(int));
+   }
+   p->numAtoms = natoms;
+   return p->numBytes;
+@@ -2489,11 +2489,11 @@
+   t += p->maxAtoms * sizeof(double);
+   p->f_slow_y = (double *) t;
+   t += p->maxAtoms * sizeof(double);
+   p->f_slow_z = (double *) t;
+   t += p->maxAtoms * sizeof(float);
+-  if (simParams->colvarsOn || simParams->tclForcesOn){  
++  if (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn){  
+     p->f_global_x = (double *) t;
+     t += p->maxAtoms * sizeof(double);
+     p->f_global_y = (double *) t;
+     t += p->maxAtoms * sizeof(double);
+     p->f_global_z = (double *) t;
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/Sequencer.C" << \EOF_EOF
+--- ./src/Sequencer.C.preplumed
++++ ./src/Sequencer.C
+@@ -688,11 +688,11 @@
+     // copy global flags
+     CUDASequencer->update_patch_flags();
+   }
+   int doTcl = simParams->tclForcesOn;
+   int doColvars = simParams->colvarsOn;
+-  const int doGlobal = (doTcl || doColvars);
++  const int doGlobal = (doTcl || doColvars || simParams->plumedOn);
+   CmiNodeBarrier();
+   // Calculate the new force and energy after rescaling the coordinates
+   // Migration happend before calling this function
+   this->runComputeObjectsCUDA(0, doGlobal, 1, step, 0 /* startup */);
+   CmiNodeBarrier();
+@@ -996,11 +996,11 @@
+     int &doVirial = patch->flags.doVirial;
+     doVirial = 1;
+     // Do we need to return forces to TCL script or Colvar module?
+     int doTcl = simParams->tclForcesOn;
+     int doColvars = simParams->colvarsOn;
+-    const int doGlobal = (doTcl || doColvars);
++    const int doGlobal = (doTcl || doColvars || simParams->plumedOn);
+     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
+ 
+     // The following flags have to be explicitly disabled in Patch object.
+     patch->flags.doMolly = 0;
+     patch->flags.doLoweAndersen = 0;
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SequencerCUDA.C" << \EOF_EOF
+--- ./src/SequencerCUDA.C.preplumed
++++ ./src/SequencerCUDA.C
+@@ -686,11 +686,11 @@
+   allocate_host<double>(&f_slow_y, numAtomsHomeAndProxyAllocated);
+   allocate_host<double>(&f_slow_z, numAtomsHomeAndProxyAllocated);
+   allocate_host<double>(&pos_x, numAtomsHomeAndProxyAllocated);
+   allocate_host<double>(&pos_y, numAtomsHomeAndProxyAllocated);
+   allocate_host<double>(&pos_z, numAtomsHomeAndProxyAllocated);
+-  if (simParams->colvarsOn || simParams->tclForcesOn){
++  if (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn){
+     allocate_host<double>(&f_global_x, numAtomsHomeAndProxyAllocated);
+     allocate_host<double>(&f_global_y, numAtomsHomeAndProxyAllocated);
+     allocate_host<double>(&f_global_z, numAtomsHomeAndProxyAllocated);
+   }
+   allocate_host<float>(&charge, numAtomsHomeAndProxyAllocated);
+@@ -737,11 +737,11 @@
+   allocate_device<double>(&d_pos_raw, 3 * numAtomsHomeAndProxyAllocated);
+   d_pos_x    = &d_pos_raw[numAtomsHomeAndProxyAllocated*0];
+   d_pos_y    = &d_pos_raw[numAtomsHomeAndProxyAllocated*1];
+   d_pos_z    = &d_pos_raw[numAtomsHomeAndProxyAllocated*2];
+   allocate_device<float>(&d_charge, numAtomsHomeAndProxyAllocated);
+-  if (simParams->colvarsOn || simParams->tclForcesOn){  
++  if (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn){  
+     allocate_device<double>(&d_f_global_x, numAtomsHomeAndProxyAllocated);
+     allocate_device<double>(&d_f_global_y, numAtomsHomeAndProxyAllocated);
+     allocate_device<double>(&d_f_global_z, numAtomsHomeAndProxyAllocated);
+   }
+   allocate_device<int>(&d_sortOrder, numAtomsHomeAndProxyAllocated);
+@@ -850,11 +850,11 @@
+     cudaCheck(cudaSetDevice(deviceID));
+ 
+     deallocate_host<double>(&f_normal_x);
+     deallocate_host<double>(&f_normal_y);
+     deallocate_host<double>(&f_normal_z);
+-    if (simParams->colvarsOn || simParams->tclForcesOn){    
++    if (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn){    
+       deallocate_host<double>(&f_global_x);
+       deallocate_host<double>(&f_global_y);
+       deallocate_host<double>(&f_global_z);
+     }
+     deallocate_host<double>(&f_nbond_x);
+@@ -916,11 +916,11 @@
+       deallocate_device<FullAtom>(&d_atomdata_AoS);
+       deallocate_device<int>(&d_migrationGroupSize);
+       deallocate_device<int>(&d_migrationGroupIndex);
+       deallocate_device<int>(&d_sortIndex);
+     }
+-    if (simParams->colvarsOn || simParams->tclForcesOn){
++    if (simParams->colvarsOn || simParams->tclForcesOn || simParams->plumedOn){
+       deallocate_device<double>(&d_f_global_x);
+       deallocate_device<double>(&d_f_global_y);
+       deallocate_device<double>(&d_f_global_z);
+     }
+     deallocate_device<double>(&d_vel_x);
+@@ -2354,11 +2354,11 @@
+     cudaCheck(cudaMemset(d_f_raw, 0, sizeof(double)*numAtoms*3*(maxForceNumber+1)));
+ #endif
+   }
+   int doTcl = simParams->tclForcesOn;
+   int doColvars = simParams->colvarsOn;
+-  const int doGlobal = (doTcl || doColvars);
++  const int doGlobal = (doTcl || doColvars || simParams->plumedOn);
+   //Update SOA buffer
+   CUDASequencerKernel->accumulateForceToSOA(
+       doGlobal,
+       maxForceNumber,
+       numPatchesHomeAndProxy,
+@@ -2661,11 +2661,11 @@
+     if (simParams->alchFepOn) doFEP = true;
+     if (simParams->alchThermIntOn) doTI = true;
+     if (simParams->alchDecouple) doAlchDecouple = true;
+     if (simParams->alchElecLambdaStart > 0) doAlchSoftCore = true;
+   }
+-  bool doGlobal = simParams->tclForcesOn || simParams->colvarsOn;
++  bool doGlobal = simParams->tclForcesOn || simParams->colvarsOn || simParams->plumedOn;
+   if (1) {
+     //fprintf(stderr, "calling set_compute_positions() ****************************************\n");
+     //fprintf(stderr, "calling set_compute_positions\n");
+     //fprintf(stderr, "doNbond=%d  doSlow=%d\n", doNbond, doSlow);
+     std::vector<int> atom_counts;
 EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
 --- ./src/SimParameters.C.preplumed
@@ -245,51 +434,44 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
     opts.optional("GBIS", "intrinsicRadiusOffset",
        "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
     opts.optional("GBIS", "ionConcentration",
-@@ -4832,10 +4839,19 @@
-     }
-     else {
-       CUDASOAintegrate = FALSE; // Don't leave uninitialized
-     }
- 
-+    // PLUMED
-+    if (CUDASOAintegrateMode && plumedOn) {
-+      NAMD_die(
-+          "PLUMED is not supported in GPU-resident mode.\n"
-+          "Set \"GPUresident off\" (GPU-offload or CPU-only mode) to use PLUMED."
-+          );
-+    }
-+    // END PLUMED
-+
-     if (CUDASOAintegrateMode && (minimizeOn || minimizeCGOn)) {
-       NAMD_die(
-           "GPUresident does not support \"minimization\" keyword.\n"
-           "Instead use \"minimize\" available through Tcl scripting interface."
-           );
-@@ -4887,10 +4903,11 @@
+@@ -4887,10 +4894,11 @@
            miscForcesOn ||
            IMDon ||
            TMDOn ||
            symmetryOn ||
            qmForcesOn ||
-+          plumedOn ||
++          (plumedOn && ! CUDASOAintegrateMode) ||
            sphericalBCOn ||
            cylindricalBCOn ||
            extForcesOn ||
            tabulatedEnergies ||
            tclBCOn ||
-@@ -4989,10 +5006,11 @@
+@@ -4989,10 +4997,11 @@
  	if(movDragOn) strncat(featuremsg,"  movDragOn\n",1023);
          if(rotDragOn) strncat(featuremsg,"  rotDragOn\n",1023);
          if(consTorqueOn) strncat(featuremsg,"  consTorqueOn\n",1023);
          if(stirOn) strncat(featuremsg,"  stirOn\n",1023);
  	if(HydrogenBonds) strncat(featuremsg,"  HydrogenBonds\n",1023);
-+	if(plumedOn) strncat(featuremsg,"  plumed\n",1023);
++	if(plumedOn && ! CUDASOAintegrateMode) strncat(featuremsg,"  plumed\n",1023);
  	strncat(msg,featuremsg,2047);
          if (CUDASOAintegrateMode) {
            NAMD_die(msg);
          }
          else {
-@@ -6130,11 +6148,11 @@
+@@ -5095,11 +5104,11 @@
+       iout << iWARN << "GPUAtomMigration is only supported for GPUresident. Disabling GPUAtomMigration.\n";
+     }
+ 
+     if ( useDeviceMigration ) { 
+       if (constraintsOn || SMDOn || groupRestraintsOn || eFieldOn || fixedAtomsOn || monteCarloPressureOn ||
+-          tclForcesOn || colvarsOn) {
++          tclForcesOn || colvarsOn || plumedOn) {
+         updateAtomMap = TRUE;
+       }
+     }
+     if ( useDeviceMigration ) { 
+       iout << iWARN << "GPUAtomMigration is experimental\n"; 
+@@ -6130,11 +6139,11 @@
     
     // Global forces configuration
  
@@ -302,7 +484,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
       NAMD_die("Monte Carlo pressure control is not compatible with "
           "global forces computations (Colvars, TclForces, TMD, IMD, "
           "symmetryRestraints, and similar features)");
-@@ -6220,10 +6238,25 @@
+@@ -6220,10 +6229,25 @@
       }
  
       iout << endi;

@@ -547,15 +547,6 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 template <typename T>
 inline double Tools::pbc(T x) {
-#ifdef __PLUMED_PBC_WHILE
-  while (x>0.5) {
-    x-=1.0;
-  }
-  while (x<-0.5) {
-    x+=1.0;
-  }
-  return x;
-#else
   if constexpr (std::is_same_v<T,float>) {
     // In single precision the offset used below costs accuracy: the spacing of floats
     // close to 100 is 7.6e-6, so the result would have an error up to 3.8e-6
@@ -576,7 +567,6 @@ inline double Tools::pbc(T x) {
   } else {
     return x-floor(x+0.5);
   }
-#endif
 }
 
 template<typename T>

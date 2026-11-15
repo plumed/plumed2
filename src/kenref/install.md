@@ -128,7 +128,7 @@ Running KEnRef-on-PLUMED-**on-GROMACS** needs GROMACS **2026.4**, patched with `
 manually:
 
 ```bash
-cd /path/to/gromacs-2026.4           # a source DEDICATED to the PLUMED path (not the kenref-gmx one)
+cd /path/to/gromacs-2026.x           # a source DEDICATED to the PLUMED path (not the kenref-gmx one)
 plumed patch -p -e gromacs-2026.4 --mode runtime
 cmake -S . -B build -DGMX_USE_PLUMED=ON -DGMX_MPI=ON && cmake --build build && cmake --install build
 ```

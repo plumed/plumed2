@@ -1,0 +1,33 @@
+name: Publish Conda test packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize publication runs; never cancel a build or upload already in progress.
+concurrency:
+  group: conda-test-publication
+  cancel-in-progress: false
+
+jobs:
+  publication-policy:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Require a manual run on master before starting package builds
+      shell: bash
+      run: |
+        if [[ $GITHUB_EVENT_NAME != workflow_dispatch || $GITHUB_REF != refs/heads/master ]]; then
+          echo 'Test publication requires a manual run on master.' >&2
+          exit 1
+        fi
+
+  conda:
+    needs: publication-policy
+    uses: ./.github/workflows/condaWF.yml
+    with:
+      full_matrix: true
+      upload_test_packages: true
+    secrets:
+      CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}

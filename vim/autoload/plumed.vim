@@ -155,7 +155,10 @@ function! s:RefreshBuffers(state) abort
   for buffer in getbufinfo()
     if getbufvar(buffer.bufnr, 'plumed_cache_key', '') ==# a:state.key
       for window in win_findbuf(buffer.bufnr)
-        call win_execute(window, 'call plumed#Update(0)')
+        " This editor just completed this generation. Do not reread a shared
+        " hint that another publisher can temporarily remove or replace.
+        let command = 'call ' . expand('<SID>') . 'Source(' . string(a:state.stage) . ')'
+        call win_execute(window, command)
       endfor
     endif
   endfor

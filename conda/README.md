@@ -172,12 +172,35 @@ requires the matching local archive and `CONDA_BLD_PATH`/`VERSION` settings.
 
 ## Dated test-channel publication
 
-After this workflow is present on the default branch, run **CI** manually on
-`master` and select **Publish dated conda packages to the test label**. The
-workflow builds every package with the UTC date as its conda version, for example
+After this workflow is merged onto the default branch, open the repository's
+**Actions** tab, select **Publish Conda test packages** in the left sidebar,
+click **Run workflow**, select **Branch: master**, then click the green
+**Run workflow** button. You need permission to run Actions, available Linux
+and macOS hosted runners, and the existing repository secret
+`CONDA_UPLOAD_TOKEN` with upload access to the `plumed` Anaconda account.
+No additional credentials are passed to the reusable packaging workflow.
+A lightweight policy job rejects other branches before package builds start.
+
+This starts fresh builds from the selected master revision; it does not publish
+packages from an existing completed CI run. It invokes only the reusable Conda
+workflow with all four platforms (Linux x86-64/ARM and macOS ARM/Intel), without
+the native, Python, Docker or MD integration CI jobs. Expect several hours and
+substantial hosted-runner usage: a recent full matrix took roughly 45–65 minutes
+per Linux/macOS ARM job and 3.5 hours for Intel macOS, before queue time and the
+additional NVHPC/OpenACC work. Timings vary with runners and dependencies.
+Publication runs are serialized and an in-progress run is never automatically
+canceled by a newer request.
+
+The workflow builds every package with the UTC date as its conda version, for example
 `2026.11.12`, validates the installation, then uploads to `plumed/label/test`
 using the existing `CONDA_UPLOAD_TOKEN` secret. Ordinary builds do not publish;
-tag uploads keep their `tag` label. This option is rejected on other branches.
+tag uploads keep their `tag` label. Ordinary **CI** has no test-publication
+checkbox.
+
+Each platform uploads only after its own package builds and installed-package
+validation succeed. Publication is per-platform, not atomic across the matrix:
+one platform can publish successfully while another fails. Inspect every job
+before using the snapshot; a failed job does not roll back earlier uploads.
 
 A separate run/attempt build number makes repeated snapshots on one date
 distinct, including their exact kernel dependency pins. Test uploads do not
