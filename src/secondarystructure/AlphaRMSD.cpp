@@ -131,6 +131,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nprevious=0, segno=1;
   std::string seglist;
+  std::vector<unsigned> nlist(30);
   for(unsigned i=0; i<chains.size(); ++i) {
     if( chains[i]<30 ) {
       error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
@@ -140,15 +141,10 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
       error("backbone segment received does not contain a multiple of five residues");
     }
     for(unsigned ires=0; ires<nres-5; ires++) {
-      unsigned accum=nprevious + 5*ires;
-      std::string strval, num;
-      Tools::convert( segno, num );
-      Tools::convert( accum, strval );
-      seglist += " SEGMENT" + num + "=" + strval;
-      for(unsigned k=1; k<30; ++k) {
-        Tools::convert( accum+k, strval );
-        seglist += "," + strval;
+      for(unsigned k=0; k<30; ++k) {
+        nlist[k] = nprevious + 5*ires + k;
       }
+      SecondaryStructureInput::addSegment( seglist, segno, nlist );
       segno++;
     }
     nprevious+=chains[i];
@@ -186,57 +182,23 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   reference[27] = Vector(-1.933, -2.219, -3.074 ); // CB
   reference[28] = Vector(-1.663, -0.171, -4.475 ); // C
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
-  std::string ref0, ref1, ref2;
-  Tools::convert(  reference[0][0], ref0 );
-  Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 );
-  std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
-  for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) {
-      Tools::convert( reference[i][k], ref0 );
-      structure += "," + ref0;
-    }
-  }
+  std::string structure;
+  SecondaryStructureInput::addStructure( structure, 1, reference );
 
-  std::string type;
-  parse("TYPE",type);
+  bool nopbc=false;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
   }
-  std::string nopbcstr="";
-  bool nopbc;
-  parseFlag("NOPBC",nopbc);
-  if( nopbc ) {
-    nopbcstr = " NOPBC";
-  }
-  std::string usegpustr="";
-  {
-    bool usegpu;
-    parseFlag("USEGPU",usegpu);
-    if( usegpu ) {
-      usegpustr = " USEGPU";
-    }
-  }
-
   std::string atoms="ATOMS=" + all_atoms[0];
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
-  if( type=="DRMSD" ) {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr);
-  } else {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr);
-  }
+  readInputLine( lab + ": " + distanceAction + seglist + structure + " " + atoms );
   // Create the less than object
-  if( ltmap.length()>0 ) {
-    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
-    if( uselessthan ) {
-      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    } else {
-      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    }
-  }
+  readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+  SecondaryStructureInput::addSum( this, uselessthan );
 }
 
 }

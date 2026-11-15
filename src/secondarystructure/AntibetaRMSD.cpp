@@ -171,7 +171,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   std::string seglist;
-  unsigned k=1;
+  unsigned segno=1;
   if( intra_chain ) {
     unsigned nprevious=0;
     std::vector<unsigned> nlist(30);
@@ -179,7 +179,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
       if( chains[i]<40 ) {
         error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
       }
-      // Loop over all possible triples in each 8 residue segment of protein
+      // Loop over all the pairs of triples of residues separated by at least two residues
       unsigned nres=chains[i]/5;
       if( chains[i]%5!=0 ) {
         error("backbone segment received does not contain a multiple of five residues");
@@ -190,18 +190,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
             nlist[kk]=nprevious + ires*5+kk;
             nlist[kk+15]=nprevious + (jres-2)*5+kk;
           }
-          std::string nlstr, num;
-          Tools::convert( nlist[0], nlstr );
-          Tools::convert(k, num);
-          ++k;
-          seglist += " SEGMENT" + num + "=" + nlstr;
-          for(unsigned kk=1; kk<nlist.size(); ++kk ) {
-            Tools::convert( nlist[kk], nlstr );
-            seglist += "," + nlstr;
-          }
+          SecondaryStructureInput::addSegment( seglist, segno, nlist );
           if( strands_cutoff>0 ) {
-            scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+            scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
           }
+          ++segno;
         }
       }
       nprevious+=chains[i];
@@ -243,18 +236,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
               nlist[kk]=iprev + ires*5+kk;
               nlist[kk+15]=jprev + jres*5+kk;
             }
-            std::string nlstr, num;
-            Tools::convert( nlist[0], nlstr );
-            Tools::convert(k, num);
-            k++;
-            seglist += " SEGMENT" + num + "=" + nlstr;
-            for(unsigned kk=1; kk<nlist.size(); ++kk ) {
-              Tools::convert( nlist[kk], nlstr );
-              seglist += "," + nlstr;
-            }
+            SecondaryStructureInput::addSegment( seglist, segno, nlist );
             if( strands_cutoff>0 ) {
-              scutoff_action += " ATOMS" + num + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
+              scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
             }
+            ++segno;
           }
         }
       }
@@ -297,35 +283,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   reference[27]=Vector( 2.699, -2.129, -2.917); // CB
   reference[28]=Vector( 1.745, -4.399, -2.330); // C
   reference[29]=Vector( 1.899, -4.545, -1.102); // O
-  // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  std::string ref0, ref1, ref2;
-  Tools::convert(  reference[0][0], ref0 );
-  Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 );
-  std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
-  for(unsigned i=1; i<30; ++i) {
-    for(unsigned kk=0; kk<3; ++kk) {
-      Tools::convert( reference[i][kk], ref0 );
-      structure += "," + ref0;
-    }
-  }
+  std::string structure;
+  SecondaryStructureInput::addStructure( structure, 1, reference );
 
-  std::string nopbcstr="";
-  bool nopbc;
-  parseFlag("NOPBC",nopbc);
-  if( nopbc ) {
-    nopbcstr = " NOPBC";
-  }
-  std::string usegpustr="";
-  {
-    bool usegpu;
-    parseFlag("USEGPU",usegpu);
-    if( usegpu ) {
-      usegpustr = " USEGPU";
-    }
-  }
-  std::string type;
-  parse("TYPE",type);
+  bool nopbc=false;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -334,49 +296,30 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
-  std::string inputLine = lab+":";
-  if( type=="DRMSD" ) {
-    inputLine+=" SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17";
-  } else {
-    inputLine+=" SECONDARY_STRUCTURE_RMSD TYPE=" +type;
-  }
-  inputLine+=" ALIGN_STRANDS " + seglist + structure
-             + " " + atoms + nopbcstr + usegpustr;
+  std::string inputLine = lab + ": " + distanceAction + " ALIGN_STRANDS" + seglist + structure + " " + atoms;
 
   if( strands_cutoff>0 ) {
     // The distance used for the cutoff has to treat the periodic boundary conditions as the rest of the calculation
-    readInputLine( scutoff_action + nopbcstr );
+    readInputLine( scutoff_action + (nopbc ? " NOPBC" : "") );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
                    + "_cut_dists FUNC=step(" + str_cut + "-x) PERIODIC=NO");
     inputLine+=" MASK=" + getShortcutLabel() + "_cut";
     readInputLine(inputLine);
-    if( ltmap.length()>0 ) {
-      // Create the less than object
-      readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
-                     + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
-      // Multiply by the strands cutoff
-      readInputLine( getShortcutLabel()
-                     + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
-                     + getShortcutLabel() + "_cut"
-                     " FUNC=x*y PERIODIC=NO");
-    }
+    // Create the less than object
+    readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
+                   + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+    // Multiply by the strands cutoff
+    readInputLine( getShortcutLabel()
+                   + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
+                   + getShortcutLabel() + "_cut"
+                   " FUNC=x*y PERIODIC=NO");
   } else {
     readInputLine(inputLine);
-    if( ltmap.length()>0 ) {
-      // Create the less than object
-      readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
-    }
+    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
   }
-  // Create the less than object
-  if( ltmap.length()>0 ) {
-    if( uselessthan ) {
-      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    } else {
-      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    }
-  }
+  SecondaryStructureInput::addSum( this, uselessthan );
 }
 
 }
