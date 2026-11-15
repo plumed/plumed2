@@ -122,6 +122,9 @@ void Angle<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout )
   VectorTyped<T,3> ddij,ddik;
 
   cvout.values[0]=PLMD::Angle::compute(dij,dik,ddij,ddik);
+  if( cvin.noderiv ) {
+    return;
+  }
   cvout.derivs[0][0]=ddik;
   cvout.derivs[0][1]=-ddik;
   cvout.derivs[0][2]=-ddij;

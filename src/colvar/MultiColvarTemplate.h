@@ -335,13 +335,14 @@ void MultiColvarTemplate<CV,myPTM>::performTask( std::size_t task_index,
   ColvarOutput cvout { output.values,
                        local_ndev,
                        output.derivatives.data() };
-  CV::calculateCV( ColvarInput{actiondata.mode,
-                               actiondata.nindices_per_task,
-                               input.inputdata+pos_start,
-                               input.inputdata+mass_start,
-                               input.inputdata+charge_start,
-                               *input.pbc},
-                   cvout );
+  ColvarInput cvin{actiondata.mode,
+                   actiondata.nindices_per_task,
+                   input.inputdata+pos_start,
+                   input.inputdata+mass_start,
+                   input.inputdata+charge_start,
+                   *input.pbc};
+  cvin.noderiv = input.noderiv;
+  CV::calculateCV( cvin, cvout );
 }
 
 template <class CV, typename myPTM>

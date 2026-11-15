@@ -259,6 +259,9 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
       fact = 4;
     }
     cvout.values[0]=rgyr;
+    if( cvin.noderiv ) {
+      return;
+    }
     for(unsigned i=0; i<cvin.pos.size(); i++) {
       for(unsigned j=0; j<3; ++j) {
         cvout.derivs[0][i][j] = fact*cvout.derivs[0][i][j];
@@ -433,6 +436,10 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     break;
   }
   }
+  cvout.values[0]=rgyr;
+  if( cvin.noderiv ) {
+    return;
+  }
 
   if( cvin.mode>=NUMBER_OF_GYRATION_TYPES ) {
     for(unsigned i=0; i<cvin.pos.size(); i++) {
@@ -462,7 +469,6 @@ void Gyration<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     }
   }
 
-  cvout.values[0]=rgyr;
   ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
 }
 

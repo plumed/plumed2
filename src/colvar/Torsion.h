@@ -196,10 +196,15 @@ void Torsion<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout
   VectorTyped<T,3> dd0,dd1,dd2;
   cvout.values[0] = PLMD::Torsion::compute(d0,d1,d2,dd0,dd1,dd2);
   if(cvin.mode==1) {
-    dd0 *= -std::sin(cvout.values[0]);
-    dd1 *= -std::sin(cvout.values[0]);
-    dd2 *= -std::sin(cvout.values[0]);
+    if( !cvin.noderiv ) {
+      dd0 *= -std::sin(cvout.values[0]);
+      dd1 *= -std::sin(cvout.values[0]);
+      dd2 *= -std::sin(cvout.values[0]);
+    }
     cvout.values[0] = std::cos(cvout.values[0]);
+  }
+  if( cvin.noderiv ) {
+    return;
   }
   cvout.derivs[0][0] = dd0;
   cvout.derivs[0][1] = -dd0;
