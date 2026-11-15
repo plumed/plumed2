@@ -187,11 +187,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
   keys.add("atoms","ATOMS","this is the full list of atoms that we are investigating");
-  keys.add("numbered","SEGMENT","this is the lists of atoms in the segment that are being considered");
+  keys.add("numbered","SEGMENT","the indices in the list given with ATOMS (starting from zero) of the atoms of a segment. All the segments must contain the same number of atoms (between 2 and 30)");
   if constexpr ( needsBondLength /*keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD"*/ ) {
-    keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
+    keys.add("compulsory","BONDLENGTH","0.17","the pairs of atoms that are closer than this distance (in nm) in the reference structure are not used to compute the DRMSD");
   }
-  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure to be used instead of the default ideal one. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
+  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
              "For more details on the OPTIMAL and SIMPLE methods see RMSD.");
@@ -209,10 +209,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
              "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
-             "As such if you define portions of the chain with fewer than N residues the code will crash.");
-    keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is a switching function.");
-    keys.add("optional","R_0","The r_0 parameter of the switching function.");
+             "As such if you define portions of the chain with fewer than N residues PLUMED stops with an error.");
+    keys.add("optional","LESS_THAN","calculate the number of segments of residues that are within a certain target distance of this secondary structure type. "
+             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is the switching function given here. "
+             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component");
+    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
     keys.add("compulsory","MM","12","The m parameter of the switching function");

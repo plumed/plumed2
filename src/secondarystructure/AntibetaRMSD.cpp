@@ -32,17 +32,18 @@ Probe the antiparallel beta sheet content of your protein structure.
 
 Two protein segments containing three contiguous residues can form an antiparallel beta sheet.
 Although if the two segments are part of the same protein chain they must be separated by
-a minimum of 2 residues to make room for the turn. This colvar thus generates the set of
-all possible six residue sections that could conceivably form an antiparallel beta sheet
+a minimum of two residues to make room for the turn. This colvar thus generates the set of
+all possible six residue sections (residues $i$, $i+1$, $i+2$ and $j-2$, $j-1$, $j$) that could conceivably form an antiparallel beta sheet
 and calculates the [DRMSD](DRMSD.md) or [RMSD](RMSD.md) distance between the configuration in which the residues find themselves
 and an idealized antiparallel beta sheet structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of inter-atomic
-distances in the reference and instantaneous structures.
+distances in the reference and instantaneous structures. The backbone atoms N, CA, CB, C and O
+of each residue are used (for glycine the HA2 atom is used in place of CB), so each section contains 30 atoms.
 
-This colvar is based on ideas from the paper cited below.  The authors of
-this paper use the set of distances from the anti parallel beta sheet configurations to measure
-the number of segments that have an configuration that resembles an anti parallel beta sheet. This is done by calculating
+This colvar is based on the paper cited below.  The authors of
+this paper use the set of distances from the antiparallel beta sheet configurations to measure
+the number of segments whose configuration resembles an antiparallel beta sheet. This is done by calculating
 the following sum of functions of the rmsd distances:
 
 $$
@@ -50,15 +51,13 @@ s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i
 $$
 
 where the sum runs over all possible segments of antiparallel beta sheet.  By default the
-NN, MM and D_0 parameters are set equal to those used in the paper cited below.  The R_0
-parameter must be set by the user - the value used in the paper below was 0.08 nm.
+NN, MM, D_0 and R_0 parameters are set equal to those used in the paper cited below, which are
+$n=8$, $m=12$, $d_0=0$ and $r_0=0.08$ nm. The value of R_0 is given in the length units of [UNITS](UNITS.md);
+the default is converted, so it is always 0.08 nm.
 
-If you change the function in the above sum you can calculate quantities such as the average
-distance from a purely configuration composed of pure anti-parallel beta sheets or the distance between the set of
-residues that is closest to an anti-parallel beta sheet and the reference configuration. To do these sorts of
-calculations you can use the AVERAGE and MIN keywords. In addition you can use the LESS_THAN
-keyword if you would like to change the form of the switching function. If you use any of these
-options you no longer need to specify NN, R_0, MM and D_0.
+If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below.
+In this case the label of the action is the vector of the distances between each segment and the ideal antiparallel beta sheet, and
+the number of segments that are similar to an antiparallel beta sheet is the `lessthan` component.
 
 The following input calculates the number of six residue segments of
 protein that are in an antiparallel beta sheet configuration.
@@ -70,24 +69,40 @@ ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
 PRINT ARG=ab FILE=colvar
 ```
 
-Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster.
+Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster, and with the LESS_THAN keyword.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-WHOLEMOLECULES ENTITY0=1-100
-hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}  STRANDS_CUTOFF=1
+hh: ANTIBETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12} STRANDS_CUTOFF=1
 PRINT ARG=hh.lessthan FILE=colvar
 ```
 
 __YOUR CALCULATION WILL BE MUCH FASTER IF YOU USE THE `STRANDS_CUTOFF` KEYWORD.__  As you can see from the
 expanded version of the inputs above this keyword reduces the computational cost of the calculation by
 avoiding calculations of the RMSD values for segments that have the two strands of the beta sheet further apart
-than a cutoff.
+than a cutoff. The distance between the two strands is the distance between the CA atoms of their central residues,
+and the cutoff is in the length units of [UNITS](UNITS.md) (nm by default). The segments that are skipped contribute
+zero to the number of segments that are similar to a beta sheet. If you use LESS_THAN together with STRANDS_CUTOFF,
+notice that the distances of the skipped segments are zero in the vector that is the value of the action, so this vector
+should not be used to find the segment that is closest to a beta sheet.
 
-## Periodic boundary conditions
+## Chains and residues
 
-You can turn off periodic boundary conditions by using the NOPBC flag as shown below:
+The STYLE keyword selects whether the two strands of a segment are taken from the same chain (STYLE=intra), from different
+chains (STYLE=inter) or both (STYLE=all, the default). With STYLE=intra and STYLE=all each chain must contain at least 8 residues,
+otherwise PLUMED stops with an error; for systems made of short peptides (for example in studies of aggregation) use STYLE=inter.
+
+## Periodic boundary conditions
+
+Unless the NOPBC flag is used, each six residue section is made whole before computing its distance from the reference.
+The two strands of three residues are made whole separately: the atoms N, CA, CB, C and O of each strand are taken in this order,
+and each atom is moved to the periodic image that is closest to the previous one, as is done by [WHOLEMOLECULES](WHOLEMOLECULES.md).
+The second strand is then moved to the periodic image where the CA atom of its central residue is closest to the CA atom of the
+central residue of the first strand (this is the ALIGN_STRANDS flag of [SECONDARY_STRUCTURE_RMSD](SECONDARY_STRUCTURE_RMSD.md)).
+This is done in the same way for [DRMSD](DRMSD.md) and [RMSD](RMSD.md), so there is no need to use [WHOLEMOLECULES](WHOLEMOLECULES.md)
+before this action. The distance used with STRANDS_CUTOFF is also computed with the periodic boundary conditions.
+You can turn off this treatment by using the NOPBC flag as shown below:
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
@@ -95,14 +110,6 @@ MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
 ab: ANTIBETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1 NOPBC
 PRINT ARG=ab FILE=colvar
 ```
-
-If you are using [DRMSD](DRMSD.md) to measure distances and you __don't__ use the NOPBC flag then
-all distances in the instantaneous structure are evaluated in a way that takes the periodic boundary conditions
-into account. Using the NOPBC flag turns off this treatment.
-
-If you are using [RMSD](RMSD.md) to measure distances and you __don't__ use the NOPBC flag the instantaneous positions of
-each segment for which the RMSD is computed is reconstructed using the procedure outlined in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md)
-before the RMSD is computed. Using the NOPBC flag turns off this treatment.
 
 */
 //+ENDPLUMEDOC
@@ -122,15 +129,14 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   keys.remove("STRUCTURE");
   keys.remove("MASK");
   keys.remove("ALIGN_STRANDS");
-  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal antiparallel beta sheet.  If LESS_THAN is not present the number of residue segments where the structure is similar to an anti parallel beta sheet");
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the vector of the distances between each segment of six residues and the ideal antiparallel beta sheet. If LESS_THAN is not present the number of segments where the structure is similar to an antiparallel beta sheet");
   keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
-  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
-           "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
-           "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
-           "However, if you are using some other option, then this cannot be used");
+  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart than this distance (between the CA atoms of their central residues) "
+           "the calculation of the distance from the reference is skipped, as the structure is very far from being beta-sheet like, and the segment does not "
+           "contribute to the number of segments that are similar to a beta sheet. This keyword speeds up the calculation enormously.");
   keys.needsAction("DISTANCE");
   keys.needsAction("CUSTOM");
 }
