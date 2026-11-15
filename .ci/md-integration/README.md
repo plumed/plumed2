@@ -346,6 +346,10 @@ lambda-MCMC cases with coordinate/ENERGY biases and metadynamics, one and two
 ranks, modular and supported legacy simulators, modular restart equivalence,
 and hybrid OpenMP. Thread-MPI replica exchange remains unsupported by GROMACS.
 Simultaneous expanded ensemble and replica exchange remains unsupported.
+Replica exchange with models that evolve internal parameters in `calculate()`
+(e.g. METAINFERENCE, EMMI and RESCALE) remains outside this focused validation.
+The patch retains legacy auxiliary-evaluation semantics for advanced histories
+and samplers; the broader kernel redesign is not part of this revision.
 
 The actual-provider fixture checks retained box bindings and simultaneous
 provider/collection isolation with 200,000 concurrent lookups. Every numerical
