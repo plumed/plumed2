@@ -232,8 +232,10 @@ double RMSD::calculate(const View<Vector> positions,
 
   switch(alignmentMethod) {
   case SIMPLE : {
-    //	do a simple alignment without rotation
-    std::vector<Vector> displacement( derivatives.size() );
+    //	do a simple alignment without rotation. The displacements are not returned:
+    // one buffer per thread is reused instead of allocating it at every call
+    thread_local std::vector<Vector> displacement;
+    displacement.resize( derivatives.size() );
     ret=simpleAlignment(align,displace,positions,reference,derivatives,displacement,squared);
     break;
   }

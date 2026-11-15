@@ -198,7 +198,10 @@ void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
     const SecondaryStructureRMSDInput& actiondata,
     const View<Vector> pos,
     ColvarOutput<double>& output ) {
-  std::vector<Vector> myderivs( actiondata.natoms );
+  // RMSD::calculate needs a std::vector for the derivatives: one per thread is reused,
+  // instead of allocating it for every segment and structure
+  thread_local std::vector<Vector> myderivs;
+  myderivs.resize( actiondata.natoms );
   output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 
   if( noderiv ) {
@@ -208,7 +211,7 @@ void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
   v.zero();
   for(unsigned j=0; j<pos.size(); ++j) {
     output.derivs[n][j] = myderivs[j];
-    v +=  (-1.0*Tensor( pos[j], myderivs[j] ));
+    v -= Tensor( pos[j], myderivs[j] );
   }
   output.virial.set( n, v );
 }
