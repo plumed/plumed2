@@ -67,8 +67,11 @@ LOAD FILE=/path/to/plumedOpenACC.so
 CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 ``` 
 
-When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
-on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
+When PLUMED runs with MPI (e.g. an MD code with several MPI ranks, or `mpirun -np 4 plumed driver`), the tasks of an action
+with `USEGPU` are split in blocks between the ranks, each rank computes its block on its GPU (see below), and the results are
+summed, as for the CPU version. With `SERIAL` only the first rank computes, on its GPU, and the results are sent to the other
+ranks, which do not use their GPU. Several ranks pay off when the action has many tasks; for a small action (a few thousands
+of tasks or less) each call is dominated by fixed costs, and `SERIAL` (one GPU) can be faster.
 
 ### Which GPU is used
 
@@ -77,8 +80,12 @@ several GPUs and do not interfere with an MD code that keeps its data on the GPU
 
 1. the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
 2. the GPU the MD code is using (the one whose CUDA context is current when PLUMED is called, as for GROMACS 2025 and 2026), otherwise
-3. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM` (e.g. for [driver](driver.md), where there is no MD code).
-   With `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU.
+3. with several GPUs on the node, and if `ACC_DEVICE_NUM` is not set, GPU number (local rank % number of GPUs), where the local rank
+   is the rank of the process within its node, as set by the MPI launcher (`OMPI_COMM_WORLD_LOCAL_RANK`, `MPI_LOCALRANKID`, `SLURM_LOCALID`, ...).
+   This is what happens with [driver](driver.md), where there is no MD code: e.g. `mpirun -np 4 plumed driver` on a node with 4 GPUs
+   uses one GPU per rank, otherwise
+4. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM`.
+   With `CUDA_VISIBLE_DEVICES` (or `srun --gpus-per-task=1`) each rank can be given its own GPU.
 
 The GPU of an action is chosen the first time it is computed, and it does not change afterwards. It is written in the log,
 in the same way for all the actions, e.g. `d runs on GPU 1` for an action labelled `d` (or `d runs on the host` when OpenACC
@@ -172,7 +179,7 @@ SAXS ...
 (This example is not highlighted only because the manual is built without the plugin.)
 
 - The GPU is chosen as for the other actions (see above): there is no `DEVICEID` keyword.
-- Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
+- As for the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.
 - With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the

@@ -514,6 +514,7 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.needsAction("TRANSPOSE");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
 }
 
 std::string LocalSteinhardt::getSymbol( const int& m ) const {
@@ -548,7 +549,10 @@ LocalSteinhardt::LocalSteinhardt(const ActionOptions& ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  bool serial;
+  parseFlag("SERIAL",serial);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
 
 #define createLabel(name) const std::string name##Lab = getShortcutLabel()+"_"#name;
   bool lowmem;
