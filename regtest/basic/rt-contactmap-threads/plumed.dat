@@ -1,0 +1,7 @@
+# three CONTACTMAP: q (1000 contacts, SUM), cm (1000 contacts, CMDIST) and c (400 components),
+# written to cmaps.dat by plumed_regtest_before
+INCLUDE FILE=cmaps.dat
+bq: RESTRAINT ARG=q AT=0.5 KAPPA=10
+bcm: BIASVALUE ARG=cm
+bc: BIASVALUE ARG=c.*
+PRINT ARG=q,cm,c.contact-1,c.contact-2,c.contact-3,c.contact-400 FILE=colvar FMT=%10.6f
