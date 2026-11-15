@@ -24,6 +24,7 @@
 #include "tools/PDB.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
+#include "tools/OpenMP.h"
 
 #include <array>
 #include <limits>
@@ -161,6 +162,10 @@ private:
   std::vector<double> reference, weight;
 /// derivative of each contact with respect to its second atom (the first one has the opposite)
   std::vector<Vector> deriv;
+/// minimum number of contacts per OpenMP thread (measured: below these the threads are slower);
+/// a component costs more than a term of the sum, since it has its own array of derivatives
+  static constexpr unsigned minContactsPerThread=300;
+  static constexpr unsigned minComponentsPerThread=100;
 public:
   static void registerKeywords( Keywords& keys );
   explicit ContactMap(const ActionOptions&);
@@ -453,7 +458,21 @@ ContactMap::ContactMap(const ActionOptions&ao):
 void ContactMap::calculate() {
   const unsigned ncontacts=sfs.size();
 
+  unsigned stride=1;
+  unsigned rank=0;
+  if(!serial) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
+  // OpenMP threads only when each of them has enough contacts
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt*stride*(docomp ? minComponentsPerThread : minContactsPerThread)>ncontacts) {
+    nt=1;
+  }
+
   if(docomp) {
+    // each contact writes only its own component
+    #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<ncontacts; ++i) {
       const Vector distance=(pbc ? pbcDistance(getPosition(i),getPosition(ncontacts+i))
                              : delta(getPosition(i),getPosition(ncontacts+i)));
@@ -469,33 +488,33 @@ void ContactMap::calculate() {
     return;
   }
 
-  unsigned stride=1;
-  unsigned rank=0;
-  if(!serial) {
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
-  }
-
   double cv=0.;
   Tensor virial;
   if(!serial) {
     // each rank sets only its own contacts
     std::fill(deriv.begin(),deriv.end(),Vector(0.,0.,0.));
   }
-  for(unsigned i=rank; i<ncontacts; i+=stride) {
-    const Vector distance=(pbc ? pbcDistance(getPosition(i),getPosition(ncontacts+i))
-                           : delta(getPosition(i),getPosition(ncontacts+i)));
-    double dfunc=0.;
-    const double coord = weight[i]*(sfs[i].calculateSqr(distance.modulo2(), dfunc) - reference[i]);
-    Vector der = weight[i]*dfunc*distance;
-    if(docmdist) {
-      der *= 2.*coord;
-      cv  += coord*coord;
-    } else {
-      cv  += coord;
+  #pragma omp parallel num_threads(nt)
+  {
+    Tensor omp_virial;
+    #pragma omp for reduction(+:cv) nowait
+    for(unsigned i=rank; i<ncontacts; i+=stride) {
+      const Vector distance=(pbc ? pbcDistance(getPosition(i),getPosition(ncontacts+i))
+                             : delta(getPosition(i),getPosition(ncontacts+i)));
+      double dfunc=0.;
+      const double coord = weight[i]*(sfs[i].calculateSqr(distance.modulo2(), dfunc) - reference[i]);
+      Vector der = weight[i]*dfunc*distance;
+      if(docmdist) {
+        der *= 2.*coord;
+        cv  += coord*coord;
+      } else {
+        cv  += coord;
+      }
+      deriv[i] = der;
+      omp_virial -= Tensor(distance,der);
     }
-    deriv[i] = der;
-    virial  -= Tensor(distance,der);
+    #pragma omp critical
+    virial += omp_virial;
   }
 
   if(!serial) {
@@ -504,6 +523,7 @@ void ContactMap::calculate() {
     comm.Sum(virial);
   }
 
+  #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<ncontacts; ++i) {
     setAtomsDerivatives(i,-deriv[i]);
     setAtomsDerivatives(ncontacts+i,deriv[i]);
