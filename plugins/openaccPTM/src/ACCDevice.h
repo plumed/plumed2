@@ -33,8 +33,11 @@ and every part of the plugin follows them in the same way:
    time it is needed with Device::resolve(action), which also writes it in the
    log of the action ("<label> runs on GPU <n>"): the GPU assigned to PLUMED by
    the MD code (cmd "setGpuDeviceId"), otherwise the GPU the MD code is using
-   (the one of the CUDA context current in the calling thread), otherwise the
-   current OpenACC device (by default the first GPU, see ACC_DEVICE_NUM and
+   (the one of the CUDA context current in the calling thread), otherwise, if
+   the node has several GPUs and ACC_DEVICE_NUM is not set, the GPU number
+   (local rank % number of GPUs), with the rank of the process in the node
+   taken from the environment of the MPI launcher, otherwise the current
+   OpenACC device (by default the first GPU, see ACC_DEVICE_NUM and
    CUDA_VISIBLE_DEVICES). It is then fixed.
 
 2. Every piece of code that uses OpenACC (kernels, transfers, allocations, and

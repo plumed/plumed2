@@ -27,6 +27,8 @@
 
 #include <openacc.h>
 
+#include <cstdlib>
+
 #if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
 #include <dlfcn.h>
 #endif
@@ -99,6 +101,32 @@ public:
   NoCurrentContext& operator=(const NoCurrentContext&)=delete;
 };
 
+/// The rank of this process among the processes of its node, as set by the MPI launcher
+/// in the environment (-1 if not set); var is the variable it was read from
+int localRank(const char*& var) {
+  // the variables of the launchers first: SLURM_LOCALID is also set (to 0) in the batch
+  // step of a job, where a launcher like OpenMPI's mpirun may be used
+  static const char* const vars[]= {"OMPI_COMM_WORLD_LOCAL_RANK","MV2_COMM_WORLD_LOCAL_RANK","MPI_LOCALRANKID",
+                                    "PMI_LOCAL_RANK","PALS_LOCAL_RANKID","FLUX_TASK_LOCAL_ID","SLURM_LOCALID"
+                                   };
+  for(const char* v : vars) {
+    if(const char* e=std::getenv(v)) {
+      char* end=nullptr;
+      const long r=std::strtol(e,&end,10);
+      if(end!=e && *end=='\0' && r>=0) {
+        var=v;
+        return static_cast<int>(r);
+      }
+    }
+  }
+  return -1;
+}
+
+/// True if the user chose the OpenACC device with the environment
+bool deviceSetInEnvironment() {
+  return std::getenv("ACC_DEVICE_NUM") || std::getenv("NVCOMPILER_ACC_DEVICE_NUM") || std::getenv("PGI_ACC_DEVICE_NUM");
+}
+
 }
 
 int currentCudaDevice() {
@@ -125,6 +153,15 @@ int Device::resolve(const Action& action) {
       } else if(caller>=0 && caller<ndevices) {
         id_=caller;
       } else {
+        // without an MD code (e.g. driver) the processes of a node share its GPUs in turn
+        const char* var=nullptr;
+        const int lr=(ndevices>1 && !deviceSetInEnvironment()) ? localRank(var) : -1;
+        if(lr>=0) {
+          id_=lr%ndevices;
+          action.log.printf("  %s runs on GPU %d (process %d of the node, from %s, with %d GPUs)\n",
+                            action.getLabel().c_str(),id_,lr,var,ndevices);
+          return id_;
+        }
         id_=acc_get_device_num(acc_device_not_host);
       }
       action.log.printf("  %s runs on GPU %d\n",action.getLabel().c_str(),id_);

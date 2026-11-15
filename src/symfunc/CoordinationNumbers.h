@@ -31,8 +31,10 @@ class CoordinationNumbers : public ActionShortcut {
 public:
   static void shortcutKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
+/// Creates the contact matrix lab_mat; flags (e.g. " USEGPU SERIAL") is added to its input
   static void expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
-                            const std::string& spa_str, const std::string& spb_str, ActionShortcut* action );
+                            const std::string& spa_str, const std::string& spb_str, ActionShortcut* action,
+                            const std::string& flags="" );
   explicit CoordinationNumbers(const ActionOptions&);
 };
 

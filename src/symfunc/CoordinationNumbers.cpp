@@ -266,7 +266,8 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
 }
 
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
-                                        const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
+                                        const std::string& spa_str, const std::string& spb_str, ActionShortcut* action,
+                                        const std::string& flags ) {
   if( sp_str.length()==0 && spa_str.length()==0 ) {
     action->error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
   }
@@ -306,7 +307,7 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
   if( maskstr.length()>0 ) {
     matinp += " MASK=" + maskstr;
   }
-  action->readInputLine( matinp );
+  action->readInputLine( matinp + flags );
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
@@ -318,6 +319,9 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
   keys.addOutputComponent("moment","MOMENTS","scalar","the moments of the distribution");
   keys.reset_style("MOMENTS","deprecated");
+  keys.addFlag("USEGPU",false,"compute the contact matrix and the coordination numbers on the GPU");
+  keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("ONES");
   keys.needsAction("MOMENTS");
@@ -332,6 +336,11 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   if( lowmem ) {
     warning("LOWMEM flag is deprecated and is no longer required for this action");
   }
+  bool usegpu, serial;
+  parseFlag("USEGPU",usegpu);
+  parseFlag("SERIAL",serial);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
   // Setup the contract matrix if that is what is needed
   std::string matlab, sp_str, specA, specB;
   parse("SPECIES",sp_str);
@@ -344,7 +353,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
       comp=true;
       matlab = getShortcutLabel() + "_mat";
     }
-    expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this );
+    expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this, doUSEGPU );
   } else {
     error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
   }
@@ -369,7 +378,7 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
     matlab = getShortcutLabel() + "_pow";
   }
   // Calcualte coordination numbers as matrix vector times vector of ones
-  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
+  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones" + doUSEGPU );
   std::vector<std::string> moments;
   parseVector("MOMENTS",moments);
   Tools::interpretRanges( moments );
