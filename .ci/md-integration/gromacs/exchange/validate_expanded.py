@@ -95,6 +95,7 @@ def main():
     parser.add_argument("--gmx", required=True)
     parser.add_argument("--kernel", required=True)
     parser.add_argument("--provider")
+    parser.add_argument("--backend", choices=["mpi", "tmpi"], default="mpi")
     parser.add_argument("--output", required=True)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument(
@@ -123,9 +124,12 @@ def main():
         os.environ["GMX_DISABLE_MODULAR_SIMULATOR"] = "1"
     else:
         os.environ.pop("GMX_DISABLE_MODULAR_SIMULATOR", None)
+    if options.backend == "tmpi":
+        os.environ.pop("PLUMED_MPI_WRAPPER", None)
     if options.provider:
         os.environ["PLUMED_MPI_WRAPPER"] = str(Path(options.provider).resolve())
     args = SimpleNamespace(
+        backend=options.backend,
         gmx=str(Path(options.gmx).resolve()),
         output=options.output,
         threads=options.threads,

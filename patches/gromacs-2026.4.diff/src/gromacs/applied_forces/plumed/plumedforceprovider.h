@@ -58,9 +58,8 @@ namespace gmx
 template<typename>
 class ArrayRef;
 struct PlumedOptions;
-#if GMX_LIB_MPI
-// Owned by the provider: registered buffers stay valid for GREX and lambda trials.
-// The temporary global lookup is restricted to real MPI in plumedexchange.h.
+// Owned separately by each simulation/rank, including thread-MPI ranks.
+// Registered buffers stay valid for GREX and lambda trials.
 struct PlumedContext
 {
     //! Whether this MD step attempts replica exchange; controls saving GREX input snapshots.
@@ -80,7 +79,6 @@ struct PlumedContext
     //! Whether this is the replica's main MPI rank; used to supply global ENERGY only once.
     bool mainRank = true;
 };
-#endif
 
 /*! \internal \brief
  * Implements IForceProvider for PLUMED.
@@ -94,12 +92,12 @@ public:
      */
     PlumedForceProvider(const PlumedOptions& options);
     ~PlumedForceProvider();
-#if GMX_LIB_MPI
+    //! Typed discovery through this simulation/rank's force-provider collection.
+    PlumedForceProvider* plumedForceProvider() override { return this; }
     //! Mutable exchange/MCMC data, valid for this provider's lifetime.
     PlumedContext& context() { return context_; }
     //! Non-owning Plumed::toVoid() handle for runtime-wrapper calls from the MD engine.
     void* plumedHandle() const;
-#endif
     /*! @brief Sets the global atom indices list
      * param[in] globalAtomIndices  the, optional, list of global atom indices
      */
@@ -142,9 +140,7 @@ private:
     //! Whether the atoms that PLUMED used on this step include virtual sites
     bool usesVirtualSites();
 
-#if GMX_LIB_MPI
     PlumedContext context_;
-#endif
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;

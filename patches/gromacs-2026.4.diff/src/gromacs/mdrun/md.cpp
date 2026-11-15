@@ -549,25 +549,27 @@ void gmx::LegacySimulator::do_md()
                                 opt2fn("-awh", nFile_, fnm_),
                                 pullWork_);
 
+    auto* plumedForceProvider = findPlumedForceProvider(fr_->forceProviders);
+
 #if GMX_LIB_MPI
-    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex
+    if (plumedForceProvider && plumedForceProvider->context().hrex
         && (inputRec_->useMts || shellfc || awh || pullWork_ || enforcedRotation_ || ed))
         gmx_fatal(FARGS,
                   "-hrex trial evaluation does not support MTS, shells, AWH, pulling, rotation or "
                   "essential dynamics");
-    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex && fr_->forceProviders
+    if (plumedForceProvider && plumedForceProvider->context().hrex && fr_->forceProviders
         && fr_->forceProviders->numForceProviders() != 1)
         gmx_fatal(FARGS,
                   "-hrex prototype supports only the PLUMED force provider; other provider side "
                   "effects are not isolated");
-    if (gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex
+    if (plumedForceProvider && plumedForceProvider->context().hrex
         && (simulationWork.useGpuUpdate || simulationWork.useGpuDirectCommunication))
         gmx_fatal(FARGS, "-hrex prototype requires -update cpu and no direct GPU communication");
 #endif
 
     if (useReplicaExchange && isMainRank)
     {
-        repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_);
+        repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_, plumedForceProvider);
     }
 
     // PME tuning is only supported with PME for Coulomb. It is not supported with only LJ PME
@@ -921,10 +923,8 @@ void gmx::LegacySimulator::do_md()
         {
             /* find and set the current lambdas */
             state_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
-#if GMX_LIB_MPI
-            if (gmx::plumedForceProvider)
-                gmx::plumedForceProvider->context().lambdaState = state_->fep_state;
-#endif
+            if (plumedForceProvider)
+                plumedForceProvider->context().lambdaState = state_->fep_state;
 
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
                            && (!bFirstStep));
@@ -933,8 +933,8 @@ void gmx::LegacySimulator::do_md()
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
                      && do_per_step(step, replExParams_.exchangeInterval));
 #if GMX_LIB_MPI
-        if (gmx::plumedForceProvider)
-            gmx::plumedForceProvider->context().exchangeStep = bDoReplEx;
+        if (plumedForceProvider)
+            plumedForceProvider->context().exchangeStep = bDoReplEx;
 #endif
 
         if (doSimulatedAnnealing)
@@ -1112,7 +1112,7 @@ void gmx::LegacySimulator::do_md()
         /* PLUMED HREX */
 #if GMX_LIB_MPI
         const bool bHREX =
-                bDoReplEx && gmx::plumedForceProvider && gmx::plumedForceProvider->context().hrex;
+                bDoReplEx && plumedForceProvider && plumedForceProvider->context().hrex;
 #else
         const bool bHREX = false;
 #endif
@@ -1123,7 +1123,7 @@ void gmx::LegacySimulator::do_md()
                 && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep());
 
 #if GMX_LIB_MPI
-        if (gmx::plumedForceProvider && bHREX)
+        if (plumedForceProvider && bHREX)
         {
             // gmx_enerdata_t *hrex_enerd;
             int            nlambda = enerd_->foreignLambdaTerms.numLambdas();
@@ -1193,11 +1193,12 @@ void gmx::LegacySimulator::do_md()
                calculate (and e.g. deposit or print) again for the previous step inside do_force() */
             struct TrialGuard
             {
-                TrialGuard() { gmx::plumedForceProvider->context().hrexTrial = true; }
-                ~TrialGuard() { gmx::plumedForceProvider->context().hrexTrial = false; }
+                PlumedForceProvider* provider;
+                explicit TrialGuard(PlumedForceProvider* p) : provider(p) { provider->context().hrexTrial = true; }
+                ~TrialGuard() { provider->context().hrexTrial = false; }
             };
             {
-                TrialGuard trialGuard;
+                TrialGuard trialGuard(plumedForceProvider);
                 do_force(fpLog_,
                          cr_,
                          *ir,
@@ -1228,7 +1229,7 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             }
-            plumed_hrex_cache_foreign(&hrex_enerd.term[InteractionFunction::PotentialEnergy]);
+            plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
 
             /* exchange back */
             if (haveDDAtomOrdering(*cr_))
@@ -1588,7 +1589,8 @@ void gmx::LegacySimulator::do_md()
                                                   step,
                                                   state_->v.rvec_array(),
                                                   md->homenr,
-                                                  md->cTC);
+                                                  md->cTC,
+                                                  plumedForceProvider);
                 /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
                 if (isMainRank)
                 {
@@ -2311,7 +2313,7 @@ void gmx::LegacySimulator::do_md()
         if (bDoReplEx)
         {
             bExchanged =
-                    replica_exchange(fpLog_, cr_, ms_, repl_ex, stateGlobal_, enerd_, state_, step, t);
+                    replica_exchange(fpLog_, cr_, ms_, repl_ex, stateGlobal_, enerd_, state_, step, t, plumedForceProvider);
         }
 
         if ((bExchanged || bNeedRepartition) && haveDDAtomOrdering(*cr_))

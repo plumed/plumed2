@@ -545,11 +545,14 @@ void Checkpointing::restartFrom(const std::string& fileName) {
     content=CheckpointReader::readFile(fname);
   }
   if(comm.Get_size()>1) {
-    unsigned long long n=content.size();
+    // The byte broadcast below is limited to int counts. Use that same type
+    // for its size, also on hosts whose MPI subset lacks unsigned long long.
+    int n=content.size()<static_cast<std::size_t>(std::numeric_limits<int>::max())
+          ? static_cast<int>(content.size()) : -1;
     comm.Bcast(n,0);
-    plumed_massert(n<static_cast<unsigned long long>(std::numeric_limits<int>::max()),"checkpoint file too large");
+    plumed_massert(n>=0,"checkpoint file too large");
     content.resize(n);
-    comm.Bcast(&content[0],static_cast<int>(n),0);
+    comm.Bcast(content.data(),n,0);
   }
   pending=std::make_unique<CheckpointReader>(content);
   restartStep=pending->get<long long int>("step");

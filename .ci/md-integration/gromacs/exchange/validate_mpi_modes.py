@@ -1,4 +1,4 @@
-"""Check thread-MPI rejection of PLUMED MCMC and ordinary-run controls."""
+"""Check thread-MPI PLUMED MCMC and ordinary-run controls."""
 
 import argparse
 import importlib.util
@@ -122,33 +122,19 @@ def main():
             rc = suite.run(command, directory, "mdrun.log", check=False)
             item["exit_code"] = rc
             log = (directory / "mdrun.log").read_text()
-            if expanded and bias != "none":
-                assert rc != 0, "PLUMED-biased MCMC must fail in a thread-MPI build"
-                # GROMACS wraps long diagnostics; compare normalized whitespace.
-                assert (
-                    "PLUMED-biased expanded-ensemble lambda MCMC requires real MPI"
-                    in " ".join(log.split())
-                ), log[-4000:]
-                assert not (directory / "COLVAR").exists(), (
-                    "Failure must precede PLUMED calculation"
-                )
-                item["expected_rejection"] = True
-            else:
-                assert rc == 0, log[-4000:]
-                assert (directory / "run.gro").is_file(), "Missing final configuration"
-                if bias != "none":
-                    rows = module.analytic.table(directory / "COLVAR")
-                    assert len(rows) == 32, "Missing ordinary PLUMED steps"
-                    for row in rows:
-                        expected = (
-                            (row["d"] - 0.4) ** 2
-                            if bias == "coordinate"
-                            else row["e"] ** 2
-                        )
-                        assert math.isclose(
-                            row["r.bias"], expected, abs_tol=3e-5, rel_tol=3e-5
-                        ), row
-                    item["rows"] = len(rows)
+            assert rc == 0, log[-4000:]
+            assert (directory / "run.gro").is_file(), "Missing final configuration"
+            if bias != "none":
+                rows = module.analytic.table(directory / "COLVAR")
+                assert len(rows) == 32, "Missing ordinary PLUMED steps"
+                for row in rows:
+                    expected = (
+                        (row["d"] - 0.4) ** 2 if bias == "coordinate" else row["e"] ** 2
+                    )
+                    assert math.isclose(
+                        row["r.bias"], expected, abs_tol=3e-5, rel_tol=3e-5
+                    ), row
+                item["rows"] = len(rows)
             item["status"] = "pass"
         except (
             AssertionError,
@@ -167,7 +153,7 @@ def main():
     for ranks in (1, 2):
         for legacy in (False, True):
             run_case(
-                "reject-mcmc-r{:d}-{!s}".format(
+                "biased-mcmc-r{:d}-{!s}".format(
                     ranks, "legacy" if legacy else "modular"
                 ),
                 ranks,

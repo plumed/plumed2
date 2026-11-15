@@ -55,6 +55,11 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 
+namespace gmx
+{
+class PlumedForceProvider;
+}
+
 /*! \libinternal
  * \brief The parameters for the replica exchange algorithm. */
 struct ReplicaExchangeParameters
@@ -79,7 +84,8 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                                     const gmx_multisim_t*            ms,
                                     int                              numAtomsInSystem,
                                     const t_inputrec*                ir,
-                                    const ReplicaExchangeParameters& replExParams);
+                                    const ReplicaExchangeParameters& replExParams,
+                                    gmx::PlumedForceProvider*         plumedForceProvider = nullptr);
 
 /*! \brief Attempts replica exchange.
  *
@@ -99,7 +105,8 @@ gmx_bool replica_exchange(FILE*                 fplog,
                           const gmx_enerdata_t* enerd,
                           t_state*              state_local,
                           int64_t               step,
-                          real                  time);
+                          real                  time,
+                          gmx::PlumedForceProvider* plumedForceProvider = nullptr);
 
 /*! \brief Prints replica exchange statistics to the log file.
  *

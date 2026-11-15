@@ -52,7 +52,8 @@ changing the MD forces. Metadynamics can therefore bias lambda alone or together
 with configurational variables, as in alchemical metadynamics
 ([Hsu et al., JCTC 2023](https://doi.org/10.1021/acs.jctc.2c01258)).
 
-Lambda is supplied only during expanded-ensemble MCMC. Native lambda replica
+Lambda is supplied only during expanded-ensemble MCMC. Native MPI and thread-MPI
+GROMACS builds are supported. Native lambda replica
 exchange uses replica-specific fixed parameters in the PLUMED inputs instead.
 Simultaneous expanded-ensemble MCMC and replica exchange is unsupported.
 

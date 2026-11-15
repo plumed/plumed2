@@ -37,7 +37,6 @@ class Suite:
         self.root = Path(args.output).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.env = os.environ.copy()
-        self.env.pop("PLUMED_HREX", None)
         self.env.update(OMP_NUM_THREADS=str(args.threads), GMX_MAXBACKUP="-1")
         self.results = []
         self.run([self.args.gmx, "--version"], self.root, "gromacs-version.txt")
@@ -83,6 +82,15 @@ class Suite:
         return r.returncode
 
     def launch(self, n):
+        if getattr(self.args, "backend", "mpi") == "tmpi":
+            return [
+                self.args.gmx,
+                "mdrun",
+                "-ntmpi",
+                str(n),
+                "-ntomp",
+                str(self.args.threads),
+            ]
         return [x.format(n=n) for x in shlex.split(self.args.launcher)] + [
             self.args.gmx,
             "mdrun",
@@ -421,6 +429,14 @@ nstfout = 1
                     hills = table(next((root / f"rep{i}").glob("HILLS*")))
                     if len(hills) != 31 // c.get("pace", 5):
                         raise AssertionError("unexpected deposition count")
+                    bystep = {round(row["time"] / 0.0001): row for row in rows}
+                    argument = "e" if c["bias"] == "metad-energy" else "d"
+                    for hill in hills:
+                        step = round(hill["time"] / 0.0001)
+                        if abs(hill[argument] - bystep[step][argument]) > 2e-7:
+                            raise AssertionError(
+                                "Hill deposited at a foreign or stale CV value"
+                            )
             item["checks"] = self.verify(c, root)
             if c.get("restart"):
                 reference_case = dict(c, name=c["name"] + "-continuous", restart=False)

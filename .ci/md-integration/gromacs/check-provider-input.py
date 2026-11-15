@@ -1,4 +1,4 @@
-"""Compile an actual-provider box lifetime regression against a native MPI host."""
+"""Compile an actual-provider box lifetime regression against an MPI or thread-MPI host."""
 
 import json
 import os
@@ -31,7 +31,9 @@ command = [
     "-o",
     str(binary),
     "-L" + str(build / "lib"),
-    "-lgromacs_mpi",
+    "-lgromacs_mpi"
+    if "GMX_MPI:BOOL=ON" in (build / "CMakeCache.txt").read_text()
+    else "-lgromacs",
     "-Wl,-rpath," + str(build / "lib"),
     "-pthread",
 ]

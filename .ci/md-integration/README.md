@@ -333,17 +333,21 @@ python3 .ci/md-integration/amber/check.py --mode serial \
 
 ## Replica exchange and expanded-ensemble coverage
 
-The same pinned GROMACS 2026.4 builds also run `gromacs/check-exchange.sh`.
-Native MPI jobs check bias-only and Hamiltonian replica exchange with coordinate,
-ENERGY and depositing metadynamics biases against independent analytical energy
-oracles. Native lambda exchange checks candidate ENERGY values and local lambda
-retention. Expanded-ensemble tests cover lambda, ENERGY and metadynamics candidate
-biases, forces and history isolation in both legacy and modular simulators.
-The small two-atom systems run 31 steps; the source harnesses can also run their
-larger matrices locally. Every case preserves inputs, commands and results JSON.
+The pinned GROMACS 2026.4 builds run `gromacs/check-exchange.sh`. Native MPI jobs
+check ordinary biased exchange, general Hamiltonian exchange, and native lambda
+exchange with coordinate, ENERGY and depositing metadynamics biases against
+independent energy oracles. GREX evaluates both biases after the ordinary PLUMED
+update, using the same updated history with the 2.11 kernel. Candidate ENERGY
+values and native physical terms are checked without double counting.
 
-The initial implementation assumes one PLUMED provider per native-MPI process.
-Thread-MPI jobs instead verify early rejection of PLUMED-biased MCMC (one/two
-ranks, legacy/modular), native MCMC without PLUMED, and ordinary coordinate/ENERGY
-bias controls. Those exclusions must remain until per-instance state replaces
-the MPI-only global bridge. GPU execution is outside this CPU workflow.
+Each simulation/rank discovers its own PLUMED provider through the existing
+force-provider collection. Native MPI and thread-MPI jobs both run successful
+lambda-MCMC cases with coordinate/ENERGY biases and metadynamics, one and two
+ranks, modular and supported legacy simulators, modular restart equivalence,
+and hybrid OpenMP. Thread-MPI replica exchange remains unsupported by GROMACS.
+Simultaneous expanded ensemble and replica exchange remains unsupported.
+
+The actual-provider fixture checks retained box bindings and simultaneous
+provider/collection isolation with 200,000 concurrent lookups. Every numerical
+case retains its commands, inputs and results JSON. GPU execution requires
+separate validation on an appropriate host.

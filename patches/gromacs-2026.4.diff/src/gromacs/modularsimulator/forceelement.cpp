@@ -43,15 +43,13 @@
 #include "forceelement.h"
 
 #include "../mdrun/plumedexchange.h"
-#if GMX_LIB_MPI
-#    define __PLUMED_WRAPPER_FORTRAN 0
-#    define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#    define __PLUMED_WRAPPER_EXTERN 0
-#    define __PLUMED_WRAPPER_CXX 1
-#    define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#    define __PLUMED_HAS_DLOPEN
-#    include "../../../Plumed.h"
-#endif
+#define __PLUMED_WRAPPER_FORTRAN 0
+#define __PLUMED_WRAPPER_LINK_RUNTIME 1
+#define __PLUMED_WRAPPER_EXTERN 0
+#define __PLUMED_WRAPPER_CXX 1
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#define __PLUMED_HAS_DLOPEN
+#include "../../../Plumed.h"
 
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
@@ -193,24 +191,24 @@ void ForceElement::elementSetup()
 template<bool doShellFC>
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
-#if GMX_LIB_MPI
+    auto* plumedForceProvider = findPlumedForceProvider(fr_->forceProviders);
     if (plumedForceProvider)
     {
-        plumedForceProvider->context().lambdaState =
-                freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->currentFEPState() : 0;
+        if (inputrec_->bExpanded)
+            plumedForceProvider->context().lambdaState = freeEnergyPerturbationData_->currentFEPState();
         // Ask at execution time, not when tasks for future steps are queued.
         // The normal provider call performs sharing, forces and the one update.
         PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
         long int     plumedStep = step;
         plumed.cmd("setStepLong", &plumedStep);
-        plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
+        if (inputrec_->bExpanded)
+            plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
         plumed.cmd("prepareDependencies");
         int needsEnergy = 0;
         plumed.cmd("isEnergyNeeded", &needsEnergy);
         if (needsEnergy)
             flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
     }
-#endif
     if (!haveDDAtomOrdering(*cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).

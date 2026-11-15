@@ -68,6 +68,7 @@ template<typename T>
 class ArrayRef;
 class ForceWithVirial;
 class MpiComm;
+class PlumedForceProvider;
 
 
 /*! \libinternal \brief
@@ -174,6 +175,9 @@ public:
 class IForceProvider
 {
 public:
+    //! Optional typed lookup; ownership stays with the simulation's MD module.
+    virtual PlumedForceProvider* plumedForceProvider() { return nullptr; }
+
     /*! \brief
      * Computes forces.
      *
@@ -261,6 +265,9 @@ public:
     bool hasForceProvider() const;
     //! Number of registered providers (used to reject unsafe HREX trial side effects).
     int numForceProviders() const;
+
+    //! This simulation/rank's PLUMED provider, or nullptr when PLUMED is disabled.
+    PlumedForceProvider* plumedForceProvider() const;
 
     //! Computes forces.
     void calculateForces(const gmx::ForceProviderInput& forceProviderInput,
