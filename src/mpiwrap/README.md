@@ -810,7 +810,7 @@ host header in C99 and C++98 modes with this macro both present and absent.
 
 ### GROMACS 2026 runtime injection
 
-The `gromacs-2026.0` patch uses the usual top-level `Plumed.h` link (or forwarding
+The `gromacs-2026.4` patch uses the usual top-level `Plumed.h` link (or forwarding
 header with `--include`). The integration and its test helper include that header;
 GROMACS's bundled copy stays unchanged. Reverting removes the top-level patch
 files through the standard patch machinery. Use a PLUMED 2.11 kernel with API
@@ -822,7 +822,7 @@ multi-rank GROMACS thread-MPI runs are rejected with those older kernels.
 
 For a runtime-linked PLUMED build, apply the patch before configuring GROMACS:
 
-    plumed patch -p --runtime -e gromacs-2026.0
+    plumed patch -p --runtime -e gromacs-2026.4
     export PLUMED_KERNEL=/path/to/libplumedKernel.so
     gmx mdrun -ntmpi 4 -ntomp 2 -plumed plumed.dat
 
@@ -841,7 +841,7 @@ checked an analytic distance restraint, PLUMED generalized forces, atom force
 increments against a no-PLUMED baseline, and rank-count consistency. This is a
 focused integration check, not the full GROMACS upstream test suite.
 
-Patch/revert checks also passed for tags `v2026.0` through `v2026.4`, both with
+The distributed patch targets `v2026.4` directly, both with
 the default links and with `--include`, restoring every original source file
 byte for byte. Fresh patched and unpatched `v2026.4` thread-MPI builds passed:
 after reverting, single-rank PLUMED use still worked and the original
