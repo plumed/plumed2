@@ -24,6 +24,10 @@
 #include "Tools.h"
 #include "PDB.h"
 #include <cctype>
+#include <array>
+#include <cmath>
+#include <limits>
+#include <map>
 
 namespace PLMD {
 
@@ -815,6 +819,108 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
     }
   } else {
     plumed_merror(type + " is not a valid molecule type");
+  }
+}
+
+
+bool MolDataClass::isHbondSymbol( const std::string& symbol ) {
+  return symbol=="hbdonors" || symbol=="hbacceptors" || symbol=="polarhydrogens";
+}
+
+void MolDataClass::hbondSymbol( const std::string& symbol, const PDB& mypdb, const double bondCutoff, std::vector<AtomNumber>& numbers ) {
+  plumed_assert(isHbondSymbol(symbol)) << symbol << " is not a hydrogen-bond symbol";
+  numbers.clear();
+  const auto & all = mypdb.getAtomNumbers();
+  const auto & pos = mypdb.getPositions();
+  // 'H', 'C', 'N', 'O' or 0 (any other element, ions and virtual sites)
+  std::vector<char> elem(all.size(),0);
+  for(unsigned i=0; i<all.size(); ++i) {
+    auto resname=mypdb.getResidueName(all[i]);
+    Tools::stripLeadingAndTrailingBlanks(resname);
+    if(allowedResidue("ion",resname)) {
+      continue;
+    }
+    std::string e=mypdb.getElement(all[i]);
+    Tools::stripLeadingAndTrailingBlanks(e);
+    if(e.empty()) {
+      // as for @hydrogens: the first letter of the atom name
+      auto atomname=mypdb.getAtomName(all[i]);
+      Tools::stripLeadingAndTrailingBlanks(atomname);
+      const auto notnumber=atomname.find_first_not_of("0123456789");
+      if(notnumber!=std::string::npos) {
+        e=atomname.substr(notnumber,1);
+      }
+    }
+    if(e.length()==1) {
+      const char c=std::toupper(static_cast<unsigned char>(e[0]));
+      if(c=='H' || c=='C' || c=='N' || c=='O') {
+        elem[i]=c;
+      }
+    }
+  }
+  if(symbol=="hbacceptors") {
+    for(unsigned i=0; i<all.size(); ++i) {
+      if(elem[i]=='N' || elem[i]=='O') {
+        numbers.push_back(all[i]);
+      }
+    }
+    return;
+  }
+  // the C, N and O atoms in a grid with cells of size bondCutoff: a hydrogen is bonded to the closest one,
+  // so that a C-H group close to an N or O atom (e.g. in a clash) is not taken as polar
+  plumed_assert(bondCutoff>0.0);
+  using Cell=std::array<long,3>;
+  auto cellOf=[&](const Vector& x) {
+    return Cell{static_cast<long>(std::floor(x[0]/bondCutoff)),
+                static_cast<long>(std::floor(x[1]/bondCutoff)),
+                static_cast<long>(std::floor(x[2]/bondCutoff))};
+  };
+  std::map<Cell,std::vector<unsigned>> grid;
+  for(unsigned i=0; i<all.size(); ++i) {
+    if(elem[i]=='C' || elem[i]=='N' || elem[i]=='O') {
+      grid[cellOf(pos[i])].push_back(i);
+    }
+  }
+  const double cut2=bondCutoff*bondCutoff;
+  std::vector<bool> donor(all.size(),false);
+  for(unsigned i=0; i<all.size(); ++i) {
+    if(elem[i]!='H') {
+      continue;
+    }
+    const Cell c=cellOf(pos[i]);
+    unsigned closest=std::numeric_limits<unsigned>::max();
+    double closest2=cut2;
+    for(long dx=-1; dx<=1; ++dx) {
+      for(long dy=-1; dy<=1; ++dy) {
+        for(long dz=-1; dz<=1; ++dz) {
+          const auto found=grid.find(Cell{c[0]+dx,c[1]+dy,c[2]+dz});
+          if(found==grid.end()) {
+            continue;
+          }
+          for(const auto j : found->second) {
+            const double d2=delta(pos[i],pos[j]).modulo2();
+            // ties go to the first atom of the file
+            if(d2<closest2 || (d2==closest2 && j<closest)) {
+              closest2=d2;
+              closest=j;
+            }
+          }
+        }
+      }
+    }
+    if(closest!=std::numeric_limits<unsigned>::max() && elem[closest]!='C') {
+      donor[closest]=true;
+      if(symbol=="polarhydrogens") {
+        numbers.push_back(all[i]);
+      }
+    }
+  }
+  if(symbol=="hbdonors") {
+    for(unsigned i=0; i<all.size(); ++i) {
+      if(donor[i]) {
+        numbers.push_back(all[i]);
+      }
+    }
   }
 }
 
