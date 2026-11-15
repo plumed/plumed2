@@ -74,6 +74,9 @@ public:
                            ParallelActionsOutput& output );
 /// Get the indices of the forces
   static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<CV>& actiondata );
+/// All the components of a task have the same force indices: getForceIndices fills the
+/// rows of force_indices it gets (one on the CPU, see ParallelTaskManager::gatherSharedIndexForces)
+  static constexpr bool forceIndicesSharedByComponents = true;
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
@@ -350,7 +353,8 @@ void FunctionOfVector<CV, myPTM>::getForceIndices( std::size_t task_index,
     ForceIndexHolder force_indices ) {
 
   unsigned vector_end = actiondata.argstart + input.nderivatives_per_scalar - actiondata.nscalars;
-  for(unsigned j=0; j<input.ncomponents; ++j) {
+  // all the components have the same indices: fill the rows that force_indices has
+  for(unsigned j=0; j<force_indices.tot_indices.size(); ++j) {
     for(unsigned k=actiondata.argstart; k<vector_end; ++k) {
       force_indices.indices[j][k-actiondata.argstart] = input.argstarts[k] + task_index;
     }

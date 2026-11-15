@@ -82,6 +82,8 @@ public:
   }
 /// Get the indices of the forces
   static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<CV>& actiondata );
+/// The same as in FunctionOfVector, whose getForceIndices is used
+  static constexpr bool forceIndicesSharedByComponents = true;
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
