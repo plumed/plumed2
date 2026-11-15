@@ -4,7 +4,7 @@
     "repository": "gromacs/gromacs",
     "tag": "v2026.4",
     "ref": "6c69f720aa7378fddfee67f99d51aff21ccfb0a2",
-    "patch": "gromacs-2026.0"
+    "patch": "gromacs-2026.4"
   },
   "lammps": {
     "version": "30Sep2026 update 1",
