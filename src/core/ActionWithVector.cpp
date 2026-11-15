@@ -209,7 +209,7 @@ void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) co
 
   // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
   const bool byRow = getRowDistribution().byRow;
-  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  const unsigned size = byRow ? comm.Get_size() : 1, rank = byRow ? comm.Get_rank() : 0;
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
@@ -243,7 +243,7 @@ void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) con
 
   // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
   const bool byRow = getRowDistribution().byRow;
-  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  const unsigned size = byRow ? comm.Get_size() : 1, rank = byRow ? comm.Get_rank() : 0;
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
@@ -692,32 +692,36 @@ static void clearOwnedRows( double* start, std::size_t nrows, std::size_t ncols,
 
 void ActionWithVector::clearForcesForApply( std::vector<double>& outforces ) {
   const auto & rd = getRowDistribution();
-  bool anylocal=false;
-  for(const auto l : rd.localArgument) {
-    anylocal = anylocal || l;
-  }
-  std::vector<std::size_t> sizes( rd.localArgument.size() );
-  for(unsigned k=0; k<sizes.size(); ++k) {
-    sizes[k] = getPntrToArgument(k)->getNumberOfStoredValues();
+  if( !rd.byRow ) {
+    std::fill( outforces.begin(), outforces.end(), 0.0 );
+    return;
   }
   // the rows of the other processes are never written on the arguments owned by row, and
   // they are zero if the whole buffer was cleared since the arguments last changed size
-  if( !rd.byRow || !anylocal || sizes!=clearedForceSizes || clearedForceGeneration!=rd.generation ) {
+  bool changed = clearedForceGeneration!=rd.generation || clearedForceSizes.size()!=rd.localArgument.size();
+  for(unsigned k=0; !changed && k<rd.localArgument.size(); ++k) {
+    changed = clearedForceSizes[k]!=getPntrToArgument(k)->getNumberOfStoredValues();
+  }
+  if( changed ) {
     std::fill( outforces.begin(), outforces.end(), 0.0 );
-    clearedForceSizes = sizes;
+    clearedForceSizes.resize( rd.localArgument.size() );
+    for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+      clearedForceSizes[k] = getPntrToArgument(k)->getNumberOfStoredValues();
+    }
     clearedForceGeneration = rd.generation;
     return;
   }
   const unsigned size=comm.Get_size(), rank=comm.Get_rank();
   std::size_t start=0;
-  for(unsigned k=0; k<sizes.size(); ++k) {
+  for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+    const Value* myarg = getPntrToArgument(k);
+    const std::size_t n = clearedForceSizes[k];
     if( rd.localArgument[k] ) {
-      const Value* myarg = getPntrToArgument(k);
       clearOwnedRows( outforces.data()+start, myarg->getShape()[0], myarg->getNumberOfColumns(), rank, size );
     } else {
-      std::fill_n( outforces.begin()+start, sizes[k], 0.0 );
+      std::fill_n( outforces.begin()+start, n, 0.0 );
     }
-    start += sizes[k];
+    start += n;
   }
   std::fill( outforces.begin()+start, outforces.end(), 0.0 );
 }
@@ -726,7 +730,7 @@ void ActionWithVector::clearForcesForApply( std::vector<double>& outforces ) {
 // the rows of this process: the other rows are never used (they are not even zero after the
 // number of columns changes)
 void ActionWithVector::clearDerivatives( const bool& force ) {
-  if( comm.Get_size()==1 || !getRowDistribution().localOutput ) {
+  if( !getRowDistribution().localOutput ) {
     ActionWithValue::clearDerivatives( force );
     return;
   }
@@ -743,7 +747,7 @@ void ActionWithVector::clearDerivatives( const bool& force ) {
 }
 
 void ActionWithVector::clearInputForces( const bool& force ) {
-  if( comm.Get_size()==1 || !getRowDistribution().localOutput ) {
+  if( !getRowDistribution().localOutput ) {
     ActionWithValue::clearInputForces( force );
     return;
   }
