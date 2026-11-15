@@ -76,6 +76,13 @@ private:
   static constexpr unsigned minAtomsPerThread=4096;
 /// Maximum total number of cells
   static constexpr double maxNumberOfCells=1048576;
+/// In createNeighborList the cells are at most this many times the atoms in them
+/// (but at least minCellsForAtomLimit): the lists are built at every step, at a cost
+/// that grows with the number of cells, and more cells than atoms only add empty cells
+  static constexpr double maxCellsPerAtom=2;
+  static constexpr double minCellsForAtomLimit=64;
+/// If not zero, the number of atoms that limits the number of cells (see maxCellsPerAtom)
+  std::size_t cellLimitAtoms=0;
 /// Check that the link cells were set up correctly
   bool cutoffwasset=false;
 /// Are there periodic boundary conditions setup
@@ -109,7 +116,7 @@ private:
   std::vector<unsigned> allcells;
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
-  void createCells(const PLMD::Tensor&);
+  void createCells(const PLMD::Tensor& box);
 /// Find the index of the cell of a position, without checks:
 /// returns getNumberOfCells() if the position is not in a cell
   unsigned findCellUnchecked( Vector pos ) const noexcept;
