@@ -14,6 +14,11 @@ on:
         required: false
         default: false
 
+    secrets:
+      CONDA_UPLOAD_TOKEN:
+        description: Anaconda token for test or tag publication
+        required: false
+
 env:
 # on CI, better dump stack trace in case there is an error
   PLUMED_STACK_TRACE: yes
@@ -76,6 +81,7 @@ jobs:
         echo "VERSION=$VERSION" >> "$GITHUB_ENV"
         python extensions/conda_recipe.py
         python conda/tests/publication.py
+        python conda/tests/publication_workflow.py
         make -C conda
     - name: Validate extensions, MPI providers and Python plugins
       run: |
