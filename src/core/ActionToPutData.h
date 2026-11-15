@@ -42,8 +42,6 @@ private:
   bool forces_added_elsewhere;
 /// Is this quantity fixed
   bool fixed;
-/// Does this input stay with its replica when configurations are exchanged?
-  bool replica_local;
 /// Is this quantity passed from the domains
   bool from_domains;
 /// Is PLUMED allowed to change the value of this pointer
@@ -93,10 +91,6 @@ public:
 /// Actually set the values for the output
   virtual void apply() override ;
   void rescaleForces( const double& alpha );
-/// Keep a Hamiltonian parameter local while exchanging configurations.
-  void setReplicaLocal() {
-    replica_local=true;
-  }
 /// For replica exchange
   void writeBinary(std::ostream&o) override;
   virtual void readBinary(std::istream&i) override;

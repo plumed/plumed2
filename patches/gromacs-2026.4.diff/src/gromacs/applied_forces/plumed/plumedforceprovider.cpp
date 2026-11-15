@@ -109,8 +109,11 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     // I prefer to pass a struct with data because it stops the coupling
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
+    expanded_ = options.inputrec_ != nullptr && options.inputrec_->bExpanded;
+    if (expanded_ && replex_)
+        GMX_THROW(InvalidInputError("Expanded-ensemble lambda MCMC combined with replica exchange is unsupported"));
 #if !GMX_LIB_MPI
-    if (options.inputrec_ != nullptr && options.inputrec_->bExpanded)
+    if (expanded_)
     {
         GMX_THROW(InvalidInputError(
                 "PLUMED-biased expanded-ensemble lambda MCMC requires real MPI "
@@ -291,10 +294,12 @@ try
     calculatedStep_ = lstep;
     plumed_->cmd("setStepLong", &lstep);
 #if GMX_LIB_MPI
-    context_.lambdaForce = 0;
-    plumed_->cmd(replex_ && plumedAPIversion_ >= 13 ? "setExtraCV lambda NOEXCHANGE" : "setExtraCV lambda",
-                 &context_.lambdaState);
-    plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
+    if (expanded_)
+    {
+        context_.lambdaForce = 0;
+        plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
+        plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
+    }
 #endif
     if (globalAtomIndices_.has_value())
     {
@@ -411,10 +416,12 @@ try
     long int lstep = step;
     plumed_->cmd("setStepLong", &lstep);
 #if GMX_LIB_MPI
-    context_.lambdaForce = 0;
-    plumed_->cmd(replex_ && plumedAPIversion_ >= 13 ? "setExtraCV lambda NOEXCHANGE" : "setExtraCV lambda",
-                 &context_.lambdaState);
-    plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
+    if (expanded_)
+    {
+        context_.lambdaForce = 0;
+        plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
+        plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
+    }
 #endif
     prepareStepIsCalled_ = true;
     currentStep_         = step;

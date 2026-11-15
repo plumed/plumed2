@@ -65,7 +65,7 @@ class Suite(analytic.Suite):
             )
             plumed = plumed.replace("SIGMA=0.1", "SIGMA=0.2")
             if case["bias"] in ("lambda-coordinate", "lambda-energy"):
-                plumed = "l: EXTRACV NAME=lambda\nd: DISTANCE ATOMS=1,2\n"
+                plumed = f"l: CONSTANT VALUE={i}\nd: DISTANCE ATOMS=1,2\n"
                 if case["bias"] == "lambda-coordinate":
                     plumed += "f: CUSTOM ARG=l,d FUNC=x*y-0.1 PERIODIC=NO\n"
                 else:

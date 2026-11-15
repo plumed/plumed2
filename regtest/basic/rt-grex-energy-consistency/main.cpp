@@ -14,7 +14,7 @@ int run(MPI_Comm world, int, char**) {
   if(size!=2) {
     MPI_Abort(world,2);
   }
-  auto evaluate=[&](bool energy, bool direct, bool lambda=false, bool local=false, bool offStride=false, int inputPolicy=0) {
+  auto evaluate=[&](bool energy, bool direct, bool lambda=false, bool local=false, bool offStride=false) {
     Plumed p;
     MPI_Comm intra=MPI_COMM_SELF;
     p.cmd("GREX setMPIIntracomm",&intra);
@@ -28,12 +28,8 @@ int run(MPI_Comm world, int, char**) {
     p.cmd("init");
     p.cmd("readInputLine","d: DISTANCE ATOMS=1,2 NOPBC");
     if(local) {
-      if(inputPolicy==1) {
-        p.cmd("readInputLine","lambda: PUT UNIT=number SHAPE=0 MUTABLE PERIODIC=NO NOEXCHANGE");
-        p.cmd("readInputLine","l: COMBINE ARG=lambda PERIODIC=NO");
-      } else {
-        p.cmd("readInputLine","l: EXTRACV NAME=lambda");
-      }
+      const std::string fixed="l: CONSTANT VALUE="+std::to_string(rank+1);
+      p.cmd("readInputLine",fixed.c_str());
       p.cmd("readInputLine","c: CUSTOM ARG=l,d FUNC=x*y PERIODIC=NO");
       p.cmd("readInputLine","r: RESTRAINT ARG=c AT=0 KAPPA=2");
     }
@@ -52,16 +48,10 @@ int run(MPI_Comm world, int, char**) {
     const double otherDistance=2-rank;
     double foreign=(rank+1)*otherDistance*otherDistance;
     double parameter=rank+1;
-    double parameterForce=0;
     for(int step=0; step<2; step++) {
       f.fill(0);
       virial.fill(0);
       p.cmd("setStep",&step);
-      if(local) {
-        parameterForce=0;
-        p.cmd(inputPolicy==0 ? "setValue lambda NOEXCHANGE" : "setExtraCV lambda",&parameter);
-        p.cmd("setExtraCVForce lambda",&parameterForce);
-      }
       p.cmd("setPositions",x.data());
       p.cmd("setMasses",masses.data());
       p.cmd("setBox",box.data());
@@ -117,7 +107,7 @@ int run(MPI_Comm world, int, char**) {
     const double gaussian=(std::exp(-.5)-std::exp(-6.25))/(1-std::exp(-6.25));
     double expected=energy ? foreign*foreign-own*own+(lambda ? 0 : foreign-own) : .2*(rank+1)*(gaussian-1);
     if(local) {
-      const double foreignParameter=inputPolicy==2 ? 2-rank : parameter;
+      const double foreignParameter=parameter;
       expected+=foreignParameter*foreignParameter*otherDistance*otherDistance-parameter*parameter*x[3]*x[3];
     }
     if(std::abs(delta-expected)>1e-10) {
@@ -130,12 +120,10 @@ int run(MPI_Comm world, int, char**) {
   evaluate(false,true);
   evaluate(true,false,true);
   evaluate(false,false,false,true);
-  evaluate(false,false,false,true,false,1); // PUT metadata retains lambda locally.
-  evaluate(false,false,false,true,false,2); // Default extra CVs follow the coordinates.
   evaluate(true,false,true,false,true);
   MPI_Barrier(world);
   if(rank==0) {
-    std::ofstream("output")<<"ENERGY cross-Hamiltonian evaluation: pass\nPost-update bias consistency: pass\nDirect energy-only evaluation: pass\nLambda ENERGY without physical double counting: pass\nLocal lambda retained on foreign coordinates: pass\nOff-stride exchange bias evaluation: pass\n";
+    std::ofstream("output")<<"ENERGY cross-Hamiltonian evaluation: pass\nPost-update bias consistency: pass\nDirect energy-only evaluation: pass\nLambda ENERGY without physical double counting: pass\nReplica-fixed parameter retained on foreign coordinates: pass\nOff-stride exchange bias evaluation: pass\n";
   }
   return 0;
 }

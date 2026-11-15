@@ -148,6 +148,8 @@ private:
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether lambda is supplied for expanded-ensemble MCMC.
+    bool                          expanded_ = false;
     //! Whether each atom is a virtual site, empty if there are none
     std::vector<bool>             isVirtualSite_;
 

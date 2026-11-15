@@ -42,18 +42,6 @@ called `n`, you would then use the following command:
 plumed.cmd("setValue n", val);
 ```
 
-For replica exchange, configuration-dependent inputs normally follow the exchanged
-coordinates. A Hamiltonian parameter that belongs to its replica can instead use
-`NOEXCHANGE`. This property is independent of `CONSTANT`: the parameter may still
-change during the simulation. All replicas must register the same inputs with
-the same exchange policy. The MD engine can also set this property while binding
-an existing input, without changing the user's input file (the same optional
-attribute is supported by `setExtraCV`):
-
-```c++
-plumed.cmd("setValue n NOEXCHANGE", val);
-```
-
 Notice also that if you expect PLUMED to try to apply forces on `n`, you can pass a void pointer called `force` to get the forces that PLUMED has applied on the elements of n as follows:
 
 ```c++
@@ -104,7 +92,6 @@ void ActionToPutData::registerKeywords(Keywords& keys) {
            "is not periodic you must state this using PERIODIC=NO.  Positions are passed with PERIODIC=NO even though special methods are used "
            "to deal with pbc");
   keys.addFlag("CONSTANT",false,"does this quantity not depend on time");
-  keys.addFlag("NOEXCHANGE",false,"keep this input local to its replica when configurations are exchanged");
   keys.addFlag("FROM_DOMAINS",false,"is this quantity passed through the domain decomposition object");
   keys.addFlag("MUTABLE",false,"can plumed change the value of the pointer that is passed from the MD code");
   keys.addFlag("ROUND_TO_BASE_TEN",false,"is this quantity written by the user in base ten, as the timestep is.  If the MD code "
@@ -119,7 +106,6 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
   noforce(false),
   forces_added_elsewhere(false),
   fixed(false),
-  replica_local(false),
   from_domains(false),
   resetable(false),
   dataCanBeSet(true),
@@ -154,7 +140,6 @@ ActionToPutData::ActionToPutData(const ActionOptions&ao):
       error("input to PERIODIC keyword does not make sense");
     }
 
-    parseFlag("NOEXCHANGE",replica_local);
     parseFlag("CONSTANT",fixed);
     if( fixed ) {
       noforce=true;
@@ -329,13 +314,13 @@ void ActionToPutData::rescaleForces( const double& alpha ) {
 }
 
 void ActionToPutData::writeBinary(std::ostream&o) {
-  if(!fixed && !replica_local) {
+  if(!fixed) {
     getPntrToValue()->writeBinary(o);
   }
 }
 
 void ActionToPutData::readBinary(std::istream&i) {
-  if(!fixed && !replica_local) {
+  if(!fixed) {
     getPntrToValue()->readBinary(i);
   }
 }
