@@ -54,6 +54,10 @@ template <typename T>
 constexpr bool needsBondLength<T,std::void_t<decltype(T::needsBondLength)>> =T::needsBondLength;
 }
 
+/// The largest number of atoms in a segment (the size of the position buffer in performTask).
+/// ALPHARMSD, ANTIBETARMSD and PARABETARMSD all use segments of exactly this size
+constexpr unsigned maxAtomsInSegment=30;
+
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 template <class T, typename myPTM=defaultPTM>
 class SecondaryStructureBase: public ActionWithVector {
@@ -67,9 +71,7 @@ public:
   static constexpr size_t virialSize=9;
   static constexpr unsigned customGatherStep=3;
   static constexpr unsigned customGatherStopBefore=virialSize;
-  /// The largest number of atoms in a segment (the size of the position buffer in performTask).
-  /// ALPHARMSD, ANTIBETARMSD and PARABETARMSD all use segments of exactly this size
-  static constexpr unsigned maxAtomsInSegment=30;
+  static constexpr unsigned maxAtomsInSegment=secondarystructure::maxAtomsInSegment;
 
 private:
   PTM taskmanager;
