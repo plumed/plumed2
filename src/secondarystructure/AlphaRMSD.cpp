@@ -67,7 +67,7 @@ alpha: ALPHARMSD RESIDUES=all R_0=0.1
 PRINT ARG=alpha FILE=colvar
 ```
 
-Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster, and with the LESS_THAN keyword.
+Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), and with the LESS_THAN keyword. The cost of the two methods is similar.
 The distance of the segment that is closest to an alpha helix is also computed.
 
 ```plumed

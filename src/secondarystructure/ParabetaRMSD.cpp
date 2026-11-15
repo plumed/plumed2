@@ -73,7 +73,7 @@ pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
 PRINT ARG=pb FILE=colvar
 ```
 
-Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster, and with the LESS_THAN keyword.
+Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), and with the LESS_THAN keyword. The cost of the two methods is similar.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
