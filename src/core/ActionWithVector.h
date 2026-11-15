@@ -50,7 +50,10 @@ class ActionWithVector:
 public:
 /// How the rows of the matrices are shared between the MPI processes (see getRowDistribution)
   struct RowDistribution {
-    bool done=false;
+/// The number of actions when this was worked out: it is worked out again if actions are added
+    std::size_t nactions=0;
+/// Incremented every time this is worked out: the buffers that are cleared row by row are then cleared completely
+    unsigned generation=0;
 /// The tasks are shared by the row of the matrices they work on: row r is done by process r%size
     bool byRow=false;
 /// Each row of the output matrices is only used by the process that computes it: the values are not summed over the processes
@@ -60,6 +63,9 @@ public:
   };
 private:
   mutable RowDistribution rowdist;
+/// The sizes of the arguments in the forces when they were last cleared, and the generation of rowdist then
+  std::vector<std::size_t> clearedForceSizes;
+  unsigned clearedForceGeneration=0;
   static constexpr int NoMasksUsed =-1;
 /// Check if there is a mask value
   int nmask=NoMasksUsed;
@@ -139,6 +145,11 @@ public:
   const RowDistribution& getRowDistribution() const ;
 /// Sum the forces over the MPI processes, except those on the arguments that are owned by row
   void sumForcesOverProcesses( std::vector<double>& outforces );
+/// Set the forces to zero before the backward loop: on the arguments owned by row only the rows of this process are used
+  void clearForcesForApply( std::vector<double>& outforces );
+/// With localOutput only the rows of this process are cleared
+  void clearInputForces( const bool& force=false ) override;
+  void clearDerivatives( const bool& force=false ) override;
 };
 
 inline

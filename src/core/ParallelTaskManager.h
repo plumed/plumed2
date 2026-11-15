@@ -366,6 +366,8 @@ protected:
   std::vector<precision> value_stash;
 /// The active tasks done by this MPI process, when the tasks are shared by row
   std::vector<unsigned> owned_tasks;
+/// The generation of the row distribution of the action when the value stash was last cleared completely
+  unsigned stash_generation=0;
 /// Make the list of the active tasks of the rows of this MPI process
   const std::vector<unsigned>& getOwnedTasks( const std::vector<unsigned>& partialTaskList );
 /// A temporary set of vectors for holding forces over threads
@@ -559,10 +561,21 @@ void ParallelTaskManager<T>::runAllTasks() {
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
-  if( value_stash.size()!=totalvals ) {
-    value_stash.resize(totalvals);
+  const auto & rowdist = action->getRowDistribution();
+  if( rowdist.localOutput && value_stash.size()==totalvals && stash_generation==rowdist.generation ) {
+    // the values are not summed over the MPI processes: only the rows of this process were written
+    const std::size_t rowsize = action->getNumberOfTasksPerRow()*myinput.nscalars;
+    const std::size_t nrows = rowsize>0 ? totalvals/rowsize : 0;
+    for(std::size_t r=comm.Get_rank(); r<nrows; r+=comm.Get_size()) {
+      std::fill_n( value_stash.begin()+r*rowsize, rowsize, precision(0.0) );
+    }
+  } else {
+    if( value_stash.size()!=totalvals ) {
+      value_stash.resize(totalvals);
+    }
+    std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
+    stash_generation=rowdist.generation;
   }
-  std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
   if( useacc ) {
     // there should not be any available path to get here
     plumed_merror("to use the USEGPU flag you need to LOAD a plugin like \"openaccPTM\"");
@@ -576,7 +589,6 @@ void ParallelTaskManager<T>::runAllTasks() {
     }
     // the tasks of this process: those of its rows, if the tasks are shared by row (see
     // ActionWithVector::getRowDistribution), otherwise one every stride
-    const auto & rowdist = action->getRowDistribution();
     const std::vector<unsigned> & mytasks = rowdist.byRow ? getOwnedTasks( partialTaskList ) : partialTaskList;
     const unsigned first = rowdist.byRow ? 0 : rank;
     const unsigned step = rowdist.byRow ? 1 : stride;
@@ -676,7 +688,11 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
   // having to gather forces across multiple nodes
   if( reset_forces ) {
     // Clear force buffer
-    std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+    if constexpr( std::is_same_v<precision,double> ) {
+      action->clearForcesForApply( forcesForApply );
+    } else {
+      std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+    }
   }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;

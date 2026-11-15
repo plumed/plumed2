@@ -207,9 +207,20 @@ void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) co
     inputdata.resize( total_args );
   }
 
+  // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
+    if( byRow && readsOnlyOwnRowOfArgument(i) ) {
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        std::copy_n( myarg->data.begin()+r*ncols, ncols, inputdata.begin()+total_args+r*ncols );
+      }
+      total_args += myarg->getNumberOfStoredValues();
+      continue;
+    }
     total_args+= myarg->assignValues(View<double> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
@@ -230,9 +241,20 @@ void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) con
     inputdata.resize( total_args );
   }
 
+  // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
+    if( byRow && readsOnlyOwnRowOfArgument(i) ) {
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        std::copy_n( myarg->data.begin()+r*ncols, ncols, inputdata.begin()+total_args+r*ncols );
+      }
+      total_args += myarg->getNumberOfStoredValues();
+      continue;
+    }
     total_args+= myarg->assignValues(View<float> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
@@ -546,7 +568,30 @@ void ActionWithVector::apply() {
   }
   // Find the top of the chain and add forces
   unsigned ind=0;
-  addForcesOnArguments( 0, forcesForApply, ind );
+  const auto & rd = getRowDistribution();
+  if( rd.byRow ) {
+    // the forces on the arguments owned by row are only known on the rows of this process
+    const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+    for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+      Value* myarg = getPntrToArgument(k);
+      if( !rd.localArgument[k] ) {
+        ind += myarg->addForces( View<const double>( forcesForApply.data()+ind, forcesForApply.size()-ind ) );
+        continue;
+      }
+      myarg->hasForce=true;
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        const double* f = forcesForApply.data()+ind+r*ncols;
+        double* dst = myarg->inputForce.data()+r*ncols;
+        for(std::size_t j=0; j<ncols; ++j) {
+          dst[j] += f[j];
+        }
+      }
+      ind += myarg->getNumberOfStoredValues();
+    }
+  } else {
+    addForcesOnArguments( 0, forcesForApply, ind );
+  }
   setForcesOnAtoms( forcesForApply, ind );
 }
 
@@ -560,10 +605,15 @@ void ActionWithVector::apply() {
 // links, the consumer does not sum the forces on the arguments of local links, and both share
 // their tasks by row.
 const ActionWithVector::RowDistribution& ActionWithVector::getRowDistribution() const {
-  if( rowdist.done ) {
+  // worked out again if actions were added (e.g. an action created by a later input line)
+  const std::size_t nactions = plumed.getActionSet().size();
+  if( rowdist.nactions==nactions ) {
     return rowdist;
   }
-  rowdist.done=true;
+  rowdist.nactions=nactions;
+  rowdist.generation++;
+  rowdist.byRow=false;
+  rowdist.localOutput=false;
   unsigned nargs = getNumberOfArguments();
   unsigned nmasks = getNumberOfMasks();
   if( nargs>=nmasks && nmasks>0 ) {
@@ -630,6 +680,85 @@ void ActionWithVector::sumForcesOverProcesses( std::vector<double>& outforces ) 
   }
   if( outforces.size()>sumstart ) {
     comm.Sum( outforces.data()+sumstart, outforces.size()-sumstart );
+  }
+}
+
+// Set to zero the rows of a matrix (stored with ncols columns from start) that are computed by this process
+static void clearOwnedRows( double* start, std::size_t nrows, std::size_t ncols, unsigned rank, unsigned size ) {
+  for(std::size_t r=rank; r<nrows; r+=size) {
+    std::fill_n( start+r*ncols, ncols, 0.0 );
+  }
+}
+
+void ActionWithVector::clearForcesForApply( std::vector<double>& outforces ) {
+  const auto & rd = getRowDistribution();
+  bool anylocal=false;
+  for(const auto l : rd.localArgument) {
+    anylocal = anylocal || l;
+  }
+  std::vector<std::size_t> sizes( rd.localArgument.size() );
+  for(unsigned k=0; k<sizes.size(); ++k) {
+    sizes[k] = getPntrToArgument(k)->getNumberOfStoredValues();
+  }
+  // the rows of the other processes are never written on the arguments owned by row, and
+  // they are zero if the whole buffer was cleared since the arguments last changed size
+  if( !rd.byRow || !anylocal || sizes!=clearedForceSizes || clearedForceGeneration!=rd.generation ) {
+    std::fill( outforces.begin(), outforces.end(), 0.0 );
+    clearedForceSizes = sizes;
+    clearedForceGeneration = rd.generation;
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  std::size_t start=0;
+  for(unsigned k=0; k<sizes.size(); ++k) {
+    if( rd.localArgument[k] ) {
+      const Value* myarg = getPntrToArgument(k);
+      clearOwnedRows( outforces.data()+start, myarg->getShape()[0], myarg->getNumberOfColumns(), rank, size );
+    } else {
+      std::fill_n( outforces.begin()+start, sizes[k], 0.0 );
+    }
+    start += sizes[k];
+  }
+  std::fill( outforces.begin()+start, outforces.end(), 0.0 );
+}
+
+// The output matrices that are not summed over the processes are only written, and read, on
+// the rows of this process: the other rows are never used (they are not even zero after the
+// number of columns changes)
+void ActionWithVector::clearDerivatives( const bool& force ) {
+  if( comm.Get_size()==1 || !getRowDistribution().localOutput ) {
+    ActionWithValue::clearDerivatives( force );
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()!=2 || myval->hasDerivatives() ) {
+      myval->clearDerivatives( force );
+      continue;
+    }
+    myval->value_set=false;
+    clearOwnedRows( myval->data.data(), myval->getShape()[0], myval->getNumberOfColumns(), rank, size );
+  }
+}
+
+void ActionWithVector::clearInputForces( const bool& force ) {
+  if( comm.Get_size()==1 || !getRowDistribution().localOutput ) {
+    ActionWithValue::clearInputForces( force );
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()!=2 || myval->hasDerivatives() ) {
+      myval->clearInputForce();
+      continue;
+    }
+    if( !myval->hasForce ) {
+      continue;
+    }
+    myval->hasForce=false;
+    clearOwnedRows( myval->inputForce.data(), myval->getShape()[0], myval->getNumberOfColumns(), rank, size );
   }
 }
 

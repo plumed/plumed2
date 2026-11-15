@@ -342,19 +342,23 @@ void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<double>& inpu
   if( getNumberOfMasks()>0 ) {
     maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   }
+  // when the tasks are shared by row between the MPI processes, only the rows of this process are used
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned rowstart = byRow ? comm.Get_rank() : 0;
+  const unsigned rowstride = byRow ? comm.Get_size() : 1;
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
     if( jarg->getRank()==0 ) {
       double val = jarg->get();
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
     } else if( nmasks>0 && jarg!=maskarg ) {
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
@@ -362,7 +366,7 @@ void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<double>& inpu
         }
       }
     } else {
-      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<jarg->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*jarg->getNumberOfColumns();
         for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
@@ -387,19 +391,23 @@ void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<float>& input
   if( getNumberOfMasks()>0 ) {
     maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   }
+  // when the tasks are shared by row between the MPI processes, only the rows of this process are used
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned rowstart = byRow ? comm.Get_rank() : 0;
+  const unsigned rowstride = byRow ? comm.Get_size() : 1;
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
     if( jarg->getRank()==0 ) {
       double val = jarg->get();
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
     } else if( nmasks>0 && jarg!=maskarg ) {
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
@@ -407,7 +415,7 @@ void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<float>& input
         }
       }
     } else {
-      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<jarg->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*jarg->getNumberOfColumns();
         for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
