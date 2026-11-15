@@ -1,0 +1,11 @@
+UNITS LENGTH=A
+# the oxygens are atoms 1, 4, 7..., each followed by its two hydrogens
+hb_sharp: HBONDS DONORS=1-192:3 HYDROGENS=2-192:3,3-192:3 ACCEPTORS=1-192:3 SWITCH={CUBIC D_0=3.2999 D_MAX=3.3001}
+# default switching function, without and with neighbor lists (the hydrogens in a different order): all equal
+hb: HBONDS DONORS=1-192:3 HYDROGENS=2-192:3,3-192:3 ACCEPTORS=1-192:3
+hb_cells: HBONDS DONORS=1-192:3 HYDROGENS=3-192:3,2-192:3 ACCEPTORS=1-192:3 NLISTCELLS NL_CUTOFF=4.5 NL_STRIDE=1
+# the hydrogens in the order of the file
+h: GROUP ATOMS=1-192 REMOVE=1-192:3
+hb_nl: HBONDS DONORS=1-192:3 HYDROGENS=h ACCEPTORS=1-192:3 NLIST NL_CUTOFF=4.5 NL_STRIDE=1
+PRINT ARG=hb_sharp,hb,hb_cells,hb_nl FILE=colvar FMT=%10.6f
+BIASVALUE ARG=hb

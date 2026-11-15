@@ -1,0 +1,28 @@
+type=driver
+# HBONDS on an RNA duplex with water and ions (the structure of ../rt-molinfo), and four noisy copies of it.
+# The hydrogen bonds counted with a sharp switching function (hb_sharp) are those of mdtraj.wernet_nilsson
+# (exclude_water=False, periodic=True, with the N-H and O-H bonds of the reference): 10 11 8 11 10.
+# The input errors are checked in plumed_regtest_after.
+arg="--plumed plumed.dat --igro traj.gro --dump-forces forces --dump-forces-fmt %10.5f"
+export PLUMED_STACK_TRACE=no
+
+function check(){
+# check "description" "plumed input": write the exit code and the first error
+  local what="$1"
+  printf "%b\n" "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --igro traj.gro > bad.out 2>&1
+  local rc=$?
+  echo "== $what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/ *$//' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  check "no donors" "hb: HBONDS HYDROGENS=1 ACCEPTORS=2"
+  check "atom repeated in a list" "hb: HBONDS DONORS=2,2 HYDROGENS=1 ACCEPTORS=2"
+  check "atom both donor and hydrogen" "hb: HBONDS DONORS=1-10 HYDROGENS=1,10 ACCEPTORS=2"
+  check "no hydrogen bonded to a donor" "hb: HBONDS DONORS=2 HYDROGENS=20 ACCEPTORS=2\nPRINT ARG=hb FILE=colvar_bad"
+  check "wrong switching function" "hb: HBONDS DONORS=2 HYDROGENS=1 ACCEPTORS=2 SWITCH={NOTAFUNCTION R_0=1}"
+  check "neighbor list without cutoff" "hb: HBONDS DONORS=2 HYDROGENS=1 ACCEPTORS=2 NLIST NL_STRIDE=10"
+  rm -f bad.dat bad.out colvar_bad
+}
