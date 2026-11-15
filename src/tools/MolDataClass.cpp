@@ -899,8 +899,8 @@ void MolDataClass::hbondSymbol( const std::string& symbol, const PDB& mypdb, con
           }
           for(const auto j : found->second) {
             const double d2=delta(pos[i],pos[j]).modulo2();
-            // ties go to the first atom of the file
-            if(d2<closest2 || (d2==closest2 && j<closest)) {
+            // in a tie, the first atom found (the loop order is fixed)
+            if(d2<closest2) {
               closest2=d2;
               closest=j;
             }

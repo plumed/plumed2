@@ -134,7 +134,16 @@ class HBonds : public Colvar {
 /// the D-H vectors and their inverse lengths (zero for a degenerate bond), in the order of hydrogens
   std::vector<Vector> dh;
   std::vector<double> invdh;
+/// Assign each hydrogen to the closest donor, on the first configuration
   void pairHydrogens();
+/// Errors for empty lists, atoms repeated in a list and atoms both in DONORS and HYDROGENS
+  void checkAtomLists(const std::vector<AtomNumber>& donors,
+                      const std::vector<AtomNumber>& hlist,
+                      const std::vector<AtomNumber>& acceptors) const;
+/// Read SWITCH and set the constants of the criterion in the length units
+  void parseSwitchingFunction();
+/// Read the neighbor-list keywords and create the list of donor-acceptor pairs
+  void setupNeighborList(const std::vector<AtomNumber>& donors,const std::vector<AtomNumber>& acceptors);
   Vector distance(const Vector&a,const Vector&b) const {
     return pbc ? pbcDistance(a,b) : delta(a,b);
   }
@@ -174,81 +183,9 @@ HBonds::HBonds(const ActionOptions&ao):
   parseAtomList("DONORS",donors);
   parseAtomList("HYDROGENS",hlist);
   parseAtomList("ACCEPTORS",acceptors);
-  if(donors.empty()) {
-    error("DONORS should contain at least one atom");
-  }
-  if(hlist.empty()) {
-    error("HYDROGENS should contain at least one atom");
-  }
-  if(acceptors.empty()) {
-    error("ACCEPTORS should contain at least one atom");
-  }
-  {
-    auto sorted=[](std::vector<AtomNumber> v) {
-      std::sort(v.begin(),v.end());
-      return v;
-    };
-    const auto sd=sorted(donors);
-    const auto sh=sorted(hlist);
-    const auto sa=sorted(acceptors);
-    for(const auto & [name,v] : {
-          std::pair{"DONORS",&sd},std::pair{"HYDROGENS",&sh},std::pair{"ACCEPTORS",&sa}
-        }) {
-      if(std::adjacent_find(v->begin(),v->end())!=v->end()) {
-        error(std::string(name)+" contains the same atom more than once");
-      }
-    }
-    std::vector<AtomNumber> common;
-    std::set_intersection(sd.begin(),sd.end(),sh.begin(),sh.end(),std::back_inserter(common));
-    if(!common.empty()) {
-      error("atom "+std::to_string(common[0].serial())+" is both in DONORS and in HYDROGENS");
-    }
-  }
-
-  const double nm=1.0/getUnits().getLength();
-  std::string sw;
-  parse("SWITCH",sw);
-  if(sw.empty()) {
-    sw="CUBIC D_0="+std::to_string(0.31*nm)+" D_MAX="+std::to_string(0.35*nm);
-  }
-  std::string errors;
-  switchingFunction.set(sw,errors);
-  if(errors.length()>0) {
-    error("problem reading SWITCH keyword : " + errors );
-  }
-  dmax=switchingFunction.get_dmax();
-  dmax2=switchingFunction.get_dmax2();
-  // 0.00044 Angstrom/deg^2, converted to nm/rad^2 and to the length units
-  const double rad=180.0/pi;
-  kangle=0.000044*rad*rad*nm;
-  bondCutoff=0.13*nm;
-
-  bool doneighClassic=false;
-  bool doneighCells=false;
-  parseFlag("NLIST",doneighClassic);
-  parseFlag("NLISTCELLS",doneighCells);
-  if(doneighClassic && doneighCells) {
-    error("use only one of NLIST and NLISTCELLS");
-  }
-  double nlCutoff=0.0;
-  if(doneighClassic || doneighCells) {
-    parse("NL_CUTOFF",nlCutoff);
-    if(nlCutoff<=0.0) {
-      error("NL_CUTOFF should be explicitly specified and positive");
-    }
-    int st=0;
-    parse("NL_STRIDE",st);
-    if(st<=0) {
-      error("NL_STRIDE should be explicitly specified and positive");
-    }
-    nlStride=st;
-    if(nlCutoff<dmax) {
-      log<<"  WARNING: NL_CUTOFF is smaller than D_MAX of the switching function: some hydrogen bonds may be missed\n";
-    }
-    nl=Tools::make_unique<NeighborList>(donors,acceptors,serial,false,pbc,getPbc(),comm,nlCutoff,nlStride,doneighCells);
-  } else {
-    nl=Tools::make_unique<NeighborList>(donors,acceptors,serial,false,pbc,getPbc(),comm);
-  }
+  checkAtomLists(donors,hlist,acceptors);
+  parseSwitchingFunction();
+  setupNeighborList(donors,acceptors);
   checkRead();
 
   nD=donors.size();
@@ -269,10 +206,95 @@ HBonds::HBonds(const ActionOptions&ao):
   } else {
     log.printf("  without periodic boundary conditions\n");
   }
-  if(nlStride>0) {
-    log.printf("  using neighbor lists of the donor-acceptor pairs with cutoff %f, updated every %u steps\n",nlCutoff,nlStride);
-  }
   log<<"  Bibliography "<<cite("Wernet et al, Science 304, 995 (2004)")<<"\n";
+}
+
+void HBonds::checkAtomLists(const std::vector<AtomNumber>& donors,
+                            const std::vector<AtomNumber>& hlist,
+                            const std::vector<AtomNumber>& acceptors) const {
+  if(donors.empty()) {
+    error("DONORS should contain at least one atom");
+  }
+  if(hlist.empty()) {
+    error("HYDROGENS should contain at least one atom");
+  }
+  if(acceptors.empty()) {
+    error("ACCEPTORS should contain at least one atom");
+  }
+  auto sorted=[](std::vector<AtomNumber> v) {
+    std::sort(v.begin(),v.end());
+    return v;
+  };
+  const auto sd=sorted(donors);
+  const auto sh=sorted(hlist);
+  const auto sa=sorted(acceptors);
+  // an atom repeated in a list would be counted twice
+  for(const auto & [name,v] : {
+        std::pair{"DONORS",&sd},std::pair{"HYDROGENS",&sh},std::pair{"ACCEPTORS",&sa}
+      }) {
+    if(std::adjacent_find(v->begin(),v->end())!=v->end()) {
+      error(std::string(name)+" contains the same atom more than once");
+    }
+  }
+  // a donor in HYDROGENS would be assigned to another donor (e.g. an O to the H of another O-H)
+  std::vector<AtomNumber> common;
+  std::set_intersection(sd.begin(),sd.end(),sh.begin(),sh.end(),std::back_inserter(common));
+  if(!common.empty()) {
+    error("atom "+std::to_string(common[0].serial())+" is both in DONORS and in HYDROGENS");
+  }
+}
+
+void HBonds::parseSwitchingFunction() {
+  // the default and the constants of the criterion are in nm, converted to the length units
+  const double nm=1.0/getUnits().getLength();
+  std::string sw;
+  parse("SWITCH",sw);
+  if(sw.empty()) {
+    sw="CUBIC D_0="+std::to_string(0.31*nm)+" D_MAX="+std::to_string(0.35*nm);
+  }
+  std::string errors;
+  switchingFunction.set(sw,errors);
+  if(errors.length()>0) {
+    error("problem reading SWITCH keyword : " + errors );
+  }
+  dmax=switchingFunction.get_dmax();
+  dmax2=switchingFunction.get_dmax2();
+  // 0.00044 Angstrom/deg^2, converted to nm/rad^2
+  const double rad=180.0/pi;
+  kangle=0.000044*rad*rad*nm;
+  bondCutoff=0.13*nm;
+}
+
+void HBonds::setupNeighborList(const std::vector<AtomNumber>& donors,const std::vector<AtomNumber>& acceptors) {
+  bool doneighClassic=false;
+  bool doneighCells=false;
+  parseFlag("NLIST",doneighClassic);
+  parseFlag("NLISTCELLS",doneighCells);
+  if(doneighClassic && doneighCells) {
+    error("use only one of NLIST and NLISTCELLS");
+  }
+  if(!doneighClassic && !doneighCells) {
+    // all the donor-acceptor pairs
+    nl=Tools::make_unique<NeighborList>(donors,acceptors,serial,false,pbc,getPbc(),comm);
+    return;
+  }
+  double nlCutoff=0.0;
+  parse("NL_CUTOFF",nlCutoff);
+  if(nlCutoff<=0.0) {
+    error("NL_CUTOFF should be explicitly specified and positive");
+  }
+  int st=0;
+  parse("NL_STRIDE",st);
+  if(st<=0) {
+    error("NL_STRIDE should be explicitly specified and positive");
+  }
+  nlStride=st;
+  // s >= r_DA: the pairs beyond D_MAX do not contribute
+  if(nlCutoff<dmax) {
+    log<<"  WARNING: NL_CUTOFF is smaller than D_MAX of the switching function: some hydrogen bonds may be missed\n";
+  }
+  nl=Tools::make_unique<NeighborList>(donors,acceptors,serial,false,pbc,getPbc(),comm,nlCutoff,nlStride,doneighCells);
+  log.printf("  using neighbor lists of the donor-acceptor pairs with cutoff %f, updated every %u steps\n",nlCutoff,nlStride);
 }
 
 HBonds::~HBonds()=default;
@@ -300,8 +322,8 @@ void HBonds::pairHydrogens() {
       continue;
     }
     const double d2=distance(pos[h],pos[d]).modulo2();
-    // ties are broken by the donor index, so that the result does not depend on the order of the pairs
-    if(d2<closest[h] || (d2==closest[h] && donorOf[h]!=none && d-nH<donorOf[h])) {
+    // the list is built in serial, so the order of the pairs (and the choice in a tie) is reproducible
+    if(d2<closest[h]) {
       closest[h]=d2;
       donorOf[h]=d-nH;
     }
