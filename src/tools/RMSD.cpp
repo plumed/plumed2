@@ -655,7 +655,7 @@ double RMSD::optimalAlignment(const std::vector<double>& alignTo,
       dq_drr01[i]=tmp;
     }
   } else {
-    dist = lowestEigenpairSym(m, q) + rr00 + rr11;
+    dist = lowestEigenpairSym4(m, q) + rr00 + rr11;
   }
 
 
