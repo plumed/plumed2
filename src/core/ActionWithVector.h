@@ -47,7 +47,19 @@ class ActionWithVector:
   public ActionWithValue,
   public ActionWithArguments {
   friend class Value;
+public:
+/// How the rows of the matrices are shared between the MPI processes (see getRowDistribution)
+  struct RowDistribution {
+    bool done=false;
+/// The tasks are shared by the row of the matrices they work on: row r is done by process r%size
+    bool byRow=false;
+/// Each row of the output matrices is only used by the process that computes it: the values are not summed over the processes
+    bool localOutput=false;
+/// The forces on these arguments are only needed by the process that owns each row: they are not summed over the processes
+    std::vector<bool> localArgument;
+  };
 private:
+  mutable RowDistribution rowdist;
   static constexpr int NoMasksUsed =-1;
 /// Check if there is a mask value
   int nmask=NoMasksUsed;
@@ -110,6 +122,23 @@ public:
   virtual void applyNonZeroRankForces( std::vector<double>& outforces ) {
     plumed_error();
   }
+/// The number of consecutive tasks that work on the same row of the matrices (1 when a task is a row)
+  virtual std::size_t getNumberOfTasksPerRow() const {
+    return 1;
+  }
+/// True if the rows of the output matrices can be computed each by one MPI process only
+  virtual bool canDistributeRows() const {
+    return false;
+  }
+/// True if task t only reads row t/getNumberOfTasksPerRow() of the matrix argument iarg, and writes forces only on that row
+  virtual bool readsOnlyOwnRowOfArgument( unsigned iarg ) const {
+    return false;
+  }
+/// Find out, at the first call, which matrices need not be summed over the MPI processes
+/// (it is const because it caches a property of the input, which does not change)
+  const RowDistribution& getRowDistribution() const ;
+/// Sum the forces over the MPI processes, except those on the arguments that are owned by row
+  void sumForcesOverProcesses( std::vector<double>& outforces );
 };
 
 inline

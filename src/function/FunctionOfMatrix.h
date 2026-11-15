@@ -70,6 +70,16 @@ public:
                            ParallelActionsOutput& output );
 /// Add some forces
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// Each task is an element of the output matrices, and it only uses the same element of the input matrices
+  std::size_t getNumberOfTasksPerRow() const override {
+    return getConstPntrToComponent(0)->getNumberOfColumns();
+  }
+  bool canDistributeRows() const override {
+    return std::is_same_v<myPTM,defaultPTM> && !taskmanager.runInSerial() && getNumberOfMasks()<=0 && argstart==0;
+  }
+  bool readsOnlyOwnRowOfArgument( unsigned iarg ) const override {
+    return canDistributeRows() && getPntrToArgument(iarg)->getRank()==2;
+  }
 /// Get the indices of the forces
   static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<CV>& actiondata );
   static void getForceIndices( std::size_t task_index,

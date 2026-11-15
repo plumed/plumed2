@@ -32,6 +32,7 @@
 #include "tools/OpenACC.h"
 
 #include <exception>
+#include <type_traits>
 
 namespace PLMD {
 
@@ -363,6 +364,10 @@ protected:
   std::size_t nthreaded_forces;
 /// This holds the values before we pass them to the value
   std::vector<precision> value_stash;
+/// The active tasks done by this MPI process, when the tasks are shared by row
+  std::vector<unsigned> owned_tasks;
+/// Make the list of the active tasks of the rows of this MPI process
+  const std::vector<unsigned>& getOwnedTasks( const std::vector<unsigned>& partialTaskList );
 /// A temporary set of vectors for holding forces over threads
   std::vector<std::vector<precision> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
@@ -569,6 +574,13 @@ void ParallelTaskManager<T>::runAllTasks() {
       stride=1;
       rank=0;
     }
+    // the tasks of this process: those of its rows, if the tasks are shared by row (see
+    // ActionWithVector::getRowDistribution), otherwise one every stride
+    const auto & rowdist = action->getRowDistribution();
+    const std::vector<unsigned> & mytasks = rowdist.byRow ? getOwnedTasks( partialTaskList ) : partialTaskList;
+    const unsigned first = rowdist.byRow ? 0 : rank;
+    const unsigned step = rowdist.byRow ? 1 : stride;
+    const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
@@ -587,9 +599,9 @@ void ParallelTaskManager<T>::runAllTasks() {
       std::vector<precision> buffer( workspace_size );
       std::vector<precision> derivatives( nderivatives_per_task );
       #pragma omp for nowait
-      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+      for(unsigned i=first; i<nmytasks; i+=step) {
         try {
-          std::size_t task_index = partialTaskList[i];
+          std::size_t task_index = mytasks[i];
           std::size_t val_pos = task_index*myinput.nscalars;
           auto myout = ParallelActionsOutput::create ( myinput.nscalars,
                        value_stash.data()+val_pos,
@@ -611,12 +623,25 @@ void ParallelTaskManager<T>::runAllTasks() {
       std::rethrow_exception( exception );
     }
     // MPI Gather everything
-    if( !serial ) {
+    if( !serial && !rowdist.localOutput ) {
       comm.Sum( value_stash );
     }
   }
-// And transfer the value to the output values
-  action->transferStashToValues( partialTaskList, value_stash );
+// And transfer the value to the output values: if they were not summed, only the rows of this process are known
+  action->transferStashToValues( action->getRowDistribution().localOutput ? owned_tasks : partialTaskList, value_stash );
+}
+
+template <class T>
+const std::vector<unsigned>& ParallelTaskManager<T>::getOwnedTasks( const std::vector<unsigned>& partialTaskList ) {
+  const std::size_t tasksPerRow = action->getNumberOfTasksPerRow();
+  const unsigned stride=comm.Get_size(), rank=comm.Get_rank();
+  owned_tasks.resize(0);
+  for(const auto t : partialTaskList) {
+    if( (t/tasksPerRow)%stride==rank ) {
+      owned_tasks.push_back(t);
+    }
+  }
+  return owned_tasks;
 }
 
 template<typename prec>
@@ -655,8 +680,11 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
   }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
+  // The tasks of this process, if the tasks are shared by row (see ActionWithVector::getRowDistribution)
+  const auto & rowdist = action->getRowDistribution();
+  const std::vector<unsigned> & mytasks = rowdist.byRow ? getOwnedTasks( partialTaskList ) : partialTaskList;
   // Retrieve the forces from the values
-  action->transferForcesToStash( partialTaskList, value_stash );
+  action->transferForcesToStash( mytasks, value_stash );
 
   if( useacc ) {
     // there should not be any available path to get here
@@ -669,6 +697,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       stride=1;
       rank=0;
     }
+    const unsigned first = rowdist.byRow ? 0 : rank;
+    const unsigned step = rowdist.byRow ? 1 : stride;
+    const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
@@ -691,8 +722,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
 
       auto force_indices = ForceIndexHolder::create( myinput,indices.data() );
       #pragma omp for nowait
-      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        std::size_t task_index = partialTaskList[i];
+      for(unsigned i=first; i<nmytasks; i+=step) {
+        std::size_t task_index = mytasks[i];
         auto myout = ParallelActionsOutput::create( myinput.nscalars,
                      fake_vals.data(),
                      derivatives.size(),
@@ -755,7 +786,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     forces.update();
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
     if( !serial ) {
-      comm.Sum( forcesForApply );
+      action->sumForcesOverProcesses( forcesForApply );
     }
   }
 }

@@ -550,4 +550,87 @@ void ActionWithVector::apply() {
   setForcesOnAtoms( forcesForApply, ind );
 }
 
+// The matrices of a chain like CONTACT_MATRIX -> FUNCTION OF MATRIX -> MATRIX_VECTOR_PRODUCT are
+// computed one row per task. If the tasks of producer and consumers are shared between the MPI
+// processes by row (row r on process r%size), each process only needs the rows it computes:
+// the values of the matrices and the forces on them need not be summed over the processes,
+// which costs more than the calculation for large matrices.
+// A link producer->consumer is local if the producer canDistributeRows() and the consumer
+// readsOnlyOwnRowOfArgument(): the producer does not sum its values if all its users are local
+// links, the consumer does not sum the forces on the arguments of local links, and both share
+// their tasks by row.
+const ActionWithVector::RowDistribution& ActionWithVector::getRowDistribution() const {
+  if( rowdist.done ) {
+    return rowdist;
+  }
+  rowdist.done=true;
+  unsigned nargs = getNumberOfArguments();
+  unsigned nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+  rowdist.localArgument.assign( nargs, false );
+  if( comm.Get_size()==1 ) {
+    return rowdist;
+  }
+  for(unsigned k=0; k<nargs; ++k) {
+    auto av=dynamic_cast<ActionWithVector*>( getPntrToArgument(k)->getPntrToAction() );
+    if( av && av->canDistributeRows() && readsOnlyOwnRowOfArgument(k) ) {
+      rowdist.localArgument[k]=true;
+      rowdist.byRow=true;
+    }
+  }
+  if( canDistributeRows() ) {
+    bool anyuser=false, alllocal=true;
+    for(const auto & a : plumed.getActionSet()) {
+      auto aa=dynamic_cast<ActionWithArguments*>( a.get() );
+      if( !aa ) {
+        continue;
+      }
+      auto av=dynamic_cast<ActionWithVector*>( a.get() );
+      const auto & args=aa->getArguments();
+      for(unsigned k=0; k<args.size(); ++k) {
+        if( args[k]->getPntrToAction()!=this ) {
+          continue;
+        }
+        anyuser=true;
+        if( av && av->readsOnlyOwnRowOfArgument(k) ) {
+          rowdist.byRow=true;
+        } else {
+          alllocal=false;
+        }
+      }
+    }
+    rowdist.localOutput = anyuser && alllocal;
+  }
+  if( rowdist.byRow ) {
+    log.printf("  %s: with MPI the rows of the matrices are shared between the processes%s\n", getLabel().c_str(),
+               rowdist.localOutput?", and the output matrices are not summed over them":"");
+  }
+  return rowdist;
+}
+
+void ActionWithVector::sumForcesOverProcesses( std::vector<double>& outforces ) {
+  const auto & rd = getRowDistribution();
+  if( !rd.byRow ) {
+    comm.Sum( outforces );
+    return;
+  }
+  // the forces on the arguments come first, in the order of the arguments (see getNumberOfForceDerivatives)
+  std::size_t start=0, sumstart=0;
+  for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+    std::size_t n = getPntrToArgument(k)->getNumberOfStoredValues();
+    if( rd.localArgument[k] ) {
+      if( start>sumstart ) {
+        comm.Sum( outforces.data()+sumstart, start-sumstart );
+      }
+      sumstart = start+n;
+    }
+    start += n;
+  }
+  if( outforces.size()>sumstart ) {
+    comm.Sum( outforces.data()+sumstart, outforces.size()-sumstart );
+  }
+}
+
 }
