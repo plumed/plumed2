@@ -31,7 +31,23 @@ namespace PLMD {
 namespace isdb {
 
 void SAXS::getOnebeadparam(std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv) {
+  // Populate one-bead SAXS parameter tables for all supported residue types.
+  //
+  // Output layout:
+  //   - parameter_vac : coefficients for vacuum form-factor representation
+  //   - parameter_mix : coefficients for mixed/combined representation
+  //   - parameter_solv: coefficients for solvent-related contribution
+  //
+  // For each residue index (e.g. TRP, TYR, ...), we append a fixed-length,
+  // order-dependent set of coefficients. The numeric constants are calibrated
+  // reference values and must remain in this exact order to preserve model
+  // compatibility and reproducibility.
+  //
+  // Maintenance note:
+  //   This function is intentionally data-heavy. When updating values, keep
+  //   per-residue grouping intact and preserve coefficient ordering.
 
+  // Solvent-parameter coefficients (7-term series) by residue.
   parameter_solv[TRP].push_back(60737.60249988003);
   parameter_solv[TRP].push_back(-77.75716755173752);
   parameter_solv[TRP].push_back(-205962.98557711052);
