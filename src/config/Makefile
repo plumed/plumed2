@@ -72,6 +72,13 @@ ConfigInstall.o: ModuleBuild.inc ConfigInstall.inc Makefile.conf.xxd version.h
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | ../maketools/xxd > Makefile.conf.xxd
 
+# Apple Clang passes OpenMP to the preprocessor and links libomp explicitly;
+# extracting a bare -fopenmp from that pair makes installed mklib fail at link time.
+mklib_openmp_flags = $(filter -fopenmp -qopenmp,$(CXXFLAGS))
+ifneq ($(findstring -Xpreprocessor -fopenmp,$(CXXFLAGS)),)
+mklib_openmp_flags = $(filter -L% -lomp,$(DYNAMIC_LIBS))
+endif
+
 # file to import compilation options inside a bash script
 compile_options.sh: ../../Makefile.conf Makefile
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
@@ -93,7 +100,7 @@ compile_options.sh: ../../Makefile.conf Makefile
 # --as-needed (the default on some distributions, e.g. Ubuntu) drop them.
 	@echo "link_shared='"$(LDSHARED)"'" >> $@
 	@echo "link_libs_installed='"$(DYNAMIC_LIBS) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
-	@echo "mklib_link_libs_installed='"$(LDFLAGS) $(filter -fopenmp -qopenmp -pthread -stdlib=%,$(CXXFLAGS)) -L$(libdir) -Wl,-rpath,$(libdir) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
+	@echo "mklib_link_libs_installed='"$(LDFLAGS) $(mklib_openmp_flags) $(filter -pthread -stdlib=%,$(CXXFLAGS)) -L$(libdir) -Wl,-rpath,$(libdir) $(libdir)/lib$(program_name)Kernel.$(SOEXT)"'" >> $@
 # this is removed with a grep statement in src/lib/Makefile (see https://github.com/plumed/plumed2/issues/408)
 	@echo "link_libs_uninstalled='"$(DYNAMIC_LIBS) $(CURDIR:/config=)/lib/libplumedKernel.$(SOEXT)"'" >> $@
 # kept for scripts written for previous versions (libraries before the objects, see above)
