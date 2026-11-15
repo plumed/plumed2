@@ -1,0 +1,53 @@
+# Contacts from the reference structure: the pairs of heavy atoms closer than 0.45 nm in native-heavy.pdb,
+# where residues 1-10 are chain A and residues 11-20 are chain B (renumbered from 1).
+# The Q switching functions take REF from the same structure.
+qall: CONTACTMAP REFERENCE=native-heavy.pdb CUTOFF=0.45 SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5} NORMALIZE_WEIGHTS SUM
+qintra: CONTACTMAP REFERENCE=native-heavy.pdb CUTOFF=0.45 CHAINS=INTRA SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5} NORMALIZE_WEIGHTS SUM
+qinter: CONTACTMAP REFERENCE=native-heavy.pdb CUTOFF=0.45 CHAINS=INTER SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5} NORMALIZE_WEIGHTS SUM
+# 179 contacts in total, 27 in the same chain (MIN_SEQ_SEPARATION=4 by default) and 152 between the chains: 1 if qall is their weighted average
+split: CUSTOM ARG=qall,qintra,qinter FUNC=step(1e-9-abs(179*x-27*y-152*z)) PERIODIC=NO
+
+# the 27 intra-chain contacts written explicitly: the same as qintra
+qlist: CONTACTMAP ...
+  ATOMS1=16,76
+  ATOMS2=35,93
+  ATOMS3=44,124
+  ATOMS4=44,126
+  ATOMS5=44,130
+  ATOMS6=46,124
+  ATOMS7=46,126
+  ATOMS8=46,130
+  ATOMS9=55,117
+  ATOMS10=55,124
+  ATOMS11=56,117
+  ATOMS12=56,119
+  ATOMS13=56,121
+  ATOMS14=56,124
+  ATOMS15=56,126
+  ATOMS16=74,136
+  ATOMS17=74,143
+  ATOMS18=75,136
+  ATOMS19=75,138
+  ATOMS20=75,140
+  ATOMS21=75,143
+  ATOMS22=92,162
+  ATOMS23=116,170
+  ATOMS24=116,175
+  ATOMS25=183,220
+  ATOMS26=183,234
+  ATOMS27=183,250
+  REFERENCE=native-heavy.pdb
+  SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5}
+  NORMALIZE_WEIGHTS
+  SUM
+...
+same: CUSTOM ARG=qintra,qlist FUNC=step(1e-9-abs(x-y)) PERIODIC=NO
+
+# reference contact map of the pairs between the chains closer than 0.6 nm (zero on the first frame, that is the reference)
+cm: CONTACTMAP REFERENCE=native-heavy.pdb CUTOFF=0.6 CHAINS=INTER SWITCH={RATIONAL R_0=0.5 NN=8 MM=12} NORMALIZE_WEIGHTS CMDIST
+# components: the 5 pairs in the same chain closer than 0.5 nm with residue numbers at least 5 apart
+c: CONTACTMAP REFERENCE=native-heavy.pdb CUTOFF=0.5 CHAINS=INTRA MIN_SEQ_SEPARATION=5 SWITCH={RATIONAL R_0=0.45}
+
+PRINT ARG=qall,qintra,qinter,qlist,cm,c.* FILE=colvar FMT=%10.6f
+PRINT ARG=split,same FILE=checks FMT=%4.1f
+DUMPDERIVATIVES ARG=cm FILE=deriv FMT=%10.6f

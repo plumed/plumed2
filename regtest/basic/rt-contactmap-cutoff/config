@@ -1,0 +1,4 @@
+type=driver
+# the trajectory of rt-contactmap-pdb (the atom numbers of native-heavy.pdb are those of the full Trp-cage)
+extra_files="../rt-contactmap-pdb/traj.xyz"
+arg="--plumed plumed.dat --ixyz traj.xyz"

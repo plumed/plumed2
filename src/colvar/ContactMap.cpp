@@ -26,7 +26,9 @@
 #include "tools/SwitchingFunction.h"
 #include "tools/OpenMP.h"
 
+#include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <limits>
 #include <sstream>
 
@@ -152,6 +154,42 @@ q: CONTACTMAP ...
 PRINT ARG=q FILE=colvar
 ```
 
+The contacts themselves can be taken from the reference structure: with CUTOFF instead of the ATOMS keywords,
+the contacts are all the pairs of atoms of the reference structure that are closer than CUTOFF.
+To use only some of the atoms (e.g. the heavy atoms, the $C_\alpha$ atoms or a single domain), give a reference structure
+that contains only those atoms; the atoms are identified by their serial numbers, that must be those of the simulation.
+CHAINS chooses the pairs of atoms in the same chain (INTRA), in different chains (INTER) or both (ALL, the default),
+with the chains given by the chain identifiers of the reference structure.
+Two atoms in the same chain form a contact only if their residue numbers differ by at least MIN_SEQ_SEPARATION (4 by default,
+as in the 2013 paper by Best cited below); this does not apply to atoms in different chains.
+The contacts that are found are listed in the log.
+
+The input below calculates the fraction of native contacts between the heavy atoms of the reference structure
+(that has two chains) that are closer than 0.45 nm, with residues at least 4 apart when in the same chain.
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt-contactmap-cutoff/native-heavy.pdb
+q: CONTACTMAP ...
+   REFERENCE=regtest/basic/rt-contactmap-cutoff/native-heavy.pdb
+   CUTOFF=0.45
+   SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5}
+   NORMALIZE_WEIGHTS
+   SUM
+...
+
+# only the contacts between the two chains
+qinter: CONTACTMAP ...
+   REFERENCE=regtest/basic/rt-contactmap-cutoff/native-heavy.pdb
+   CUTOFF=0.45
+   CHAINS=INTER
+   SWITCH={Q R_0=0.01 BETA=50.0 LAMBDA=1.5}
+   NORMALIZE_WEIGHTS
+   SUM
+...
+
+PRINT ARG=q,qinter FILE=colvar
+```
+
 */
 //+ENDPLUMEDOC
 
@@ -195,6 +233,53 @@ bool addNativeDistance(std::string& sw, const double r) {
   sw+=" REF="+ostr.str();
   return true;
 }
+/// The pairs of atoms of a reference structure closer than cutoff, sorted by atom numbers.
+/// chains is ALL, INTRA (pairs in the same chain) or INTER (pairs in different chains);
+/// the atoms of a pair in the same chain must have residue numbers at least minsep apart.
+std::vector<std::pair<AtomNumber,AtomNumber>> contactsFromStructure(const PDB& pdb, const double cutoff,
+const std::string& chains, const int minsep) {
+  const auto & atoms=pdb.getAtomNumbers();
+  const auto & pos=pdb.getPositions();
+  const unsigned natoms=atoms.size();
+  std::vector<std::string> chain(natoms);
+  std::vector<int> resnum(natoms);
+  for(unsigned i=0; i<natoms; ++i) {
+    chain[i]=pdb.getChainID(atoms[i]);
+    resnum[i]=pdb.getResidueNumber(atoms[i]);
+  }
+  // with the atoms sorted along x, the search of the partners of an atom stops at the first one farther than cutoff along x
+  std::vector<unsigned> order(natoms);
+  for(unsigned i=0; i<natoms; ++i) {
+    order[i]=i;
+  }
+  std::sort(order.begin(),order.end(),[&](unsigned i,unsigned j) {
+    return pos[i][0]<pos[j][0];
+  });
+  const double cutoff2=cutoff*cutoff;
+  std::vector<std::pair<AtomNumber,AtomNumber>> pairs;
+  for(unsigned a=0; a<natoms; ++a) {
+    const unsigned i=order[a];
+    for(unsigned b=a+1; b<natoms; ++b) {
+      const unsigned j=order[b];
+      if( pos[j][0]-pos[i][0]>=cutoff ) {
+        break;
+      }
+      if( delta(pos[i],pos[j]).modulo2()>=cutoff2 ) {
+        continue;
+      }
+      const bool samechain=( chain[i]==chain[j] );
+      if( (samechain && chains=="INTER") || (!samechain && chains=="INTRA") ) {
+        continue;
+      }
+      if( samechain && std::abs(resnum[i]-resnum[j])<minsep ) {
+        continue;
+      }
+      pairs.emplace_back(std::min(atoms[i],atoms[j]),std::max(atoms[i],atoms[j]));
+    }
+  }
+  std::sort(pairs.begin(),pairs.end());
+  return pairs;
+}
 }
 
 void ContactMap::registerKeywords( Keywords& keys ) {
@@ -211,7 +296,13 @@ void ContactMap::registerKeywords( Keywords& keys ) {
            "You can either specify a global reference value using REFERENCE or one "
            "reference value for each contact. REFERENCE can also be a PDB file with a reference structure: "
            "the reference values are then computed from the distances in it (used with CMDIST), and "
-           "the Q switching functions without REF take REF from them.");
+           "the Q switching functions without REF take REF from them. With CUTOFF the contacts are also taken from the reference structure.");
+  keys.add("optional","CUTOFF","instead of the ATOMS keywords, use as contacts all the pairs of atoms that are closer than this distance "
+           "in the reference structure given with REFERENCE");
+  keys.add("optional","CHAINS","with CUTOFF, the pairs of atoms to use: ALL (default), INTRA (only pairs in the same chain) "
+           "or INTER (only pairs in different chains)");
+  keys.add("optional","MIN_SEQ_SEPARATION","with CUTOFF, the minimum difference between the residue numbers of the two atoms "
+           "of a pair in the same chain (default 4); it does not apply to pairs in different chains");
   keys.add("numbered","WEIGHT","A weight value for a given contact, by default is 1.0 "
            "You can either specify a global weight value using WEIGHT or one "
            "weight value for each contact.");
@@ -264,12 +355,65 @@ ContactMap::ContactMap(const ActionOptions&ao):
     ga_lista.push_back(t[0]);
     gb_lista.push_back(t[1]);
     t.resize(0);
+  }
 
-    // Add a value for this contact
-    if(!dosum&&!docmdist) {
-      addComponentWithDerivatives("contact-"+num);
-      componentIsNotPeriodic("contact-"+num);
+  // The reference: a single value, or a reference structure
+  std::string refstr;
+  parse("REFERENCE",refstr);
+  double ref0=0.0;
+  const bool globalref=( refstr.length()>0 && Tools::convertNoexcept(refstr,ref0) );
+  PDB pdb;
+  const bool refstructure=( refstr.length()>0 && !globalref );
+  if( refstructure ) {
+    if( !pdb.read(refstr,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
+      error("the value " + refstr + " given to REFERENCE is neither a number nor a readable PDB file");
     }
+    log.printf("  reference structure read from file %s\n", refstr.c_str());
+  }
+
+  // The contacts can also be the pairs of atoms closer than CUTOFF in the reference structure
+  std::string cutstr;
+  parse("CUTOFF",cutstr);
+  const bool usecutoff=( cutstr.length()>0 );
+  double cutoff=0.0;
+  if( usecutoff && ( !Tools::convertNoexcept(cutstr,cutoff) || !(cutoff>0.0) ) ) {
+    error("CUTOFF should be a positive distance");
+  }
+  std::string chains;
+  parse("CHAINS",chains);
+  std::string minsepstr;
+  parse("MIN_SEQ_SEPARATION",minsepstr);
+  int minsep=4;
+  if( minsepstr.length()>0 && ( !Tools::convertNoexcept(minsepstr,minsep) || minsep<0 ) ) {
+    error("MIN_SEQ_SEPARATION should be a non-negative integer");
+  }
+  if( usecutoff ) {
+    if( !ga_lista.empty() ) {
+      error("use either ATOMS1, ATOMS2, ... or CUTOFF to choose the contacts");
+    }
+    if( !refstructure ) {
+      error("CUTOFF needs a reference structure given with REFERENCE");
+    }
+    if( chains.length()==0 ) {
+      chains="ALL";
+    }
+    if( chains!="ALL" && chains!="INTRA" && chains!="INTER" ) {
+      error("CHAINS should be ALL, INTRA or INTER");
+    }
+    log.printf("  contacts are the pairs of atoms of the reference structure closer than %f", cutoff);
+    if( chains!="INTER" ) {
+      log.printf(", in the same chain with residue numbers at least %d apart", minsep);
+    }
+    log.printf(" (CHAINS=%s)\n", chains.c_str());
+    for(const auto & c : contactsFromStructure(pdb,cutoff,chains,minsep)) {
+      ga_lista.push_back(c.first);
+      gb_lista.push_back(c.second);
+    }
+    if( ga_lista.empty() ) {
+      error("no pairs of atoms in the reference structure " + refstr + " satisfy CUTOFF, CHAINS and MIN_SEQ_SEPARATION");
+    }
+  } else if( chains.length()>0 || minsepstr.length()>0 ) {
+    error("CHAINS and MIN_SEQ_SEPARATION can only be used with CUTOFF");
   }
   if( ga_lista.empty() ) {
     error("no contacts have been specified, use the ATOMS1, ATOMS2, ... keywords");
@@ -277,6 +421,19 @@ ContactMap::ContactMap(const ActionOptions&ao):
   const unsigned ncontacts=ga_lista.size();
   std::string snc;
   Tools::convert(ncontacts,snc);
+  if( usecutoff ) {
+    log.printf("  %s contacts found in the reference structure\n", snc.c_str());
+  }
+
+  // Add a value for each contact
+  if(!dosum&&!docmdist) {
+    for(unsigned i=0; i<ncontacts; ++i) {
+      std::string num;
+      Tools::convert(i+1,num);
+      addComponentWithDerivatives("contact-"+num);
+      componentIsNotPeriodic("contact-"+num);
+    }
+  }
 
   // Read numbered keywords KEY1, KEY2, ...: either none of them or one for each contact
   auto parseAllNumbered=[&](const std::string& key, std::vector<double>& v) {
@@ -295,39 +452,28 @@ ContactMap::ContactMap(const ActionOptions&ao):
     return nread>0;
   };
 
-  // Read in the reference: one value for each contact, a single value or a reference structure
+  // Read in the reference values: one value for each contact, a single value or from the reference structure
   reference.assign(ncontacts, 0.);
   const bool numberedref=parseAllNumbered("REFERENCE",reference);
-  std::string refstr;
-  parse("REFERENCE",refstr);
   if( numberedref && refstr.length()>0 ) {
     error("use either REFERENCE or REFERENCE1, REFERENCE2, ...");
   }
-  bool hasref=numberedref;
+  const bool hasref=( numberedref || refstr.length()>0 );
+  if( globalref ) {
+    reference.assign(ncontacts, ref0);
+  }
   std::vector<double> refdist; // the distances in the reference structure
-  if( refstr.length()>0 ) {
-    hasref=true;
-    double ref0=0.0;
-    if( Tools::convertNoexcept(refstr,ref0) ) {
-      // a single value for all the contacts
-      reference.assign(ncontacts, ref0);
-    } else {
-      PDB pdb;
-      if( !pdb.read(refstr,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
-        error("the value " + refstr + " given to REFERENCE is neither a number nor a readable PDB file");
-      }
-      log.printf("  reference structure read from file %s\n", refstr.c_str());
-      refdist.resize(ncontacts);
-      for(unsigned i=0; i<ncontacts; ++i) {
-        for(const AtomNumber a : std::array<AtomNumber,2> {ga_lista[i], gb_lista[i]}) {
-          if( !pdb.checkForAtom(a) ) {
-            std::string sa;
-            Tools::convert(a.serial(),sa);
-            error("atom " + sa + " is not in the reference structure " + refstr);
-          }
+  if( refstructure ) {
+    refdist.resize(ncontacts);
+    for(unsigned i=0; i<ncontacts; ++i) {
+      for(const AtomNumber a : std::array<AtomNumber,2> {ga_lista[i], gb_lista[i]}) {
+        if( !pdb.checkForAtom(a) ) {
+          std::string sa;
+          Tools::convert(a.serial(),sa);
+          error("atom " + sa + " is not in the reference structure " + refstr);
         }
-        refdist[i]=delta(pdb.getPosition(ga_lista[i]),pdb.getPosition(gb_lista[i])).modulo();
       }
+      refdist[i]=delta(pdb.getPosition(ga_lista[i]),pdb.getPosition(gb_lista[i])).modulo();
     }
   }
   if( !hasref && docmdist ) {
@@ -384,7 +530,7 @@ ContactMap::ContactMap(const ActionOptions&ao):
         double dfunc;
         reference[i]=sfs[i].calculate(refdist[i],dfunc);
       }
-    } else if( nnative==0 ) {
+    } else if( nnative==0 && !usecutoff ) {
       error("without CMDIST the reference structure given to REFERENCE is only used to set REF in Q switching functions, and there are none without REF");
     } else {
       log.printf("  no reference value is subtracted from the contacts (the reference structure is used for the reference contact map only with CMDIST)\n");
