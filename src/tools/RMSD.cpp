@@ -33,6 +33,19 @@ View<T> make_view(const std::vector<T>& d) {
   return View<T> {const_cast<T*>(d.data()),d.size()};
 }
 
+namespace {
+/// Square root of a mean square deviation: when the structure is equal to the reference the msd
+/// computed from the eigenvalue can be slightly negative because of rounding
+inline double rmsdFromMsd(const double msd) {
+  return msd>0.0 ? std::sqrt(msd) : 0.0;
+}
+/// Derivative of the square root, 0.5/rmsd. The RMSD has a cusp where it is zero: there the derivative
+/// is taken as zero, instead of inf (or nan, when multiplied by the zero derivatives of the msd)
+inline double sqrtDerivativeFactor(const double rmsd) {
+  return rmsd>0.0 ? 0.5/rmsd : 0.0;
+}
+}
+
 RMSD::RMSD() =default;
 
 ///
@@ -525,10 +538,11 @@ double RMSD::simpleAlignment(const std::vector<double>& alignTo,
 
   if(!squared) {
     // sqrt
-    dist=std::sqrt(dist);
+    dist=rmsdFromMsd(dist);
     ///// sqrt on derivatives
+    const double xx=sqrtDerivativeFactor(dist);
     for(unsigned i=0; i<n; i++) {
-      derivatives[i]*=(0.5/dist);
+      derivatives[i]*=xx;
     }
   }
   return dist;
@@ -676,7 +690,7 @@ double RMSD::optimalAlignment(const std::vector<double>& alignTo,
   double prefactor=2.0;
 
   if(!squared && alEqDis) {
-    prefactor*=0.5/std::sqrt(dist);
+    prefactor*=sqrtDerivativeFactor(rmsdFromMsd(dist));
   }
 
 // if "safe", recompute dist here to a better accuracy
@@ -727,9 +741,9 @@ double RMSD::optimalAlignment(const std::vector<double>& alignTo,
     }
   }
   if(!squared) {
-    dist=std::sqrt(dist);
+    dist=rmsdFromMsd(dist);
     if(!alEqDis) {
-      double xx=0.5/dist;
+      const double xx=sqrtDerivativeFactor(dist);
       for(unsigned iat=0; iat<n; iat++) {
         derivatives[iat]*=xx;
       }
@@ -1293,7 +1307,7 @@ double RMSDCoreData::getDistance( const bool squared) {
     }
   }
   if(!squared) {
-    dist=std::sqrt(localDist);
+    dist=rmsdFromMsd(localDist);
     distanceIsMSD=false;
   } else {
     dist=localDist;
@@ -1358,7 +1372,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions() {
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) {
-    prefactor*=0.5/dist;
+    prefactor*=sqrtDerivativeFactor(dist);
   }
   if(!hasDistance) {
     plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
@@ -1406,7 +1420,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDReference() {
   derivatives.resize(n);
   double prefactor=1.0;
   if(!distanceIsMSD) {
-    prefactor*=0.5/dist;
+    prefactor*=sqrtDerivativeFactor(dist);
   }
   Vector csum;
 

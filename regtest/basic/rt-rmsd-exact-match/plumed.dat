@@ -1,0 +1,10 @@
+# the first frame is exactly the reference: the RMSD is zero (up to rounding) and its
+# derivative is taken as zero (it gave inf or nan forces, and a nan value with OPTIMAL-FAST)
+ro: RMSD REFERENCE=ref.pdb TYPE=OPTIMAL
+rf: RMSD REFERENCE=ref.pdb TYPE=OPTIMAL-FAST
+so: SECONDARY_STRUCTURE_RMSD ATOMS=1-4 TYPE=OPTIMAL STRUCTURE1=1,0,0,0,1,0,0,0,1,1.2,1.1,0 SEGMENT1=0,1,2,3
+sf: SECONDARY_STRUCTURE_RMSD ATOMS=1-4 TYPE=OPTIMAL-FAST STRUCTURE1=1,0,0,0,1,0,0,0,1,1.2,1.1,0 SEGMENT1=0,1,2,3
+so1: SUM ARG=so PERIODIC=NO
+sf1: SUM ARG=sf PERIODIC=NO
+RESTRAINT ARG=ro,rf,so1,sf1 AT=0.1,0.1,0.1,0.1 KAPPA=10,10,10,10
+PRINT ARG=ro,rf,so,sf FILE=colvar FMT=%10.6f
