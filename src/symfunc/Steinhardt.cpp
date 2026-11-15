@@ -588,7 +588,7 @@ private:
                               int l,
                               const std::string& sep,
                               const std::string& vlab,
-                              bool usegpu = false);
+                              const std::string& gpuflags = "");
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -618,6 +618,7 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector",
                            "the norms of the vectors of spherical harmonic coefficients");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
@@ -633,7 +634,10 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  bool serial;
+  parseFlag("SERIAL",serial);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
 
   std::string sp_str;
   parse("SPECIES",sp_str);
@@ -646,7 +650,8 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                                      sp_str,
                                      specA,
                                      specB,
-                                     this );
+                                     this,
+                                     doUSEGPU );
   int l;
   std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
                           + getShortcutLabel() + "_mat.x,"
@@ -732,7 +737,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "ms",
-                           usegpu );
+                           doUSEGPU );
   }
   if( do_vsum ) {
     auto makeString=[&](const std::string& numstr,
@@ -754,7 +759,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "mz",
-                           usegpu );
+                           doUSEGPU );
   }
 
   // Now calculate the total length of the vector
@@ -763,7 +768,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                          l,
                          ".",
                          "m",
-                         usegpu );
+                         doUSEGPU );
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
@@ -777,7 +782,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
                                         const int l,
                                         const std::string& sep,
                                         const std::string& vlab,
-                                        const bool usegpu) {
+                                        const std::string& gpuflags) {
   std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
   std::string arg_inp = "";
@@ -791,7 +796,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
     norm_input += comma + "2,2";
     comma=",";
   }
-  readInputLine( norm_input + " ARG=" + arg_inp + (usegpu?" USEGPU":"") );
+  readInputLine( norm_input + " ARG=" + arg_inp + gpuflags );
   readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 

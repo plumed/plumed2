@@ -217,6 +217,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector","the values of the local averages");
   keys.addDOI("10.1063/1.2977970");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):
@@ -229,14 +230,18 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  bool serial;
+  parseFlag("SERIAL",serial);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
 
   CoordinationNumbers::expandMatrix( false,
                                      getShortcutLabel(),
                                      sp_str,
                                      specA,
                                      specB,
-                                     this );
+                                     this,
+                                     doUSEGPU );
   std::map<std::string,std::string> keymap;
   multicolvar::MultiColvarShortcuts::readShortcutKeywords( keymap, this );
   if( sp_str.length()>0 ) {

@@ -74,10 +74,8 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
 }
 
 void ActionWithMatrix::checkThreadGatherWithMPI( const bool serial ) {
-  if( no_thread_gather && comm.Get_size()>1 && !serial ) {
-    if( getName().find("ACC")!=std::string::npos ) {
-      error("with more than one MPI process the GPU version needs DO_THREAD_GATHER (the low memory gathering of the forces, used by default, is not parallelised with MPI) or SERIAL");
-    }
+  // the GPU versions (openaccPTM plugin) parallelise the low memory gathering with MPI
+  if( no_thread_gather && comm.Get_size()>1 && !serial && getName().find("ACC")==std::string::npos ) {
     error("AVOID_THREAD_GATHER cannot be used with more than one MPI process unless SERIAL is also used (the low memory gathering of the forces is not parallelised with MPI)");
   }
 }
