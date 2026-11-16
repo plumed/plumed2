@@ -163,14 +163,20 @@ private:
   std::unique_ptr<AccDeviceWorkspace<precision>> devws;
 /// The active tasks of this process, when they are shared between the processes
   std::vector<unsigned> my_tasks;
+/// MULTIGPU: with MPI the tasks are shared between the processes, each using its GPU
+  bool multigpu=false;
 /// The GPU of this action (chosen at the first call), -1 without GPUs
   int getDevice() {
     return device.resolve(*action);
   }
-/// True if the tasks are shared between the MPI processes, each using its GPU.
-/// Otherwise (one process, or SERIAL) the first process computes all of them
+/// True if the tasks are shared between the MPI processes, each using its GPU
+/// (MULTIGPU, without SERIAL). Otherwise the first process computes all of them
+/// and sends the results to the others: by default, because each call has costs
+/// on the CPU (copies of the input, of the results and of the forces) that do
+/// not decrease with the number of processes, while the sums over the processes
+/// add more (see the README of the plugin)
   bool splitTasks() const {
-    return !serial && comm.Get_size()>1;
+    return multigpu && !serial && comm.Get_size()>1;
   }
 /// The active tasks computed by this process, a contiguous block of the list:
 /// [first,first+count). Contiguous blocks keep the part of the value stash
@@ -188,12 +194,20 @@ private:
 public:
   static void registerKeywords( Keywords& keys ) {
     ParallelTaskManager<T>::registerKeywords(keys);
+    keys.addFlag("MULTIGPU",false,"with MPI, share the tasks between the processes, each using its own GPU, and sum the results "
+                 "(by default only the first process computes, on its GPU, and sends the results to the others)");
   }
   AccParallelTaskManager(ActionWithVector* av):
     PLMD::ParallelTaskManager<T>(av),
     devws(std::make_unique<AccDeviceWorkspace<precision>>()) {
     useacc=true;
     action->log.printf("  using GPU to calculate this action\n");
+    action->parseFlag("MULTIGPU",multigpu);
+    if( multigpu && !serial ) {
+      action->log.printf("  with MPI the tasks are shared between the processes, each using its GPU\n");
+    } else if( multigpu ) {
+      action->log.printf("  MULTIGPU is ignored with SERIAL\n");
+    }
   }
   ~AccParallelTaskManager() {
     // members are destroyed after the scope ends: the buffers are freed here
@@ -374,9 +388,9 @@ void AccParallelTaskManager<T>::runAllTasks() {
   if( value_stash.size()!=totalvals ) {
     value_stash.resize(totalvals);
   }
-  // With MPI each process computes a block of the tasks on its GPU and the
-  // stashes are summed; with SERIAL (or one process) the first process
-  // computes all the tasks, and the stash is sent to the others
+  // With MULTIGPU each process computes a block of the tasks on its GPU and
+  // the stashes are summed; otherwise the first process computes all the
+  // tasks, and the stash is sent to the others
   const bool split = splitTasks();
   unsigned first, count;
   getMyTasks( nactive_tasks, first, count );
@@ -677,9 +691,9 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
   const unsigned nactive_tasks=partialTaskList.size();
-  // As in runAllTasks: with MPI each process computes the forces of a block of
-  // the tasks on its GPU and the forces are summed; with SERIAL (or one process)
-  // the first process computes all of them and sends them to the others
+  // As in runAllTasks: with MULTIGPU each process computes the forces of a block
+  // of the tasks on its GPU and the forces are summed; otherwise the first
+  // process computes all of them and sends them to the others
   const bool split = splitTasks();
   unsigned first, count;
   getMyTasks( nactive_tasks, first, count );

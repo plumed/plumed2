@@ -38,6 +38,8 @@ class SphericalHarmonic {
 public:
   static void registerKeywords( Keywords& keys );
   static unsigned factorial( unsigned n );
+/// Sets up the coefficients for the angular momentum l (1 to 6); returns false for other values
+  static bool setup( SphericalHarmonic& func, int l );
   static void read( SphericalHarmonic& func,
                     ActionWithArguments* action,
                     function::FunctionOptions& options );
@@ -101,7 +103,7 @@ public:
 #endif // _OPENACC
 };
 
-void SphericalHarmonic::registerKeywords( Keywords& keys ) {
+inline void SphericalHarmonic::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","L","the value of the angular momentum");
   keys.addOutputComponent("rm","default",
                           "matrix","the real parts of the spherical harmonic values with the m value given");
@@ -111,27 +113,15 @@ void SphericalHarmonic::registerKeywords( Keywords& keys ) {
            "turns on that you are allowed to use masked inputs");
 }
 
-unsigned SphericalHarmonic::factorial( unsigned n ) {
+inline unsigned SphericalHarmonic::factorial( unsigned n ) {
   return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
 }
 
-void SphericalHarmonic::read( SphericalHarmonic& func,
-                              ActionWithArguments* action,
-                              function::FunctionOptions& options ) {
-  action->parse("L",func.tmom);
-  if( action->getNumberOfArguments()<3 ) {
-    action->error("the x, y and z components of the vectors (and optionally a weight) should be given with ARG");
+inline bool SphericalHarmonic::setup( SphericalHarmonic& func, const int l ) {
+  func.tmom = l;
+  if( l<1 || l>6 ) {
+    return false;
   }
-  action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n",
-                     func.tmom,
-                     action->getPntrToArgument(0)->getName().c_str(),
-                     action->getPntrToArgument(1)->getName().c_str(),
-                     action->getPntrToArgument(2)->getName().c_str() );
-  if( action->getNumberOfArguments()==4 ) {
-    action->log.printf("  multiplying cylindrical harmonic by weight from %s \n",
-                       action->getPntrToArgument(3)->getName().c_str() );
-  }
-
   func.normaliz_v.resize( func.tmom+1 );
   func.coeff_poly_v.resize( func.tmom+1 );
   func.update();
@@ -190,6 +180,29 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
     func.coeff_poly[6]=14.4375;
     break;
   default:
+    return false;
+  }
+  return true;
+}
+
+inline void SphericalHarmonic::read( SphericalHarmonic& func,
+                                     ActionWithArguments* action,
+                                     function::FunctionOptions& options ) {
+  action->parse("L",func.tmom);
+  if( action->getNumberOfArguments()<3 ) {
+    action->error("the x, y and z components of the vectors (and optionally a weight) should be given with ARG");
+  }
+  action->log.printf("  calculating %dth order spherical harmonic with %s, %s and %s as input \n",
+                     func.tmom,
+                     action->getPntrToArgument(0)->getName().c_str(),
+                     action->getPntrToArgument(1)->getName().c_str(),
+                     action->getPntrToArgument(2)->getName().c_str() );
+  if( action->getNumberOfArguments()==4 ) {
+    action->log.printf("  multiplying cylindrical harmonic by weight from %s \n",
+                       action->getPntrToArgument(3)->getName().c_str() );
+  }
+
+  if( !setup( func, func.tmom ) ) {
     action->error("Insert Legendre polynomial coefficients into SphericalHarmonics code");
   }
 
@@ -209,10 +222,10 @@ void SphericalHarmonic::read( SphericalHarmonic& func,
                                          ->isDerivativeZeroWhenValueIsZero() );
 }
 
-void SphericalHarmonic::calc( const SphericalHarmonic& func,
-                              bool noderiv,
-                              const View<const double> args,
-                              function::FunctionOutput funcout ) {
+inline void SphericalHarmonic::calc( const SphericalHarmonic& func,
+                                     bool noderiv,
+                                     const View<const double> args,
+                                     function::FunctionOutput funcout ) {
   double weight=1;
   if( args.size()==4 ) {
     weight = args[3];
@@ -341,9 +354,9 @@ void SphericalHarmonic::calc( const SphericalHarmonic& func,
   }
 }
 
-double SphericalHarmonic::deriv_poly( const unsigned m,
-                                      const double val,
-                                      double& df ) const {
+inline double SphericalHarmonic::deriv_poly( const unsigned m,
+    const double val,
+    double& df ) const {
   double fact=1.0;
   for(unsigned j=2; j<=m; ++j) {
     fact *= j;

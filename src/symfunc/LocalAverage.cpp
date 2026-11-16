@@ -218,6 +218,7 @@ void LocalAverage::registerKeywords( Keywords& keys ) {
   keys.addDOI("10.1063/1.2977970");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
   keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
 }
 
 LocalAverage::LocalAverage(const ActionOptions&ao):
@@ -230,10 +231,11 @@ LocalAverage::LocalAverage(const ActionOptions&ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  bool serial;
+  bool serial, multigpu;
   parseFlag("SERIAL",serial);
+  parseFlag("MULTIGPU",multigpu);
   // passed to the actions that can run on the GPU
-  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"") + (multigpu?" MULTIGPU":"");
 
   CoordinationNumbers::expandMatrix( false,
                                      getShortcutLabel(),
