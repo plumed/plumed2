@@ -403,6 +403,8 @@ protected:
   NeighborSumsGeometry geometry;
   /// the sums (nrows x ncomponents) and the forces on them
   std::vector<double> sums, forcesOnSums;
+  /// all the rows, to copy sums and forcesOnSums from and to the values (transferStashToValues)
+  std::vector<unsigned> allrows;
   /// the rows of this process: first, number
   std::size_t myfirst=0, mycount=0;
   /// the forces on the columns of each thread, and their virials (without GROUP)
@@ -528,6 +530,10 @@ NeighborSums<PF>::NeighborSums( const ActionOptions& ao ):
   for(unsigned c=0; c<ncols; ++c) {
     colind[c]=c;
   }
+  allrows.resize( nrows );
+  for(unsigned r=0; r<nrows; ++r) {
+    allrows[r]=r;
+  }
 }
 
 template <class PF>
@@ -573,7 +579,12 @@ template <class PF>
 void NeighborSums<PF>::calculate() {
   setMyRows();
   const unsigned ncomp = pairs.ncomponents;
-  sums.assign( nrows*ncomp, 0.0 );
+  // the rows of the other processes are zero (for the sum)
+  if( mycount<nrows ) {
+    sums.assign( nrows*ncomp, 0.0 );
+  } else {
+    sums.resize( nrows*ncomp );
+  }
   if( mycount>0 ) {
     buildCells();
     computeSums();
@@ -583,12 +594,8 @@ void NeighborSums<PF>::calculate() {
   } else if( firstProcessOnly() && comm.Get_size()>1 ) {
     comm.Bcast( sums, 0 );
   }
-  for(unsigned k=0; k<ncomp; ++k) {
-    Value* val = getPntrToComponent(k);
-    for(std::size_t r=0; r<nrows; ++r) {
-      val->set( r, sums[r*ncomp+k] );
-    }
-  }
+  // sums has the layout of the stash of the task manager (the components of a row together)
+  transferStashToValues( allrows, sums );
 }
 
 template <class PF>
@@ -671,13 +678,8 @@ template <class PF>
 void NeighborSums<PF>::applyNonZeroRankForces( std::vector<double>& outforces ) {
   const unsigned ncomp = pairs.ncomponents;
   // the forces on the sums are the same on all the processes
-  forcesOnSums.assign( nrows*ncomp, 0.0 );
-  for(unsigned k=0; k<ncomp; ++k) {
-    const Value* val = getConstPntrToComponent(k);
-    for(std::size_t r=0; r<nrows; ++r) {
-      forcesOnSums[r*ncomp+k] = val->getForce(r);
-    }
-  }
+  forcesOnSums.resize( nrows*ncomp );
+  transferForcesToStash( allrows, forcesOnSums );
   std::fill( outforces.begin(), outforces.end(), 0.0 );
   if( mycount>0 ) {
     // the cells and the geometry are those of the forward pass of this step

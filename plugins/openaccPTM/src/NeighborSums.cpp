@@ -42,7 +42,6 @@ GPU, and the results are summed.
 #include "ACCDevice.h"
 #include "ACCParallelTaskManager.h"
 
-#include <cstdlib>
 #include <memory>
 
 namespace PLMD {
@@ -128,11 +127,6 @@ NeighborSumsACC<PF>::NeighborSumsACC( const ActionOptions& ao ):
   this->parseFlag("USEGPU",usegpu);
   if( multigpu && !this->serial ) {
     this->log.printf("  with MPI the atoms are shared between the processes, each using its GPU\n");
-  }
-  // cells per cutoff searched on the GPU (temporary, to compare 1 and 2 on the GPUs)
-  if( const char* sub=std::getenv("PLUMED_NEIGHBORSUMS_SUBDIVISION") ) {
-    this->cells.setSubdivision( std::atoi(sub) );
-    this->log.printf("  %s cells per cutoff (PLUMED_NEIGHBORSUMS_SUBDIVISION)\n",sub);
   }
   this->checkRead();
 }
