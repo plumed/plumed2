@@ -30,6 +30,9 @@
 #include "core/ParallelTaskManager.h"
 #include "tools/ColvarOutput.h"
 #include "tools/TypeUtils.h"
+#include <algorithm>
+#include <cctype>
+#include <string>
 #include <vector>
 #include <type_traits>
 
@@ -54,6 +57,10 @@ template <typename T>
 constexpr bool needsBondLength<T,std::void_t<decltype(T::needsBondLength)>> =T::needsBondLength;
 }
 
+/// The largest number of atoms in a segment (the size of the position buffer in performTask).
+/// ALPHARMSD, ANTIBETARMSD and PARABETARMSD all use segments of exactly this size
+constexpr unsigned maxAtomsInSegment=30;
+
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 template <class T, typename myPTM=defaultPTM>
 class SecondaryStructureBase: public ActionWithVector {
@@ -67,9 +74,7 @@ public:
   static constexpr size_t virialSize=9;
   static constexpr unsigned customGatherStep=3;
   static constexpr unsigned customGatherStopBefore=virialSize;
-  /// The largest number of atoms in a segment (the size of the position buffer in performTask).
-  /// ALPHARMSD, ANTIBETARMSD and PARABETARMSD all use segments of exactly this size
-  static constexpr unsigned maxAtomsInSegment=30;
+  static constexpr unsigned maxAtomsInSegment=secondarystructure::maxAtomsInSegment;
 
 private:
   PTM taskmanager;
@@ -79,6 +84,14 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
+  /// Read TYPE, NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action that computes the distances
+  static std::string readDistanceAction( ActionShortcut* action, bool& nopbc );
+  /// Append " SEGMENTnum=nlist[0],nlist[1],..." to line
+  static void addSegment( std::string& line, unsigned num, const std::vector<unsigned>& nlist );
+  /// Append " STRUCTUREnum=x0,y0,z0,x1,..." (in Angstrom) to line
+  static void addStructure( std::string& line, unsigned num, const std::vector<Vector>& reference );
+  /// Create the SUM of the switching functions in label_lt: the shortcut label if LESS_THAN was not used, label_lessthan otherwise
+  static void addSum( ActionShortcut* action, bool uselessthan );
   explicit SecondaryStructureBase(const ActionOptions&);
   unsigned getNumberOfDerivatives() override ;
   void calculate() override;
@@ -118,6 +131,55 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
 }
 
 template <class T,typename myPTM>
+std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, bool& nopbc ) {
+  std::string type;
+  action->parse("TYPE",type);
+  // RMSD only accepts upper case names
+  std::transform( type.begin(), type.end(), type.begin(), [](unsigned char c) {
+    return std::toupper(c);
+  } );
+  // BONDLENGTH is in nm, see the constructor
+  std::string line = type=="DRMSD" ? "SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" : "SECONDARY_STRUCTURE_RMSD TYPE=" + type;
+  action->parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    line += " NOPBC";
+  }
+  bool usegpu=false;
+  action->parseFlag("USEGPU",usegpu);
+  if( usegpu ) {
+    line += " USEGPU";
+  }
+  return line;
+}
+
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::addSegment( std::string& line, unsigned num, const std::vector<unsigned>& nlist ) {
+  // std::to_string is much faster than Tools::convert, and there can be hundreds of thousands of segments
+  line += " SEGMENT" + std::to_string(num) + "=" + std::to_string(nlist[0]);
+  for(unsigned i=1; i<nlist.size(); ++i) {
+    line += "," + std::to_string(nlist[i]);
+  }
+}
+
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::addStructure( std::string& line, unsigned num, const std::vector<Vector>& reference ) {
+  line += " STRUCTURE" + std::to_string(num) + "=";
+  std::string coord;
+  for(unsigned i=0; i<reference.size(); ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], coord );
+      line += (i==0 && k==0 ? "" : ",") + coord;
+    }
+  }
+}
+
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::addSum( ActionShortcut* action, bool uselessthan ) {
+  const std::string lab = action->getShortcutLabel();
+  action->readInputLine( lab + (uselessthan ? "_lessthan" : "") + ": SUM ARG=" + lab + "_lt PERIODIC=NO");
+}
+
+template <class T,typename myPTM>
 void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
   T::registerKeywords( keys );
@@ -125,11 +187,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions");
   keys.addInputKeyword("optional","MASK","vector","a vector which is used to determine which elements of the secondary structure variable should be computed");
   keys.add("atoms","ATOMS","this is the full list of atoms that we are investigating");
-  keys.add("numbered","SEGMENT","this is the lists of atoms in the segment that are being considered");
+  keys.add("numbered","SEGMENT","the indices in the list given with ATOMS (starting from zero) of the atoms of a segment. All the segments must contain the same number of atoms (between 2 and 30)");
   if constexpr ( needsBondLength /*keys.getDisplayName()=="SECONDARY_STRUCTURE_DRMSD"*/ ) {
-    keys.add("compulsory","BONDLENGTH","0.17","the length to use for bonds");
+    keys.add("compulsory","BONDLENGTH","0.17","the pairs of atoms that are closer than this distance (in nm) in the reference structure are not used to compute the DRMSD");
   }
-  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure to be used instead of the default ideal one. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
+  keys.add("numbered","STRUCTURE","the coordinates (in Angstrom, three for each atom of a segment) of a reference structure. Use STRUCTURE1, STRUCTURE2, ... for multiple references");
   if constexpr ( needsType /*keys.getDisplayName()=="SECONDARY_STRUCTURE_RMSD"*/ ) {
     keys.add("compulsory","TYPE","OPTIMAL","the manner in which RMSD alignment is performed. Should be OPTIMAL or SIMPLE. "
              "For more details on the OPTIMAL and SIMPLE methods see RMSD.");
@@ -147,17 +209,23 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
              "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
-             "As such if you define portions of the chain with fewer than N residues the code will crash.");
-    keys.add("optional","LESS_THAN","calculate the number of a residue segments that are within a certain target distance of this secondary structure type. "
-             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is a switching function.");
-    keys.add("optional","R_0","The r_0 parameter of the switching function.");
+             "As such if you define portions of the chain with fewer than N residues PLUMED stops with an error.");
+    keys.add("optional","LESS_THAN","calculate the number of segments of residues that are within a certain target distance of this secondary structure type. "
+             "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is the switching function given here. "
+             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component");
+    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
     keys.add("compulsory","MM","12","The m parameter of the switching function");
   }
-  keys.addFlag("ALIGN_STRANDS",false,"ensure that the two halves of a beta sheet are not broken by the periodic boundaries before doing alignment");
-  keys.addOutputComponent("struct","default","vector","the vectors containing the rmsd distances between the residues and each of the reference structures");
-  keys.addOutputComponent("lessthan","default","scalar","the number blocks of residues that have an RMSD from the secondary structure that is less than the threshold");
+  keys.addFlag("ALIGN_STRANDS",false,"the segments contain two strands of 15 atoms each: make the two strands whole separately and move the second one to the periodic image where its 7th atom (the 22nd of the segment) is closest to the 7th atom of the first strand");
+  if constexpr ( !needsBondLength && !needsType ) {
+    // ALPHARMSD, ANTIBETARMSD and PARABETARMSD
+    keys.addOutputComponent("lessthan","LESS_THAN","scalar","the number of segments of residues that have a distance from the secondary structure that is less than the threshold given with LESS_THAN");
+  } else {
+    keys.setValueDescription("vector","the distances between each segment and the reference structure (if only one STRUCTURE is given)");
+    keys.addOutputComponent("struct","STRUCTURE","vector","struct-n is the vector of distances between each segment and the n-th reference structure (if more than one STRUCTURE is given)");
+  }
   keys.needsAction("SECONDARY_STRUCTURE_RMSD");
   keys.needsAction("SECONDARY_STRUCTURE_DRMSD");
   keys.needsAction("LESS_THAN");
@@ -218,14 +286,20 @@ SecondaryStructureBase<T,myPTM>::SecondaryStructureBase(const ActionOptions&ao):
   if constexpr ( needsType ) {
     parse("TYPE",alignType);
   }
-  log.printf("  distances from secondary structure elements are calculated using %s algorithm\n", alignType.c_str() );
+  log.printf("  distances from secondary structure elements are calculated using %s algorithm\n", needsType ? alignType.c_str() : "DRMSD" );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)");
   log<<"\n";
 
   parseFlag("ALIGN_STRANDS",myinput.align_strands);
   bool verbose_output=false;
   parseFlag("VERBOSE",verbose_output);
-  log.printf("  ensuring atoms 7 and 22 in each residue are not separated by pbc before doing alignment\n");
+  if( myinput.nopbc ) {
+    log.printf("  without periodic boundary conditions\n");
+  } else if( myinput.align_strands ) {
+    log.printf("  the two strands of each segment are made whole separately, and atom 22 is moved to the periodic image that is closest to atom 7\n");
+  } else {
+    log.printf("  each segment is made whole before computing the distance\n");
+  }
 
   // Read in the atoms
   std::vector<AtomNumber> all_atoms;

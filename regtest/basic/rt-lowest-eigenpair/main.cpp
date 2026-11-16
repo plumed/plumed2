@@ -135,6 +135,9 @@ void doTest(std::string suffix="") {
   std::ofstream matOut ("matrices"+suffix);
   std::ofstream out ("eigenValues"+suffix);
   std::ofstream outv ("eigenVectors"+suffix);
+  // the same for lowestEigenpairSym4
+  std::ofstream out4 ("eigenValues4"+suffix);
+  std::ofstream outv4 ("eigenVectors4"+suffix);
 // setting up an header for clarity
 
   matOut<<"# id:";
@@ -159,6 +162,14 @@ void doTest(std::string suffix="") {
 
   out <<std::setprecision(5) << std::fixed;
   outv <<std::setprecision(5) << std::fixed;
+  out4 <<"# id:"<<" "<<std::setw(10) <<"eigv0"<<"\n";
+  outv4 <<"# id:";
+  for (unsigned i=0; i<3; ++i) {
+    outv4<<" "<<std::setw(10) <<"eigvct0_"+std::to_string(i);
+  }
+  outv4 << "\n";
+  out4 <<std::setprecision(5) << std::fixed;
+  outv4 <<std::setprecision(5) << std::fixed;
 
   for (unsigned index=0; index<tests.size(); ++index) {
     const auto& mat = tests[index];
@@ -201,6 +212,32 @@ void doTest(std::string suffix="") {
     outv<<" "<<std::setw(10) << modulo2;
     outv<<" "<<std::setw(10) << dot_product*dot_product;
     outv<<"\n";
+
+    PLMD::VectorTyped<T,4> eigenvec4;
+    const T eigenval4=lowestEigenpairSym4(m,eigenvec4);
+    out4 <<std::setw(4)<<index <<":";
+    {
+      auto tmp = eigenval_ref[0] - eigenval4;
+      // the eigenvalues are checked to 1e-8 (double) and 1e-4 (float) of the scale of the matrix
+      T scale=0.0;
+      for(unsigned i=0; i<16; ++i) {
+        scale=std::max(scale,T(std::fabs((&m[0][0])[i])));
+      }
+      const T tol = std::is_same_v<T,double> ? 1e-8 : 1e-4;
+      out4<<" "<<std::setw(10) <<((std::fabs(tmp) < tol*std::max(scale,T(1.0))) ? T(0.0): tmp);
+    }
+    out4<<"\n";
+    double modulo2_4=0.0;
+    double dot_product4=0.0;
+    for(unsigned i=0; i<4; i++) {
+      modulo2_4 += eigenvec4[i] * eigenvec4[i];
+      dot_product4 += eigenvec_ref[0][i] * eigenvec4[i];
+    }
+    outv4 <<std::setw(4)<<index <<":";
+    outv4<<" "<<std::setw(10) << modulo2_ref;
+    outv4<<" "<<std::setw(10) << modulo2_4;
+    outv4<<" "<<std::setw(10) << dot_product4*dot_product4;
+    outv4<<"\n";
   }
 
   //Timings
@@ -227,6 +264,16 @@ void doTest(std::string suffix="") {
       }
 
       {
+        auto sww = sw.startStop("lowestEigenpairSym4_all");
+        for (const auto & mat : matrices) {
+          VectorTyped<T,4> eigenvecs;
+          auto eigenvals=lowestEigenpairSym4(mat, eigenvecs);
+          DoNotOptimize(eigenvals);
+          DoNotOptimize(eigenvecs);
+        }
+      }
+
+      {
         auto sww = sw.startStop("compute_quaternion_from_K_all");
         for (const auto & mat : matrices) {
           auto sww = sw.startStop("compute_quaternion_from_K");
@@ -242,7 +289,54 @@ void doTest(std::string suffix="") {
     std::cerr<<sw;
   }
 }
+// Degenerate lowest eigenvalues: the eigenvector is not unique, so only the residual is checked
+template <typename T>
+void doDegenerateTest(std::string suffix="") {
+  std::vector<PLMD::TensorT<T>> tests= {
+    {1,1,1,1,1,1,1,1,1},
+    {1,2,3,4,5,6,7,8,9},
+    {
+      0.0, 1.0, 1.0,
+      1.0, 0.0, 1.0,
+      1.0, 1.0, 0.0
+    },
+    {0,0,0,0,0,0,0,0,0}
+  };
+  std::vector<PLMD::TensorTyped<T,4,4>> matrices;
+  for(const auto & t : tests) {
+    matrices.push_back(makeMatrix(t));
+  }
+  // proportional to the identity: the old method returned nan
+  PLMD::TensorTyped<T,4,4> id;
+  for(unsigned i=0; i<4; ++i) {
+    id[i][i]=2.5;
+  }
+  matrices.push_back(id);
+  std::ofstream out ("degenerate"+suffix);
+  out << "# id: residual_ok_lowestEigenpairSym4 residual_ok_lowestEigenpairSym eigenvalue_ok\n";
+  for (unsigned index=0; index<matrices.size(); ++index) {
+    const auto & m=matrices[index];
+    VectorTyped<T,4> eigenval_ref;
+    TensorTyped<T,4,4> eigenvec_ref;
+    diagMatSym(m, eigenval_ref, eigenvec_ref );
+    T scale=1.0;
+    for(unsigned i=0; i<16; ++i) {
+      scale=std::max(scale,T(std::fabs((&m[0][0])[i])));
+    }
+    const T tol = std::is_same_v<T,double> ? 1e-8 : 1e-4;
+    PLMD::VectorTyped<T,4> v4, v;
+    const T l4=lowestEigenpairSym4(m,v4);
+    const T l=lowestEigenpairSym(m,v);
+    const bool ok4 = modulo(matmul(m,v4)-l4*v4) < tol*scale && std::fabs(modulo2(v4)-1.0) < tol;
+    const bool ok = modulo(matmul(m,v)-l*v) < tol*scale && std::fabs(modulo2(v)-1.0) < tol;
+    const bool okl = std::fabs(l4-eigenval_ref[0]) < tol*scale;
+    out << std::setw(4) << index << ": " << ok4 << " " << ok << " " << okl << "\n";
+  }
+}
+
 int main () {
+  doDegenerateTest<double>();
+  doDegenerateTest<float>("_float");
   doTest<double>();
   std::cerr << "\n\nFloating point\n\n";
   doTest<float>("_float");
