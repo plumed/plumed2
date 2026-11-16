@@ -67,8 +67,29 @@ LOAD FILE=/path/to/plumedOpenACC.so
 CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 ``` 
 
-When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
-on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
+When PLUMED runs with MPI (e.g. an MD code with several MPI ranks, or `mpirun -np 4 plumed driver`), the actions with `USEGPU`
+are computed by the first rank, on its GPU, and the results are sent to the other ranks. With `MULTIGPU` (accepted by the actions
+and by the shortcuts that take `USEGPU`) the tasks are split in blocks between the ranks, each rank computes its block on its GPU
+(see below), and the results are summed, as for the CPU version; `SERIAL` restores the default. `MULTIGPU` is not the default
+because, for most actions, a call is dominated by work on the CPU (copies of the input, of the results and of the forces) that
+does not decrease with the number of ranks, while the sums over the ranks add more: on Leonardo (A100) splitting
+[COORDINATIONNUMBER](COORDINATIONNUMBER.md) or [Q6](Q6.md) of 20000 atoms or a [DISTANCES](DISTANCES.md) of 100000 between
+2 or 4 GPUs was slower than using one (measured with the contact matrices, before the sums described below). It pays off when
+the calculation on the GPU dominates.
+
+The forces of the matrices are gathered in one pass, adding with atomics the forces that several rows touch. The low memory
+version (`AVOID_THREAD_GATHER`), which computes the matrix again column by column, was the default on the GPU, but it makes the
+backward pass about two times slower ([CONTACT_MATRIX](CONTACT_MATRIX.md) of 20000 atoms on an A100).
+
+### Coordination numbers and Steinhardt parameters
+
+With `USEGPU`, [COORDINATIONNUMBER](COORDINATIONNUMBER.md) and [Q1](Q1.md), [Q3](Q3.md), [Q4](Q4.md), [Q6](Q6.md) (and so
+[LOCAL_Q1](LOCAL_Q1.md), ..., [LOCAL_AVERAGE](LOCAL_AVERAGE.md) that use their output) compute the sums over the neighbours
+of each atom on the GPU in a single pass, without building the contact matrix (`COORDINATIONNUMBER_SUMSACC`, `Q6_SUMSACC`, ...,
+see `src/NeighborSums.cpp`): only the positions go to the GPU, and only the sums and the forces on the atoms come back. The
+neighbours are found with cells built on the CPU, in any box. The results are those of the CPU version (in double precision).
+This is not used with `MASK`, and for [COORDINATION_MOMENTS](COORDINATION_MOMENTS.md): the contact matrix is then computed
+on the GPU as before. The internal labels of the matrix (e.g. `q6_mat`, `q6_sh`) do not exist in this case.
 
 ### Secondary structure
 
@@ -158,6 +179,7 @@ The next section contains a list of the actions that can take the USEGPU command
 - isdb
    - [SAXS](SAXS.md) and [SANS](SANS.md), see below
 - symfunc
+   - [COORDINATIONNUMBER](COORDINATIONNUMBER.md)
    - [Q1](Q1.md)
    - [Q3](Q3.md)
    - [Q4](Q4.md)
@@ -196,7 +218,7 @@ SAXS ...
 (This example is not highlighted only because the manual is built without the plugin.)
 
 - The GPU is chosen as for the other actions (see above): there is no `DEVICEID` keyword.
-- Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
+- Differently from the other actions, which need `MULTIGPU` for this, with MPI the rows of the Debye sum are split over the ranks, each one using its own
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.
 - With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the

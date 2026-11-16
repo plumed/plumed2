@@ -1,2 +1,2 @@
-#! FIELDS time q6_mean w6_mean cn_mean
- 0.000000   0.2451   0.0658  13.5703
+#! FIELDS time q6_mean w6_mean cn_mean d_mean
+ 0.000000   0.2451   0.0658  13.5703   6.0990

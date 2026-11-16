@@ -31,6 +31,15 @@ class CoordinationNumbers : public ActionShortcut {
 public:
   static void shortcutKeywords( Keywords& keys );
   static void registerKeywords( Keywords& keys );
+/// Reads the atoms (SPECIES, or SPECIESA and SPECIESB), the switching function and MASK of a
+/// shortcut, creates the group lab_grp and returns the input of a contact matrix for them
+/// (without the MASK, which is returned in mask)
+  static std::string contactMatrixInput( const std::string& lab, const std::string& sp_str,
+                                         const std::string& spa_str, const std::string& spb_str,
+                                         ActionShortcut* action, std::string& mask );
+/// True if the sums over the neighbours (coordination numbers, spherical harmonics) can be computed
+/// by the action fusedAction (from the openaccPTM plugin), on the GPU, without the contact matrix
+  static bool fusedOnGPU( bool usegpu, const std::string& mask, const std::string& fusedAction, ActionShortcut* action );
 /// Creates the contact matrix lab_mat; flags (e.g. " USEGPU SERIAL") is added to its input
   static void expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
                             const std::string& spa_str, const std::string& spb_str, ActionShortcut* action,
