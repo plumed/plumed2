@@ -263,7 +263,8 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned cend=std::min(cstart+cellsPerRank,ncells);
     const LinkCellsView view = useShifts ? cells.getView(candidates,do_pbc_) : LinkCellsView{};
     // the largest number of candidates of an atom: the atoms in the most populated cells
-    const std::size_t nsearched=(2*view.nsub+1)*(2*view.nsub+1)*(2*view.nsub+1);
+    const std::size_t side=2*view.nsub+1;
+    const std::size_t nsearched=side*side*side;
     const std::size_t maxcandidates=useShifts ? candidates.getMaximimumCombination(nsearched) : 0;
     #pragma omp parallel num_threads(nt)
     {

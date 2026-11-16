@@ -71,8 +71,12 @@ int main() {
     pbc.setBox(c.box);
     std::vector<Vector> pos(natoms);
     for(auto& p: pos) {
-      // also outside the box
-      const Vector f(1.6*rnd()-0.3,1.6*rnd()-0.3,1.6*rnd()-0.3);
+      // also outside the box. One statement per number: the order in which the
+      // arguments of a call are evaluated is not specified (gcc and clang differ)
+      Vector f;
+      for(unsigned k=0; k<3; ++k) {
+        f[k]=1.6*rnd()-0.3;
+      }
       p=nopbc ? 4.0*f : matmul(transpose(c.box),f);
     }
     std::vector<unsigned> indices(natoms);
