@@ -1,9 +1,11 @@
 LOAD FILE=../../../../plumedOpenACC.so
-# The shortcuts pass USEGPU and SERIAL to the actions they create that run on the GPU. With 3 MPI
-# processes, the GPU actions of q6 and w6 split their tasks between the processes, and those of cn
-# are computed by the first process only (SERIAL). The references are the results of the CPU versions
-q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MM=24 MEAN USEGPU
-w6: LOCAL_AVERAGE SPECIES=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN USEGPU
+# The shortcuts pass USEGPU, SERIAL and MULTIGPU to the actions they create that run on the GPU.
+# With 3 MPI processes the GPU actions of q6 and w6 split their tasks between the processes
+# (MULTIGPU), those of cn are computed by the first process only (SERIAL), as those of d (the
+# default). The references are the results of the CPU versions
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MM=24 MEAN USEGPU MULTIGPU
+w6: LOCAL_AVERAGE SPECIES=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN USEGPU MULTIGPU
 cn: COORDINATIONNUMBER SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN USEGPU SERIAL
-r: RESTRAINT ARG=q6.mean,w6_mean,cn.mean AT=0.3,0.3,10 KAPPA=10,10,0.1
-PRINT ARG=q6.mean,w6_mean,cn.mean FILE=colvar FMT=%8.4f
+d: DISTANCES GROUPA=1-4 GROUPB=5-64 MEAN USEGPU
+r: RESTRAINT ARG=q6.mean,w6_mean,cn.mean,d.mean AT=0.3,0.3,10,5 KAPPA=10,10,0.1,0.1
+PRINT ARG=q6.mean,w6_mean,cn.mean,d.mean FILE=colvar FMT=%8.4f

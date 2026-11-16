@@ -618,7 +618,11 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector",
                            "the norms of the vectors of spherical harmonic coefficients");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  // with USEGPU, the sums of the spherical harmonics are computed without the contact matrix by the openaccPTM plugin
+  keys.addActionNameSuffix("_SUMSACC");
+  keys.addActionNameSuffix("_DENOM_SUMSACC");
   keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
@@ -634,10 +638,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  bool serial;
+  bool serial, multigpu;
   parseFlag("SERIAL",serial);
+  parseFlag("MULTIGPU",multigpu);
   // passed to the actions that can run on the GPU
-  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"");
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"") + (multigpu?" MULTIGPU":"");
 
   std::string sp_str;
   parse("SPECIES",sp_str);
@@ -645,52 +650,54 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   parse("SPECIESA",specA);
   std::string specB;
   parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( true,
-                                     getShortcutLabel(),
-                                     sp_str,
-                                     specA,
-                                     specB,
-                                     this,
-                                     doUSEGPU );
   int l;
-  std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
-                          + getShortcutLabel() + "_mat.x,"
-                          + getShortcutLabel() + "_mat.y,"
-                          + getShortcutLabel() + "_mat.z,"
-                          + getShortcutLabel() + "_mat.w";
-
   if( getName()=="Q1" ) {
-    sph_input +=" L=1";
     l=1;
   } else if( getName()=="Q3" ) {
-    sph_input += " L=3";
     l=3;
   } else if( getName()=="Q4" ) {
-    sph_input += " L=4";
     l=4;
   } else if( getName()=="Q6" ) {
-    sph_input += " L=6";
     l=6;
   } else {
     plumed_merror("invalid input");
   }
-  readInputLine( sph_input + doUSEGPU);
+  std::string lstr;
+  Tools::convert( l, lstr );
+  std::string mask;
+  const std::string matinp = CoordinationNumbers::contactMatrixInput( getShortcutLabel(), sp_str, specA, specB, this, mask );
+  // the coordination numbers, that divide the sums of the spherical harmonics
+  const std::string denomLab = getShortcutLabel() + "_denom";
+  if( CoordinationNumbers::fusedOnGPU( usegpu, mask, getName() + "_SUMSACC", this ) ) {
+    // the sums of the spherical harmonics over the neighbours (and the coordination numbers),
+    // computed on the GPU without the contact matrix
+    readInputLine( getShortcutLabel() + "_sp: " + getName() + "_SUMSACC" + matinp + doUSEGPU );
+    readInputLine( denomLab + ": " + getName() + "_DENOM_SUMSACC" + matinp + doUSEGPU );
+  } else {
+    readInputLine( getShortcutLabel() + "_mat: CONTACT_MATRIX" + matinp + " COMPONENTS"
+                   + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
+    readInputLine( getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
+                   + getShortcutLabel() + "_mat.x,"
+                   + getShortcutLabel() + "_mat.y,"
+                   + getShortcutLabel() + "_mat.z,"
+                   + getShortcutLabel() + "_mat.w L=" + lstr + doUSEGPU );
 
-  // Input for denominator (coord)
-  ActionWithValue* av = plumed.getActionSet()
-                        .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
-  plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-  std::string size;
-  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
-  readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
-                 "ARG=" + getShortcutLabel() + "_mat.w,"
-                 + getShortcutLabel() + "_denom_ones"
-                 + doUSEGPU);
-  readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
-                 "ARG=" + getShortcutLabel() + "_sh.*,"
-                 + getShortcutLabel() + "_denom_ones"
-                 + doUSEGPU);
+    // Input for denominator (coord)
+    ActionWithValue* av = plumed.getActionSet()
+                          .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
+    plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
+    std::string size;
+    Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+    readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
+    readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
+                   "ARG=" + getShortcutLabel() + "_mat.w,"
+                   + getShortcutLabel() + "_denom_ones"
+                   + doUSEGPU);
+    readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
+                   "ARG=" + getShortcutLabel() + "_sh.*,"
+                   + getShortcutLabel() + "_denom_ones"
+                   + doUSEGPU);
+  }
 
   // If we are doing VMEAN determine sum of vector components
   std::string snum;
@@ -704,7 +711,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
       //realImg is "r" or "i"
       return getShortcutLabel() + "_" +realImg + "mn-" + numstr + ": CUSTOM "
       "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + numstr + ","
-      + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO";
+      + denomLab + " FUNC=x/y PERIODIC=NO";
     };
     // Divide all components by coordination numbers
     for(int i=-l; i<=l; ++i) {
@@ -737,7 +744,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "ms",
-                           doUSEGPU );
+                           "" ); // the norm of a vector of scalars: on the CPU
   }
   if( do_vsum ) {
     auto makeString=[&](const std::string& numstr,
@@ -759,7 +766,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "mz",
-                           doUSEGPU );
+                           "" ); // the norm of a vector of scalars: on the CPU
   }
 
   // Now calculate the total length of the vector
@@ -772,7 +779,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
-                 + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+                 + denomLab + " FUNC=x/y PERIODIC=NO");
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
       getShortcutLabel(), "", this );
 }
