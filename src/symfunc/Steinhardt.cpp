@@ -618,7 +618,10 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector",
                            "the norms of the vectors of spherical harmonic coefficients");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
-  // with USEGPU, the sums of the spherical harmonics are computed without the contact matrix by the openaccPTM plugin
+  // without MASK, the sums of the spherical harmonics are computed without the contact matrix
+  // (on the GPU by the openaccPTM plugin)
+  keys.addActionNameSuffix("_SUMS");
+  keys.addActionNameSuffix("_DENOM_SUMS");
   keys.addActionNameSuffix("_SUMSACC");
   keys.addActionNameSuffix("_DENOM_SUMSACC");
   keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
@@ -668,28 +671,32 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   const std::string matinp = CoordinationNumbers::contactMatrixInput( getShortcutLabel(), sp_str, specA, specB, this, mask );
   // the coordination numbers, that divide the sums of the spherical harmonics
   const std::string denomLab = getShortcutLabel() + "_denom";
-  if( CoordinationNumbers::fusedOnGPU( usegpu, mask, getName() + "_SUMSACC", this ) ) {
-    // the sums of the spherical harmonics over the neighbours (and the coordination numbers),
-    // computed on the GPU without the contact matrix
-    readInputLine( getShortcutLabel() + "_sp: " + getName() + "_SUMSACC" + matinp + doUSEGPU );
-    readInputLine( denomLab + ": " + getName() + "_DENOM_SUMSACC" + matinp + doUSEGPU );
+  // the sums without the contact matrix, if possible
+  const std::string fused = CoordinationNumbers::fusedAction( usegpu, mask, getName(), this );
+  // The contact matrix, the spherical harmonics and the vector of ones are created also with
+  // the fused action, as inputs can use their labels: they are computed only if something uses them
+  readInputLine( getShortcutLabel() + "_mat: CONTACT_MATRIX" + matinp + " COMPONENTS"
+                 + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
+  readInputLine( getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
+                 + getShortcutLabel() + "_mat.x,"
+                 + getShortcutLabel() + "_mat.y,"
+                 + getShortcutLabel() + "_mat.z,"
+                 + getShortcutLabel() + "_mat.w L=" + lstr + doUSEGPU );
+  ActionWithValue* av = plumed.getActionSet()
+                        .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
+  plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
+  std::string size;
+  Tools::convert( (av->copyOutput(0))->getShape()[1], size );
+  readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
+  if( fused.length()>0 ) {
+    // the sums of the spherical harmonics over the neighbours, and the coordination numbers
+    // (on the CPU only SERIAL applies)
+    const std::string flags = usegpu ? doUSEGPU : std::string(serial ? " SERIAL" : "");
+    const std::string denom = fused.substr( 0, fused.find("_SUMS") ) + "_DENOM" + fused.substr( fused.find("_SUMS") );
+    readInputLine( getShortcutLabel() + "_sp: " + fused + matinp + flags );
+    readInputLine( denomLab + ": " + denom + matinp + flags );
   } else {
-    readInputLine( getShortcutLabel() + "_mat: CONTACT_MATRIX" + matinp + " COMPONENTS"
-                   + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
-    readInputLine( getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
-                   + getShortcutLabel() + "_mat.x,"
-                   + getShortcutLabel() + "_mat.y,"
-                   + getShortcutLabel() + "_mat.z,"
-                   + getShortcutLabel() + "_mat.w L=" + lstr + doUSEGPU );
-
-    // Input for denominator (coord)
-    ActionWithValue* av = plumed.getActionSet()
-                          .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
-    plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
-    std::string size;
-    Tools::convert( (av->copyOutput(0))->getShape()[1], size );
-    readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
-    readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
+    readInputLine( denomLab + ": MATRIX_VECTOR_PRODUCT "
                    "ARG=" + getShortcutLabel() + "_mat.w,"
                    + getShortcutLabel() + "_denom_ones"
                    + doUSEGPU);

@@ -303,8 +303,15 @@ std::string CoordinationNumbers::contactMatrixInput( const std::string& lab, con
   return matinp;
 }
 
-bool CoordinationNumbers::fusedOnGPU( const bool usegpu, const std::string& mask, const std::string& fusedAction, ActionShortcut* action ) {
-  return usegpu && mask.length()==0 && action->plumed.checkAction( fusedAction );
+std::string CoordinationNumbers::fusedAction( const bool usegpu, const std::string& mask, const std::string& base, ActionShortcut* action ) {
+  if( mask.length()>0 ) {
+    return "";
+  }
+  if( usegpu ) {
+    const std::string acc = base + "_SUMSACC";
+    return action->plumed.checkAction( acc ) ? acc : "";
+  }
+  return base + "_SUMS";
 }
 
 void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
@@ -338,7 +345,8 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.needsAction("ONES");
   keys.needsAction("MOMENTS");
   keys.setValueDescription("vector","the coordination numbers of the specified atoms");
-  // with USEGPU, computed without the contact matrix by the openaccPTM plugin
+  // without MASK, computed without the contact matrix (on the GPU by the openaccPTM plugin)
+  keys.addActionNameSuffix("_SUMS");
   keys.addActionNameSuffix("_SUMSACC");
 }
 
@@ -367,24 +375,28 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   const bool comp = getName()=="COORDINATION_MOMENTS";
   std::string mask;
   const std::string matinp = contactMatrixInput( getShortcutLabel(), sp_str, specA, specB, this, mask );
-  if( !comp && fusedOnGPU( usegpu, mask, "COORDINATIONNUMBER_SUMSACC", this ) ) {
-    // the coordination numbers computed on the GPU without the contact matrix
-    readInputLine( getShortcutLabel() + ": COORDINATIONNUMBER_SUMSACC" + matinp + doUSEGPU );
+  // the coordination numbers without the contact matrix, if possible
+  const std::string fused = comp ? "" : fusedAction( usegpu, mask, "COORDINATIONNUMBER", this );
+  // The contact matrix and the vector of ones are created also with the fused action, as inputs
+  // can use their labels: they are computed only if something uses them
+  std::string matlab = getShortcutLabel() + "_mat";
+  readInputLine( matlab + ": CONTACT_MATRIX" + matinp + (comp ? " COMPONENTS" : "") + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
+  ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
+  if( !mb ) {
+    error("could not find action with name " + matlab );
+  }
+  Value*  arg=mb->copyOutput(0);
+  if( arg->getRank()!=2 || arg->hasDerivatives() ) {
+    error("the input to this action should be a matrix or scalar");
+  }
+  // Create vector of ones to multiply input matrix by
+  std::string nones;
+  Tools::convert( arg->getShape()[1], nones );
+  readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones );
+  if( fused.length()>0 ) {
+    // on the CPU only SERIAL applies
+    readInputLine( getShortcutLabel() + ": " + fused + matinp + (usegpu ? doUSEGPU : std::string(serial ? " SERIAL" : "")) );
   } else {
-    std::string matlab = getShortcutLabel() + "_mat";
-    readInputLine( matlab + ": CONTACT_MATRIX" + matinp + (comp ? " COMPONENTS" : "") + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
-    ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
-    if( !mb ) {
-      error("could not find action with name " + matlab );
-    }
-    Value*  arg=mb->copyOutput(0);
-    if( arg->getRank()!=2 || arg->hasDerivatives() ) {
-      error("the input to this action should be a matrix or scalar");
-    }
-    // Create vector of ones to multiply input matrix by
-    std::string nones;
-    Tools::convert( arg->getShape()[1], nones );
-    readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones );
     if( comp ) {
       // Calculate the lengths of the vectors
       std::string r_power;
