@@ -423,6 +423,10 @@ protected:
   virtual void computeForces( std::vector<double>& outforces );
   /// the cells and the geometry of this step
   void buildCells();
+  /// the OpenMP threads for the rows of this process (at least 8 rows per thread)
+  unsigned numberOfThreads() const {
+    return std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), mycount/8 ) );
+  }
 private:
   void setMyRows();
 public:
@@ -589,9 +593,8 @@ void NeighborSums<PF>::calculate() {
 template <class PF>
 void NeighborSums<PF>::computeSums() {
   const unsigned ncomp = pairs.ncomponents;
-  const unsigned nt = std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), mycount/8 ) );
   const std::size_t first=myfirst, count=mycount;
-  #pragma omp parallel for num_threads(nt) schedule(static)
+  #pragma omp parallel for num_threads(numberOfThreads()) schedule(static)
   for(std::size_t rr=0; rr<count; ++rr) {
     const std::size_t r = first+rr;
     neighborSumsRow( pairs, geometry, r, sums.data()+r*ncomp );
@@ -611,7 +614,7 @@ struct NeighborSumsThreadColumns {
 template <class PF>
 void NeighborSums<PF>::computeForces( std::vector<double>& outforces ) {
   const std::size_t natoms = getNumberOfAtoms();
-  const unsigned nt = std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), mycount/8 ) );
+  const unsigned nt = numberOfThreads();
   threadVirials.assign( 9*nt, 0.0 );
   if( !symmetric ) {
     threadForces.resize( nt );
