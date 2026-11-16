@@ -90,6 +90,8 @@ see `src/NeighborSums.cpp`): only the positions go to the GPU, and only the sums
 neighbours are found with cells built on the CPU, in any box. The results are those of the CPU version (in double precision).
 This is not used with `MASK`, and for [COORDINATION_MOMENTS](COORDINATION_MOMENTS.md): the contact matrix is then computed
 on the GPU as before. The internal labels of the matrix (e.g. `q6_mat`, `q6_sh`) do not exist in this case.
+For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums ([COMBINE](COMBINE.md)) is always computed on the CPU, which is faster
+than moving the $2(2l+1)$ vectors to the GPU and back.
 
 ### Secondary structure
 
