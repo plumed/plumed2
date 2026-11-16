@@ -12,3 +12,5 @@ nopbc nsub=2 wrap=1 used=2 pairs=1740 missing=0 extra=0 duplicates=0 wrong_vecto
 nopbc nsub=2 wrap=0 used=2 pairs=1740 missing=0 extra=0 duplicates=0 wrong_vectors=0 fewer_candidates=1
 small nsub=1 wrap=1 the cells do not fix the images
 small nsub=2 wrap=1 used=2 pairs=19470 missing=0 extra=0 duplicates=0 wrong_vectors=0 fewer_candidates=1
+nopbc-outside nsub=1 wrap=1 used=1 queries_with_neighbors=2950 pairs=22400 missing=0 extra=0 duplicates=0 wrong_vectors=0
+nopbc-outside nsub=2 wrap=1 used=2 queries_with_neighbors=2889 pairs=21550 missing=0 extra=0 duplicates=0 wrong_vectors=0

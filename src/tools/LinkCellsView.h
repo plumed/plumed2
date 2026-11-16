@@ -112,6 +112,11 @@ struct LinkCellsView {
 /// view.lists and view.positions, d the vector from pos to the image of the atom that is
 /// in those cells: the minimum image if the atom is within the cutoff. The cutoff is not
 /// tested, and the atom at pos (if it is in the cells) is visited too. visit is a functor.
+/// Without periodic boundary conditions pos can be outside the cells: it is then moved to
+/// the other side of the box, and its candidates are found through the cells on the other
+/// side if wrapCells is true. This is correct within half a cutoff from the cells, that is
+/// for any position within the cutoff from an atom (the cells extend at least half a
+/// cutoff beyond the atoms).
 /// No `acc routine` pragma: as the templated kernels of the actions, the device versions
 /// of these templates are generated where they are called from a compute region
 template<typename Visitor>

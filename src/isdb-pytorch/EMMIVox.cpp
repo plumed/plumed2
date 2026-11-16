@@ -32,6 +32,7 @@
 #include "core/ActionSet.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
+#include "tools/LinkCells.h"
 #include <string>
 #include <cmath>
 #include <map>
@@ -1482,6 +1483,22 @@ double EMMIVOX::get_overlap(const Vector &d_m, const Vector &m_m,
   return ov_tot;
 }
 
+namespace {
+/// The visitor of EMMIVOX::update_neighbor_sphere: the atoms within twice their
+/// cutoff from a voxel
+struct EMMIVoxClose {
+  std::vector<unsigned>& close;
+  // the sphere radius 2*cut_ of the atoms, in the order of the cells
+  const double* range;
+  const unsigned* lists;
+  void operator()(const std::size_t j, const Vector& d) {
+    if(d.modulo()<=range[j]) {
+      close.push_back(lists[j]);
+    }
+  }
+};
+}
+
 void EMMIVOX::update_neighbor_sphere() {
   // number of atoms
   const unsigned natoms = Model_type_.size();
@@ -1493,45 +1510,29 @@ void EMMIVOX::update_neighbor_sphere() {
     return;
   }
 
-  // the atoms are binned in cells larger than the largest sphere radius (2*cut_),
-  // so that only the 27 cells around a voxel have to be searched
+  // the atoms are binned in cells as large as the largest sphere radius (2*cut_)
   const double rc = 2.0 * (*std::max_element(cut_.begin(), cut_.end()));
+  std::vector<unsigned> indices(natoms);
+  std::iota(indices.begin(), indices.end(), 0);
+  LinkCells cells;
+  cells.setCutoff(rc);
+  cells.setSubdivision(LinkCells::maxSubdivision);
+  cells.setLimitCellsByAtoms(true);
+  cells.setupCells(refpos_);
+  const auto collection = cells.getCollection(refpos_, indices, true);
+  // the voxels just outside the cells are searched through the cells on the
+  // other side (see forEachCandidate): wrapCells must be true
+  const LinkCellsView view = cells.getView(collection, true);
+  std::vector<double> range(natoms);
+  for(unsigned j=0; j<natoms; ++j) {
+    range[j] = 2.0*cut_[view.lists[j]];
+  }
+  // the voxels farther than rc from the box around the atoms have no neighbours
   Vector lo = refpos_[0], hi = refpos_[0];
   for(unsigned im=1; im<natoms; ++im) {
     for(unsigned k=0; k<3; ++k) {
       lo[k] = std::min(lo[k], refpos_[im][k]);
       hi[k] = std::max(hi[k], refpos_[im][k]);
-    }
-  }
-  int ncell[3];
-  double csize[3];
-  for(unsigned k=0; k<3; ++k) {
-    // at most 200 cells per direction
-    const double len = hi[k]-lo[k];
-    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
-    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
-  }
-  auto cellIndex=[&](const Vector & x, const unsigned k) {
-    return static_cast<int>(std::floor((x[k]-lo[k])/csize[k]));
-  };
-  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
-  // atoms of each cell, in ascending order
-  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(natoms), atom_cell(natoms);
-  for(unsigned im=0; im<natoms; ++im) {
-    int c[3];
-    for(unsigned k=0; k<3; ++k) {
-      c[k] = std::min(ncell[k]-1, std::max(0, cellIndex(refpos_[im],k)));
-    }
-    atom_cell[im] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
-    cell_start[atom_cell[im]+1]++;
-  }
-  for(unsigned ic=0; ic<ncells; ++ic) {
-    cell_start[ic+1] += cell_start[ic];
-  }
-  {
-    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
-    for(unsigned im=0; im<natoms; ++im) {
-      cell_atoms[fill[atom_cell[im]]++] = im;
     }
   }
 
@@ -1547,12 +1548,9 @@ void EMMIVOX::update_neighbor_sphere() {
     for(unsigned id=0; id<ovdd_.size(); ++id) {
       // grid point
       const Vector d_m = Map_m_[id];
-      int c[3];
       bool outside = false;
       for(unsigned k=0; k<3; ++k) {
-        c[k] = cellIndex(d_m,k);
-        // more than one cell away from the atoms
-        if(c[k]<-1 || c[k]>ncell[k]) {
+        if(d_m[k]<lo[k]-rc || d_m[k]>hi[k]+rc) {
           outside = true;
         }
       }
@@ -1560,22 +1558,8 @@ void EMMIVOX::update_neighbor_sphere() {
         continue;
       }
       close.clear();
-      for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
-        for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
-          for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
-            const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
-            for(unsigned j=cell_start[ic]; j<cell_start[ic+1]; ++j) {
-              const unsigned im = cell_atoms[j];
-              // calculate distance
-              const double dist = delta(getPosition(im), d_m).modulo();
-              // add to local list
-              if(dist<=2.0*cut_[im]) {
-                close.push_back(im);
-              }
-            }
-          }
-        }
-      }
+      EMMIVoxClose collect{close, range.data(), view.lists};
+      forEachCandidate(view, d_m, collect);
       std::sort(close.begin(), close.end());
       for(const auto im : close) {
         ns_l.push_back(std::make_pair(id,im));
