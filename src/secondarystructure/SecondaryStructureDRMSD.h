@@ -125,8 +125,9 @@ public:
 
     if( noderiv ) {
       for (unsigned i=0; i<targetSize; ++i) {
-        const auto& [reference,k,j] = target[i];
-        const double diff = delta( pos[k], pos[j] ).modulo() - reference;
+        // no structured bindings here: CodeQL reports their hidden variable as unused
+        const auto& t = target[i];
+        const double diff = delta( pos[t.i], pos[t.j] ).modulo() - t.distance;
         drmsd += diff*diff;
       }
       output.values[n] = sqrt(inpairs*drmsd);
@@ -140,14 +141,14 @@ public:
       deriv[i].zero();
     }
     for (unsigned i=0; i<targetSize; ++i) {
-      const auto& [reference,k,j] = target[i];
-      const VectorT<precision> distance=delta( pos[k], pos[j] );
+      const auto& t = target[i];
+      const VectorT<precision> distance=delta( pos[t.i], pos[t.j] );
       const double len = distance.modulo();
-      const double diff = len - reference;
+      const double diff = len - t.distance;
       drmsd += diff*diff;
       const VectorT<precision> dd=distance*(diff / len);
-      deriv[k] -= dd;
-      deriv[j] += dd;
+      deriv[t.i] -= dd;
+      deriv[t.j] += dd;
     }
     output.values[n] = sqrt(inpairs*drmsd);
 
