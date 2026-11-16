@@ -1,0 +1,6 @@
+type=driver
+plumed_modules="symfunc adjmat"
+arg="--plumed plumed.dat --ixyz tric300.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+# as rt-neighbor-sums, with the rows split between 3 processes
+mpiprocs=3
+extra_files="../rt-neighbor-sums/tric300.xyz"
