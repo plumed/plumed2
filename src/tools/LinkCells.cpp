@@ -41,6 +41,10 @@ void LinkCells::setSubdivision( const unsigned n ) {
   requestedSubdivision=n;
 }
 
+void LinkCells::setLimitCellsByAtoms( bool limit ) {
+  limitCellsByAtoms=limit;
+}
+
 void LinkCells::setCutoff( const double lcut ) {
   cutoffwasset=true;
   link_cutoff=lcut;
@@ -74,7 +78,9 @@ void LinkCells::setupCells(View<const Vector> pos) {
     }
     origin[k] = ( minp[k] + maxp[k] ) / 2;
   }
+  cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
   createCells(box);
+  cellLimitAtoms = 0;
 }
 
 void LinkCells::setupCells(const Pbc& pbc ) {
@@ -97,7 +103,9 @@ void LinkCells::setupCells(View<const Vector> pos,
     setupCells(pos);
   } else {
     // Setup the pbc object by copying it from action if the Pbc were set
+    cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
     setupCells(pbc);
+    cellLimitAtoms = 0;
   }
 }
 
@@ -125,7 +133,7 @@ void LinkCells::createCells(const PLMD::Tensor& box) {
     // Limit the total number of cells: with a small cutoff in a large box the number of
     // cells (and the memory and the time spent looping over empty cells) would grow
     // with the volume. Larger cells are still correct, they only contain more atoms.
-    // In createNeighborList they are also limited by the number of atoms (see maxCellsPerAtom)
+    // With setLimitCellsByAtoms they are also limited by the number of atoms (see maxCellsPerAtom)
     double maxcells=maxNumberOfCells;
     if( cellLimitAtoms>0 ) {
       maxcells=std::min(maxcells,std::max(minCellsForAtomLimit,maxCellsPerAtom*cellLimitAtoms));
@@ -554,9 +562,10 @@ void LinkCells::createNeighborList( unsigned nat,
   // with the distance test smaller cells give fewer candidates beyond the cutoff
   requestedSubdivision = useCutoff ? maxSubdivision : 1;
   // the lists are built at every step: no more cells than about twice the atoms
-  cellLimitAtoms = neigh_pos.size();
+  const bool limitWasSet = limitCellsByAtoms;
+  limitCellsByAtoms = true;
   buildCellLists( neigh_pos, neigh_ind, pbc );
-  cellLimitAtoms = 0;
+  limitCellsByAtoms = limitWasSet;
   // the largest number of atoms in the cells searched for one atom
   unsigned maxcandidates=innerCollection.getMaximimumCombination((2*nsub+1)*(2*nsub+1)*(2*nsub+1));
   if( maxcandidates>innerCollection.lcell_lists.size() ) {
