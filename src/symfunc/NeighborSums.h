@@ -407,6 +407,7 @@ protected:
   std::size_t myfirst=0, mycount=0;
   /// the forces on the columns of each thread, and their virials (without GROUP)
   std::vector<std::vector<double> > threadForces;
+  std::vector<char> threadUsed;
   std::vector<double> threadVirials;
   /// split the rows between the MPI processes
   virtual bool splitRows() const {
@@ -618,16 +619,21 @@ void NeighborSums<PF>::computeForces( std::vector<double>& outforces ) {
   threadVirials.assign( 9*nt, 0.0 );
   if( !symmetric ) {
     threadForces.resize( nt );
+    // the team can have fewer threads than nt (e.g. without OpenMP, where getNumThreads() still
+    // returns PLUMED_NUM_THREADS): only the buffers of the threads that ran are summed
+    threadUsed.assign( nt, 0 );
   }
   const std::size_t first=myfirst, count=mycount;
   const double* G = forcesOnSums.data();
   #pragma omp parallel num_threads(nt)
   {
     const unsigned t = OpenMP::getThreadNum();
+    plumed_dbg_assert( t<nt );
     double virial[9]= {0,0,0,0,0,0,0,0,0};
     NeighborSumsThreadColumns cols{nullptr};
     if( !symmetric ) {
       threadForces[t].assign( 3*ncols, 0.0 );
+      threadUsed[t] = 1;
       cols.forces = threadForces[t].data();
     }
     #pragma omp for schedule(static)
@@ -645,7 +651,9 @@ void NeighborSums<PF>::computeForces( std::vector<double>& outforces ) {
       for(std::size_t c=0; c<3*ncols; ++c) {
         double s=0.0;
         for(unsigned u=0; u<nt; ++u) {
-          s += threadForces[u][c];
+          if( threadUsed[u] ) {
+            s += threadForces[u][c];
+          }
         }
         outforces[3*colstart+c] += s;
       }
