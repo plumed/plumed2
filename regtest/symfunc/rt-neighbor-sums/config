@@ -1,0 +1,6 @@
+type=driver
+plumed_modules="symfunc adjmat"
+arg="--plumed plumed.dat --ixyz tric300.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+# the sums over the neighbours without the contact matrix (triclinic box, cells), 2 threads:
+# the references were computed with the contact matrix written out (chain.dat, not run by the test)
+export PLUMED_NUM_THREADS=2

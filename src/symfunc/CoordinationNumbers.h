@@ -37,9 +37,11 @@ public:
   static std::string contactMatrixInput( const std::string& lab, const std::string& sp_str,
                                          const std::string& spa_str, const std::string& spb_str,
                                          ActionShortcut* action, std::string& mask );
-/// True if the sums over the neighbours (coordination numbers, spherical harmonics) can be computed
-/// by the action fusedAction (from the openaccPTM plugin), on the GPU, without the contact matrix
-  static bool fusedOnGPU( bool usegpu, const std::string& mask, const std::string& fusedAction, ActionShortcut* action );
+/// The action that computes the sums over the neighbours (coordination numbers, spherical
+/// harmonics) without the contact matrix (see NeighborSums.h): base+"_SUMS" on the CPU, or
+/// base+"_SUMSACC" with USEGPU if the openaccPTM plugin is loaded. Empty if the contact matrix is
+/// needed: with a MASK, or with USEGPU without the plugin
+  static std::string fusedAction( bool usegpu, const std::string& mask, const std::string& base, ActionShortcut* action );
 /// Creates the contact matrix lab_mat; flags (e.g. " USEGPU SERIAL") is added to its input
   static void expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
                             const std::string& spa_str, const std::string& spb_str, ActionShortcut* action,
