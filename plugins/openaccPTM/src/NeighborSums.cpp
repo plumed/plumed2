@@ -92,6 +92,7 @@ struct ContactPairs {
   }
   /// The values of the pair with vector d (and d2=|d|^2) and their derivatives with
   /// respect to d. Returns false if the pair does not contribute
+#pragma acc routine seq
   bool pair( const Vector& d, const double d2, const bool noderiv, double* f, Vector* df ) const {
     double dfunc;
     const double w = switchingFunction.calculateSqr( d2, dfunc );
@@ -158,6 +159,7 @@ struct SphericalHarmonicPairs {
     }
     return names;
   }
+#pragma acc routine seq
   bool pair( const Vector& d, const double d2, const bool noderiv, double* f, Vector* df ) const {
     double dfunc;
     const double w = switchingFunction.calculateSqr( d2, dfunc );
@@ -297,34 +299,6 @@ struct NeighborSumsWorkspace {
   OpenACC::memoryManager<double> forcesOnSums;
   OpenACC::memoryManager<double> forces;
 };
-
-/// The loop over the neighbours of row r, calling body(j,d,d2) for each column j (index of positions)
-/// within dmax, with d the minimum image of r_j-r_i. Used inside the kernels
-#define NEIGHBOR_SUMS_LOOP(body) \
-  { \
-    const Vector xi( positions[3*i], positions[3*i+1], positions[3*i+2] ); \
-    const int* ci = rowCell + 3*r; \
-    for(int ox=0; ox<noff0; ++ox) { \
-      const int cx = (ci[0]+offStart0+ox+ncell0)%ncell0; \
-      for(int oy=0; oy<noff1; ++oy) { \
-        const int cy = (ci[1]+offStart1+oy+ncell1)%ncell1; \
-        for(int oz=0; oz<noff2; ++oz) { \
-          const int cz = (ci[2]+offStart2+oz+ncell2)%ncell2; \
-          const unsigned cell = (cx*ncell1+cy)*ncell2+cz; \
-          for(unsigned p=cellStart[cell]; p<cellStart[cell+1]; ++p) { \
-            const unsigned j = cellAtoms[p]; \
-            const Vector xj( positions[3*j], positions[3*j+1], positions[3*j+2] ); \
-            const Vector d = pbc->distance( xi, xj ); \
-            const double d2 = d.modulo2(); \
-            if( d2>dmax2 || d2<epsilon ) { \
-              continue; \
-            } \
-            body \
-          } \
-        } \
-      } \
-    } \
-  }
 
 template <class PF>
 class NeighborSums : public ActionWithVector {
@@ -502,35 +476,61 @@ void NeighborSums<PF>::forwardKernel( const bool noderiv ) {
   const int noff0=cells.noff[0], noff1=cells.noff[1], noff2=cells.noff[2];
   const int offStart0=cells.offStart[0], offStart1=cells.offStart[1], offStart2=cells.offStart[2];
   const double dmax2=this->dmax2;
+  const double eps=epsilon;
   const std::size_t first=myfirst, count=mycount, rstart=rowstart;
-  auto pairs_acc = OpenACC::fromToDataHelper( pairs );
-  const PF& data = pairs;
+  // a local copy on the device for the kernel (as the task manager does with the action data)
+  PF data = pairs;
+  auto data_acc = OpenACC::fromToDataHelper( data );
 #pragma acc parallel loop gang vector async(accQueue) present(data) \
                     firstprivate(ncomp, ncell0, ncell1, ncell2, noff0, noff1, noff2, \
-                                 offStart0, offStart1, offStart2, dmax2, first, count, rstart, noderiv) \
+                                 offStart0, offStart1, offStart2, dmax2, eps, first, count, rstart, noderiv) \
                        deviceptr(positions, cellStart, cellAtoms, rowCell, pbc, out) \
                          default(none)
   for(std::size_t rr=0; rr<count; ++rr) {
     const std::size_t r = first+rr;
     const std::size_t i = rstart+r;
-    double acc[PF::maxComponents];
+    double sum[PF::maxComponents];
     double f[PF::maxComponents];
     Vector df[PF::maxComponents];
 #pragma acc loop seq
     for(unsigned k=0; k<ncomp; ++k) {
-      acc[k]=0.0;
+      sum[k]=0.0;
     }
-    NEIGHBOR_SUMS_LOOP(
-    if( data.pair( d, d2, true, f, df ) ) {
+    const Vector xi( positions[3*i], positions[3*i+1], positions[3*i+2] );
+    const int* ci = rowCell + 3*r;
+    // the cells around the one of i, each visited once (see NeighborCells)
 #pragma acc loop seq
-    for(unsigned k=0; k<ncomp; ++k) {
-        acc[k] += f[k];
+    for(int ox=0; ox<noff0; ++ox) {
+      const int cx = (ci[0]+offStart0+ox+ncell0)%ncell0;
+#pragma acc loop seq
+      for(int oy=0; oy<noff1; ++oy) {
+        const int cy = (ci[1]+offStart1+oy+ncell1)%ncell1;
+#pragma acc loop seq
+        for(int oz=0; oz<noff2; ++oz) {
+          const int cz = (ci[2]+offStart2+oz+ncell2)%ncell2;
+          const unsigned cell = (cx*ncell1+cy)*ncell2+cz;
+#pragma acc loop seq
+          for(unsigned p=cellStart[cell]; p<cellStart[cell+1]; ++p) {
+            const unsigned j = cellAtoms[p];
+            const Vector xj( positions[3*j], positions[3*j+1], positions[3*j+2] );
+            const Vector d = pbc->distance( xi, xj );
+            const double d2 = d.modulo2();
+            if( d2>dmax2 || d2<eps ) {
+              continue;
+            }
+            if( data.pair( d, d2, true, f, df ) ) {
+#pragma acc loop seq
+              for(unsigned k=0; k<ncomp; ++k) {
+                sum[k] += f[k];
+              }
+            }
+          }
+        }
       }
     }
-    )
 #pragma acc loop seq
     for(unsigned k=0; k<ncomp; ++k) {
-      out[rr*ncomp+k] = acc[k];
+      out[rr*ncomp+k] = sum[k];
     }
   }
   sums.assign( nrows*ncomp, 0.0 );
@@ -585,13 +585,15 @@ void NeighborSums<PF>::backwardKernel( std::vector<double>& outforces ) {
   const int noff0=cells.noff[0], noff1=cells.noff[1], noff2=cells.noff[2];
   const int offStart0=cells.offStart[0], offStart1=cells.offStart[1], offStart2=cells.offStart[2];
   const double dmax2=this->dmax2;
+  const double eps=epsilon;
   const std::size_t first=myfirst, count=mycount, rstart=rowstart;
   double v00=0, v01=0, v02=0, v10=0, v11=0, v12=0, v20=0, v21=0, v22=0;
-  auto pairs_acc = OpenACC::fromToDataHelper( pairs );
-  const PF& data = pairs;
+  // a local copy on the device for the kernel (as the task manager does with the action data)
+  PF data = pairs;
+  auto data_acc = OpenACC::fromToDataHelper( data );
 #pragma acc parallel loop gang vector async(accQueue) present(data) \
                     firstprivate(ncomp, ncell0, ncell1, ncell2, noff0, noff1, noff2, \
-                                 offStart0, offStart1, offStart2, dmax2, first, count, rstart) \
+                                 offStart0, offStart1, offStart2, dmax2, eps, first, count, rstart) \
                        deviceptr(positions, cellStart, cellAtoms, rowCell, pbc, fin, forces) \
                        reduction(+:v00,v01,v02,v10,v11,v12,v20,v21,v22) \
                          default(none)
@@ -609,33 +611,59 @@ void NeighborSums<PF>::backwardKernel( std::vector<double>& outforces ) {
     }
     if( any ) {
       double fi0=0, fi1=0, fi2=0;
-      NEIGHBOR_SUMS_LOOP(
-      if( data.pair( d, d2, false, f, df ) ) {
-      Vector g( 0.0, 0.0, 0.0 );
+      const Vector xi( positions[3*i], positions[3*i+1], positions[3*i+2] );
+      const int* ci = rowCell + 3*r;
+      // the cells around the one of i, each visited once (see NeighborCells)
 #pragma acc loop seq
-        for(unsigned k=0; k<ncomp; ++k) {
-          g += G[k]*df[k];
+      for(int ox=0; ox<noff0; ++ox) {
+        const int cx = (ci[0]+offStart0+ox+ncell0)%ncell0;
+#pragma acc loop seq
+        for(int oy=0; oy<noff1; ++oy) {
+          const int cy = (ci[1]+offStart1+oy+ncell1)%ncell1;
+#pragma acc loop seq
+          for(int oz=0; oz<noff2; ++oz) {
+            const int cz = (ci[2]+offStart2+oz+ncell2)%ncell2;
+            const unsigned cell = (cx*ncell1+cy)*ncell2+cz;
+#pragma acc loop seq
+            for(unsigned p=cellStart[cell]; p<cellStart[cell+1]; ++p) {
+              const unsigned j = cellAtoms[p];
+              const Vector xj( positions[3*j], positions[3*j+1], positions[3*j+2] );
+              const Vector d = pbc->distance( xi, xj );
+              const double d2 = d.modulo2();
+              if( d2>dmax2 || d2<eps ) {
+                continue;
+              }
+              if( data.pair( d, d2, false, f, df ) ) {
+                double g0=0.0, g1=0.0, g2=0.0;
+#pragma acc loop seq
+                for(unsigned k=0; k<ncomp; ++k) {
+                  g0 += G[k]*df[k][0];
+                  g1 += G[k]*df[k][1];
+                  g2 += G[k]*df[k][2];
+                }
+#pragma acc atomic update
+                forces[3*j] += g0;
+#pragma acc atomic update
+                forces[3*j+1] += g1;
+#pragma acc atomic update
+                forces[3*j+2] += g2;
+                fi0 -= g0;
+                fi1 -= g1;
+                fi2 -= g2;
+                v00 -= d[0]*g0;
+                v01 -= d[0]*g1;
+                v02 -= d[0]*g2;
+                v10 -= d[1]*g0;
+                v11 -= d[1]*g1;
+                v12 -= d[1]*g2;
+                v20 -= d[2]*g0;
+                v21 -= d[2]*g1;
+                v22 -= d[2]*g2;
+              }
+            }
+          }
         }
-#pragma acc atomic update
-        forces[3*j] += g[0];
-#pragma acc atomic update
-        forces[3*j+1] += g[1];
-#pragma acc atomic update
-        forces[3*j+2] += g[2];
-        fi0 -= g[0];
-        fi1 -= g[1];
-        fi2 -= g[2];
-        v00 -= d[0]*g[0];
-        v01 -= d[0]*g[1];
-        v02 -= d[0]*g[2];
-        v10 -= d[1]*g[0];
-        v11 -= d[1]*g[1];
-        v12 -= d[1]*g[2];
-        v20 -= d[2]*g[0];
-        v21 -= d[2]*g[1];
-        v22 -= d[2]*g[2];
       }
-      )
 #pragma acc atomic update
       forces[3*i] += fi0;
 #pragma acc atomic update
