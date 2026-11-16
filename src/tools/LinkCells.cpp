@@ -41,6 +41,10 @@ void LinkCells::setSubdivision( const unsigned n ) {
   requestedSubdivision=n;
 }
 
+void LinkCells::setLimitCellsByAtoms( bool limit ) {
+  limitCellsByAtoms=limit;
+}
+
 void LinkCells::setCutoff( const double lcut ) {
   cutoffwasset=true;
   link_cutoff=lcut;
@@ -74,7 +78,9 @@ void LinkCells::setupCells(View<const Vector> pos) {
     }
     origin[k] = ( minp[k] + maxp[k] ) / 2;
   }
+  cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
   createCells(box);
+  cellLimitAtoms = 0;
 }
 
 void LinkCells::setupCells(const Pbc& pbc ) {
@@ -97,7 +103,9 @@ void LinkCells::setupCells(View<const Vector> pos,
     setupCells(pos);
   } else {
     // Setup the pbc object by copying it from action if the Pbc were set
+    cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
     setupCells(pbc);
+    cellLimitAtoms = 0;
   }
 }
 
@@ -125,9 +133,14 @@ void LinkCells::createCells(const PLMD::Tensor& box) {
     // Limit the total number of cells: with a small cutoff in a large box the number of
     // cells (and the memory and the time spent looping over empty cells) would grow
     // with the volume. Larger cells are still correct, they only contain more atoms.
-    while(nc[0]*nc[1]*nc[2]>maxNumberOfCells) {
+    // With setLimitCellsByAtoms they are also limited by the number of atoms (see maxCellsPerAtom)
+    double maxcells=maxNumberOfCells;
+    if( cellLimitAtoms>0 ) {
+      maxcells=std::min(maxcells,std::max(minCellsForAtomLimit,maxCellsPerAtom*cellLimitAtoms));
+    }
+    while(nc[0]*nc[1]*nc[2]>maxcells) {
       const unsigned k=std::distance(nc.begin(),std::max_element(nc.begin(),nc.end()));
-      const double factor=std::cbrt(nc[0]*nc[1]*nc[2]/maxNumberOfCells);
+      const double factor=std::cbrt(nc[0]*nc[1]*nc[2]/maxcells);
       nc[k]=std::max(1.0,std::min(nc[k]-1.0,std::floor(nc[k]/factor)));
     }
     // smaller cells are used only if the cells to be searched are all different
@@ -548,7 +561,11 @@ void LinkCells::createNeighborList( unsigned nat,
   const bool useCutoff = applyCutoff && link_cutoff<std::sqrt(std::numeric_limits<double>::max());
   // with the distance test smaller cells give fewer candidates beyond the cutoff
   requestedSubdivision = useCutoff ? maxSubdivision : 1;
+  // the lists are built at every step: no more cells than about twice the atoms
+  const bool limitWasSet = limitCellsByAtoms;
+  limitCellsByAtoms = true;
   buildCellLists( neigh_pos, neigh_ind, pbc );
+  limitCellsByAtoms = limitWasSet;
   // the largest number of atoms in the cells searched for one atom
   unsigned maxcandidates=innerCollection.getMaximimumCombination((2*nsub+1)*(2*nsub+1)*(2*nsub+1));
   if( maxcandidates>innerCollection.lcell_lists.size() ) {
@@ -674,8 +691,9 @@ unsigned LinkCells::CellCollection::getMaximimumCombination(const unsigned numCe
   //this is not efficient (there is a copy), but in principle it should be called not much times:
   //nth_element order by partition until the array is partially sorted
   //(it stops when the pivot is at the asked point, so all the elements to the right of the nth element are higher/lower than it)
-  if (numCells >= lcell_tots.size()) {
-    return std::accumulate(lcell_tots.begin(),lcell_tots.end(),0);
+  // with no more atoms than cells, the most populated numCells cells contain all the atoms
+  if (numCells >= lcell_tots.size() || lcell_lists.size() <= numCells) {
+    return lcell_lists.size();
   }
   auto tmpCopy=lcell_tots;
   auto nth_place=tmpCopy.begin() + numCells-1;

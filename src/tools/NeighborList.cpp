@@ -203,6 +203,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     cells.setCutoff(distance_);
     // smaller cells: fewer candidate pairs beyond the cutoff
     cells.setSubdivision(LinkCells::maxSubdivision);
+    // with few atoms in a large box most cells would be empty, and visiting them
+    // would cost more than the search
+    cells.setLimitCellsByAtoms(true);
     if(do_pbc_) {
       cells.setupCells(make_const_view(positions),*pbc_);
     } else {

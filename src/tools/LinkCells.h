@@ -76,6 +76,15 @@ private:
   static constexpr unsigned minAtomsPerThread=4096;
 /// Maximum total number of cells
   static constexpr double maxNumberOfCells=1048576;
+/// With setLimitCellsByAtoms(true) the cells are at most this many times the atoms in them
+/// (but at least minCellsForAtomLimit): building the lists costs time proportional to the
+/// number of cells, and more cells than atoms only add empty cells
+  static constexpr double maxCellsPerAtom=2;
+  static constexpr double minCellsForAtomLimit=64;
+/// Set with setLimitCellsByAtoms
+  bool limitCellsByAtoms=false;
+/// If not zero, the number of atoms that limits the number of cells in createCells
+  std::size_t cellLimitAtoms=0;
 /// Check that the link cells were set up correctly
   bool cutoffwasset=false;
 /// Are there periodic boundary conditions setup
@@ -109,7 +118,7 @@ private:
   std::vector<unsigned> allcells;
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
-  void createCells(const PLMD::Tensor&);
+  void createCells(const PLMD::Tensor& box);
 /// Find the index of the cell of a position, without checks:
 /// returns getNumberOfCells() if the position is not in a cell
   unsigned findCellUnchecked( Vector pos ) const noexcept;
@@ -125,6 +134,10 @@ public:
 /// each direction. The functions that work on the neighboring cells (addRequiredCells,
 /// getNeighborRuns, retrieveNeighboringAtoms) take it into account
   void setSubdivision( unsigned n );
+/// If true, the next setupCells with positions uses at most max(64, 2*natoms) cells
+/// (larger cells, still correct). Useful when the lists are rebuilt often and the atoms
+/// are few for the size of the box; createNeighborList always does it
+  void setLimitCellsByAtoms( bool limit );
 /// Set the value of the cutoff
   void setCutoff( double lcut );
 /// Get the value of the cutoff

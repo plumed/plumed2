@@ -168,12 +168,18 @@ void Position<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     cvout.values[0]=Tools::pbc(d[0]);
     cvout.values[1]=Tools::pbc(d[1]);
     cvout.values[2]=Tools::pbc(d[2]);
+    if( cvin.noderiv ) {
+      return;
+    }
     cvout.derivs[0][0]=matmul(cvin.pbc.getInvBox(),Versors::xp<T>);
     cvout.derivs[1][0]=matmul(cvin.pbc.getInvBox(),Versors::yp<T>);
     cvout.derivs[2][0]=matmul(cvin.pbc.getInvBox(),Versors::zp<T>);
   } else {
     for(unsigned i=0; i<3; ++i) {
       cvout.values[i]=cvin.pos[0][i];
+    }
+    if( cvin.noderiv ) {
+      return;
     }
     cvout.derivs[0][0]=Versors::xp<T>;
     cvout.derivs[1][0]=Versors::yp<T>;
