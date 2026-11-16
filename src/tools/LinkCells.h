@@ -122,6 +122,8 @@ public:
 /// The communicator is not used: the cells are built locally on every process
 /// (the argument is kept for backward compatibility)
   explicit LinkCells( Communicator& comm );
+/// The cells are built locally: no communicator is needed
+  LinkCells() = default;
 /// Have the link cells been enabled
   bool enabled() const ;
 /// Set the number of cells per cutoff (1 or 2, the default is 1) used by the next setupCells.

@@ -23,6 +23,7 @@
 #include "LCPO.h"
 #include "OnebeadMapping.h"
 #include "tools/Exception.h"
+#include "tools/LinkCells.h"
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 
@@ -1465,6 +1466,25 @@ LCPO::LCPO(const std::vector<std::string> &atomNames, const std::vector<std::str
 namespace {
 // skin of the candidate list (Angstrom)
 constexpr double lcpo_skin = 2.0;
+
+// the visitor of buildCandidates: the atoms j closer than (r_i + r_j + skin) to atom i
+struct CollectCandidates {
+  std::vector<unsigned>& row;
+  const unsigned i;
+  const double ri;
+  const std::vector<std::vector<double> >& param;
+  const unsigned* lists;
+  void operator()(const std::size_t jj, const Vector& d) {
+    const unsigned j = lists[jj];
+    if(j==i) {
+      return;
+    }
+    const double cut = (ri+param[j][0]+lcpo_skin)/10.;
+    if(modulo2(d) < cut*cut) {
+      row.push_back(j);
+    }
+  }
+};
 }
 
 void LCPO::buildCandidates(const std::vector<Vector> &pos) {
@@ -1473,68 +1493,27 @@ void LCPO::buildCandidates(const std::vector<Vector> &pos) {
   for(const auto i : atoms_) {
     maxr = std::max(maxr, param_[i][0]);
   }
-  // cell size (nm) not smaller than the largest cutoff
+  // the largest cutoff (nm)
   const double rc = (2.0*maxr+lcpo_skin)/10.;
-  Vector lo = pos[atoms_[0]], hi = lo;
-  for(const auto i : atoms_) {
-    for(unsigned k=0; k<3; ++k) {
-      lo[k] = std::min(lo[k], pos[i][k]);
-      hi[k] = std::max(hi[k], pos[i][k]);
-    }
-  }
-  int ncell[3];
-  double csize[3];
-  for(unsigned k=0; k<3; ++k) {
-    const double len = hi[k]-lo[k];
-    ncell[k] = std::max(1, std::min(200, static_cast<int>(std::floor(len/rc))));
-    csize[k] = std::max(len/static_cast<double>(ncell[k]), rc);
-  }
-  auto cell=[&](const unsigned i, int *c) {
-    for(unsigned k=0; k<3; ++k) {
-      c[k] = std::min(ncell[k]-1, std::max(0, static_cast<int>(std::floor((pos[i][k]-lo[k])/csize[k]))));
-    }
-  };
-  const unsigned ncells = ncell[0]*ncell[1]*ncell[2];
   const unsigned nlcpo = atoms_.size();
-  std::vector<unsigned> cell_start(ncells+1,0), cell_atoms(nlcpo), atom_cell(nlcpo);
+  std::vector<Vector> lcpo_pos(nlcpo);
   for(unsigned a=0; a<nlcpo; ++a) {
-    int c[3];
-    cell(atoms_[a],c);
-    atom_cell[a] = (c[0]*ncell[1]+c[1])*ncell[2]+c[2];
-    cell_start[atom_cell[a]+1]++;
+    lcpo_pos[a] = pos[atoms_[a]];
   }
-  for(unsigned ic=0; ic<ncells; ++ic) {
-    cell_start[ic+1] += cell_start[ic];
-  }
-  {
-    std::vector<unsigned> fill(cell_start.begin(), cell_start.end()-1);
-    for(unsigned a=0; a<nlcpo; ++a) {
-      cell_atoms[fill[atom_cell[a]]++] = atoms_[a];
-    }
-  }
+  // cells around the atoms, without periodic boundary conditions
+  LinkCells cells;
+  cells.setCutoff(rc);
+  cells.setSubdivision(LinkCells::maxSubdivision);
+  cells.setLimitCellsByAtoms(true);
+  cells.setupCells(lcpo_pos);
+  const auto collection = cells.getCollection(lcpo_pos, atoms_, true);
+  const LinkCellsView view = cells.getView(collection, false);
   std::vector<std::vector<unsigned> > rows(natoms);
   #pragma omp parallel for num_threads(OpenMP::getNumThreads()) schedule(dynamic,64)
   for(unsigned a=0; a<nlcpo; ++a) {
     const unsigned i = atoms_[a];
-    int c[3];
-    cell(i,c);
-    for(int i0=std::max(0,c[0]-1); i0<=std::min(ncell[0]-1,c[0]+1); ++i0) {
-      for(int i1=std::max(0,c[1]-1); i1<=std::min(ncell[1]-1,c[1]+1); ++i1) {
-        for(int i2=std::max(0,c[2]-1); i2<=std::min(ncell[2]-1,c[2]+1); ++i2) {
-          const unsigned ic = (i0*ncell[1]+i1)*ncell[2]+i2;
-          for(unsigned jj=cell_start[ic]; jj<cell_start[ic+1]; ++jj) {
-            const unsigned j = cell_atoms[jj];
-            if(j==i) {
-              continue;
-            }
-            const double cut = (param_[i][0]+param_[j][0]+lcpo_skin)/10.;
-            if(modulo2(delta(pos[i], pos[j])) < cut*cut) {
-              rows[i].push_back(j);
-            }
-          }
-        }
-      }
-    }
+    CollectCandidates collect{rows[i], i, param_[i][0], param_, view.lists};
+    forEachCandidate(view, pos[i], collect);
     std::sort(rows[i].begin(), rows[i].end());
   }
   cand_off_.assign(natoms+1,0);
