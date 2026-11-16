@@ -588,7 +588,7 @@ private:
                               int l,
                               const std::string& sep,
                               const std::string& vlab,
-                              const std::string& gpuflags = "");
+                              const std::string& flags = "");
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -769,13 +769,14 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            "" ); // the norm of a vector of scalars: on the CPU
   }
 
-  // Now calculate the total length of the vector
+  // Now calculate the total length of the vector: always on the CPU, as the
+  // sum of 2l+1 squares per atom is cheaper than moving the 2(2l+1) vectors to the GPU
   createVectorNormInput( getShortcutLabel() + "_sp",
                          getShortcutLabel() + "_norm",
                          l,
                          ".",
                          "m",
-                         doUSEGPU );
+                         serial?" SERIAL":"" );
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
@@ -789,7 +790,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
                                         const int l,
                                         const std::string& sep,
                                         const std::string& vlab,
-                                        const std::string& gpuflags) {
+                                        const std::string& flags) {
   std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
   std::string arg_inp = "";
@@ -803,7 +804,7 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
     norm_input += comma + "2,2";
     comma=",";
   }
-  readInputLine( norm_input + " ARG=" + arg_inp + gpuflags );
+  readInputLine( norm_input + " ARG=" + arg_inp + flags );
   readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
 }
 
