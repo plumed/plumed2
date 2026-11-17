@@ -56,6 +56,8 @@ class ActionAtomistic :
   std::vector<std::pair<std::size_t,std::vector<std::size_t>>> atom_value_ind_grouped;
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
+/// No atom is requested twice: the forces of the atoms can be added by several threads
+  bool atomsAreUnique=false;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
   bool unique_local_needs_update;
   std::vector<AtomNumber>  unique_local;

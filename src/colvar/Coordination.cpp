@@ -119,6 +119,7 @@ public:
 // active methods:
   static void registerKeywords( Keywords& keys );
   double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
+  double pairCutoff2() const override;
 };
 
 PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
@@ -171,6 +172,12 @@ double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)
   (void) i; // avoid warnings
   (void) j; // avoid warnings
   return switchingFunction.calculateSqr(distance,dfunc);
+}
+
+double Coordination::pairCutoff2() const {
+  // the switching functions are zero beyond dmax; the margin covers the rounding
+  // of dmax*dmax and of the square root of the distance in calculateSqr
+  return switchingFunction.get_dmax2()*(1.0+1e-12);
 }
 
 }

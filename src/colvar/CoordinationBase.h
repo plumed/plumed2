@@ -23,6 +23,8 @@
 #define __PLUMED_colvar_CoordinationBase_h
 #include "Colvar.h"
 #include <memory>
+#include <vector>
+#include "tools/Tensor.h"
 
 namespace PLMD {
 
@@ -33,12 +35,51 @@ namespace colvar {
 class CoordinationBase : public Colvar {
   bool pbc;
   bool serial;
+/// The neighbor list, only with NLIST, NLISTCELLS or PAIR (otherwise the pairs come from the groups)
   std::unique_ptr<NeighborList> nl;
   bool invalidateList;
   bool firsttime;
+/// Without a neighbor list: the pairs are the rows times the columns
+/// (all the pairs i<j in GROUPA when GROUPB is empty).
+/// The rows are the larger group, split in blocks of rowsPerBlock rows.
+  unsigned nrows=0;
+  unsigned ncols=0;
+/// Index in the list of atoms of the first row and of the first column
+  unsigned rowBase=0;
+  unsigned colBase=0;
+/// The atom of the row is the first of the pair (the one in GROUPA)
+  bool rowFirst=true;
+/// The pairs are i<j in a single group
+  bool singleGroup=false;
+  unsigned rowsPerBlock=1;
+/// A pair can be made of the same atom twice (the groups share some atoms)
+  bool samePairsPossible=false;
+/// Contributions of each block to the derivatives of the columns, and the value and the virial of each block
+  std::vector<Vector> blockColumns;
+  std::vector<double> blockValue;
+  std::vector<Tensor> blockVirial;
+/// Buffers of the threads for the neighbor list
+  std::vector<std::vector<Vector>> threadDeriv;
+  std::vector<double> threadValue;
+  std::vector<Tensor> threadVirial;
+  std::vector<char> threadUsed;
+/// Derivatives summed over the MPI processes
+  std::vector<Vector> mpiDeriv;
 
-  template<bool useBatch>
-  void calculateImpl();
+  template<bool usePbc>
+  void calculateBlocks();
+  template<bool usePbc>
+  void calculateList();
+/// Add d to the derivatives of atom i: to the value, or to mpiDeriv when the processes have to sum them
+  void addAtomDerivatives(bool toBuffer,unsigned i,const Vector& d) {
+    if(toBuffer) {
+      mpiDeriv[i]+=d;
+    } else {
+      setAtomsDerivatives(i,d);
+    }
+  }
+/// Sum the derivatives of mpiDeriv over the processes and add them to the value
+  void sumAndSetDerivatives();
 
 public:
   explicit CoordinationBase(const ActionOptions&);
@@ -47,6 +88,9 @@ public:
   void calculate() override;
   void prepare() override;
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const=0;
+/// Square of the distance beyond which pairing() is exactly zero, with zero derivative:
+/// the pairs farther than this are skipped. By default all the pairs are computed.
+  virtual double pairCutoff2() const;
   static void registerKeywords( Keywords& keys );
 };
 

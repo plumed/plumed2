@@ -58,6 +58,21 @@ Value::Value(ActionWithValue* av,
   setShape( ss );
 }
 
+void Value::clearDerivatives( const bool force, [[maybe_unused]] const unsigned nt ) {
+  if( !force && (valtype==constant || valtype==average) ) {
+    return;
+  }
+  value_set=false;
+  // as clearDerivatives(force): the value is kept, unless this is a vector or a matrix
+  const std::size_t first=shape.size()>0 ? 0 : 1;
+  const std::size_t n=data.size();
+  double* const d=data.data();
+  #pragma omp parallel for num_threads(nt)
+  for(std::size_t i=first; i<n; ++i) {
+    d[i]=0.0;
+  }
+}
+
 void Value::setValType( const std::string& vtype ) {
   if( vtype=="normal" ) {
     valtype=normal;
