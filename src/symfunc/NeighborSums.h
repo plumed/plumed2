@@ -49,7 +49,14 @@ neighbours: f_k(-d) = p f_k(d), with parity p = 1 for w and (-1)^l for w Y_lm, s
 the rows of i and of its neighbour j are -sum_k [G_k(i) + p G_k(j)] df_k(d_ij)/dd. Every thread
 (or GPU thread) writes only the force on its own atom: no atomics and no buffers, and the result
 does not depend on the number of threads. Each directed pair is then counted from both ends, so
-its contribution to the virial is half of -d (x) g.
+its contribution to the virial is half of -d (x) g. The sums over k are contracted pair by pair
+(PF::contract), without storing the derivatives of all the components.
+
+With few rows (without GROUP) the cells are not built: sorting all the columns into cells costs
+more than one distance per column. The columns are then split in blocks (parts of the search,
+nslices), shared between the threads (and the MPI processes); the partial results of each row
+are summed in order, so they do not depend on the number of threads. The GPU actions split the
+search around each row (also with the cells) to have enough GPU threads.
 */
 #include "core/ActionWithVector.h"
 #include "tools/SwitchingFunction.h"
@@ -62,6 +69,8 @@ its contribution to the virial is half of -d (x) g.
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <complex>
 #include <limits>
 #include <string>
 #include <vector>
@@ -71,11 +80,14 @@ namespace symfunc {
 
 /// The pairs of COORDINATIONNUMBER_SUMS (and Qn_DENOM_SUMS): f = w
 struct ContactPairs {
-  static constexpr unsigned maxComponents=1;
   SwitchingFunctionAccelerable switchingFunction;
   unsigned ncomponents=1;
   /// f(-d) = parity f(d)
   double parity=1.0;
+  /// the coordination number as one more sum: not available (it is the sum)
+  bool addDenominator() {
+    return false;
+  }
   static void registerKeywords( Keywords& keys ) {
     keys.setValueDescription("vector","the sum of the switching function over the neighbours of each atom (its coordination number)");
   }
@@ -84,19 +96,29 @@ struct ContactPairs {
   std::vector<std::string> componentNames() const {
     return {};
   }
-  /// The values of the pair with vector d (and d2=|d|^2) and their derivatives with
-  /// respect to d. Returns false if the pair does not contribute
+  /// Adds the values of the pair with vector d (and d2=|d|^2) to sum.
+  /// Returns false if the pair does not contribute
 #pragma acc routine seq
-  bool pair( const Vector& d, const double d2, const bool noderiv, double* f, Vector* df ) const {
+  bool addValues( const Vector&, const double d2, double* sum ) const {
     double dfunc;
     const double w = switchingFunction.calculateSqr( d2, dfunc );
     if( std::fabs(w)<epsilon ) {
       return false;
     }
-    f[0] = w;
-    if( !noderiv ) {
-      df[0] = dfunc*d;
+    sum[0] += w;
+    return true;
+  }
+  /// g = sum_k a_k df_k/dd, with a_k = A[k] + p B[k] (a_k = A[k] if B is null).
+  /// Returns false if the pair does not contribute
+#pragma acc routine seq
+  bool contract( const Vector& d, const double d2, const double* A, const double* B, const double p, Vector& g ) const {
+    double dfunc;
+    const double w = switchingFunction.calculateSqr( d2, dfunc );
+    if( std::fabs(w)<epsilon ) {
+      return false;
     }
+    const double a = B ? A[0]+p*B[0] : A[0];
+    g = a*(dfunc*d);
     return true;
   }
 #ifdef _OPENACC
@@ -113,15 +135,21 @@ struct ContactPairs {
 
 /// The pairs of Q1_SUMS,...,Q6_SUMS: f = w Re/Im Y_lm(d), with l from the name of the action
 struct SphericalHarmonicPairs {
-  /// 2(2l+1) spherical harmonics for l up to 6
-  static constexpr unsigned maxComponents=26;
   SwitchingFunctionAccelerable switchingFunction;
   SphericalHarmonic harmonic;
   /// number of spherical harmonic components, 2(2l+1)
   unsigned nharmonics=0;
+  /// the harmonics, and the switching function (the coordination number) if withDenominator
   unsigned ncomponents=0;
-  /// f(-d) = parity f(d): Y_lm(-r) = (-1)^l Y_lm(r)
+  bool withDenominator=false;
+  /// f(-d) = parity f(d) for the harmonics: Y_lm(-r) = (-1)^l Y_lm(r) (the switching function has parity 1)
   double parity=1.0;
+  /// the coordination number as one more sum, after the harmonics (the denominator of Q1,...,Q6)
+  bool addDenominator() {
+    withDenominator=true;
+    ncomponents=nharmonics+1;
+    return true;
+  }
   static void registerKeywords( Keywords& keys ) {
     keys.addOutputComponent("rm","default","vector","the sums over the neighbours of the real parts of the spherical harmonics, weighted by the switching function, with the m value given");
     keys.addOutputComponent("im","default","vector","the sums over the neighbours of the imaginary parts of the spherical harmonics, weighted by the switching function, with the m value given");
@@ -158,36 +186,101 @@ struct SphericalHarmonicPairs {
     }
     return names;
   }
+  /// Adds the values of the pair with vector d (and d2=|d|^2) to sum, as SphericalHarmonic::calc
+  /// computes them. Returns false if the pair does not contribute
 #pragma acc routine seq
-  bool pair( const Vector& d, const double d2, const bool noderiv, double* f, Vector* df ) const {
+  bool addValues( const Vector& d, const double d2, double* sum ) const {
     double dfunc;
     const double w = switchingFunction.calculateSqr( d2, dfunc );
     if( std::fabs(w)<epsilon ) {
       return false;
     }
+    if( withDenominator ) {
+      sum[nharmonics] += w;
+    }
     // as SPHERICAL_HARMONIC, whose value is zero when the weight is below epsilon
     if( w<epsilon ) {
-      for(unsigned k=0; k<nharmonics; ++k) {
-        f[k] = 0.0;
-        if( !noderiv ) {
-          df[k] = Vector(0.0,0.0,0.0);
-        }
-      }
-    } else {
-      double args[4] = { d[0], d[1], d[2], w };
-      double vals[maxComponents];
-      double ders[4*maxComponents];
-      auto out = function::FunctionOutput::create( nharmonics, vals, 4, ders );
-      SphericalHarmonic::calc( harmonic, noderiv, View<const double>( args, 4 ), out );
-      for(unsigned k=0; k<nharmonics; ++k) {
-        f[k] = vals[k];
-        if( !noderiv ) {
-          // derivative with respect to d, through x,y,z and through w
-          const double dw = ders[4*k+3]*dfunc;
-          df[k] = Vector( ders[4*k]+dw*d[0], ders[4*k+1]+dw*d[1], ders[4*k+2]+dw*d[2] );
-        }
-      }
+      return true;
     }
+    const int l = harmonic.getL();
+    const int imbase = 3*l+1;
+    const double dlen2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
+    const double dleninv = 1.0/std::sqrt( dlen2 );
+    double dpoly;
+    sum[l] += w*harmonic.deriv_poly( 0, d[2]*dleninv, dpoly );
+    // the imaginary part for m=0 is zero
+    const std::complex<double> com1( d[0]*dleninv, d[1]*dleninv );
+    std::complex<double> powered( 1.0, 0.0 );
+    double pref = -1.0;
+    for(int m=1; m<=l; ++m) {
+      const double poly = harmonic.deriv_poly( m, d[2]*dleninv, dpoly );
+      const double fr = w*(poly*std::real(com1*powered));
+      const double fi = w*(poly*std::imag(com1*powered));
+      sum[l+m] += fr;
+      sum[imbase+m] += fi;
+      sum[l-m] += pref*fr;
+      sum[imbase-m] += -pref*fi;
+      powered *= com1;
+      pref = -pref;
+    }
+    return true;
+  }
+  /// g = sum_k a_k df_k/dd, with a_k = A[k] + p B[k] (a_k = A[k] if B is null), computed one m
+  /// at a time without storing the derivatives of the components. As in SphericalHarmonic::calc,
+  /// with f_k = w Y_k: df_k/dd = w dY_k/dd + Y_k dw/dd. With the denominator f = w has parity 1:
+  /// its a is A + B. Returns false if the pair does not contribute
+#pragma acc routine seq
+  bool contract( const Vector& d, const double d2, const double* A, const double* B, const double p, Vector& g ) const {
+    double dfunc;
+    const double w = switchingFunction.calculateSqr( d2, dfunc );
+    if( std::fabs(w)<epsilon ) {
+      return false;
+    }
+    // the coordination number
+    const double aden = withDenominator ? (B ? A[nharmonics]+B[nharmonics] : A[nharmonics]) : 0.0;
+    // the derivatives of SPHERICAL_HARMONIC are zero when the weight is below epsilon
+    if( w<epsilon ) {
+      g = aden*(dfunc*d);
+      return true;
+    }
+    const int l = harmonic.getL();
+    const int imbase = 3*l+1;
+    const double dlen2 = d[0]*d[0] + d[1]*d[1] + d[2]*d[2];
+    const double dlen = std::sqrt( dlen2 );
+    const double dleninv = 1.0/dlen;
+    const double dlen3inv = 1.0/(dlen2*dlen);
+    // the derivatives of z/r
+    const Vector dz( -(d[2]*dlen3inv)*d[0], -(d[2]*dlen3inv)*d[1], -(d[2]*dlen3inv)*d[2] + dleninv );
+    double dpoly;
+    double poly = harmonic.deriv_poly( 0, d[2]*dleninv, dpoly );
+    // s = sum_k a_k Y_k, gy = sum_k a_k dY_k/dd
+    double a = B ? A[l]+p*B[l] : A[l];
+    double s = a*poly;
+    Vector gy = (a*dpoly)*dz;
+    const std::complex<double> com1( d[0]*dleninv, d[1]*dleninv );
+    std::complex<double> powered( 1.0, 0.0 );
+    constexpr std::complex<double> ii( 0.0, 1.0 );
+    double pref = -1.0;
+    for(int m=1; m<=l; ++m) {
+      poly = harmonic.deriv_poly( m, d[2]*dleninv, dpoly );
+      const double real_z = std::real(com1*powered);
+      const double imag_z = std::imag(com1*powered);
+      const double md = static_cast<double>(m);
+      // the derivatives of (x/r + i y/r)^m
+      const std::complex<double> dp_x = md*powered*( dleninv-(d[0]*d[0])*dlen3inv-ii*(d[0]*d[1])*dlen3inv );
+      const std::complex<double> dp_y = md*powered*( ii*dleninv-(d[0]*d[1])*dlen3inv-ii*(d[1]*d[1])*dlen3inv );
+      const std::complex<double> dp_z = md*powered*( -(d[0]*d[2])*dlen3inv-ii*(d[1]*d[2])*dlen3inv );
+      const Vector real_dz( std::real(dp_x), std::real(dp_y), std::real(dp_z) );
+      const Vector imag_dz( std::imag(dp_x), std::imag(dp_y), std::imag(dp_z) );
+      // the components +m and -m: Y_{-m} = pref Re Y_m - i pref Im Y_m
+      const double ar = B ? (A[l+m]+p*B[l+m]) + pref*(A[l-m]+p*B[l-m]) : A[l+m] + pref*A[l-m];
+      const double ai = B ? (A[imbase+m]+p*B[imbase+m]) - pref*(A[imbase-m]+p*B[imbase-m]) : A[imbase+m] - pref*A[imbase-m];
+      s += ar*(poly*real_z) + ai*(poly*imag_z);
+      gy += (ar*dpoly*real_z + ai*dpoly*imag_z)*dz + (ar*poly)*real_dz + (ai*poly)*imag_dz;
+      powered *= com1;
+      pref = -pref;
+    }
+    g = w*gy + ((s+aden)*dfunc)*d;
     return true;
   }
 #ifdef _OPENACC
@@ -219,21 +312,46 @@ struct NeighborSumsGeometry {
   const Pbc* pbc=nullptr;
 };
 
-/// Calls visit(c,d,d2) for the columns c within the cutoff from x, except the column self
+/// Calls visit(c,d,d2) for the columns c within the cutoff from x, except the column self.
+/// The search can be split in nslices parts, done by different threads: the slice-th part is
+/// a group of rows of cells (with the cells) or of consecutive columns (all the pairs)
 template<typename Visitor>
-inline void neighborSumsVisit( const NeighborSumsGeometry& g, const Vector& x, const unsigned self, Visitor& visit ) {
+inline void neighborSumsVisit( const NeighborSumsGeometry& g, const Vector& x, const unsigned self, Visitor& visit,
+                               const unsigned slice=0, const unsigned nslices=1 ) {
   if( g.usecells ) {
-    forEachNeighbor( g.cells, x, self, visit );
+    forEachNeighbor( g.cells, x, self, visit, slice, nslices );
     return;
   }
-  for(unsigned c=0; c<g.ncols; ++c) {
+  const std::size_t cfirst=(slice*g.ncols)/nslices;
+  const std::size_t cend=((slice+1)*g.ncols)/nslices;
+#ifndef _OPENACC
+  // on the CPU, the minimum images of a block of columns at once (Pbc::apply, without branches)
+  constexpr std::size_t block=64;
+  Vector d[block];
+  for(std::size_t c0=cfirst; c0<cend; c0+=block) {
+    const std::size_t nb=std::min( block, cend-c0 );
+    for(std::size_t k=0; k<nb; ++k) {
+      const std::size_t j=g.colstart+c0+k;
+      d[k] = Vector( g.positions[3*j]-x[0], g.positions[3*j+1]-x[1], g.positions[3*j+2]-x[2] );
+    }
+    g.pbc->apply( VectorView( &d[0][0], nb ) );
+    for(std::size_t k=0; k<nb; ++k) {
+      const double d2 = d[k].modulo2();
+      if( d2<=g.dmax2 && c0+k!=self ) {
+        visit( static_cast<unsigned>(c0+k), d[k], d2 );
+      }
+    }
+  }
+#else
+  for(std::size_t c=cfirst; c<cend; ++c) {
     const std::size_t j=g.colstart+c;
     const Vector d = g.pbc->distance( x, Vector( g.positions[3*j], g.positions[3*j+1], g.positions[3*j+2] ) );
     const double d2 = d.modulo2();
     if( d2<=g.dmax2 && c!=self ) {
-      visit( c, d, d2 );
+      visit( static_cast<unsigned>(c), d, d2 );
     }
   }
+#endif
 }
 
 /// Adds the values of the pairs to sum
@@ -241,33 +359,27 @@ template<class PF>
 struct NeighborSumsAdd {
   const PF& pairs;
   double* sum;
-  double* f;
-  Vector* df;
   inline void operator()( const unsigned, const Vector& d, const double d2 ) {
     // the atom itself, or an atom that is both a row and a column
     if( d2<epsilon ) {
       return;
     }
-    if( pairs.pair( d, d2, true, f, df ) ) {
-      for(unsigned k=0; k<pairs.ncomponents; ++k) {
-        sum[k] += f[k];
-      }
-    }
+    pairs.addValues( d, d2, sum );
   }
 };
 
-/// The sums of row r (pairs.ncomponents values)
+/// The sums of row r (pairs.ncomponents values), over the neighbours of the slice-th of
+/// nslices parts of the search (see neighborSumsVisit)
 template<class PF>
-inline void neighborSumsRow( const PF& pairs, const NeighborSumsGeometry& g, const std::size_t r, double* sum ) {
-  double f[PF::maxComponents];
-  Vector df[PF::maxComponents];
+inline void neighborSumsRow( const PF& pairs, const NeighborSumsGeometry& g, const std::size_t r, double* sum,
+                             const unsigned slice=0, const unsigned nslices=1 ) {
   for(unsigned k=0; k<pairs.ncomponents; ++k) {
     sum[k]=0.0;
   }
   const std::size_t i=g.rowstart+r;
   const Vector xi( g.positions[3*i], g.positions[3*i+1], g.positions[3*i+2] );
-  NeighborSumsAdd<PF> add{pairs,sum,f,df};
-  neighborSumsVisit( g, xi, g.symmetric ? static_cast<unsigned>(r) : std::numeric_limits<unsigned>::max(), add );
+  NeighborSumsAdd<PF> add{pairs,sum};
+  neighborSumsVisit( g, xi, g.symmetric ? static_cast<unsigned>(r) : std::numeric_limits<unsigned>::max(), add, slice, nslices );
 }
 
 /// With GROUP: the force on atom r from the rows of r and of its neighbours (see the top of the file)
@@ -277,37 +389,27 @@ struct NeighborSumsGather {
   /// the forces on the sums of all the rows, and those of row r
   const double* G;
   const double* Gr;
-  double* f;
-  Vector* df;
   Vector force;
   /// the derivative with respect to the box, of this row only
   double virial[9];
   inline void operator()( const unsigned c, const Vector& d, const double d2 ) {
-    if( d2<epsilon || !pairs.pair( d, d2, false, f, df ) ) {
+    Vector g;
+    if( d2<epsilon || !pairs.contract( d, d2, Gr, G+c*pairs.ncomponents, pairs.parity, g ) ) {
       return;
     }
-    const unsigned ncomp=pairs.ncomponents;
-    const double* Gc=G+c*ncomp;
-    double g0=0.0, g1=0.0, g2=0.0;
-    for(unsigned k=0; k<ncomp; ++k) {
-      const double a=Gr[k]+pairs.parity*Gc[k];
-      g0 += a*df[k][0];
-      g1 += a*df[k][1];
-      g2 += a*df[k][2];
-    }
-    force[0] -= g0;
-    force[1] -= g1;
-    force[2] -= g2;
+    force[0] -= g[0];
+    force[1] -= g[1];
+    force[2] -= g[2];
     // each pair is visited from both its atoms
-    virial[0] -= 0.5*d[0]*g0;
-    virial[1] -= 0.5*d[0]*g1;
-    virial[2] -= 0.5*d[0]*g2;
-    virial[3] -= 0.5*d[1]*g0;
-    virial[4] -= 0.5*d[1]*g1;
-    virial[5] -= 0.5*d[1]*g2;
-    virial[6] -= 0.5*d[2]*g0;
-    virial[7] -= 0.5*d[2]*g1;
-    virial[8] -= 0.5*d[2]*g2;
+    virial[0] -= 0.5*d[0]*g[0];
+    virial[1] -= 0.5*d[0]*g[1];
+    virial[2] -= 0.5*d[0]*g[2];
+    virial[3] -= 0.5*d[1]*g[0];
+    virial[4] -= 0.5*d[1]*g[1];
+    virial[5] -= 0.5*d[1]*g[2];
+    virial[6] -= 0.5*d[2]*g[0];
+    virial[7] -= 0.5*d[2]*g[1];
+    virial[8] -= 0.5*d[2]*g[2];
   }
 };
 
@@ -316,53 +418,46 @@ template<class PF, class Columns>
 struct NeighborSumsScatter {
   const PF& pairs;
   const double* Gr;
-  double* f;
-  Vector* df;
   Columns& cols;
   Vector force;
   /// the derivative with respect to the box, of this row only
   double virial[9];
   inline void operator()( const unsigned c, const Vector& d, const double d2 ) {
-    if( d2<epsilon || !pairs.pair( d, d2, false, f, df ) ) {
+    Vector g;
+    if( d2<epsilon || !pairs.contract( d, d2, Gr, nullptr, 0.0, g ) ) {
       return;
     }
-    double g0=0.0, g1=0.0, g2=0.0;
-    for(unsigned k=0; k<pairs.ncomponents; ++k) {
-      g0 += Gr[k]*df[k][0];
-      g1 += Gr[k]*df[k][1];
-      g2 += Gr[k]*df[k][2];
-    }
-    cols.add( c, g0, g1, g2 );
-    force[0] -= g0;
-    force[1] -= g1;
-    force[2] -= g2;
-    virial[0] -= d[0]*g0;
-    virial[1] -= d[0]*g1;
-    virial[2] -= d[0]*g2;
-    virial[3] -= d[1]*g0;
-    virial[4] -= d[1]*g1;
-    virial[5] -= d[1]*g2;
-    virial[6] -= d[2]*g0;
-    virial[7] -= d[2]*g1;
-    virial[8] -= d[2]*g2;
+    cols.add( c, g[0], g[1], g[2] );
+    force[0] -= g[0];
+    force[1] -= g[1];
+    force[2] -= g[2];
+    virial[0] -= d[0]*g[0];
+    virial[1] -= d[0]*g[1];
+    virial[2] -= d[0]*g[2];
+    virial[3] -= d[1]*g[0];
+    virial[4] -= d[1]*g[1];
+    virial[5] -= d[1]*g[2];
+    virial[6] -= d[2]*g[0];
+    virial[7] -= d[2]*g[1];
+    virial[8] -= d[2]*g[2];
   }
 };
 
 /// The backward pass of row r: returns the force on the atom of row r, adds the forces on the
 /// columns to cols (only without GROUP) and the derivative with respect to the box to virial.
-/// G are the forces on the sums of all the rows (ncomponents per row)
+/// G are the forces on the sums of all the rows (ncomponents per row). Only the neighbours of
+/// the slice-th of nslices parts of the search are visited (see neighborSumsVisit)
 template<class PF, class Columns>
 inline Vector neighborForcesRow( const PF& pairs, const NeighborSumsGeometry& g, const double* G,
-                                 const std::size_t r, Columns& cols, double* virial ) {
+                                 const std::size_t r, Columns& cols, double* virial,
+                                 const unsigned slice=0, const unsigned nslices=1 ) {
   const unsigned ncomp=pairs.ncomponents;
   const double* Gr=G+r*ncomp;
-  double f[PF::maxComponents];
-  Vector df[PF::maxComponents];
   const std::size_t i=g.rowstart+r;
   const Vector xi( g.positions[3*i], g.positions[3*i+1], g.positions[3*i+2] );
   if( g.symmetric ) {
-    NeighborSumsGather<PF> gather{pairs,G,Gr,f,df,Vector(0.0,0.0,0.0),{0,0,0,0,0,0,0,0,0}};
-    neighborSumsVisit( g, xi, static_cast<unsigned>(r), gather );
+    NeighborSumsGather<PF> gather{pairs,G,Gr,Vector(0.0,0.0,0.0),{0,0,0,0,0,0,0,0,0}};
+    neighborSumsVisit( g, xi, static_cast<unsigned>(r), gather, slice, nslices );
     for(unsigned k=0; k<9; ++k) {
       virial[k] += gather.virial[k];
     }
@@ -375,18 +470,34 @@ inline Vector neighborForcesRow( const PF& pairs, const NeighborSumsGeometry& g,
   if( !any ) {
     return Vector(0.0,0.0,0.0);
   }
-  NeighborSumsScatter<PF,Columns> scatter{pairs,Gr,f,df,cols,Vector(0.0,0.0,0.0),{0,0,0,0,0,0,0,0,0}};
-  neighborSumsVisit( g, xi, std::numeric_limits<unsigned>::max(), scatter );
+  NeighborSumsScatter<PF,Columns> scatter{pairs,Gr,cols,Vector(0.0,0.0,0.0),{0,0,0,0,0,0,0,0,0}};
+  neighborSumsVisit( g, xi, std::numeric_limits<unsigned>::max(), scatter, slice, nslices );
   for(unsigned k=0; k<9; ++k) {
     virial[k] += scatter.virial[k];
   }
   return scatter.force;
 }
 
-/// The action: COORDINATIONNUMBER_SUMS, Qn_SUMS, Qn_DENOM_SUMS on the CPU (OpenMP, MPI).
+/// The sums of Q1,...,Q6 can also give the coordination numbers (their denominators) in the same
+/// pass over the neighbours: Qn_DENOM_SUMS with SUMS gets them from here, and gives back the forces
+/// on them, which are added in the backward pass of the sums
+class NeighborSumsDenominators {
+public:
+  virtual ~NeighborSumsDenominators() = default;
+  /// one more sum per row, the coordination number; false if these sums cannot give it
+  virtual bool addDenominators() = 0;
+  /// the coordination numbers of this step (one per row)
+  virtual const std::vector<double>& getDenominators() const = 0;
+  /// the forces on the coordination numbers of this step, before the backward pass of the sums
+  virtual void setDenominatorForces( const std::vector<double>& f ) = 0;
+};
+
+/// The action: COORDINATIONNUMBER_SUMS, Qn_SUMS on the CPU (OpenMP, MPI).
 /// The openaccPTM plugin derives from it and overrides computeSums and computeForces
 template <class PF>
-class NeighborSums : public ActionWithVector {
+class NeighborSums :
+  public ActionWithVector,
+  public NeighborSumsDenominators {
 protected:
   PF pairs;
   double dmax2=0.0;
@@ -405,9 +516,23 @@ protected:
   std::vector<double> sums, forcesOnSums;
   /// all the rows, to copy sums and forcesOnSums from and to the values (transferStashToValues)
   std::vector<unsigned> allrows;
+  /// with the coordination numbers as the last sum of each row (addDenominators): the values
+  /// (or the forces on them) without it, the coordination numbers and the forces on them
+  bool withDenominators=false;
+  bool denominatorForcesSet=false;
+  std::vector<double> valueStash, denominators, denominatorForces;
   /// the rows of this process: first, number
   std::size_t myfirst=0, mycount=0;
-  /// the forces on the columns of each thread, and their virials (without GROUP)
+  /// the search around each row is split in nslices parts (see neighborSumsVisit), done by
+  /// different threads; this process does the parts slicefirst..sliceend-1
+  unsigned nslices=1, slicefirst=0, sliceend=1;
+  /// with MPI and few rows, the processes share the columns instead of the rows
+  bool splitColumns=false;
+  /// the sums of each row and part (mycount x nslices x ncomponents), and the forces on the
+  /// atom of each row from each part (mycount x nslices x 3)
+  std::vector<double> sliceSums, sliceForces;
+  /// the forces on the columns of each thread, and their virials (without GROUP; with nslices>1
+  /// the virials of the parts)
   std::vector<std::vector<double> > threadForces;
   std::vector<char> threadUsed;
   std::vector<double> threadVirials;
@@ -420,16 +545,25 @@ protected:
   virtual bool firstProcessOnly() const {
     return false;
   }
+  /// the number of parts of the search around each row of this step (nslices): on the CPU 1,
+  /// or (all the pairs, few rows) chunks of about columnChunk columns, so that the threads share
+  /// the columns. It does not depend on the number of threads
+  virtual unsigned numberOfSlices() const;
   /// the sums of rows myfirst..myfirst+mycount-1 into sums (on all the others there are zeros)
   virtual void computeSums();
   /// the forces of the rows of this process (whole array, zero elsewhere), from forcesOnSums
   virtual void computeForces( std::vector<double>& outforces );
   /// the cells and the geometry of this step
   void buildCells();
-  /// the OpenMP threads for the rows of this process (at least 8 rows per thread)
-  unsigned numberOfThreads() const {
-    return std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), mycount/8 ) );
+  /// the OpenMP threads for n tasks (at least 8 tasks per thread)
+  static unsigned numberOfThreads( const std::size_t n ) {
+    return std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), n/8 ) );
   }
+  /// without GROUP, at most this many rows are computed without the cells: all the pairs,
+  /// the columns shared between the threads (and the processes)
+  std::size_t fewRows() const;
+  /// the columns of a part of the search with all the pairs, on the CPU
+  static constexpr std::size_t columnChunk=1024;
 private:
   void setMyRows();
 public:
@@ -440,6 +574,22 @@ public:
   }
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override;
+  bool addDenominators() override {
+    if( !pairs.addDenominator() ) {
+      return false;
+    }
+    withDenominators=true;
+    return true;
+  }
+  const std::vector<double>& getDenominators() const override {
+    return denominators;
+  }
+  void setDenominatorForces( const std::vector<double>& f ) override {
+    denominatorForces=f;
+    denominatorForcesSet=true;
+    // the backward pass runs also if the sums have no forces
+    getPntrToComponent(0)->addForce();
+  }
 };
 
 template <class PF>
@@ -539,13 +689,32 @@ NeighborSums<PF>::NeighborSums( const ActionOptions& ao ):
 template <class PF>
 void NeighborSums<PF>::setMyRows() {
   const std::size_t size=comm.Get_size(), rank=comm.Get_rank();
-  if( splitRows() ) {
+  splitColumns = splitRows() && !symmetric && nrows<=fewRows();
+  if( splitColumns ) {
+    myfirst = 0;
+    mycount = nrows;
+  } else if( splitRows() ) {
     myfirst = (nrows*rank)/size;
     mycount = (nrows*(rank+1))/size - myfirst;
   } else {
     myfirst = 0;
     mycount = ( firstProcessOnly() && rank>0 ) ? 0 : nrows;
   }
+}
+
+template <class PF>
+std::size_t NeighborSums<PF>::fewRows() const {
+  // TEMPORARY, for the measurements: PLUMED_NEIGHBORSUMS_FEWROWS
+  static const long env = std::getenv("PLUMED_NEIGHBORSUMS_FEWROWS") ? std::atol(std::getenv("PLUMED_NEIGHBORSUMS_FEWROWS")) : -1;
+  return env>=0 ? env : 8;
+}
+
+template <class PF>
+unsigned NeighborSums<PF>::numberOfSlices() const {
+  if( geometry.usecells || symmetric || mycount>fewRows() ) {
+    return 1;
+  }
+  return std::max<std::size_t>( 1, (ncols+columnChunk/2)/columnChunk );
 }
 
 template <class PF>
@@ -561,6 +730,10 @@ void NeighborSums<PF>::buildCells() {
   geometry.usecells = false;
   if( dmax2>=0.25*std::numeric_limits<double>::max() ) {
     // no D_MAX: all the pairs
+    return;
+  }
+  if( !symmetric && mycount<=fewRows() ) {
+    // few rows: one distance per column costs less than sorting all the columns in the cells
     return;
   }
   colpos.assign( pos.begin()+colstart, pos.begin()+colstart+ncols );
@@ -587,6 +760,16 @@ void NeighborSums<PF>::calculate() {
   }
   if( mycount>0 ) {
     buildCells();
+    nslices = numberOfSlices();
+    slicefirst = 0;
+    sliceend = nslices;
+    if( splitColumns ) {
+      // the processes share the parts of the search (at least one each)
+      const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+      nslices = std::max( nslices, size );
+      slicefirst = (nslices*rank)/size;
+      sliceend = (nslices*(rank+1))/size;
+    }
     computeSums();
   }
   if( splitRows() ) {
@@ -595,17 +778,55 @@ void NeighborSums<PF>::calculate() {
     comm.Bcast( sums, 0 );
   }
   // sums has the layout of the stash of the task manager (the components of a row together)
-  transferStashToValues( allrows, sums );
+  if( !withDenominators ) {
+    transferStashToValues( allrows, sums );
+    return;
+  }
+  // the coordination numbers are the last sum of each row: they are not values of this action
+  const std::size_t nv=ncomp-1;
+  valueStash.resize( nrows*nv );
+  denominators.resize( nrows );
+  denominatorForcesSet=false;
+  #pragma omp parallel for num_threads(numberOfThreads(nrows)) schedule(static)
+  for(std::size_t r=0; r<nrows; ++r) {
+    std::copy( sums.begin()+r*ncomp, sums.begin()+r*ncomp+nv, valueStash.begin()+r*nv );
+    denominators[r] = sums[r*ncomp+nv];
+  }
+  transferStashToValues( allrows, valueStash );
 }
 
 template <class PF>
 void NeighborSums<PF>::computeSums() {
   const unsigned ncomp = pairs.ncomponents;
   const std::size_t first=myfirst, count=mycount;
-  #pragma omp parallel for num_threads(numberOfThreads()) schedule(static)
-  for(std::size_t rr=0; rr<count; ++rr) {
-    const std::size_t r = first+rr;
-    neighborSumsRow( pairs, geometry, r, sums.data()+r*ncomp );
+  if( nslices==1 ) {
+    #pragma omp parallel for num_threads(numberOfThreads(count)) schedule(static)
+    for(std::size_t rr=0; rr<count; ++rr) {
+      const std::size_t r = first+rr;
+      neighborSumsRow( pairs, geometry, r, sums.data()+r*ncomp );
+    }
+    return;
+  }
+  // the parts of the search, then their sums in order (the result does not depend on the threads)
+  const unsigned S=nslices, s0=slicefirst, ns=sliceend-slicefirst;
+  sliceSums.resize( count*ns*ncomp );
+  #pragma omp parallel num_threads(numberOfThreads(count*ns))
+  {
+    #pragma omp for schedule(static)
+    for(std::size_t t=0; t<count*ns; ++t) {
+      neighborSumsRow( pairs, geometry, first+t/ns, sliceSums.data()+t*ncomp, s0+t%ns, S );
+    }
+    #pragma omp for schedule(static)
+    for(std::size_t rr=0; rr<count; ++rr) {
+      double* sum = sums.data()+(first+rr)*ncomp;
+      for(unsigned k=0; k<ncomp; ++k) {
+        double v=0.0;
+        for(unsigned s=0; s<ns; ++s) {
+          v += sliceSums[(rr*ns+s)*ncomp+k];
+        }
+        sum[k]=v;
+      }
+    }
   }
 }
 
@@ -619,10 +840,62 @@ struct NeighborSumsThreadColumns {
   }
 };
 
+/// The forces on the columns written directly: each column is visited by one thread
+struct NeighborSumsDirectColumns {
+  double* forces;
+  inline void add( const unsigned c, const double g0, const double g1, const double g2 ) {
+    forces[3*c] += g0;
+    forces[3*c+1] += g1;
+    forces[3*c+2] += g2;
+  }
+};
+
 template <class PF>
 void NeighborSums<PF>::computeForces( std::vector<double>& outforces ) {
   const std::size_t natoms = getNumberOfAtoms();
-  const unsigned nt = numberOfThreads();
+  if( nslices>1 ) {
+    // the threads share the parts of the search (all the pairs: each part is a block of
+    // columns): the forces on the columns are written directly, those on the rows are
+    // summed over the parts in order
+    plumed_assert( !geometry.usecells );
+    const unsigned S=nslices, s0=slicefirst, ns=sliceend-slicefirst;
+    const std::size_t first=myfirst, count=mycount;
+    const double* G = forcesOnSums.data();
+    sliceForces.resize( 3*count*ns );
+    threadVirials.assign( 9*ns, 0.0 );
+    #pragma omp parallel num_threads(std::max<unsigned>( 1, std::min<unsigned>( OpenMP::getNumThreads(), ns ) ))
+    {
+      NeighborSumsDirectColumns cols{outforces.data()+3*colstart};
+      #pragma omp for schedule(static)
+      for(unsigned s=0; s<ns; ++s) {
+        double* virial = threadVirials.data()+9*s;
+        for(std::size_t rr=0; rr<count; ++rr) {
+          const Vector fr = neighborForcesRow( pairs, geometry, G, first+rr, cols, virial, s0+s, S );
+          for(unsigned k=0; k<3; ++k) {
+            sliceForces[3*(rr*ns+s)+k] = fr[k];
+          }
+        }
+      }
+      #pragma omp for schedule(static)
+      for(std::size_t rr=0; rr<count; ++rr) {
+        for(unsigned k=0; k<3; ++k) {
+          double f=0.0;
+          for(unsigned s=0; s<ns; ++s) {
+            f += sliceForces[3*(rr*ns+s)+k];
+          }
+          outforces[3*(rowstart+first+rr)+k] += f;
+        }
+      }
+    }
+    // the virials of the parts, in order
+    for(unsigned s=0; s<ns; ++s) {
+      for(unsigned k=0; k<9; ++k) {
+        outforces[3*natoms+k] += threadVirials[9*s+k];
+      }
+    }
+    return;
+  }
+  const unsigned nt = numberOfThreads(mycount);
   threadVirials.assign( 9*nt, 0.0 );
   if( !symmetric ) {
     threadForces.resize( nt );
@@ -679,7 +952,22 @@ void NeighborSums<PF>::applyNonZeroRankForces( std::vector<double>& outforces ) 
   const unsigned ncomp = pairs.ncomponents;
   // the forces on the sums are the same on all the processes
   forcesOnSums.resize( nrows*ncomp );
-  transferForcesToStash( allrows, forcesOnSums );
+  if( withDenominators ) {
+    // the forces on the coordination numbers (from Qn_DENOM_SUMS) are those on the last sum
+    const std::size_t nv=ncomp-1;
+    valueStash.resize( nrows*nv );
+    transferForcesToStash( allrows, valueStash );
+    const bool den=denominatorForcesSet;
+    plumed_assert( !den || denominatorForces.size()==nrows );
+    #pragma omp parallel for num_threads(numberOfThreads(nrows)) schedule(static)
+    for(std::size_t r=0; r<nrows; ++r) {
+      std::copy( valueStash.begin()+r*nv, valueStash.begin()+(r+1)*nv, forcesOnSums.begin()+r*ncomp );
+      forcesOnSums[r*ncomp+nv] = den ? denominatorForces[r] : 0.0;
+    }
+    denominatorForcesSet=false;
+  } else {
+    transferForcesToStash( allrows, forcesOnSums );
+  }
   std::fill( outforces.begin(), outforces.end(), 0.0 );
   if( mycount>0 ) {
     // the cells and the geometry are those of the forward pass of this step

@@ -73,7 +73,7 @@
 "q1_norm2" : { "type": "vector", "desciption": "" }
 }, 
 "q1_norm" : { 
-"action" : "CUSTOM", 
+"action" : "Q1", 
 "q1_norm" : { "type": "vector", "desciption": "" }
 }, 
 "q1" : { 

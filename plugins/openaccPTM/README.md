@@ -88,14 +88,19 @@ With `USEGPU`, [COORDINATIONNUMBER](COORDINATIONNUMBER.md) and [Q1](Q1.md), [Q3]
 of each atom on the GPU in a single pass, without building the contact matrix (`COORDINATIONNUMBER_SUMSACC`, `Q6_SUMSACC`, ...,
 see `src/NeighborSums.cpp`): only the positions and the linked cells go to the GPU, and only the sums and the forces on the atoms
 come back. These are the actions that the CPU uses without `USEGPU` (`src/symfunc/NeighborSums.h` in PLUMED), with the same
-kernels: the linked cells are built on the CPU and searched on the GPU, in any box. With `SPECIES` the force on each atom is gathered
+kernels: the linked cells are built on the CPU and searched on the GPU, in any box. The search around each atom is split between
+several GPU threads (groups of the rows of cells around it), so that the GPU has enough threads, and the partial sums of each atom
+are added in order by a second kernel. With few atoms in `SPECIESA` (e.g. one ion against all the water molecules) the cells are not
+built: the GPU threads share the atoms of `SPECIESB` in blocks. With `SPECIES` the force on each atom is gathered
 from its own neighbours (no atomics); with `SPECIESA` and `SPECIESB` the forces on the second group are added with atomics.
+For Q1, ..., Q6 the coordination numbers (the denominators) are computed in the same pass as the sums of the spherical harmonics,
+and the forces of the spherical harmonics are contracted pair by pair, without storing the derivatives of the $2(2l+1)$ components.
 The results are those of the CPU version (in double precision).
 This is not used with `MASK`, and for [COORDINATION_MOMENTS](COORDINATION_MOMENTS.md): the contact matrix is then computed
 on the GPU as before. The actions of the contact matrix (e.g. `q6_mat`, `q6_sh`) are still created, and are computed (on the GPU)
 only when another action uses them.
-For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums ([COMBINE](COMBINE.md)) is always computed on the CPU, which is faster
-than moving the $2(2l+1)$ vectors to the GPU and back.
+For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums (`Q6_NORM`, as [COMBINE](COMBINE.md) and the square root) is always
+computed on the CPU, which is faster than moving the $2(2l+1)$ vectors to the GPU and back.
 
 ### Secondary structure
 
