@@ -165,6 +165,27 @@ private:
   std::vector<unsigned> my_tasks;
 /// MULTIGPU: with MPI the tasks are shared between the processes, each using its GPU
   bool multigpu=false;
+/// A copy of actiondata that stays on the device between the calls (see residentActionData)
+  std::unique_ptr<typename T::input_type> resident_actiondata;
+/// The generation of actiondata (see ParallelTaskManager::getActionInputGeneration) of resident_actiondata
+  unsigned long resident_generation=0;
+/// Returns a copy of actiondata that is present on the device (of the current device scope).
+/// It is copied and uploaded only when actiondata may have changed since the last upload:
+/// before, actiondata was copied on the host (it was passed by value) and moved with enter/exit
+/// data at every call, twice per step. For large action data (e.g. the 370k segments of the
+/// secondary structure variables of 144 peptides: 45 MB) this was most of the time of the action
+  const typename T::input_type* residentActionData() {
+    const unsigned long generation=this->getActionInputGeneration();
+    if( !resident_actiondata || generation!=resident_generation ) {
+      if( resident_actiondata ) {
+        resident_actiondata->removeFromACCDevice();
+      }
+      resident_actiondata=std::make_unique<typename T::input_type>( actiondata );
+      resident_actiondata->toACCDevice();
+      resident_generation=generation;
+    }
+    return resident_actiondata.get();
+  }
 /// The GPU of this action (chosen at the first call), -1 without GPUs
   int getDevice() {
     return device.resolve(*action);
@@ -212,6 +233,9 @@ public:
   ~AccParallelTaskManager() {
     // members are destroyed after the scope ends: the buffers are freed here
     ACC::DeviceScope scope(device.id());
+    if( resident_actiondata ) {
+      resident_actiondata->removeFromACCDevice();
+    }
     devws.reset();
   }
   AccParallelTaskManager(const AccParallelTaskManager&)=delete;
@@ -302,7 +326,7 @@ ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
 /// rest of the host stash is set to zero (it belongs to the tasks of the
 /// other processes, or to inactive tasks)
 template <class T, typename precision>
-void runAllTasksACC(typename T::input_type actiondata,
+void runAllTasksACC(const typename T::input_type* ad,
                     ParActionsInput<precision> myinput,
                     std::vector<precision>& value_stash,
                     const unsigned* tasks,
@@ -316,7 +340,6 @@ void runAllTasksACC(typename T::input_type actiondata,
   const std::size_t stash_hi = std::min((std::size_t(*tmax)+1)*myinput.nscalars, value_stash.size());
   // from here on the pointers in myinput are device addresses
   myinput = toDeviceInput(myinput, ws, true);
-  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
@@ -331,7 +354,7 @@ void runAllTasksACC(typename T::input_type actiondata,
   // myinput and the scalars are passed by value as kernel arguments.
   // One task per thread, as in the force kernel
   {
-#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
+#pragma acc parallel loop gang vector async(accQueue) present(ad[0:1]) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   nderivatives_per_task, \
@@ -353,7 +376,7 @@ void runAllTasksACC(typename T::input_type actiondata,
                    buffer+workspace_size*i
                    :nullptr  );
       // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, myinput, myout );
+      T::performTask( task_index, *ad, myinput, myout );
     }
   }
   if(stash_hi>stash_lo) {
@@ -367,7 +390,7 @@ void runAllTasksACC(typename T::input_type actiondata,
 }
 #else
 template <class T, typename precision>
-void runAllTasksACC(typename T::input_type actiondata,
+void runAllTasksACC(const typename T::input_type* ad,
                     ParActionsInput<precision> myinput,
                     std::vector<precision>& value_stash,
                     const unsigned* tasks,
@@ -409,7 +432,7 @@ void AccParallelTaskManager<T>::runAllTasks() {
     if( count>0 ) {
       ACC::DeviceScope scope(getDevice());
       runAllTasksACC<T>(
-        actiondata,
+        residentActionData(),
         myinput,
         value_stash,
         partialTaskList.data()+first,
@@ -446,7 +469,7 @@ void AccParallelTaskManager<T>::runAllTasks() {
 /// the first and the last task is copied to the device
 template <class T, typename precision>
 void applyForcesWithACC(PLMD::View<precision> forcesForApply,
-                        typename T::input_type actiondata,
+                        const typename T::input_type* ad,
                         ParActionsInput<precision> myinput,
                         const std::vector<precision>& value_stash,
                         const unsigned* tasks,
@@ -463,7 +486,6 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   // The input data is the one of the last runAllTasks, so nothing is copied
   // here unless something changed in between
   myinput = toDeviceInput(myinput, ws, false);
-  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
@@ -534,7 +556,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     // One task per thread (gang vector), and every inner loop is sequential:
     // without this, nvc++ makes the task loop gang-only and vectorizes the
     // short inner loops, i.e. one block of 128 threads per task, mostly idle
-#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
+#pragma acc parallel loop gang vector async(accQueue) present(ad[0:1]) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   forcesForApply_size, \
@@ -559,7 +581,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                    workspace_size,
                    (workspace_size>0)?buffer+workspace_size*t:nullptr);
       // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, myinput, myout );
+      T::performTask( task_index, *ad, myinput, myout );
 
       // this task's column of the buffer of the shared entries
 #pragma acc loop seq
@@ -581,7 +603,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       }
 
       // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, *ad );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
         auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
@@ -589,7 +611,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
         T::getForceIndices( task_index,
                             vID,
                             forcesForApply_size,
-                            actiondata,
+                            *ad,
                             myinput,
                             force_indices );
 
@@ -674,7 +696,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #else
 template <class T, typename precision>
 void applyForcesWithACC(PLMD::View<precision> forcesForApply,
-                        typename T::input_type actiondata,
+                        const typename T::input_type* ad,
                         ParActionsInput<precision> myinput,
                         const std::vector<precision>& value_stash,
                         const unsigned* tasks,
@@ -716,7 +738,7 @@ void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply
     }
     applyForcesWithACC<T>(
       PLMD::View<precision> { forces.ffa.data(), forces.ffa.size() },
-      actiondata,
+      residentActionData(),
       myinput,
       value_stash,
       partialTaskList.data()+first,
