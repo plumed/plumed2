@@ -568,11 +568,11 @@ protected:
     return std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), n/8 ) );
   }
   /// without GROUP, at most this many rows are computed without the cells: all the pairs,
-  /// the columns shared between the threads (and the processes). On the CPU twice the number of
-  /// threads: building the cells (serial) costs about as much as one distance per column for
-  /// two rows per thread (measured with 2 and 32 threads)
+  /// the columns shared between the threads (and the processes). On the CPU the number of
+  /// threads (at least 4): building the cells and searching them costs about as much as one
+  /// distance per column for 1.4 rows per thread (measured with 32 threads, 100000 columns)
   virtual std::size_t fewRows() const {
-    return std::max<std::size_t>( 4, 2*OpenMP::getNumThreads() );
+    return std::max<std::size_t>( 4, OpenMP::getNumThreads() );
   }
   /// the columns of a part of the search with all the pairs, on the CPU
   static constexpr std::size_t columnChunk=1024;
