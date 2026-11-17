@@ -49,7 +49,16 @@ $$
 but it can be changed using the optional SWITCH option.  You can find more information about the various switching functions that you can
 use with this action in the documentation for [LESS_THAN](LESS_THAN.md).
 
-To make your __calculation faster you can use a neighbor list__, which makes it that only a relevant subset of the pairwise distance are calculated at every step.
+To make your __calculation faster you can use a neighbor list__: every NL_STRIDE steps the pairs closer than NL_CUTOFF are listed,
+and only those are computed at the following steps.
+
+- With NLIST the list is built by checking all the pairs. Use it with small groups (up to about a hundred atoms), or when one of the two groups has only a few atoms (fewer than about ten).
+- With NLISTCELLS the list is built with link cells, at a cost that grows with the number of atoms rather than with the number of pairs. Use it for larger groups:
+  building the list is about 4 times faster with 1000 atoms, and about 30 times with 10000. The pairs are the same, in another order.
+- NL_CUTOFF must be larger than D_MAX of the switching function (set D_MAX: without it the switching function is not zero at any distance, and the pairs beyond NL_CUTOFF are ignored).
+  The difference NL_CUTOFF-D_MAX is a skin: the list is exact as long as no pair of atoms gets closer by more than the skin between two updates.
+  For atoms in a liquid at room temperature with a time step of 2 fs, a skin of 0.1 nm with NL_STRIDE=10 is a safe choice.
+  A larger skin allows a larger stride but makes every step slower, since more pairs are computed. You can check your choice by comparing a short run with one without neighbor list.
 
 If GROUPB is empty, the coordination  number will be calculated based on the $\frac{N(N-1)}{2}$ pairs in GROUPA. This avoids computing
 permuted indexes (e.g. pair (i,j) and (j,i)) twice and ensures that the calculation runs at twice the speed.
@@ -60,14 +69,16 @@ so that they actually count as "zero".
 
 ## Examples
 
-The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbor list is used to make this calculation faster, this neighbor list is updated every 100 steps.
+The following example instructs plumed to calculate the total coordination number of the atoms in group 1-10 with the atoms in group 20-100.  For atoms 1-10 coordination numbers are calculated that count the number of atoms from the second group that are within 0.3 nm of the central atom.  A neighbor list is used to make this calculation faster: it contains the pairs within 0.5 nm (a skin of 0.1 nm beyond D_MAX) and it is updated every 10 steps.
 
 ```plumed
-COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
+COORDINATION GROUPA=1-10 GROUPB=20-100 SWITCH={RATIONAL R_0=0.3 D_MAX=0.4} NLIST NL_CUTOFF=0.5 NL_STRIDE=10
 ```
 
+With larger groups the neighbor list is built faster with link cells:
+
 ```plumed
-COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLISTCELLS NL_CUTOFF=0.5 NL_STRIDE=80
+COORDINATION GROUPA=1-1000 GROUPB=1001-5000 SWITCH={RATIONAL R_0=0.3 D_MAX=0.4} NLISTCELLS NL_CUTOFF=0.5 NL_STRIDE=10
 ```
 
 The following is a dummy example which should compute the value 0 because the self interaction

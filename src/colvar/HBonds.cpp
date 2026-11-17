@@ -89,7 +89,7 @@ PRINT ARG=hb FILE=colvar
 The atoms can also be given explicitly. This input counts the hydrogen bonds in a box of 64 water molecules,
 in which the oxygens are atoms 1, 4, 7... and the hydrogens are the atoms that follow each oxygen.
 The oxygens are both donors and acceptors, and a neighbor list on the donor-acceptor distance is used
-(as for [COORDINATION](COORDINATION.md), NL_CUTOFF should be larger than D_MAX of the switching function):
+(see [COORDINATION](COORDINATION.md) for the choice between NLIST and NLISTCELLS, and of NL_CUTOFF and NL_STRIDE; NL_CUTOFF should be larger than D_MAX of the switching function):
 
 ```plumed
 hb: HBONDS ...
