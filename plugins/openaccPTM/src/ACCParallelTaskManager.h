@@ -35,6 +35,7 @@
 #include "ACCDevice.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -460,6 +461,23 @@ void AccParallelTaskManager<T>::runAllTasks() {
   action->transferStashToValues( partialTaskList,  value_stash );
 }
 
+/// The order of the tasks in the force kernel: consecutive threads take tasks
+/// that are this many positions apart in the list (32 by default, 1 for the order
+/// of the list, set with the environment variable PLUMED_ACC_TASK_INTERLEAVE).
+/// Neighbouring tasks often add forces to the same atoms (e.g. segments that
+/// share a strand, rows of a matrix with the same columns), and the threads of
+/// a warp, which run together, are serialized when their atomics go to the same
+/// address.
+inline std::size_t accTaskInterleaveFromEnv() {
+  const char* env=std::getenv("PLUMED_ACC_TASK_INTERLEAVE");
+  const long n = env ? std::atol(env) : 32;
+  return static_cast<std::size_t>( n>0 ? n : 1 );
+}
+inline std::size_t accTaskInterleave() {
+  static const std::size_t interleave=accTaskInterleaveFromEnv();
+  return interleave;
+}
+
 //use the __PLUMED_USE_OPENACC_FORCESMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_FORCESMINE
@@ -528,6 +546,12 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   // With atomics the order of the sums is not fixed, so results are
   // reproducible only up to rounding.
   constexpr std::size_t maxShared = 32;
+  // thread w, which uses the part w of the work buffers, computes the task in
+  // position t of the list, see accTaskInterleave (with nint=1, t=w). There are
+  // nwork>=nactive_tasks threads: the last ones may have no task
+  const std::size_t nint = accTaskInterleave();
+  const std::size_t chunk = (nactive_tasks+nint-1)/nint;
+  const std::size_t nwork = nint*chunk;
   const std::size_t n_unsafe = (forcesForApply_size > myinput.threadunsafe_forces_start) ?
                                forcesForApply_size - myinput.threadunsafe_forces_start : 0;
   const std::size_t nshared = (n_unsafe < maxShared) ? n_unsafe : maxShared;
@@ -536,14 +560,14 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
   // space for the indices of one value at a time
   const std::size_t ind_stride_task = nind_per_scalar;
 
-  auto derivatives = ws.getDerivatives(nderivatives_per_task*nactive_tasks);
-  ws.indices.resize(ind_stride_task*nactive_tasks);
+  auto derivatives = ws.getDerivatives(nderivatives_per_task*nwork);
+  ws.indices.resize(ind_stride_task*nwork);
   auto indices = ws.indices.devicePtr();
-  ws.valstmp.resize(myinput.sizeOfFakeVals()*nactive_tasks);
+  ws.valstmp.resize(myinput.sizeOfFakeVals()*nwork);
   auto valstmp = ws.valstmp.devicePtr();
-  ws.buffer.resize(workspace_size*nactive_tasks);
+  ws.buffer.resize(workspace_size*nwork);
   auto buffer = ws.buffer.devicePtr();
-  ws.sharedForces.resize(nshared*nactive_tasks);
+  ws.sharedForces.resize(nshared*nwork);
   auto sharedForces = ws.sharedForces.devicePtr();
 
 #define derivativeDrift(taskID,scalarID)  taskID*nderivatives_per_task \
@@ -558,7 +582,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     // short inner loops, i.e. one block of 128 threads per task, mostly idle
 #pragma acc parallel loop gang vector async(accQueue) present(ad[0:1]) \
                      firstprivate(myinput, \
-                                  nactive_tasks, \
+                                  nactive_tasks, nint, chunk, nwork, \
                                   forcesForApply_size, \
                                   nderivatives_per_task, ind_stride_task, \
                                   nshared, sharedStart, \
@@ -572,22 +596,26 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                                   sharedForces, \
                                   buffer) \
                           default(none)
-    for(unsigned t=0; t<nactive_tasks; ++t) {
+    for(std::size_t w=0; w<nwork; ++w) {
+      // this thread's column of the buffer of the shared entries
+#pragma acc loop seq
+      for(std::size_t k=0; k<nshared; ++k) {
+        sharedForces[k*nwork+w]=0.0;
+      }
+      const std::size_t t=(w%nint)*chunk+w/nint;
+      if(t>=nactive_tasks) {
+        continue;
+      }
       std::size_t task_index = partialTaskList_data[t];
       auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
-                   valstmp+myinput.nscalars*t,
+                   valstmp+myinput.nscalars*w,
                    nderivatives_per_task,
-                   derivatives+nderivatives_per_task*t,
+                   derivatives+nderivatives_per_task*w,
                    workspace_size,
-                   (workspace_size>0)?buffer+workspace_size*t:nullptr);
+                   (workspace_size>0)?buffer+workspace_size*w:nullptr);
       // Calculate the stuff in the loop for this action
       T::performTask( task_index, *ad, myinput, myout );
 
-      // this task's column of the buffer of the shared entries
-#pragma acc loop seq
-      for(std::size_t k=0; k<nshared; ++k) {
-        sharedForces[k*nactive_tasks+t]=0.0;
-      }
       // private accumulators of the other thread-unsafe entries: slot s holds
       // the s-th thread-unsafe contribution of the current value; it is summed
       // to the one of the next value if they go to the same entry, and added
@@ -606,7 +634,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, *ad );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
-        auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
+        auto force_indices = ForceIndexHolder::create(myinput, indices + w*ind_stride_task);
         // Get the indices for forces
         T::getForceIndices( task_index,
                             vID,
@@ -619,7 +647,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
         auto finput = ForcesInput<precision>::create ( myinput.nforcescalars,
                       value_stash_data + stashDrift(task_index,vID),
                       myinput.nderivatives_per_scalar,
-                      derivatives + derivativeDrift(t,vID));
+                      derivatives + derivativeDrift(w,vID));
 
         // Gather forces that can be gathered locally
         ParallelTaskManager<T>::gatherThreadSafeForces( myinput,
@@ -638,7 +666,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
             const std::size_t fi = force_indices.indices[i][d];
             const precision contribution = ff*finput.deriv[i][d];
             if(fi>=sharedStart) {
-              sharedForces[(fi-sharedStart)*nactive_tasks+t] += contribution;
+              sharedForces[(fi-sharedStart)*nwork+w] += contribution;
             } else if(s<nslots) {
               if(slotIndex[s]==fi) {
                 slotForce[s]+=contribution;
@@ -670,18 +698,18 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
     }
 
     // sum the columns of the buffer of the shared entries: one gang per entry,
-    // the threads of the gang sum over the tasks. It runs after the previous
+    // the threads of the gang sum over the threads of the previous kernel. It runs after the previous
     // kernel, on the same queue, and only it writes these entries
     if(nshared>0) {
 #pragma acc parallel loop gang async(accQueue) \
-                     firstprivate(nactive_tasks, nshared, sharedStart) \
+                     firstprivate(nwork, nshared, sharedStart) \
                         deviceptr(sharedForces, forcesForApply_data) \
                           default(none)
       for(std::size_t k=0; k<nshared; ++k) {
         double tmp = 0.0;
 #pragma acc loop vector reduction(+:tmp)
-        for(unsigned t=0; t<nactive_tasks; ++t) {
-          tmp += sharedForces[k*nactive_tasks+t];
+        for(std::size_t w=0; w<nwork; ++w) {
+          tmp += sharedForces[k*nwork+w];
         }
         forcesForApply_data[sharedStart+k] += tmp;
       }

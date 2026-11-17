@@ -103,6 +103,20 @@ only when another action uses them.
 For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums (`Q6_NORM`, as [COMBINE](COMBINE.md) and the square root) is always
 computed on the CPU, which is faster than moving the $2(2l+1)$ vectors to the GPU and back.
 
+### Beta sheets
+
+With `USEGPU` and `TYPE=DRMSD`, the number of segments that are similar to a sheet computed by [ANTIBETARMSD](ANTIBETARMSD.md)
+and [PARABETARMSD](PARABETARMSD.md) (the value, or the `lessthan` component) comes from `ANTIBETARMSD_SCALAR_ACC` and
+`PARABETARMSD_SCALAR_ACC` (`src/SheetCount.cpp`), the GPU version of the single action that PLUMED uses on the CPU
+(`src/secondarystructure/SheetCount.h`), with the same functions for a segment: a first kernel lists the pairs of strands
+within `STRANDS_CUTOFF`, one GPU thread per listed segment computes its distance from the references, the switching function
+and the derivatives, which are added to the atoms with atomics, and a last kernel sums the values and the virial. The forces
+need no second pass. The vectors of the expanded input are computed (on the GPU) only when another action uses them.
+
+In the force kernels of the task manager and in the kernel of the sheets, consecutive GPU threads take tasks that are 32
+positions apart in the list of the tasks, because neighbouring tasks often add forces to the same atoms and the atomics of
+the threads of a warp on the same address are serialized. `PLUMED_ACC_TASK_INTERLEAVE=1` gives the order of the list.
+
 ### Which GPU is used
 
 All the actions of the plugin (SAXS and SANS included) use the same GPU as the MD code, so that they work on a node with
@@ -149,8 +163,8 @@ The next section contains a list of the actions that can take the USEGPU command
  - secondarystructure:
    - [SECONDARY_STRUCTURE_DRMSD](SECONDARY_STRUCTURE_DRMSD.md), and in particular:
      - [ALPHARMSD](ALPHARMSD.md) only with **TYPE=DRMSD**
-     - [ANTIBETARMSD](ANTIBETARMSD.md) only with **TYPE=DRMSD**
-     - [PARABETARMSD](PARABETARMSD.md) only with **TYPE=DRMSD**
+     - [ANTIBETARMSD](ANTIBETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `ANTIBETARMSD_SCALAR_ACC`, see below)
+     - [PARABETARMSD](PARABETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `PARABETARMSD_SCALAR_ACC`, see below)
  - volumes:
    - [AROUND](AROUND.md)
    - [INCYLINDER](INCYLINDER.md)

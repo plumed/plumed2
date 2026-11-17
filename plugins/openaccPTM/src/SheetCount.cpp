@@ -35,10 +35,6 @@ namespace PLMD {
 namespace secondarystructure {
 
 namespace {
-/// Consecutive GPU threads take segments that are this many positions apart in the list
-/// of the segments, so that the threads of a warp, which run together, rarely add to the
-/// derivatives of the same atoms (neighbouring segments share a strand)
-constexpr std::size_t interleave=32;
 /// For each segment, the value of the switching function and its contribution to the virial
 constexpr std::size_t segmentColumns=10;
 }
@@ -49,7 +45,8 @@ constexpr std::size_t segmentColumns=10;
 /// - one thread per segment of that list (or per pair, without STRANDS_CUTOFF): the segment is built
 ///   and its distance from the references and the switching function are computed with the same
 ///   functions as on the CPU (sheet::segmentPositions and sheet::segmentSwitch); the derivatives
-///   are added to the atoms with atomics, the value and the virial are written for the next kernel;
+///   are added to the atoms with atomics (consecutive threads take segments far apart in the list,
+///   see accTaskInterleave), the value and the virial are written for the next kernel;
 /// - the sum of the values and of the virial.
 /// The derivatives are copied back to the host and used as in SheetCount: there is no backward pass.
 /// The pairs, the reference distances and the switching function are copied to the GPU once.
@@ -185,7 +182,10 @@ void SheetCountACC::calculate() {
       b.derivatives.resize( 3*natoms );
       double* dder=b.derivatives.devicePtr();
       accZeroAsync( dder, 3*natoms );
-      const std::size_t nint=interleave;
+      // consecutive threads take segments that are nint positions apart in the list, so that the
+      // threads of a warp rarely add to the derivatives of the same atoms (neighbouring segments
+      // share a strand), see accTaskInterleave
+      const std::size_t nint=accTaskInterleave();
       const std::size_t chunk=(nactive+nint-1)/nint;
       const std::size_t nthreads=nint*chunk;
       const unsigned nstr=nstructures;
