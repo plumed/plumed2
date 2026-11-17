@@ -95,7 +95,8 @@ atom is gathered from its own neighbours (no atomics); with `SPECIESA` and `SPEC
 with atomics.
 For Q1, ..., Q6 the coordination numbers (the denominators) are computed in the same pass as the sums of the spherical harmonics,
 and the forces of the spherical harmonics are contracted pair by pair, without storing the derivatives of the $2(2l+1)$ components.
-The results are those of the CPU version (in double precision).
+The results are those of the CPU version (in double precision). On one A100 (8 CPU threads), ms per step:
+COORDINATIONNUMBER 3.7 (20000 atoms) and 17 (100000), Q6 13 and 59; on 32 CPU cores 4.7, 25, 17 and 94.
 This is not used with `MASK`, and for [COORDINATION_MOMENTS](COORDINATION_MOMENTS.md): the contact matrix is then computed
 on the GPU as before. The actions of the contact matrix (e.g. `q6_mat`, `q6_sh`) are still created, and are computed (on the GPU)
 only when another action uses them.
