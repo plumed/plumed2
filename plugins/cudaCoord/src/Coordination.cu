@@ -1312,8 +1312,16 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
     return;
   }
   cells.setCutoff(NL.cutoff);
+  // with few atoms in a large box most cells would be empty, and building and
+  // visiting them would cost more than the search: at most max(64, 2*natoms)
+  // cells (larger cells are still correct). The cells stay as large as the cutoff:
+  // with cells of half the cutoff (LinkCells::setSubdivision(2)) there are fewer
+  // candidates, but each tile of the neighbourhood is shared by fewer atoms and
+  // the lists are longer, and the kernels were 2.5 to 5 times slower (A100)
+  cells.setLimitCellsByAtoms(true);
   if (pbc) {
-    cells.setupCells(getPbc());
+    // with the positions, so that the number of cells can be limited by the atoms
+    cells.setupCells(getPositions(),getPbc());
   } else {
     cells.setupCells(getPositions());
   }
