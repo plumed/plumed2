@@ -118,13 +118,9 @@ struct LinkCellsView {
 /// for any position within the cutoff from an atom (the cells extend at least half a
 /// cutoff beyond the atoms).
 /// No `acc routine` pragma: as the templated kernels of the actions, the device versions
-/// of these templates are generated where they are called from a compute region.
-/// With nslices>1 only the slice-th of nslices parts of the cells is searched: the rows of
-/// cells (along the first direction) around pos are split in nslices consecutive groups, so
-/// that several threads can share the search around the same position
+/// of these templates are generated where they are called from a compute region
 template<typename Visitor>
-inline void forEachCandidate( const LinkCellsView& view, const Vector& pos, Visitor& visit,
-                              const unsigned slice=0, const unsigned nslices=1 ) {
+inline void forEachCandidate( const LinkCellsView& view, const Vector& pos, Visitor& visit ) {
   constexpr int maxoff=LinkCellsView::maxSubdivision;
   // the cell of the position and where it is inside it (from 0 to 1), as in LinkCells::findCellUnchecked
   Vector fpos=matmul( view.invBoxT, view.nopbc ? pos-view.origin : pos );
@@ -152,11 +148,6 @@ inline void forEachCandidate( const LinkCellsView& view, const Vector& pos, Visi
   }
   const Vector wrapped=( view.nopbc ? pos : matmul( view.boxT, fpos ) );
   const double reach2=view.reach2;
-  // the rows of cells of this slice: t=(oz-first[2])*ny+(oy-first[1]) in [tfirst,tend)
-  const int ny=last[1]-first[1]+1;
-  const unsigned nrowcells=(last[2]-first[2]+1)*ny;
-  const int tfirst=(slice*nrowcells)/nslices;
-  const int tend=((slice+1)*nrowcells)/nslices;
   for(int oz=first[2]; oz<=last[2]; ++oz) {
     const double gz2=gap2[2][oz+maxoff];
     if(gz2>reach2) {
@@ -172,10 +163,6 @@ inline void forEachCandidate( const LinkCellsView& view, const Vector& pos, Visi
       sz=1;
     }
     for(int oy=first[1]; oy<=last[1]; ++oy) {
-      const int t=(oz-first[2])*ny+(oy-first[1]);
-      if(t<tfirst || t>=tend) {
-        continue;
-      }
       const double gyz2=gz2+gap2[1][oy+maxoff];
       if(gyz2>reach2) {
         continue;
@@ -257,10 +244,9 @@ struct LinkCellsNeighborFilter {
 };
 
 template<typename Visitor>
-inline void forEachNeighbor( const LinkCellsView& view, const Vector& pos, const unsigned self, Visitor& visit,
-                             const unsigned slice=0, const unsigned nslices=1 ) {
+inline void forEachNeighbor( const LinkCellsView& view, const Vector& pos, const unsigned self, Visitor& visit ) {
   LinkCellsNeighborFilter<Visitor> filter{view,self,visit};
-  forEachCandidate( view, pos, filter, slice, nslices );
+  forEachCandidate( view, pos, filter );
 }
 
 } // namespace PLMD

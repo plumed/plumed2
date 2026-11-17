@@ -26,9 +26,9 @@ the denominators of Q1,...,Q6, are computed in the same pass and given by Qn_DEN
 
 They are the actions of the core (keywords, outputs, cells) with the kernels of the core run on
 the GPU: only the positions and the cells go to the GPU, and only the sums and the forces on the
-atoms come back. The search around each row is split between several GPU threads (parts of the
-rows of cells around it, or blocks of columns with few rows), so that the GPU has enough threads
-also with few rows; the results of the parts of a row are summed in order by a second kernel. The link cells are built on the CPU (LinkCells) and
+atoms come back. One GPU thread per row; with few rows (no cells) the columns are split in
+blocks between the GPU threads, and the results of the blocks of a row are summed in order by a
+second kernel. The link cells are built on the CPU (LinkCells) and
 searched on the GPU (LinkCellsView, forEachNeighbor). With GROUP the force on each atom is
 gathered from its own neighbours (no atomics); with GROUPA/GROUPB the forces on the columns are
 added with atomics.
@@ -45,7 +45,6 @@ GPU, and the results are summed.
 #include "ACCDevice.h"
 #include "ACCParallelTaskManager.h"
 
-#include <cstdlib>
 #include <memory>
 
 namespace PLMD {
@@ -96,8 +95,13 @@ class NeighborSumsACC : public symfunc::NeighborSums<PF> {
   }
   /// the geometry of this step on the device
   symfunc::NeighborSumsGeometry toDevice();
-  /// enough GPU threads: each row is searched by several threads (see neighborSumsVisit)
+  /// with few rows, the columns are split between the GPU threads (see neighborSumsVisit)
   unsigned numberOfSlices() const override;
+  /// without the cells up to 512 rows: building the cells on the host and uploading them costs
+  /// more than all the distances on the GPU up to several hundred rows (A100, 100000 columns)
+  std::size_t fewRows() const override {
+    return 512;
+  }
   void computeSums() override;
   void computeForces( std::vector<double>& outforces ) override;
 public:
@@ -171,24 +175,15 @@ symfunc::NeighborSumsGeometry NeighborSumsACC<PF>::toDevice() {
 
 template <class PF>
 unsigned NeighborSumsACC<PF>::numberOfSlices() const {
-  // TEMPORARY, for the measurements on the GPU: PLUMED_NEIGHBORSUMS_SLICES (0: automatic)
-  static const long env = std::getenv("PLUMED_NEIGHBORSUMS_SLICES") ? std::atol(std::getenv("PLUMED_NEIGHBORSUMS_SLICES")) : 0;
-  if( env>0 ) {
-    return env;
+  // With the cells, one GPU thread per row: splitting the search of a row between several
+  // threads was slower in all the cases measured (A100, 20000 and 100000 rows, CN and Q6).
+  // With few rows (no cells), the columns in blocks of at least 32, for about 131k threads
+  if( this->geometry.usecells || this->mycount>fewRows() ) {
+    return 1;
   }
-  // about this many GPU threads (tasks of a row and a part of its search)
   constexpr std::size_t tasks=std::size_t(1)<<17;
   const std::size_t rows=std::max<std::size_t>( 1, this->mycount );
-  std::size_t S=std::max<std::size_t>( 1, tasks/rows );
-  if( this->geometry.usecells ) {
-    // the rows of cells around a cell
-    constexpr std::size_t side=2*LinkCellsView::maxSubdivision+1;
-    S=std::min( S, side*side );
-  } else {
-    // at least 32 columns per part
-    S=std::min( S, std::max<std::size_t>( 1, this->ncols/32 ) );
-  }
-  return S;
+  return std::max<std::size_t>( 1, std::min( tasks/rows, this->ncols/32 ) );
 }
 
 template <class PF>
