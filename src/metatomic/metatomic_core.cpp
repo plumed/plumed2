@@ -658,10 +658,15 @@ void CoreBackend::apply() {
     auto forces = action_.outputForces(output_rows_);
     auto n_atoms = atomic_types_.size();
 
-    // Nothing upstream bounds these. `check_consistency` validates the names and
-    // components of a gradient block but not the values of its samples, so the
-    // `sample` and `atom` columns below are whatever the model wrote, and they
-    // index buffers sized by PLUMED. Check them here or not at all.
+    // Nothing upstream bounds the `atom` column: `check_consistency` validates
+    // the names and components of a gradient block but not the values of its
+    // samples, so it is whatever the model wrote, and it indexes a buffer sized
+    // by PLUMED. Check it here or not at all.
+    //
+    // The `sample` column is range-checked by metatensor when the gradient is
+    // added, so a well-formed block cannot have it out of range -- but metatensor
+    // skips that check on meta tensors and on labels built through the unchecked
+    // constructor, so it is still worth bounding here.
     auto check_sample = [&](int32_t sample) {
         if (sample < 0 || (static_cast<size_t>(sample) + 1) * n_properties > forces.size()) {
             plumed_merror(
