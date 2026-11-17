@@ -330,8 +330,8 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   SecondaryStructureInput::addStructure( structure, 2, reference );
 
-  bool nopbc=false;
-  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
+  std::string nopbc, usegpu;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_low";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -344,7 +344,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 
   if( strands_cutoff>0 ) {
     // The distance used for the cutoff has to treat the periodic boundary conditions as the rest of the calculation
-    readInputLine( scutoff_action + (nopbc ? " NOPBC" : "") );
+    readInputLine( scutoff_action + nopbc + usegpu );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
@@ -356,7 +356,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
                    + getShortcutLabel() + "_both.struct-2 MASK=" + getShortcutLabel() + "_cut");
     // Create the less than object
     readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
-                   + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+                   + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut" + usegpu );
     // Multiply by the strands cutoff
     readInputLine( getShortcutLabel()
                    + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
@@ -368,7 +368,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1,"
                    + getShortcutLabel() + "_both.struct-2" );
     // Create the less than object
-    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}" + usegpu );
   }
   SecondaryStructureInput::addSum( this, uselessthan );
 }

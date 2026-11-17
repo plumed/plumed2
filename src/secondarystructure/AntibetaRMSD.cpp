@@ -292,8 +292,8 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::string structure;
   SecondaryStructureInput::addStructure( structure, 1, reference );
 
-  bool nopbc=false;
-  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
+  std::string nopbc, usegpu;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -306,7 +306,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
 
   if( strands_cutoff>0 ) {
     // The distance used for the cutoff has to treat the periodic boundary conditions as the rest of the calculation
-    readInputLine( scutoff_action + (nopbc ? " NOPBC" : "") );
+    readInputLine( scutoff_action + nopbc + usegpu );
     std::string str_cut;
     Tools::convert( strands_cutoff, str_cut );
     readInputLine( getShortcutLabel() + "_cut: CUSTOM ARG=" + getShortcutLabel()
@@ -315,7 +315,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     readInputLine(inputLine);
     // Create the less than object
     readInputLine( getShortcutLabel() + "_ltu: LESS_THAN ARG=" + lab
-                   + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut");
+                   + " SWITCH={" + ltmap  +"} MASK=" + getShortcutLabel() + "_cut" + usegpu );
     // Multiply by the strands cutoff
     readInputLine( getShortcutLabel()
                    + "_lt: CUSTOM ARG=" + getShortcutLabel() + "_ltu,"
@@ -323,7 +323,7 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
                    " FUNC=x*y PERIODIC=NO");
   } else {
     readInputLine(inputLine);
-    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}" + usegpu );
   }
   SecondaryStructureInput::addSum( this, uselessthan );
 }

@@ -84,8 +84,9 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
-  /// Read TYPE, NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action that computes the distances
-  static std::string readDistanceAction( ActionShortcut* action, bool& nopbc );
+  /// Read TYPE, NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action that computes the distances.
+  /// nopbc and usegpu are set to " NOPBC" and " USEGPU" (or empty) for the other actions of the shortcut
+  static std::string readDistanceAction( ActionShortcut* action, std::string& nopbc, std::string& usegpu );
   /// Append " SEGMENTnum=nlist[0],nlist[1],..." to line
   static void addSegment( std::string& line, unsigned num, const std::vector<unsigned>& nlist );
   /// Append " STRUCTUREnum=x0,y0,z0,x1,..." (in Angstrom) to line
@@ -131,25 +132,22 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
 }
 
 template <class T,typename myPTM>
-std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, bool& nopbc ) {
+std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, std::string& nopbc, std::string& usegpu ) {
   std::string type;
   action->parse("TYPE",type);
   // RMSD only accepts upper case names
   std::transform( type.begin(), type.end(), type.begin(), [](unsigned char c) {
     return std::toupper(c);
   } );
+  bool flag=false;
+  action->parseFlag("NOPBC",flag);
+  nopbc = flag ? " NOPBC" : "";
+  // with USEGPU the shortcuts also run on the GPU the actions that the openaccPTM plugin provides (DISTANCE and LESS_THAN)
+  flag=false;
+  action->parseFlag("USEGPU",flag);
+  usegpu = flag ? " USEGPU" : "";
   // BONDLENGTH is in nm, see the constructor
-  std::string line = type=="DRMSD" ? "SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" : "SECONDARY_STRUCTURE_RMSD TYPE=" + type;
-  action->parseFlag("NOPBC",nopbc);
-  if( nopbc ) {
-    line += " NOPBC";
-  }
-  bool usegpu=false;
-  action->parseFlag("USEGPU",usegpu);
-  if( usegpu ) {
-    line += " USEGPU";
-  }
-  return line;
+  return (type=="DRMSD" ? "SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" : "SECONDARY_STRUCTURE_RMSD TYPE=" + type) + nopbc + usegpu;
 }
 
 template <class T,typename myPTM>

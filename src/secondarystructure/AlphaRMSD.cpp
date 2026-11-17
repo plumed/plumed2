@@ -182,8 +182,8 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   std::string structure;
   SecondaryStructureInput::addStructure( structure, 1, reference );
 
-  bool nopbc=false;
-  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
+  std::string nopbc, usegpu;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -194,7 +194,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   }
   readInputLine( lab + ": " + distanceAction + seglist + structure + " " + atoms );
   // Create the less than object
-  readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+  readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}" + usegpu );
   SecondaryStructureInput::addSum( this, uselessthan );
 }
 
