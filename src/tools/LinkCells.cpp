@@ -33,6 +33,33 @@
 
 namespace PLMD {
 
+namespace {
+/// The index of the cell of a position from its scaled coordinates fpos, which are
+/// wrapped in the box (between -0.5 and 0.5) in place. Returns the number of cells if
+/// the position is not in a cell. The same operations are in forEachCandidate (LinkCellsView.h)
+inline unsigned cellOfScaled( Vector& fpos, const std::array<unsigned,3>& ncells,
+                              const std::array<unsigned,3>& nstride ) noexcept {
+  unsigned index=0;
+  for(unsigned j=0; j<3; ++j) {
+    fpos[j]=Tools::pbc(fpos[j]);
+    const double x=( fpos[j] + 0.5 ) * ncells[j];
+    // as floor(x) in [0,ncells) (also false for NaN); then floor(x) is the truncation
+    if(!(x>=0.0 && x<ncells[j])) {
+      return ncells[0]*ncells[1]*ncells[2];
+    }
+    index+=static_cast<unsigned>(x)*nstride[j];
+  }
+  return index;
+}
+
+/// matmul(a,b) for a 3x3 matrix, written out: the generic loops of matmul are not unrolled at -O2
+inline Vector matmul3( const Tensor& a, const Vector& b ) noexcept {
+  return Vector( a[0][0]*b[0]+a[0][1]*b[1]+a[0][2]*b[2],
+                 a[1][0]*b[0]+a[1][1]*b[1]+a[1][2]*b[2],
+                 a[2][0]*b[0]+a[2][1]*b[1]+a[2][2]*b[2] );
+}
+}
+
 LinkCells::LinkCells( Communicator& ) {
 }
 
@@ -209,9 +236,9 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
                                 View<const unsigned> indices,
                                 const bool withPositions ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
-  const auto nat=pos.size();
-  // Resize and resets the lists
-  allcells.assign( nat, 0 );
+  const unsigned nat=pos.size();
+  // Resize the lists (every element is overwritten below)
+  allcells.resize( nat );
   collection.lcell_lists.resize( nat );
   if( withPositions ) {
     allwrapped.resize( nat );
@@ -219,54 +246,110 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   } else {
     collection.lcell_pos.clear();
   }
-  // Setup the storage for link cells
   const unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
   collection.lcell_starts.resize( ncellstot );
-  // Clear nlcells
-  collection.lcell_tots.assign( ncellstot, 0 );
+  collection.lcell_tots.resize( ncellstot );
 
-  // Find out what cell everyone is in.
   // This is done locally on every process: finding the cell of an atom costs a few
   // nanoseconds, much less than the two MPI_Allreduce (of the cell of each atom and of
   // the number of atoms in each cell) that were needed when the atoms were split among processes.
+  // The cells are split in nranges contiguous ranges, each one handled by one thread: the
+  // thread goes through all the atoms, and counts and then places those in its cells. The
+  // ranges do not share the cells, nor the parts of the lists they write, and the atoms
+  // of each cell are in increasing order, whatever the number of ranges and of threads.
+  // Each range goes twice through the cells of all the atoms (about a nanosecond per atom),
+  // which is cheap compared to finding the cells only with enough atoms per range
+  const unsigned nranges=std::max( 1u, std::min( std::min<unsigned>( OpenMP::getNumThreads(), nat/minAtomsPerThread ), ncellstot ) );
+  rangetots.resize( nranges );
+  // the transposed matrices used by Pbc::realToScaled and Pbc::scaledToReal
+  const Tensor invBoxT=transpose( mypbc.getInvBox() );
+  const Tensor boxT=transpose( mypbc.getBox() );
+  unsigned invalid=0;
+  // the three steps share one parallel region, separated by the implicit barriers of the
+  // loops. No exceptions inside the parallel region: invalid cells are checked after it
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt=(nat>=minAtomsPerThread)?
-                    std::min<unsigned>(OpenMP::getNumThreads(),nat/minAtomsPerThread) : 1;
+  const unsigned nt=nranges;
 #endif
-  #pragma omp parallel for num_threads(nt) schedule(static)
-  for(unsigned i=0; i<nat; ++i) {
-    // no exceptions inside the parallel region: invalid cells are checked below
-    allcells[i]=findCellUnchecked( pos[i] );
-    if( withPositions ) {
-      allwrapped[i]=wrapPosition( pos[i] );
+  #pragma omp parallel num_threads(nt)
+  {
+    // 1. the cell of each atom (and its position wrapped in the box)
+    #pragma omp for schedule(static) reduction(+:invalid)
+    for(unsigned i=0; i<nat; ++i) {
+      // as findCellUnchecked and wrapPosition
+      Vector fpos=matmul3( invBoxT, nopbc ? pos[i]-origin : pos[i] );
+      const unsigned mycell=cellOfScaled( fpos, ncells, nstride );
+      allcells[i]=mycell;
+      if( withPositions ) {
+        allwrapped[i]=( nopbc ? pos[i] : matmul3( boxT, fpos ) );
+      }
+      if( mycell>=ncellstot ) {
+        invalid++;
+      }
+    }
+    // the loops over the ranges work whatever the number of threads of the team
+    if( invalid==0 ) {
+      // 2. the number of atoms in each cell, and in each range
+      #pragma omp for schedule(static,1)
+      for(unsigned r=0; r<nranges; ++r) {
+        const unsigned first=std::size_t(ncellstot)*r/nranges;
+        const unsigned size=std::size_t(ncellstot)*(r+1)/nranges-first;
+        unsigned* tots=collection.lcell_tots.data()+first;
+        std::fill( tots, tots+size, 0u );
+        for(unsigned i=0; i<nat; ++i) {
+          // also false if allcells[i]<first (unsigned)
+          const unsigned c=allcells[i]-first;
+          if( c<size ) {
+            tots[c]++;
+          }
+        }
+        unsigned tot=0;
+        for(unsigned c=0; c<size; ++c) {
+          tot+=tots[c];
+        }
+        rangetots[r]=tot;
+      }
+      // 3. where each cell starts, and the atoms in the cells
+      #pragma omp for schedule(static,1)
+      for(unsigned r=0; r<nranges; ++r) {
+        const unsigned first=std::size_t(ncellstot)*r/nranges;
+        const unsigned size=std::size_t(ncellstot)*(r+1)/nranges-first;
+        const unsigned* tots=collection.lcell_tots.data()+first;
+        unsigned* starts=collection.lcell_starts.data()+first;
+        unsigned tot=0;
+        for(unsigned q=0; q<r; ++q) {
+          tot+=rangetots[q];
+        }
+        for(unsigned c=0; c<size; ++c) {
+          starts[c]=tot;
+          tot+=tots[c];
+        }
+        // starts[c] is where the next atom of the cell goes...
+        for(unsigned i=0; i<nat; ++i) {
+          const unsigned c=allcells[i]-first;
+          if( c<size ) {
+            const unsigned myind=starts[c]++;
+            collection.lcell_lists[myind]=indices[i];
+            if( withPositions ) {
+              collection.lcell_pos[myind]=allwrapped[i];
+            }
+          }
+        }
+        // ...and then it is moved back to the first atom
+        for(unsigned c=0; c<size; ++c) {
+          starts[c]-=tots[c];
+        }
+      }
     }
   }
-  for(unsigned i=0; i<nat; ++i) {
-    if(allcells[i]>=ncellstot) {
-      // this raises an error with an explanation
-      findMyCell( pos[i] );
-      plumed_error()<<"atom "<<i<<" is not inside a link cell";
+  if( invalid>0 ) {
+    for(unsigned i=0; i<nat; ++i) {
+      if( allcells[i]>=ncellstot ) {
+        // this raises an error with an explanation
+        findMyCell( pos[i] );
+        plumed_error()<<"atom "<<i<<" is not inside a link cell";
+      }
     }
-    collection.lcell_tots[allcells[i]]++;
-  }
-  // Now prepare the link cell lists
-  unsigned tot=0;
-  for(unsigned i=0; i<collection.lcell_tots.size(); ++i) {
-    collection.lcell_starts[i]=tot;
-    tot+=collection.lcell_tots[i];
-    collection.lcell_tots[i]=0;
-  }
-  plumed_assert( tot==nat ) <<"Total number of atoms found in link cells is "<<tot<<" number of atoms is "<<nat;
-
-  // And setup the link cells properly
-  for(unsigned j=0; j<nat; ++j) {
-    unsigned myind = collection.lcell_starts[ allcells[j] ] + collection.lcell_tots[ allcells[j] ];
-    collection.lcell_lists[ myind ] = indices[j];
-    if( withPositions ) {
-      collection.lcell_pos[ myind ] = allwrapped[j];
-    }
-    collection.lcell_tots[allcells[j]]++;
   }
 }
 
@@ -326,11 +409,11 @@ Vector LinkCells::wrapPosition( const Vector& pos ) const {
     return pos;
   }
   // the same operations used in findCellUnchecked
-  Vector fpos=mypbc.realToScaled( pos );
+  Vector fpos=matmul3( transpose(mypbc.getInvBox()), pos );
   for(unsigned j=0; j<3; ++j) {
     fpos[j]=Tools::pbc(fpos[j]);
   }
-  return mypbc.scaledToReal( fpos );
+  return matmul3( transpose(mypbc.getBox()), fpos );
 }
 
 LinkCellsView LinkCells::getView( const CellCollection& collection, const bool wrapCells ) const {
@@ -404,20 +487,8 @@ void LinkCells::retrieveAtomsInCells( const unsigned ncells_required,
 }
 
 unsigned LinkCells::findCellUnchecked( Vector mypos ) const noexcept {
-  if( nopbc ) {
-    mypos = mypos - origin;
-  }
-  const Vector fpos=mypbc.realToScaled( mypos );
-  const unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
-  unsigned index=0;
-  for(unsigned j=0; j<3; ++j) {
-    const double c=std::floor( ( Tools::pbc(fpos[j]) + 0.5 ) * ncells[j] );
-    if(!(c>=0.0 && c<ncells[j])) {
-      return ncellstot;
-    }
-    index+=static_cast<unsigned>(c)*nstride[j];
-  }
-  return index;
+  Vector fpos=matmul3( transpose(mypbc.getInvBox()), nopbc ? mypos-origin : mypos );
+  return cellOfScaled( fpos, ncells, nstride );
 }
 
 std::array<unsigned,3> LinkCells::findMyCell( Vector mypos ) const {
@@ -541,8 +612,8 @@ void LinkCells::createNeighborList( unsigned nat,
   unsigned maxneigh=1;
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt=(pos.size()>=minAtomsPerThread/16)?
-                    std::min<unsigned>(OpenMP::getNumThreads(),pos.size()/(minAtomsPerThread/16)) : 1;
+  const unsigned nt=(pos.size()>=minAtomsPerThreadNeighborList)?
+                    std::min<unsigned>(OpenMP::getNumThreads(),pos.size()/minAtomsPerThreadNeighborList) : 1;
 #endif
   #pragma omp parallel num_threads(nt)
   {
