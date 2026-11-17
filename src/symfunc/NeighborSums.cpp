@@ -28,6 +28,31 @@
 namespace PLMD {
 namespace symfunc {
 
+void neighborSumsSplitLast( const std::vector<double>& sums, const std::size_t nrows, const unsigned ncomp,
+                            std::vector<double>& values, std::vector<double>& last ) {
+  const std::size_t nv=ncomp-1;
+  plumed_assert( ncomp>0 && sums.size()>=nrows*ncomp );
+  values.resize( nrows*nv );
+  last.resize( nrows );
+  #pragma omp parallel for num_threads(std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), nrows/256 ) )) schedule(static)
+  for(std::size_t r=0; r<nrows; ++r) {
+    std::copy( sums.begin()+r*ncomp, sums.begin()+r*ncomp+nv, values.begin()+r*nv );
+    last[r] = sums[r*ncomp+nv];
+  }
+}
+
+void neighborSumsMergeLast( const std::vector<double>& values, const std::vector<double>* last,
+                            const std::size_t nrows, const unsigned ncomp, std::vector<double>& sums ) {
+  const std::size_t nv=ncomp-1;
+  plumed_assert( ncomp>0 && values.size()>=nrows*nv && ( !last || last->size()>=nrows ) );
+  sums.resize( nrows*ncomp );
+  #pragma omp parallel for num_threads(std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), nrows/256 ) )) schedule(static)
+  for(std::size_t r=0; r<nrows; ++r) {
+    std::copy( values.begin()+r*nv, values.begin()+(r+1)*nv, sums.begin()+r*ncomp );
+    sums[r*ncomp+nv] = last ? (*last)[r] : 0.0;
+  }
+}
+
 /// The actions of the core (the plugin derives its own from NeighborSums)
 template <class PF>
 class NeighborSumsCPU : public NeighborSums<PF> {
