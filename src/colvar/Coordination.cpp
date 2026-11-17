@@ -55,6 +55,7 @@ and only those are computed at the following steps.
 - With NLIST the list is built by checking all the pairs. Use it with small groups (up to about a hundred atoms), or when one of the two groups has only a few atoms (fewer than about ten).
 - With NLISTCELLS the list is built with link cells, at a cost that grows with the number of atoms rather than with the number of pairs. Use it for larger groups:
   building the list is about 4 times faster with 1000 atoms, and about 30 times with 10000. The pairs are the same, in another order.
+  When one of the two groups has at most 8 atoms, NLISTCELLS builds the list as NLIST: sorting all the atoms into cells would cost more than one distance per pair.
 - NL_CUTOFF must be larger than D_MAX of the switching function (set D_MAX: without it the switching function is not zero at any distance, and the pairs beyond NL_CUTOFF are ignored).
   The difference NL_CUTOFF-D_MAX is a skin: the list is exact as long as no pair of atoms gets closer by more than the skin between two updates.
   For atoms in a liquid at room temperature with a time step of 2 fs, a skin of 0.1 nm with NL_STRIDE=10 is a safe choice.
@@ -66,6 +67,20 @@ permuted indexes (e.g. pair (i,j) and (j,i)) twice and ensures that the calculat
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
 equal to one. These "self contacts" are discarded by plumed (since version 2.1),
 so that they actually count as "zero".
+
+## One atom against many atoms
+
+To compute the coordination number of one atom (or a few) with many atoms, such as the oxygens of all the
+water molecules around an ion, use COORDINATION with a neighbor list: between the updates of the list only
+the atoms in the list are used, and only they are requested from the MD code.
+
+```plumed
+ow: GROUP ATOMS=2-30001:3
+c: COORDINATION GROUPA=1 GROUPB=ow SWITCH={RATIONAL R_0=0.35 NN=6 MM=10 D_MAX=1.2} NLIST NL_CUTOFF=1.3 NL_STRIDE=10
+```
+
+If you need the coordination number of each atom of the small group as a vector, use [COORDINATIONNUMBER](COORDINATIONNUMBER.md)
+with SPECIESA and SPECIESB.
 
 ## Examples
 
