@@ -283,6 +283,9 @@ void CoordinationBase::calculateBlocks() {
         if constexpr (usePbc) {
           thePbc.apply(VectorView(distances[0].data(),count));
         }
+        // local accumulators (in registers): the value and the virial, symmetric since dd is parallel to the distance
+        double batchValue=0.0;
+        double vxx=0.0,vxy=0.0,vxz=0.0,vyy=0.0,vyz=0.0,vzz=0.0;
         for(unsigned k=0; k<count; ++k) {
           const Vector& distance=distances[k];
           const double d2=distance.modulo2();
@@ -297,12 +300,17 @@ void CoordinationBase::calculateBlocks() {
             continue;
           }
           double dfunc=0.;
-          value += pairing(d2,dfunc,i0,i1);
+          batchValue += pairing(d2,dfunc,i0,i1);
           if(dfunc==0.0) {
             continue;
           }
           const Vector dd(dfunc*distance);
-          virial-=Tensor(dd,distance);
+          vxx+=dd[0]*distance[0];
+          vxy+=dd[0]*distance[1];
+          vxz+=dd[0]*distance[2];
+          vyy+=dd[1]*distance[1];
+          vyz+=dd[1]*distance[2];
+          vzz+=dd[2]*distance[2];
           // the derivative is -dd on the first atom of the pair and +dd on the second
           if(rowFirst) {
             rowDeriv[batchRow[k]]-=dd;
@@ -312,6 +320,8 @@ void CoordinationBase::calculateBlocks() {
             cols[batchCol[k]]-=dd;
           }
         }
+        value+=batchValue;
+        virial-=Tensor(vxx,vxy,vxz,vxy,vyy,vyz,vxz,vyz,vzz);
         count=0;
       };
       for(unsigned r=r0; r<r1; ++r) {
@@ -418,6 +428,9 @@ void CoordinationBase::calculateList() {
       if constexpr (usePbc) {
         thePbc.apply(VectorView(distances[0].data(),count));
       }
+      // local accumulators, as in calculateBlocks
+      double batchValue=0.0;
+      double vxx=0.0,vxy=0.0,vxz=0.0,vyy=0.0,vyz=0.0,vzz=0.0;
       for(unsigned j=0; j<count; ++j) {
         const Vector& distance=distances[j];
         const double d2=distance.modulo2();
@@ -429,15 +442,22 @@ void CoordinationBase::calculateList() {
           continue;
         }
         double dfunc=0.;
-        value += pairing(d2,dfunc,i0,i1);
+        batchValue += pairing(d2,dfunc,i0,i1);
         if(dfunc==0.0) {
           continue;
         }
         const Vector dd(dfunc*distance);
         deriv[i0]-=dd;
         deriv[i1]+=dd;
-        virial-=Tensor(dd,distance);
+        vxx+=dd[0]*distance[0];
+        vxy+=dd[0]*distance[1];
+        vxz+=dd[0]*distance[2];
+        vyy+=dd[1]*distance[1];
+        vyz+=dd[1]*distance[2];
+        vzz+=dd[2]*distance[2];
       }
+      value+=batchValue;
+      virial-=Tensor(vxx,vxy,vxz,vxy,vyy,vyz,vxz,vyz,vzz);
     }
     threadValue[t]=value;
     threadVirial[t]=virial;
