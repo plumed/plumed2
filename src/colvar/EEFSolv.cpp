@@ -181,11 +181,11 @@ struct EEFSolvNeighbors {
     const double c2 = (2. * mlambda + nl_buffer) * (2. * mlambda + nl_buffer);
     // no branch: the tests are not predictable (kept has one more element)
     kept[n] = i;
-    n += (i < j) & !(zero[ii] & zero_j)
+    n += (i < j) && !(zero[ii] && zero_j)
          // crude approximation for i-i+1/2 interactions,
          // we want to exclude atoms separated by less than three bonds
-         & !((d2 < lower_c2) & (j < i+14))
-         & (d2 < c2);
+         && !((d2 < lower_c2) && (j < i+14))
+         && (d2 < c2);
   }
 };
 }
