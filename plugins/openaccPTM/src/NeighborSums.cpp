@@ -21,11 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
 The sums over the neighbours of COORDINATIONNUMBER and Q1,...,Q6 (src/symfunc/NeighborSums.h)
-on the GPU: COORDINATIONNUMBER_SUMSACC, Q1_SUMSACC,...,Q6_SUMSACC, Q1_DENOM_SUMSACC,...
+on the GPU: COORDINATIONNUMBER_SUMSACC, Q1_SUMSACC,...,Q6_SUMSACC (whose coordination numbers,
+the denominators of Q1,...,Q6, are computed in the same pass and given by Qn_DENOM_SUMS).
 
 They are the actions of the core (keywords, outputs, cells) with the kernels of the core run on
-the GPU, one GPU thread per row: only the positions and the cells go to the GPU, and only the
-sums and the forces on the atoms come back. The link cells are built on the CPU (LinkCells) and
+the GPU: only the positions and the cells go to the GPU, and only the sums and the forces on the
+atoms come back. The search around each row is split between several GPU threads (parts of the
+rows of cells around it, or blocks of columns with few rows), so that the GPU has enough threads
+also with few rows; the results of the parts of a row are summed in order by a second kernel. The link cells are built on the CPU (LinkCells) and
 searched on the GPU (LinkCellsView, forEachNeighbor). With GROUP the force on each atom is
 gathered from its own neighbours (no atomics); with GROUPA/GROUPB the forces on the columns are
 added with atomics.
@@ -42,6 +45,7 @@ GPU, and the results are summed.
 #include "ACCDevice.h"
 #include "ACCParallelTaskManager.h"
 
+#include <cstdlib>
 #include <memory>
 
 namespace PLMD {
@@ -58,6 +62,8 @@ struct NeighborSumsWorkspace {
   OpenACC::memoryManager<double> sums;
   OpenACC::memoryManager<double> forcesOnSums;
   OpenACC::memoryManager<double> forces;
+  /// the forces on the atoms of the rows from each part of the search
+  OpenACC::memoryManager<double> rowForces;
 };
 
 /// The forces on the columns (without GROUP), added with atomics
@@ -90,6 +96,8 @@ class NeighborSumsACC : public symfunc::NeighborSums<PF> {
   }
   /// the geometry of this step on the device
   symfunc::NeighborSumsGeometry toDevice();
+  /// enough GPU threads: each row is searched by several threads (see neighborSumsVisit)
+  unsigned numberOfSlices() const override;
   void computeSums() override;
   void computeForces( std::vector<double>& outforces ) override;
 public:
@@ -100,10 +108,6 @@ public:
 
 typedef NeighborSumsACC<symfunc::ContactPairs> ContactSumsACC;
 PLUMED_REGISTER_ACTION(ContactSumsACC,"COORDINATIONNUMBER_SUMSACC")
-PLUMED_REGISTER_ACTION(ContactSumsACC,"Q1_DENOM_SUMSACC")
-PLUMED_REGISTER_ACTION(ContactSumsACC,"Q3_DENOM_SUMSACC")
-PLUMED_REGISTER_ACTION(ContactSumsACC,"Q4_DENOM_SUMSACC")
-PLUMED_REGISTER_ACTION(ContactSumsACC,"Q6_DENOM_SUMSACC")
 typedef NeighborSumsACC<symfunc::SphericalHarmonicPairs> SphericalHarmonicSumsACC;
 PLUMED_REGISTER_ACTION(SphericalHarmonicSumsACC,"Q1_SUMSACC")
 PLUMED_REGISTER_ACTION(SphericalHarmonicSumsACC,"Q3_SUMSACC")
@@ -166,22 +170,59 @@ symfunc::NeighborSumsGeometry NeighborSumsACC<PF>::toDevice() {
 }
 
 template <class PF>
+unsigned NeighborSumsACC<PF>::numberOfSlices() const {
+  // TEMPORARY, for the measurements on the GPU: PLUMED_NEIGHBORSUMS_SLICES (0: automatic)
+  static const long env = std::getenv("PLUMED_NEIGHBORSUMS_SLICES") ? std::atol(std::getenv("PLUMED_NEIGHBORSUMS_SLICES")) : 0;
+  if( env>0 ) {
+    return env;
+  }
+  // about this many GPU threads (tasks of a row and a part of its search)
+  constexpr std::size_t tasks=std::size_t(1)<<17;
+  const std::size_t rows=std::max<std::size_t>( 1, this->mycount );
+  std::size_t S=std::max<std::size_t>( 1, tasks/rows );
+  if( this->geometry.usecells ) {
+    // the rows of cells around a cell
+    constexpr std::size_t side=2*LinkCellsView::maxSubdivision+1;
+    S=std::min( S, side*side );
+  } else {
+    // at least 32 columns per part
+    S=std::min( S, std::max<std::size_t>( 1, this->ncols/32 ) );
+  }
+  return S;
+}
+
+template <class PF>
 void NeighborSumsACC<PF>::computeSums() {
   ACC::DeviceScope scope( device.resolve(*this) );
   const unsigned ncomp = this->pairs.ncomponents;
   NeighborSumsWorkspace& w=*ws;
   // the positions and the cells are also used by the backward pass of this step
   const symfunc::NeighborSumsGeometry g = toDevice();
-  w.sums.resize( this->mycount*ncomp );
-  double* out = w.sums.devicePtr();
   const std::size_t first=this->myfirst, count=this->mycount;
+  // one GPU thread for each row and part of its search (row-major: the threads of a row are
+  // next to each other), then the sums of the parts of each row in order
+  const unsigned S=this->nslices, s0=this->slicefirst, ns=this->sliceend-this->slicefirst;
+  const std::size_t ntasks=count*ns;
+  w.sums.resize( ntasks*ncomp + count*ncomp );
+  double* parts = w.sums.devicePtr();
+  double* out = parts + ntasks*ncomp;
   // a local copy on the device for the kernel (as the task manager does with the action data)
   PF data = this->pairs;
   auto data_acc = OpenACC::fromToDataHelper( data );
 #pragma acc parallel loop gang vector async(accQueue) present(data) \
-                    firstprivate(g, ncomp, first, count) deviceptr(out) default(none)
-  for(std::size_t rr=0; rr<count; ++rr) {
-    symfunc::neighborSumsRow( data, g, first+rr, out+rr*ncomp );
+                    firstprivate(g, ncomp, first, ntasks, ns, s0, S) deviceptr(parts) default(none)
+  for(std::size_t t=0; t<ntasks; ++t) {
+    symfunc::neighborSumsRow( data, g, first+t/ns, parts+t*ncomp, s0+t%ns, S );
+  }
+#pragma acc parallel loop gang vector async(accQueue) \
+                    firstprivate(ncomp, count, ns) deviceptr(parts, out) default(none)
+  for(std::size_t e=0; e<count*ncomp; ++e) {
+    const std::size_t rr=e/ncomp, k=e%ncomp;
+    double v=0.0;
+    for(unsigned s=0; s<ns; ++s) {
+      v += parts[(rr*ns+s)*ncomp+k];
+    }
+    out[e]=v;
   }
   acc_memcpy_from_device_async( this->sums.data()+first*ncomp, out, count*ncomp*sizeof(double), accQueue );
   acc_wait(accQueue);
@@ -211,22 +252,24 @@ void NeighborSumsACC<PF>::computeForces( std::vector<double>& outforces ) {
   const double* G = w.forcesOnSums.devicePtr();
   double* forces = w.forces.devicePtr();
   const std::size_t first=this->myfirst, count=this->mycount, rowstart=this->rowstart;
+  const unsigned S=this->nslices, s0=this->slicefirst, ns=this->sliceend-this->slicefirst;
+  const std::size_t ntasks=count*ns;
+  w.rowForces.resize( 3*ntasks );
+  double* rowForces = w.rowForces.devicePtr();
   NeighborSumsAtomicColumns cols{forces,this->colstart};
   double v0=0, v1=0, v2=0, v3=0, v4=0, v5=0, v6=0, v7=0, v8=0;
   PF data = this->pairs;
   auto data_acc = OpenACC::fromToDataHelper( data );
+  // one GPU thread for each row and part of its search; the forces on the columns with atomics
 #pragma acc parallel loop gang vector async(accQueue) present(data) \
-                    firstprivate(g, cols, first, count, rowstart) deviceptr(G, forces) \
+                    firstprivate(g, cols, first, ntasks, ns, s0, S) deviceptr(G, rowForces) \
                     reduction(+:v0,v1,v2,v3,v4,v5,v6,v7,v8) default(none)
-  for(std::size_t rr=0; rr<count; ++rr) {
-    const std::size_t r = first+rr;
+  for(std::size_t t=0; t<ntasks; ++t) {
     double vir[9]= {0,0,0,0,0,0,0,0,0};
-    const Vector fr = symfunc::neighborForcesRow( data, g, G, r, cols, vir );
-    // each row is a different atom, and the columns are other atoms
-    const std::size_t i = 3*(rowstart+r);
-    forces[i] += fr[0];
-    forces[i+1] += fr[1];
-    forces[i+2] += fr[2];
+    const Vector fr = symfunc::neighborForcesRow( data, g, G, first+t/ns, cols, vir, s0+t%ns, S );
+    rowForces[3*t] = fr[0];
+    rowForces[3*t+1] = fr[1];
+    rowForces[3*t+2] = fr[2];
     v0 += vir[0];
     v1 += vir[1];
     v2 += vir[2];
@@ -236,6 +279,18 @@ void NeighborSumsACC<PF>::computeForces( std::vector<double>& outforces ) {
     v6 += vir[6];
     v7 += vir[7];
     v8 += vir[8];
+  }
+  // the forces on the atoms of the rows, summed over the parts in order (each row is a
+  // different atom, and the columns are other atoms)
+#pragma acc parallel loop gang vector async(accQueue) \
+                    firstprivate(first, count, rowstart, ns) deviceptr(rowForces, forces) default(none)
+  for(std::size_t e=0; e<3*count; ++e) {
+    const std::size_t rr=e/3, k=e%3;
+    double f=0.0;
+    for(unsigned s=0; s<ns; ++s) {
+      f += rowForces[3*(rr*ns+s)+k];
+    }
+    forces[3*(rowstart+first+rr)+k] += f;
   }
   w.forces.copyFromDeviceAsync( outforces.data(), accQueue );
   acc_wait(accQueue);
