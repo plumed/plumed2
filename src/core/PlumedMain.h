@@ -171,6 +171,11 @@ private:
 /// Present step number.
   long long int step=0;
 
+/// Step at which update() was last called.
+/// Used to warn when update() is called more than once within the same step,
+/// which most likely leads to incorrect results (see issue #512).
+  long long int lastUpdateStep=-1;
+
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
 /// If at least one Action requires some work, this variable is set to true.
