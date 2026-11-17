@@ -200,7 +200,25 @@ std::vector<std::string> defaultPlugins() {
         return plugins;
     }
 
-    auto prefix = std::filesystem::path(info.dli_fname).parent_path().parent_path();
+    // `<prefix>/lib/libmetatomic.so` gives the prefix two levels up, but on a
+    // multiarch layout (`<prefix>/lib/x86_64-linux-gnu/`) that lands inside
+    // `lib`, and the plugins are then silently not found -- which the user sees
+    // as "failed to load the model" rather than "I looked in the wrong place".
+    // Walk up until a `libexec/metatomic` exists.
+    auto directory = std::filesystem::path(info.dli_fname).parent_path();
+    auto prefix = std::filesystem::path();
+    for (unsigned up=0; up<3 && !directory.empty(); up++) {
+        auto candidate = directory.parent_path();
+        if (std::filesystem::is_directory(candidate / "libexec" / "metatomic")) {
+            prefix = candidate;
+            break;
+        }
+        directory = candidate;
+    }
+    if (prefix.empty()) {
+        return plugins;
+    }
+
     for (const auto* name: {"metatomic-torch-plugin.so", "metatomic-python-plugin.so"}) {
         auto plugin = prefix / "libexec" / "metatomic" / name;
         if (std::filesystem::exists(plugin)) {
@@ -332,7 +350,17 @@ CoreBackend::CoreBackend(
         if (std::find(devices.begin(), devices.end(), mta::ModelCapabilities::Device::CPU) == devices.end()) {
             action.error("this model does not support running on CPU, which is required for metatomic-core models in PLUMED");
         }
-        float64_ = capabilities.dtype() == mta::ModelCapabilities::DType::Float64;
+        auto dtype = capabilities.dtype();
+        if (dtype == mta::ModelCapabilities::DType::Float64) {
+            float64_ = true;
+        } else if (dtype == mta::ModelCapabilities::DType::Float32) {
+            float64_ = false;
+        } else {
+            // the released torch-based module errors here rather than guessing;
+            // treating an unknown dtype as float32 would run the model silently
+            // at the wrong precision
+            action.error("this model requested a dtype which is not supported by PLUMED, only float32 and float64 can be used");
+        }
         log.printf("  running model on cpu device with %s data\n", float64_ ? "float64" : "float32");
 
         this->atomic_types_ = action.parseAtomicTypes();
@@ -579,9 +607,22 @@ void CoreBackend::calculate() {
         output_rows_.resize(n_samples);
         for (unsigned i=0; i<n_samples; i++) {
             auto atom = samples_values(i, 1);
+            if (atom < 0 || static_cast<size_t>(atom) >= atomic_types_.size()) {
+                plumed_merror(
+                    "this model returned an output for atom " + std::to_string(atom) +
+                    ", which is outside the " + std::to_string(atomic_types_.size()) +
+                    " atoms given to it"
+                );
+            }
             if (selected_atoms_.has_value()) {
                 auto position = selected_atoms_->position({0, atom});
-                plumed_assert(position.has_value());
+                if (!position.has_value()) {
+                    plumed_merror(
+                        "this model returned an output for atom " +
+                        std::to_string(AtomNumber::index(static_cast<unsigned>(atom)).serial()) +
+                        ", which is not in SELECTED_ATOMS"
+                    );
+                }
                 output_rows_[i] = static_cast<unsigned>(position.value());
             } else {
                 output_rows_[i] = static_cast<unsigned>(atom);
@@ -603,16 +644,35 @@ void CoreBackend::apply() {
     for (const auto* parameter: {"positions", "strain"}) {
         if (std::find(gradients.begin(), gradients.end(), parameter) == gradients.end()) {
             plumed_merror(
-                std::string("forces were applied to this METATOMIC action, but the model did not compute "
-                "gradients of '") + outputs_[0].name() + "' with respect to " + parameter + ". metatomic only "
-                "computes gradients of energies with automatic differentiation, models used as biased CVs "
-                "must compute these gradients explicitly"
+                std::string("forces were applied to this METATOMIC action, but no gradients of '") +
+                outputs_[0].name() + "' with respect to " + parameter + " are available. Either the "
+                "model did not compute them -- metatomic only computes gradients of energies with "
+                "automatic differentiation, so models used as biased CVs must compute them explicitly "
+                "-- or PLUMED did not request them, which happens when the action was set up without "
+                "derivatives and forces were applied to it afterwards"
             );
         }
     }
 
     auto n_properties = action_.n_properties_;
     auto forces = action_.outputForces(output_rows_);
+    auto n_atoms = atomic_types_.size();
+
+    // Nothing upstream bounds these. `check_consistency` validates the names and
+    // components of a gradient block but not the values of its samples, so the
+    // `sample` and `atom` columns below are whatever the model wrote, and they
+    // index buffers sized by PLUMED. Check them here or not at all.
+    auto check_sample = [&](int32_t sample) {
+        if (sample < 0 || (static_cast<size_t>(sample) + 1) * n_properties > forces.size()) {
+            plumed_merror(
+                "this model returned a gradient for output row " + std::to_string(sample) +
+                ", which is outside the " + std::to_string(forces.size() / n_properties) +
+                " rows of this action's value"
+            );
+        }
+        return static_cast<size_t>(sample);
+    };
+
     // contract one gradient row (`n_properties` values) with the output forces
     auto contract = [&](const std::vector<double>& gradient, size_t row, size_t sample) {
         double sum = 0;
@@ -622,15 +682,30 @@ void CoreBackend::apply() {
         return sum;
     };
 
-    auto derivatives = std::vector<double>(3 * atomic_types_.size() + 9, 0.0);
+    auto derivatives = std::vector<double>(3 * n_atoms + 9, 0.0);
 
     // positions gradients: samples (sample, system, atom), component xyz
     auto positions_gradient = block.gradient("positions");
     auto positions_values = valuesAsDoubles(positions_gradient);
+    const auto positions_names = positions_gradient.samples().names();
+    plumed_massert(
+        (std::vector<std::string>(positions_names.begin(), positions_names.end())
+            == std::vector<std::string>{"sample", "system", "atom"}),
+        "the 'positions' gradient of this model does not have samples "
+        "('sample', 'system', 'atom'), so its atom column can not be read"
+    );
     const auto positions_samples = positions_gradient.samples().values_cpu();
     for (size_t g=0; g<positions_gradient.samples().count(); g++) {
-        auto sample = static_cast<size_t>(positions_samples(g, 0));
-        auto atom = static_cast<size_t>(positions_samples(g, 2));
+        auto sample = check_sample(positions_samples(g, 0));
+        auto atom_index = positions_samples(g, 2);
+        if (atom_index < 0 || static_cast<size_t>(atom_index) >= n_atoms) {
+            plumed_merror(
+                "this model returned a positions gradient with respect to atom " +
+                std::to_string(atom_index) + ", which is outside the " +
+                std::to_string(n_atoms) + " atoms given to it"
+            );
+        }
+        auto atom = static_cast<size_t>(atom_index);
         for (size_t x=0; x<3; x++) {
             // execute_model already gives gradients w.r.t. positions in the system's
             // (PLUMED's) length unit
@@ -642,12 +717,30 @@ void CoreBackend::apply() {
     // expects minus the strain derivative for the virial
     auto strain_gradient = block.gradient("strain");
     auto strain_values = valuesAsDoubles(strain_gradient);
+    const auto strain_names = strain_gradient.samples().names();
+    plumed_massert(
+        (std::vector<std::string>(strain_names.begin(), strain_names.end())
+            == std::vector<std::string>{"sample"}),
+        "the 'strain' gradient of this model does not have samples ('sample',)"
+    );
     const auto strain_samples = strain_gradient.samples().values_cpu();
-    auto* virial = &derivatives[3 * atomic_types_.size()];
+    auto* virial = &derivatives[3 * n_atoms];
     for (size_t g=0; g<strain_gradient.samples().count(); g++) {
-        auto sample = static_cast<size_t>(strain_samples(g, 0));
+        auto sample = check_sample(strain_samples(g, 0));
         for (size_t ab=0; ab<9; ab++) {
             virial[ab] -= contract(strain_values, 9 * g + ab, sample);
+        }
+    }
+
+    // A model which is not exactly rotationally equivariant returns a slightly
+    // non-symmetric strain gradient, and metatomic passes it through untouched.
+    // The antisymmetric part is not a virial: keep the symmetric part, as i-PI's
+    // metatomic drivers do.
+    for (size_t a=0; a<3; a++) {
+        for (size_t b=a+1; b<3; b++) {
+            auto mean = 0.5 * (virial[3 * a + b] + virial[3 * b + a]);
+            virial[3 * a + b] = mean;
+            virial[3 * b + a] = mean;
         }
     }
 
