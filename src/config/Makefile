@@ -11,7 +11,7 @@ endif
 
 .PHONY: all obj
 ifdef PLUMED_FORCE
-.PHONY: ConfigInstall.inc Config.inc version.h
+.PHONY: ConfigInstall.inc Config.inc version.h ModuleBuild.inc
 endif
 
 # default target
@@ -32,11 +32,10 @@ version.h:
 	@echo "Updating version.h"
 	@ ../maketools/update-version.sh version.h
 
-ModuleBuild.inc: FORCE
+# Regenerated only in the PLUMED_FORCE pass of "all" (see .PHONY above), so the
+# second sub-make building Config.o does not hash the whole tree again.
+ModuleBuild.inc:
 	../maketools/module-build-info
-
-.PHONY: FORCE
-FORCE:
 
 ConfigInstall.inc: Config.inc.in
 	@echo "Updating ConfigInstall.inc"
