@@ -1,0 +1,53 @@
+plumed_needs="metatomic:libmetatomic"
+plumed_modules=metatomic
+type=driver
+
+arg="--plumed plumed.dat --ixyz structure.xyz --length-units A"
+export PLUMED_STACK_TRACE=no
+
+# A model's output indices reach PLUMED unchecked: metatomic-core validates the
+# names and components of a gradient block, not the values of its samples, so
+# the `sample` and `atom` columns index buffers PLUMED sized. Each bad_NAME.dat
+# below drives a model which puts one of them out of range, and must be rejected
+# with a message rather than writing out of bounds.
+#
+# There is no case here for the `sample` column: metatensor range-checks that one
+# itself when the gradient is added ("invalid value for the 'sample' dimension in
+# gradient samples: we got 5, but the values contain 1 samples"), so a model
+# cannot hand PLUMED a block with it out of range. PLUMED checks it anyway, for
+# the paths where metatensor skips its own check -- meta tensors, and labels
+# built through the unchecked constructor.
+function plumed_regtest_before(){
+  printf 'd: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=colvar FMT=%%8.4f\n' > plumed.dat
+
+  for variant in atom names ; do
+    cat bad_model.py > bad_$variant.py
+    echo "model = BrokenDistance(\"$variant\")" >> bad_$variant.py
+    {
+      echo "cv: METATOMIC ..."
+      echo "    PLUGIN=python"
+      echo "    MODEL=bad_$variant.py"
+      echo "    SPECIES1=1"
+      echo "    SPECIES2=2"
+      echo "    SPECIES_TO_TYPES=8,1"
+      echo "..."
+      echo "RESTRAINT ARG=cv AT=1.2 KAPPA=10.0"
+    } > bad_$variant.dat
+  done
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz structure.xyz --length-units A \
+        > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+atom returned a positions gradient with respect to atom 2, which is outside the 2 atoms given to it
+names the 'positions' gradient of this model does not have samples ('sample', 'system', 'atom')
+EOT
+}
