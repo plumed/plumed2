@@ -1,0 +1,151 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2026 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed.org for more information.
+
+   This file is part of plumed, version 2.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#ifndef __PLUMED_secondarystructure_SheetCount_h
+#define __PLUMED_secondarystructure_SheetCount_h
+#include "SecondaryStructureDRMSD.h"
+#include "SecondaryStructureRMSD.h"
+#include "core/Colvar.h"
+#include "tools/ColvarOutput.h"
+#include "tools/Pbc.h"
+#include "tools/SwitchingFunction.h"
+
+#include <array>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace PLMD {
+namespace secondarystructure {
+
+/// The calculation of a single segment of ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR. These functions are
+/// used both by SheetCount and by its GPU version in the openaccPTM plugin, so that the two give the same result.
+namespace sheet {
+
+/// The number of atoms of a strand (N, CA, CB, C and O of three residues)
+constexpr unsigned strandAtoms=15;
+/// The position of the CA of the central residue in a strand, used for STRANDS_CUTOFF and to align the strands
+constexpr unsigned centralCA=6;
+/// The number of derivatives of the distance of a segment from a reference structure: its atoms and the virial
+constexpr unsigned segmentDerivatives=3*maxAtomsInSegment+9;
+
+inline Vector atomPosition( const double* x, const unsigned a ) {
+  return Vector( x[3*a], x[3*a+1], x[3*a+2] );
+}
+
+/// Is the distance between the central CA atoms of two strands (given by their first atom) within the cutoff?
+/// x are the coordinates of the atoms, pbc is null with NOPBC.
+/// As step(STRANDS_CUTOFF-x) in the shortcut: the pair is used if the distance is not larger than the cutoff
+inline bool withinCutoff( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc, const double cutoff ) {
+  const Vector p1=atomPosition( x, s1+centralCA );
+  const Vector p2=atomPosition( x, s2+centralCA );
+  const Vector d = pbc ? pbc->distance( p1, p2 ) : delta( p1, p2 );
+  return d.modulo()<=cutoff;
+}
+
+/// The positions of the atoms of the segment made of the strands starting at atoms s1 and s2.
+/// As in SecondaryStructureBase::performTask with ALIGN_STRANDS: the strands are made whole separately, then the
+/// second is moved to the image where its central CA atom is closest to that of the first (pbc is null with NOPBC)
+inline void segmentPositions( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc,
+                              std::array<Vector,maxAtomsInSegment>& pos ) {
+  for(unsigned k=0; k<strandAtoms; ++k) {
+    pos[k]=atomPosition( x, s1+k );
+    pos[strandAtoms+k]=atomPosition( x, s2+k );
+  }
+  if( pbc ) {
+    for(unsigned start=0; start<maxAtomsInSegment; start+=strandAtoms) {
+      for(unsigned i=start; i+1<start+strandAtoms; ++i) {
+        pos[i+1]=pos[i]+pbc->distance(pos[i],pos[i+1]);
+      }
+    }
+    const Vector shift = pbc->distance(pos[centralCA],pos[strandAtoms+centralCA]) + pos[centralCA] - pos[strandAtoms+centralCA];
+    for(unsigned i=strandAtoms; i<maxAtomsInSegment; ++i) {
+      pos[i]+=shift;
+    }
+  }
+}
+
+/// The switching function of the lowest distance of a segment from the reference structures (as LOWEST and LESS_THAN
+/// in the shortcuts). It returns s(r) and sets g=ds/dr. If g is not zero, der[best*segmentDerivatives ...] contains
+/// the derivatives of r with respect to the positions of the atoms of the segment and the virial; with several
+/// structures the distances are first computed without derivatives, and the derivatives are computed only for the
+/// lowest one, and only if g is not zero.
+template <class I, class SW>
+double segmentSwitch( const I& input, const unsigned nstructures, const SW& switchingFunction,
+                      std::array<Vector,maxAtomsInSegment>& pos,
+                      std::array<double,2*segmentDerivatives>& der, unsigned& best, double& g ) {
+  std::array<double,2> dist{};
+  ColvarOutput<double> output( View<double>(dist.data(),nstructures), segmentDerivatives, der.data() );
+  const View<Vector> segment( pos.data(), maxAtomsInSegment );
+  const bool single = (nstructures==1);
+  for(unsigned n=0; n<nstructures; ++n) {
+    I::calculateDistance( n, !single, input, segment, output );
+  }
+  best=0;
+  for(unsigned n=1; n<nstructures; ++n) {
+    if( dist[n]<dist[best] ) {
+      best=n;
+    }
+  }
+  const double r=dist[best];
+  double df=0.0;
+  const double s=switchingFunction.calculate( r, df );
+  // df is (ds/dr)/r
+  g=df*r;
+  if( !single && g!=0.0 ) {
+    I::calculateDistance( best, false, input, segment, output );
+  }
+  return s;
+}
+
+} // namespace sheet
+
+/// The number of segments that are similar to a beta sheet, computed in a single action (ANTIBETARMSD_SCALAR and
+/// PARABETARMSD_SCALAR, see ANTIBETARMSD and PARABETARMSD). The openaccPTM plugin derives the GPU version from it.
+class SheetCount : public Colvar {
+protected:
+  bool parallel;
+  bool nopbc;
+  bool usedrmsd;
+  double strands_cutoff;
+  /// The definition of the switching function, as given in SWITCH
+  std::string switchInput;
+  SwitchingFunction switchingFunction;
+  /// The first atom of the two strands of each segment, in the list of atoms
+  std::vector<std::pair<unsigned,unsigned> > pairs;
+  SecondaryStructureDRMSDInput<double> drmsd;
+  SecondaryStructureRMSDInput rmsd;
+  unsigned nstructures;
+  /// Sets the value and the derivatives from the sum over the segments (3*natoms derivatives and the virial)
+  void setValueAndDerivatives( double value, const std::vector<double>& derivatives );
+private:
+  /// Buffers of the derivatives of each OpenMP thread
+  std::vector<std::vector<double> > omp_derivatives;
+  std::vector<double> derivatives;
+public:
+  static void registerKeywords( Keywords& keys );
+  explicit SheetCount(const ActionOptions&);
+  void calculate() override;
+};
+
+}
+}
+#endif

@@ -94,7 +94,7 @@ LESS_THAN is used) is computed by a single action, ANTIBETARMSD_SCALAR, which lo
 apart than `STRANDS_CUTOFF` and adds the derivatives of each segment directly to the atoms. The vectors that appear in the expanded input
 (the distances of the strands, the distances from the reference structure and their switching functions) are only computed when they are
 used elsewhere in the input, e.g. when the vector that is the value of the action with LESS_THAN is printed. The result is the same.
-With `USEGPU` the number of segments is the sum of the vector of the switching functions, which is computed on the GPU.
+With `USEGPU` and TYPE=DRMSD the same calculation is done on the GPU by ANTIBETARMSD_SCALAR_ACC, from the openaccPTM plugin: one GPU thread per pair of strands within `STRANDS_CUTOFF`. With `USEGPU` and the other types the number of segments is the sum of the vector of the switching functions.
 
 ## Chains and residues
 
@@ -147,6 +147,7 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ) {
            "the calculation of the distance from the reference is skipped, as the structure is very far from being beta-sheet like, and the segment does not "
            "contribute to the number of segments that are similar to a beta sheet. This keyword speeds up the calculation enormously.");
   keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_SCALAR_ACC");
   keys.needsAction("DISTANCE");
   keys.needsAction("CUSTOM");
 }
@@ -257,16 +258,17 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     readInputLine(inputLine);
     readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
   }
-  if( usegpu ) {
+  if( usegpu && type!="DRMSD" ) {
+    // there is no GPU version of the single action with the RMSD
     SecondaryStructureInput::addSum( this, uselessthan );
   } else {
     // The number of segments that are similar to a sheet is computed by a single action: without the vectors above,
-    // which are only computed if they are used elsewhere in the input
+    // which are only computed if they are used elsewhere in the input. With USEGPU this is its GPU version
     std::string chainsizes=std::to_string(chains[0]);
     for(unsigned i=1; i<chains.size(); ++i) {
       chainsizes += "," + std::to_string(chains[i]);
     }
-    std::string sumline = getShortcutLabel() + (uselessthan ? "_lessthan" : "") + ": ANTIBETARMSD_SCALAR " + atoms
+    std::string sumline = getShortcutLabel() + (uselessthan ? "_lessthan" : "") + ": ANTIBETARMSD_SCALAR" + (usegpu ? "_ACC " : " ") + atoms
                           + " CHAIN_SIZES=" + chainsizes + " STYLE=" + style + " TYPE=" + type + " SWITCH={" + ltmap + "}" + structure;
     if( strands_cutoff>0 ) {
       std::string str_cut;

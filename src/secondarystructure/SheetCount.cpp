@@ -19,57 +19,30 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureDRMSD.h"
-#include "SecondaryStructureRMSD.h"
-#include "core/Colvar.h"
+#include "SheetCount.h"
 #include "core/ActionRegister.h"
-#include "tools/SwitchingFunction.h"
 #include "tools/OpenMP.h"
-
-#include <array>
 
 namespace PLMD {
 namespace secondarystructure {
 
 // The documentation of these actions is in ANTIBETARMSD and PARABETARMSD, the shortcuts that create them.
 
-/// The number of segments that are similar to a beta sheet, computed in a single action.
-/// It gives the same result as the chain of actions created by ANTIBETARMSD and PARABETARMSD
-/// (SECONDARY_STRUCTURE_(D)RMSD, the DISTANCE and CUSTOM of STRANDS_CUTOFF, LOWEST, LESS_THAN, SUM), but
-/// - the segments are not stored: they are built from the lengths of the chains, as pairs of strands;
-/// - the segments whose strands are further apart than STRANDS_CUTOFF cost one distance;
-/// - the derivatives are accumulated on the atoms while the segments are computed, so they are
-///   computed once (the chain computes the active segments again in the backward pass) and no vector
-///   with an element per segment is created.
-class SheetCount : public Colvar {
-private:
-  bool parallel;
-  bool nopbc;
-  bool usedrmsd;
-  double strands_cutoff;
-  SwitchingFunction switchingFunction;
-  /// The first atom of the two strands of each segment, in the list of atoms
-  std::vector<std::pair<unsigned,unsigned> > pairs;
-  SecondaryStructureDRMSDInput<double> drmsd;
-  SecondaryStructureRMSDInput rmsd;
-  unsigned nstructures;
-  /// Buffers of the derivatives of each OpenMP thread
-  std::vector<std::vector<double> > omp_derivatives;
-  std::vector<double> derivatives;
-  template <class I>
-  double segmentValue( const I& input, unsigned ipair, std::array<double,3*maxAtomsInSegment+9>& der ) const;
-public:
-  static void registerKeywords( Keywords& keys );
-  explicit SheetCount(const ActionOptions&);
-  void calculate() override;
-};
+// SheetCount gives the same result as the chain of actions created by ANTIBETARMSD and PARABETARMSD
+// (SECONDARY_STRUCTURE_(D)RMSD, the DISTANCE and CUSTOM of STRANDS_CUTOFF, LOWEST, LESS_THAN, SUM), but
+// - the segments are not stored: they are built from the lengths of the chains, as pairs of strands;
+// - the segments whose strands are further apart than STRANDS_CUTOFF cost one distance;
+// - the derivatives are accumulated on the atoms while the segments are computed, so they are
+//   computed once (the chain computes the active segments again in the backward pass), only for the
+//   segments where the switching function is not constant, and no vector with an element per segment is created.
 
 PLUMED_REGISTER_ACTION(SheetCount,"ANTIBETARMSD_SCALAR")
 PLUMED_REGISTER_ACTION(SheetCount,"PARABETARMSD_SCALAR")
 
 void SheetCount::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
-  if( keys.getDisplayName()=="ANTIBETARMSD_SCALAR" ) {
+  // the names are ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR, with _ACC for the GPU version
+  if( keys.getDisplayName().rfind("ANTIBETARMSD",0)==0 ) {
     keys.setDisplayName("ANTIBETARMSD");
   } else {
     keys.setDisplayName("PARABETARMSD");
@@ -87,7 +60,7 @@ void SheetCount::registerKeywords( Keywords& keys ) {
 SheetCount::SheetCount(const ActionOptions&ao):
   Action(ao),
   Colvar(ao),
-  parallel(getName()=="PARABETARMSD_SCALAR"),
+  parallel(getName().rfind("PARABETARMSD",0)==0),
   nopbc(false),
   usedrmsd(true),
   strands_cutoff(-1.0),
@@ -119,9 +92,9 @@ SheetCount::SheetCount(const ActionOptions&ao):
   parse("TYPE",type);
   usedrmsd = (type=="DRMSD");
   parseFlag("NOPBC",nopbc);
-  std::string sw, errors;
-  parse("SWITCH",sw);
-  switchingFunction.set(sw,errors);
+  std::string errors;
+  parse("SWITCH",switchInput);
+  switchingFunction.set(switchInput,errors);
   if( errors.length()>0 ) {
     error("problem reading SWITCH keyword : " + errors );
   }
@@ -162,46 +135,6 @@ SheetCount::SheetCount(const ActionOptions&ao):
   derivatives.resize( 3*atoms.size()+9 );
 }
 
-template <class I>
-double SheetCount::segmentValue( const I& input, const unsigned ipair, std::array<double,3*maxAtomsInSegment+9>& der ) const {
-  const unsigned s1=pairs[ipair].first, s2=pairs[ipair].second;
-  std::array<Vector,maxAtomsInSegment> pos;
-  for(unsigned k=0; k<15; ++k) {
-    pos[k]=getPosition(s1+k);
-    pos[15+k]=getPosition(s2+k);
-  }
-  if( !nopbc ) {
-    // As in SecondaryStructureBase::performTask with ALIGN_STRANDS: the strands are made whole separately,
-    // then the second is moved to the image where its central CA atom is closest to that of the first
-    for(unsigned start=0; start<maxAtomsInSegment; start+=15) {
-      for(unsigned i=start; i+1<start+15; ++i) {
-        pos[i+1]=pos[i]+pbcDistance(pos[i],pos[i+1]);
-      }
-    }
-    const Vector shift = pbcDistance(pos[6],pos[21]) + pos[6] - pos[21];
-    for(unsigned i=15; i<maxAtomsInSegment; ++i) {
-      pos[i]+=shift;
-    }
-  }
-  // the distance from each reference structure and its derivatives
-  constexpr unsigned nder=3*maxAtomsInSegment+9;
-  std::array<double,2> dist;
-  std::array<double,2*nder> d;
-  ColvarOutput<double> output( View<double>(dist.data(),nstructures), nder, d.data() );
-  for(unsigned n=0; n<nstructures; ++n) {
-    I::calculateDistance( n, false, input, View<Vector>(pos.data(),maxAtomsInSegment), output );
-  }
-  // the lowest distance, as LOWEST in PARABETARMSD
-  unsigned best=0;
-  for(unsigned n=1; n<nstructures; ++n) {
-    if( dist[n]<dist[best] ) {
-      best=n;
-    }
-  }
-  std::copy( d.begin()+best*nder, d.begin()+(best+1)*nder, der.begin() );
-  return dist[best];
-}
-
 void SheetCount::calculate() {
   const unsigned npairs=pairs.size();
   const unsigned natoms=getNumberOfAtoms();
@@ -223,35 +156,33 @@ void SheetCount::calculate() {
     const unsigned t=OpenMP::getThreadNum();
     std::vector<double>& myder( omp_derivatives[t] );
     myder.assign( 3*natoms+9, 0.0 );
-    std::array<double,3*maxAtomsInSegment+9> der;
+    std::array<Vector,maxAtomsInSegment> pos;
+    std::array<double,2*sheet::segmentDerivatives> der;
+    const double* x=&getPositions()[0][0];
+    const Pbc* pbc = nopbc ? nullptr : &getPbc();
     #pragma omp for
     for(unsigned i=rank; i<npairs; i+=stride) {
-      if( strands_cutoff>0 ) {
-        const unsigned c1=pairs[i].first+6, c2=pairs[i].second+6;
-        const Vector dca = nopbc ? delta( getPosition(c1), getPosition(c2) ) : pbcDistance( getPosition(c1), getPosition(c2) );
-        // as step(STRANDS_CUTOFF-x) in the shortcut: the pair is used if the distance is not larger than the cutoff
-        if( dca.modulo()>strands_cutoff ) {
-          continue;
-        }
+      const unsigned s1=pairs[i].first, s2=pairs[i].second;
+      if( strands_cutoff>0 && !sheet::withinCutoff( x, s1, s2, pbc, strands_cutoff ) ) {
+        continue;
       }
-      const double r = usedrmsd ? segmentValue( drmsd, i, der ) : segmentValue( rmsd, i, der );
-      double df=0.0;
-      const double s=switchingFunction.calculate( r, df );
-      value += s;
-      // df is (ds/dr)/r
-      const double g=df*r;
+      sheet::segmentPositions( x, s1, s2, pbc, pos );
+      unsigned best=0;
+      double g=0.0;
+      value += usedrmsd ? sheet::segmentSwitch( drmsd, nstructures, switchingFunction, pos, der, best, g )
+               : sheet::segmentSwitch( rmsd, nstructures, switchingFunction, pos, der, best, g );
       if( g==0.0 ) {
         continue;
       }
-      const unsigned s1=pairs[i].first, s2=pairs[i].second;
+      const double* d=der.data()+best*sheet::segmentDerivatives;
       for(unsigned k=0; k<maxAtomsInSegment; ++k) {
-        const unsigned a = (k<15) ? s1+k : s2+k-15;
+        const unsigned a = (k<sheet::strandAtoms) ? s1+k : s2+k-sheet::strandAtoms;
         for(unsigned j=0; j<3; ++j) {
-          myder[3*a+j] += g*der[3*k+j];
+          myder[3*a+j] += g*d[3*k+j];
         }
       }
       for(unsigned j=0; j<9; ++j) {
-        myder[3*natoms+j] += g*der[3*maxAtomsInSegment+j];
+        myder[3*natoms+j] += g*d[3*maxAtomsInSegment+j];
       }
     }
   }
@@ -265,13 +196,18 @@ void SheetCount::calculate() {
     comm.Sum( value );
     comm.Sum( derivatives );
   }
+  setValueAndDerivatives( value, derivatives );
+}
+
+void SheetCount::setValueAndDerivatives( const double value, const std::vector<double>& der ) {
+  const unsigned natoms=getNumberOfAtoms();
   setValue( value );
   for(unsigned a=0; a<natoms; ++a) {
-    setAtomsDerivatives( a, Vector( derivatives[3*a], derivatives[3*a+1], derivatives[3*a+2] ) );
+    setAtomsDerivatives( a, Vector( der[3*a], der[3*a+1], der[3*a+2] ) );
   }
-  setBoxDerivatives( Tensor( derivatives[3*natoms], derivatives[3*natoms+1], derivatives[3*natoms+2],
-                             derivatives[3*natoms+3], derivatives[3*natoms+4], derivatives[3*natoms+5],
-                             derivatives[3*natoms+6], derivatives[3*natoms+7], derivatives[3*natoms+8] ) );
+  setBoxDerivatives( Tensor( der[3*natoms], der[3*natoms+1], der[3*natoms+2],
+                             der[3*natoms+3], der[3*natoms+4], der[3*natoms+5],
+                             der[3*natoms+6], der[3*natoms+7], der[3*natoms+8] ) );
 }
 
 }
