@@ -39,6 +39,17 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+// TEMPORARY, for the GPU A/B of the cell lists (to be fixed after the benchmark and removed):
+// the number of cells per cutoff (1: cells as large as the cutoff, 27 cells around each cell;
+// 2: cells of half the cutoff, 125 cells around each cell, fewer candidates but fewer atoms per cell)
+#ifndef PLUMED_CUDACOORD_CELLS_PER_CUTOFF
+#define PLUMED_CUDACOORD_CELLS_PER_CUTOFF 1
+#endif
+// 1: at most max(64, 2*natoms) cells (larger cells for few atoms in a large box); 0: as before
+#ifndef PLUMED_CUDACOORD_LIMIT_CELLS
+#define PLUMED_CUDACOORD_LIMIT_CELLS 1
+#endif
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -146,7 +157,8 @@ constexpr unsigned maxCellChunks = 65535u;
 /// these partials then need to be reduced with CUDAHELPERS::reducePartials
 /// the device view of a set of cell lists, in CSR format:
 /// the atoms in the cell `c` are `cellAtoms[cellStart[c]:cellStart[c+1]]` and
-/// the atoms in its neighbourhood (the 27 cells around it, itself included)
+/// the atoms in its neighbourhood (the cells around it, itself included: 27 with cells
+/// as large as the cutoff, 125 with cells of half the cutoff)
 /// are `neighAtoms[neighStart[c]:neighStart[c+1]]`.
 /// Only the non empty cells are stored.
 struct cellListsDevice {
@@ -855,7 +867,11 @@ class cellSetup {
   std::vector<unsigned> activeCells{};
   std::vector<unsigned> nRequired{};
   std::vector<unsigned> requiredCells{};
-  std::vector<unsigned> cells_required=std::vector<unsigned>(27);
+  /// the largest number of cells around a cell (see LinkCells::setSubdivision)
+  static constexpr unsigned maxRequired=(2*PLMD::LinkCells::maxSubdivision+1)*
+                                        (2*PLMD::LinkCells::maxSubdivision+1)*
+                                        (2*PLMD::LinkCells::maxSubdivision+1);
+  std::vector<unsigned> cells_required=std::vector<unsigned>(maxRequired);
   unsigned nCells=0;
   unsigned nAtoms=0;
   unsigned nNeigh=0;
@@ -872,7 +888,7 @@ public:
     return maxNeighbours;
   }
   ///builds the lists: for each non empty cell of listCell, the atoms in that
-  ///cell and the atoms of listNeigh that are in the 27 cells around it
+  ///cell and the atoms of listNeigh that are in the cells around it
   void build(const PLMD::LinkCells& cells,
              const PLMD::LinkCells::CellCollection& listCell,
              const PLMD::LinkCells::CellCollection& listNeigh,
@@ -1312,8 +1328,13 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
     return;
   }
   cells.setCutoff(NL.cutoff);
+  cells.setSubdivision(PLUMED_CUDACOORD_CELLS_PER_CUTOFF);
+  // with few atoms in a large box most cells would be empty, and building and
+  // visiting them would cost more than the search (larger cells are still correct)
+  cells.setLimitCellsByAtoms(PLUMED_CUDACOORD_LIMIT_CELLS);
   if (pbc) {
-    cells.setupCells(getPbc());
+    // with the positions, so that the number of cells can be limited by the atoms
+    cells.setupCells(getPositions(),getPbc());
   } else {
     cells.setupCells(getPositions());
   }
