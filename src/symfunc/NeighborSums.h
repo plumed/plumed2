@@ -54,9 +54,8 @@ its contribution to the virial is half of -d (x) g. The sums over k are contract
 
 With few rows (without GROUP) the cells are not built: sorting all the columns into cells costs
 more than one distance per column. The columns are then split in blocks (parts of the search,
-nslices), shared between the threads (and the MPI processes); the partial results of each row
-are summed in order, so they do not depend on the number of threads. The GPU actions split the
-search around each row (also with the cells) to have enough GPU threads.
+nslices), shared between the threads (and the MPI processes, and the GPU threads); the partial
+results of each row are summed in order, so they do not depend on the number of threads.
 */
 #include "core/ActionWithVector.h"
 #include "tools/SwitchingFunction.h"
@@ -69,7 +68,6 @@ search around each row (also with the cells) to have enough GPU threads.
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <complex>
 #include <limits>
 #include <string>
@@ -313,13 +311,13 @@ struct NeighborSumsGeometry {
 };
 
 /// Calls visit(c,d,d2) for the columns c within the cutoff from x, except the column self.
-/// The search can be split in nslices parts, done by different threads: the slice-th part is
-/// a group of rows of cells (with the cells) or of consecutive columns (all the pairs)
+/// Without the cells the search can be split in nslices parts, done by different threads: the
+/// slice-th part is a block of consecutive columns. With the cells nslices must be 1
 template<typename Visitor>
 inline void neighborSumsVisit( const NeighborSumsGeometry& g, const Vector& x, const unsigned self, Visitor& visit,
                                const unsigned slice=0, const unsigned nslices=1 ) {
   if( g.usecells ) {
-    forEachNeighbor( g.cells, x, self, visit, slice, nslices );
+    forEachNeighbor( g.cells, x, self, visit );
     return;
   }
   const std::size_t cfirst=(slice*g.ncols)/nslices;
@@ -478,6 +476,16 @@ inline Vector neighborForcesRow( const PF& pairs, const NeighborSumsGeometry& g,
   return scatter.force;
 }
 
+/// Copies the sums (nrows x ncomp) to values (nrows x (ncomp-1)) and last (the last of each row).
+/// Compiled in the core: the OpenMP threads are those of the core also when the plugin calls it
+/// (a parallel region in the header would start the OpenMP runtime of the compiler of the plugin,
+/// whose threads then compete with those of the core)
+void neighborSumsSplitLast( const std::vector<double>& sums, std::size_t nrows, unsigned ncomp,
+                            std::vector<double>& values, std::vector<double>& last );
+/// The reverse of neighborSumsSplitLast: last can be null (zeros)
+void neighborSumsMergeLast( const std::vector<double>& values, const std::vector<double>* last,
+                            std::size_t nrows, unsigned ncomp, std::vector<double>& sums );
+
 /// The sums of Q1,...,Q6 can also give the coordination numbers (their denominators) in the same
 /// pass over the neighbours: Qn_DENOM_SUMS with SUMS gets them from here, and gives back the forces
 /// on them, which are added in the backward pass of the sums
@@ -560,8 +568,12 @@ protected:
     return std::max<unsigned>( 1, std::min<std::size_t>( OpenMP::getNumThreads(), n/8 ) );
   }
   /// without GROUP, at most this many rows are computed without the cells: all the pairs,
-  /// the columns shared between the threads (and the processes)
-  std::size_t fewRows() const;
+  /// the columns shared between the threads (and the processes). On the CPU twice the number of
+  /// threads: building the cells (serial) costs about as much as one distance per column for
+  /// two rows per thread (measured with 2 and 32 threads)
+  virtual std::size_t fewRows() const {
+    return std::max<std::size_t>( 4, 2*OpenMP::getNumThreads() );
+  }
   /// the columns of a part of the search with all the pairs, on the CPU
   static constexpr std::size_t columnChunk=1024;
 private:
@@ -703,13 +715,6 @@ void NeighborSums<PF>::setMyRows() {
 }
 
 template <class PF>
-std::size_t NeighborSums<PF>::fewRows() const {
-  // TEMPORARY, for the measurements: PLUMED_NEIGHBORSUMS_FEWROWS
-  static const long env = std::getenv("PLUMED_NEIGHBORSUMS_FEWROWS") ? std::atol(std::getenv("PLUMED_NEIGHBORSUMS_FEWROWS")) : -1;
-  return env>=0 ? env : 8;
-}
-
-template <class PF>
 unsigned NeighborSums<PF>::numberOfSlices() const {
   if( geometry.usecells || symmetric || mycount>fewRows() ) {
     return 1;
@@ -783,15 +788,8 @@ void NeighborSums<PF>::calculate() {
     return;
   }
   // the coordination numbers are the last sum of each row: they are not values of this action
-  const std::size_t nv=ncomp-1;
-  valueStash.resize( nrows*nv );
-  denominators.resize( nrows );
   denominatorForcesSet=false;
-  #pragma omp parallel for num_threads(numberOfThreads(nrows)) schedule(static)
-  for(std::size_t r=0; r<nrows; ++r) {
-    std::copy( sums.begin()+r*ncomp, sums.begin()+r*ncomp+nv, valueStash.begin()+r*nv );
-    denominators[r] = sums[r*ncomp+nv];
-  }
+  neighborSumsSplitLast( sums, nrows, ncomp, valueStash, denominators );
   transferStashToValues( allrows, valueStash );
 }
 
@@ -954,16 +952,10 @@ void NeighborSums<PF>::applyNonZeroRankForces( std::vector<double>& outforces ) 
   forcesOnSums.resize( nrows*ncomp );
   if( withDenominators ) {
     // the forces on the coordination numbers (from Qn_DENOM_SUMS) are those on the last sum
-    const std::size_t nv=ncomp-1;
-    valueStash.resize( nrows*nv );
+    valueStash.resize( nrows*(ncomp-1) );
     transferForcesToStash( allrows, valueStash );
-    const bool den=denominatorForcesSet;
-    plumed_assert( !den || denominatorForces.size()==nrows );
-    #pragma omp parallel for num_threads(numberOfThreads(nrows)) schedule(static)
-    for(std::size_t r=0; r<nrows; ++r) {
-      std::copy( valueStash.begin()+r*nv, valueStash.begin()+(r+1)*nv, forcesOnSums.begin()+r*ncomp );
-      forcesOnSums[r*ncomp+nv] = den ? denominatorForces[r] : 0.0;
-    }
+    plumed_assert( !denominatorForcesSet || denominatorForces.size()==nrows );
+    neighborSumsMergeLast( valueStash, denominatorForcesSet ? &denominatorForces : nullptr, nrows, ncomp, forcesOnSums );
     denominatorForcesSet=false;
   } else {
     transferForcesToStash( allrows, forcesOnSums );
