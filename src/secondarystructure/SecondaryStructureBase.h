@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 #include <type_traits>
+#include <utility>
 
 namespace PLMD {
 namespace secondarystructure {
@@ -84,8 +85,15 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
-  /// Read TYPE, NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action that computes the distances
-  static std::string readDistanceAction( ActionShortcut* action, bool& nopbc );
+  /// Read TYPE (returned in upper case), NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action
+  /// that computes the distances
+  static std::string readDistanceAction( ActionShortcut* action, std::string& type, bool& nopbc, bool& usegpu );
+  /// The pairs of strands of three residues that could form a parallel or antiparallel sheet with the given STYLE (all, inter
+  /// or intra), in the order of the SEGMENT keywords of PARABETARMSD and ANTIBETARMSD. Each strand is given by the position
+  /// of its first atom in the list of the backbone atoms (a strand is 15 consecutive atoms: N, CA, CB, C and O of three
+  /// residues); chain_lengths contains the number of backbone atoms of each chain
+  static void getSheetPairs( Action* action, const std::vector<unsigned>& chain_lengths, bool parallel, const std::string& style,
+                             std::vector<std::pair<unsigned,unsigned> >& pairs );
   /// Append " SEGMENTnum=nlist[0],nlist[1],..." to line
   static void addSegment( std::string& line, unsigned num, const std::vector<unsigned>& nlist );
   /// Append " STRUCTUREnum=x0,y0,z0,x1,..." (in Angstrom) to line
@@ -131,8 +139,7 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
 }
 
 template <class T,typename myPTM>
-std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, bool& nopbc ) {
-  std::string type;
+std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, std::string& type, bool& nopbc, bool& usegpu ) {
   action->parse("TYPE",type);
   // RMSD only accepts upper case names
   std::transform( type.begin(), type.end(), type.begin(), [](unsigned char c) {
@@ -144,12 +151,97 @@ std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut*
   if( nopbc ) {
     line += " NOPBC";
   }
-  bool usegpu=false;
   action->parseFlag("USEGPU",usegpu);
   if( usegpu ) {
     line += " USEGPU";
   }
   return line;
+}
+
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::getSheetPairs( Action* action, const std::vector<unsigned>& chains, const bool parallel,
+    const std::string& style, std::vector<std::pair<unsigned,unsigned> >& pairs ) {
+  bool intra_chain(false), inter_chain(false);
+  if( Tools::caseInSensStringCompare(style, "all") ) {
+    intra_chain=true;
+    inter_chain=true;
+  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
+    inter_chain=true;
+  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
+    intra_chain=true;
+  } else {
+    action->error( style + " is not a valid directive for the STYLE keyword");
+  }
+  pairs.resize(0);
+  if( intra_chain ) {
+    unsigned nprevious=0;
+    for(unsigned i=0; i<chains.size(); ++i) {
+      if( chains[i]<40 ) {
+        action->error( std::string("segment of backbone is not long enough to form ") + (parallel ? "a parallel beta sheet" : "an antiparallel beta hairpin")
+                       + ". Each backbone fragment must contain a minimum of 8 residues");
+      }
+      const unsigned nres=chains[i]/5;
+      if( chains[i]%5!=0 ) {
+        action->error("backbone segment received does not contain a multiple of five residues");
+      }
+      if( parallel ) {
+        // the two strands are separated by at least three residues
+        for(unsigned ires=0; ires+8<nres; ires++) {
+          for(unsigned jres=ires+6; jres+2<nres; jres++) {
+            pairs.emplace_back( nprevious+5*ires, nprevious+5*jres );
+          }
+        }
+      } else {
+        // the strands are i,i+1,i+2 and j-2,j-1,j, separated by at least two residues
+        for(unsigned ires=0; ires+7<nres; ires++) {
+          for(unsigned jres=ires+7; jres<nres; jres++) {
+            pairs.emplace_back( nprevious+5*ires, nprevious+5*(jres-2) );
+          }
+        }
+      }
+      nprevious+=chains[i];
+    }
+  }
+  if( inter_chain ) {
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
+      action->error("there is only one chain defined so cannot use inter_chain option");
+    }
+    for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
+      unsigned iprev=0;
+      for(unsigned i=0; i<ichain; ++i) {
+        iprev+=chains[i];
+      }
+      const unsigned inres=chains[ichain]/5;
+      if( chains[ichain]%5!=0 ) {
+        action->error("backbone segment received does not contain a multiple of five residues");
+      }
+      if( inres<3 ) {
+        // A strand contains three residues. Without this the unsigned subtraction in the loop below wraps around
+        continue;
+      }
+      for(unsigned ires=0; ires<inres-2; ++ires) {
+        for(unsigned jchain=0; jchain<ichain; ++jchain) {
+          unsigned jprev=0;
+          for(unsigned i=0; i<jchain; ++i) {
+            jprev+=chains[i];
+          }
+          const unsigned jnres=chains[jchain]/5;
+          if( chains[jchain]%5!=0 ) {
+            action->error("backbone segment received does not contain a multiple of five residues");
+          }
+          if( jnres<3 ) {
+            continue;
+          }
+          for(unsigned jres=0; jres<jnres-2; ++jres) {
+            pairs.emplace_back( iprev+5*ires, jprev+5*jres );
+          }
+        }
+      }
+    }
+  }
+  if( pairs.empty() ) {
+    action->error("it is not possible to build any segment of backbone that could form a sheet with the residues and the STYLE that were given");
+  }
 }
 
 template <class T,typename myPTM>

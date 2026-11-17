@@ -19,9 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureBase.h"
+#include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
-#include "tools/RMSD.h"
 
 //+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
 /*
@@ -121,60 +120,6 @@ values are only computed for parts of the strand that are close together; the el
 
 namespace PLMD {
 namespace secondarystructure {
-
-class SecondaryStructureRMSDInput {
-/// The list of reference configurations
-  std::vector<RMSD> myrmsd;
-public:
-  static void registerKeywords( Keywords& keys ) {
-    keys.setDisplayName("SECONDARY_STRUCTURE_RMSD");
-  }
-  static constexpr bool needsType=true;
-/// The number of atoms
-  std::size_t natoms{0};
-/// The number of structures
-  std::size_t nstructures{0};
-/// The number of indices per task
-  std::size_t nindices_per_task{0};
-/// Are we operating without periodic boundary conditions
-  bool nopbc{false};
-/// Variables for strands cutoff
-  bool align_strands{false};
-/// The atoms involved in each of the secondary structure segments
-  Matrix<unsigned> colvar_atoms;
-//   void toACCDevice()const {
-// #pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
-//     colvar_atoms.toACCDevice();
-//   }
-//   void removeFromACCDevice() const {
-//     colvar_atoms.removeFromACCDevice();
-// #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
-
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
-  void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
-  SecondaryStructureRMSDInput() = default;
-  SecondaryStructureRMSDInput( const SecondaryStructureRMSDInput& m ) {
-    *this = m;
-  }
-  SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
-    if( this==&m ) {
-      return *this;
-    }
-    natoms = m.natoms;
-    nstructures = m.nstructures;
-    nindices_per_task = m.nindices_per_task;
-    nopbc = m.nopbc;
-    align_strands = m.align_strands;
-    colvar_atoms=m.colvar_atoms;
-    // setReferenceStructure appends to myrmsd, so the structures that are already here have to go
-    myrmsd.clear();
-    for(unsigned i=0; i<m.myrmsd.size(); ++i) {
-      std::vector<Vector> mystruct( m.myrmsd[i].getReference() );
-      setReferenceStructure( m.myrmsd[i].getMethod(), 0.0, mystruct );
-    }
-    return *this;
-  }
-};
 
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
