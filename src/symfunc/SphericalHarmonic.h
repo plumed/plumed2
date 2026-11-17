@@ -38,6 +38,10 @@ class SphericalHarmonic {
 public:
   static void registerKeywords( Keywords& keys );
   static unsigned factorial( unsigned n );
+/// The angular momentum l
+  int getL() const {
+    return tmom;
+  }
 /// Sets up the coefficients for the angular momentum l (1 to 6); returns false for other values
   static bool setup( SphericalHarmonic& func, int l );
   static void read( SphericalHarmonic& func,

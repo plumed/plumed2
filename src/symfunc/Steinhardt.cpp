@@ -588,7 +588,8 @@ private:
                               int l,
                               const std::string& sep,
                               const std::string& vlab,
-                              const std::string& flags = "");
+                              const std::string& flags = "",
+                              const std::string& normAction = "");
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -623,7 +624,7 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.addActionNameSuffix("_SUMS");
   keys.addActionNameSuffix("_DENOM_SUMS");
   keys.addActionNameSuffix("_SUMSACC");
-  keys.addActionNameSuffix("_DENOM_SUMSACC");
+  keys.addActionNameSuffix("_NORM");
   keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
   keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
 }
@@ -692,9 +693,9 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
     // the sums of the spherical harmonics over the neighbours, and the coordination numbers
     // (on the CPU only SERIAL applies)
     const std::string flags = usegpu ? doUSEGPU : std::string(serial ? " SERIAL" : "");
-    const std::string denom = fused.substr( 0, fused.find("_SUMS") ) + "_DENOM" + fused.substr( fused.find("_SUMS") );
     readInputLine( getShortcutLabel() + "_sp: " + fused + matinp + flags );
-    readInputLine( denomLab + ": " + denom + matinp + flags );
+    // computed in the same pass over the neighbours by the sums
+    readInputLine( denomLab + ": " + getName() + "_DENOM_SUMS SUMS=" + getShortcutLabel() + "_sp" );
   } else {
     readInputLine( denomLab + ": MATRIX_VECTOR_PRODUCT "
                    "ARG=" + getShortcutLabel() + "_mat.w,"
@@ -777,13 +778,16 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   }
 
   // Now calculate the total length of the vector: always on the CPU, as the
-  // sum of 2l+1 squares per atom is cheaper than moving the 2(2l+1) vectors to the GPU
+  // sum of 2l+1 squares per atom is cheaper than moving the 2(2l+1) vectors to the GPU.
+  // The norm is one action (COMBINE and the square root are created too, as inputs can use
+  // the label of the square: it is computed only if something uses it)
   createVectorNormInput( getShortcutLabel() + "_sp",
                          getShortcutLabel() + "_norm",
                          l,
                          ".",
                          "m",
-                         serial?" SERIAL":"" );
+                         serial?" SERIAL":"",
+                         getName() );
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
@@ -797,7 +801,8 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
                                         const int l,
                                         const std::string& sep,
                                         const std::string& vlab,
-                                        const std::string& flags) {
+                                        const std::string& flags,
+                                        const std::string& normAction ) {
   std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
   std::string arg_inp = "";
@@ -812,7 +817,11 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
     comma=",";
   }
   readInputLine( norm_input + " ARG=" + arg_inp + flags );
-  readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  if( normAction.length()>0 ) {
+    readInputLine( olab + ": " + normAction + "_NORM ARG=" + arg_inp );
+  } else {
+    readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  }
 }
 
 std::string Steinhardt::getSymbol( const int m ) {
