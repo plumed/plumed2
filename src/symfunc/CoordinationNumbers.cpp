@@ -74,6 +74,11 @@ DUMPATOMS ATOMS=c ARG=c FILE=coords.xyz
 Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
 of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
+When SPECIESA has only a few atoms and SPECIESB many (one site against the solvent), the linked lists are not used:
+the atoms of SPECIESB are shared between the threads and one distance is computed per pair, which costs less than sorting
+all of them into cells. If you only need the sum of these coordination numbers, [COORDINATION](COORDINATION.md) with a
+neighbor list (NLIST) is faster still, as between the updates of the list only the atoms in the list are used.
+
 The vectors that are output by the COORDINATIONNUMBER shortcut can be used in the input for many other functions that are within
 PLUMED. In addition, in order to ensure compatibility with older versions of PLUMED you can add additional keywords on the input
 line for COORDINATIONNUMBER in order to calculate various functions of the input.  For example, the following input tells plumed
