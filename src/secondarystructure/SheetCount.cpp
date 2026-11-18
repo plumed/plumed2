@@ -147,15 +147,20 @@ void SheetCount::calculate() {
   if( nt==0 ) {
     nt=1;
   }
+  // The buffers are cleared here and not by the threads, because all the nt buffers are summed below and fewer
+  // threads may run: OpenMP may give fewer than nt, and without OpenMP a single one runs (nt still comes from
+  // PLUMED_NUM_THREADS)
   if( omp_derivatives.size()<nt ) {
     omp_derivatives.resize(nt);
+  }
+  for(unsigned t=0; t<nt; ++t) {
+    omp_derivatives[t].assign( 3*natoms+9, 0.0 );
   }
   double value=0.0;
   #pragma omp parallel num_threads(nt) reduction(+:value)
   {
     const unsigned t=OpenMP::getThreadNum();
     std::vector<double>& myder( omp_derivatives[t] );
-    myder.assign( 3*natoms+9, 0.0 );
     std::array<Vector,maxAtomsInSegment> pos;
     std::array<double,2*sheet::segmentDerivatives> der;
     const double* x=&getPositions()[0][0];
