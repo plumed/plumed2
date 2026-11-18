@@ -19,10 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Current Fedora plus supported Rocky Linux 8/9 lines.
+        # Current Fedora plus supported Rocky Linux 9 lines.
         variant:
         - fedora44
-        - rocky8
         - rocky9
     steps:
     - uses: actions/checkout@v6
