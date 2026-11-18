@@ -255,7 +255,6 @@ void CoordinationBase::calculateBlocks() {
 
   const double cut2=pairCutoff2();
   const Vector* const pos=getPositions().data();
-  const Pbc& thePbc=getPbc();
 
   #pragma omp parallel num_threads(nt)
   {
@@ -281,7 +280,7 @@ void CoordinationBase::calculateBlocks() {
       unsigned count=0;
       auto computeBatch=[&]() {
         if constexpr (usePbc) {
-          thePbc.apply(VectorView(distances[0].data(),count));
+          getPbc().apply(VectorView(distances[0].data(),count));
         }
         // local accumulators (in registers): the value and the virial, symmetric since dd is parallel to the distance
         double batchValue=0.0;
@@ -402,7 +401,6 @@ void CoordinationBase::calculateList() {
 
   const double cut2=pairCutoff2();
   const Vector* const pos=getPositions().data();
-  const Pbc& thePbc=getPbc();
 
   #pragma omp parallel num_threads(nt)
   {
@@ -426,7 +424,7 @@ void CoordinationBase::calculateList() {
         ++count;
       }
       if constexpr (usePbc) {
-        thePbc.apply(VectorView(distances[0].data(),count));
+        getPbc().apply(VectorView(distances[0].data(),count));
       }
       // local accumulators, as in calculateBlocks
       double batchValue=0.0;
