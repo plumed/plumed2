@@ -32,6 +32,7 @@
 #include "tools/TypeUtils.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -84,7 +85,10 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
-  static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
+  /// Read LESS_THAN, or R_0, D_0, NN and MM, in a shortcut: ltmap is the switching function. With withDmax, the rational
+  /// function defined by R_0, D_0, NN and MM gets the D_MAX that the other actions use for these keywords (where the
+  /// function is 1e-5): it is then stretched to be zero at D_MAX. Returns true if LESS_THAN was used
+  static bool readShortcutWords( std::string& ltmap, ActionShortcut* action, bool withDmax=false );
   /// Read TYPE (returned in upper case), NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action
   /// that computes the distances
   static std::string readDistanceAction( ActionShortcut* action, std::string& type, bool& nopbc, bool& usegpu );
@@ -120,7 +124,7 @@ unsigned SecondaryStructureBase<T,myPTM>::getNumberOfDerivatives() {
 }
 
 template <class T,typename myPTM>
-bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, ActionShortcut* action ) {
+bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, ActionShortcut* action, const bool withDmax ) {
   action->parse("LESS_THAN",ltmap);
   if( ltmap.length()==0 ) {
     std::string nn, mm, d_0, r_0;
@@ -133,6 +137,24 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
     action->parse("D_0",d_0);
     action->parse("MM",mm);
     ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
+    if( withDmax ) {
+      // as SwitchingFunction::set(nn,mm,r0,d0)
+      double r0, d0;
+      int n, m;
+      Tools::convert( r_0, r0 );
+      Tools::convert( d_0, d0 );
+      Tools::convert( nn, n );
+      Tools::convert( mm, m );
+      if( m==0 ) {
+        m=2*n;
+      }
+      if( n==m ) {
+        action->error("NN and MM must be different");
+      }
+      std::string dmax;
+      Tools::convert( d0+r0*std::pow( 0.00001, 1.0/(n-m) ), dmax );
+      ltmap += " D_MAX=" + dmax;
+    }
     return false;
   }
   return true;

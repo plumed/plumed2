@@ -35,6 +35,10 @@ These keywords are still read, as the keyword that replaces them, with a warning
 - UPPER_WALLS and LOWER_WALLS acting on a periodic argument do not apply the periodic boundary conditions to the difference
   between the argument and `AT` any more.
 - `ARG=*` leaves out the values that the action cannot use (e.g. in PRINT).
+- ANTIBETARMSD and PARABETARMSD use `STRANDS_CUTOFF=1` (nm) by default: the segments whose strands are further apart do not
+  contribute to the number of segments. Write `STRANDS_CUTOFF=0` to use all the pairs of strands as before. With R_0, NN, MM and D_0
+  (and not LESS_THAN) their switching function is stretched to be zero where it is 1e-5, as in the other actions that take these
+  keywords; `LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}` gives the function of v2.10.
 - A function of a sparse matrix that is not zero for zero arguments (e.g. CUSTOM with `FUNC=1-x` on a CONTACT_MATRIX
   with `D_MAX`) stops with an error: the elements that the matrix does not store were silently taken as zero.
   Give the function a `MASK` (e.g. the matrix itself) to compute it only on the stored elements, or remove `D_MAX`.

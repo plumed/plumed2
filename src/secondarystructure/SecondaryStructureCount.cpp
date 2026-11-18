@@ -23,6 +23,9 @@
 #include "core/ActionRegister.h"
 #include "tools/OpenMP.h"
 
+#include <algorithm>
+#include <limits>
+
 namespace PLMD {
 namespace secondarystructure {
 
@@ -31,7 +34,8 @@ namespace secondarystructure {
 // SecondaryStructureCount gives the same result as the chain of actions created by ALPHARMSD, ANTIBETARMSD and PARABETARMSD
 // (SECONDARY_STRUCTURE_(D)RMSD, the DISTANCE and CUSTOM of STRANDS_CUTOFF, LOWEST, LESS_THAN, SUM), but
 // - the segments are not stored: they are built from the lengths of the chains (for the sheets, as pairs of strands);
-// - the segments whose strands are further apart than STRANDS_CUTOFF cost one distance;
+// - the segments whose strands are further apart than STRANDS_CUTOFF cost one distance, and so do the segments
+//   whose switching function is zero because their strands are far apart (see setSkipDistance);
 // - the derivatives are accumulated on the atoms while the segments are computed, so they are
 //   computed once (the chain computes the active segments again in the backward pass), only for the
 //   segments where the switching function is not constant, and no vector with an element per segment is created.
@@ -71,6 +75,7 @@ SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
   nopbc(false),
   usedrmsd(true),
   strands_cutoff(-1.0),
+  skipDistance(-1.0),
   nstructures(0) {
   if( plumed.usingNaturalUnits() ) {
     error("cannot use this collective variable when using natural units");
@@ -123,6 +128,9 @@ SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
   log.printf("  sum of %s of the %s distance from the reference structure\n", switchingFunction.description().c_str(), type.c_str() );
 
   // The reference structures, as in SECONDARY_STRUCTURE_RMSD and SECONDARY_STRUCTURE_DRMSD
+  // the bond length of the shortcuts, 0.17 nm
+  const double bondlength=0.17/getUnits().getLength();
+  std::vector<std::vector<Vector> > references;
   for(unsigned ii=1;; ++ii) {
     std::vector<double> cstruct;
     if( !parseNumberedVector("STRUCTURE",ii,cstruct) ) {
@@ -138,16 +146,17 @@ SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
       }
     }
     if( usedrmsd ) {
-      // the bond length of the shortcuts, 0.17 nm
-      drmsd.setReferenceStructure( type, 0.17/getUnits().getLength(), structure );
+      drmsd.setReferenceStructure( type, bondlength, structure );
     } else {
       rmsd.setReferenceStructure( type, 0.0, structure );
     }
+    references.push_back( structure );
     nstructures++;
   }
   if( nstructures==0 || nstructures>2 ) {
     error("there must be one or two STRUCTURE keywords");
   }
+  setSkipDistance( references, bondlength );
   checkRead();
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)")<<"\n";
 
@@ -155,6 +164,75 @@ SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
   setNotPeriodic();
   requestAtoms(atoms);
   derivatives.resize( 3*atoms.size()+9 );
+}
+
+void SecondaryStructureCount::setSkipDistance( const std::vector<std::vector<Vector> >& references, const double bondlength ) {
+  skipDistance=-1.0;
+  const double dmax=switchingFunction.get_dmax();
+  if( alpha || !(dmax<std::numeric_limits<double>::max()) ) {
+    return;
+  }
+  // The switching function is zero for a distance r>dmax. A segment whose strands have their central CA atoms at a
+  // distance d, and radii r1 and r2 (sscount::strandRadius), has all the distances between an atom of the first strand
+  // and one of the second larger than or equal to L=d-r1-r2. A lower bound of its distance from a reference is then:
+  // - DRMSD: of the npairs distances of the reference, ncross are between the two strands, all at most d0max. If
+  //   L>d0max, each of them gives a term at least (L-d0max)^2, so DRMSD >= sqrt(ncross/npairs)*(L-d0max);
+  // - RMSD: after the optimal alignment the RMSD is at least the difference of the radii of gyration of the segment
+  //   and of the reference, and the radius of gyration of the segment is at least half the distance between the
+  //   centers of the strands, which is at least L: RMSD >= L/2-rg.
+  // The segment can be skipped if the bound is larger than dmax for all the references, i.e. if L is larger than
+  // d0max+dmax*sqrt(npairs/ncross) for DRMSD and 2*(dmax+rg) for RMSD.
+  double skip=0.0;
+  for(const auto& ref : references) {
+    double s;
+    if( usedrmsd ) {
+      unsigned npairs=0, ncross=0;
+      double d0max=0.0;
+      for(unsigned i=0; i<ref.size(); ++i) {
+        for(unsigned j=i+1; j<ref.size(); ++j) {
+          const double d0=delta( ref[i], ref[j] ).modulo();
+          if( d0>bondlength ) {
+            npairs++;
+            if( i<sscount::strandAtoms && j>=sscount::strandAtoms ) {
+              ncross++;
+              d0max=std::max( d0max, d0 );
+            }
+          }
+        }
+      }
+      if( ncross==0 ) {
+        return;
+      }
+      s = d0max + dmax*std::sqrt( static_cast<double>(npairs)/ncross );
+    } else {
+      Vector center;
+      center.zero();
+      for(const auto& r : ref) {
+        center += r;
+      }
+      center /= ref.size();
+      double rg2=0.0;
+      for(const auto& r : ref) {
+        rg2 += delta( center, r ).modulo2();
+      }
+      s = 2.0*( dmax + std::sqrt( rg2/ref.size() ) );
+    }
+    skip=std::max( skip, s );
+  }
+  // a margin for the rounding
+  skip *= 1.0+1e-6;
+  if( strands_cutoff>0 && strands_cutoff<=skip ) {
+    // STRANDS_CUTOFF already skips these pairs
+    return;
+  }
+  skipDistance=skip;
+  for(const auto& p : pairs) {
+    strands.push_back( p.first );
+    strands.push_back( p.second );
+  }
+  std::sort( strands.begin(), strands.end() );
+  strands.erase( std::unique( strands.begin(), strands.end() ), strands.end() );
+  log.printf("  the pairs of strands whose central CA atoms are further apart than %f plus the radii of the strands are skipped, because their switching function is zero\n", skipDistance );
 }
 
 void SecondaryStructureCount::calculate() {
@@ -178,6 +256,18 @@ void SecondaryStructureCount::calculate() {
   for(unsigned t=0; t<nt; ++t) {
     omp_derivatives[t].assign( 3*natoms+9, 0.0 );
   }
+  const double* x=&getPositions()[0][0];
+  const Pbc* pbc = nopbc ? nullptr : &getPbc();
+  const double* rad=nullptr;
+  if( skipDistance>=0 ) {
+    radius.resize( natoms );
+    #pragma omp parallel for num_threads(nt)
+    for(unsigned i=0; i<strands.size(); ++i) {
+      radius[strands[i]]=sscount::strandRadius( x, strands[i], pbc );
+    }
+    rad=radius.data();
+  }
+  const bool skip = strands_cutoff>0 || rad;
   double value=0.0;
   #pragma omp parallel num_threads(nt) reduction(+:value)
   {
@@ -185,12 +275,10 @@ void SecondaryStructureCount::calculate() {
     std::vector<double>& myder( omp_derivatives[t] );
     std::array<Vector,maxAtomsInSegment> pos;
     std::array<double,2*sscount::segmentDerivatives> der;
-    const double* x=&getPositions()[0][0];
-    const Pbc* pbc = nopbc ? nullptr : &getPbc();
     #pragma omp for
     for(unsigned i=rank; i<npairs; i+=stride) {
       const unsigned s1=pairs[i].first, s2=pairs[i].second;
-      if( strands_cutoff>0 && !sscount::withinCutoff( x, s1, s2, pbc, strands_cutoff ) ) {
+      if( skip && !sscount::segmentActive( x, s1, s2, pbc, strands_cutoff, rad, skipDistance ) ) {
         continue;
       }
       sscount::segmentPositions( x, s1, s2, pbc, !alpha, pos );
