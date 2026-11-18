@@ -1,0 +1,20 @@
+MOLINFO STRUCTURE=ref.pdb
+
+# the N and O atoms bonded to a hydrogen, their hydrogens, all the N and O atoms (ions excluded)
+DUMPATOMS ATOMS=@hbdonors FILE=donors.gro PRECISION=3
+DUMPATOMS ATOMS=@polarhydrogens FILE=hydrogens.gro PRECISION=3
+DUMPATOMS ATOMS=@hbacceptors FILE=acceptors.gro PRECISION=3
+
+# the number of hydrogen bonds of mdtraj
+hb_sharp: HBONDS DONORS=@hbdonors HYDROGENS=@polarhydrogens ACCEPTORS=@hbacceptors SWITCH={CUBIC D_0=0.32999 D_MAX=0.33001}
+# the default switching function, without and with neighbor lists: all equal
+hb: HBONDS DONORS=@hbdonors HYDROGENS=@polarhydrogens ACCEPTORS=@hbacceptors
+hb_nl: HBONDS DONORS=@hbdonors HYDROGENS=@polarhydrogens ACCEPTORS=@hbacceptors NLIST NL_CUTOFF=0.5 NL_STRIDE=2
+hb_cells: HBONDS DONORS=@hbdonors HYDROGENS=@polarhydrogens ACCEPTORS=@hbacceptors NLISTCELLS NL_CUTOFF=0.5 NL_STRIDE=2
+# the N and O atoms without hydrogens are ignored as donors, and the hydrogens bonded to carbons are ignored: equal to hb
+hb_all: HBONDS DONORS=@hbacceptors HYDROGENS=@hydrogens ACCEPTORS=@hbacceptors
+# a smooth switching function with a long tail, for the forces
+hb_rational: HBONDS DONORS=@hbdonors HYDROGENS=@polarhydrogens ACCEPTORS=@hbacceptors SWITCH={RATIONAL R_0=0.33 NN=8 MM=16 D_MAX=0.45}
+
+PRINT ARG=hb_sharp,hb,hb_nl,hb_cells,hb_all,hb_rational FILE=colvar FMT=%10.6f
+BIASVALUE ARG=hb,hb_rational

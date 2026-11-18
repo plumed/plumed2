@@ -77,7 +77,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
 // cppcheck-suppress syntaxError
     , 0x00
   };
-  std::fprintf(out,"local cmds=\"help -h --help");
+  std::fprintf(out,"local cmds=\"help -h --help modules");
 // Build list of available C++ tools:
   std::vector<std::string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
@@ -98,6 +98,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
       std::fprintf(out," %s",tmp[j].c_str());
     }
   std::fprintf(out,"\"\n");
+  std::fprintf(out,"local cmd_keys_modules=\"--module --list --has --has-feature -q --help\"\n");
 
   //here I am looping on the copies,
   //since I want to preprocess the string before printing it

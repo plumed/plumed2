@@ -62,6 +62,33 @@ These cases need a separate design decision before using internal threads.
 
 HOW TO ADD A NEW TEST
 
+Declare prerequisites in config with plumed_needs, for example:
+  plumed_modules="drr"
+  plumed_needs="drr:boost_serialization"
+or, when two libraries are required by one module:
+  plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
+
+Use module:feature for the module containing the library-dependent code.
+For example HDF5 table I/O belongs to tools, so OPES tests using these tables
+require tools:libhdf5, while TTsketch directly requires ttsketch:libhdf5.
+The feature name is the lowercase __PLUMED_HAS_ suffix (boost_serialization,
+not boost). The checks run before reading the input; LOAD MODULE inside the
+input cannot make a prerequisite available. Use autoload or a command-line
+module selection when running against installed extension packages.
+
+Modern executables query that module's own feature vector. A missing feature
+does not fall back to an aggregate/kernel feature. Older monolithic executables
+check both static module presence and the global build feature. Bare feature
+names remain supported for compatibility and intentionally query the aggregate
+runtime feature set (or static config with older executables). The existing
+bare python requirement describes Python-wrapper build support, not a native
+module named python. Use plumed_needs for all feature prerequisites.
+
+PLUMED_REGTEST_FORCE_REQUIREMENTS=yes bypasses prerequisites only for explicitly
+curated installed-package checks. It never bypasses calculations or comparisons;
+those package checks reject skipped tests. Ordinary suite runs should leave it
+unset so missing prerequisites are detected.
+
 Add a new directory rtXXX, let's say rt105, and go there:
 > cd rt105
 

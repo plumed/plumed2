@@ -395,6 +395,13 @@ jobs:
       run: |
          export PLUMED_MAXBACKUP=0 
          make doc >/dev/null
+    - name: Exercise separate modules in the instrumented kernel
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+        # The ordinary native build includes every real module in the kernel.
+        # These native-linked fixtures exercise discovery, hard dependencies,
+        # autoloading and feature inquiries through the instrumented loader.
+        python3 extensions/tests/module_features.py --base "$HOME/opt"
     - name: Coverage
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}

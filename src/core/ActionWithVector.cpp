@@ -207,9 +207,20 @@ void ActionWithVector::getArgumentInputData( std::vector<double>& inputdata ) co
     inputdata.resize( total_args );
   }
 
+  // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned size = byRow ? comm.Get_size() : 1, rank = byRow ? comm.Get_rank() : 0;
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
+    if( byRow && readsOnlyOwnRowOfArgument(i) ) {
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        std::copy_n( myarg->data.begin()+r*ncols, ncols, inputdata.begin()+total_args+r*ncols );
+      }
+      total_args += myarg->getNumberOfStoredValues();
+      continue;
+    }
     total_args+= myarg->assignValues(View<double> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
@@ -230,9 +241,20 @@ void ActionWithVector::getArgumentInputData( std::vector<float>& inputdata ) con
     inputdata.resize( total_args );
   }
 
+  // when the tasks are shared by row, the tasks of this process only read its rows of these arguments
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned size = byRow ? comm.Get_size() : 1, rank = byRow ? comm.Get_rank() : 0;
   total_args = 0;
   for(unsigned i=0; i<nargs; ++i) {
     Value* myarg = getPntrToArgument(i);
+    if( byRow && readsOnlyOwnRowOfArgument(i) ) {
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        std::copy_n( myarg->data.begin()+r*ncols, ncols, inputdata.begin()+total_args+r*ncols );
+      }
+      total_args += myarg->getNumberOfStoredValues();
+      continue;
+    }
     total_args+= myarg->assignValues(View<float> {inputdata.data()+total_args,inputdata.size()-total_args});
   }
 }
@@ -350,11 +372,12 @@ template <typename T>
 void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTaskList, const std::vector<T>& stash ) {
   const std::size_t ntask = partialTaskList.size();
   const std::size_t ncomponents = getNumberOfComponents();
-#ifdef _OPENMP
-  // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt = OpenMP::getGoodNumThreads( stash );
-#endif
-  #pragma omp parallel for num_threads(nt) schedule(static)
+  // The stash holds the components of a task contiguously. The copy loops over the tasks and,
+  // for each task, over the components, so that the stash is read in order: looping over the
+  // components first read it with a stride of ncomponents, one cache line per element
+  std::vector<double*> data;
+  std::vector<std::size_t> comp;
+  std::vector<Value*> periodic;
   for(std::size_t i=0; i<ncomponents; ++i) {
     Value* myval = copyOutput(i);
     if( myval->hasDeriv || myval->getRank()==0 ) {
@@ -364,19 +387,45 @@ void ActionWithVector::stashToValuesImpl( const std::vector<unsigned>& partialTa
       continue;
     }
     myval->value_set=true;
-    double* d = myval->data.data();
     plumed_dbg_massert( ntask==0 || myval->data.size()>partialTaskList[ntask-1], "failing in " + myval->getName() );
+    data.push_back( myval->data.data() );
+    comp.push_back( i );
     if( myval->isPeriodic() ) {
-      for(std::size_t j=0; j<ntask; ++j) {
-        const std::size_t t = partialTaskList[j];
-        d[t] = stash[t*ncomponents+i];
-        myval->applyPeriodicity(t);
-      }
-    } else {
-      for(std::size_t j=0; j<ntask; ++j) {
-        const std::size_t t = partialTaskList[j];
-        d[t] = stash[t*ncomponents+i];
-      }
+      periodic.push_back( myval );
+    }
+  }
+  const std::size_t ncopy = comp.size();
+  if( ncopy==0 ) {
+    return;
+  }
+  if( ncomponents==1 && periodic.empty() ) {
+    // one component: a plain gather
+    double* d = data[0];
+    for(std::size_t j=0; j<ntask; ++j) {
+      const std::size_t t = partialTaskList[j];
+      d[t] = stash[t];
+    }
+    return;
+  }
+  auto copyTask=[&]( const std::size_t j ) {
+    const std::size_t t = partialTaskList[j];
+    const T* src = stash.data() + t*ncomponents;
+    for(std::size_t k=0; k<ncopy; ++k) {
+      data[k][t] = src[comp[k]];
+    }
+    for(Value* myval : periodic) {
+      myval->applyPeriodicity(t);
+    }
+  };
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  if( nt>1 ) {
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
+    }
+  } else {
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
     }
   }
 }
@@ -385,17 +434,38 @@ template <typename T>
 void ActionWithVector::forcesToStashImpl( const std::vector<unsigned>& partialTaskList, std::vector<T>& stash ) const {
   const std::size_t ntask = partialTaskList.size();
   const std::size_t ncomponents = getNumberOfComponents();
-#ifdef _OPENMP
-  // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt = OpenMP::getGoodNumThreads( stash );
-#endif
-  #pragma omp parallel for num_threads(nt) schedule(static)
-  for(std::size_t i=0; i<ncomponents; ++i) {
-    const double* f = getConstPntrToComponent(i)->inputForce.data();
-    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+  if( ncomponents==1 ) {
+    // one component: a plain scatter
+    const double* f = getConstPntrToComponent(0)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(0)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(0)->getName() );
     for(std::size_t j=0; j<ntask; ++j) {
       const std::size_t t = partialTaskList[j];
-      stash[t*ncomponents+i] = f[t];
+      stash[t] = f[t];
+    }
+    return;
+  }
+  // the stash is written in order, a task at a time (see stashToValuesImpl)
+  std::vector<const double*> force( ncomponents );
+  for(std::size_t i=0; i<ncomponents; ++i) {
+    force[i] = getConstPntrToComponent(i)->inputForce.data();
+    plumed_dbg_massert( ntask==0 || getConstPntrToComponent(i)->inputForce.size()>partialTaskList[ntask-1], "failing in " + getConstPntrToComponent(i)->getName() );
+  }
+  auto copyTask=[&]( const std::size_t j ) {
+    const std::size_t t = partialTaskList[j];
+    T* dst = stash.data() + t*ncomponents;
+    for(std::size_t i=0; i<ncomponents; ++i) {
+      dst[i] = force[i][t];
+    }
+  };
+  const unsigned nt = OpenMP::getGoodNumThreads( stash );
+  if( nt>1 ) {
+    #pragma omp parallel for num_threads(nt) schedule(static)
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
+    }
+  } else {
+    for(std::size_t j=0; j<ntask; ++j) {
+      copyTask(j);
     }
   }
 }
@@ -498,8 +568,202 @@ void ActionWithVector::apply() {
   }
   // Find the top of the chain and add forces
   unsigned ind=0;
-  addForcesOnArguments( 0, forcesForApply, ind );
+  const auto & rd = getRowDistribution();
+  if( rd.byRow ) {
+    // the forces on the arguments owned by row are only known on the rows of this process
+    const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+    for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+      Value* myarg = getPntrToArgument(k);
+      if( !rd.localArgument[k] ) {
+        ind += myarg->addForces( View<const double>( forcesForApply.data()+ind, forcesForApply.size()-ind ) );
+        continue;
+      }
+      myarg->hasForce=true;
+      const std::size_t ncols = myarg->getNumberOfColumns();
+      for(std::size_t r=rank; r<myarg->getShape()[0]; r+=size) {
+        const double* f = forcesForApply.data()+ind+r*ncols;
+        double* dst = myarg->inputForce.data()+r*ncols;
+        for(std::size_t j=0; j<ncols; ++j) {
+          dst[j] += f[j];
+        }
+      }
+      ind += myarg->getNumberOfStoredValues();
+    }
+  } else {
+    addForcesOnArguments( 0, forcesForApply, ind );
+  }
   setForcesOnAtoms( forcesForApply, ind );
+}
+
+// The matrices of a chain like CONTACT_MATRIX -> FUNCTION OF MATRIX -> MATRIX_VECTOR_PRODUCT are
+// computed one row per task. If the tasks of producer and consumers are shared between the MPI
+// processes by row (row r on process r%size), each process only needs the rows it computes:
+// the values of the matrices and the forces on them need not be summed over the processes,
+// which costs more than the calculation for large matrices.
+// A link producer->consumer is local if the producer canDistributeRows() and the consumer
+// readsOnlyOwnRowOfArgument(): the producer does not sum its values if all its users are local
+// links, the consumer does not sum the forces on the arguments of local links, and both share
+// their tasks by row.
+const ActionWithVector::RowDistribution& ActionWithVector::getRowDistribution() const {
+  // worked out again if actions were added (e.g. an action created by a later input line)
+  const std::size_t nactions = plumed.getActionSet().size();
+  if( rowdist.nactions==nactions ) {
+    return rowdist;
+  }
+  rowdist.nactions=nactions;
+  rowdist.generation++;
+  rowdist.byRow=false;
+  rowdist.localOutput=false;
+  unsigned nargs = getNumberOfArguments();
+  unsigned nmasks = getNumberOfMasks();
+  if( nargs>=nmasks && nmasks>0 ) {
+    nargs = nargs - nmasks;
+  }
+  rowdist.localArgument.assign( nargs, false );
+  if( comm.Get_size()==1 ) {
+    return rowdist;
+  }
+  for(unsigned k=0; k<nargs; ++k) {
+    auto av=dynamic_cast<ActionWithVector*>( getPntrToArgument(k)->getPntrToAction() );
+    if( av && av->canDistributeRows() && readsOnlyOwnRowOfArgument(k) ) {
+      rowdist.localArgument[k]=true;
+      rowdist.byRow=true;
+    }
+  }
+  if( canDistributeRows() ) {
+    bool anyuser=false, alllocal=true;
+    for(const auto & a : plumed.getActionSet()) {
+      auto aa=dynamic_cast<ActionWithArguments*>( a.get() );
+      if( !aa ) {
+        continue;
+      }
+      auto av=dynamic_cast<ActionWithVector*>( a.get() );
+      const auto & args=aa->getArguments();
+      for(unsigned k=0; k<args.size(); ++k) {
+        if( args[k]->getPntrToAction()!=this ) {
+          continue;
+        }
+        anyuser=true;
+        if( av && av->readsOnlyOwnRowOfArgument(k) ) {
+          rowdist.byRow=true;
+        } else {
+          alllocal=false;
+        }
+      }
+    }
+    rowdist.localOutput = anyuser && alllocal;
+  }
+  if( rowdist.byRow ) {
+    log.printf("  %s: with MPI the rows of the matrices are shared between the processes%s\n", getLabel().c_str(),
+               rowdist.localOutput?", and the output matrices are not summed over them":"");
+  }
+  return rowdist;
+}
+
+void ActionWithVector::sumForcesOverProcesses( std::vector<double>& outforces ) {
+  const auto & rd = getRowDistribution();
+  if( !rd.byRow ) {
+    comm.Sum( outforces );
+    return;
+  }
+  // the forces on the arguments come first, in the order of the arguments (see getNumberOfForceDerivatives)
+  std::size_t start=0, sumstart=0;
+  for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+    std::size_t n = getPntrToArgument(k)->getNumberOfStoredValues();
+    if( rd.localArgument[k] ) {
+      if( start>sumstart ) {
+        comm.Sum( outforces.data()+sumstart, start-sumstart );
+      }
+      sumstart = start+n;
+    }
+    start += n;
+  }
+  if( outforces.size()>sumstart ) {
+    comm.Sum( outforces.data()+sumstart, outforces.size()-sumstart );
+  }
+}
+
+// Set to zero the rows of a matrix (stored with ncols columns from start) that are computed by this process
+static void clearOwnedRows( double* start, std::size_t nrows, std::size_t ncols, unsigned rank, unsigned size ) {
+  for(std::size_t r=rank; r<nrows; r+=size) {
+    std::fill_n( start+r*ncols, ncols, 0.0 );
+  }
+}
+
+void ActionWithVector::clearForcesForApply( std::vector<double>& outforces ) {
+  const auto & rd = getRowDistribution();
+  if( !rd.byRow ) {
+    std::fill( outforces.begin(), outforces.end(), 0.0 );
+    return;
+  }
+  // the rows of the other processes are never written on the arguments owned by row, and
+  // they are zero if the whole buffer was cleared since the arguments last changed size
+  bool changed = clearedForceGeneration!=rd.generation || clearedForceSizes.size()!=rd.localArgument.size();
+  for(unsigned k=0; !changed && k<rd.localArgument.size(); ++k) {
+    changed = clearedForceSizes[k]!=getPntrToArgument(k)->getNumberOfStoredValues();
+  }
+  if( changed ) {
+    std::fill( outforces.begin(), outforces.end(), 0.0 );
+    clearedForceSizes.resize( rd.localArgument.size() );
+    for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+      clearedForceSizes[k] = getPntrToArgument(k)->getNumberOfStoredValues();
+    }
+    clearedForceGeneration = rd.generation;
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  std::size_t start=0;
+  for(unsigned k=0; k<rd.localArgument.size(); ++k) {
+    const Value* myarg = getPntrToArgument(k);
+    const std::size_t n = clearedForceSizes[k];
+    if( rd.localArgument[k] ) {
+      clearOwnedRows( outforces.data()+start, myarg->getShape()[0], myarg->getNumberOfColumns(), rank, size );
+    } else {
+      std::fill_n( outforces.begin()+start, n, 0.0 );
+    }
+    start += n;
+  }
+  std::fill( outforces.begin()+start, outforces.end(), 0.0 );
+}
+
+// The output matrices that are not summed over the processes are only written, and read, on
+// the rows of this process: the other rows are never used (they are not even zero after the
+// number of columns changes)
+void ActionWithVector::clearDerivatives( const bool& force ) {
+  if( !getRowDistribution().localOutput ) {
+    ActionWithValue::clearDerivatives( force );
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()!=2 || myval->hasDerivatives() ) {
+      myval->clearDerivatives( force );
+      continue;
+    }
+    myval->value_set=false;
+    clearOwnedRows( myval->data.data(), myval->getShape()[0], myval->getNumberOfColumns(), rank, size );
+  }
+}
+
+void ActionWithVector::clearInputForces( const bool& force ) {
+  if( !getRowDistribution().localOutput ) {
+    ActionWithValue::clearInputForces( force );
+    return;
+  }
+  const unsigned size=comm.Get_size(), rank=comm.Get_rank();
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    Value* myval = getPntrToComponent(i);
+    if( myval->getRank()!=2 || myval->hasDerivatives() ) {
+      myval->clearInputForce();
+      continue;
+    }
+    if( !myval->hasForce ) {
+      continue;
+    }
+    myval->hasForce=false;
+    clearOwnedRows( myval->inputForce.data(), myval->getShape()[0], myval->getNumberOfColumns(), rank, size );
+  }
 }
 
 }

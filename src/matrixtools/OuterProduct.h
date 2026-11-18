@@ -84,6 +84,7 @@ OuterProductBase<T>::OuterProductBase(const ActionOptions&ao):
   ActionWithMatrix(ao),
   isproduct(false),
   taskmanager(this) {
+  checkThreadGatherWithMPI( taskmanager.runInSerial() );
   unsigned nargs=getNumberOfArguments();
   if( getNumberOfMasks()>0 ) {
     nargs = nargs - getNumberOfMasks();

@@ -119,6 +119,7 @@ MatrixTimesMatrix<CV, myPTM>::MatrixTimesMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao),
   taskmanager(this) {
+  checkThreadGatherWithMPI( taskmanager.runInSerial() );
   int nm=getNumberOfMasks();
   if( nm<0 ) {
     nm = 0;

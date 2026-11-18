@@ -5,6 +5,16 @@ if exists("b:current_syntax")
   finish
 endif
 
+" Keep the installed dictionary usable on its own (including vim2html).
+" Interactive PLUMED buffers can replace it with metadata from live modules.
+let s:path=expand('<sfile>:p:h:h')
+if &l:filetype ==# 'plumed' && filereadable(s:path . '/autoload/plumed.vim')
+  execute 'source ' . fnameescape(s:path . '/autoload/plumed.vim')
+  if plumed#Load(s:path)
+    finish
+  endif
+endif
+
 syntax case ignore
 
 let b:current_syntax="plumed"
@@ -16,6 +26,7 @@ endif
 
 " path for plumed plugin
 let s:path=expand('<sfile>:p:h:h')
+let b:plumed_help_root=s:path
 
 " All except space and hash are in word
 setlocal iskeyword=33,34,36-126
@@ -148,11 +159,11 @@ fun! PlumedContextManual()
   if(m=="")
     return
   else
-    let name=s:path . "/help/" . m . ".txt"
+    let name=b:plumed_help_root . "/help/" . m . ".txt"
     if(exists("b:plumed_helpfile_vertical"))
-      execute 'rightbelow vsplit | view ' name
+      execute 'rightbelow vsplit | view ' . fnameescape(name)
     else
-      execute 'rightbelow split | view ' name
+      execute 'rightbelow split | view ' . fnameescape(name)
     endif
     let b:plumed_helpfile=1
 " this is to allow closing the window with F2

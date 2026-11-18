@@ -1,4 +1,4 @@
-plumed_needs=libmetatomic
+plumed_needs="metatomic:libmetatomic metatomic:libtorch"
 plumed_modules=metatomic
 type=driver
 

@@ -27,6 +27,7 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
+#include "ModuleLoader.h"
 #include "tools/Subprocess.h"
 #include "../mpiwrap/mpiwrap.h"
 #include <string>
@@ -269,6 +270,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   }
 
   DLLoader dlloader;
+  ModuleLoader::autoload(dlloader);
 
   std::string root=config::getPlumedRoot();
 
@@ -327,6 +329,19 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       continue;
     } else if(a=="--standalone-executable") {
       standalone_executable=true;
+    } else if(Tools::startWith(a,"--load-module=")) {
+      ModuleLoader::load(a.substr(a.find('=')+1),dlloader);
+      prefix="";
+    } else if(a=="--load-module") {
+      prefix="--load-module=";
+    } else if(a=="--module-build-id") {
+      std::fprintf(out,"%s\n",config::getModuleBuildID().c_str());
+      return 0;
+    } else if(a=="--list-modules") {
+      for(const auto& name:ModuleLoader::modules(dlloader)) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
     } else if(Tools::startWith(a,"--load=")) {
       a.erase(0,a.find("=")+1);
       prefix="";
@@ -342,6 +357,13 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     }
   }
 
+  if(!prefix.empty()) {
+    std::fprintf(stderr,"ERROR: missing argument for %s\n",prefix.c_str());
+    return 1;
+  }
+
+  ModuleLoader::Context moduleContext(dlloader);
+
 // Check if plumedRoot/patches/ directory exists (as a further check)
   if(!standalone_executable) {
     std::vector<std::string> files=Tools::ls(root);
@@ -354,6 +376,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // Build list of available C++ tools:
   std::vector<std::string> availableCxx=cltoolRegister().list();
+  for(auto image:dlloader.getHandles()) {
+    const auto extra=cltoolRegister().getKeysWithDLHandle(image);
+    availableCxx.insert(availableCxx.end(),extra.begin(),extra.end());
+  }
+  std::sort(availableCxx.begin(),availableCxx.end());
+  availableCxx.erase(std::unique(availableCxx.begin(),availableCxx.end()),availableCxx.end());
 // Build list of available shell tools:
   std::vector<std::string> availableShell;
   if(!standalone_executable) {
@@ -385,9 +413,11 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "  [--has-thread-mpi]        : fails if no thread MPI capability is available\n"
       "  [--mpi-ranks-are-threads] : succeeds if the selected MPI provider uses threads\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
+      "  [--load-module MODULE]   : loads an installed module and its hard dependencies\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
-      "Commands:\n";
+      "Commands:\n"
+      "  plumed modules : list or check runtime module and native feature availability\n";
     std::fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
       auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(availableCxx[j]));
@@ -418,6 +448,78 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // this is the command to be executed:
   std::string command(argv[i]);
+  // Configuration remains build-time provenance. Runtime availability has its
+  // own command and follows this invocation's automatic/explicit load context.
+  if(command=="mklib" && std::find(availableShell.begin(),availableShell.end(),command)==availableShell.end()) {
+    std::fprintf(stderr,"ERROR: runtime C++ compilation tools are not installed; for conda install plumed-mklib\n");
+    return 1;
+  }
+  if(command=="modules") {
+    bool query=false,featureQuery=false,list=false,quiet=false;
+    std::vector<std::string> names;
+    std::string module;
+    int j=i+1;
+    while(j<argc) {
+      const std::string option=argv[j++];
+      if(option=="--help" || option=="-h") {
+        std::fprintf(out,"Usage: plumed modules [--module NAME] [--list | --has NAME... | --has-feature NAME...] [-q]\n"
+                     "List visible runtime modules (default), or check that all requested modules/features are available.\n"
+                     "Without --module, features include the kernel and visible extensions; --module selects one build.\n"
+                     "Presence checks return 0 when all names are available, otherwise 1. -q suppresses output.\n");
+        return 0;
+      } else if(option=="--module" && module.empty() && j<argc) {
+        module=argv[j++];
+      } else if(option=="-q" || option=="--quiet") {
+        quiet=true;
+      } else if(option=="--list" && !query && !list) {
+        list=true;
+      } else if((option=="--has" || option=="--has-feature") && !query && !list) {
+        query=true;
+        featureQuery=option=="--has-feature";
+      } else if(query && !option.empty() && option[0]!='-') {
+        names.push_back(option);
+      } else {
+        std::fprintf(stderr,"ERROR: invalid modules option %s; use plumed modules --help\n",option.c_str());
+        return 1;
+      }
+    }
+    if(query && names.empty()) {
+      std::fprintf(stderr,"ERROR: modules presence checks require at least one name\n");
+      return 1;
+    }
+    if(!module.empty() && query && !featureQuery) {
+      std::fprintf(stderr,"ERROR: --module selects features, use --has-feature\n");
+      return 1;
+    }
+    if(!module.empty() && !ModuleLoader::available(module,dlloader)) {
+      if(!quiet) {
+        std::fprintf(out,"%s not available\n",module.c_str());
+      }
+      return 1;
+    }
+    const auto available=(featureQuery || !module.empty())?ModuleLoader::features(dlloader,module):ModuleLoader::modules(dlloader);
+    if(!query) {
+      if(quiet) {
+        std::fprintf(stderr,"ERROR: modules -q requires a presence check\n");
+        return 1;
+      }
+      for(const auto& name:available) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
+    }
+    int result=0;
+    for(const auto& name:names) {
+      const bool present=std::find(available.begin(),available.end(),name)!=available.end();
+      if(!quiet) {
+        std::fprintf(out,"%s %s\n",name.c_str(),present?"on":"off");
+      }
+      if(!present) {
+        result=1;
+      }
+    }
+    return result;
+  }
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
     auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));

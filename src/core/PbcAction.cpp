@@ -94,11 +94,19 @@ void PbcAction::setPbc() {
   if( interface ) {
     interface->broadcastToDomains( getPntrToValue() );
   }
+  // setBox is expensive (and the actions copy the Pbc when its version changes): skip it when the box is the same
+  bool changed=(pbc.getVersion()==0);
+  const Tensor& oldbox(pbc.getBox());
   for(unsigned i=0; i<3; ++i)
     for(unsigned j=0; j<3; ++j) {
       box(i,j) = getPntrToValue()->get(3*i+j);
+      if( box(i,j)!=oldbox(i,j) ) {
+        changed=true;
+      }
     }
-  pbc.setBox(box);
+  if( changed ) {
+    pbc.setBox(box);
+  }
 }
 
 void PbcAction::wait() {

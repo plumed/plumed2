@@ -1,0 +1,12 @@
+== no donors: exit code 1
+ERROR in input to action HBONDS with label hb : DONORS should contain at least one atom
+== atom repeated in a list: exit code 1
+ERROR in input to action HBONDS with label hb : DONORS contains the same atom more than once
+== atom both donor and hydrogen: exit code 1
+ERROR in input to action HBONDS with label hb : atom 1 is both in DONORS and in HYDROGENS
+== no hydrogen bonded to a donor: exit code 1
+ERROR in input to action HBONDS with label hb : none of the HYDROGENS is closer than 0.13 nm to one of the DONORS
+== wrong switching function: exit code 1
+ERROR in input to action HBONDS with label hb : problem reading SWITCH keyword : cannot understand switching function type 'NOTAFUNCTION'
+== neighbor list without cutoff: exit code 1
+ERROR in input to action HBONDS with label hb : NL_CUTOFF should be explicitly specified and positive

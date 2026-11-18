@@ -2,6 +2,9 @@
 
 MANUAL="\
 
+Static configuration of the PLUMED base build.
+For runtime module availability, use plumed modules.
+
 Options:
   -h, --help
                     print this help and exit
@@ -10,9 +13,9 @@ Options:
   show
                     dump a full configuration file
   has [word1 [word2]..]
-                    check if plumed has features words
+                    check if the base was built with features words
   module [word1 [word2]..]
-                    check if plumed has enables modules words
+                    check if modules words were compiled into the base
   makefile_conf
                     dumps the Makefile.conf file
 

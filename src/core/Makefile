@@ -35,7 +35,7 @@ CLToolMainEnum.inc: CLToolMain.cpp
 
 ModuleMap.o: ModuleMap.inc
 
-ModuleMap.inc: ../*/*.cpp $(wildcard ../../plugins/*/*.cpp ../../plugins/*/src/*.cpp)
+ModuleMap.inc: ../maketools/makeModuleMap ../*/*.cpp $(wildcard ../../plugins/*/*.cpp ../../plugins/*/*.cu ../../plugins/*/src/*.cpp ../../plugins/*/src/*.cu)
 	../maketools/makeModuleMap $@
 
 ActionDescriptions.o: ActionDescriptions.inc

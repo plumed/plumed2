@@ -22,11 +22,17 @@
 #include "RegisterBase.h"
 
 #include <mutex>
+#if defined(__PLUMED_HAS_DLADDR) && defined(__PLUMED_HAS_DLOPEN)
+#include <dlfcn.h>
+#endif
 #include "tools/Tools.h"
 
 namespace PLMD {
 
 namespace {
+// A nontrivial TLS destructor would pin an otherwise unloadable kernel on ELF.
+// Context owns the heap snapshot and restores this pointer before freeing it.
+thread_local const std::vector<void*>* contextImages=nullptr;
 class Singleton {
 public:
   /// Mutex to avoid simultaneous registrations from multiple threads
@@ -38,6 +44,9 @@ public:
 
   /// Take care of all exisiting registers
   std::vector<Register*> registers;
+
+  std::vector<void*> automaticImages;
+  std::mutex imagesMutex;
 
   /// Full path of the registering library
   std::string fullPath;
@@ -95,6 +104,41 @@ void Register::completeAllRegistrations(void* image) {
   for(auto & reg : singleton.registers) {
     reg->completeRegistration(image);
   }
+}
+
+std::vector<void*> Register::automaticImages() {
+  std::lock_guard<std::mutex> lock(getSingleton().imagesMutex);
+  auto result=getSingleton().automaticImages;
+  if(contextImages) {
+    result.insert(result.end(),contextImages->begin(),contextImages->end());
+  }
+  return result;
+}
+
+void Register::setContextImages(const std::vector<void*>* images) {
+  contextImages=images;
+}
+
+void Register::setAutomaticImages(const std::vector<void*>& images) {
+  std::lock_guard<std::mutex> lock(getSingleton().imagesMutex);
+  getSingleton().automaticImages=images;
+}
+
+void* Register::registrationImage(const void* anchor, void* fallback, std::string& path) {
+#if defined(__PLUMED_HAS_DLADDR) && defined(__PLUMED_HAS_DLOPEN)
+  Dl_info info;
+  if(anchor && dladdr(anchor,&info) && info.dli_fname) {
+    // The root dlopen already retains this image through its native dependencies.
+    // Obtain its own handle without retaining an extra reference.
+    void* owner=dlopen(info.dli_fname,RTLD_NOW|RTLD_LOCAL);
+    if(owner) {
+      path=info.dli_fname;
+      dlclose(owner);
+      return owner;
+    }
+  }
+#endif
+  return fallback;
 }
 
 std::string Register::imageToString(void* image) {

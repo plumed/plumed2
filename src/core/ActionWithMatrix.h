@@ -93,6 +93,10 @@ protected:
   void updateBookeepingArrays( RequiredMatrixElements& mat );
 /// Get an array that tells us which indices are in each column
   void getColumnBookeepingArrays( RequiredMatrixElements& outmat );
+/// With AVOID_THREAD_GATHER the forces are gathered in two passes that are not combined across MPI processes:
+/// stop with an error if the action is parallelised with MPI (serial is the SERIAL flag of the task manager,
+/// so this is called by the derived actions after it has been read)
+  void checkThreadGatherWithMPI( const bool serial );
 public:
   static void registerKeywords( Keywords& keys );
   explicit ActionWithMatrix(const ActionOptions&);

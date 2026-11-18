@@ -496,3 +496,30 @@ The two files `energy1` and `energy2` should be virtually identical.
 
 In case you were able to have the virial properly working (see previous section), then you can try the same with a constant temperarure-constant pressure
 simulation. In this case, please also monitor the volume of the resulting trajectory.
+
+
+\subsection direct-hamiltonian-exchange Direct host evaluation for Hamiltonian exchange
+
+A host that already evaluates a foreign configuration under its local Hamiltonian
+can evaluate the corresponding PLUMED bias directly, without exchanging serialized
+PLUMED inputs through GREX. First complete the normal local calculation and its
+update. Evaluate both local and foreign biases with this same updated potential:
+
+- Call `setStep` (or `setStepLong`) with the current step again to reopen input
+  pointers, without advancing time or calling update.
+- Pass integer one to `setExchangeStep`. This activates exchange dependencies,
+  including actions that are not scheduled for the ordinary calculation.
+- Bind the current coordinates, box, masses, charges and domain atom indices as
+  usual; call `prepareCalc`. If ENERGY is used, pass the physical energy of this
+  configuration under the local Hamiltonian using `setEnergy` before calculation.
+- Call `performCalcNoForces`, then `getBias`. This performs forward calculation
+  only: it does not propagate forces or call update (including deposition/output).
+- Pass integer zero to `setExchangeStep` after the exchange evaluations.
+
+The host combines physical and bias energy differences exactly once in the
+acceptance exponent. Physical energies supplied to `setEnergy` are local-domain
+contributions, as in ordinary force evaluation; the returned bias is already
+replicated across the PLUMED communicator and must not be summed again.
+The host must preserve the normal forces, virial and state during its temporary
+foreign evaluation. This path replaces GREX save/prepare/calculate calls for that
+exchange; it must not be combined with their bias correction.

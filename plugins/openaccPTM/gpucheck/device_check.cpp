@@ -120,8 +120,10 @@ int main(int argc, char** argv) {
     for(const auto & plugin : plugins) {
       p.cmd("readInputLine", ("LOAD FILE=" + plugin).c_str());
       if(plugin.find("plumedOpenACC")!=std::string::npos) {
-        p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 USEGPU");
-        p.cmd("readInputLine", "RESTRAINT ARG=d AT=0.5 KAPPA=10");
+        // a vector of distances: a single DISTANCE is computed on the CPU also with USEGPU
+        p.cmd("readInputLine", "d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 USEGPU");
+        p.cmd("readInputLine", "dsum: SUM ARG=d PERIODIC=NO");
+        p.cmd("readInputLine", "RESTRAINT ARG=dsum AT=0.5 KAPPA=10");
         p.cmd("readInputLine", "s: SAXS ATOMS=1-4 NOPBC USEGPU CHI2 "
               "PARAMETERS1=1.0 PARAMETERS2=2.0 PARAMETERS3=1.5 PARAMETERS4=0.5 "
               "QVALUE1=0.03 EXPINT1=8.3 EXPERR1=0.2 QVALUE2=0.12 EXPINT2=8.8 EXPERR2=0.25 "

@@ -1,5 +1,5 @@
 plumed_modules=metatomic
-plumed_needs=libmetatomic
+plumed_needs="metatomic:libmetatomic metatomic:libtorch"
 type=driver
 arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.num"
 

@@ -199,6 +199,8 @@ BEGINFILE{
   nf=split(filename,ff,"/");
   if(nf>1 && !isplugin){
     module=ff[nf-1];
+    module_namespace=module;
+    gsub(/-/,"_",module_namespace);
     if(!(module in module_type)){
       path=filepath
       sub("/.*$","/module.type",path);
@@ -460,7 +462,7 @@ BEGINFILE{
     if(match($0,"^ *namespace *PLMD")) found_namespace_plmd=1
 
 # check if namespace for module is present
-    if(match($0,"^ *namespace *" module)) found_namespace_module=1
+    if(match($0,"^ *namespace *" module_namespace)) found_namespace_module=1
 
 # take note of registered actions
     if(match($0,"^ *PLUMED_REGISTER_ACTION")){
@@ -570,7 +572,7 @@ BEGINFILE{
 # check if guard is present
     guard_filebase=filebase;
     gsub("[^[:alnum:]_]","_",guard_filebase);
-    guard="^#ifndef __PLUMED_" module "_" guard_filebase "_h"
+    guard="^#ifndef __PLUMED_" module_namespace "_" guard_filebase "_h"
     if(match($0,guard)) found_guard_ifdef=1
 
 # check that "using namespace" statements are not used in header files
@@ -653,12 +655,12 @@ ENDFILE{
     if(!found_namespace_plmd) error("missing_namespace_plmd","missing PLMD namespace");
 # DOC: :missing_namespace_module:
 # DOC: Missing module namespace.
-# DOC: Every source file should contain a sub namespace with the same name of the module itself.
+# DOC: Every source file should contain a sub namespace with the module name, replacing hyphens with underscores.
 # DOC: Notice that there are important exceptions to this rule:
 # DOC: - "outer modules" `wrapper` and `main`, that are not included in the kernel library.
 # DOC: - "core modules" that are part of the core of PLUMED. Since the classes implemented here are
 # DOC:   widely used within PLUMED, they are directly defined in the PLMD namespace.
-    if(module && !(module in core_modules) && !found_namespace_module) error("missing_namespace_module","missing " module " namespace")
+    if(module && !(module in core_modules) && !found_namespace_module) error("missing_namespace_module","missing " module_namespace " namespace")
   }
 
   if(filetype=="header"){
@@ -667,7 +669,7 @@ ENDFILE{
 # DOC: Missing header guard.
 # DOC: Every header file should contain a proper guard to avoid double inclusion.
 # DOC: The format of the guard is fixed and should be `__PLUMED_modulename_filename_h`, where
-# DOC: `modulename` is the name of the module and `filename` is the name of the file, without suffix.
+# DOC: `modulename` is the module name with hyphens replaced by underscores, and `filename` is the file name without suffix.
 # DOC: Characters outside letters, digits and underscores in `filename` are replaced with underscores
 # DOC: so that the resulting guard is a valid C/C++ identifier.
 # DOC: This choice makes guards unique within the whole codebase.

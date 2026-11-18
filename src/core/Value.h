@@ -166,6 +166,8 @@ public:
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
   void clearDerivatives( const bool force=false );
+/// Clear the derivatives as above, with nt threads (for values with many derivatives)
+  void clearDerivatives( bool force, unsigned nt );
 /// Add some derivative to the ith component of the derivatives array
 /// Derivative writes to constant scalars are ignored.
   void addDerivative(unsigned i,double d);

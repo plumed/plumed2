@@ -48,6 +48,8 @@ private:
       return on;
     }
     DomainComms(): on(false), async(false) {}
+    ~DomainComms() override;
+    void waitPending();
     void enable(Communicator& c);
   };
   DomainComms dd;

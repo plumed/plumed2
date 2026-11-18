@@ -1,5 +1,5 @@
 type=driver
-plumed_needs=libhdf5
+plumed_needs="tools:libhdf5"
 plumed_modules=bias
 # Reference run: the whole trajectory (60 frames)
 arg="--plumed plumed.dat --ixyz traj.xyz"

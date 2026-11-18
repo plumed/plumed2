@@ -1,7 +1,7 @@
 mpiprocs=2
 type=driver
 plumed_modules=ttsketch
-plumed_needs=libitensor
+plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
 # two independent replicas (no WALKERS_MPI) in the same directory:
 # each one has its own hills file and TT file (HILLS.0/1, ttsketch.0/1.h5).
 # Replica 1 reads traj.1.gro, the same frames in reverse order.

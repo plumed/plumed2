@@ -29,3 +29,17 @@ __pycache__
 .python-version
 .vscode
 .claude
+
+/_extensions/
+
+/extensions/catalog.json
+/extensions/conda-source.json
+
+# Generated recipes, variant matrices and selected regression inventories.
+/conda/*/meta.yaml
+/conda/*/conda_build_config.yaml
+/conda/*/regtests.json
+# These recipes and their variant matrices remain hand-maintained.
+!/conda/py-plumed/*.yaml
+!/conda/plumed-mpi/*.yaml
+!/conda/plumed-mklib/*.yaml

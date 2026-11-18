@@ -9,10 +9,15 @@ def getPythonCVInterface():
 
     # path_of_this = inspect.getfile(pycv)
     import importlib.util
+    import sys
 
     path_of_this = importlib.util.find_spec("pycv").origin
     path_of_lib = path_of_this[: path_of_this.rfind("/")]
-    return path_of_lib + "/PythonCVInterface.so"
+    return (
+        path_of_lib
+        + "/PythonCVInterface"
+        + (".dylib" if sys.platform == "darwin" else ".so")
+    )
 
 
 def main():

@@ -1,4 +1,4 @@
-plumed_needs=libitensor
+plumed_needs="ttsketch:libitensor ttsketch:libhdf5"
 plumed_modules=ttsketch
 type=driver
 # kernel basis; SKETCH_PACE < PACE, so that some sketches have no hill (skipped) and the others only one

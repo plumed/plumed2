@@ -1,0 +1,6 @@
+name: isdb-pytorch
+authors: Max Bonomi and Carlo Camilloni
+description: PyTorch-dependent tools for integrative structural and dynamical biology
+dois: ["10.1093/bioinformatics/btx529"]
+tags:
+  ISDB_PYTORCH_COLVAR: PyTorch-dependent collective variables for integrative structural and dynamical biology

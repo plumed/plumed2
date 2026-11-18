@@ -1,7 +1,7 @@
 type=make
 plumed_src=main.cpp
 plumed_link=runtime
-plumed_needs=dlopen
+plumed_needs="tools:dlopen"
 plumed_modules=setup
 
 function plumed_regtest_before(){

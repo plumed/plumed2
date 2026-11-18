@@ -303,6 +303,7 @@ endif
 # copy compile_options.sh file (we leave it in src/colvar/ for backward compatibility)
 # we remove the link_uninstalled= and link_libs_uninstalled= options (see https://github.com/plumed/plumed2/issues/408)
 	grep -v -e "^link_uninstalled=" -e "^link_libs_uninstalled=" ../config/compile_options.sh > "$(DESTDIR)$(libdir)/$(program_name)/src/config/compile_options.sh"
+	cp ../config/module-build-id "$(DESTDIR)$(libdir)/$(program_name)/src/config/module-build-id"
 # copy config.txt file (we leave it in src/colvar/ for backward compatibility)
 	cp ../config/config.txt "$(DESTDIR)$(libdir)/$(program_name)/src/config/config.txt"
 ifeq ($(make_static_archive),yes)
@@ -342,6 +343,7 @@ endif
 	if test -d ../../vim/syntax ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/syntax | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/help ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/help | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -d ../../vim/templates ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/templates | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
+	if test -d ../../vim/autoload ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)" && cd ../../ && tar cf - vim/autoload | tar xf - -C "$(DESTDIR)$(libdir)/$(program_name)/" ; fi
 	if test -f ../../vim/scripts.vim ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/vim" && cp ../../vim/scripts.vim  "$(DESTDIR)$(libdir)/$(program_name)/vim/" ; fi
 # json syntax file
 	if test -f ../../json/syntax.json ; then mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/json" && cp ../../json/syntax.json  "$(DESTDIR)$(libdir)/$(program_name)/json/" ; fi

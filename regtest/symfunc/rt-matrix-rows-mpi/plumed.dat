@@ -1,0 +1,6 @@
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MM=24 MEAN
+w6: LOCAL_AVERAGE SPECIES=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN
+# SUM needs the whole contact matrix: the contact matrix of q6 is summed over the processes
+s: SUM ARG=q6_mat.w PERIODIC=NO
+r: RESTRAINT ARG=q6.mean,w6_mean,s AT=0.3,0.3,700 KAPPA=10,10,0.01
+PRINT ARG=q6.mean,w6_mean,s FILE=colvar FMT=%8.4f

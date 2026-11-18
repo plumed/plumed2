@@ -28,6 +28,7 @@
 #include "View.h"
 #include "Vector.h"
 #include "Pbc.h"
+#include "LinkCellsView.h"
 
 namespace PLMD {
 
@@ -45,6 +46,9 @@ public:
     std::vector<unsigned> lcell_tots;
 /// The atoms ordered by link cells
     std::vector<unsigned> lcell_lists;
+/// The positions of the atoms wrapped in the box, in the same order as lcell_lists
+/// (only if they were requested when the collection was built, see resetCollection)
+    std::vector<Vector> lcell_pos;
     ///return the sum of the number of atoms in the n cells with most atoms
     unsigned getMaximimumCombination(unsigned numCells=27) const;
     ///returns a const view of the on indexes the given cell
@@ -59,11 +63,22 @@ public:
       //return {&lcell_lists[lcell_starts[cellno]],lcell_tots[cellno]};
     }
   };
+/// The largest value accepted by setSubdivision
+  static constexpr unsigned maxSubdivision=LinkCellsView::maxSubdivision;
 private:
 /// Minimum number of atoms per thread when finding the cells of the atoms
   static constexpr unsigned minAtomsPerThread=4096;
 /// Maximum total number of cells
   static constexpr double maxNumberOfCells=1048576;
+/// With setLimitCellsByAtoms(true) the cells are at most this many times the atoms in them
+/// (but at least minCellsForAtomLimit): building the lists costs time proportional to the
+/// number of cells, and more cells than atoms only add empty cells
+  static constexpr double maxCellsPerAtom=2;
+  static constexpr double minCellsForAtomLimit=64;
+/// Set with setLimitCellsByAtoms
+  bool limitCellsByAtoms=false;
+/// If not zero, the number of atoms that limits the number of cells in createCells
+  std::size_t cellLimitAtoms=0;
 /// Check that the link cells were set up correctly
   bool cutoffwasset=false;
 /// Are there periodic boundary conditions setup
@@ -74,15 +89,32 @@ private:
   Pbc mypbc;
 /// The location of the origin if we are not using periodic boundary conditions
   Vector origin;
+/// The number of cells per cutoff that was asked for with setSubdivision
+  unsigned requestedSubdivision=1;
+/// The number of cells per cutoff in use: the cells within nsub cells from a cell, in each
+/// direction, contain all the atoms within the cutoff from its atoms. It is the requested one
+/// if there are enough cells (2*nsub+1 in each direction), otherwise 1
+  unsigned nsub=1;
+/// The width of the cells: the distance between their opposite faces
+  std::array<double,3> cellWidth{0.0,0.0,0.0};
+/// Two points whose distances along the normals to the three families of faces of the
+/// cells are (at least) p_k are farther than sqrt(sum_k p_k^2/skewFactor). It is the
+/// largest eigenvalue of the matrix of the cosines of the angles between the normals:
+/// 1 for orthorhombic boxes, and at most 3
+  double skewFactor=1.0;
+/// The lattice vectors of the box (zero without periodic boundary conditions)
+  std::array<Vector,3> lattice;
 /// The number of cells in each direction
   std::array<unsigned,3> ncells{0,0,0};
 /// The number of cells to stride through to get the link cells
   std::array<unsigned,3> nstride{1,0,0};
 /// Work vector with the list of cells each atom is inside
   std::vector<unsigned> allcells;
+/// Work vector with the positions of the atoms wrapped in the box
+  std::vector<Vector> allwrapped;
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
-  void createCells(const PLMD::Tensor&);
+  void createCells(const PLMD::Tensor& box);
 /// Find the index of the cell of a position, without checks:
 /// returns getNumberOfCells() if the position is not in a cell
   unsigned findCellUnchecked( Vector pos ) const noexcept;
@@ -90,8 +122,20 @@ public:
 /// The communicator is not used: the cells are built locally on every process
 /// (the argument is kept for backward compatibility)
   explicit LinkCells( Communicator& comm );
+/// The cells are built locally: no communicator is needed
+  LinkCells() = default;
 /// Have the link cells been enabled
   bool enabled() const ;
+/// Set the number of cells per cutoff (1 or 2, the default is 1) used by the next setupCells.
+/// With 2 the cells are smaller and those within two cells are searched: fewer atoms
+/// beyond the cutoff are visited. It is used only if there are at least five cells in
+/// each direction. The functions that work on the neighboring cells (addRequiredCells,
+/// retrieveNeighboringAtoms, and the searches on getView) take it into account
+  void setSubdivision( unsigned n );
+/// If true, the next setupCells with positions uses at most max(64, 2*natoms) cells
+/// (larger cells, still correct). Useful when the lists are rebuilt often and the atoms
+/// are few for the size of the box; createNeighborList always does it
+  void setLimitCellsByAtoms( bool limit );
 /// Set the value of the cutoff
   void setCutoff( double lcut );
 /// Get the value of the cutoff
@@ -123,28 +167,35 @@ public:
                           const Pbc& pbc ) {
     setupCells(make_const_view(pos),pbc);
   }
-/// Build the link cell lists
+/// Build the link cell lists (withPositions: see resetCollection)
   void buildCellLists( View<const Vector> pos,
                        View<const unsigned> indices,
-                       const Pbc& pbc );
+                       const Pbc& pbc,
+                       bool withPositions=false );
   template <typename T,typename Y>
   inline void buildCellLists( const T& pos,
                               const Y& indices,
-                              const Pbc& pbc ) {
-    buildCellLists(make_const_view(pos), make_const_view(indices),pbc);
+                              const Pbc& pbc,
+                              bool withPositions=false ) {
+    buildCellLists(make_const_view(pos), make_const_view(indices),pbc,withPositions);
   }
-// Reset the passed collection on the positions and the passed indexes, needs setupCells to be launched in advance
+/// Reset the passed collection on the positions and the passed indexes, needs setupCells to be launched in advance.
+/// With withPositions the wrapped positions are also stored (lcell_pos), as needed by getView
   void resetCollection( CellCollection& collection,
                         View<const Vector> pos,
-                        View<const unsigned> indices );
-// Returns a collection on the positions and the passed indexes, needs setupCells to be launched in advance
+                        View<const unsigned> indices,
+                        bool withPositions=false );
+/// Returns a collection on the positions and the passed indexes, needs setupCells to be launched in advance
   CellCollection getCollection(View<const Vector> pos,
-                               View<const unsigned> indices );
+                               View<const unsigned> indices,
+                               bool withPositions=false );
   template <typename T,typename Y>
   inline CellCollection getCollection(const T& pos,
-                                      const Y& indices) {
+                                      const Y& indices,
+                                      bool withPositions=false) {
     return getCollection(make_const_view(pos),
-                         make_const_view(indices));
+                         make_const_view(indices),
+                         withPositions);
   }
 /// Take three indices and return the index of the corresponding cell
   unsigned convertIndicesToIndex( std::array<unsigned,3> cellCoord) const;
@@ -161,6 +212,22 @@ public:
                          unsigned& ncells_required,
                          std::vector<unsigned>& cells_required,
                          bool usePbc=true) const ;
+/// Returns true if the periodic image of an atom that is within the cutoff from an atom
+/// of another cell is fixed by the cells of the two atoms. This is the case when the cells
+/// to be searched in each direction are all different (the box is at least three cutoffs
+/// wide), and without periodic boundary conditions. The minimum image can then be found
+/// without Pbc::distance: see getView
+  bool cellsFixImages() const ;
+/// The position moved inside the box, as it is done to find the cell of an atom
+/// (the position itself without periodic boundary conditions)
+  Vector wrapPosition( const Vector& pos ) const ;
+/// The cells and a collection built with its positions, to be searched with forEachCandidate
+/// or forEachNeighbor (also on a GPU). The cells farther than the cutoff from a position are
+/// not searched, and the vectors to the candidates are found without Pbc::distance: it can
+/// be used only if cellsFixImages() is true. wrapCells is the usePbc of addRequiredCells
+  LinkCellsView getView( const CellCollection& collection, bool wrapCells=true ) const ;
+/// The view of the collection built by buildCellLists
+  LinkCellsView getView( bool wrapCells=true ) const ;
 /// Retrieve the atoms in a list of cells
   void retrieveAtomsInCells( unsigned ncells_required,
                              View<const unsigned> cells_required,
@@ -181,14 +248,18 @@ public:
 /// @param neigh_pos position of the candidate neighbors
 /// @param neigh_ind indexes of the candidate neighbors
 /// @param pbc
-/// @param natoms_per_list *output* number of atom per list (mapped on tind) `nlist[tind[i]]=natoms[i]`
-/// @param nlist *output* list of the central atoms plus their neighbors
+/// @param natoms_per_list *output* the number of neighbors in the longest list: each list has
+///        1+natoms_per_list slots in nlist (the first one is for the central atom)
+/// @param nlist *output* the number of atoms in each list, central atom included
+///        (`nlist[tind[i]]`), followed by the lists: the one of atom i starts at
+///        `nat+tind[i]*(1+natoms_per_list)`
 /// @param applyCutoff if true only the candidates whose (minimum image) distance from the
-///        central atom is not larger than the link cell cutoff are kept. The cells are at
-///        least as wide as the cutoff, so without this the lists hold all the atoms of the
-///        27 cells around the central atom, up to ~2-3 cutoffs away: with a short cutoff
-///        in a dense system most of them are beyond it. Use it only when the quantity
-///        computed from the list is exactly zero beyond the cutoff.
+///        central atom is not larger than the link cell cutoff are kept, and cells of half
+///        the cutoff are used when the box is large enough (fewer candidates are visited).
+///        Without it the cells are at least as wide as the cutoff and the lists hold all
+///        the atoms of the 27 cells around the central atom, up to ~2-3 cutoffs away: with
+///        a short cutoff in a dense system most of them are beyond it. Use it only when
+///        the quantity computed from the list is exactly zero beyond the cutoff.
   void createNeighborList( unsigned nat,
                            View<const Vector> pos,
                            View<const unsigned> ind,

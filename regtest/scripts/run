@@ -10,6 +10,8 @@ else
   make=make
 fi
 
+regtest_scripts_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 export valgrind=env
 
 for opt in ${*}
@@ -199,10 +201,17 @@ then
   exit 0;
 fi
 
+# Curated package checks can assert that their prerequisites are installed and
+# require actual execution. This bypasses eligibility only, never calculations
+# or comparisons; the package runner rejects any remaining skip or failure.
+if [[ ${PLUMED_REGTEST_FORCE_REQUIREMENTS:-no} = yes ]]; then
+  echo "Module/library prerequisites asserted by the package test selection"
+else
+source "$regtest_scripts_dir/requirements.sh"
 for need in $plumed_needs
 do
   echo "Checking for $need dependency"
-  if ! $plumed_nompi config -q has $need
+  if ! plumed_check_feature "$need"
   then
     if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -220,7 +229,7 @@ done
 for module in $plumed_modules
 do
   echo "Checking for $module module"
-  if ! $plumed_nompi config -q module $module
+  if ! plumed_check_module "$module"
   then
     if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
@@ -234,6 +243,8 @@ do
     exit 0;
   fi
 done
+
+fi
 
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then

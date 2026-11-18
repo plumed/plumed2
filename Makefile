@@ -7,6 +7,11 @@ endif
 endif
 
 
+ifneq ($(EXTENSION_BASE),)
+include extensions/Makefile
+else
+
+
 SRCDIRS := src test
 SUBDIRS := $(SRCDIRS) new-manual developer-doc regtest macports vim json astyle python
 
@@ -169,3 +174,5 @@ nmcheck:
 endif
 
 
+
+endif # extension-only build

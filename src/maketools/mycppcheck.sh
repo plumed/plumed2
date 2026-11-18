@@ -38,7 +38,7 @@ files=$(
 # shellcheck disable=SC2086
 cppcheck --std=c++17 -j 4 --platform=unix64 --language=c++ \
     -U__GNUG__ -U__PLUMED_HAS_EXTERNAL_LAPACK -U__PLUMED_HAS_EXTERNAL_BLAS \
-    -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG -U__PLUMED_PBC_WHILE \
+    -UGMX_CYGWIN -UF77_NO_UNDERSCORE -U_GLIBCXX_DEBUG -DNDEBUG \
     -U__PLUMED_HAS_ASMJIT \
     -D__PLUMED_WRAPPER_CXX_EXPLICIT=explicit \
     --config-exclude=small_vector/ \

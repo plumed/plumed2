@@ -16,6 +16,22 @@
 AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
+AC_ARG_WITH([extension-base],
+  AS_HELP_STRING([--with-extension-base=PREFIX], [build extensions only, against an installed exact-compatible base]))
+AC_ARG_ENABLE([extension-modules],
+  AS_HELP_STRING([--enable-extension-modules=LIST], [colon-separated extension modules (requires --with-extension-base)]))
+
+# Extension-only builds reuse the installed base's compiler/ABI configuration.
+# Dispatch before ordinary configure probes or module-selection mutations.
+for plumed_option in "$[]@"; do
+  case "$plumed_option" in
+    --with-extension-base=*)
+      rm -f confdefs.h
+      exec python3 "$(dirname "$[]0")/extensions/configure.py" "$[]@"
+      ;;
+  esac
+done
+
 ##################################################################
 # In order to add m4 macros, put then in a m4 directory and include them here.
 # E.g.:
@@ -256,7 +272,20 @@ AC_ARG_ENABLE([modules],
    if test "${enableval}" = no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
+   # Preserve names containing hyphens while accepting legacy all-foo+bar syntax.
+   modules_words=""
+   for modules_word in `echo "${enableval}" | sed 's/:/ /g'`; do
+     modules_name=$modules_word
+     case "$modules_name" in
+       (+*|-*) modules_name=${modules_name#?} ;;
+     esac
+     if test -f "src/$modules_name/module.type"; then
+       modules_words="$modules_words $modules_word"
+     else
+       modules_words="$modules_words `echo "$modules_word" | sed 's/+/ +/g' | sed 's/-/ -/g'`"
+     fi
+   done
+   for modules_mod in $modules_words
    do
      case "$modules_mod" in
      (none)

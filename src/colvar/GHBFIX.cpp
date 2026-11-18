@@ -90,6 +90,9 @@ public:
 // active methods:
   static void registerKeywords( Keywords& keys );
   double pairing(double distance,double&dfunc,unsigned i,unsigned j)const override;
+  double pairCutoff2() const override {
+    return dmax_squared;
+  }
 };
 
 PLUMED_REGISTER_ACTION(GHBFIX,"GHBFIX")

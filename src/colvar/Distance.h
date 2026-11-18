@@ -224,43 +224,54 @@ void  Distance<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvo
   using PLMD::Versors::zp;
   using PLMD::Versors::zm;
   if(cvin.mode==components::standard) {
-
+    cvout.values[0] = distance[0];
+    cvout.values[1] = distance[1];
+    cvout.values[2] = distance[2];
+    if( cvin.noderiv ) {
+      return;
+    }
     cvout.derivs[0][0] = xm<T>;
     cvout.derivs[0][1] = xp<T>;
-    cvout.values[0] = distance[0];
 
     cvout.derivs[1][0] = ym<T>;
     cvout.derivs[1][1] = yp<T>;
-    cvout.values[1] = distance[1];
 
     cvout.derivs[2][0] = zm<T>;
     cvout.derivs[2][1] = zp<T>;
-    cvout.values[2] = distance[2];
     ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
   } else if(cvin.mode==components::scaled) {
     auto d=cvin.pbc.realToScaled(distance);
+    cvout.values[0] = Tools::pbc(d[0]);
+    cvout.values[1] = Tools::pbc(d[1]);
+    cvout.values[2] = Tools::pbc(d[2]);
+    if( cvin.noderiv ) {
+      return;
+    }
     cvout.derivs[0][0].copyConv(matmul(cvin.pbc.getInvBox(),xm<T>));
     cvout.derivs[0][1].copyConv(matmul(cvin.pbc.getInvBox(),xp<T>));
-    cvout.values[0] = Tools::pbc(d[0]);
     cvout.derivs[1][0].copyConv(matmul(cvin.pbc.getInvBox(),ym<T>));
     cvout.derivs[1][1].copyConv(matmul(cvin.pbc.getInvBox(),yp<T>));
-    cvout.values[1] = Tools::pbc(d[1]);
     cvout.derivs[2][0].copyConv(matmul(cvin.pbc.getInvBox(),zm<T>));
     cvout.derivs[2][1].copyConv(matmul(cvin.pbc.getInvBox(),zp<T>));
-    cvout.values[2] = Tools::pbc(d[2]);
   } else if(cvin.mode==components::squared) {
     const double value=distance.modulo2();
+    cvout.values[0] = value;
+    if( cvin.noderiv ) {
+      return;
+    }
     cvout.derivs[0][0] = -2*distance;
     cvout.derivs[0][1] = 2*distance;
     ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
-    cvout.values[0] = value;
   } else {
     const double value=distance.modulo();
+    cvout.values[0] = value;
+    if( cvin.noderiv ) {
+      return;
+    }
     const double invvalue=1.0/value;
     cvout.derivs[0][0] = -invvalue*distance;
     cvout.derivs[0][1] = invvalue*distance;
     ColvarInput<T>::setBoxDerivativesNoPbc( cvin, cvout );
-    cvout.values[0] = value;
   }
 }
 

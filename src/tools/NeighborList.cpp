@@ -180,6 +180,26 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) const {
   return index;
 }
 
+namespace {
+/// The visitor of NeighborList::update: appends to kept the candidates B within the
+/// cutoff from A (with a single list, only those that come after A)
+struct KeepPairs {
+  unsigned* kept;
+  std::size_t n;
+  unsigned A;
+  double d2;
+  bool twoLists;
+  const unsigned* lists;
+  inline void operator()( const std::size_t j, const Vector& d ) {
+    const unsigned B=lists[j];
+    // no branch: whether a candidate is within the cutoff, and whether it
+    // comes after A in a single list, cannot be predicted
+    kept[n]=B;
+    n+=( (modulo2(d)<=d2) & (twoLists | (B>A)) );
+  }
+};
+}
+
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   // check if positions array has the correct length
@@ -201,6 +221,11 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
     LinkCells cells(comm);
     cells.setCutoff(distance_);
+    // smaller cells: fewer candidate pairs beyond the cutoff
+    cells.setSubdivision(LinkCells::maxSubdivision);
+    // with few atoms in a large box most cells would be empty, and visiting them
+    // would cost more than the search
+    cells.setLimitCellsByAtoms(true);
     if(do_pbc_) {
       cells.setupCells(make_const_view(positions),*pbc_);
     } else {
@@ -211,18 +236,24 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     plumed_assert(style_!=NNStyle::Pair) << "Cell list should not be active with a Pair NL";
     const bool twoLists = style_==NNStyle::TwoList;
     const std::size_t nA=nlist0_;
+    // When the cell of an atom fixes its periodic image, the minimum image distance is not
+    // needed for each candidate pair (they are many more than the pairs within the cutoff):
+    // the candidates are stored with their wrapped positions and searched on a LinkCellsView
+    const bool useShifts=cells.cellsFixImages();
     LinkCells::CellCollection listA;
     LinkCells::CellCollection listB;
     if(twoLists) {
       listA = cells.getCollection(View{positions.data(),nlist0_},
                                   View<const unsigned> {indexesForCells.data(),nlist0_});
       listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_},
+                                  useShifts);
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
     } else {
       listA = cells.getCollection(View{positions.data(),nA},
-                                  View<const unsigned> {indexesForCells.data(),nA});
+                                  View<const unsigned> {indexesForCells.data(),nA},
+                                  useShifts);
     }
     const LinkCells::CellCollection& candidates = twoLists ? listB : listA;
     // cells are split among processes
@@ -230,14 +261,35 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned cellsPerRank=(ncells+stride-1)/stride;
     const unsigned cstart=std::min(rank*cellsPerRank,ncells);
     const unsigned cend=std::min(cstart+cellsPerRank,ncells);
+    const LinkCellsView view = useShifts ? cells.getView(candidates,do_pbc_) : LinkCellsView{};
+    // the largest number of candidates of an atom: the atoms in the most populated cells
+    const std::size_t side=2*view.nsub+1;
+    const std::size_t nsearched=side*side*side;
+    const std::size_t maxcandidates=useShifts ? candidates.getMaximimumCombination(nsearched) : 0;
     #pragma omp parallel num_threads(nt)
     {
       auto & private_flat_nl=thread_flat_nl[OpenMP::getThreadNum()];
-      std::vector<unsigned> cells_required(27);
+      std::vector<unsigned> cells_required(cells.getNumberOfCells());
+      // one more element: a candidate is written before it is known if it is kept
+      std::vector<unsigned> kept(maxcandidates+1);
       #pragma omp for schedule(static) nowait
       for(unsigned c=cstart; c<cend; ++c) {
         auto atomsInC= listA.getCellIndexes(c);
         if(atomsInC.size()==0) {
+          continue;
+        }
+        if(useShifts) {
+          for (auto A : atomsInC) {
+            KeepPairs keep{kept.data(),0,A,d2,twoLists,view.lists};
+            forEachCandidate(view,positions[A],keep);
+            const std::size_t nkept=keep.n;
+            const std::size_t first=private_flat_nl.size();
+            private_flat_nl.resize(first+2*nkept);
+            for (std::size_t k=0; k<nkept; ++k) {
+              private_flat_nl[first+2*k]=A;
+              private_flat_nl[first+2*k+1]=kept[k];
+            }
+          }
           continue;
         }
         auto cell = cells.findMyCell(c);
@@ -377,32 +429,38 @@ void NeighborList::setRequestList() {
   // at time of adding the `if (stride_>1)` in `update()`
   // this function is called only from `update()` and it is private
   // so as now it is not necessary to add extra logic in this function
-  requestlist_.clear();
+  // The atoms are marked in fullToRequest_ (one entry per element of fullatomlist_) and only
+  // the atoms that are used are sorted, instead of the two atoms of every pair
+  constexpr unsigned unused=std::numeric_limits<unsigned>::max();
+  fullToRequest_.assign(fullatomlist_.size(),unused);
   for(unsigned int i=0; i<size(); ++i) {
-    requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
-    requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
+    fullToRequest_[neighbors_[i].first]=0;
+    fullToRequest_[neighbors_[i].second]=0;
+  }
+  requestlist_.clear();
+  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+    if(fullToRequest_[i]!=unused) {
+      requestlist_.push_back(fullatomlist_[i]);
+    }
   }
   Tools::removeDuplicates(requestlist_);
+  // position of each used atom in the sorted list, so that the pairs can be renumbered without searches
+  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+    if(fullToRequest_[i]!=unused) {
+      auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), fullatomlist_[i]);
+      plumed_dbg_assert(p!=requestlist_.end() && *p==fullatomlist_[i]);
+      fullToRequest_[i]=p-requestlist_.begin();
+    }
+  }
   reduced=false;
 }
 
 std::vector<AtomNumber>& NeighborList::getReducedAtomList() {
   if(stride_>1) {
     if(!reduced) {
+      // the pairs refer to fullatomlist_: renumber them with the positions in requestlist_
       for(unsigned int i=0; i<size(); ++i) {
-        AtomNumber index0=fullatomlist_[neighbors_[i].first];
-        AtomNumber index1=fullatomlist_[neighbors_[i].second];
-// I exploit the fact that requestlist_ is an ordered vector
-// And I assume that index0 and index1 actually exists in the requestlist_ (see setRequestList())
-// so I can use lower_bond that uses binary seach instead of find
-        plumed_dbg_assert(std::is_sorted(requestlist_.begin(),requestlist_.end()));
-        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index0);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex0=p-requestlist_.begin();
-        p = std::lower_bound(requestlist_.begin(), requestlist_.end(), index1);
-        plumed_dbg_assert(p!=requestlist_.end());
-        unsigned newindex1=p-requestlist_.begin();
-        neighbors_[i]=pairIDs(newindex0,newindex1);
+        neighbors_[i]=pairIDs(fullToRequest_[neighbors_[i].first],fullToRequest_[neighbors_[i].second]);
       }
     }
     reduced=true;

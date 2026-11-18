@@ -1,5 +1,5 @@
 type=make
-plumed_needs=subprocess
+plumed_needs="tools:subprocess"
 
 function plumed_regtest_before(){
   export SUBPROCESS_RUN_VALUE=parent

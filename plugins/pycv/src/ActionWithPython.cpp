@@ -29,7 +29,14 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = pybind11;
 
+#ifdef PLUMED_PYCV_RUNTIME_HELPER
+extern "C" void plumed_pycv_runtime_anchor();
+#endif
+
 namespace {
+#ifdef PLUMED_PYCV_RUNTIME_HELPER
+const auto runtime_link = (plumed_pycv_runtime_anchor(), 0);
+#endif
 auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
 }
 

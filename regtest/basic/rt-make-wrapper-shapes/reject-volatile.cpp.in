@@ -1,0 +1,7 @@
+#include <vector>
+#include <array>
+#include "plumed/wrapper/Plumed.h"
+void test(PLMD::Plumed& p) {
+  volatile std::array<double,2> v = {};
+  p.cmd("test",v);
+}

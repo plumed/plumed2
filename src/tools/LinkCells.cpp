@@ -36,6 +36,15 @@ namespace PLMD {
 LinkCells::LinkCells( Communicator& ) {
 }
 
+void LinkCells::setSubdivision( const unsigned n ) {
+  plumed_assert( n>=1 && n<=maxSubdivision );
+  requestedSubdivision=n;
+}
+
+void LinkCells::setLimitCellsByAtoms( bool limit ) {
+  limitCellsByAtoms=limit;
+}
+
 void LinkCells::setCutoff( const double lcut ) {
   cutoffwasset=true;
   link_cutoff=lcut;
@@ -69,7 +78,9 @@ void LinkCells::setupCells(View<const Vector> pos) {
     }
     origin[k] = ( minp[k] + maxp[k] ) / 2;
   }
+  cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
   createCells(box);
+  cellLimitAtoms = 0;
 }
 
 void LinkCells::setupCells(const Pbc& pbc ) {
@@ -92,7 +103,9 @@ void LinkCells::setupCells(View<const Vector> pos,
     setupCells(pos);
   } else {
     // Setup the pbc object by copying it from action if the Pbc were set
+    cellLimitAtoms = limitCellsByAtoms ? pos.size() : 0;
     setupCells(pbc);
+    cellLimitAtoms = 0;
   }
 }
 
@@ -102,25 +115,72 @@ void LinkCells::createCells(const PLMD::Tensor& box) {
 // notice that reciprocal.getRow(0) is a vector that is orthogonal to b and c
 // This allows to use linked cells in non orthorhomic boxes
   const auto reciprocal = transpose(mypbc.getInvBox());
-  // the width of the cells along each direction must be at least the cutoff
-  std::array<double,3> nc;
+  // the width of the cells along each direction must be at least the cutoff divided by
+  // the number of cells per cutoff
+  std::array<double,3> width, nc;
   for(unsigned k=0; k<3; ++k) {
-    nc[k]=std::floor( 1.0/ reciprocal.getRow(k).modulo() / link_cutoff );
-    // also catches NaNs
-    if( !(nc[k]>=1.0) ) {
-      nc[k]=1.0;
-    }
+    width[k]=1.0/reciprocal.getRow(k).modulo();
   }
-  // Limit the total number of cells: with a small cutoff in a large box the number of
-  // cells (and the memory and the time spent looping over empty cells) would grow
-  // with the volume. Larger cells are still correct, they only contain more atoms.
-  while(nc[0]*nc[1]*nc[2]>maxNumberOfCells) {
-    const unsigned k=std::distance(nc.begin(),std::max_element(nc.begin(),nc.end()));
-    const double factor=std::cbrt(nc[0]*nc[1]*nc[2]/maxNumberOfCells);
-    nc[k]=std::max(1.0,std::min(nc[k]-1.0,std::floor(nc[k]/factor)));
+  nsub=requestedSubdivision;
+  while(true) {
+    for(unsigned k=0; k<3; ++k) {
+      nc[k]=std::floor( width[k] / link_cutoff * nsub );
+      // also catches NaNs
+      if( !(nc[k]>=1.0) ) {
+        nc[k]=1.0;
+      }
+    }
+    // Limit the total number of cells: with a small cutoff in a large box the number of
+    // cells (and the memory and the time spent looping over empty cells) would grow
+    // with the volume. Larger cells are still correct, they only contain more atoms.
+    // With setLimitCellsByAtoms they are also limited by the number of atoms (see maxCellsPerAtom)
+    double maxcells=maxNumberOfCells;
+    if( cellLimitAtoms>0 ) {
+      maxcells=std::min(maxcells,std::max(minCellsForAtomLimit,maxCellsPerAtom*cellLimitAtoms));
+    }
+    while(nc[0]*nc[1]*nc[2]>maxcells) {
+      const unsigned k=std::distance(nc.begin(),std::max_element(nc.begin(),nc.end()));
+      const double factor=std::cbrt(nc[0]*nc[1]*nc[2]/maxcells);
+      nc[k]=std::max(1.0,std::min(nc[k]-1.0,std::floor(nc[k]/factor)));
+    }
+    // smaller cells are used only if the cells to be searched are all different
+    if( nsub==1 || (nc[0]>=2*nsub+1 && nc[1]>=2*nsub+1 && nc[2]>=2*nsub+1) ) {
+      break;
+    }
+    nsub=1;
   }
   for(unsigned k=0; k<3; ++k) {
     ncells[k]=static_cast<unsigned>(nc[k]);
+    cellWidth[k]=width[k]/nc[k];
+  }
+  // see the comment of skewFactor
+  Tensor cosines;
+  bool orthogonal=true;
+  for(unsigned k=0; k<3; ++k) {
+    for(unsigned l=0; l<3; ++l) {
+      cosines[k][l]=dotProduct(reciprocal.getRow(k),reciprocal.getRow(l))*width[k]*width[l];
+      if(l!=k && std::fabs(cosines[k][l])>1e-12) {
+        orthogonal=false;
+      }
+    }
+  }
+  skewFactor=1.0;
+  if( !orthogonal ) {
+    Vector eigenvalues;
+    Tensor eigenvectors;
+    diagMatSym(cosines,eigenvalues,eigenvectors);
+    skewFactor=std::max(eigenvalues[0],std::max(eigenvalues[1],eigenvalues[2]));
+    // it cannot be smaller than one (the trace is three): this only protects from a failed diagonalization
+    if( !(skewFactor>=1.0) ) {
+      skewFactor=3.0;
+    }
+  }
+  for(unsigned k=0; k<3; ++k) {
+    if( nopbc ) {
+      lattice[k].zero();
+    } else {
+      lattice[k]=box.getRow(k);
+    }
   }
   // Setup the strides
   nstride[0]=1;
@@ -130,26 +190,35 @@ void LinkCells::createCells(const PLMD::Tensor& box) {
 
 void LinkCells::buildCellLists( View<const Vector> pos,
                                 View<const unsigned> indices,
-                                const Pbc& pbc ) {
+                                const Pbc& pbc,
+                                const bool withPositions ) {
   setupCells(pos,pbc);
-  resetCollection(innerCollection,pos, indices);
+  resetCollection(innerCollection,pos, indices, withPositions);
 }
 
 LinkCells::CellCollection LinkCells::getCollection( View<const Vector> pos,
-    View<const unsigned> indices) {
+    View<const unsigned> indices,
+    const bool withPositions ) {
   CellCollection collection;
-  resetCollection(collection,pos, indices);
+  resetCollection(collection,pos, indices, withPositions);
   return collection;
 }
 
 void LinkCells::resetCollection(LinkCells::CellCollection &collection,
                                 View<const Vector> pos,
-                                View<const unsigned> indices) {
+                                View<const unsigned> indices,
+                                const bool withPositions ) {
   plumed_assert( cutoffwasset && pos.size()==indices.size() );
   const auto nat=pos.size();
   // Resize and resets the lists
   allcells.assign( nat, 0 );
   collection.lcell_lists.resize( nat );
+  if( withPositions ) {
+    allwrapped.resize( nat );
+    collection.lcell_pos.resize( nat );
+  } else {
+    collection.lcell_pos.clear();
+  }
   // Setup the storage for link cells
   const unsigned ncellstot=ncells[0]*ncells[1]*ncells[2];
   collection.lcell_starts.resize( ncellstot );
@@ -169,6 +238,9 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   for(unsigned i=0; i<nat; ++i) {
     // no exceptions inside the parallel region: invalid cells are checked below
     allcells[i]=findCellUnchecked( pos[i] );
+    if( withPositions ) {
+      allwrapped[i]=wrapPosition( pos[i] );
+    }
   }
   for(unsigned i=0; i<nat; ++i) {
     if(allcells[i]>=ncellstot) {
@@ -191,29 +263,20 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   for(unsigned j=0; j<nat; ++j) {
     unsigned myind = collection.lcell_starts[ allcells[j] ] + collection.lcell_tots[ allcells[j] ];
     collection.lcell_lists[ myind ] = indices[j];
+    if( withPositions ) {
+      collection.lcell_pos[ myind ] = allwrapped[j];
+    }
     collection.lcell_tots[allcells[j]]++;
   }
-}
-
-constexpr inline int min_cell(int celn, const int ncells, const bool usePBC) {
-  celn+=(ncells<2)?0:-1;
-  return (usePBC) ? celn : std::max(celn,0);
-}
-
-constexpr inline int max_cell(int celn, const int ncells, const bool usePBC) {
-  //if we are not using pbcs the minimum is 0 and not -1 (if there are only 2 cells)
-  //so the maximum should be 2, so that cell 0 can check cell 1
-  celn+=(ncells<3 && usePBC)?1:2;
-  return (usePBC) ? celn : std::min(celn,ncells);
 }
 
 void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
                                   unsigned& ncells_required,
                                   std::vector<unsigned>& cells_required,
                                   const bool usePbc) const {
-#define LINKC_MIN(n) min_cell(celn[n],ncells[n],usePbc)
-#define LINKC_MAX(n) max_cell(celn[n],ncells[n],usePbc)
-#define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
+#define LINKC_MIN(n) LinkCellsView::firstCell(celn[n],ncells[n],usePbc,nsub)
+#define LINKC_MAX(n) LinkCellsView::endCell(celn[n],ncells[n],usePbc,nsub)
+#define LINKC_PBC(n,num) ((n<0)? n+num : n%num )
   unsigned nnew_cells=0;
   plumed_dbg_assert((celn[0] < ncells[0]) && (celn[1] < ncells[1]) && (celn[2] < ncells[2]));
 
@@ -251,6 +314,57 @@ void LinkCells::addRequiredCells( const std::array<unsigned,3>& celn,
 #undef LINKC_MIN
 #undef LINKC_MAX
 #undef LINKC_PBC
+}
+
+bool LinkCells::cellsFixImages() const {
+  const unsigned needed=2*nsub+1;
+  return nopbc || ( ncells[0]>=needed && ncells[1]>=needed && ncells[2]>=needed );
+}
+
+Vector LinkCells::wrapPosition( const Vector& pos ) const {
+  if( nopbc ) {
+    return pos;
+  }
+  // the same operations used in findCellUnchecked
+  Vector fpos=mypbc.realToScaled( pos );
+  for(unsigned j=0; j<3; ++j) {
+    fpos[j]=Tools::pbc(fpos[j]);
+  }
+  return mypbc.scaledToReal( fpos );
+}
+
+LinkCellsView LinkCells::getView( const CellCollection& collection, const bool wrapCells ) const {
+  plumed_assert( cellsFixImages() ) << "the cells do not fix the periodic images: use addRequiredCells and Pbc::distance";
+  plumed_assert( collection.lcell_pos.size()==collection.lcell_lists.size() )
+      << "the collection was built without its positions";
+  plumed_assert( collection.lcell_starts.size()==getNumberOfCells() );
+  LinkCellsView view;
+  view.boxT=mypbc.getBox().transpose();
+  view.invBoxT=mypbc.getInvBox().transpose();
+  view.origin=( nopbc ? origin : Vector(0.0,0.0,0.0) );
+  for(unsigned k=0; k<3; ++k) {
+    view.lattice[k]=lattice[k];
+    view.ncells[k]=static_cast<int>(ncells[k]);
+    view.nstride[k]=nstride[k];
+    view.cellWidth[k]=cellWidth[k];
+  }
+  view.nsub=static_cast<int>(nsub);
+  // cells farther than this cannot contain atoms within the cutoff (see skewFactor)
+  view.reach2=link_cutoff*link_cutoff*skewFactor*(1.0+1e-10);
+  view.cutoff2=link_cutoff*link_cutoff;
+  view.nopbc=nopbc;
+  view.wrapCells=wrapCells;
+  view.ncellstot=getNumberOfCells();
+  view.natoms=collection.lcell_lists.size();
+  view.starts=collection.lcell_starts.data();
+  view.tots=collection.lcell_tots.data();
+  view.lists=collection.lcell_lists.data();
+  view.positions=collection.lcell_pos.data();
+  return view;
+}
+
+LinkCellsView LinkCells::getView( const bool wrapCells ) const {
+  return getView( innerCollection, wrapCells );
 }
 
 void LinkCells::retrieveNeighboringAtoms( const Vector& pos,
@@ -356,6 +470,25 @@ unsigned LinkCells::getMaxInCell() const {
   return maxn;
 }
 
+namespace {
+/// The visitor of createNeighborList: appends the candidates within the cutoff,
+/// except the central atom, to indices
+struct KeepWithinCutoff {
+  unsigned* indices;
+  unsigned n;
+  unsigned self;
+  double cutoff2;
+  const unsigned* lists;
+  inline void operator()( const std::size_t j, const Vector& d ) {
+    const unsigned atom=lists[j];
+    // no branch: most of the candidates are beyond the cutoff, but not in a predictable way
+    // (indices has one more element: a candidate is written before it is known if it is kept)
+    indices[n]=atom;
+    n+=( (d.modulo2()<=cutoff2) & (atom!=self) );
+  }
+};
+}
+
 void LinkCells::createNeighborList( unsigned nat,
                                     View<const Vector> pos,
                                     View<const unsigned> ind,
@@ -366,21 +499,30 @@ void LinkCells::createNeighborList( unsigned nat,
                                     unsigned& natoms_per_list,
                                     std::vector<std::size_t>& nlist,
                                     const bool applyCutoff ) {
-  buildCellLists( neigh_pos, neigh_ind, pbc );
-//  natoms_per_list = 27*getMaxInCell();
-//this should save a little memory
-  natoms_per_list=innerCollection.getMaximimumCombination(27);
-  if( natoms_per_list>innerCollection.lcell_lists.size() ) {
-    natoms_per_list = innerCollection.lcell_lists.size();
-  }
-  const std::size_t nlist_sz = std::size_t(nat)*( 2 + std::size_t(natoms_per_list) );
-  nlist.resize( nlist_sz );
-  // The distance test needs the position of a candidate from its index: the
-  // cell lists hold the indices of neigh_ind, the positions are in neigh_pos
   const bool useCutoff = applyCutoff && link_cutoff<std::sqrt(std::numeric_limits<double>::max());
+  // with the distance test smaller cells give fewer candidates beyond the cutoff
+  requestedSubdivision = useCutoff ? maxSubdivision : 1;
+  // the lists are built at every step: no more cells than about twice the atoms
+  const bool limitWasSet = limitCellsByAtoms;
+  limitCellsByAtoms = true;
+  // with the distance test the wrapped positions are stored with the cells (see getView)
+  buildCellLists( neigh_pos, neigh_ind, pbc, useCutoff );
+  limitCellsByAtoms = limitWasSet;
+  // the largest number of atoms in the cells searched for one atom
+  unsigned maxcandidates=innerCollection.getMaximimumCombination((2*nsub+1)*(2*nsub+1)*(2*nsub+1));
+  if( maxcandidates>innerCollection.lcell_lists.size() ) {
+    maxcandidates = innerCollection.lcell_lists.size();
+  }
   const double cutoff2 = link_cutoff*link_cutoff;
+  // When the cell of a candidate fixes its periodic image, the minimum image distance
+  // is not needed for each candidate (they are many more than the atoms within the cutoff):
+  // see getView
+  const bool useShifts = useCutoff && cellsFixImages();
+  const LinkCellsView view = useShifts ? getView() : LinkCellsView{};
+  // otherwise the distance test needs the position of a candidate from its index: the
+  // cell lists hold the indices of neigh_ind, the positions are in neigh_pos
   std::vector<unsigned> posOfIndex;
-  if( useCutoff ) {
+  if( useCutoff && !useShifts ) {
     unsigned maxind=0;
     for(unsigned j=0; j<neigh_ind.size(); ++j) {
       maxind = std::max( maxind, neigh_ind[j] );
@@ -390,7 +532,13 @@ void LinkCells::createNeighborList( unsigned nat,
       posOfIndex[neigh_ind[j]] = j;
     }
   }
-  // Each central atom writes its own slots of nlist, so the loop is parallel
+  // The lists are first stored one after the other by each thread, and copied to nlist
+  // when the length of the longest one is known. That length is much smaller than the
+  // number of atoms in the cells that are searched: sizing the slots of nlist on the
+  // latter spreads the lists over a memory that is ten times larger, which is slow to
+  // write here and to read for whoever uses the lists.
+  std::vector<unsigned> nneigh( pos.size() );
+  unsigned maxneigh=1;
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
   const unsigned nt=(pos.size()>=minAtomsPerThread/16)?
@@ -398,42 +546,70 @@ void LinkCells::createNeighborList( unsigned nat,
 #endif
   #pragma omp parallel num_threads(nt)
   {
-    std::vector<unsigned> indices( 1+natoms_per_list );
+    // the lists found by this thread
+    std::vector<unsigned> found;
+    // one more element: a candidate is written before it is known if it is kept
+    std::vector<unsigned> indices( 2+maxcandidates );
     std::vector<unsigned> cells_required( getNumberOfCells() );
-    #pragma omp for schedule(static)
+    unsigned mymax=1;
+    #pragma omp for schedule(static) nowait
     for(unsigned i=0; i<pos.size(); ++i) {
-      unsigned ncells_required=0;
-      addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
       unsigned natoms=1;
       indices[0] = ind[i];
-      retrieveAtomsInCells( ncells_required,
-                            make_const_view(cells_required),
-                            natoms,
-                            indices,
-                            ind[i]);
-      const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
-      if( natoms>neigh_ind.size() ) {
-        // the cells wrap around the box: the same atom was found more than once,
-        // use the whole list of candidates instead
-        natoms = 1 + neigh_ind.size();
-        indices[0] = ind[i];
-        std::copy( neigh_ind.begin(), neigh_ind.end(), indices.begin()+1 );
-      }
-      if( useCutoff ) {
-        unsigned nkept=1;
-        for(unsigned j=1; j<natoms; ++j) {
-          const Vector d = pbc.distance( pos[i], neigh_pos[posOfIndex[indices[j]]] );
-          if( d.modulo2()<=cutoff2 ) {
-            indices[nkept] = indices[j];
-            nkept++;
-          }
+      if( useShifts ) {
+        KeepWithinCutoff keep{indices.data(),natoms,ind[i],cutoff2,view.lists};
+        forEachCandidate( view, pos[i], keep );
+        natoms = keep.n;
+      } else {
+        unsigned ncells_required=0;
+        addRequiredCells( findMyCell( pos[i] ), ncells_required, cells_required );
+        retrieveAtomsInCells( ncells_required,
+                              make_const_view(cells_required),
+                              natoms,
+                              indices,
+                              ind[i]);
+        if( natoms>neigh_ind.size() ) {
+          // the cells wrap around the box: the same atom was found more than once,
+          // use the whole list of candidates instead
+          natoms = 1 + neigh_ind.size();
+          indices[0] = ind[i];
+          std::copy( neigh_ind.begin(), neigh_ind.end(), indices.begin()+1 );
         }
-        natoms = nkept;
+        if( useCutoff ) {
+          unsigned nkept=1;
+          for(unsigned j=1; j<natoms; ++j) {
+            const Vector d = pbc.distance( pos[i], neigh_pos[posOfIndex[indices[j]]] );
+            if( d.modulo2()<=cutoff2 ) {
+              indices[nkept] = indices[j];
+              nkept++;
+            }
+          }
+          natoms = nkept;
+        }
       }
-      nlist[tind[i]] = natoms;
-      std::copy(indices.begin(),
-                indices.begin()+natoms,
+      nneigh[i] = natoms;
+      mymax = std::max( mymax, natoms );
+      found.insert( found.end(), indices.begin(), indices.begin()+natoms );
+    }
+    #pragma omp critical
+    maxneigh = std::max( maxneigh, mymax );
+    #pragma omp barrier
+    #pragma omp single
+    {
+      natoms_per_list = maxneigh-1;
+      nlist.resize( std::size_t(nat)*( 2 + std::size_t(natoms_per_list) ) );
+    }
+    // the same atoms as in the first loop (static schedule, same parallel region):
+    // each thread copies its lists in the order in which it found them
+    std::size_t next=0;
+    #pragma omp for schedule(static)
+    for(unsigned i=0; i<pos.size(); ++i) {
+      const std::size_t lstart = nat + std::size_t(tind[i])*(1+std::size_t(natoms_per_list));
+      nlist[tind[i]] = nneigh[i];
+      std::copy(found.begin()+next,
+                found.begin()+next+nneigh[i],
                 nlist.begin()+lstart);
+      next += nneigh[i];
     }
   }
 }
@@ -442,8 +618,9 @@ unsigned LinkCells::CellCollection::getMaximimumCombination(const unsigned numCe
   //this is not efficient (there is a copy), but in principle it should be called not much times:
   //nth_element order by partition until the array is partially sorted
   //(it stops when the pivot is at the asked point, so all the elements to the right of the nth element are higher/lower than it)
-  if (numCells >= lcell_tots.size()) {
-    return std::accumulate(lcell_tots.begin(),lcell_tots.end(),0);
+  // with no more atoms than cells, the most populated numCells cells contain all the atoms
+  if (numCells >= lcell_tots.size() || lcell_lists.size() <= numCells) {
+    return lcell_lists.size();
   }
   auto tmpCopy=lcell_tots;
   auto nth_place=tmpCopy.begin() + numCells-1;

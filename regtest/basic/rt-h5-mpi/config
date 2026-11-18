@@ -1,6 +1,6 @@
 mpiprocs=4
 type=driver
-plumed_needs=libhdf5
+plumed_needs="tools:libhdf5"
 plumed_modules=bias
 arg="--plumed plumed.dat --ixyz traj.xyz --multi 2"
 

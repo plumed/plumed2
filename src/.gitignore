@@ -26,6 +26,7 @@
 !/gridtools
 !/imd
 !/isdb
+!/isdb-pytorch
 !/kenref
 !/landmarks
 !/lapack

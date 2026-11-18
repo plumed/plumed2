@@ -59,7 +59,7 @@ CLToolRegister::ID CLToolRegister::add(std::string key,creator_pointer cp,keywor
 
   Keywords keys;
   kp(keys);
-  return RegisterBase::add(key,Pointers{cp,keys});
+  return RegisterBase::add(key,Pointers{cp,keys},reinterpret_cast<const void*>(cp));
 }
 
 bool CLToolRegister::printManual( const std::string& cltool, const bool& spelling ) {
@@ -93,7 +93,7 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
 
 
 std::vector<std::string> CLToolRegister::list()const {
-  return RegisterBase::getKeys();
+  return visibleKeys();
 }
 
 }

@@ -72,6 +72,33 @@ const CudaDriver& cudaDriver() {
   return driver;
 }
 
+/// While in scope no CUDA context is current in this thread; the previous one is
+/// made current again at the end. The OpenACC runtime initializes a device on the
+/// CUDA context that is current, if there is one: with the context of the caller
+/// (e.g. the MD code on another GPU) the memory of "our" device would be allocated on
+/// the GPU of the caller, and used later from the context of our device (which fails
+/// with CUDA_ERROR_ILLEGAL_ADDRESS). So the runtime is never called while the context
+/// of the caller is current.
+class NoCurrentContext {
+  void* prev_=nullptr;
+  bool restore_=false;
+public:
+  NoCurrentContext() {
+    const auto & cu=cudaDriver();
+    if(cu.ok() && cu.getCurrent(&prev_)==0 && prev_) {
+      cu.setCurrent(nullptr);
+      restore_=true;
+    }
+  }
+  ~NoCurrentContext() {
+    if(restore_) {
+      cudaDriver().setCurrent(prev_);
+    }
+  }
+  NoCurrentContext(const NoCurrentContext&)=delete;
+  NoCurrentContext& operator=(const NoCurrentContext&)=delete;
+};
+
 }
 
 int currentCudaDevice() {
@@ -87,10 +114,12 @@ int currentCudaDevice() {
 int Device::resolve(const Action& action) {
   if(!resolved_) {
     resolved_=true;
+    // the device of the caller, before its context is removed
+    const int caller=currentCudaDevice();
+    NoCurrentContext noContext;
     const int ndevices=acc_get_num_devices(acc_device_not_host);
     if(ndevices>0) {
       const int md=action.plumed.getGpuDeviceId();
-      const int caller=currentCudaDevice();
       if(md>=0 && md<ndevices) {
         id_=md;
       } else if(caller>=0 && caller<ndevices) {
@@ -112,15 +141,18 @@ DeviceScope::DeviceScope(const int device) {
   }
   const auto & cu=cudaDriver();
   restore_ = cu.ok() && cu.getCurrent(&prevCtx_)==0;
+  // the runtime must not see the context of the caller (see NoCurrentContext):
+  // with no context current, it uses (and initializes if needed) the one of the device
+  if(restore_ && prevCtx_) {
+    cu.setCurrent(nullptr);
+  }
   if(acc_get_device_num(acc_device_not_host)!=device) {
     acc_set_device_num(device,acc_device_not_host);
   }
   if(restore_) {
     // null if the runtime has not initialized the device yet: it makes its
-    // context current when it does
-    void* ctx=acc_get_current_cuda_context();
-    void* cur=nullptr;
-    if(ctx && cu.getCurrent(&cur)==0 && cur!=ctx) {
+    // context current when it does (no other context is current now)
+    if(void* ctx=acc_get_current_cuda_context()) {
       cu.setCurrent(ctx);
     }
   }
