@@ -2022,7 +2022,7 @@ struct has_size_and_data : std::false_type {};
 
 /// Specialization for types T that do have both size() and data() methods
 template<typename T>
-struct has_size_and_data<T, void_t<decltype(std::declval<T>().size()), decltype(std::declval<T>().data())>> : std::true_type {};
+struct has_size_and_data<T, void_t<decltype(std::declval<T&>().size()), decltype(std::declval<T&>().data())>> : std::true_type {};
 
 /// Primary template, assumes T is not a custom structure.
 /// Can be specialized to inform about custom structures
@@ -2045,15 +2045,36 @@ struct is_custom_array<T[N]> : std::true_type {
   using value_type = typename std::remove_reference<decltype(std::declval<T[N]>()[0])>::type;
 };
 
+/// Const custom arrays retain the unqualified customization. Exact user
+/// specializations (including false_type) still take precedence.
+template<typename T>
+struct is_custom_array<const T> : is_custom_array<T> {};
+
+/// Disambiguate const C arrays from the two partial specializations above.
+template<typename T, std::size_t N>
+struct is_custom_array<const T[N]> : std::true_type {
+  using value_type = const T;
+};
+
+/// std::array<T,0> has nonzero sizeof but no elements.
+template<typename T>
+struct custom_array_bytes : std::integral_constant<std::size_t,sizeof(T)> {};
+template<typename T, std::size_t N>
+struct custom_array_bytes<std::array<T,N>> : std::integral_constant<std::size_t,N*sizeof(T)> {};
+template<typename T>
+struct custom_array_bytes<const T> : custom_array_bytes<T> {};
+
 /// Generic utility to retrieve the size of a container
 template<typename T>
-inline std::size_t size(const T&obj) {
+inline std::size_t size(T&obj) {
   return obj.size();
 }
 
 /// Specialization for std::string, which returns size()+1, which includes the terminating null character
-template<>
 inline std::size_t size(const std::string &obj) {
+  return obj.size()+1;
+}
+inline std::size_t size(std::string &obj) {
   return obj.size()+1;
 }
 
@@ -2064,16 +2085,32 @@ inline std::size_t custom_array_size() {
   using value_type = typename wrapper::is_custom_array<typename std::remove_reference<T>::type>::value_type;
   constexpr std::size_t value_size=sizeof(value_type);
   static_assert(value_size>0,"cannot use custom arrays of void types");
-  static_assert(sizeof(T)%value_size==0,"custom array has incorrect size");
-  return sizeof(T)/sizeof(value_type);
+  constexpr std::size_t bytes=custom_array_bytes<typename std::remove_reference<T>::type>::value;
+  static_assert(bytes%value_size==0,"custom array has incorrect size");
+  return bytes/value_size;
 }
 
 /// Cast a pointer to a custom_array to a pointer of its value_type.
 /// typename std::remove_reference<T>::type is needed because C arrays are passed by reference
 template<typename T, typename std::enable_if<wrapper::is_custom_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
-inline typename wrapper::is_custom_array<T>::value_type* custom_array_cast(T* val) {
-  using value_type = typename wrapper::is_custom_array<typename std::remove_reference<T>::type>::value_type;
-  return reinterpret_cast<value_type*>(val);
+inline typename std::conditional<std::is_const<T>::value,
+       const typename wrapper::is_custom_array<T>::value_type,
+typename wrapper::is_custom_array<T>::value_type>::type* custom_array_cast(T* val) {
+  using value_type = typename wrapper::is_custom_array<T>::value_type;
+  using qualified_type = typename std::conditional<std::is_const<T>::value,const value_type,value_type>::type;
+  return reinterpret_cast<qualified_type*>(val);
+}
+
+/// Use the actual element buffer, including for empty arrays and null pointers.
+template<typename T, std::size_t N>
+inline typename wrapper::is_custom_array<std::array<T,N>>::value_type* custom_array_cast(std::array<T,N>* val) {
+  using value_type = typename wrapper::is_custom_array<std::array<T,N>>::value_type;
+  return val ? reinterpret_cast<value_type*>(val->data()) : nullptr;
+}
+template<typename T, std::size_t N>
+inline const typename wrapper::is_custom_array<const std::array<T,N>>::value_type* custom_array_cast(const std::array<T,N>* val) {
+  using value_type = typename wrapper::is_custom_array<const std::array<T,N>>::value_type;
+  return val ? reinterpret_cast<const value_type*>(val->data()) : nullptr;
 }
 
 }
@@ -3419,7 +3456,12 @@ private:
   /// Internal utility to append a shape.
   /// Create a new shape where newindex has been appended to the last non zero element.
   std::array<std::size_t,5> append_size(std::size_t* shape,std::size_t newindex) {
-    std::array<std::size_t,5> shape_;
+    std::array<std::size_t,5> shape_ {};
+    // A zero extent terminates the metadata. Do not replace an empty outer
+    // dimension with a nonzero inner one during recursive flattening.
+    if(shape[0]==0 || newindex==0) {
+      return shape_;
+    }
     unsigned i;
     for(i=0; i<4; i++) {
       shape_[i]=shape[i];
@@ -3450,7 +3492,7 @@ private:
   template<typename Key,typename T, typename std::enable_if<wrapper::is_custom_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
   void cmd_helper(Key && key,T&& val) {
     std::size_t shape[] { wrapper::custom_array_size<T>(), 0 };
-    cmd_helper_with_shape(std::forward<Key>(key),wrapper::custom_array_cast(&val),shape, std::is_rvalue_reference<T&&>::value);
+    cmd_helper_with_shape(std::forward<Key>(key),wrapper::custom_array_cast(std::addressof(val)),shape, std::is_rvalue_reference<T&&>::value);
   }
 
 /// cmd_helper with size/data val (typically, std::vector, std::string, small_vector, etc)
@@ -3512,6 +3554,8 @@ private:
 /// nocopy information is used to pass the proper flags to plumed
   template<typename Key,typename T, typename std::enable_if<!wrapper::is_custom_array<T>::value, int>::type = 0>
   void cmd_helper_with_shape(Key && key,T* val, __PLUMED_WRAPPER_STD size_t* shape,bool nocopy=false) {
+    static_assert(!wrapper::has_size_and_data<T>::value,
+                  "cmd cannot flatten nested dynamic containers");
     SafePtr s(val,0,shape);
     if(nocopy) {
       s.safeptr.flags |= 0x10000000;
