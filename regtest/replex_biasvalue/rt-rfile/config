@@ -1,0 +1,23 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# A new run starting from the state in BIASINDEX_RFILE: its first line in FILE
+# is that state (3 1 0 2)
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 20
+  {
+    echo "#! FIELDS time replica-0 replica-1 replica-2 replica-3"
+    echo " 0.000000 0 1 2 3"
+    echo " 500.000000 2 3 1 0"
+    echo " 1000.000000 3 1 0 2"
+  } > start.xvg
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 | sed -n '/initial state/,/replica indices/p' > log_summary
+}
