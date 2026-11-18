@@ -66,8 +66,11 @@ public:
 /// The largest value accepted by setSubdivision
   static constexpr unsigned maxSubdivision=LinkCellsView::maxSubdivision;
 private:
-/// Minimum number of atoms per thread when finding the cells of the atoms
-  static constexpr unsigned minAtomsPerThread=4096;
+/// Minimum number of atoms per thread when building the lists of the atoms in the cells
+/// (see resetCollection)
+  static constexpr unsigned minAtomsPerThread=1024;
+/// Minimum number of atoms per thread when building the neighbor lists in createNeighborList
+  static constexpr unsigned minAtomsPerThreadNeighborList=256;
 /// Maximum total number of cells
   static constexpr double maxNumberOfCells=1048576;
 /// With setLimitCellsByAtoms(true) the cells are at most this many times the atoms in them
@@ -112,6 +115,8 @@ private:
   std::vector<unsigned> allcells;
 /// Work vector with the positions of the atoms wrapped in the box
   std::vector<Vector> allwrapped;
+/// Work vector with the number of atoms in each range of cells (see resetCollection)
+  std::vector<unsigned> rangetots;
 ///The collection of indexes per cell created by buildCellLists
   CellCollection innerCollection;
   void createCells(const PLMD::Tensor& box);
