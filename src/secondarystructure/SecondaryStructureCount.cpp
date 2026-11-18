@@ -250,30 +250,34 @@ void SecondaryStructureCount::calculate() {
   if( nt==0 ) {
     nt=1;
   }
-  // The buffers are cleared here and not by the threads, because all the nt buffers are summed below and fewer
-  // threads may run: OpenMP may give fewer than nt, and without OpenMP a single one runs (nt still comes from
-  // PLUMED_NUM_THREADS)
   if( omp_derivatives.size()<nt ) {
     omp_derivatives.resize(nt);
   }
-  for(unsigned t=0; t<nt; ++t) {
-    omp_derivatives[t].assign( 3*natoms+9, 0.0 );
-  }
+  const unsigned nder=3*natoms+9;
   const double* x=&getPositions()[0][0];
   const Pbc* pbc = nopbc ? nullptr : &getPbc();
   const double* rad=nullptr;
   if( skipDistance>=0 ) {
     radius.resize( natoms );
-    #pragma omp parallel for num_threads(nt)
-    for(unsigned i=0; i<strands.size(); ++i) {
-      radius[strands[i]]=sscount::strandRadius( x, strands[i], pbc );
-    }
     rad=radius.data();
   }
   const bool skip = strands_cutoff>0 || rad;
   double value=0.0;
+  // The buffers of the threads are cleared and summed with loops over the nt buffers and over the derivatives
+  // shared between the threads: all the nt buffers are summed, and fewer threads may run (OpenMP may give fewer
+  // than nt, and without OpenMP a single one runs, while nt still comes from PLUMED_NUM_THREADS)
   #pragma omp parallel num_threads(nt) reduction(+:value)
   {
+    #pragma omp for
+    for(unsigned t=0; t<nt; ++t) {
+      omp_derivatives[t].assign( nder, 0.0 );
+    }
+    if( rad ) {
+      #pragma omp for
+      for(unsigned i=0; i<strands.size(); ++i) {
+        radius[strands[i]]=sscount::strandRadius( x, strands[i], pbc );
+      }
+    }
     const unsigned t=OpenMP::getThreadNum();
     std::vector<double>& myder( omp_derivatives[t] );
     std::array<Vector,maxAtomsInSegment> pos;
@@ -303,11 +307,14 @@ void SecondaryStructureCount::calculate() {
         myder[3*natoms+j] += g*d[3*maxAtomsInSegment+j];
       }
     }
-  }
-  std::fill( derivatives.begin(), derivatives.end(), 0.0 );
-  for(unsigned t=0; t<nt; ++t) {
-    for(unsigned j=0; j<derivatives.size(); ++j) {
-      derivatives[j] += omp_derivatives[t][j];
+    // the sum of the buffers, in the same order for each derivative
+    #pragma omp for
+    for(unsigned j=0; j<nder; ++j) {
+      double sum=0.0;
+      for(unsigned k=0; k<nt; ++k) {
+        sum += omp_derivatives[k][j];
+      }
+      derivatives[j]=sum;
     }
   }
   if( stride>1 ) {
