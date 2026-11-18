@@ -80,22 +80,28 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
   // Opening an OpenMP region costs microseconds and this is called for every
   // active action at every step: use threads only when there is enough to clear.
 #ifdef _OPENMP
+  constexpr std::size_t minPerThread=32768;
   unsigned nt=OpenMP::getNumThreads();
   if( nt>1 ) {
     std::size_t tot=0;
     for(const auto & v : values) {
       tot+=v->data.size();
     }
-    if( values.size()<2 || tot<32768 ) {
+    if( tot<2*minPerThread ) {
       nt=1;
-    } else if( nt>values.size() ) {
-      nt=values.size();
     }
   }
-  if( nt>1 ) {
+  if( nt>1 && values.size()>=nt ) {
     #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<values.size(); i++) {
       values[i]->clearDerivatives();
+    }
+    return;
+  }
+  if( nt>1 ) {
+    // a few values with many derivatives (e.g. a colvar of many atoms): the threads share each value
+    for(const auto & v : values) {
+      v->clearDerivatives(false,std::min<std::size_t>(nt,std::max<std::size_t>(1,v->data.size()/minPerThread)));
     }
     return;
   }
@@ -368,11 +374,9 @@ bool ActionWithValue::checkForForces() {
     return false;
   }
 
-  // Make sure forces to apply is empty of forces
   if( forcesForApply.size()!=nder ) {
     forcesForApply.resize( nder );
   }
-  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
 
   unsigned stride=1;
   unsigned rank=0;
@@ -385,6 +389,37 @@ bool ActionWithValue::checkForForces() {
   if(nt>ncp/(4*stride)) {
     nt=1;
   }
+
+  // A few values with many derivatives (e.g. a colvar of many atoms): the threads share the derivatives.
+  // Each element is computed as in the serial loop below, so the result does not change.
+  constexpr unsigned chunk=4096;
+  const unsigned nchunks=(nder+chunk-1)/chunk;
+  const unsigned ntder=(nt==1 && nchunks>=16) ? std::min(OpenMP::getNumThreads(),nchunks/8) : 1;
+  if( ntder>1 ) {
+    double* const dest=forcesForApply.data();
+    #pragma omp parallel for num_threads(ntder)
+    for(unsigned c=0; c<nchunks; ++c) {
+      const unsigned j0=c*chunk;
+      const unsigned j1=std::min(nder,j0+chunk);
+      for(unsigned j=j0; j<j1; ++j) {
+        dest[j]=0.0;
+      }
+      for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+        const double ff=values[valsToForce[i]]->inputForce[0];
+        const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+        for(unsigned j=j0; j<j1; ++j) {
+          dest[j]+=ff*thisderiv[j];
+        }
+      }
+    }
+    if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+      comm.Sum(&forcesForApply[0],nder);
+    }
+    return true;
+  }
+
+  // Make sure forces to apply is empty of forces
+  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
 
   // Note: plain loops are used here on purpose instead of BLAS daxpy.
   // An external multithreaded BLAS (e.g. OpenBLAS, MKL) would spawn its own
