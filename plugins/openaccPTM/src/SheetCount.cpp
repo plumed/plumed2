@@ -45,8 +45,7 @@ constexpr std::size_t segmentColumns=10;
 /// - one thread per segment of that list (or per pair, without STRANDS_CUTOFF): the segment is built
 ///   and its distance from the references and the switching function are computed with the same
 ///   functions as on the CPU (sheet::segmentPositions and sheet::segmentSwitch); the derivatives
-///   are added to the atoms with atomics (consecutive threads take segments far apart in the list,
-///   see accTaskInterleave), the value and the virial are written for the next kernel;
+///   are added to the atoms with atomics, the value and the virial are written for the next kernel;
 /// - the sum of the values and of the virial.
 /// The derivatives are copied back to the host and used as in SheetCount: there is no backward pass.
 /// The pairs, the reference distances and the switching function are copied to the GPU once.
@@ -182,45 +181,32 @@ void SheetCountACC::calculate() {
       b.derivatives.resize( 3*natoms );
       double* dder=b.derivatives.devicePtr();
       accZeroAsync( dder, 3*natoms );
-      // consecutive threads take segments that are nint positions apart in the list, so that the
-      // threads of a warp rarely add to the derivatives of the same atoms (neighbouring segments
-      // share a strand), see accTaskInterleave
-      const std::size_t nint=accTaskInterleave();
-      const std::size_t chunk=(nactive+nint-1)/nint;
-      const std::size_t nthreads=nint*chunk;
       const unsigned nstr=nstructures;
       const unsigned nsegatoms=maxAtomsInSegment;
       const unsigned nstrand=sheet::strandAtoms;
       const unsigned nder=sheet::segmentDerivatives;
       // one thread per segment, with all the inner loops sequential
 #pragma acc parallel loop gang vector async(accQueue) present(dd[0:1]) \
-                     firstprivate(nthreads, chunk, nint, nactive, usecut, rank, stride, \
+                     firstprivate(nactive, usecut, rank, stride, \
                                   nstr, nsegatoms, nstrand, nder) \
                         deviceptr(dx, dpairs, dpbc, dsw, dactive, dseg, dder) \
                           default(none)
-      for(std::size_t u=0; u<nthreads; ++u) {
-        // no continue in this loop: with default(none) nvc++ asks for a data clause
-        // for the arrays declared after a continue
+      for(std::size_t e=0; e<nactive; ++e) {
+        // the arrays are declared first in the body of the loop, before its inner loops:
+        // otherwise, with default(none), nvc++ asks for a data clause for them
         std::array<Vector,maxAtomsInSegment> pos;
         std::array<double,2*sheet::segmentDerivatives> der;
         unsigned best=0;
         double g=0.0;
-        // the last threads may have no segment
-        const std::size_t e=(u%nint)*chunk+u/nint;
-        const bool hasSegment = e<nactive;
-        const std::size_t p = !hasSegment ? 0 : ( usecut ? dactive[e] : rank+e*stride );
+        const std::size_t p = usecut ? dactive[e] : rank+e*stride;
         const unsigned s1=dpairs[2*p], s2=dpairs[2*p+1];
-        if( hasSegment ) {
-          sheet::segmentPositions( dx, s1, s2, dpbc, pos );
-          dseg[e]=sheet::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
-        }
+        sheet::segmentPositions( dx, s1, s2, dpbc, pos );
+        dseg[e]=sheet::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
         // with g zero the derivatives were not computed
         const double* d=der.data()+best*nder;
-        if( hasSegment ) {
 #pragma acc loop seq
-          for(unsigned j=0; j<9; ++j) {
-            dseg[(j+1)*nactive+e] = (g!=0.0) ? g*d[3*nsegatoms+j] : 0.0;
-          }
+        for(unsigned j=0; j<9; ++j) {
+          dseg[(j+1)*nactive+e] = (g!=0.0) ? g*d[3*nsegatoms+j] : 0.0;
         }
         if( g!=0.0 ) {
 #pragma acc loop seq
