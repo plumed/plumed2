@@ -199,23 +199,28 @@ void SheetCountACC::calculate() {
                         deviceptr(dx, dpairs, dpbc, dsw, dactive, dseg, dder) \
                           default(none)
       for(std::size_t u=0; u<nthreads; ++u) {
-        const std::size_t e=(u%nint)*chunk+u/nint;
-        if( e>=nactive ) {
-          continue;
-        }
-        const std::size_t p = usecut ? dactive[e] : rank+e*stride;
-        const unsigned s1=dpairs[2*p], s2=dpairs[2*p+1];
+        // no continue in this loop: with default(none) nvc++ asks for a data clause
+        // for the arrays declared after a continue
         std::array<Vector,maxAtomsInSegment> pos;
         std::array<double,2*sheet::segmentDerivatives> der;
-        sheet::segmentPositions( dx, s1, s2, dpbc, pos );
         unsigned best=0;
         double g=0.0;
-        dseg[e]=sheet::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
+        // the last threads may have no segment
+        const std::size_t e=(u%nint)*chunk+u/nint;
+        const bool hasSegment = e<nactive;
+        const std::size_t p = !hasSegment ? 0 : ( usecut ? dactive[e] : rank+e*stride );
+        const unsigned s1=dpairs[2*p], s2=dpairs[2*p+1];
+        if( hasSegment ) {
+          sheet::segmentPositions( dx, s1, s2, dpbc, pos );
+          dseg[e]=sheet::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
+        }
         // with g zero the derivatives were not computed
         const double* d=der.data()+best*nder;
+        if( hasSegment ) {
 #pragma acc loop seq
-        for(unsigned j=0; j<9; ++j) {
-          dseg[(j+1)*nactive+e] = (g!=0.0) ? g*d[3*nsegatoms+j] : 0.0;
+          for(unsigned j=0; j<9; ++j) {
+            dseg[(j+1)*nactive+e] = (g!=0.0) ? g*d[3*nsegatoms+j] : 0.0;
+          }
         }
         if( g!=0.0 ) {
 #pragma acc loop seq

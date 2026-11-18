@@ -597,25 +597,16 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                                   buffer) \
                           default(none)
     for(std::size_t w=0; w<nwork; ++w) {
-      // this thread's column of the buffer of the shared entries
-#pragma acc loop seq
-      for(std::size_t k=0; k<nshared; ++k) {
-        sharedForces[k*nwork+w]=0.0;
-      }
-      const std::size_t t=(w%nint)*chunk+w/nint;
-      if(t>=nactive_tasks) {
-        continue;
-      }
-      std::size_t task_index = partialTaskList_data[t];
+      // the work buffers of this thread. The loop has no continue (the last
+      // threads, which have no task, do nothing below), and myout and the
+      // arrays are declared before the inner loops: otherwise, with
+      // default(none), nvc++ asks for a data clause for them
       auto myout = ParActionsOutput<precision>::create( myinput.nscalars,
                    valstmp+myinput.nscalars*w,
                    nderivatives_per_task,
                    derivatives+nderivatives_per_task*w,
                    workspace_size,
                    (workspace_size>0)?buffer+workspace_size*w:nullptr);
-      // Calculate the stuff in the loop for this action
-      T::performTask( task_index, *ad, myinput, myout );
-
       // private accumulators of the other thread-unsafe entries: slot s holds
       // the s-th thread-unsafe contribution of the current value; it is summed
       // to the one of the next value if they go to the same entry, and added
@@ -624,14 +615,27 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       constexpr std::size_t noSlot=~std::size_t(0);
       std::size_t slotIndex[nslots];
       precision slotForce[nslots];
+      // this thread's column of the buffer of the shared entries
+#pragma acc loop seq
+      for(std::size_t k=0; k<nshared; ++k) {
+        sharedForces[k*nwork+w]=0.0;
+      }
 #pragma acc loop seq
       for(unsigned s=0; s<nslots; ++s) {
         slotIndex[s]=noSlot;
         slotForce[s]=0.0;
       }
+      // the last threads may have no task
+      const std::size_t t=(w%nint)*chunk+w/nint;
+      const bool hasTask = t<nactive_tasks;
+      const std::size_t task_index = hasTask ? partialTaskList_data[t] : 0;
+      // Calculate the stuff in the loop for this action
+      if(hasTask) {
+        T::performTask( task_index, *ad, myinput, myout );
+      }
 
       // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, *ad );
+      const std::size_t nvpt = hasTask ? T::getNumberOfValuesPerTask( task_index, *ad ) : 0;
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
         auto force_indices = ForceIndexHolder::create(myinput, indices + w*ind_stride_task);
