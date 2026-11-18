@@ -60,10 +60,12 @@ $n=8$, $m=12$, $d_0=0$ and $r_0=0.08$ nm. The value of R_0 is given in the lengt
 the default is converted, so it is always 0.08 nm. As in the other actions that take R_0, NN, MM and D_0, the function above, $f(r)$,
 is stretched so that it goes to zero at $d_{max}=d_0+r_0\,10^{5/(m-n)}$, where $f(d_{max})=10^{-5}$ (1.42 nm with the default
 parameters): each segment contributes $\left(f(r_i)-f(d_{max})\right)/\left(1-f(d_{max})\right)$ if $r_i<d_{max}$ and zero otherwise.
-The segments with a distance from the reference larger than $d_{max}$, whose strands are far apart, are then not computed (see below).
+The value of $d_{max}$ is the D_MAX of the switching function in the expanded input. The segments with a distance from the
+reference larger than $d_{max}$, whose strands are far apart, are then not computed (see below).
 To use the function without stretching, use LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}.
 
-If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below.
+If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below,
+where D_MAX is given as for the default function, so that the pairs of strands that are too far apart can be skipped also with this function.
 In this case the label of the action is the vector of the distances between each segment and the ideal parallel beta sheet, and
 the number of segments that are similar to a parallel beta sheet is the `lessthan` component.
 
@@ -73,7 +75,7 @@ protein that are in a parallel beta sheet configuration.
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
+pb: PARABETARMSD RESIDUES=all R_0=0.1
 PRINT ARG=pb FILE=colvar
 ```
 
@@ -82,7 +84,7 @@ Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), and wi
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12} STRANDS_CUTOFF=1
+hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12 D_MAX=1.78}
 PRINT ARG=hh.lessthan FILE=colvar
 ```
 
@@ -129,7 +131,7 @@ You can turn off this treatment by using the NOPBC flag as shown below:
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1 NOPBC
+pb: PARABETARMSD RESIDUES=all R_0=0.1 NOPBC
 PRINT ARG=pb FILE=colvar
 ```
 
@@ -172,7 +174,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   ActionShortcut(ao) {
   // Read in the input and create a string that describes how to compute the less than
   std::string ltmap;
-  bool uselessthan=SecondaryStructureInput::readShortcutWords( ltmap, this, true );
+  bool uselessthan=SecondaryStructureInput::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
   std::vector<std::string> all_atoms;

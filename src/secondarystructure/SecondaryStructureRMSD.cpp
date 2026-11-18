@@ -83,8 +83,9 @@ PRINT ARG=c1 FILE=colvar
 
 ## Working with beta sheet like structures
 
-As discussed in the documentation for [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) using the STRANDS_CUTOFF keyword can speed up the calculation
-dramatically.  The reason this keyword gives such dramatic speed ups is illustrated by the example input:
+As discussed in the documentation for [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) the STRANDS_CUTOFF keyword (1 nm by default) speeds up the calculation
+dramatically.  The reason it gives such dramatic speed ups is illustrated by the example input, which is the one that these shortcuts used before
+the number of segments was computed by a single action (the vectors below are still in the expanded input, and are computed if they are used):
 
 ```plumed
 ab_cut_dists: DISTANCE ...
@@ -103,7 +104,7 @@ ab_rmsd: SECONDARY_STRUCTURE_RMSD ...
    SEGMENT5=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59
    STRUCTURE1=2.263,-3.795,1.722,2.493,-2.426,2.263,3.847,-1.838,1.761,1.301,-1.517,1.921,0.852,-1.504,0.739,0.818,-0.738,2.917,-0.299,0.243,2.748,-1.421,-0.076,3.757,0.273,1.68,2.854,0.902,1.993,3.888,0.119,2.532,1.813,0.683,3.916,1.68,1.58,3.94,0.395,-0.394,5.011,1.63,-1.459,4.814,0.982,-2.962,3.559,-1.359,-2.439,2.526,-2.287,-1.189,3.006,-3.087,-2.081,1.231,-1.52,-1.524,1.324,-0.409,-2.326,0.037,-2.095,-1.858,-1.269,-1.554,-3.053,-2.199,-1.291,-0.869,-1.949,-2.512,-1.255,-2.07,-3.71,0.326,-2.363,-2.072,1.405,-2.992,-2.872,2.699,-2.129,-2.917,1.745,-4.399,-2.33,1.899,-4.545,-1.102
 ...
-ab_ltu: LESS_THAN ARG=ab_rmsd SWITCH={RATIONAL R_0=0.1 D_0=0.0 NN=8 MM=12} MASK=ab_cut
+ab_ltu: LESS_THAN ARG=ab_rmsd SWITCH={RATIONAL R_0=0.1 D_0=0.0 NN=8 MM=12 D_MAX=1.77828} MASK=ab_cut
 ab_lt: CUSTOM ARG=ab_ltu,ab_cut FUNC=x*y PERIODIC=NO
 ab: SUM ARG=ab_lt PERIODIC=NO
 PRINT ARG=ab FILE=colvar

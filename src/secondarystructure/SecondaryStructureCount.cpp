@@ -126,6 +126,9 @@ SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
     error("problem reading SWITCH keyword : " + errors );
   }
   log.printf("  sum of %s of the %s distance from the reference structure\n", switchingFunction.description().c_str(), type.c_str() );
+  if( switchingFunction.get_dmax()<std::numeric_limits<double>::max() ) {
+    log.printf("  the switching function is zero for distances from the reference structure larger than D_MAX=%f\n", switchingFunction.get_dmax() );
+  }
 
   // The reference structures, as in SECONDARY_STRUCTURE_RMSD and SECONDARY_STRUCTURE_DRMSD
   // the bond length of the shortcuts, 0.17 nm
