@@ -87,6 +87,15 @@ zero to the number of segments that are similar to a beta sheet. If you use LESS
 notice that the distances of the skipped segments are zero in the vector that is the value of the action, so this vector
 should not be used to find the segment that is closest to a beta sheet.
 
+## How the number of segments is computed
+
+Without `USEGPU`, the number of segments that are similar to a sheet (the value of the action, or its `lessthan` component when
+LESS_THAN is used) is computed by a single action, ANTIBETARMSD_SCALAR, which loops over the pairs of strands, skips those that are further
+apart than `STRANDS_CUTOFF` and adds the derivatives of each segment directly to the atoms. The vectors that appear in the expanded input
+(the distances of the strands, the distances from the reference structure and their switching functions) are only computed when they are
+used elsewhere in the input, e.g. when the vector that is the value of the action with LESS_THAN is printed. The result is the same.
+With `USEGPU` and TYPE=DRMSD the same calculation is done on the GPU by ANTIBETARMSD_SCALAR_ACC, from the openaccPTM plugin: one GPU thread per pair of strands within `STRANDS_CUTOFF`. With `USEGPU` and the other types the number of segments is the sum of the vector of the switching functions.
+
 ## Chains and residues
 
 The STYLE keyword selects whether the two strands of a segment are taken from the same chain (STYLE=intra), from different
@@ -137,6 +146,8 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ) {
   keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart than this distance (between the CA atoms of their central residues) "
            "the calculation of the distance from the reference is skipped, as the structure is very far from being beta-sheet like, and the segment does not "
            "contribute to the number of segments that are similar to a beta sheet. This keyword speeds up the calculation enormously.");
+  keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_SCALAR_ACC");
   keys.needsAction("DISTANCE");
   keys.needsAction("CUSTOM");
 }
@@ -152,21 +163,11 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::vector<std::string> all_atoms;
   SecondaryStructureInput::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
-  bool intra_chain(false), inter_chain(false);
   std::string style;
   parse("STYLE",style);
-  if( Tools::caseInSensStringCompare(style, "all") ) {
-    intra_chain=true;
-    inter_chain=true;
-  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
-    intra_chain=false;
-    inter_chain=true;
-  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
-    intra_chain=true;
-    inter_chain=false;
-  } else {
-    error( style + " is not a valid directive for the STYLE keyword");
-  }
+  // All the conceivable pairs of strands in the backbone of the chains
+  std::vector<std::pair<unsigned,unsigned> > pairs;
+  SecondaryStructureInput::getSheetPairs( this, chains, false, style, pairs );
 
   double strands_cutoff=-1.0;
   parse("STRANDS_CUTOFF",strands_cutoff);
@@ -174,87 +175,18 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   if( strands_cutoff>0 ) {
     scutoff_action=getShortcutLabel() + "_cut_dists: DISTANCE ";
   }
-
-  // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   std::string seglist;
-  unsigned segno=1;
-  if( intra_chain ) {
-    unsigned nprevious=0;
-    std::vector<unsigned> nlist(30);
-    for(unsigned i=0; i<chains.size(); ++i) {
-      if( chains[i]<40 ) {
-        error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
-      }
-      // Loop over all the pairs of triples of residues separated by at least two residues
-      unsigned nres=chains[i]/5;
-      if( chains[i]%5!=0 ) {
-        error("backbone segment received does not contain a multiple of five residues");
-      }
-      for(unsigned ires=0; ires<nres-7; ires++) {
-        for(unsigned jres=ires+7; jres<nres; jres++) {
-          for(unsigned kk=0; kk<15; ++kk) {
-            nlist[kk]=nprevious + ires*5+kk;
-            nlist[kk+15]=nprevious + (jres-2)*5+kk;
-          }
-          SecondaryStructureInput::addSegment( seglist, segno, nlist );
-          if( strands_cutoff>0 ) {
-            scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
-          }
-          ++segno;
-        }
-      }
-      nprevious+=chains[i];
+  std::vector<unsigned> nlist(30);
+  for(unsigned k=0; k<pairs.size(); ++k) {
+    for(unsigned kk=0; kk<15; ++kk) {
+      nlist[kk]=pairs[k].first+kk;
+      nlist[kk+15]=pairs[k].second+kk;
     }
-  }
-  if( inter_chain ) {
-    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
-      error("there is only one chain defined so cannot use inter_chain option");
+    SecondaryStructureInput::addSegment( seglist, k+1, nlist );
+    if( strands_cutoff>0 ) {
+      // the central CA atoms of the two strands
+      scutoff_action += " ATOMS" + std::to_string(k+1) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
     }
-    std::vector<unsigned> nlist(30);
-    for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
-      unsigned iprev=0;
-      for(unsigned i=0; i<ichain; ++i) {
-        iprev+=chains[i];
-      }
-      unsigned inres=chains[ichain]/5;
-      if( chains[ichain]%5!=0 ) {
-        error("backbone segment received does not contain a multiple of five residues");
-      }
-      if( inres<3 ) {
-        // A strand contains three residues. Without this the unsigned subtraction in the loop below wraps around
-        continue;
-      }
-      for(unsigned ires=0; ires<inres-2; ++ires) {
-        for(unsigned jchain=0; jchain<ichain; ++jchain) {
-          unsigned jprev=0;
-          for(unsigned i=0; i<jchain; ++i) {
-            jprev+=chains[i];
-          }
-          unsigned jnres=chains[jchain]/5;
-          if( chains[jchain]%5!=0 ) {
-            error("backbone segment received does not contain a multiple of five residues");
-          }
-          if( jnres<3 ) {
-            continue;
-          }
-          for(unsigned jres=0; jres<jnres-2; ++jres) {
-            for(unsigned kk=0; kk<15; ++kk) {
-              nlist[kk]=iprev + ires*5+kk;
-              nlist[kk+15]=jprev + jres*5+kk;
-            }
-            SecondaryStructureInput::addSegment( seglist, segno, nlist );
-            if( strands_cutoff>0 ) {
-              scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
-            }
-            ++segno;
-          }
-        }
-      }
-    }
-  }
-
-  if( seglist.empty() ) {
-    error("it is not possible to build any segment of backbone that could form a sheet with the residues and the STYLE that were given");
   }
 
   // Build the reference structure ( in angstroms )
@@ -292,8 +224,9 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
   std::string structure;
   SecondaryStructureInput::addStructure( structure, 1, reference );
 
-  bool nopbc=false;
-  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
+  std::string type;
+  bool nopbc=false, usegpu=false;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, type, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -325,7 +258,28 @@ AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
     readInputLine(inputLine);
     readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
   }
-  SecondaryStructureInput::addSum( this, uselessthan );
+  if( usegpu && type!="DRMSD" ) {
+    // there is no GPU version of the single action with the RMSD
+    SecondaryStructureInput::addSum( this, uselessthan );
+  } else {
+    // The number of segments that are similar to a sheet is computed by a single action: without the vectors above,
+    // which are only computed if they are used elsewhere in the input. With USEGPU this is its GPU version
+    std::string chainsizes=std::to_string(chains[0]);
+    for(unsigned i=1; i<chains.size(); ++i) {
+      chainsizes += "," + std::to_string(chains[i]);
+    }
+    std::string sumline = getShortcutLabel() + (uselessthan ? "_lessthan" : "") + ": ANTIBETARMSD_SCALAR" + (usegpu ? "_ACC " : " ") + atoms
+                          + " CHAIN_SIZES=" + chainsizes + " STYLE=" + style + " TYPE=" + type + " SWITCH={" + ltmap + "}" + structure;
+    if( strands_cutoff>0 ) {
+      std::string str_cut;
+      Tools::convert( strands_cutoff, str_cut );
+      sumline += " STRANDS_CUTOFF=" + str_cut;
+    }
+    if( nopbc ) {
+      sumline += " NOPBC";
+    }
+    readInputLine( sumline );
+  }
 }
 
 }

@@ -70,6 +70,23 @@ CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
 on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
 
+### Secondary structure
+
+With `USEGPU` and `TYPE=DRMSD`, the number of segments that are similar to a helix or a sheet computed by [ALPHARMSD](ALPHARMSD.md),
+[ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) (the value, or the `lessthan` component) comes from
+`ALPHARMSD_SCALAR_ACC`, `ANTIBETARMSD_SCALAR_ACC` and `PARABETARMSD_SCALAR_ACC` (`src/SecondaryStructureCount.cpp`), the GPU
+version of the single action that PLUMED uses on the CPU
+(`src/secondarystructure/SecondaryStructureCount.h`), with the same functions for a segment: a first kernel lists the pairs of strands
+within `STRANDS_CUTOFF`, one GPU thread per listed segment computes its distance from the references, the switching function
+and the derivatives, which are added to the atoms with atomics, and a last kernel sums the values and the virial. The forces
+need no second pass. The vectors of the expanded input are computed (on the GPU) only when another action uses them.
+
+On one A100 (8 CPU threads), for 144 peptides of 8 residues (20160 atoms, 370800 pairs of strands, about 5000 of them
+within `STRANDS_CUTOFF=1`), [ALPHARMSD](ALPHARMSD.md), ANTIBETARMSD and PARABETARMSD together take 2.3 ms per step
+(7.8 ms on 32 CPU cores); without `STRANDS_CUTOFF` ANTIBETARMSD takes 12 ms (37 ms on 32 CPU cores). For a single protein,
+with a few hundred residues, the CPU is faster: the time on the GPU is then set by the cost of starting the kernels and of
+the transfers (about 0.6 ms per step for ALPHARMSD).
+
 ### Which GPU is used
 
 All the actions of the plugin (SAXS and SANS included) use the same GPU as the MD code, so that they work on a node with
@@ -111,9 +128,9 @@ The next section contains a list of the actions that can take the USEGPU command
    - ~~[QUATERNION_BOND_PRODUCT_MATRIX](QUATERNION_BOND_PRODUCT_MATRIX.md)~~ setup, but deactivated
  - secondarystructure:
    - [SECONDARY_STRUCTURE_DRMSD](SECONDARY_STRUCTURE_DRMSD.md), and in particular:
-     - [ALPHARMSD](ALPHARMSD.md) only with **TYPE=DRMSD**
-     - [ANTIBETARMSD](ANTIBETARMSD.md) only with **TYPE=DRMSD**
-     - [PARABETARMSD](PARABETARMSD.md) only with **TYPE=DRMSD**
+     - [ALPHARMSD](ALPHARMSD.md) only with **TYPE=DRMSD** (the number of segments: `ALPHARMSD_SCALAR_ACC`, see below)
+     - [ANTIBETARMSD](ANTIBETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `ANTIBETARMSD_SCALAR_ACC`, see below)
+     - [PARABETARMSD](PARABETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `PARABETARMSD_SCALAR_ACC`, see below)
  - volumes:
    - [AROUND](AROUND.md)
    - [INCYLINDER](INCYLINDER.md)
