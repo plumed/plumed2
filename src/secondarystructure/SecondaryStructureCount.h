@@ -29,6 +29,7 @@
 #include "tools/SwitchingFunction.h"
 
 #include <array>
+#include <cmath>
 #include <string>
 #include <utility>
 #include <vector>
@@ -52,14 +53,36 @@ inline Vector atomPosition( const double* x, const unsigned a ) {
   return Vector( x[3*a], x[3*a+1], x[3*a+2] );
 }
 
-/// Is the distance between the central CA atoms of two strands (given by their first atom) within the cutoff?
-/// x are the coordinates of the atoms, pbc is null with NOPBC.
-/// As step(STRANDS_CUTOFF-x) in the shortcut: the pair is used if the distance is not larger than the cutoff
-inline bool withinCutoff( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc, const double cutoff ) {
+/// The largest distance of an atom of the strand that starts at atom s from its central CA, with the strand made
+/// whole as in segmentPositions (pbc is null with NOPBC)
+inline double strandRadius( const double* x, const unsigned s, const Pbc* pbc ) {
+  std::array<Vector,strandAtoms> pos;
+  pos[0]=atomPosition( x, s );
+  for(unsigned i=0; i+1<strandAtoms; ++i) {
+    pos[i+1] = pbc ? pos[i]+pbc->distance( pos[i], atomPosition( x, s+i+1 ) ) : atomPosition( x, s+i+1 );
+  }
+  double r2=0.0;
+  for(unsigned i=0; i<strandAtoms; ++i) {
+    const double d2=delta( pos[centralCA], pos[i] ).modulo2();
+    r2 = d2>r2 ? d2 : r2;
+  }
+  return sqrt(r2);
+}
+
+/// Is the segment made of the strands starting at atoms s1 and s2 computed? x are the coordinates of the atoms,
+/// pbc is null with NOPBC. It is not if the distance between the central CA atoms of the strands is larger than
+/// cutoff (if cutoff>0), as step(STRANDS_CUTOFF-x) in the shortcut, or, if radius is not null, if that distance minus
+/// the radii of the strands (see strandRadius, radius[s] is the one of the strand that starts at atom s) is larger
+/// than skipDistance: then the switching function of the segment is zero (see SecondaryStructureCount::setSkipDistance)
+inline bool segmentActive( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc, const double cutoff,
+                           const double* radius, const double skipDistance ) {
   const Vector p1=atomPosition( x, s1+centralCA );
   const Vector p2=atomPosition( x, s2+centralCA );
-  const Vector d = pbc ? pbc->distance( p1, p2 ) : delta( p1, p2 );
-  return d.modulo()<=cutoff;
+  const double d = ( pbc ? pbc->distance( p1, p2 ) : delta( p1, p2 ) ).modulo();
+  if( cutoff>0 && d>cutoff ) {
+    return false;
+  }
+  return !radius || d-radius[s1]-radius[s2]<=skipDistance;
 }
 
 /// The positions of the atoms of the segment made of the strands starting at atoms s1 and s2, as in
@@ -135,6 +158,11 @@ protected:
   bool nopbc;
   bool usedrmsd;
   double strands_cutoff;
+  /// The pairs of strands whose central CA atoms are further apart than this plus the radii of the strands are
+  /// skipped (see sscount::segmentActive); negative if no pair can be skipped in this way
+  double skipDistance;
+  /// The first atom of each strand, if pairs are skipped with skipDistance
+  std::vector<unsigned> strands;
   /// The definition of the switching function, as given in SWITCH
   std::string switchInput;
   SwitchingFunction switchingFunction;
@@ -143,12 +171,16 @@ protected:
   SecondaryStructureDRMSDInput<double> drmsd;
   SecondaryStructureRMSDInput rmsd;
   unsigned nstructures;
+  /// Sets skipDistance from the reference structures and the switching function
+  void setSkipDistance( const std::vector<std::vector<Vector> >& references, double bondlength );
   /// Sets the value and the derivatives from the sum over the segments (3*natoms derivatives and the virial)
   void setValueAndDerivatives( double value, const std::vector<double>& derivatives );
 private:
   /// Buffers of the derivatives of each OpenMP thread
   std::vector<std::vector<double> > omp_derivatives;
   std::vector<double> derivatives;
+  /// The radius of each strand (sscount::strandRadius), at the position of its first atom
+  std::vector<double> radius;
 public:
   static void registerKeywords( Keywords& keys );
   explicit SecondaryStructureCount(const ActionOptions&);

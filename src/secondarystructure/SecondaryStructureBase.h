@@ -32,6 +32,7 @@
 #include "tools/TypeUtils.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <type_traits>
@@ -84,6 +85,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
+  /// Read LESS_THAN, or R_0, D_0, NN and MM, in a shortcut: ltmap is the switching function. The rational function defined
+  /// by R_0, D_0, NN and MM gets the D_MAX that the other actions use for these keywords (where the function is 1e-5): it is
+  /// then stretched to be zero at D_MAX. Returns true if LESS_THAN was used
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
   /// Read TYPE (returned in upper case), NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action
   /// that computes the distances
@@ -133,6 +137,22 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
     action->parse("D_0",d_0);
     action->parse("MM",mm);
     ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
+    // as SwitchingFunction::set(nn,mm,r0,d0)
+    double r0, d0;
+    int n, m;
+    Tools::convert( r_0, r0 );
+    Tools::convert( d_0, d0 );
+    Tools::convert( nn, n );
+    Tools::convert( mm, m );
+    if( m==0 ) {
+      m=2*n;
+    }
+    if( n==m ) {
+      action->error("NN and MM must be different");
+    }
+    std::string dmax;
+    Tools::convert( d0+r0*std::pow( 0.00001, 1.0/(n-m) ), dmax );
+    ltmap += " D_MAX=" + dmax;
     return false;
   }
   return true;
@@ -304,8 +324,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "As such if you define portions of the chain with fewer than N residues PLUMED stops with an error.");
     keys.add("optional","LESS_THAN","calculate the number of segments of residues that are within a certain target distance of this secondary structure type. "
              "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is the switching function given here. "
-             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component");
-    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm");
+             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component. "
+             "Give a D_MAX in this switching function (e.g. LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12 D_MAX=1.42}) to make it zero beyond D_MAX, "
+             "as the one defined by R_0, NN, MM and D_0");
+    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm. "
+             "The switching function is stretched to be zero at the distance where it is 1e-5 (its D_MAX in the expanded input)");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
     keys.add("compulsory","MM","12","The m parameter of the switching function");

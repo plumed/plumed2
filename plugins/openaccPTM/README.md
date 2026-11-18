@@ -77,7 +77,8 @@ With `USEGPU` and `TYPE=DRMSD`, the number of segments that are similar to a hel
 `ALPHARMSD_SCALAR_ACC`, `ANTIBETARMSD_SCALAR_ACC` and `PARABETARMSD_SCALAR_ACC` (`src/SecondaryStructureCount.cpp`), the GPU
 version of the single action that PLUMED uses on the CPU
 (`src/secondarystructure/SecondaryStructureCount.h`), with the same functions for a segment: a first kernel lists the pairs of strands
-within `STRANDS_CUTOFF`, one GPU thread per listed segment computes its distance from the references, the switching function
+within `STRANDS_CUTOFF` (1 nm by default) and whose switching function is not certainly zero (see the documentation of
+ANTIBETARMSD), one GPU thread per listed segment computes its distance from the references, the switching function
 and the derivatives, which are added to the atoms with atomics, and a last kernel sums the values and the virial. The forces
 need no second pass. The vectors of the expanded input are computed (on the GPU) only when another action uses them.
 

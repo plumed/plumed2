@@ -50,9 +50,14 @@ $$
 where the sum runs over all possible segments of alpha helix.  By default the
 NN, MM, D_0 and R_0 parameters are set equal to those used in the paper cited below, which are
 $n=8$, $m=12$, $d_0=0$ and $r_0=0.08$ nm. The value of R_0 is given in the length units of [UNITS](UNITS.md);
-the default is converted, so it is always 0.08 nm.
+the default is converted, so it is always 0.08 nm. As in the other actions that take R_0, NN, MM and D_0, the function above, $f(r)$,
+is stretched so that it goes to zero at $d_{max}=d_0+r_0\,10^{5/(m-n)}$, where $f(d_{max})=10^{-5}$ (1.42 nm with the default
+parameters): each segment contributes $\left(f(r_i)-f(d_{max})\right)/\left(1-f(d_{max})\right)$ if $r_i<d_{max}$ and zero otherwise.
+The value of $d_{max}$ is the D_MAX of the switching function in the expanded input. To use the function without stretching,
+use LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}.
 
-If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below.
+If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below,
+where D_MAX is given as for the default function.
 In this case the label of the action is the vector of the distances between each segment and the ideal alpha helix, and
 the number of segments that are similar to an alpha helix is the `lessthan` component. The vector can be given in input to other
 actions: for example [LOWEST](LOWEST.md) gives the distance of the segment that is closest to an alpha helix.
@@ -73,7 +78,7 @@ The distance of the segment that is closest to an alpha helix is also computed.
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12 D_MAX=1.78}
 closest: LOWEST ARG=alpha
 PRINT ARG=alpha.lessthan,closest FILE=colvar
 ```

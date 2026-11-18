@@ -40,9 +40,10 @@ constexpr std::size_t segmentColumns=10;
 }
 
 /// The GPU version of ALPHARMSD_SCALAR, ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR (only with TYPE=DRMSD), created by
-/// ANTIBETARMSD and PARABETARMSD with USEGPU. A step is done in three kernels:
-/// - with STRANDS_CUTOFF, the list of the pairs of strands within the cutoff (one thread per pair);
-/// - one thread per segment of that list (or per pair, without STRANDS_CUTOFF): the segment is built
+/// ALPHARMSD, ANTIBETARMSD and PARABETARMSD with USEGPU. A step is done in these kernels:
+/// - for the sheets, the list of the pairs of strands within STRANDS_CUTOFF and whose switching function is not zero for
+///   certain (one thread per pair, see sscount::segmentActive; the radii of the strands are computed first);
+/// - one thread per segment of that list (or per segment, for the helices): the segment is built
 ///   and its distance from the references and the switching function are computed with the same
 ///   functions as on the CPU (sscount::segmentPositions and sscount::segmentSwitch); the derivatives
 ///   are added to the atoms with atomics, the value and the virial are written for the next kernel;
@@ -62,7 +63,10 @@ class SecondaryStructureCountACC : public SecondaryStructureCount {
     OpenACC::memoryManager<double> positions;
     AccCachedBuffer<Pbc> pbc;
     AccCachedBuffer<SwitchingFunctionAccelerable> switchingFunction;
-    /// the pairs within STRANDS_CUTOFF, and their number
+    /// the first atom of each strand and the radii of the strands, if the pairs are skipped with skipDistance
+    OpenACC::memoryManager<unsigned> strands;
+    OpenACC::memoryManager<double> radius;
+    /// the pairs that are computed (within STRANDS_CUTOFF and skipDistance), and their number
     OpenACC::memoryManager<unsigned> active;
     OpenACC::memoryManager<unsigned> count;
     /// segmentColumns values per segment: column c of segment e is at c*nactive+e
@@ -139,6 +143,11 @@ void SecondaryStructureCountACC::calculate() {
       b.active.resize( nmine );
       b.count.resize( 1 );
       b.sums.resize( segmentColumns );
+      if( skipDistance>=0 ) {
+        b.strands.resize( strands.size() );
+        b.strands.copyToDevice( strands.data() );
+        b.radius.resize( natoms );
+      }
     }
     const SecondaryStructureDRMSDInput<double>* dd=b.drmsd.get();
     const unsigned* dpairs=b.pairs.devicePtr();
@@ -149,20 +158,37 @@ void SecondaryStructureCountACC::calculate() {
     const SwitchingFunctionAccelerable* dsw=b.switchingFunction.update( &switchAcc, 1 );
     unsigned* dactive=b.active.devicePtr();
 
-    // the pairs within the cutoff
-    const bool usecut = strands_cutoff>0;
+    // the radii of the strands, to skip the pairs whose switching function is zero
+    const double* drad=nullptr;
+    if( skipDistance>=0 ) {
+      const unsigned* dstrands=b.strands.devicePtr();
+      double* dradius=b.radius.devicePtr();
+      const std::size_t nstrands=strands.size();
+#pragma acc parallel loop gang vector async(accQueue) \
+                     firstprivate(nstrands) \
+                        deviceptr(dx, dpbc, dstrands, dradius) \
+                          default(none)
+      for(std::size_t i=0; i<nstrands; ++i) {
+        dradius[dstrands[i]]=sscount::strandRadius( dx, dstrands[i], dpbc );
+      }
+      drad=dradius;
+    }
+
+    // the list of the pairs that are computed
+    const bool uselist = strands_cutoff>0 || drad;
     std::size_t nactive=nmine;
-    if( usecut ) {
+    if( uselist ) {
       unsigned* dcount=b.count.devicePtr();
       accZeroAsync( dcount, 1 );
       const double cutoff=strands_cutoff;
+      const double skip=skipDistance;
 #pragma acc parallel loop gang vector async(accQueue) \
-                     firstprivate(nmine, rank, stride, cutoff) \
-                        deviceptr(dx, dpairs, dpbc, dactive, dcount) \
+                     firstprivate(nmine, rank, stride, cutoff, skip) \
+                        deviceptr(dx, dpairs, dpbc, drad, dactive, dcount) \
                           default(none)
       for(std::size_t k=0; k<nmine; ++k) {
         const std::size_t p=rank+k*stride;
-        if( sscount::withinCutoff( dx, dpairs[2*p], dpairs[2*p+1], dpbc, cutoff ) ) {
+        if( sscount::segmentActive( dx, dpairs[2*p], dpairs[2*p+1], dpbc, cutoff, drad, skip ) ) {
           unsigned slot;
 #pragma acc atomic capture
           slot=(*dcount)++;
@@ -189,7 +215,7 @@ void SecondaryStructureCountACC::calculate() {
       const unsigned nder=sscount::segmentDerivatives;
       // one thread per segment, with all the inner loops sequential
 #pragma acc parallel loop gang vector async(accQueue) present(dd[0:1]) \
-                     firstprivate(nactive, usecut, rank, stride, alignStrands, \
+                     firstprivate(nactive, uselist, rank, stride, alignStrands, \
                                   nstr, nsegatoms, nstrand, nder) \
                         deviceptr(dx, dpairs, dpbc, dsw, dactive, dseg, dder) \
                           default(none)
@@ -200,7 +226,7 @@ void SecondaryStructureCountACC::calculate() {
         std::array<double,2*sscount::segmentDerivatives> der;
         unsigned best=0;
         double g=0.0;
-        const std::size_t p = usecut ? dactive[e] : rank+e*stride;
+        const std::size_t p = uselist ? dactive[e] : rank+e*stride;
         const unsigned s1=dpairs[2*p], s2=dpairs[2*p+1];
         sscount::segmentPositions( dx, s1, s2, dpbc, alignStrands, pos );
         dseg[e]=sscount::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
