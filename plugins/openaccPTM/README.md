@@ -103,12 +103,13 @@ only when another action uses them.
 For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums (`Q6_NORM`, as [COMBINE](COMBINE.md) and the square root) is always
 computed on the CPU, which is faster than moving the $2(2l+1)$ vectors to the GPU and back.
 
-### Beta sheets
+### Secondary structure
 
-With `USEGPU` and `TYPE=DRMSD`, the number of segments that are similar to a sheet computed by [ANTIBETARMSD](ANTIBETARMSD.md)
-and [PARABETARMSD](PARABETARMSD.md) (the value, or the `lessthan` component) comes from `ANTIBETARMSD_SCALAR_ACC` and
-`PARABETARMSD_SCALAR_ACC` (`src/SheetCount.cpp`), the GPU version of the single action that PLUMED uses on the CPU
-(`src/secondarystructure/SheetCount.h`), with the same functions for a segment: a first kernel lists the pairs of strands
+With `USEGPU` and `TYPE=DRMSD`, the number of segments that are similar to a helix or a sheet computed by [ALPHARMSD](ALPHARMSD.md),
+[ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) (the value, or the `lessthan` component) comes from
+`ALPHARMSD_SCALAR_ACC`, `ANTIBETARMSD_SCALAR_ACC` and `PARABETARMSD_SCALAR_ACC` (`src/SecondaryStructureCount.cpp`), the GPU
+version of the single action that PLUMED uses on the CPU
+(`src/secondarystructure/SecondaryStructureCount.h`), with the same functions for a segment: a first kernel lists the pairs of strands
 within `STRANDS_CUTOFF`, one GPU thread per listed segment computes its distance from the references, the switching function
 and the derivatives, which are added to the atoms with atomics, and a last kernel sums the values and the virial. The forces
 need no second pass. The vectors of the expanded input are computed (on the GPU) only when another action uses them.
@@ -164,7 +165,7 @@ The next section contains a list of the actions that can take the USEGPU command
    - ~~[QUATERNION_BOND_PRODUCT_MATRIX](QUATERNION_BOND_PRODUCT_MATRIX.md)~~ setup, but deactivated
  - secondarystructure:
    - [SECONDARY_STRUCTURE_DRMSD](SECONDARY_STRUCTURE_DRMSD.md), and in particular:
-     - [ALPHARMSD](ALPHARMSD.md) only with **TYPE=DRMSD**
+     - [ALPHARMSD](ALPHARMSD.md) only with **TYPE=DRMSD** (the number of segments: `ALPHARMSD_SCALAR_ACC`, see below)
      - [ANTIBETARMSD](ANTIBETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `ANTIBETARMSD_SCALAR_ACC`, see below)
      - [PARABETARMSD](PARABETARMSD.md) only with **TYPE=DRMSD** (the number of segments: `PARABETARMSD_SCALAR_ACC`, see below)
  - volumes:

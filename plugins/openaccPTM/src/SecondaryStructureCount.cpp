@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "plumed/secondarystructure/SheetCount.h"
+#include "plumed/secondarystructure/SecondaryStructureCount.h"
 #include "plumed/core/ActionRegister.h"
 #include "plumed/tools/OpenACC.h"
 #include "ACCDevice.h"
@@ -39,18 +39,18 @@ namespace {
 constexpr std::size_t segmentColumns=10;
 }
 
-/// The GPU version of ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR (only with TYPE=DRMSD), created by
+/// The GPU version of ALPHARMSD_SCALAR, ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR (only with TYPE=DRMSD), created by
 /// ANTIBETARMSD and PARABETARMSD with USEGPU. A step is done in three kernels:
 /// - with STRANDS_CUTOFF, the list of the pairs of strands within the cutoff (one thread per pair);
 /// - one thread per segment of that list (or per pair, without STRANDS_CUTOFF): the segment is built
 ///   and its distance from the references and the switching function are computed with the same
-///   functions as on the CPU (sheet::segmentPositions and sheet::segmentSwitch); the derivatives
+///   functions as on the CPU (sscount::segmentPositions and sscount::segmentSwitch); the derivatives
 ///   are added to the atoms with atomics, the value and the virial are written for the next kernel;
 /// - the sum of the values and of the virial.
-/// The derivatives are copied back to the host and used as in SheetCount: there is no backward pass.
+/// The derivatives are copied back to the host and used as in SecondaryStructureCount: there is no backward pass.
 /// The pairs, the reference distances and the switching function are copied to the GPU once.
 /// The order of the sums is not fixed, so results are reproducible only up to rounding.
-class SheetCountACC : public SheetCount {
+class SecondaryStructureCountACC : public SecondaryStructureCount {
   ACC::Device device_;
   SwitchingFunctionAccelerable switchAcc;
   /// the device memory, that must be freed on its GPU
@@ -75,23 +75,24 @@ class SheetCountACC : public SheetCount {
   std::vector<double> hsums_;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit SheetCountACC(const ActionOptions&);
-  ~SheetCountACC() override;
-  SheetCountACC(const SheetCountACC&)=delete;
-  SheetCountACC& operator=(const SheetCountACC&)=delete;
+  explicit SecondaryStructureCountACC(const ActionOptions&);
+  ~SecondaryStructureCountACC() override;
+  SecondaryStructureCountACC(const SecondaryStructureCountACC&)=delete;
+  SecondaryStructureCountACC& operator=(const SecondaryStructureCountACC&)=delete;
   void calculate() override;
 };
 
-PLUMED_REGISTER_ACTION(SheetCountACC,"ANTIBETARMSD_SCALAR_ACC")
-PLUMED_REGISTER_ACTION(SheetCountACC,"PARABETARMSD_SCALAR_ACC")
+PLUMED_REGISTER_ACTION(SecondaryStructureCountACC,"ALPHARMSD_SCALAR_ACC")
+PLUMED_REGISTER_ACTION(SecondaryStructureCountACC,"ANTIBETARMSD_SCALAR_ACC")
+PLUMED_REGISTER_ACTION(SecondaryStructureCountACC,"PARABETARMSD_SCALAR_ACC")
 
-void SheetCountACC::registerKeywords( Keywords& keys ) {
-  SheetCount::registerKeywords( keys );
+void SecondaryStructureCountACC::registerKeywords( Keywords& keys ) {
+  SecondaryStructureCount::registerKeywords( keys );
 }
 
-SheetCountACC::SheetCountACC(const ActionOptions&ao):
+SecondaryStructureCountACC::SecondaryStructureCountACC(const ActionOptions&ao):
   Action(ao),
-  SheetCount(ao),
+  SecondaryStructureCount(ao),
   buf_(std::make_unique<Buffers>()) {
   if( !usedrmsd ) {
     error("on the GPU only TYPE=DRMSD is available");
@@ -104,7 +105,7 @@ SheetCountACC::SheetCountACC(const ActionOptions&ao):
   log.printf("  computed on the GPU\n");
 }
 
-SheetCountACC::~SheetCountACC() {
+SecondaryStructureCountACC::~SecondaryStructureCountACC() {
   // the device memory is freed here, on its GPU
   ACC::DeviceScope scope(device_.id());
   if( buf_ && buf_->drmsd ) {
@@ -113,12 +114,12 @@ SheetCountACC::~SheetCountACC() {
   buf_.reset();
 }
 
-void SheetCountACC::calculate() {
+void SecondaryStructureCountACC::calculate() {
   const unsigned npairs=pairs.size();
   const unsigned natoms=getNumberOfAtoms();
   const unsigned stride=comm.Get_size();
   const unsigned rank=comm.Get_rank();
-  // the pairs rank, rank+stride, ... are computed here, as in SheetCount
+  // the pairs rank, rank+stride, ... are computed here, as in SecondaryStructureCount
   const std::size_t nmine = rank<npairs ? (npairs-1-rank)/stride+1 : 0;
   hder_.assign( 3*natoms+9, 0.0 );
   double value=0.0;
@@ -161,7 +162,7 @@ void SheetCountACC::calculate() {
                           default(none)
       for(std::size_t k=0; k<nmine; ++k) {
         const std::size_t p=rank+k*stride;
-        if( sheet::withinCutoff( dx, dpairs[2*p], dpairs[2*p+1], dpbc, cutoff ) ) {
+        if( sscount::withinCutoff( dx, dpairs[2*p], dpairs[2*p+1], dpbc, cutoff ) ) {
           unsigned slot;
 #pragma acc atomic capture
           slot=(*dcount)++;
@@ -182,12 +183,13 @@ void SheetCountACC::calculate() {
       double* dder=b.derivatives.devicePtr();
       accZeroAsync( dder, 3*natoms );
       const unsigned nstr=nstructures;
+      const bool alignStrands=!alpha;
       const unsigned nsegatoms=maxAtomsInSegment;
-      const unsigned nstrand=sheet::strandAtoms;
-      const unsigned nder=sheet::segmentDerivatives;
+      const unsigned nstrand=sscount::strandAtoms;
+      const unsigned nder=sscount::segmentDerivatives;
       // one thread per segment, with all the inner loops sequential
 #pragma acc parallel loop gang vector async(accQueue) present(dd[0:1]) \
-                     firstprivate(nactive, usecut, rank, stride, \
+                     firstprivate(nactive, usecut, rank, stride, alignStrands, \
                                   nstr, nsegatoms, nstrand, nder) \
                         deviceptr(dx, dpairs, dpbc, dsw, dactive, dseg, dder) \
                           default(none)
@@ -195,13 +197,13 @@ void SheetCountACC::calculate() {
         // the arrays are declared first in the body of the loop, before its inner loops:
         // otherwise, with default(none), nvc++ asks for a data clause for them
         std::array<Vector,maxAtomsInSegment> pos;
-        std::array<double,2*sheet::segmentDerivatives> der;
+        std::array<double,2*sscount::segmentDerivatives> der;
         unsigned best=0;
         double g=0.0;
         const std::size_t p = usecut ? dactive[e] : rank+e*stride;
         const unsigned s1=dpairs[2*p], s2=dpairs[2*p+1];
-        sheet::segmentPositions( dx, s1, s2, dpbc, pos );
-        dseg[e]=sheet::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
+        sscount::segmentPositions( dx, s1, s2, dpbc, alignStrands, pos );
+        dseg[e]=sscount::segmentSwitch( *dd, nstr, *dsw, pos, der, best, g );
         // with g zero the derivatives were not computed
         const double* d=der.data()+best*nder;
 #pragma acc loop seq

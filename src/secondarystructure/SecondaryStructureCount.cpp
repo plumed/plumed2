@@ -19,47 +19,54 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SheetCount.h"
+#include "SecondaryStructureCount.h"
 #include "core/ActionRegister.h"
 #include "tools/OpenMP.h"
 
 namespace PLMD {
 namespace secondarystructure {
 
-// The documentation of these actions is in ANTIBETARMSD and PARABETARMSD, the shortcuts that create them.
+// The documentation of these actions is in ALPHARMSD, ANTIBETARMSD and PARABETARMSD, the shortcuts that create them.
 
-// SheetCount gives the same result as the chain of actions created by ANTIBETARMSD and PARABETARMSD
+// SecondaryStructureCount gives the same result as the chain of actions created by ALPHARMSD, ANTIBETARMSD and PARABETARMSD
 // (SECONDARY_STRUCTURE_(D)RMSD, the DISTANCE and CUSTOM of STRANDS_CUTOFF, LOWEST, LESS_THAN, SUM), but
-// - the segments are not stored: they are built from the lengths of the chains, as pairs of strands;
+// - the segments are not stored: they are built from the lengths of the chains (for the sheets, as pairs of strands);
 // - the segments whose strands are further apart than STRANDS_CUTOFF cost one distance;
 // - the derivatives are accumulated on the atoms while the segments are computed, so they are
 //   computed once (the chain computes the active segments again in the backward pass), only for the
 //   segments where the switching function is not constant, and no vector with an element per segment is created.
 
-PLUMED_REGISTER_ACTION(SheetCount,"ANTIBETARMSD_SCALAR")
-PLUMED_REGISTER_ACTION(SheetCount,"PARABETARMSD_SCALAR")
+PLUMED_REGISTER_ACTION(SecondaryStructureCount,"ALPHARMSD_SCALAR")
+PLUMED_REGISTER_ACTION(SecondaryStructureCount,"ANTIBETARMSD_SCALAR")
+PLUMED_REGISTER_ACTION(SecondaryStructureCount,"PARABETARMSD_SCALAR")
 
-void SheetCount::registerKeywords( Keywords& keys ) {
+void SecondaryStructureCount::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
-  // the names are ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR, with _ACC for the GPU version
-  if( keys.getDisplayName().rfind("ANTIBETARMSD",0)==0 ) {
+  // the names are ALPHARMSD_SCALAR, ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR, with _ACC for the GPU version
+  const bool helix=keys.getDisplayName().rfind("ALPHARMSD",0)==0;
+  if( helix ) {
+    keys.setDisplayName("ALPHARMSD");
+  } else if( keys.getDisplayName().rfind("ANTIBETARMSD",0)==0 ) {
     keys.setDisplayName("ANTIBETARMSD");
   } else {
     keys.setDisplayName("PARABETARMSD");
   }
   keys.add("atoms","ATOMS","the backbone atoms of the chains (N, CA, CB, C and O of each residue)");
   keys.add("compulsory","CHAIN_SIZES","the number of atoms of each chain in ATOMS");
-  keys.add("compulsory","STYLE","all","the pairs of strands that are used: from the same chain (intra), from different chains (inter) or both (all)");
+  if( !helix ) {
+    keys.add("compulsory","STYLE","all","the pairs of strands that are used: from the same chain (intra), from different chains (inter) or both (all)");
+    keys.add("optional","STRANDS_CUTOFF","the segments whose strands are further apart than this (between the CA atoms of their central residues) are not used");
+  }
   keys.add("compulsory","TYPE","DRMSD","the distance from the reference structures: DRMSD, OPTIMAL, OPTIMAL-FAST or SIMPLE");
   keys.add("compulsory","SWITCH","the switching function of the distance from the reference structures that is summed over the segments");
-  keys.add("optional","STRANDS_CUTOFF","the segments whose strands are further apart than this (between the CA atoms of their central residues) are not used");
   keys.add("numbered","STRUCTURE","the coordinates (in Angstrom) of the 30 atoms of a reference structure; with more than one, the distance of a segment is the lowest");
-  keys.setValueDescription("scalar","the number of segments that are similar to a beta sheet");
+  keys.setValueDescription("scalar",helix ? "the number of segments that are similar to an alpha helix" : "the number of segments that are similar to a beta sheet");
 }
 
-SheetCount::SheetCount(const ActionOptions&ao):
+SecondaryStructureCount::SecondaryStructureCount(const ActionOptions&ao):
   Action(ao),
   Colvar(ao),
+  alpha(getName().rfind("ALPHARMSD",0)==0),
   parallel(getName().rfind("PARABETARMSD",0)==0),
   nopbc(false),
   usedrmsd(true),
@@ -79,14 +86,29 @@ SheetCount::SheetCount(const ActionOptions&ao):
   if( ntot!=atoms.size() ) {
     error("the sum of CHAIN_SIZES is not the number of atoms in ATOMS");
   }
-  std::string style;
-  parse("STYLE",style);
-  SecondaryStructureInput::getSheetPairs( this, chains, parallel, style, pairs );
-  log.printf("  %zu pairs of strands that could form a %s sheet\n", pairs.size(), parallel ? "parallel" : "antiparallel" );
+  if( alpha ) {
+    // all the segments of six consecutive residues of each chain, as in ALPHARMSD
+    unsigned nprevious=0;
+    for(const auto c : chains) {
+      if( c<maxAtomsInSegment || c%5!=0 ) {
+        error("each chain must contain at least 6 residues of 5 backbone atoms");
+      }
+      for(unsigned ires=0; ires+5<c/5; ++ires) {
+        pairs.emplace_back( nprevious+5*ires, nprevious+5*ires+sscount::strandAtoms );
+      }
+      nprevious+=c;
+    }
+    log.printf("  %zu segments of six residues that could form an alpha helix\n", pairs.size() );
+  } else {
+    std::string style;
+    parse("STYLE",style);
+    SecondaryStructureInput::getSheetPairs( this, chains, parallel, style, pairs );
+    log.printf("  %zu pairs of strands that could form a %s sheet\n", pairs.size(), parallel ? "parallel" : "antiparallel" );
 
-  parse("STRANDS_CUTOFF",strands_cutoff);
-  if( strands_cutoff>0 ) {
-    log.printf("  only the pairs of strands whose central CA atoms are closer than %f are computed\n", strands_cutoff );
+    parse("STRANDS_CUTOFF",strands_cutoff);
+    if( strands_cutoff>0 ) {
+      log.printf("  only the pairs of strands whose central CA atoms are closer than %f are computed\n", strands_cutoff );
+    }
   }
   std::string type;
   parse("TYPE",type);
@@ -135,7 +157,7 @@ SheetCount::SheetCount(const ActionOptions&ao):
   derivatives.resize( 3*atoms.size()+9 );
 }
 
-void SheetCount::calculate() {
+void SecondaryStructureCount::calculate() {
   const unsigned npairs=pairs.size();
   const unsigned natoms=getNumberOfAtoms();
   unsigned stride=comm.Get_size();
@@ -162,26 +184,26 @@ void SheetCount::calculate() {
     const unsigned t=OpenMP::getThreadNum();
     std::vector<double>& myder( omp_derivatives[t] );
     std::array<Vector,maxAtomsInSegment> pos;
-    std::array<double,2*sheet::segmentDerivatives> der;
+    std::array<double,2*sscount::segmentDerivatives> der;
     const double* x=&getPositions()[0][0];
     const Pbc* pbc = nopbc ? nullptr : &getPbc();
     #pragma omp for
     for(unsigned i=rank; i<npairs; i+=stride) {
       const unsigned s1=pairs[i].first, s2=pairs[i].second;
-      if( strands_cutoff>0 && !sheet::withinCutoff( x, s1, s2, pbc, strands_cutoff ) ) {
+      if( strands_cutoff>0 && !sscount::withinCutoff( x, s1, s2, pbc, strands_cutoff ) ) {
         continue;
       }
-      sheet::segmentPositions( x, s1, s2, pbc, pos );
+      sscount::segmentPositions( x, s1, s2, pbc, !alpha, pos );
       unsigned best=0;
       double g=0.0;
-      value += usedrmsd ? sheet::segmentSwitch( drmsd, nstructures, switchingFunction, pos, der, best, g )
-               : sheet::segmentSwitch( rmsd, nstructures, switchingFunction, pos, der, best, g );
+      value += usedrmsd ? sscount::segmentSwitch( drmsd, nstructures, switchingFunction, pos, der, best, g )
+               : sscount::segmentSwitch( rmsd, nstructures, switchingFunction, pos, der, best, g );
       if( g==0.0 ) {
         continue;
       }
-      const double* d=der.data()+best*sheet::segmentDerivatives;
+      const double* d=der.data()+best*sscount::segmentDerivatives;
       for(unsigned k=0; k<maxAtomsInSegment; ++k) {
-        const unsigned a = (k<sheet::strandAtoms) ? s1+k : s2+k-sheet::strandAtoms;
+        const unsigned a = (k<sscount::strandAtoms) ? s1+k : s2+k-sscount::strandAtoms;
         for(unsigned j=0; j<3; ++j) {
           myder[3*a+j] += g*d[3*k+j];
         }
@@ -204,7 +226,7 @@ void SheetCount::calculate() {
   setValueAndDerivatives( value, derivatives );
 }
 
-void SheetCount::setValueAndDerivatives( const double value, const std::vector<double>& der ) {
+void SecondaryStructureCount::setValueAndDerivatives( const double value, const std::vector<double>& der ) {
   const unsigned natoms=getNumberOfAtoms();
   setValue( value );
   for(unsigned a=0; a<natoms; ++a) {

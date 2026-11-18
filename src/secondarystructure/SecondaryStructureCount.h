@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_secondarystructure_SheetCount_h
-#define __PLUMED_secondarystructure_SheetCount_h
+#ifndef __PLUMED_secondarystructure_SecondaryStructureCount_h
+#define __PLUMED_secondarystructure_SecondaryStructureCount_h
 #include "SecondaryStructureDRMSD.h"
 #include "SecondaryStructureRMSD.h"
 #include "core/Colvar.h"
@@ -36,9 +36,10 @@
 namespace PLMD {
 namespace secondarystructure {
 
-/// The calculation of a single segment of ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR. These functions are
-/// used both by SheetCount and by its GPU version in the openaccPTM plugin, so that the two give the same result.
-namespace sheet {
+/// The calculation of a single segment of ALPHARMSD_SCALAR, ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR. These functions
+/// are used both by SecondaryStructureCount and by its GPU version in the openaccPTM plugin, so that the two give the same result.
+/// A segment is given by the first atoms of its two halves of 15 atoms (strands): for a helix they are consecutive.
+namespace sscount {
 
 /// The number of atoms of a strand (N, CA, CB, C and O of three residues)
 constexpr unsigned strandAtoms=15;
@@ -61,16 +62,21 @@ inline bool withinCutoff( const double* x, const unsigned s1, const unsigned s2,
   return d.modulo()<=cutoff;
 }
 
-/// The positions of the atoms of the segment made of the strands starting at atoms s1 and s2.
-/// As in SecondaryStructureBase::performTask with ALIGN_STRANDS: the strands are made whole separately, then the
-/// second is moved to the image where its central CA atom is closest to that of the first (pbc is null with NOPBC)
-inline void segmentPositions( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc,
+/// The positions of the atoms of the segment made of the strands starting at atoms s1 and s2, as in
+/// SecondaryStructureBase::performTask (pbc is null with NOPBC). With alignStrands (the sheets) the strands are made
+/// whole separately, then the second is moved to the image where its central CA atom is closest to that of the first;
+/// otherwise (the helices, where s2=s1+15) the segment is made whole as a single chain of bonded atoms.
+inline void segmentPositions( const double* x, const unsigned s1, const unsigned s2, const Pbc* pbc, const bool alignStrands,
                               std::array<Vector,maxAtomsInSegment>& pos ) {
   for(unsigned k=0; k<strandAtoms; ++k) {
     pos[k]=atomPosition( x, s1+k );
     pos[strandAtoms+k]=atomPosition( x, s2+k );
   }
-  if( pbc ) {
+  if( pbc && !alignStrands ) {
+    for(unsigned i=0; i+1<maxAtomsInSegment; ++i) {
+      pos[i+1]=pos[i]+pbc->distance(pos[i],pos[i+1]);
+    }
+  } else if( pbc ) {
     for(unsigned start=0; start<maxAtomsInSegment; start+=strandAtoms) {
       for(unsigned i=start; i+1<start+strandAtoms; ++i) {
         pos[i+1]=pos[i]+pbc->distance(pos[i],pos[i+1]);
@@ -116,12 +122,15 @@ double segmentSwitch( const I& input, const unsigned nstructures, const SW& swit
   return s;
 }
 
-} // namespace sheet
+} // namespace sscount
 
-/// The number of segments that are similar to a beta sheet, computed in a single action (ANTIBETARMSD_SCALAR and
-/// PARABETARMSD_SCALAR, see ANTIBETARMSD and PARABETARMSD). The openaccPTM plugin derives the GPU version from it.
-class SheetCount : public Colvar {
+/// The number of segments that are similar to an alpha helix or to a beta sheet, computed in a single action
+/// (ALPHARMSD_SCALAR, ANTIBETARMSD_SCALAR and PARABETARMSD_SCALAR, see ALPHARMSD, ANTIBETARMSD and PARABETARMSD).
+/// The openaccPTM plugin derives the GPU version from it.
+class SecondaryStructureCount : public Colvar {
 protected:
+  /// ALPHARMSD: the segments are six consecutive residues, made whole as a chain
+  bool alpha;
   bool parallel;
   bool nopbc;
   bool usedrmsd;
@@ -129,7 +138,7 @@ protected:
   /// The definition of the switching function, as given in SWITCH
   std::string switchInput;
   SwitchingFunction switchingFunction;
-  /// The first atom of the two strands of each segment, in the list of atoms
+  /// The first atom of the two strands of each segment, in the list of atoms (for a helix the second is the first plus 15)
   std::vector<std::pair<unsigned,unsigned> > pairs;
   SecondaryStructureDRMSDInput<double> drmsd;
   SecondaryStructureRMSDInput rmsd;
@@ -142,7 +151,7 @@ private:
   std::vector<double> derivatives;
 public:
   static void registerKeywords( Keywords& keys );
-  explicit SheetCount(const ActionOptions&);
+  explicit SecondaryStructureCount(const ActionOptions&);
   void calculate() override;
 };
 
