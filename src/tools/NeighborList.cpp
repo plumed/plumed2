@@ -216,7 +216,10 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // and the results are reproducible.
   std::vector<std::vector<unsigned>> thread_flat_nl(nt);
 
-  if(useCellList_) {
+  // with two lists and one of them small, the cells (sorting all the atoms) cost more than
+  // one distance per pair: the plain search is used (about the same cost with 8 atoms)
+  const bool useCells = useCellList_ && !(style_==NNStyle::TwoList && std::min(nlist0_,nlist1_)<=cellsMinimumGroup);
+  if(useCells) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
     LinkCells cells(comm);
