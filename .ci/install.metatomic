@@ -21,6 +21,13 @@ PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
 # use torch at all, fails those checks. Both wheels find torch through Python.
 unset LDFLAGS CPPFLAGS
 
+# The plugin of metatomic-torch finds libmetatensor_torch (and libtorch,
+# libmetatensor) relative to its own directory, so metatomic has to go in the
+# same site-packages as metatensor-torch, which PLUMED's CI installs with --user.
+# Elsewhere, PLUMED fails to dlopen the plugin.
+PIP_USER=$("$PYTHON_BIN" -c 'import importlib.util, site; print(int(importlib.util.find_spec("metatensor_torch").origin.startswith(site.getusersitepackages())))')
+export PIP_USER
+
 cd "$(mktemp -dt plumed.XXXXXX)"
 
 # blobless rather than shallow, the packages compute their version from git tags
