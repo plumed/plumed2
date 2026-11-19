@@ -4,3 +4,12 @@ mm_neg: rejected
 nn_zero: rejected
 r0_neg: rejected
 r0_missing: rejected
+r0_missing_dmax: rejected
+nn_eq_mm_dmax: rejected
+threads_zero: rejected
+pair_sizes: rejected
+nl_stride_zero: rejected
+nl_stride_noskin: rejected
+unknown_keyword: rejected
+float_nn_eq_mm: rejected
+float_unknown_keyword: rejected

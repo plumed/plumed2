@@ -1,21 +1,14 @@
 type=driver
 arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
 export PLUMED_STACK_TRACE=no
-# wrong values of NN, MM and R_0 must be errors with a message (SwitchingFunction::set does not check them,
-# so before they could end in a division by zero or an infinite D_MAX)
-
-plumed_regtest_before() {
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=6 MM=6" > bad_nn_eq_mm.dat
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=-6" > bad_nn_neg.dat
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 MM=-12" > bad_mm_neg.dat
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=1.1 NN=0 MM=0" > bad_nn_zero.dat
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "R_0=-1.1" > bad_r0_neg.dat
-  printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: CUDACOORDINATION GROUPA=1-108 NOPBC %s\n' "NN=6" > bad_r0_missing.dat
-}
+# Wrong inputs must be errors with a message. They are all detected before the GPU
+# is chosen, so this test runs also on machines without a GPU (e.g. in CI).
+# Each line of the table below is: name|action|expected message|keywords
 
 plumed_regtest_after() {
   rm -f errors
-  while read -r name text ; do
+  while IFS='|' read -r name action text keywords ; do
+    printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: %s %s\n' "$action" "$keywords" > bad_$name.dat
     rc=0
     $plumed driver --plumed bad_$name.dat --ixyz traj-nopbc.xyz > bad_$name.out 2> bad_$name.err || rc=$?
     if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
@@ -24,12 +17,21 @@ plumed_regtest_after() {
       echo "$name: NOT REJECTED PROPERLY" >> errors
     fi
   done <<'EOT'
-nn_eq_mm NN and MM should be different
-nn_neg NN and MM should be positive
-mm_neg NN and MM should be positive
-nn_zero NN and MM should be positive
-r0_neg R_0 should be explicitly specified and positive
-r0_missing keyword R_0 is compulsory for this action
+nn_eq_mm|CUDACOORDINATION|NN and MM should be different|GROUPA=1-108 NOPBC R_0=1.1 NN=6 MM=6
+nn_neg|CUDACOORDINATION|NN and MM should be positive|GROUPA=1-108 NOPBC R_0=1.1 NN=-6
+mm_neg|CUDACOORDINATION|NN and MM should be positive|GROUPA=1-108 NOPBC R_0=1.1 MM=-12
+nn_zero|CUDACOORDINATION|NN and MM should be positive|GROUPA=1-108 NOPBC R_0=1.1 NN=0 MM=0
+r0_neg|CUDACOORDINATION|R_0 should be explicitly specified and positive|GROUPA=1-108 NOPBC R_0=-1.1
+r0_missing|CUDACOORDINATION|keyword R_0 is compulsory for this action|GROUPA=1-108 NOPBC NN=6
+r0_missing_dmax|CUDACOORDINATION|keyword R_0 is compulsory for this action|GROUPA=1-108 NOPBC D_MAX=1.0
+nn_eq_mm_dmax|CUDACOORDINATION|NN and MM should be different|GROUPA=1-108 NOPBC R_0=1.1 D_MAX=2.0 NN=6 MM=6
+threads_zero|CUDACOORDINATION|THREADS should be positive|GROUPA=1-108 NOPBC R_0=1.1 THREADS=0
+pair_sizes|CUDACOORDINATION|GROUPA and GROUPB must have the same number of atoms|GROUPA=1-10 GROUPB=11-30 PAIR NOPBC R_0=1.1
+nl_stride_zero|CUDACOORDINATION|NL_STRIDE must be positive|GROUPA=1-108 NOPBC R_0=1.1 D_MAX=2.0 NL_STRIDE=0
+nl_stride_noskin|CUDACOORDINATION|cutoff of the neigbor list to be higher than DMAX|GROUPA=1-108 NOPBC R_0=1.1 D_MAX=2.0 NL_STRIDE=10
+unknown_keyword|CUDACOORDINATION|cannot understand the following words|GROUPA=1-108 NOPBC R_0=1.1 NOTAKEYWORD=1
+float_nn_eq_mm|CUDACOORDINATIONFLOAT|NN and MM should be different|GROUPA=1-108 NOPBC R_0=1.1 NN=6 MM=6
+float_unknown_keyword|CUDACOORDINATIONFLOAT|cannot understand the following words|GROUPA=1-108 NOPBC R_0=1.1 NOTAKEYWORD=1
 EOT
 }
 extra_files="../../trajectories/traj-nopbc.xyz"

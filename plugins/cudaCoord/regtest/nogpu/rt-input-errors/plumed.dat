@@ -1,3 +1,2 @@
+# loading the plugin does not need a GPU
 LOAD FILE=../../../../CudaCoordination.so
-gpu: CUDACOORDINATION GROUPA=1-108 R_0=1.1 NOPBC
-PRINT ARG=gpu FILE=colvar FMT=%8.4f STRIDE=1
