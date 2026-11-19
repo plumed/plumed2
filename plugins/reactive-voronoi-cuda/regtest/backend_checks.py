@@ -76,21 +76,22 @@ def main():
         "VORONOI_POSITION " + common + " AXIS=Z ORIGIN=1.2 ABSOLUTE NORMALIZE",
         "VORONOI_POSITION " + common + " AXIS=X ORIGIN=-0.4 SELECT=1,4 NORMALIZE",
     ]
+    plugin = arguments.library and Path(arguments.library).resolve()
     modes = {
         "independent": " NO_SHARE",
         "shared": " BACKEND=CPU",
-        "auto-missing": " BACKEND=AUTO CUDA_LIBRARY=missing-backend.so",
+        "auto-missing": " BACKEND=AUTO",
     }
     if not arguments.cpu_only:
         modes.update(
             {
-                "cuda": " BACKEND=CUDA CUDA_LIBRARY=" + arguments.library,
-                "auto": " BACKEND=AUTO CUDA_LIBRARY=" + arguments.library,
+                "cuda": " BACKEND=CUDA",
+                "auto": " BACKEND=AUTO",
             }
         )
     results = {"work": str(work), "positive": [], "negative": []}
 
-    def run(name, lines, coordinates=None, box="7,8,9", frames=None):
+    def run(name, lines, coordinates=None, box="7,8,9", frames=None, load=False):
         directory = work / name
         directory.mkdir()
         if frames is None:
@@ -100,6 +101,8 @@ def main():
                 xyz.write(f"{len(frame)}\nsmall backend regression\n")
                 for row in frame:
                     xyz.write("H " + " ".join(map(str, row)) + "\n")
+        if load:
+            lines = [f"LOAD FILE={plugin}", *lines]
         (directory / "plumed.dat").write_text("\n".join(lines) + "\n")
         command = [
             arguments.plumed,
@@ -137,7 +140,9 @@ def main():
                 + " FILE=derivatives FMT=%24.16e",
             ]
             box = "7,0,0,0.8,8,0,0.4,0.7,9" if geometry == "triclinic" else "7,8,9"
-            directory, code = run(geometry + "-" + mode, lines, box=box)
+            directory, code = run(
+                geometry + "-" + mode, lines, box=box, load=mode in ("cuda", "auto")
+            )
             assert code == 0, directory
             data = {
                 key: read_numbers(directory / key) for key in ["values", "derivatives"]
@@ -175,7 +180,12 @@ def main():
             "PRINT ARG=q,d FILE=values FMT=%24.16e",
             "DUMPDERIVATIVES ARG=q,d FILE=derivatives FMT=%24.16e",
         ]
-        directory, code = run("displacement-rebuild-" + mode, lines, frames=frames)
+        directory, code = run(
+            "displacement-rebuild-" + mode,
+            lines,
+            frames=frames,
+            load=mode in ("cuda", "auto"),
+        )
         assert code == 0, directory
         data = {key: read_numbers(directory / key) for key in ("values", "derivatives")}
         assert len(data["values"]) == len(frames), directory
@@ -207,6 +217,7 @@ def main():
                 "DUMPDERIVATIVES ARG=v FILE=derivatives",
             ],
             coordinates=[[0, 0, 0], [2.5, 0, 0], [0.5, 0, 0]],
+            load=mode in ("cuda", "auto"),
         )
         assert code == 0, directory
         assert read_numbers(directory / "values")[0][1] == 1.0, directory
@@ -280,6 +291,7 @@ def main():
             directory, code = run(
                 name + "-" + mode,
                 ["v: " + definition + suffix, "PRINT ARG=v FILE=values"],
+                load=mode in ("cuda", "auto"),
             )
             assert code != 0, directory
             assert re.search(expected, (directory / "stdout.log").read_text(), re.I), (
@@ -297,6 +309,7 @@ def main():
                 name + "-" + mode,
                 ["v: " + definition + backend, "PRINT ARG=v FILE=values"],
                 coordinates=coordinates,
+                load=mode in ("cuda", "auto"),
             )
             assert code != 0, directory
             assert re.search(
@@ -305,34 +318,36 @@ def main():
                 re.I,
             ), directory
             results["negative"].append(dict(case=name, mode=mode, returncode=code))
+    strict_cases = [
+        ("missing-plugin", "", "7,8,9", False, "No CUDA Voronoi backend is available")
+    ]
     if not arguments.cpu_only:
-        for name, suffix, box in [
-            ("missing-library", " CUDA_LIBRARY=missing-backend.so", "7,8,9"),
+        strict_cases += [
             (
                 "empty-nlist",
-                " CUDA_LIBRARY="
-                + arguments.library
-                + " NLIST NL_CUTOFF=0.02 NL_STRIDE=3",
+                " NLIST NL_CUTOFF=0.02 NL_STRIDE=3",
                 "7,8,9",
+                True,
+                "no CENTER inside the candidate list",
             ),
             (
                 "strict-triclinic",
-                " CUDA_LIBRARY=" + arguments.library,
+                "",
                 "7,0,0,0.8,8,0,0.4,0.7,9",
+                True,
+                "CUDA backend does not support triclinic",
             ),
-        ]:
-            lines = [
-                "v: VORONOI_COORDINATION " + common + " BACKEND=CUDA" + suffix,
-                "PRINT ARG=v FILE=values",
-            ]
-            directory, code = run(name, lines, box=box)
-            assert code != 0, directory
-            if name == "empty-nlist":
-                assert (
-                    "no CENTER inside the candidate list"
-                    in (directory / "stdout.log").read_text()
-                )
-            results["negative"].append(dict(case=name, returncode=code))
+        ]
+    for name, suffix, box, load, reason in strict_cases:
+        lines = [
+            "v: VORONOI_COORDINATION " + common + " BACKEND=CUDA" + suffix,
+            "PRINT ARG=v FILE=values",
+        ]
+        directory, code = run(name, lines, box=box, load=load)
+        assert code != 0, directory
+        log = (directory / "stdout.log").read_text()
+        assert "label v" in log and reason in log, directory
+        results["negative"].append(dict(case=name, returncode=code))
     results["status"] = "PASSED"
     (work / "RESULTS.json").write_text(json.dumps(results, indent=2) + "\n")
     print(json.dumps(results, indent=2))

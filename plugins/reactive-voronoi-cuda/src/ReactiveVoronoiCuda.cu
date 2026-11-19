@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // FP64 streamed assignments with optional buffered center lists.
+#include "plumed/colvar/ReactiveVoronoiBackend.h"
 #include <cuda_runtime.h>
 #include <cmath>
 #include <cstdio>
@@ -262,20 +263,13 @@ void release(State* state) {
   }
   delete state;
 }
-}
 
-extern "C" int reactive_voronoi_device_count_v1() {
-  int count=0;
-  if(cudaGetDeviceCount(&count)!=cudaSuccess) {
-    return 0;
+State* createState(int numCenters, int numAssigned, int mdDevice) {
+  int deviceCount=0;
+  if(!checkCuda(cudaGetDeviceCount(&deviceCount)) || deviceCount==0) {
+    throw std::runtime_error("No CUDA device is available");
   }
-  return count;
-}
-
-extern "C" void* reactive_voronoi_create_v2(int numCenters, int numAssigned,
-    int mdDevice) {
-  const int deviceCount=reactive_voronoi_device_count_v1();
-  if(numCenters<=0 || numAssigned<=0 || deviceCount==0 || mdDevice>=deviceCount) {
+  if(numCenters<=0 || numAssigned<=0 || mdDevice>=deviceCount) {
     return nullptr;
   }
   int device=mdDevice;
@@ -309,26 +303,9 @@ extern "C" void* reactive_voronoi_create_v2(int numCenters, int numAssigned,
   return state;
 }
 
-extern "C" void* reactive_voronoi_create_v1(int numCenters, int numAssigned) {
-  return reactive_voronoi_create_v2(numCenters,numAssigned,-1);
-}
-
-extern "C" int reactive_voronoi_device_v1(void* context) {
-  return context ? static_cast<State*>(context)->device : -1;
-}
-
-extern "C" void reactive_voronoi_destroy_v1(void* context) {
-  release(static_cast<State*>(context));
-}
-
-namespace {
-int runForward(void* context, const double* positions, const double* box, int pbc,
+int runForward(State& state, const double* positions, const double* box, bool pbc,
                double kappa, double* occupancy, bool useNeighbors, double cutoff,
                const int* offsets, const int* centers, int count) {
-  if(!context || !positions || !box || !occupancy || !std::isfinite(kappa) || kappa<=0) {
-    return 1;
-  }
-  State& state=*static_cast<State*>(context);
   DeviceScope scope(state.device);
   if(!scope.valid()) {
     return 1;
@@ -396,26 +373,7 @@ int runForward(void* context, const double* positions, const double* box, int pb
   return invalid;
 }
 
-}
-
-extern "C" int reactive_voronoi_forward_v1(void* context, const double* positions,
-    const double* box, int pbc, double kappa, double* occupancy) {
-  return runForward(context,positions,box,pbc,kappa,occupancy,false,0,nullptr,nullptr,0);
-}
-
-// A null offsets pointer reuses the already uploaded candidate list.
-extern "C" int reactive_voronoi_forward_nlist_v1(void* context, const double* positions,
-    const double* box, int pbc, double kappa, double* occupancy, double cutoff,
-    const int* offsets, const int* centers, int count) {
-  return runForward(context,positions,box,pbc,kappa,occupancy,true,cutoff,offsets,centers,count);
-}
-
-extern "C" int reactive_voronoi_backward_v1(void* context, const double* sensitivity,
-    double* derivatives, double* virial) {
-  if(!context || !sensitivity || !derivatives || !virial) {
-    return 1;
-  }
-  State& state=*static_cast<State*>(context);
+int runBackward(State& state, const double* sensitivity, double* derivatives, double* virial) {
   DeviceScope scope(state.device);
   if(!scope.valid()) {
     return 1;
@@ -441,4 +399,57 @@ extern "C" int reactive_voronoi_backward_v1(void* context, const double* sensiti
     return 1;
   }
   return 0;
+}
+
+
+class ReactiveVoronoiCuda final : public PLMD::colvar::ReactiveVoronoiBackend {
+  std::unique_ptr<State,decltype(&release)> state_;
+  unsigned long uploadedNeighborVersion_=0;
+
+public:
+  ReactiveVoronoiCuda(int centers, int assigned, int device):
+    state_(createState(centers,assigned,device),release) {
+    if(!state_) {
+      throw std::runtime_error("CUDA backend context creation failed on the requested or current device");
+    }
+  }
+
+  int device() const override {
+    return state_->device;
+  }
+
+  void forward(const double* positions, const double* box, bool pbc,
+               double kappa, double* occupancy) override {
+    if(runForward(*state_,positions,box,pbc,kappa,occupancy,false,0,nullptr,nullptr,0)!=0) {
+      throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
+    }
+  }
+
+  void forwardNeighbors(const double* positions, const double* box, bool pbc,
+                        double kappa, double* occupancy, double cutoff,
+                        const std::vector<int>& offsets, const std::vector<int>& centers,
+                        unsigned long version) override {
+    const bool upload=uploadedNeighborVersion_!=version;
+    const int status=runForward(*state_,positions,box,pbc,kappa,occupancy,true,cutoff,
+                                upload ? offsets.data() : nullptr,
+                                upload ? centers.data() : nullptr,
+                                upload ? static_cast<int>(centers.size()) : 0);
+    if(status==2) {
+      throw std::runtime_error("an ASSIGNED atom has no CENTER inside the candidate list");
+    }
+    if(status!=0) {
+      throw std::runtime_error("CUDA reactive Voronoi NLIST forward failed; check geometry and CUDA diagnostics");
+    }
+    uploadedNeighborVersion_=version;
+  }
+
+  void backward(const double* sensitivity, double* derivatives, double* virial) override {
+    if(runBackward(*state_,sensitivity,derivatives,virial)!=0) {
+      throw std::runtime_error("CUDA reactive Voronoi backward failed");
+    }
+  }
+};
+
+PLMD::colvar::ReactiveVoronoiBackendRegistration<ReactiveVoronoiCuda> registration("CUDA");
+
 }

@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ReactiveVoronoiCuda.h"
+#include "ReactiveVoronoiBackend.h"
 #include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
@@ -180,7 +180,7 @@ protected:
   struct Assignment {
     std::vector<PairData> pairs;
     std::vector<double> occupancy;
-    std::shared_ptr<ReactiveVoronoiCuda> cuda;
+    std::shared_ptr<ReactiveVoronoiBackend> cuda;
   };
 
   struct CudaNeighbors {
@@ -200,7 +200,7 @@ protected:
     Tensor box;
     std::vector<PairData> geometry;
     std::map<double,Assignment> assignments;
-    std::map<double,std::shared_ptr<ReactiveVoronoiCuda>> cuda;
+    std::map<double,std::shared_ptr<ReactiveVoronoiBackend>> cuda;
     CudaNeighbors cudaNeighbors;
     bool haveNeighborReference=false;
     std::vector<Vector> neighborReferencePositions;
@@ -210,13 +210,13 @@ protected:
   bool noShare_=false;
   unsigned long evaluations_=0, hits_=0, geometryHits_=0;
   Assignment independent_;
-  std::shared_ptr<ReactiveVoronoiCuda> independentCuda_;
+  std::shared_ptr<ReactiveVoronoiBackend> independentCuda_;
   CudaNeighbors independentCudaNeighbors_;
-  std::string backend_="CPU", cudaLibrary_;
+  std::string backend_="CPU";
   std::string autoCudaFailure_;
   std::string lastBackendMessage_;
   void logBackend(const std::string&, const std::string&);
-  std::shared_ptr<ReactiveVoronoiCuda> cudaContext();
+  std::shared_ptr<ReactiveVoronoiBackend> cudaContext();
   bool sharedCoordinatesMatch() const;
   Assignment computeAssignment();
   void packCudaNeighbors(CudaNeighbors&);
@@ -271,7 +271,6 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
   keys.add("compulsory","REFERENCE",
            "One intended occupancy broadcast to all CENTERS, or one value per CENTER in CENTERS order");
   keys.add("compulsory","BACKEND","CPU","Assignment backend: CPU, CUDA, or opt-in AUTO detection");
-  keys.add("optional","CUDA_LIBRARY","Optional FP64 CUDA library path; defaults to libReactiveVoronoiCuda plus the shared-library extension");
   keys.addFlag("NO_SHARE",false,"Disable instance-local reuse of compatible assignment calculations");
   keys.addFlag("SERIAL",false,"Perform the calculation redundantly on each rank for debugging");
   keys.addFlag("NLIST",false,"Use an approximate neighbor-list truncation of the assignment candidates");
@@ -470,16 +469,12 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   broadcastOrCheck(reference_,centers_.size(),"REFERENCE");
 
   parse("BACKEND",backend_);
-  parse("CUDA_LIBRARY",cudaLibrary_);
   std::transform(backend_.begin(),backend_.end(),backend_.begin(),
   [](const char value) {
     return static_cast<char>(std::toupper(static_cast<unsigned char>(value)));
   });
   if(backend_!="CPU" && backend_!="CUDA" && backend_!="AUTO") {
     error("BACKEND must be CPU, CUDA or AUTO");
-  }
-  if(backend_!="CPU" && cudaLibrary_.empty()) {
-    cudaLibrary_="libReactiveVoronoiCuda.so";
   }
   if(backend_=="CUDA" && comm.Get_size()!=1) {
     error("CUDA prototype requires a single MPI rank");
@@ -577,7 +572,6 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
       if(other->shared_ && other->centers_==centers_ &&
           other->assigned_==assigned_ && other->pbc_==pbc_ &&
           other->serial_==serial_ && other->backend_==backend_ &&
-          other->cudaLibrary_==cudaLibrary_ &&
           std::tie(other->neighborCutoff_,other->neighborSkin_)==
           std::tie(neighborCutoff_,neighborSkin_) &&
           other->neighborList_->getStride()==neighborList_->getStride() &&
@@ -752,7 +746,7 @@ void SoftVoronoiBase::logBackend(const std::string& selected,
   }
 }
 
-std::shared_ptr<ReactiveVoronoiCuda> SoftVoronoiBase::cudaContext() {
+std::shared_ptr<ReactiveVoronoiBackend> SoftVoronoiBase::cudaContext() {
   if(backend_=="CPU") {
     logBackend("CPU","shared evaluation enabled unless NO_SHARE is set");
     return nullptr;
@@ -787,8 +781,13 @@ std::shared_ptr<ReactiveVoronoiCuda> SoftVoronoiBase::cudaContext() {
   auto& context=shared_ ? shared_->cuda[kappa_] : independentCuda_;
   if(!context) {
     try {
-      context=std::make_shared<ReactiveVoronoiCuda>(
-                cudaLibrary_,centers_.size(),assigned_.size(),plumed.getGpuDeviceId(),neighborCutoff_>0);
+      const auto& images=plumed.getLoadedLibraryHandles();
+      const auto& registry=reactiveVoronoiBackendRegister();
+      if(!registry.check(images,"CUDA")) {
+        throw std::runtime_error("No CUDA Voronoi backend is available. Build the reactive-voronoi-cuda plugin and LOAD it before the action.");
+      }
+      const auto create=registry.get(images,"CUDA");
+      context=create(centers_.size(),assigned_.size(),plumed.getGpuDeviceId());
     } catch(const std::exception& failure) {
       if(backend_=="CUDA") {
         error(std::string("CUDA initialization failed: ")+failure.what());
@@ -798,9 +797,7 @@ std::shared_ptr<ReactiveVoronoiCuda> SoftVoronoiBase::cudaContext() {
       return nullptr;
     }
   }
-  const std::string device=context->device()>=0 ?
-                           "device "+std::to_string(context->device()) :
-                           "current device (legacy backend library)";
+  const std::string device="device "+std::to_string(context->device());
   logBackend("CUDA",device+(neighborCutoff_>0 ? "; NLIST assignment and assignment derivatives" :
                             "; assignment and assignment derivatives"));
   return context;
@@ -835,7 +832,8 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
   // CPU and CUDA use the same rebuild and safe-skin criteria.
   if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
       (invalidateList_ || neighborListNeedsUpdate())) {
-    neighborList_->update(getPositions());
+    // The action that first created the list may be inactive on this step.
+    neighborList_->update(getPositions(),getPbc());
     saveNeighborListReference();
     ++neighbors.version;
     neighbors.offsets.clear();
@@ -857,16 +855,20 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
     }
     // Calculation failures propagate for both CUDA and AUTO. Invalid geometry
     // must remain an error after a backend has been successfully initialized.
-    if(neighborCutoff_>0) {
-      if(neighbors.offsets.empty()) {
-        packCudaNeighbors(neighbors);
+    try {
+      if(neighborCutoff_>0) {
+        if(neighbors.offsets.empty()) {
+          packCudaNeighbors(neighbors);
+        }
+        const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
+                            std::numeric_limits<double>::infinity();
+        context->forwardNeighbors(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data(),
+                                  cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
+      } else {
+        context->forward(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data());
       }
-      const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
-                          std::numeric_limits<double>::infinity();
-      context->forwardNeighbors(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data(),
-                                cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
-    } else {
-      context->forward(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data());
+    } catch(const std::exception& failure) {
+      error(failure.what());
     }
     return result;
   }
@@ -1229,7 +1231,11 @@ void SoftVoronoiBase::addAssignmentDerivatives(
   if(assignment.cuda) {
     std::vector<double> gradient(3*derivatives.size());
     double boxGradient[9];
-    assignment.cuda->backward(derivativeByDefect.data(),gradient.data(),boxGradient);
+    try {
+      assignment.cuda->backward(derivativeByDefect.data(),gradient.data(),boxGradient);
+    } catch(const std::exception& failure) {
+      error(failure.what());
+    }
     for(unsigned i=0; i<derivatives.size(); ++i)
       for(unsigned k=0; k<3; ++k) {
         derivatives[i][k]+=gradient[3*i+k];
@@ -1552,14 +1558,14 @@ geometry and, for equal KAPPA, weights and occupancies. NO_SHARE selects an
 independent CPU reference. Consumer-specific selections and reductions retain
 their own meanings.
 
-BACKEND=CUDA explicitly requests the optional FP64 CUDA library.
-BACKEND=AUTO selects a compatible available backend and logs the choice.
-CUDA_LIBRARY supplies its path; the default library name on Linux is
-libReactiveVoronoiCuda.so. The CUDA implementation currently supports complete
-exponential assignments, one MPI rank, orthorhombic PBC and NOPBC. AUTO uses
-CPU for triclinic boxes or multiple MPI ranks. CUDA NLIST reuses the
-CPU-built candidate list and applies the same cutoff each evaluation. OPES, scalar reductions
-and direct distance/position terms execute on CPU.
+Load the optional CUDA plugin with [LOAD](LOAD.md) before the CV.
+BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the loaded
+backend supports the calculation and otherwise uses CPU. The log shows the
+selected backend. CUDA supports a single MPI rank with axis-aligned
+orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
+applies the same cutoff at each evaluation. OPES, scalar reductions and direct
+distance/position terms execute on CPU. Floating-point CUDA reductions may
+differ in the last digits between runs.
 
 The plugin README describes compilation, device selection and examples.
 Choose a backend using matched numerical checks and workload timings.

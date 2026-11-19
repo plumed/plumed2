@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -57,6 +58,11 @@ struct System {
     auto read=[&](const std::string& line) {
       plumed.cmd("readInputLine",line.c_str());
     };
+    if(!backend.empty()) {
+      if(const char* library=std::getenv("PLUMED_VORONOI_TEST_PLUGIN")) {
+        read(std::string("LOAD FILE=")+library);
+      }
+    }
     read("a: "+specification.action+atomsInput+reference+kappa+
          " "+specification.options+control);
     read("b: VORONOI_COORDINATION"+atomsInput+reference+kappa+

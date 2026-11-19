@@ -21,24 +21,25 @@ PRINT ARG=q,d FILE=COLVAR
 Add NO_SHARE to select independent CPU evaluation for a reference comparison.
 BACKEND=CPU also selects shared CPU evaluation.
 
-BACKEND=CUDA explicitly requests CUDA and reports an error when the library,
-device or requested calculation is unsupported.
+BACKEND=CUDA explicitly requests CUDA and reports an error when the plugin has not been
+loaded or the device or requested calculation is unsupported.
 
 ~~~plumed
-q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=CUDA CUDA_LIBRARY=/path/libReactiveVoronoiCuda.so
+LOAD FILE=./libReactiveVoronoiCuda.so
+q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=CUDA
 ~~~
 
-BACKEND=AUTO opts into capability detection. It selects CUDA when the library,
-device and input are supported. Otherwise it selects CPU and logs the reason.
+BACKEND=AUTO opts into capability detection. It selects CUDA when the plugin has
+been loaded and the device and input are supported. Otherwise it selects
+CPU and logs the reason.
 
 ~~~plumed
 q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=AUTO
 ~~~
 
-CUDA_LIBRARY defaults to libReactiveVoronoiCuda.so, searched through the
-system dynamic-library search path. An explicit path is useful for isolated
-installations. Backend names are case insensitive. The log identifies the
-requested backend, selected backend and GPU device when available.
+Place LOAD before the Voronoi actions. Backend names are case insensitive.
+The log identifies the requested backend, selected backend and GPU device
+when available.
 
 AUTO checks capability and input compatibility. Actual speed depends on system
 size, reduction groups, host transfers and the MD workload. The CPU default
@@ -49,9 +50,7 @@ Calculation errors after successful CUDA initialization propagate normally.
 
 The currently supported CUDA domain is orthorhombic PBC or NOPBC and a
 single rank, with either complete assignments or NLIST. AUTO falls back to
-CPU for triclinic PBC and multiple MPI ranks. Older CUDA libraries still
-support complete assignments, and AUTO uses CPU if their NLIST symbol is
-missing.
+CPU for triclinic PBC and multiple MPI ranks.
 
 NLIST uses the same CPU-built candidate list and cutoff in both backends.
 Each CUDA context uploads the list after a rebuild and reuses the uploaded
@@ -73,20 +72,19 @@ for the actual atom selections and length units.
 ## Using CUDA Voronoi with other actions and force fields
 
 The existing cudaCoord plugin and the CUDA Voronoi backend can run in the
-same PLUMED input. Load cudaCoord through LOAD and select the Voronoi
-backend on the Voronoi action.
+same PLUMED input. Load both plugins and select the Voronoi backend on
+the Voronoi action.
 
 ~~~plumed
 LOAD FILE=./CudaCoordination.so
+LOAD FILE=./libReactiveVoronoiCuda.so
 c: CUDACOORDINATION GROUPA=1,2 GROUPB=3,4 R_0=0.32 D_MAX=1.25
 q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=CUDA
 PRINT ARG=c,q FILE=COLVAR
 ~~~
 
-The example uses PLUMED's default length unit (nm). Make the Voronoi
-library available on the dynamic-library search path or set CUDA_LIBRARY
-on the action. The two plugins keep their own GPU data and can use the same
-device. The MD engine can also use that device for the potential, as in
+The example uses PLUMED's default length unit (nm). The two plugins keep
+their own GPU data and can use the same device. The MD engine can also use that device for the potential, as in
 the single-GPU DeePMD examples. The CV's backend is chosen independently of
 the potential. For a CPU force field, the default shared CPU CV requires no
 CUDA library. BACKEND=CUDA can instead offload the Voronoi assignment if
@@ -99,14 +97,15 @@ The PLUMED core builds with a normal C++ compiler and keeps CUDA headers
 confined to the plugin. Build the CUDA library on a Linux CUDA host.
 
 ~~~bash
-make CUDA_ARCH=sm_70
+make PLUMED=/path/to/plumed CUDA_ARCH=sm_70
 ~~~
 
 Select the architecture of the target GPU, such as sm_70 for V100 or sm_80
 for A100. The default CUDA_ARCH=native detects the GPU on the compilation
 host. Set NVCC and NVCCFLAGS when the toolchain requires them. Install the
-resulting libReactiveVoronoiCuda.so in a versioned library directory and put
-that directory in LD_LIBRARY_PATH, or provide CUDA_LIBRARY in the input.
+resulting library in a versioned directory and pass its path to LOAD. Use
+the same PLUMED build at compile time and at runtime. The Makefile uses the
+shared-library extension reported by PLUMED.
 
 The build links the shared CUDA runtime and marks the Linux library NODELETE.
 This follows the lifetime protection used by the official CUDA plugin and
@@ -120,14 +119,12 @@ allocation, transfer, kernel, synchronization and release uses that captured
 device, and restores the caller's device afterward. CUDA_VISIBLE_DEVICES
 provides the usual logical-device mapping.
 
-The v2 context factory accepts the MD device. The v1 factory remains exported.
-The core accepts a v1 library when the MD device is unspecified. An explicit
-MD device requires a library providing the v2 factory.
-
 Each compatible KAPPA context retains O(Ncenters+Nassigned) device buffers
 for complete assignments. NLIST adds offsets by assigned atom and one center
 index per buffered candidate. FP64 kernels stream over the selected centers
-for each assigned atom and use shifted-softmax normalization. Each scalar
+for each assigned atom and use shifted-softmax normalization. CUDA FP64
+atomic additions can sum in a different order between runs, so the final
+digits of values and derivatives can vary. Each scalar
 action still contracts its own analytic derivatives. PLUMED combines bias
 sensitivities using its existing force graph.
 
@@ -138,9 +135,8 @@ host coordinates and receives host forces.
 
 The official cudaCoord plugin registers CUDACOORDINATION and
 CUDACOORDINATIONFLOAT after LOAD. The openaccPTM plugin adds USEGPU selection
-to its supported actions after LOAD. This experimental library is loaded by
-the Voronoi core through CUDA_LIBRARY. Its BACKEND input is specific to these
-three actions.
+to its supported actions after LOAD. The Voronoi plugin registers its assignment
+backend after LOAD. Its BACKEND keyword belongs to the three Voronoi actions.
 
 ## Validation
 
@@ -162,7 +158,7 @@ The driver matrix includes a fixed-box trajectory that forces a rebuild
 before the scheduled step. It compares values and derivatives to an
 independent CPU list rebuilt every step. It also checks invalid stride/skin
 inputs and pinpoints failed comparisons by file, row and column.
-Run the CPU and missing-library fallback cases on a CPU-only host with:
+Run the CPU and missing-plugin fallback cases on a CPU-only host with:
 
 ~~~bash
 python3 regtest/backend_checks.py --plumed /absolute/path/bin/plumed --cpu-only
@@ -180,7 +176,8 @@ or AUTO run. Use an empty working directory for each run because the test
 writes logs and an output file in the current directory.
 
 ~~~bash
-/absolute/path/to/regtest/basic/rt-reactive-voronoi-backends/tmp/exe " BACKEND=CUDA CUDA_LIBRARY=/absolute/path/libReactiveVoronoiCuda.so"
+PLUMED_VORONOI_TEST_PLUGIN=/absolute/path/libReactiveVoronoiCuda.so \
+  /absolute/path/to/regtest/basic/rt-reactive-voronoi-backends/tmp/exe " BACKEND=CUDA"
 ~~~
 
 Strict CUDA tests compare every supported force/virial component to CPU and

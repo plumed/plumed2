@@ -576,6 +576,8 @@ public:
   bool hasBeenInitialized() const ;
 /// Check if an action with the given name has been registered by default or LOADed
   bool checkAction(const std::string& action) const;
+/// Handles of libraries visible to this PLUMED instance, for plugin registers.
+  const std::vector<void*>& getLoadedLibraryHandles() const;
 };
 
 /////

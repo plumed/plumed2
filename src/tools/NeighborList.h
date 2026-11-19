@@ -107,6 +107,8 @@ public:
 /// Update the neighbor list and prepare the new
 /// list of atoms that will be requested to the main code
   void update(const std::vector<PLMD::Vector>& positions);
+/// Rebuild with the PBC of the action requesting this update.
+  void update(const std::vector<PLMD::Vector>& positions, const PLMD::Pbc& pbc);
 /// Get the update stride of the neighbor list
   unsigned getStride() const;
 /// Get the last step in which the neighbor list was updated

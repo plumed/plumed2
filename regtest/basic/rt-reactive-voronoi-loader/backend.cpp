@@ -1,65 +1,55 @@
-// Test fixture for one center and one assigned atom. The soft assignment is
-// exactly one and its derivatives vanish whenever the pair is retained.
+// One retained pair has weight one and zero derivatives.
+#include "colvar/ReactiveVoronoiBackend.h"
+
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
-struct Context {
-  bool candidate=false;
+namespace {
+
+class TestVoronoiBackend final : public PLMD::colvar::ReactiveVoronoiBackend {
+  static double separation(const double* x) {
+    return std::hypot(x[3]-x[0],x[4]-x[1],x[5]-x[2]);
+  }
+
+public:
+  TestVoronoiBackend(int centers, int assigned, int device) {
+    if(centers!=1 || assigned!=1 || device>0) {
+      throw std::runtime_error("test backend context creation failed");
+    }
+  }
+
+  int device() const override {
+    return 0;
+  }
+
+  void forward(const double* x, const double*, bool, double, double* occupancy) override {
+    if(separation(x)<=0.0) {
+      throw std::runtime_error("test backend forward failed");
+    }
+    occupancy[0]=1.0;
+  }
+
+  void forwardNeighbors(const double* x, const double* box, bool pbc, double kappa,
+                        double* occupancy, double cutoff,
+                        const std::vector<int>& offsets, const std::vector<int>& centers,
+                        unsigned long) override {
+    if(offsets.size()!=2 || offsets[0]!=0 || offsets[1]!=static_cast<int>(centers.size()) ||
+        centers.size()>1 || (!centers.empty() && centers[0]!=0)) {
+      throw std::runtime_error("invalid candidate list");
+    }
+    if(centers.empty() || separation(x)>cutoff) {
+      throw std::runtime_error("no CENTER inside the candidate list");
+    }
+    forward(x,box,pbc,kappa,occupancy);
+  }
+
+  void backward(const double*, double* gradient, double* virial) override {
+    std::fill_n(gradient,6,0.0);
+    std::fill_n(virial,9,0.0);
+  }
 };
 
-extern "C" void* reactive_voronoi_create_v1(int centers, int assigned) {
-  return centers==1 && assigned==1 ? new Context : nullptr;
-}
+PLMD::colvar::ReactiveVoronoiBackendRegistration<TestVoronoiBackend> registerBackend("CUDA");
 
-extern "C" void reactive_voronoi_destroy_v1(void* state) {
-  delete static_cast<Context*>(state);
 }
-
-extern "C" int reactive_voronoi_forward_v1(void*, const double* x, const double*,
-    int, double, double* occupancy) {
-  if(std::hypot(x[3]-x[0],x[4]-x[1],x[5]-x[2])<=0.0) {
-    return 1;
-  }
-  occupancy[0]=1.0;
-  return 0;
-}
-
-extern "C" int reactive_voronoi_backward_v1(void*, const double*, double* gradient, double* virial) {
-  std::fill_n(gradient,6,0.0);
-  std::fill_n(virial,9,0.0);
-  return 0;
-}
-
-#ifndef LEGACY_VORONOI_ABI
-extern "C" void* reactive_voronoi_create_v2(int centers, int assigned, int device) {
-  return device<=0 ? reactive_voronoi_create_v1(centers,assigned) : nullptr;
-}
-
-extern "C" int reactive_voronoi_device_count_v1() {
-  return 1;
-}
-
-extern "C" int reactive_voronoi_device_v1(void*) {
-  return 0;
-}
-
-extern "C" int reactive_voronoi_forward_nlist_v1(void* state, const double* x,
-    const double* box, int pbc, double kappa, double* occupancy, double cutoff,
-    const int* offsets, const int* centers, int count) {
-  auto& context=*static_cast<Context*>(state);
-  if(offsets) {
-    const bool valid=offsets[0]==0 && offsets[1]==count &&
-                     (count==0 || (count==1 && centers && centers[0]==0));
-    if(!valid) {
-      return 1;
-    }
-    context.candidate=count==1;
-  } else if(centers || count!=0) {
-    return 1;
-  }
-  if(!context.candidate || std::hypot(x[3]-x[0],x[4]-x[1],x[5]-x[2])>cutoff) {
-    return 2;
-  }
-  return reactive_voronoi_forward_v1(state,x,box,pbc,kappa,occupancy);
-}
-#endif
