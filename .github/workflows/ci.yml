@@ -87,6 +87,12 @@ jobs:
     uses: ./.github/workflows/linuxWF.yml
     secrets: inherit
 
+  gpu-plugins:
+    needs: [policy, codecheck, checks]
+    if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
+    uses: ./.github/workflows/gpuPluginsWF.yml
+    secrets: inherit
+
   windows:
     needs: [policy, codecheck, checks]
     if: ${{ needs.policy.outputs.run_ci == 'true' && !cancelled() && ((github.event_name != 'pull_request' && github.event_name != 'workflow_dispatch') || (needs.codecheck.result == 'success' && needs.checks.result == 'success')) }}
