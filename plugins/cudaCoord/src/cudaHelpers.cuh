@@ -21,12 +21,15 @@
 #ifndef __PLUMED_cuda_helpers_cuh
 #define __PLUMED_cuda_helpers_cuh
 
+#include "cuda_to_hip.h"
 #include "plumed/core/GpuDevice.h"
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/View.h"
 #include "plumed/tools/Exception.h"
+#ifndef __HIP__
 #include <cub/block/block_reduce.cuh>
+#endif
 #include <thrust/device_vector.h>
 #include <algorithm>
 #include <string>
@@ -241,7 +244,7 @@ __device__ __forceinline__ void blockReduceToPartials (const T (&vals)[N],
     T v = vals[k];
 #pragma unroll
     for (unsigned offset = 16; offset > 0; offset /= 2) {
-      v += __shfl_down_sync (0xffffffffu, v, offset);
+      v += __shfl_down_sync (warpMask(), v, offset, 32);
     }
     if (lane == 0) {
       smem[warp * N + k] = v;

@@ -19,8 +19,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "cuda_runtime.h"
+#include "cuda_to_hip.h"
+#ifndef __HIP__
 #include "device_launch_parameters.h"
+#endif
 
 // cfloat for DLB_EPSILON and FLT_EPSILON
 #include <cfloat>

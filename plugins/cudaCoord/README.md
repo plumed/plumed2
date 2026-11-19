@@ -19,6 +19,13 @@ NVCCLDFLAGS = -shared -dlto --gpu-architecture=sm_75
 ```
 If you are using a T1000
 
+For AMD GPUs, with ROCm (`hipcc`, rocThrust and hipCUB) installed:
+  - `USE_HIP=1 ./configure.sh`
+  - `make USE_HIP=1`
+
+the code is compiled for the GPUs of the machine that compiles; other targets can be chosen with, for example, `make USE_HIP=1 HIP_ARCHITECTURES="gfx90a gfx1100"`.
+The tests are run in the same way, with `make USE_HIP=1 check`.
+
 
 ### How to tests
 
