@@ -24,7 +24,7 @@ For AMD GPUs, with ROCm (`hipcc`, rocThrust and hipCUB) installed:
   - `make USE_HIP=1`
 
 the code is compiled for the GPUs of the machine that compiles; other targets can be chosen with, for example, `make USE_HIP=1 HIP_ARCHITECTURES="gfx90a gfx1100"`.
-The tests are run in the same way, with `make USE_HIP=1 check`.
+The tests are run in the same way, with `make USE_HIP=1 check` and `make USE_HIP=1 check-gpu`.
 
 
 ### How to tests
@@ -53,7 +53,7 @@ its node modulo the number of GPUs, otherwise the current one of the CUDA runtim
 `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
 (e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
 Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
-`make check-gpu` (on a node with GPUs) checks this, see `../openaccPTM/gpucheck`.
+`make check-gpu` (on a node with GPUs; `make USE_HIP=1 check-gpu` for AMD GPUs) checks this, see `../openaccPTM/gpucheck`.
 
 ## Performance notes
 

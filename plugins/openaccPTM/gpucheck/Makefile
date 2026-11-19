@@ -6,6 +6,12 @@
 CUDACXX ?= nvcc
 PLUGINS ?= $(CURDIR)/../plumedOpenACC.so
 PLUMED_INCLUDE_DIR = $(shell plumed --no-mpi info --include-dir)
+ifdef USE_HIP
+# AMD GPUs ("make USE_HIP=1 check-gpu" from cudaCoord): the HIP runtime, with the
+# CUDA names mapped by the header of cudaCoord; the program has no kernels
+HIPCC ?= hipcc
+CUDACXX = $(HIPCC) -x hip --offload-host-only -I$(CURDIR)/../../cudaCoord/src
+endif
 
 all: check
 
