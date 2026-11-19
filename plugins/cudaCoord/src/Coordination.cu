@@ -1578,16 +1578,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     //mpiActive is const
     mpiActive( comm.Get_rank()== 0),
     cells(comm) {
-  if (mpiActive) {
-    gpu = CUDAHELPERS::chooseGPU (plumed.getGpuDeviceId());
-    if (gpu < 0) {
-      error ("no GPU available");
-    }
-    log.printf ("  %s runs on GPU %d\n", getLabel().c_str(), gpu);
-  }
-  // all the GPU work of the constructor is done on the GPU of the action
-  CUDAHELPERS::deviceGuard guard (gpu);
-
   std::vector<AtomNumber> GroupA;
   parseAtomList ("GROUPA", GroupA);
   std::vector<AtomNumber> GroupB;
@@ -1721,35 +1711,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   } else {
     switchingParameters.invr0_2 = invr0;
   }
-  // the switching function is stretched so that it is 1 in 0 and 0 in dmax
-  if (mpiActive) {
-    std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
-
-    thrust::device_vector<calculateFloat> inputZeroMax = inputs;
-    thrust::device_vector<calculateFloat> dummydfunc (2);
-    thrust::device_vector<calculateFloat> resZeroMax (2);
-
-    PLMD::GPU::getpcuda_func<PLMD::GPU::Rational><<<1, 2>>> (
-      thrust::raw_pointer_cast (inputZeroMax.data()),
-      switchingParameters,
-      thrust::raw_pointer_cast (dummydfunc.data()),
-      thrust::raw_pointer_cast (resZeroMax.data()));
-
-    switchingParameters.stretch = 1.0 / (resZeroMax[0] - resZeroMax[1]);
-    switchingParameters.shift = -resZeroMax[1] * switchingParameters.stretch;
-  }
-  if (switchingParameters.calcSquared) {
-    switchingParameters.nn/=2;
-    switchingParameters.mm/=2;
-  }
-  comm.Bcast (switchingParameters.dmaxSQ,0);
-  comm.Bcast (switchingParameters.invr0_2,0);
-  comm.Bcast (switchingParameters.d0,0);
-  comm.Bcast (switchingParameters.stretch,0);
-  comm.Bcast (switchingParameters.shift,0);
-  comm.Bcast (switchingParameters.nn,0);
-  comm.Bcast (switchingParameters.mm,0);
-
   parse("NL_CUTOFF",NL.cutoff);
   parse("NL_STRIDE",NL.stride);
   if(NL.stride == 0) {
@@ -1783,6 +1744,47 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   }
 
   checkRead();
+
+  // the GPU is chosen only now, after the whole input has been read, so that
+  // input errors are reported (and can be tested) also on a machine without GPUs
+  if (mpiActive) {
+    gpu = CUDAHELPERS::chooseGPU (plumed.getGpuDeviceId());
+    if (gpu < 0) {
+      error ("no GPU available");
+    }
+    log.printf ("  %s runs on GPU %d\n", getLabel().c_str(), gpu);
+  }
+  // all the GPU work of the constructor is done on the GPU of the action
+  CUDAHELPERS::deviceGuard guard (gpu);
+
+  // the switching function is stretched so that it is 1 in 0 and 0 in dmax
+  if (mpiActive) {
+    std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
+
+    thrust::device_vector<calculateFloat> inputZeroMax = inputs;
+    thrust::device_vector<calculateFloat> dummydfunc (2);
+    thrust::device_vector<calculateFloat> resZeroMax (2);
+
+    PLMD::GPU::getpcuda_func<PLMD::GPU::Rational><<<1, 2>>> (
+      thrust::raw_pointer_cast (inputZeroMax.data()),
+      switchingParameters,
+      thrust::raw_pointer_cast (dummydfunc.data()),
+      thrust::raw_pointer_cast (resZeroMax.data()));
+
+    switchingParameters.stretch = 1.0 / (resZeroMax[0] - resZeroMax[1]);
+    switchingParameters.shift = -resZeroMax[1] * switchingParameters.stretch;
+  }
+  if (switchingParameters.calcSquared) {
+    switchingParameters.nn/=2;
+    switchingParameters.mm/=2;
+  }
+  comm.Bcast (switchingParameters.dmaxSQ,0);
+  comm.Bcast (switchingParameters.invr0_2,0);
+  comm.Bcast (switchingParameters.d0,0);
+  comm.Bcast (switchingParameters.stretch,0);
+  comm.Bcast (switchingParameters.shift,0);
+  comm.Bcast (switchingParameters.nn,0);
+  comm.Bcast (switchingParameters.mm,0);
 
   runner = make_worker(pbc,switchingParameters);
   nat = getPositions().size();
