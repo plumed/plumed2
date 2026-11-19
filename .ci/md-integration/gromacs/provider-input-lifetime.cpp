@@ -42,6 +42,36 @@ int main(int argc, char** argv)
         options.simulationTimeStep_ = 0.001;
         options.startingBehavior_   = gmx::StartingBehavior::NewSimulation;
         {
+            std::ofstream("energy.dat") << "e: ENERGY\n"
+                                         "r: RESTRAINT ARG=e AT=0 KAPPA=2\n";
+            auto energyOptions = options;
+            energyOptions.plumedFile_ = "energy.dat";
+            energyOptions.replex_ = false;
+            gmx::PlumedForceProvider provider(energyOptions);
+            std::vector<gmx::RVec> x{ { 0, 0, 0 }, { real(0.45), 0, 0 } }, f(2);
+            std::vector<real> mass(2, 1), charge(2, 0);
+            matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+            matrix virial = { { real(0.2), 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+            f[0][0] = 1;
+            f[1][0] = -1;
+            gmx::ForceProviderInput input(x, 2, charge, mass, 0, 0, box, comm, nullptr);
+            gmx::ForceWithVirial force(f, true);
+            gmx_enerdata_t energy(1, nullptr);
+            gmx::ForceProviderOutput output(&force, &energy);
+            if (!provider.prepareStep(0, false))
+                throw std::runtime_error("Prepared ENERGY requirement was not detected");
+            provider.calculateForces(input, &output);
+            real physicalEnergy = real(0.25), bias = 0;
+            provider.applyAfterPotentialEnergy(true, &physicalEnergy, f, virial);
+            provider.plumedHandle()->cmd("getBias", &bias);
+            if (std::abs(bias - real(0.0625)) > 1e-6
+                || std::abs(f[0][0] - real(1.5)) > 1e-6
+                || std::abs(f[1][0] + real(1.5)) > 1e-6
+                || std::abs(virial[0][0] - real(0.3)) > 1e-6)
+                throw std::runtime_error("Prepared ENERGY force/virial scaling is incorrect");
+            std::cout << "prepared ENERGY bias/force/virial: pass\n";
+        }
+        {
             gmx::PlumedForceProvider provider(options);
             gmx::ForceProviders providers;
             providers.addForceProvider(&provider);

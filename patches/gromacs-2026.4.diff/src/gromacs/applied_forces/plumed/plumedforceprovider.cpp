@@ -265,7 +265,12 @@ try
     // "Again" means since the last prepareStep(), which MD and reruns call before each step
     repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
     calculatedStep_ = lstep;
-    plumed_->cmd("setStepLong", &lstep);
+    // prepareStep() already opened this input epoch. Repeating setStep would
+    // clear older kernels' prepared energy requirements before sharing data.
+    if (preparedStep_ != lstep)
+    {
+        plumed_->cmd("setStepLong", &lstep);
+    }
     if (expanded_)
     {
         context_.lambdaForce = 0;
@@ -438,11 +443,15 @@ try
         {
             GMX_RELEASE_ASSERT(energyWasComputed && potentialEnergy != nullptr,
                                "Replica exchange requires the physical potential energy");
-            // Also bind ENERGY when its bias has an off-step MTS stride. Save
-            // only after the normal physical energy has been computed.
-            long int savedStep = calculatedStep_.value();
-            plumed_->cmd("setStepLong", &savedStep);
-            plumed_->cmd("setEnergy", potentialEnergy);
+            // Save only after the normal physical energy has been computed.
+            // Older kernels retain those bindings: resetting the step would
+            // clear PLUMED 2.9's positions/masses without registering them again.
+            if (plumedAPIversion_ >= 13)
+            {
+                long int savedStep = calculatedStep_.value();
+                plumed_->cmd("setStepLong", &savedStep);
+                plumed_->cmd("setEnergy", potentialEnergy);
+            }
             plumed_->cmd("GREX savePositions");
         }
 #endif
