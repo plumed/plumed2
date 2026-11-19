@@ -101,6 +101,8 @@ private:
     int                           plumedNeedsEnergy_ = 0;
     int                           plumedWantsToStop_ = 0;
     matrix                        plumedVir_         = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    //! The box passed to PLUMED, which reads it after calculateForces() has returned when it needs the energy
+    matrix plumedBox_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
     //! Step for which prepareStep() already prepared the dependencies, if any.
     std::optional<int64_t> preparedStep_;
     //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation.
