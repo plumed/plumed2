@@ -31,6 +31,16 @@ def table(path):
     return out
 
 
+def failure_diagnostics(root):
+    """Keep kernel errors even when MPI truncates the launcher's stack dump."""
+    logs = [
+        root / "mdrun.log",
+        *root.glob("rep*/run.log"),
+        *root.glob("rep*/PLUMED.OUT*"),
+    ]
+    return "\n".join(path.read_text(errors="replace") for path in logs)
+
+
 class Suite:
     def __init__(self, args):
         self.args = args
@@ -403,11 +413,7 @@ nstfout = 1
                     check=not (c.get("nex") or c.get("expected_failure")),
                 )
                 if c.get("expected_failure"):
-                    diagnostics = (
-                        (root / "mdrun.log").read_text()
-                        + "\n"
-                        + "".join(p.read_text() for p in root.glob("rep*/run.log"))
-                    )
+                    diagnostics = failure_diagnostics(root)
                     if not code or c["expected_failure"] not in diagnostics:
                         raise AssertionError("expected diagnostic not observed")
                     item["checks"] = "expected failure verified"

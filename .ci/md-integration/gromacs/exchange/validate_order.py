@@ -291,12 +291,17 @@ def main():
         if hrex:
             command += ["-hrex"]
         code = suite.run(command, directory, "mdrun.log", check=False)
+        diagnostics = analytic.failure_diagnostics(directory)
         if (
             code == 0
             or "requires bias force STRIDE to divide the exchange interval"
-            not in (directory / "mdrun.log").read_text()
+            not in diagnostics
         ):
             raise AssertionError(f"Missing STRIDE/replex rejection: {case['name']}")
+        if re.search(r"^PLUMED_GREX step=", diagnostics, re.MULTILINE):
+            raise AssertionError(
+                f"Acceptance evaluated with invalid STRIDE: {case['name']}"
+            )
         results.append(dict(case=case, status="pass", invalid_stride_rejected=True))
         (root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
         print(case["name"], "pass", flush=True)
