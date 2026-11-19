@@ -1748,11 +1748,10 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   // the GPU is chosen only now, after the whole input has been read, so that
   // input errors are reported (and can be tested) also on a machine without GPUs
   if (mpiActive) {
-    gpu = CUDAHELPERS::chooseGPU (plumed.getGpuDeviceId());
+    gpu = CUDAHELPERS::chooseGPU (*this);
     if (gpu < 0) {
       error ("no GPU available");
     }
-    log.printf ("  %s runs on GPU %d\n", getLabel().c_str(), gpu);
   }
   // all the GPU work of the constructor is done on the GPU of the action
   CUDAHELPERS::deviceGuard guard (gpu);
