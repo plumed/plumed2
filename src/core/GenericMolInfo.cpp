@@ -32,6 +32,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <limits>
 
 namespace PLMD {
 
@@ -480,18 +481,25 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
           Tools::convert(w,n);
           atoms.push_back(AtomNumber::serial(n));
         }
+        plumed_massert(atoms.size()<=static_cast<std::size_t>(std::numeric_limits<int>::max()),
+                       "MOLINFO selection contains too many atoms for an MPI broadcast");
         ok=1;
       } catch (const Exception & e) {
         error_msg=e.what();
       }
       comm.Bcast(ok,0);
       if(!ok) {
-        size_t s=error_msg.length();
+        // size_t can be unsigned long long on LLP64 hosts. The following
+        // broadcast already requires an int-sized payload.
+        if(error_msg.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+          error_msg="MOLINFO selection error message is too large for an MPI broadcast";
+        }
+        unsigned long s=error_msg.length();
         comm.Bcast(s,0);
         comm.Bcast(error_msg,0);
         throw Exception()<<error_msg;
       }
-      size_t nat=atoms.size();
+      unsigned long nat=atoms.size();
       comm.Bcast(nat,0);
       comm.Bcast(atoms,0);
     } else {
@@ -499,13 +507,13 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
       std::string error_msg;
       comm.Bcast(ok,0);
       if(!ok) {
-        size_t s;
+        unsigned long s;
         comm.Bcast(s,0);
         error_msg.resize(s);
         comm.Bcast(error_msg,0);
         throw Exception()<<error_msg;
       }
-      size_t nat=0;
+      unsigned long nat=0;
       comm.Bcast(nat,0);
       atoms.resize(nat);
       comm.Bcast(atoms,0);
