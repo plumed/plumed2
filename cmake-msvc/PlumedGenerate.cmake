@@ -222,34 +222,34 @@ function(plumed_generate_config src_root out_dir)
   message(STATUS "  Config.inc / version.h / Makefile.conf.xxd (version ${PLUMED_VERSION_LONG}, git ${PLUMED_VERSION_GIT})")
 endfunction()
 
-# --- completion.xxd ------------------------------------------------------
-# Same content as { make-scripts-options.sh ; cat completion.sh ; } | xxd.
-# The scripts are run only if bash is available; otherwise a minimal set of
-# global options is embedded (the completion cltool only prints this text).
+# --- completion.xxd / completion-scripts.xxd ------------------------------
+# Match src/cltools/Makefile: keep the function body separate from the
+# shell-neutral script-option records. Bash is optional on Windows; without
+# it, embed an empty catalogue (a newline keeps the C++ byte array nonempty).
 function(plumed_generate_completion src_root out_dir)
+  plumed_xxd_file("${src_root}/src/cltools/completion.sh" "${out_dir}/completion.xxd")
   find_program(_bash bash)
   set(_content "")
   if(_bash)
     file(GLOB _scripts "${src_root}/scripts/*.sh")
     foreach(_s IN LISTS _scripts)
-      get_filename_component(_name "${_s}" NAME_WE)
-      string(REPLACE "-" "_" _name "${_name}")
-      execute_process(COMMAND "${_bash}" -c "PLUMED_ROOT='${src_root}' bash '${_s}' --options"
+      get_filename_component(_name "${_s}" NAME)
+      string(REGEX REPLACE "[.]sh$" "" _name "${_name}")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E env "PLUMED_ROOT=${src_root}"
+                              "${_bash}" "${_s}" --options
                       WORKING_DIRECTORY "${src_root}"
                       OUTPUT_VARIABLE _opts ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-      if(NOT _opts STREQUAL "")
-        string(APPEND _content "local cmd_keys_${_name}=\"${_opts}\"\n")
-      endif()
+      string(REPLACE "\n" " " _opts "${_opts}")
+      string(REPLACE "\r" "" _opts "${_opts}")
+      string(APPEND _content "${_name}\t${_opts}\n")
     endforeach()
   endif()
   if(_content STREQUAL "")
-    set(_content "local cmd_keys_plumed=\"--help --options --version\"\n")
+    set(_content "\n")
   endif()
-  file(READ "${src_root}/src/cltools/completion.sh" _comp)
-  string(APPEND _content "${_comp}")
-  set(_tmp "${out_dir}/completion.txt")
+  set(_tmp "${out_dir}/completion-scripts.txt")
   file(WRITE "${_tmp}" "${_content}")
-  plumed_xxd_file("${_tmp}" "${out_dir}/completion.xxd")
+  plumed_xxd_file("${_tmp}" "${out_dir}/completion-scripts.xxd")
   file(REMOVE "${_tmp}")
-  message(STATUS "  completion.xxd (bash: ${_bash})")
+  message(STATUS "  completion.xxd / completion-scripts.xxd (bash: ${_bash})")
 endfunction()
