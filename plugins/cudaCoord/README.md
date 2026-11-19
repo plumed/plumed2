@@ -22,9 +22,11 @@ If you are using a T1000
 
 ### How to tests
 
-Assuming you are using this plugin from the plugin directory of a plumed source directory:
- - `cd regtest; ln -s ../../../regtest/scripts .`
- - `make check`
+From the plugin directory of a plumed source directory (`regtest/scripts` links to the scripts of the plumed regtests):
+ - `make check` runs all the tests (it needs a GPU)
+ - `make check-nogpu` runs only the tests that do not need a GPU (in `regtest/nogpu`: loading the plugin, input errors, the error when there is no GPU)
+
+The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits and runs `make check-nogpu`.
 
 ## Limitations
 
@@ -61,4 +63,4 @@ Since PLUMED receives the positions and returns the forces through host memory, 
 
 ## Current TODO
  
- - Integrate the CI
+ - Run the GPU tests in CI (it needs a runner with a GPU)
