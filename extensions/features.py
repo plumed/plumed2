@@ -20,23 +20,9 @@ PROBES = {
         "includes": ["include/torch/csrc/api/include"],
     },
     "LIBMETATOMIC": {
-        "source": """#include <torch/script.h>
-#include <metatensor.hpp>
-#include <metatensor/torch.hpp>
-#include <metatomic/torch.hpp>
-#if METATOMIC_TORCH_VERSION_MAJOR != 0 || METATOMIC_TORCH_VERSION_MINOR != 1 || METATOMIC_TORCH_VERSION_PATCH < 12
-#error metatomic-torch >=0.1.12,<0.2 is required
-#endif
-int main(){metatomic_torch::version(); metatensor_torch::version(); mts_version();}
-""",
-        "libraries": [
-            "metatomic_torch",
-            "metatensor_torch",
-            "metatensor",
-            "torch_cpu",
-            "c10",
-        ],
-        "includes": ["include/torch/csrc/api/include"],
+        "source": "#include <metatensor.hpp>\n#include <metatomic.hpp>\nint main(){mts_version(); mta_version();}",
+        "libraries": ["metatomic", "metatensor"],
+        "includes": ["include/metatomic/third-party"],
     },
     "LIBHDF5": {
         "source": "#include <hdf5.h>\nint main(){unsigned a,b,c; return H5get_libversion(&a,&b,&c);}",
@@ -116,7 +102,7 @@ class FeatureProbes:
         log = result.stdout + result.stderr
         # Recent LibTorch headers require C++20. Upgrade only the modules using
         # these headers, retaining the kernel's C++ ABI and compiler settings.
-        if result.returncode and feature in ("LIBTORCH", "LIBMETATOMIC"):
+        if result.returncode and feature == "LIBTORCH":
             includes.append("-std=c++20")
             command.insert(
                 len(self.compiler) + len(self.cppflags) + len(self.cxxflags),

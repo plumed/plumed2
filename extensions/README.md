@@ -140,10 +140,11 @@ Platform selectors and explicit version/build constraints are retained; requirem
 from default-off modules stay in their own outputs.
 The extension recipe selects all default-off modules and opted-in empty compatibility
 packages for modules supplied by the kernel. DRR declares Boost;
-Fourier declares non-MPI FFTW; `isdb-pytorch` (EMMIVOX), PyTorch and metatomic declare CPU LibTorch and
-native metatomic/metatensor libraries; TTsketch builds against non-MPI HDF5 but permits ABI-compatible MPI variants
+Fourier declares non-MPI FFTW; `isdb-pytorch` (EMMIVOX) and PyTorch declare CPU LibTorch;
+TTsketch builds against non-MPI HDF5 but permits ABI-compatible MPI variants
 at runtime, while its
-unavailable ITensor dependency does not exclude it. KEnRef is also retained.
+unavailable ITensor dependency does not exclude it. metatomic and KEnRef are also
+retained without their unavailable libraries (metatomic-core and the KEnRef core).
 Each package gets the license and notices from its own module directory, with
 the root license used only when a module has no notice.
 
