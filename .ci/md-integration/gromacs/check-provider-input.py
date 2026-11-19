@@ -49,13 +49,15 @@ with (output / "compile.log").open("w") as log:
 environment = os.environ.copy()
 environment["PLUMED_KERNEL"] = str(kernel)
 with (output / "output").open("w") as log:
-    subprocess.run(
+    result = subprocess.run(
         [str(binary)],
         cwd=output,
         env=environment,
         stdout=log,
         stderr=subprocess.STDOUT,
-        check=True,
+        check=False,
         timeout=60,
     )
 print((output / "output").read_text(), end="")
+
+result.check_returncode()

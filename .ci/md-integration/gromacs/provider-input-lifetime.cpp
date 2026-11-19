@@ -48,7 +48,7 @@ int main(int argc, char** argv)
             energyOptions.plumedFile_ = "energy.dat";
             energyOptions.replex_ = false;
             gmx::PlumedForceProvider provider(energyOptions);
-            std::vector<gmx::RVec> x{ { 0, 0, 0 }, { real(0.45), 0, 0 } }, f(2);
+            std::vector<gmx::RVec> x{ { 0, 0, 0 }, { real(0.45), 0, 0 } }, f(2, gmx::RVec{ 0, 0, 0 });
             std::vector<real> mass(2, 1), charge(2, 0);
             matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
             matrix virial = { { real(0.2), 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
             providers.addForceProvider(&provider);
             if (gmx::findPlumedForceProvider(&providers) != &provider)
                 throw std::runtime_error("PLUMED provider lookup does not match its collection");
-            std::vector<gmx::RVec>   x{ { 0, 0, 0 }, { real(0.45), 0, 0 } }, f(2);
+            std::vector<gmx::RVec>   x{ { 0, 0, 0 }, { real(0.45), 0, 0 } }, f(2, gmx::RVec{ 0, 0, 0 });
             std::vector<real>        mass(2, 1), charge(2, 0);
             matrix                   box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
             gmx::ForceProviderInput  input(x, 2, charge, mass, 0, 0, box, comm, nullptr);
@@ -90,7 +90,10 @@ int main(int argc, char** argv)
             copy_mat(force.getVirial(), savedVirial);
             if (std::abs(f[0][0] - real(0.9)) > 1e-6
                 || std::abs(savedVirial[0][0] - real(0.2025)) > 1e-6)
+                {
+                std::cerr << "restraint force=" << f[0][0] << " virial=" << savedVirial[0][0] << "\n";
                 throw std::runtime_error("Unexpected normal restraint force/virial");
+            }
             auto& plumed = *provider.plumedHandle();
 #if GMX_LIB_MPI
             plumed.cmd("GREX init");
