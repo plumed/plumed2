@@ -1,4 +1,3 @@
-
 include ../maketools/make.module
 CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror
 

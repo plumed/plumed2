@@ -29,6 +29,7 @@ jobs:
         python3 extensions/tests/kernel_requirements.py
         python3 extensions/tests/configure_selection.py
         python3 extensions/tests/cmake_selection.py
+        python3 extensions/tests/module_metadata.py
         python3 extensions/tests/requirements.py
         python3 conda/tests/module_options.py
         python3 conda/tests/gpu_handoff.py

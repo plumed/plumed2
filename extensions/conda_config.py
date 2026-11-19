@@ -142,7 +142,7 @@ def regression_selection(catalog):
                     "regtest": fixture,
                     "module": name,
                     "packages": list(dict.fromkeys(packages + policy["test_packages"])),
-                    "force_requirements": policy["test_force_requirements"] == "yes",
+                    "force_requirements": policy["test_force_requirements"],
                     "hardware": policy["test_hardware"],
                     "platforms": policy["platforms"],
                 }

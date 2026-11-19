@@ -9,12 +9,8 @@ dois: ["10.1088/1361-648X/aa893d"]
 
 conda:
   requirements:
-    host:
-    - fftw * nompi_*
-    run:
-    - fftw * nompi_*
+    host: [fftw * nompi_*]
+    run: [fftw * nompi_*]
   tests:
-    regtests:
-    - fourier/rt-fftw
-    packages:
-    - plumed-ext-symfunc
+    regtests: [fourier/rt-fftw]
+    packages: [plumed-ext-symfunc]

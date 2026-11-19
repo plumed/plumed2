@@ -10,9 +10,6 @@ dois: ["10.1021/acs.jctc.6c00487"]
 # Keep the module enabled without ITensor while compulsory libraries are reviewed.
 conda:
   requirements:
-    host:
-    - hdf5 * nompi_*
-    run:
-    - hdf5
-  unavailable_libraries:
-  - ITensor
+    host: [hdf5 * nompi_*]
+    run: [hdf5]
+  unavailable_libraries: [ITensor]

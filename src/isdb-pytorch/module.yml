@@ -11,11 +11,7 @@ tags:
 # EMMIVOX uses LibTorch directly; it does not link the PLUMED pytorch module.
 conda:
   requirements:
-    host:
-    - libtorch * cpu_generic*
-    run:
-    - libtorch * cpu_generic*
+    host: [libtorch * cpu_generic*]
+    run: [libtorch * cpu_generic*]
   tests:
-    regtests:
-    - isdb-pytorch/rt-emmivox-fixed
-    - isdb-pytorch/rt-checkpoint-emmivox
+    regtests: [isdb-pytorch/rt-emmivox-fixed, isdb-pytorch/rt-checkpoint-emmivox]

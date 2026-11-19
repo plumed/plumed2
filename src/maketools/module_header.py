@@ -4,10 +4,15 @@ import re
 from pathlib import Path
 
 
-def read_header(path):
+def check_obsolete(source):
+    for declaration in Path(source).glob("*/module.type"):
+        raise ValueError(f"{declaration}: module.type is obsolete, use module.yml")
+
+
+def read_header(path, text=None):
     """Read the two restricted top-level YAML fields, preserving USE order."""
     fields = {}
-    for line in Path(path).read_text().splitlines():
+    for line in (Path(path).read_text() if text is None else text).splitlines():
         if not re.match(r"""^["']?(type|use)["']?\s*:""", line):
             continue
         key = line.split(":", 1)[0]

@@ -30,6 +30,7 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 set(PLUMED_MODULES "reset" CACHE STRING
     "Modules to compile, with the syntax of ./configure --enable-modules")
 include(${PLUMED_SRC}/cmake-msvc/PlumedModules.cmake)
+plumed_check_obsolete_modules("${PLUMED_SRC}")
 set(_all_modules)
 set(_always_modules)
 set(_default_modules)

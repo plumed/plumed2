@@ -24,3 +24,26 @@ function(plumed_read_module declaration type_out use_out)
   set(${type_out} "${_type}" PARENT_SCOPE)
   set(${use_out} "${_use}" PARENT_SCOPE)
 endfunction()
+
+# Fail explicitly for user modules that have not migrated their declarations.
+function(plumed_check_obsolete_modules src_root)
+  file(GLOB _obsolete "${src_root}/src/*/module.type")
+  if(_obsolete)
+    list(GET _obsolete 0 _declaration)
+    message(FATAL_ERROR "${_declaration}: module.type is obsolete, use module.yml")
+  endif()
+endfunction()
+
+# Only native build settings contribute to binary compatibility, not descriptions
+# or packaging policy. Sorted paths also identify added/removed declarations.
+function(plumed_module_headers src_root result)
+  file(GLOB _declarations "${src_root}/src/*/module.yml")
+  list(SORT _declarations)
+  set(_headers "")
+  foreach(_declaration IN LISTS _declarations)
+    plumed_read_module("${_declaration}" _type _use)
+    file(RELATIVE_PATH _relative "${src_root}" "${_declaration}")
+    string(APPEND _headers ";${_relative}:${_type}:${_use}")
+  endforeach()
+  set(${result} "${_headers}" PARENT_SCOPE)
+endfunction()

@@ -1,7 +1,16 @@
 #!/bin/sh
 # No Python/YAML dependency for configure or Make. One declaration per call.
 if test "$#" != 2; then
-  echo "usage: module-header type|use|table module.yml" >&2
+  echo "usage: module-header type|use|table module.yml | check-obsolete src" >&2
   exit 1
+fi
+if test "$1" = check-obsolete; then
+  for declaration in "$2"/*/module.type; do
+    if test -f "$declaration"; then
+      echo "$declaration: module.type is obsolete, use module.yml" >&2
+      exit 1
+    fi
+  done
+  exit 0
 fi
 LC_ALL=C awk -v field="$1" -f "$(dirname "$0")/module-header.awk" "$2"

@@ -11,10 +11,7 @@ tags:
 # Boost serialization is available on conda-forge; it is optional for this module.
 conda:
   requirements:
-    host:
-    - libboost-devel
-    run:
-    - libboost
+    host: [libboost-devel]
+    run: [libboost]
   tests:
-    regtests:
-    - drr/rt-checkpoint-drr
+    regtests: [drr/rt-checkpoint-drr]

@@ -91,6 +91,50 @@ def check():
             else:
                 raise AssertionError(suffix)
         assert not (directory / "sentinel").exists()
+        # CMake compatibility identity must ignore prose/Conda policy, but retain
+        # native type/use changes even when the selected module list is unchanged.
+        tree = directory / "tree"
+        module = tree / "src/probe/module.yml"
+        module.parent.mkdir(parents=True)
+        script = directory / "headers.cmake"
+        output = directory / "identity"
+        script.write_text(
+            f'include("{source}/cmake-msvc/PlumedModules.cmake")\n'
+            f'plumed_check_obsolete_modules("{tree}")\n'
+            f'plumed_module_headers("{tree}" headers)\n'
+            f'file(WRITE "{output}" "${{headers}}")\n'
+        )
+
+        def cmake_headers():
+            subprocess.run(
+                [os.environ.get("CMAKE", "cmake"), "-P", str(script)],
+                check=True,
+                capture_output=True,
+            )
+            return output.read_text()
+
+        module.write_text(good)
+        baseline = cmake_headers()
+        module.write_text(
+            good + "description: Updated prose\nconda: {platforms: [linux-64]}\n"
+        )
+        assert cmake_headers() == baseline
+        for changed in (
+            good.replace("default-off", "default-on"),
+            good.replace("core, tools", "core"),
+        ):
+            module.write_text(changed)
+            assert cmake_headers() != baseline
+        obsolete = tree / "src/legacy/module.type"
+        obsolete.parent.mkdir()
+        obsolete.write_text("default-on\n")
+        for command in (
+            [str(reader), "check-obsolete", str(tree / "src")],
+            [os.environ.get("CMAKE", "cmake"), "-P", str(script)],
+        ):
+            result = subprocess.run(command, capture_output=True, text=True)
+            assert result.returncode != 0
+            assert "module.type is obsolete, use module.yml" in result.stderr
     print(
         "Module declarations: shell/Python/Make agreement; invalid headers rejected by shell/Python/CMake"
     )

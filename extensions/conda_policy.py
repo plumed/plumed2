@@ -25,7 +25,7 @@ LISTS = (
 )
 DEFAULTS = {
     "dummy_package": False,
-    "test_force_requirements": "no",
+    "test_force_requirements": False,
     "test_hardware": "none",
 }
 
@@ -45,17 +45,18 @@ def validate_backend(policy, backend, directory):
             )
 
 
-def read_policy(directory):
+def read_policy(directory, metadata=None):
     result = {key: [] for key in (*REQUIREMENTS, *LISTS)}
     result.update(DEFAULTS)
     result["variants"] = {}
     declaration = directory / "module.yml"
     if not declaration.exists():
         declaration = directory / "plugin.yml"
-    if not declaration.exists():
-        result["dummy_package"] = False
-        return result
-    policy = read_metadata(declaration).get("conda", {})
+    if metadata is None:
+        if not declaration.exists():
+            return result
+        metadata = read_metadata(declaration)
+    policy = metadata.get("conda", {})
     if not isinstance(policy, dict):
         raise ValueError(f"{declaration}: conda must be a mapping")
 
@@ -102,7 +103,7 @@ def read_policy(directory):
                 if target in LISTS:
                     result[target] = string_list(values)
                 elif name == "force_requirements" and isinstance(values, bool):
-                    result[target] = "yes" if values else "no"
+                    result[target] = values
                 elif name == "hardware" and values in ("none", "gpu"):
                     result[target] = values
                 else:

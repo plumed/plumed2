@@ -42,4 +42,16 @@ with tempfile.TemporaryDirectory(prefix="plumed-configure-modules-") as scratch:
         for name in disabled:
             assert (root / "src" / (name + ".off")).exists(), (expression, name)
             assert not (root / "src" / (name + ".on")).exists(), (expression, name)
-print("Hyphenated and legacy native configure module selection passed")
+    obsolete = root / "src/legacy-module/module.type"
+    obsolete.parent.mkdir()
+    obsolete.write_text("default-on\n")
+    result = subprocess.run(
+        ["bash", "configure", "--enable-modules=reset"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    assert result.returncode != 0
+    assert "module.type is obsolete, use module.yml" in result.stderr, result.stderr
+print("Hyphenated/legacy selection and obsolete-declaration diagnostics passed")

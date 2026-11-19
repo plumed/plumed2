@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src/maketools"))
-from module_header import read_header
+from module_header import check_obsolete as check_obsolete, read_header
 
 
 def read_metadata(path):
@@ -26,14 +26,15 @@ def read_metadata(path):
                 result[key] = self.construct_object(value_node, deep=deep)
             return result
 
+    text = Path(path).read_text()
     try:
-        data = yaml.load(Path(path).read_text(), Loader=Loader)
+        data = yaml.load(text, Loader=Loader)
     except yaml.YAMLError as error:
         raise ValueError(f"{path}: {error}") from error
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected a YAML mapping")
     if Path(path).name == "module.yml":
-        header = read_header(path)
+        header = read_header(path, text)
         if any(data.get(key) != value for key, value in header.items()):
             raise ValueError(f"{path}: YAML and native header disagree")
     return data

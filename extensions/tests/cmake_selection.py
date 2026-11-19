@@ -6,8 +6,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from module_metadata import check
-
 source = Path(__file__).resolve().parents[2]
 # CMake configures the runtime config.txt in the source tree. Preserve an
 # existing Autotools snapshot when testing module selection in a shared checkout.
@@ -71,5 +69,3 @@ finally:
     else:
         config_snapshot.write_bytes(original_config)
 print("CMake hyphenated and legacy module selection passed")
-
-check()

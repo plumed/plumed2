@@ -151,6 +151,7 @@ endfunction()
 
 # --- Config.inc / version.h / Makefile.conf.xxd --------------------------
 function(plumed_generate_config src_root out_dir)
+  plumed_check_obsolete_modules("${src_root}")
   plumed_read_version("${src_root}")
 
   # Config.inc: the substitutions that src/config/Makefile does with sed for
@@ -193,8 +194,7 @@ function(plumed_generate_config src_root out_dir)
   string(JOIN " " _builtin_modules ${MODULES})
   set(_identity "cmake-static;${PLUMED_VERSION_LONG};${MODULE_TOOLCHAIN};${MODULES};${MODULE_DEFINITIONS}")
   file(GLOB _identity_sources "${src_root}/src/*/*.cpp"
-       "${src_root}/src/*/*.h" "${src_root}/src/*/*.c"
-       "${src_root}/src/*/module.yml")
+       "${src_root}/src/*/*.h" "${src_root}/src/*/*.c")
   list(SORT _identity_sources)
   foreach(_source IN LISTS _identity_sources)
     if(NOT _source STREQUAL "${src_root}/src/config/version.h")
@@ -203,6 +203,8 @@ function(plumed_generate_config src_root out_dir)
       string(APPEND _identity ";${_relative}:${_digest}")
     endif()
   endforeach()
+  plumed_module_headers("${src_root}" _headers)
+  string(APPEND _identity "${_headers}")
   file(SHA256 "${src_root}/CMakeLists.txt" _cmake_digest)
   string(SHA256 _build_id "${_identity};${_cmake_digest}")
   file(WRITE "${out_dir}/ModuleBuild.inc"

@@ -15,5 +15,4 @@ tags:
 
 conda:
   tests:
-    regtests:
-    - ves/rt-le-1d-static-bias
+    regtests: [ves/rt-le-1d-static-bias]

@@ -2428,6 +2428,9 @@ done
 
 ##################################################################
 
+src/maketools/module-header check-obsolete src ||
+  as_fn_error $? "obsolete module declaration" "$LINENO" 5
+
 # Validate the restricted build fields with a POSIX reader, without Python.
 for modules_file in src/*/module.yml; do
   src/maketools/module-header type "$modules_file" >/dev/null ||

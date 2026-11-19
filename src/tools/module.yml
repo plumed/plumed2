@@ -7,13 +7,5 @@ use: [core, lapack, lepton, small_vector, xdrfile, mpiwrap, gemmi]
 # Retain the main package's configured FFTW capability and actual OpenBLAS provider.
 conda:
   requirements:
-    host:
-    - hdf5 * nompi_*
-    - zlib
-    - libopenblas
-    - fftw * nompi_*
-    run:
-    - hdf5
-    - zlib
-    - libopenblas
-    - fftw * nompi_*
+    host: [hdf5 * nompi_*, zlib, libopenblas, fftw * nompi_*]
+    run: [hdf5, zlib, libopenblas, fftw * nompi_*]

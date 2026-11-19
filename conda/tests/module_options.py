@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -50,7 +51,7 @@ class ModuleOptions(unittest.TestCase):
         policy = read_policy(self.root)
         self.assertFalse(policy["dummy_package"])
         self.assertEqual(policy["test_hardware"], "none")
-        self.assertEqual(policy["test_force_requirements"], "no")
+        self.assertFalse(policy["test_force_requirements"])
         self.assertEqual(policy["required_features"], [])
 
     def test_kernel_identity_changes_with_module_selection(self):
@@ -86,6 +87,31 @@ class ModuleOptions(unittest.TestCase):
         self.assertNotEqual(identity(), baseline)
         marker.unlink()
         self.assertEqual(identity(), baseline)
+        declaration = tree / "src/core/module.yml"
+        original = declaration.read_text()
+        declaration.write_text(
+            original
+            + "description: Updated prose\nconda: {requirements: {host: [example]}}\n"
+        )
+        self.assertEqual(identity(), baseline)
+        declaration.write_text(original.replace("use: []", "use: [alpha]"))
+        self.assertNotEqual(identity(), baseline)
+        declaration.write_text(original.replace("type: always", "type: default-on"))
+        self.assertNotEqual(identity(), baseline)
+
+    def test_inventory_reads_each_declaration_once(self):
+        counts = {}
+        original = Path.read_text
+
+        def read(path, *args, **kwargs):
+            if path.name in ("module.yml", "plugin.yml"):
+                counts[path] = counts.get(path, 0) + 1
+            return original(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "read_text", read):
+            catalog = generate_catalog(write=False)
+        self.assertEqual(len(counts), len(catalog["modules"]) + len(catalog["plugins"]))
+        self.assertTrue(all(count == 1 for count in counts.values()))
 
     def test_complete_unavailable_action_catalogue(self):
         output = self.root / "ModuleMap.inc"
@@ -119,8 +145,8 @@ class ModuleOptions(unittest.TestCase):
     def test_malformed_and_unknown_settings(self):
         for text in (
             "conda:\n  host_requirments:\n  - hdf5\n",
-            "include other.mk",
-            "conda:\n  dummy_package: invalid-append\n",
+            "conda: []",
+            'conda:\n  dummy_package: "true"\n',
             "conda:\n  dummy_package: maybe\n",
             "conda:\n  tests:\n    hardware: maybe\n",
             "conda:\n  cxxflags:\n  - spec: -O2\n    selector: linux\n",

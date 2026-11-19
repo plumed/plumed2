@@ -1,6 +1,5 @@
 #! /usr/bin/env bash
 
-module_header="$(cd "$(dirname "$0")" && pwd)/module-header"
 # first argument is name of txt file to be updated
 file="$1"
 
@@ -84,7 +83,7 @@ for dir in *
 do
   if test -f "$dir/module.yml"
   then
-    mtype="$("$module_header" type "$dir/module.yml")" || exit 1
+    mtype="$(maketools/module-header type "$dir/module.yml")" || exit 1
     is=""
     case "$mtype" in
     (always) is=on ;;

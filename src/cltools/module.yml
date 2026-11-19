@@ -10,9 +10,6 @@ dois: []
 # with its minor version. 0.10.3 also supports linux-aarch64.
 conda:
   requirements:
-    host:
-    - chemfiles-lib 0.10.*
-    run:
-    - chemfiles-lib >=0.10.3,<0.11
-  configure_flags:
-  - --enable-libchemfiles
+    host: [chemfiles-lib 0.10.*]
+    run: ['chemfiles-lib >=0.10.3,<0.11']
+  configure_flags: [--enable-libchemfiles]

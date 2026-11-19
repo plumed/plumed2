@@ -7,9 +7,9 @@
 !/*.sh
 !/Makefile
 !/README.md
-!/module.yml
 !/COPYRIGHT
 !/PEOPLE-METATOMIC
 !/flags-from-python.py
 !external/
+!/module.yml
 !/module.md

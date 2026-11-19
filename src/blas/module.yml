@@ -6,7 +6,5 @@ use: []
 # Link the actual OpenBLAS provider rather than switchable BLAS/LAPACK symlinks.
 conda:
   requirements:
-    host:
-    - libopenblas
-    run:
-    - libopenblas
+    host: [libopenblas]
+    run: [libopenblas]

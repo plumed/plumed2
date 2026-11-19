@@ -259,6 +259,9 @@ AC_DEFUN([PLUMED_OPENMP],
 
 ##################################################################
 
+src/maketools/module-header check-obsolete src ||
+  AC_MSG_ERROR([obsolete module declaration])
+
 # Validate the restricted build fields with a POSIX reader, without Python.
 for modules_file in src/*/module.yml; do
   src/maketools/module-header type "$modules_file" >/dev/null ||

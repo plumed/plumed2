@@ -12,5 +12,4 @@ tags:
 # Packaging options: see conda/module-options.md.
 # Keep the module enabled without the separately distributed KEnRef core library.
 conda:
-  unavailable_libraries:
-  - kenref_core
+  unavailable_libraries: [kenref_core]
