@@ -641,7 +641,7 @@ void ReplexBiasValue::doExchanges() {
       reduced_biases[ibias] += coefficients[ibias * narg + j] * getArgument(j) / kbt;
     }
   }
-  std::vector<double> all_reduced_biases(nrep * nrep);
+  std::vector<double> all_reduced_biases(reduced_biases.size() * nrep);
   if (comm.Get_rank() == 0) {
     multi_sim_comm.Allgather(reduced_biases, all_reduced_biases);
   }
