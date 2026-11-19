@@ -205,6 +205,14 @@ This is the entry point to the command line tools
 included in the plumed library.
 */
 
+std::vector<std::string> CLToolMain::getGlobalOptions() {
+  return {"--help", "-h", "--has-mpi", "--has-real-mpi", "--has-thread-mpi",
+          "--mpi-ranks-are-threads", "--has-cregex", "--has-dlopen", "--has-molfile",
+          "--has-external-molfile", "--has-zlib", "--has-xdrfile", "--is-installed",
+          "--no-mpi", "--mpi", "--standalone-executable", "--load-module",
+          "--module-build-id", "--list-modules", "--load", "--tmpi-threads"};
+}
+
 int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   int i;
   bool printhelp=false;

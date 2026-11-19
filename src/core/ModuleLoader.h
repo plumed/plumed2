@@ -48,6 +48,8 @@ public:
   static void autoload(DLLoader& loader);
   static void load(const std::string& name, DLLoader& loader);
   static bool available(const std::string& name, const DLLoader& loader);
+  /// Registered module names, without activating their libraries.
+  static std::vector<std::string> installedModules();
   static std::vector<std::string> modules(const DLLoader& loader);
   /// Base native features plus features compiled into visible loaded modules.
   static std::vector<std::string> features(const DLLoader& loader, const std::string& module="");

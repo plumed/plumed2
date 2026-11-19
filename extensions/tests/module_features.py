@@ -6,6 +6,7 @@ import importlib
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,9 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--base", type=Path, required=True)
+parser.add_argument(
+    "--bash", action="append", help="Bash executable to test (repeatable)"
+)
 args = parser.parse_args()
 base = args.base.resolve()
 program = str(base / "bin/plumed")
@@ -231,12 +235,57 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
         assert (destination / "help/METADATA_ACTION.txt").is_file()
     # Real Bash completion must carry explicit LOAD options into its metadata
     # query, and expose the modules command and its presence/feature switches.
-    completion_env = dict(env, PATH=str(base / "bin") + os.pathsep + os.environ["PATH"])
+    completion_bin = root / "completion bin"
+    completion_bin.mkdir()
+    (completion_bin / "plumed-renamed").symlink_to(program)
+    completion_env = dict(
+        env,
+        PATH=os.pathsep.join(
+            (str(completion_bin), str(base / "bin"), os.environ["PATH"])
+        ),
+    )
+    # Exercise quoted library paths, including characters that must not be eval'd.
+    quoted_library = root / ("module path $literal." + soext)
+    quoted_library.symlink_to(root / ("feature-a." + soext))
     for words, expected in (
         (["plumed", "--"], "--load-module"),
         (["plumed", "modules", "--"], "--has-feature"),
         (["plumed", "--load-module", "feature_b", "metadata_tool", "--"], "--probe"),
         (["plumed", "--load-module=feature_b", "metadata_tool", "--"], "--probe"),
+        (
+            ["plumed", "--load-module", "=", "feature_b", "metadata_tool", "--"],
+            "--probe",
+        ),
+        (["plumed", "--load", str(quoted_library), "metadata_tool", "--"], "--probe"),
+        (["plumed", "--load=" + str(quoted_library), "metadata_tool", "--"], "--probe"),
+        (["plumed", "--load-module", "feature_b", "meta"], "metadata_tool"),
+        (
+            [
+                "plumed",
+                "--load-module",
+                "feature-a",
+                "--load-module",
+                "feature_b",
+                "metadata_tool",
+                "--",
+            ],
+            "--probe",
+        ),
+        (
+            ["plumed-renamed", "--load-module", "feature_b", "metadata_tool", "--"],
+            "--probe",
+        ),
+        (
+            [
+                str(completion_bin / "plumed-renamed"),
+                "--load-module",
+                "feature_b",
+                "metadata_tool",
+                "--",
+            ],
+            "--probe",
+        ),
+        (["plumed", "--load-module", "missing-module", "meta"], None),
         (["plumed", "driver", "--load", str(root / "missing.so"), "--"], "--plumed"),
         (["plumed", "driver", "--load=" + str(root / "missing.so"), "--"], "--plumed"),
         (["plumed", "driver", "--load-module", "missing-module", "--"], "--plumed"),
@@ -251,21 +300,47 @@ with tempfile.TemporaryDirectory(prefix="plumed-module-features-") as scratch:
             "--plumed",
         ),
     ):
-        script = 'source "$1"\nshift\nCOMP_WORDS=("$@")\nCOMP_CWORD=$((${#COMP_WORDS[@]}-1))\n_plumed\nprintf "%s\\n" "${COMPREPLY[@]}"'
-        result = subprocess.run(
-            [
-                "bash",
-                "-c",
-                script,
-                "completion-test",
-                str(source / "src/lib/bash.completion"),
-                *words,
-            ],
-            env=completion_env,
-            check=True,
-            text=True,
-            capture_output=True,
-            timeout=30,
-        )
-        assert expected in result.stdout.split(), (words, result.stdout, result.stderr)
+        for setup in (
+            'source "$1"',
+            # The unchanged profile snippet, using the executable being tested.
+            '_plumed() { eval "$('
+            + shlex.quote(words[0])
+            + ' --no-mpi completion 2>/dev/null)"; }',
+        ):
+            script = (
+                setup
+                + '\nshift\nCOMP_WORDS=("$@")\nCOMP_CWORD=$((${#COMP_WORDS[@]}-1))\n_plumed\nprintf "%s\\n" "${COMPREPLY[@]}"'
+                # A second completion must not retain the guard or loaded tools.
+                + "\n[[ ${_plumed_completion_reloaded:-unset} == unset ]] || exit 1"
+                + '\nCOMP_WORDS=("${COMP_WORDS[0]}" meta)\nCOMP_CWORD=1\n_plumed'
+                + '\n[[ " ${COMPREPLY[*]} " != *" metadata_tool "* ]]'
+            )
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    script,
+                    "completion-test",
+                    str(source / "src/lib/bash.completion"),
+                    *words,
+                ],
+                env=completion_env,
+                check=True,
+                text=True,
+                capture_output=True,
+                timeout=30,
+            )
+            if expected is None:
+                assert not result.stdout.strip(), (words, result.stdout, result.stderr)
+            else:
+                assert expected in result.stdout.split(), (
+                    words,
+                    result.stdout,
+                    result.stderr,
+                )
+
+    from completion import check_bash
+
+    for bash in args.bash or [shutil.which("bash")]:
+        check_bash(bash, program, root, dict(env, TEST_SOEXT=soext))
 print("Per-module kernel/extension feature isolation passed")

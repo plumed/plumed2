@@ -32,4 +32,15 @@ public:
   }
 };
 PLUMED_REGISTER_CLTOOL(MetadataTool,"metadata_tool")
+
+class MetadataHyphenTool:public MetadataTool {
+public:
+  static void registerKeywords(Keywords& keys) {
+    CLTool::registerKeywords(keys);
+    keys.addFlag("--hyphen",false,"distinct hyphenated-tool fixture flag");
+  }
+  explicit MetadataHyphenTool(const CLToolOptions& options):MetadataTool(options) {}
+};
+PLUMED_REGISTER_CLTOOL(MetadataHyphenTool,"metadata-tool")
+
 }

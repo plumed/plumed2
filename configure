@@ -11082,8 +11082,8 @@ if test -z "$BASH_COMPLETION_DIR" ; then
 $as_echo "$as_me: WARNING: **** Bash completion for plumed will not be installed, please add the following two lines to your bashrc" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** _$program_name() { eval \"\$($program_name --no-mpi completion 2>/dev/null)\";}" >&5
 $as_echo "$as_me: WARNING: **** _$program_name() { eval \"\$($program_name --no-mpi completion 2>/dev/null)\";}" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** complete -F _$program_name -o default $program_name" >&5
-$as_echo "$as_me: WARNING: **** complete -F _$program_name -o default $program_name" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** complete -F _$program_name -o default -o filenames $program_name" >&5
+$as_echo "$as_me: WARNING: **** complete -F _$program_name -o default -o filenames $program_name" >&2;}
 fi
 
 if test $mpi = true; then
