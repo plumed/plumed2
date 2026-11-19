@@ -51,7 +51,7 @@ private:
   Block key;
   Block counter{};
   Block buffer{};
-  unsigned used=2;
+  unsigned used = 2;
 };
 
 }

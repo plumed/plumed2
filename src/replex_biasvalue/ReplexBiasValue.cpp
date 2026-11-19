@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2023 The plumed team
+   Copyright (c) 2026 Olivier Languin-Cattoën
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -33,7 +33,7 @@
 #include <numeric>
 
 namespace PLMD {
-namespace bias {
+namespace replex_biasvalue {
 
 //+PLUMEDOC BIAS REPLEX_BIASVALUE
 /*
@@ -242,7 +242,7 @@ very last line is used.
 */
 //+ENDPLUMEDOC
 
-class ReplexBiasValue : public Bias {
+class ReplexBiasValue : public bias::Bias {
 private:
   // Statistics of the exchange attempts of each pair of neighbors: index
   // ibias + d*nrep is the pair (ibias, ibias + strides[d]) along dimension d
@@ -907,5 +907,5 @@ void ReplexBiasValue::logGrid(const std::vector<std::string> &cells) const {
   }
 }
 
-} // namespace bias
+} // namespace replex_biasvalue
 } // namespace PLMD

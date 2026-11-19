@@ -31,22 +31,22 @@ inline std::uint64_t rotl(std::uint64_t x, unsigned r) {
 
 // Same algorithm as threefry2x64 with 20 rounds in Random123 (threefry.h)
 Threefry2x64::Block Threefry2x64::block(const Block & in, const Block & k) {
-  constexpr unsigned rotations[8]= {16,42,12,31,16,32,24,21};
-  const std::uint64_t ks[3]= {k[0],k[1],UINT64_C(0x1BD11BDAA9FC1A22)^k[0]^k[1]};
-  std::uint64_t x0=in[0]+ks[0];
-  std::uint64_t x1=in[1]+ks[1];
+  constexpr unsigned rotations[8] = {16,42,12,31,16,32,24,21};
+  const std::uint64_t ks[3] = {k[0], k[1], UINT64_C(0x1BD11BDAA9FC1A22)^k[0]^k[1]};
+  std::uint64_t x0 = in[0] + ks[0];
+  std::uint64_t x1 = in[1] + ks[1];
   for(unsigned r=0; r<20; r++) {
-    x0+=x1;
-    x1=rotl(x1,rotations[r%8]);
-    x1^=x0;
+    x0 += x1;
+    x1 = rotl(x1, rotations[r%8]);
+    x1 ^= x0;
     // key injection every 4 rounds
-    if(r%4==3) {
-      const unsigned j=(r+1)/4;
-      x0+=ks[j%3];
-      x1+=ks[(j+1)%3]+j;
+    if(r%4 == 3) {
+      const unsigned j = (r+1)/4;
+      x0 += ks[j%3];
+      x1 += ks[(j+1)%3] + j;
     }
   }
-  return {x0,x1};
+  return {x0, x1};
 }
 
 Threefry2x64::Threefry2x64(std::uint64_t key0, std::uint64_t key1):
@@ -54,15 +54,15 @@ Threefry2x64::Threefry2x64(std::uint64_t key0, std::uint64_t key1):
 }
 
 void Threefry2x64::restart(std::uint64_t c0) {
-  counter= {c0,0};
-  used=2;
+  counter = {c0,0};
+  used = 2;
 }
 
 std::uint64_t Threefry2x64::next() {
-  if(used==2) {
-    buffer=block(counter,key);
+  if (used == 2) {
+    buffer = block(counter, key);
     counter[1]++;
-    used=0;
+    used = 0;
   }
   return buffer[used++];
 }
