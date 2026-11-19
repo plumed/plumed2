@@ -128,7 +128,8 @@ class Suite(analytic.Suite):
             for hill in hills[replica]:
                 hill_step = round(hill["time"] / 0.0001)
                 if hill_step < step or (
-                    getattr(self.args, "bias_order", "pre") == "post" and hill_step == step
+                    getattr(self.args, "bias_order", "pre") == "post"
+                    and hill_step == step
                 ):
                     scaled = (value - hill[argument]) / hill["sigma_" + argument]
                     result += hill["height"] * max(
