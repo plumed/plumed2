@@ -221,7 +221,11 @@ try
     plumed_->cmd("setPositions", &(forceProviderInput.x_.data()->as_vec()[0]));
     plumed_->cmd("setMasses", forceProviderInput.massT_.data());
     plumed_->cmd("setCharges", forceProviderInput.chargeA_.data());
-    plumed_->cmd("setBox", &forceProviderInput.box_[0][0]);
+    /* PLUMED keeps the pointer and reads the box when it calculates. When it needs the energy
+       that happens in applyAfterPotentialEnergy(), after forceProviderInput (which owns its
+       copy of the box) has been destroyed: PLUMED is given a copy that lives as long as this object. */
+    copy_mat(forceProviderInput.box_, plumedBox_);
+    plumed_->cmd("setBox", &plumedBox_[0][0]);
 
     if (preparedStep_ == lstep)
     {
