@@ -21,9 +21,9 @@
 #ifndef __PLUMED_cuda_to_hip_h
 #define __PLUMED_cuda_to_hip_h
 
-// The CUDA runtime names used by the plugin, mapped to HIP when the plugin is
-// compiled for AMD GPUs (USE_HIP=1 in the Makefile); with nvcc this only
-// includes the CUDA runtime.
+// The CUDA runtime names used by the plugin (and by ../openaccPTM/gpucheck),
+// mapped to HIP when the plugin is compiled for AMD GPUs (USE_HIP=1 in the
+// Makefile); with nvcc this only includes the CUDA runtime.
 
 #ifdef __HIP__
 
@@ -42,6 +42,7 @@
 #define cudaSuccess                      hipSuccess
 
 #define cudaDeviceGetStreamPriorityRange hipDeviceGetStreamPriorityRange
+#define cudaDeviceSynchronize            hipDeviceSynchronize
 #define cudaEventCreateWithFlags         hipEventCreateWithFlags
 #define cudaEventDestroy                 hipEventDestroy
 #define cudaEventRecord                  hipEventRecord
@@ -55,6 +56,7 @@
 #define cudaMallocHost                   hipHostMalloc
 #define cudaMemcpy                       hipMemcpy
 #define cudaMemcpyAsync                  hipMemcpyAsync
+#define cudaMemset                       hipMemset
 #define cudaSetDevice                    hipSetDevice
 #define cudaStreamCreateWithPriority     hipStreamCreateWithPriority
 #define cudaStreamDestroy                hipStreamDestroy
