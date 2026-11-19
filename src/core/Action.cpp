@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
+#include <cstdlib>
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
@@ -235,7 +236,19 @@ void Action::parseFlag(const std::string&key,bool & t) {
   }
 }
 
-void Action::setLaunchable( const bool forward, const bool backward ) {
+void Action::setLaunchable( bool forward, bool backward ) {
+  // PLUMED_LAUNCH=no: launch() and launchApply() are never called, and the actions do all their
+  // work in calculate() and apply(). Results are the same: it is meant to compare timings and to debug
+  if(const char* e=std::getenv("PLUMED_LAUNCH")) {
+    if(std::string(e)=="no") {
+      forward=backward=false;
+    }
+  }
+  if(forward || backward) {
+    log.printf("  the work of this action is started as soon as possible (launch), set PLUMED_LAUNCH=no to disable\n");
+  } else if(std::getenv("PLUMED_LAUNCH")) {
+    log.printf("  the work of this action is not started in advance (PLUMED_LAUNCH=no)\n");
+  }
   launchable=forward;
   applyLaunchable=backward;
   // the loops over the actions look for launchable actions only after this

@@ -339,6 +339,7 @@ public:
 
 protected:
 /// Ask that launch() is called before calculate(), and launchApply() before apply()
+/// (unless the environment variable PLUMED_LAUNCH is set to "no"). It writes in the log.
   void setLaunchable( bool forward, bool backward=false );
 /// To be used once in calculate(): true if the work was queued by launch() (and it is still valid)
   bool takeLaunch() {
