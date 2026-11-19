@@ -39,6 +39,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -570,13 +571,15 @@ std::vector<unsigned> SoftVoronoiBase::mapSelection(
 void SoftVoronoiBase::finishSetup(const std::string& displayName) {
   checkRead();
   // Compatible actions share the candidate-list history as well as each evaluation.
+  // The cutoff and skin are exact cache keys: even a small change can select a different pair.
   if(!noShare_) {
     for(auto* other: plumed.getActionSet().select<SoftVoronoiBase*>()) {
       if(other->shared_ && other->centers_==centers_ &&
           other->assigned_==assigned_ && other->pbc_==pbc_ &&
           other->serial_==serial_ && other->backend_==backend_ &&
-          other->cudaLibrary_==cudaLibrary_ && other->neighborCutoff_==neighborCutoff_ &&
-          other->neighborSkin_==neighborSkin_ &&
+          other->cudaLibrary_==cudaLibrary_ &&
+          std::tie(other->neighborCutoff_,other->neighborSkin_)==
+          std::tie(neighborCutoff_,neighborSkin_) &&
           other->neighborList_->getStride()==neighborList_->getStride() &&
           other->useCellList_==useCellList_) {
         shared_=other->shared_;

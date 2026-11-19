@@ -1,0 +1,13 @@
+type=make
+plumed_needs="tools:dlopen"
+plumed_src=main.cpp
+plumed_link=shared
+export PLUMED_NUM_THREADS=1
+
+function plumed_regtest_before(){
+  local soext
+  soext=$($plumed_nompi info --soext) || return 1
+  $plumed_nompi mklib -o "backend.$soext" backend.cpp || return 1
+  PLUMED_MKLIB_CFLAGS="$PLUMED_MKLIB_CFLAGS -DLEGACY_VORONOI_ABI" \
+    $plumed_nompi mklib -o "legacy.$soext" backend.cpp
+}
