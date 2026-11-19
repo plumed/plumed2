@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--kernel", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--launcher", required=True)
+    parser.add_argument("--bias-order", choices=["pre", "post"], default="pre")
     options = parser.parse_args()
     root = Path(options.output).resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -55,6 +56,7 @@ def main():
         mdrun_args="-nb cpu -pme cpu -update cpu",
         atol=3e-5,
         rtol=3e-5,
+        bias_order=options.bias_order,
     )
 
     class Suite(analytic.Suite):
@@ -135,7 +137,7 @@ def main():
                     if step % stride == 0:
                         expected[step, 0] += 1
                     if step in range(interval, 31, interval):
-                        expected[step, 1] += 2
+                        expected[step, 1] += 2 if options.bias_order == "post" else 1
                 if counts != expected:
                     raise AssertionError(
                         f"{case['name']}: forward calls {counts} expected {expected}"

@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -102,6 +103,11 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
         GMX_THROW(InvalidInputError("Expanded-ensemble lambda MCMC combined with replica exchange is unsupported"));
     context_.mainRank = options.mpiComm_->isMainRank();
     context_.hrex     = options.hrex_;
+#if GMX_LIB_MPI
+    mpiComm_          = options.mpiComm_;
+    multiSim_         = options.ms_;
+    numAtoms_         = options.natoms_;
+#endif
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
     if (plumedAPIversion_ >= 13)
@@ -249,22 +255,9 @@ catch (const std::exception& ex)
             std::string("An error occurred while PLUMED was writing the checkpoint data\n:") + ex.what()));
 }
 
-void PlumedForceProvider::calculateForces(const ForceProviderInput& forceProviderInput,
-                                          ForceProviderOutput*      forceProviderOutput)
-try
+void PlumedForceProvider::bindInput(const ForceProviderInput& forceProviderInput)
 {
-#if GMX_LIB_MPI
-    if (context_.hrexTrial)
-        return;
-#endif
-    // setup: these instructions in the original patch are BEFORE do_force()
-    // now this is called within do_force(), but this does not impact the results
     long int lstep = prepareStepIsCalled_ ? currentStep_ : forceProviderInput.step_;
-    // With shell particles, relax_shell_flexcon() calls do_force() again on the same step (passing
-    // step 1): PLUMED then calculates its forces again, without updating (depositing, printing...).
-    // "Again" means since the last prepareStep(), which MD and reruns call before each step
-    repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
-    calculatedStep_ = lstep;
     // prepareStep() already opened this input epoch. Repeating setStep would
     // clear older kernels' prepared energy requirements before sharing data.
     if (preparedStep_ != lstep)
@@ -291,6 +284,36 @@ try
     // short-lived input container has gone out of scope. Keep the binding alive.
     copy_mat(forceProviderInput.box_, plumedBox_);
     plumed_->cmd("setBox", plumedBox_);
+
+}
+
+void PlumedForceProvider::calculateForces(const ForceProviderInput& forceProviderInput,
+                                          ForceProviderOutput*      forceProviderOutput)
+try
+{
+#if GMX_LIB_MPI
+    if (context_.hrexTrial)
+    {
+        if (usesPreUpdateExchange())
+            stepInput_.emplace(forceProviderInput);
+        return;
+    }
+    if (context_.exchangeStep && usesPreUpdateExchange())
+    {
+        // Delay the local bias until the foreign trial and physical energy are complete.
+        stepInput_.emplace(forceProviderInput);
+        return;
+    }
+#endif
+    // setup: these instructions in the original patch are BEFORE do_force()
+    // now this is called within do_force(), but this does not impact the results
+    long int lstep = prepareStepIsCalled_ ? currentStep_ : forceProviderInput.step_;
+    // With shell particles, relax_shell_flexcon() calls do_force() again on the same step (passing
+    // step 1): PLUMED then calculates its forces again, without updating (depositing, printing...).
+    // "Again" means since the last prepareStep(), which MD and reruns call before each step
+    repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
+    calculatedStep_ = lstep;
+    bindInput(forceProviderInput);
 
     if (preparedStep_ == lstep)
     {
@@ -397,6 +420,8 @@ try
         plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
         plumed_->cmd("setExtraCVForce lambda", &context_.lambdaForce);
     }
+    context_.foreignReady = false;
+    context_.exchangeReady = false;
     prepareStepIsCalled_ = true;
     currentStep_         = step;
     calculatedStep_.reset();
@@ -423,12 +448,181 @@ catch (const std::exception& ex)
             std::string("An error occurred while PLUMED was preparing the step\n:") + ex.what()));
 }
 
+#if GMX_LIB_MPI
+void PlumedForceProvider::prepareExchange(const gmx_enerdata_t& energy)
+{
+    if (!usesPreUpdateExchange() || context_.hrex || context_.foreignReady)
+        return;
+    GMX_RELEASE_ASSERT(stepInput_.has_value(), "Exchange needs this force call's physical inputs");
+    const auto& input = *stepInput_;
+    // Native lambda terms are still domain-local here. Reduce scratch copies,
+    // leaving GROMACS's ordinary energy arrays for their normal later reduction.
+    double potentials[2] = { energy.term[InteractionFunction::PotentialEnergy],
+                             energy.term[InteractionFunction::PotentialEnergy] };
+    if (context_.partnerLambda >= 0)
+        potentials[1] += energy.foreignLambdaTerms.deltaPotentialEnergy(context_.partnerLambda);
+    mpiComm_->sumReduce(2, potentials);
+    double foreignPotential = potentials[1];
+
+    // Assemble coordinates by atom identity, without changing GROMACS's DD,
+    // neighbor lists or force buffers. The trial uses the evaluating rank's
+    // local Hamiltonian (masses/charges), at the partner's positions and box.
+    const std::size_t coordinateCount = std::size_t(DIM) * numAtoms_;
+    GMX_RELEASE_ASSERT(coordinateCount <= std::size_t(std::numeric_limits<int>::max()) / sizeof(real),
+                       "PLUMED trial coordinate buffer exceeds the MPI count limit");
+    std::vector<real> positions(coordinateCount, 0);
+    for (int i = 0; i < input.homenr_; ++i)
+    {
+        const int global = globalAtomIndices_ ? (*globalAtomIndices_)[i] : i;
+        for (int d = 0; d < DIM; ++d)
+            positions[DIM * global + d] = input.x_[i][d];
+    }
+    mpiComm_->sumReduce(static_cast<int>(positions.size()), positions.data());
+    matrix foreignBox;
+    copy_mat(input.box_, foreignBox);
+    if (context_.mainRank && context_.partner != multiSim_->simulationIndex_)
+    {
+        // Send U_partner(x_local); receive U_local(x_partner).
+        MPI_Sendrecv_replace(&foreignPotential,
+                             1,
+                             MPI_DOUBLE,
+                             context_.partner,
+                             4110,
+                             context_.partner,
+                             4110,
+                             multiSim_->mainRanksComm_,
+                             MPI_STATUS_IGNORE);
+        MPI_Sendrecv_replace(positions.data(),
+                             static_cast<int>(positions.size() * sizeof(real)),
+                             MPI_BYTE,
+                             context_.partner,
+                             4111,
+                             context_.partner,
+                             4111,
+                             multiSim_->mainRanksComm_,
+                             MPI_STATUS_IGNORE);
+        MPI_Sendrecv_replace(foreignBox,
+                             sizeof(matrix),
+                             MPI_BYTE,
+                             context_.partner,
+                             4112,
+                             context_.partner,
+                             4112,
+                             multiSim_->mainRanksComm_,
+                             MPI_STATUS_IGNORE);
+    }
+    MPI_Bcast(&foreignPotential, 1, MPI_DOUBLE, 0, mpiComm_->comm());
+    MPI_Bcast(positions.data(), static_cast<int>(positions.size() * sizeof(real)), MPI_BYTE, 0, mpiComm_->comm());
+    MPI_Bcast(foreignBox, sizeof(matrix), MPI_BYTE, 0, mpiComm_->comm());
+    context_.foreignEnergy = foreignPotential;
+    std::vector<RVec> trialPositions(input.homenr_);
+    for (int i = 0; i < input.homenr_; ++i)
+    {
+        const int global = globalAtomIndices_ ? (*globalAtomIndices_)[i] : i;
+        for (int d = 0; d < DIM; ++d)
+            trialPositions[i][d] = positions[DIM * global + d];
+    }
+    preparedStep_.reset();
+    bindInput(input);
+    plumed_->cmd("setPositions", &(trialPositions.data()->as_vec()[0]));
+    copy_mat(foreignBox, plumedBox_);
+    plumed_->cmd("setBox", plumedBox_);
+    context_.trialEnergy = context_.mainRank ? context_.foreignEnergy : 0;
+    plumed_->cmd("setEnergy", &context_.trialEnergy);
+    int exchange = 1;
+    plumed_->cmd("setExchangeStep", &exchange);
+    plumed_->cmd("prepareCalc");
+    plumed_->cmd("performCalcNoForces");
+    plumed_->cmd("getBias", &context_.foreignBias);
+    context_.foreignReady = true;
+    exchange              = 0;
+    plumed_->cmd("setExchangeStep", &exchange);
+    // The caller immediately rebinds the local input before the normal force
+    // calculation/update; the temporary trialPositions binding is not reused.
+    preparedStep_.reset();
+}
+
+real PlumedForceProvider::localExchangeBias(real physicalEnergy)
+{
+    // The strict bias STRIDE policy makes the ordinary local bias complete.
+    // savePositions validates that policy and shares inputs, without a calculation.
+    long int step = currentStep_;
+    plumed_->cmd("setStepLong", &step);
+    context_.trialEnergy = physicalEnergy;
+    plumed_->cmd("setEnergy", &context_.trialEnergy);
+    plumed_->cmd("GREX savePositions");
+    real bias = 0;
+    plumed_->cmd("getBias", &bias);
+    return bias;
+}
+#endif
+
 bool PlumedForceProvider::applyAfterPotentialEnergy(bool           energyWasComputed,
                                                     real*          potentialEnergy,
                                                     ArrayRef<RVec> force,
                                                     tensor         virial)
 try
 {
+#if GMX_LIB_MPI
+    if (usesPreUpdateExchange() && context_.hrexTrial)
+    {
+        GMX_RELEASE_ASSERT(stepInput_.has_value() && energyWasComputed,
+                           "HREX trial must supply coordinates and physical energy");
+        preparedStep_.reset();
+        bindInput(*stepInput_);
+        int exchange = 1;
+        plumed_->cmd("setExchangeStep", &exchange);
+        plumed_->cmd("prepareCalc");
+        plumed_->cmd("setEnergy", potentialEnergy);
+        plumed_->cmd("performCalcNoForces");
+        plumed_->cmd("getBias", &context_.foreignBias);
+        double energy = *potentialEnergy;
+        mpiComm_->sumReduce(1, &energy);
+        context_.foreignEnergy = energy;
+        context_.foreignReady  = true;
+        exchange               = 0;
+        plumed_->cmd("setExchangeStep", &exchange);
+        preparedStep_.reset();
+        return false;
+    }
+    if (usesPreUpdateExchange() && context_.exchangeStep)
+    {
+        GMX_RELEASE_ASSERT(stepInput_.has_value() && context_.foreignReady,
+                           "Exchange requires its foreign bias before the local calculation");
+        const long int step = currentStep_;
+        repeatedCall_       = calculatedStep_ == step;
+        calculatedStep_     = step;
+        if (!repeatedCall_)
+            plumedWantsToStop_ = 0;
+        preparedStep_.reset();
+        bindInput(*stepInput_);
+        plumed_->cmd("prepareCalc");
+        plumedNeedsEnergy_ = 0;
+        plumed_->cmd("isEnergyNeeded", &plumedNeedsEnergy_);
+        // Run the ordinary local force calculation once, before its bias update.
+        plumed_->cmd("setEnergy", potentialEnergy);
+        if (!force.empty())
+            plumed_->cmd("setForces", &(force.data()->as_vec()[0]));
+        msmul(virial, 2.0, plumedVir_);
+        plumed_->cmd("setVirial", plumedVir_);
+        plumed_->cmd("setStopFlag", &plumedWantsToStop_);
+        plumed_->cmd("performCalcNoUpdate");
+        const real localBias   = localExchangeBias(*potentialEnergy);
+        context_.exchangeDelta = context_.foreignBias - localBias;
+        if (context_.hrex)
+        {
+            double energy = *potentialEnergy;
+            mpiComm_->sumReduce(1, &energy);
+            context_.exchangeDelta += context_.foreignEnergy - energy;
+        }
+        context_.exchangeReady = true;
+        if (!repeatedCall_)
+            plumed_->cmd("update");
+        msmul(plumedVir_, 0.5, virial);
+        preparedStep_.reset();
+        return usesVirtualSites();
+    }
+#endif
 #if GMX_LIB_MPI
     if (context_.hrexTrial)
         return false;

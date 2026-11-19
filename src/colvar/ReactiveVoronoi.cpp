@@ -180,6 +180,8 @@ protected:
   bool serial_;
   bool invalidateList_;
   bool firstTime_;
+  // A pre-update trial can be followed by an accepted swap after the local pass.
+  long long lastExchangeStep_=-1;
   bool filterCandidatePairs_;
   bool useCellList_;
   bool haveNeighborReference_;
@@ -521,18 +523,18 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
 
 void SoftVoronoiBase::prepare() {
   if(neighborList_->getStride()>0) {
-    if(firstTime_ || getStep()%neighborList_->getStride()==0) {
+    if(firstTime_ || getStep()%neighborList_->getStride()==0 || getExchangeStep()) {
       requestAtoms(neighborList_->getFullAtomList());
       invalidateList_=true;
       firstTime_=false;
     } else {
       requestAtoms(neighborList_->getFullAtomList());
       invalidateList_=false;
-      if(getExchangeStep()) {
-        error("neighbor lists must be updated on exchange steps; choose an NL_STRIDE that divides the exchange stride");
-      }
     }
     if(getExchangeStep()) {
+      lastExchangeStep_=getStep();
+    }
+    if(lastExchangeStep_==getStep()) {
       firstTime_=true;
     }
   }

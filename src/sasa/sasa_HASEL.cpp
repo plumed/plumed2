@@ -138,6 +138,8 @@ private:
   int approach;
   unsigned stride;
   unsigned nl_update;
+  // Invalidate through the local pass and the first pass after an accepted swap.
+  long long lastExchangeStep_=-1;
   int firstStepFlag;
   double Ti;
   // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
@@ -1045,9 +1047,16 @@ void SASA_HASEL::calculate() {
   setBoxDerivatives(virial);
   setValue(sasa);
   firstStepFlag = 1;
-  ++nl_update;
-  if (nl_update == stride) {
-    nl_update = 0;
+  if(getExchangeStep()) {
+    lastExchangeStep_=getStep();
+  }
+  if(lastExchangeStep_==getStep()) {
+    nl_update=0;
+  } else if(!plumed.isCalculationOnly()) {
+    ++nl_update;
+    if(nl_update==stride) {
+      nl_update=0;
+    }
   }
 }
 

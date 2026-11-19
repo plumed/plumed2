@@ -93,6 +93,8 @@ private:
   double nl_buffer;
   unsigned nl_stride;
   unsigned nl_update;
+  // Invalidate through this step's local pass and the first pass after acceptance.
+  long long lastExchangeStep_=-1;
   std::vector<std::vector<unsigned> > nl;
   std::vector<std::vector<bool> > nlexpo;
   std::vector<std::vector<double> > parameter;
@@ -379,9 +381,18 @@ void EEFSolv::calculate() {
   setValue(delta_g_ref - bias);
 
   // Keep track of the neighbourlist updates
-  nl_update++;
-  if (nl_update == nl_stride) {
+  if(getExchangeStep()) {
+    lastExchangeStep_=getStep();
+  }
+  if(lastExchangeStep_==getStep()) {
+    // The list contains foreign coordinates. Rebuild it for the next local pass,
+    // whether or not the engine accepts the exchange.
     nl_update = 0;
+  } else if(!plumed.isCalculationOnly()) {
+    nl_update++;
+    if(nl_update==nl_stride) {
+      nl_update=0;
+    }
   }
 }
 

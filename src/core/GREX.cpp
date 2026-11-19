@@ -226,6 +226,8 @@ void GREX::savePositions() {
   plumedMain.writeBinary(o);
   buffer=o.str();
   plumedMain.setExchangeStep(wasExchangeStep);
+  // A delayed normal update must retain its ordinary action/stride activation.
+  plumedMain.prepareDependencies();
 }
 
 void GREX::calculate() {
@@ -250,7 +252,9 @@ void GREX::calculate() {
   plumedMain.readBinary(own);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  // These are local inputs; leave history/statistics untouched without recording a partner.
+  plumedMain.setExchangeStep(false);
+  plumedMain.justCalculate(true);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -272,7 +276,7 @@ void GREX::calculate() {
   }
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  plumedMain.justCalculate(true);
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
   if(physicalEnergiesProvided) {

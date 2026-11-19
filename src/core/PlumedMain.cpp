@@ -831,7 +831,8 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(13));
+        // Calculation-only history/cache protection permits pre-update exchange trials.
+        val.set(int(14));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -1488,8 +1489,7 @@ void PlumedMain::prepareDependencies() {
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
     auto* value=exchangeStep ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
-    // Calculation-only exchange trials need the full potential even when an
-    // MTS bias does not apply forces on this MD step.
+    // Exchange trials need the full potential even between MTS force steps.
     const bool exchangeBias=exchangeStep && value && value->exists(value->getLabel()+".bias");
     if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
@@ -1549,7 +1549,7 @@ void PlumedMain::performCalcNoUpdate() {
 
 void PlumedMain::performCalcNoForces() {
   waitData();
-  justCalculate();
+  justCalculate(true);
 }
 
 void PlumedMain::performCalc() {
@@ -1581,7 +1581,15 @@ void PlumedMain::waitData() {
   }
 }
 
-void PlumedMain::justCalculate() {
+void PlumedMain::justCalculate(bool calculationOnly) {
+  struct RestoreFlag {
+    bool& flag;
+    bool previous;
+    ~RestoreFlag() {
+      flag=previous;
+    }
+  } restore{calculationOnly_,calculationOnly_};
+  calculationOnly_=calculationOnly;
   if(!active) {
     return;
   }

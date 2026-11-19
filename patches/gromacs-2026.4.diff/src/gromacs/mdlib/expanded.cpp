@@ -1472,7 +1472,14 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
             plumed.cmd("setStepLong", &plumedStep);
             plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
             plumed.cmd("setEnergy", &plumedForceProvider->context().trialEnergy);
+            exchange = 1;
+            plumed.cmd("setExchangeStep", &exchange);
             plumed.cmd("prepareCalc");
+            if (plumedForceProvider->hasCalculationOnlyProtection())
+            {
+                exchange = 0;
+                plumed.cmd("setExchangeStep", &exchange);
+            }
             plumed.cmd("performCalcNoForces");
             real bias = 0;
             plumed.cmd("getBias", &bias);

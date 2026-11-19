@@ -8,6 +8,7 @@ results=${3:?set a fresh results directory}
 suite=$(cd "$(dirname "$0")/exchange" && pwd)
 export PLUMED_KERNEL="$kernel"
 unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
+python "$suite/../check-calculation-only.py" "$(dirname "$(dirname "$gmx")")" "$results/calculation-only" "$kernel"
 if [[ "$BACKEND" == tmpi ]]; then
   python "$suite/validate_mpi_modes.py" --gmx "$gmx" --kernel "$kernel" --output "$results/tmpi"
   python "$suite/../check-provider-input.py" "$(dirname "$(dirname "$gmx")")" "$results/provider-input" "$kernel"
@@ -19,6 +20,8 @@ if [[ "$BACKEND" == tmpi ]]; then
   done
   python "$suite/validate_expanded.py" --gmx "$gmx" --kernel "$kernel" \
     --backend tmpi --output "$results/expanded-restart" --filter restart-metad-energy-r2-at5
+  python "$suite/validate_auxiliary.py" --gmx "$gmx" --kernel "$kernel" \
+    --backend tmpi --output "$results/auxiliary"
   python "$suite/validate_expanded.py" --gmx "$gmx" --kernel "$kernel" \
     --backend tmpi --threads 2 --quick --filter lambda-energy-r2 \
     --output "$results/expanded-hybrid"
@@ -43,6 +46,8 @@ else
     --output "$results/lambda-pme" --launcher "$launcher" --pme
   python "$suite/validate_order.py" --gmx "$gmx" --kernel "$kernel" \
     --output "$results/order" --launcher "$launcher"
+  python "$suite/validate_auxiliary.py" --gmx "$gmx" --kernel "$kernel" \
+    --launcher "$launcher" --output "$results/auxiliary"
   python "$suite/validate_native_terms.py" --gmx "$gmx" --kernel "$kernel" \
     --output "$results/native-terms" --launcher "$launcher"
   for simulator in modular legacy; do

@@ -531,6 +531,8 @@ class CS2Backbone : public MetainferenceBase {
   unsigned         cs_end_;
   unsigned         box_nupdate;
   unsigned         box_count;
+  // Invalidate through the local pass and the first pass after an accepted swap.
+  long long lastExchangeStep_=-1;
   bool             camshift;
   bool             pbc;
   bool             serial;
@@ -1489,9 +1491,16 @@ void CS2Backbone::calculate() {
     }
   }
 
-  ++box_count;
-  if(box_count == box_nupdate) {
-    box_count = 0;
+  if(getExchangeStep()) {
+    lastExchangeStep_=getStep();
+  }
+  if(lastExchangeStep_==getStep()) {
+    box_count=0;
+  } else if(!plumed.isCalculationOnly()) {
+    ++box_count;
+    if(box_count==box_nupdate) {
+      box_count=0;
+    }
   }
 
   // every rank owns a contiguous block of chemical shifts: gather the blocks

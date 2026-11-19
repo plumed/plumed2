@@ -617,7 +617,9 @@ private:
   /// used to detect whether an attempted exchange was accepted
   struct ExchangeDetection {
     bool attempted=false;
+    long long step=-1;
     std::vector<double> partner_cv;
+    std::vector<double> previous_partner_cv;
     std::vector<double> last_cv;
   } exchange_;
   OFile hillsOfile_;
@@ -2012,7 +2014,11 @@ void MetaD::calculate() {
   // The MD code does not tell whether the exchange is accepted: with ADAPTIVE=DIFF this is
   // detected at the next update, comparing the CVs with those of the partner (see updateFlexibleBin)
   if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
+    if(exchange_.attempted && exchange_.step<getStep()) {
+      exchange_.previous_partner_cv=exchange_.partner_cv;
+    }
     exchange_.attempted=true;
+    exchange_.step=getStep();
     exchange_.partner_cv=cv;
   }
 
@@ -2054,12 +2060,13 @@ void MetaD::calculate() {
   }
   // calculate the acceleration factor
   // (only once per STRIDE steps: the action can be calculated more often when other actions need it)
-  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()&&getStep()%getStride()==0) {
+  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()&&!plumed.isCalculationOnly()&&getStep()%getStride()==0) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/static_cast<double>(getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0) {
-    if(getStep()>acc_restart_step_ && !getExchangeStep() && getStep()%getStride()==0) {
+  } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0
+             && !getExchangeStep() && !plumed.isCalculationOnly()) {
+    if(getStep()>acc_restart_step_ && getStep()%getStride()==0) {
       // the previous run did not compute this step (the steps in between, if any, are assumed to have the mean value)
       acc_ = acc_restart_mean_ * static_cast<double>(getStep()-getStride()) + static_cast<double>(getStride()) * std::exp(ene/(kbt_));
       getPntrToComponent("acc")->set(acc_/static_cast<double>(getStep()));
@@ -2096,7 +2103,12 @@ void MetaD::updateFlexibleBin(bool nowAddAHill) {
     for(unsigned i=0; i<ncv; ++i) {
       cv[i]=getArgument(i);
     }
-    if(exchange_.attempted && exchange_.last_cv.size()==ncv) {
+    // A trial can precede this step's update. Consume it only at a later step;
+    // preserve the preceding trial when another exchange is evaluated meanwhile.
+    const auto* partner=(exchange_.step<getStep()
+                         ? (exchange_.attempted ? &exchange_.partner_cv : nullptr)
+                         : (exchange_.previous_partner_cv.empty() ? nullptr : &exchange_.previous_partner_cv));
+    if(partner && exchange_.last_cv.size()==ncv) {
       // the exchange has been accepted if the CVs are now closer to those of the partner than
       // to their own value at the previous update (distances in units of the current fluctuations)
       const std::vector<double> var=flexbin_->getMatrix();
@@ -2105,7 +2117,7 @@ void MetaD::updateFlexibleBin(bool nowAddAHill) {
       unsigned k=0;
       for(unsigned i=0; i<ncv; i++) {
         const double s2=(var.size()>k && var[k]>0.0 ? var[k] : 1.0);
-        const double dp=difference(i,exchange_.partner_cv[i],cv[i]);
+        const double dp=difference(i,(*partner)[i],cv[i]);
         const double dl=difference(i,exchange_.last_cv[i],cv[i]);
         dpartner+=dp*dp/s2;
         down+=dl*dl/s2;
@@ -2116,7 +2128,10 @@ void MetaD::updateFlexibleBin(bool nowAddAHill) {
         flexbin_->restartAverage();
       }
     }
-    exchange_.attempted=false;
+    exchange_.previous_partner_cv.clear();
+    if(exchange_.step<getStep()) {
+      exchange_.attempted=false;
+    }
     exchange_.last_cv=cv;
   }
   flexbin_->update(nowAddAHill);
@@ -2447,7 +2462,9 @@ void MetaD::writeCheckpoint(CheckpointWriter& w) {
     w.beginSection("adaptive");
     flexbin_->writeCheckpoint(w);
     w.write("exchange_attempted",exchange_.attempted);
+    w.write("exchange_step",exchange_.step);
     w.write("exchange_partner_cv",exchange_.partner_cv);
+    w.write("exchange_previous_partner_cv",exchange_.previous_partner_cv);
     w.write("exchange_last_cv",exchange_.last_cv);
     w.endSection();
   }
@@ -2512,7 +2529,15 @@ void MetaD::readCheckpoint(CheckpointReader& r) {
     r.beginSection("adaptive");
     flexbin_->readCheckpoint(r);
     r.read("exchange_attempted",exchange_.attempted);
+    exchange_.step=-1;
+    if(r.has("exchange_step")) {
+      r.read("exchange_step",exchange_.step);
+    }
     r.read("exchange_partner_cv",exchange_.partner_cv);
+    exchange_.previous_partner_cv.clear();
+    if(r.has("exchange_previous_partner_cv")) {
+      r.read("exchange_previous_partner_cv",exchange_.previous_partner_cv);
+    }
     r.read("exchange_last_cv",exchange_.last_cv);
     r.endSection();
   }

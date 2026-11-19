@@ -353,6 +353,9 @@
   kernel symbol table remains version 4. Query `getApiVersion` before sending
   this command to an older kernel.
 
+  Command API version 14 additionally guarantees calculation-only history and
+  cache protection for pre-update exchange trials. It adds no command names.
+
 \verbatim
   #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
   #include <mpi.h>

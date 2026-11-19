@@ -550,6 +550,9 @@ void gmx::LegacySimulator::do_md()
                                 pullWork_);
 
     auto* plumedForceProvider = findPlumedForceProvider(fr_->forceProviders);
+    // Repeated/split force calculations retain the validated post-update path.
+    if (plumedForceProvider && (shellfc != nullptr || inputRec_->useMts))
+        plumedForceProvider->context().preUpdateExchange = false;
 
 #if GMX_LIB_MPI
     if (plumedForceProvider && plumedForceProvider->context().hrex
@@ -1123,6 +1126,8 @@ void gmx::LegacySimulator::do_md()
                 && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep());
 
 #if GMX_LIB_MPI
+        if (bDoReplEx && plumedForceProvider && plumedForceProvider->usesPreUpdateExchange())
+            plumed_prepare_exchange(fpLog_, cr_, ms_, repl_ex, step, plumedForceProvider);
         if (plumedForceProvider && bHREX)
         {
             // gmx_enerdata_t *hrex_enerd;
@@ -1229,7 +1234,8 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             }
-            plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
+            if (!plumedForceProvider->usesPreUpdateExchange())
+                plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
 
             /* exchange back */
             if (haveDDAtomOrdering(*cr_))

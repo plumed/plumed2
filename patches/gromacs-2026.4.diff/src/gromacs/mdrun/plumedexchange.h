@@ -32,6 +32,10 @@ namespace gmx
 //! Called by every rank of every replica; returns the local replica index when unpaired.
 int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step);
 
+//! Select/broadcast the partner and native lambda index before any ordinary bias updates.
+//! Called collectively on PP ranks; only main ranks dereference the replica-exchange object.
+void plumed_prepare_exchange(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step, PlumedForceProvider* provider);
+
 //! Cache this rank's physical potential contribution at the foreign configuration.
 //! Uses the local Hamiltonian and GROMACS units; GREX sums collectively within the replica.
 void plumed_hrex_cache_foreign(PlumedForceProvider* provider, real* energy);

@@ -49,6 +49,8 @@
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
+struct gmx_multisim_t;
+
 namespace PLMD
 {
 class Plumed;
@@ -62,11 +64,13 @@ struct PlumedOptions;
 // Registered buffers stay valid for GREX and lambda trials.
 struct PlumedContext
 {
-    //! Whether this MD step attempts replica exchange; controls saving GREX input snapshots.
+    //! Whether this MD step attempts replica exchange.
     bool exchangeStep = false;
+    //! Engine eligibility for pre-update trials; shells and native MTS retain legacy ordering.
+    bool preUpdateExchange = true;
     //! Whether general Hamiltonian replica exchange was requested by -hrex.
     bool hrex = false;
-    //! Suppress PLUMED force/energy/checkpoint callbacks during a foreign HREX evaluation.
+    //! Foreign HREX pass: suppress normal callbacks, or evaluate only its bias with API14.
     bool hrexTrial = false;
     //! Current or trial alchemical state index exposed as EXTRACV NAME=lambda.
     real lambdaState = 0;
@@ -76,6 +80,20 @@ struct PlumedContext
     real trialEnergy = 0;
     //! Physical potential differences already included in native lambda acceptance, indexed by replica.
     std::vector<real> nativePhysicalDeltas;
+    //! Selected partner replica, shared by the early trials and later acceptance.
+    int partner = 0;
+    //! Partner's native lambda index, or -1 for ordinary/Hamiltonian exchange.
+    int partnerLambda = -1;
+    //! Whether the pre-update foreign bias has been evaluated on this step.
+    bool foreignReady = false;
+    //! Whether the complete pre-update correction is ready for acceptance.
+    bool exchangeReady = false;
+    //! Foreign physical potential, summed over the evaluating replica, in MD units.
+    real foreignEnergy = 0;
+    //! Foreign bias before the ordinary local update, in MD units.
+    real foreignBias = 0;
+    //! Bias difference, plus physical potential difference only for -hrex.
+    real exchangeDelta = 0;
     //! Whether this is the replica's main MPI rank; used to supply global ENERGY only once.
     bool mainRank = true;
 };
@@ -98,6 +116,15 @@ public:
     PlumedContext& context() { return context_; }
     //! Non-owning access to the provider-owned PLUMED object from the MD engine.
     PLMD::Plumed* plumedHandle() const;
+    //! Kernel capability for side-effect-protected calculation-only trials.
+    bool hasCalculationOnlyProtection() const { return plumedAPIversion_ >= 14; }
+    //! Use early cached exchange energies only when both kernel and engine allow it.
+    bool usesPreUpdateExchange() const { return hasCalculationOnlyProtection() && context_.preUpdateExchange; }
+#if GMX_LIB_MPI
+    //! Evaluate the foreign bias from existing cross potentials, before the local update.
+    //! Called collectively on PP ranks after the physical potentials are accumulated.
+    void prepareExchange(const gmx_enerdata_t& energy);
+#endif
     /*! @brief Sets the global atom indices list
      * param[in] globalAtomIndices  the, optional, list of global atom indices
      */
@@ -137,6 +164,20 @@ public:
                                    tensor         virial) override;
 
 private:
+    //! Register local or trial inputs, retaining the provider-owned box binding.
+    void bindInput(const ForceProviderInput& input);
+#if GMX_LIB_MPI
+    //! Current force call's input: owns its box and refers to MD-owned atom arrays.
+    std::optional<ForceProviderInput> stepInput_;
+    //! Simulation-owned replica communication and metadata.
+    const MpiComm* mpiComm_ = nullptr;
+    const gmx_multisim_t* multiSim_ = nullptr;
+    //! Global atom count for temporary coordinate communication.
+    int numAtoms_ = 0;
+    //! Snapshot/validate complete local inputs and read the already calculated bias.
+    //! Performs no additional forward calculation under the strict STRIDE policy.
+    real localExchangeBias(real physicalEnergy);
+#endif
     //! Whether the atoms that PLUMED used on this step include virtual sites
     bool usesVirtualSites();
 

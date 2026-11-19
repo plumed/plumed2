@@ -213,7 +213,9 @@ nstfout = 1
         z = (0.34 / x) ** 6
         return 4 * eps * (z * z - z)
 
-    def bias(self, c, i, x, step, hills, post=True):
+    def bias(self, c, i, x, step, hills, post=None):
+        if post is None:
+            post = getattr(self.args, "bias_order", "pre") == "post"
         kind = c["bias"]
         v = 0.0
         u = self.physical(c, i, x)
@@ -740,6 +742,7 @@ if __name__ == "__main__":
     p.add_argument("--atol", type=float, default=3e-5)
     p.add_argument("--rtol", type=float, default=3e-5)
     p.add_argument("--exchange-mode", choices=["both", "bias", "hrex"], default="both")
+    p.add_argument("--bias-order", choices=["pre", "post"], default="pre")
     p.add_argument("--filter", default="")
     p.add_argument("--hrex", action="store_true")
     p.add_argument("--custom", action="store_true")

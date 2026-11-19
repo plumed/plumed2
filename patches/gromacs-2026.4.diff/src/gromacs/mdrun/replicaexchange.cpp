@@ -976,6 +976,24 @@ void plumed_hrex_cache_foreign(PlumedForceProvider* provider, real* energy)
 {
     provider->plumedHandle()->cmd("GREX cacheLocalUSwap", energy);
 }
+void plumed_prepare_exchange(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step, PlumedForceProvider* plumedForceProvider)
+{
+    auto& context         = plumedForceProvider->context();
+    context.partner       = plumed_hrex_partner(fplog, cr, ms, re, step);
+    context.partnerLambda = -1;
+    if (cr->commMyGroup.isMainRank()
+        && (re->type == ReplicaExchangeType::Lambda || re->type == ReplicaExchangeType::TemperatureLambda))
+    {
+        context.partnerLambda = static_cast<int>(re->q[ReplicaExchangeType::Lambda][context.partner]);
+        if (re->lambdaNeighbors >= 0
+            && std::abs(context.partnerLambda - re->q[ReplicaExchangeType::Lambda][re->repl]) > re->lambdaNeighbors)
+            gmx_fatal(FARGS,
+                      "The selected partner's lambda energy was not requested. Use "
+                      "calc-lambda-neighbors=-1 for arbitrary exchange patterns.");
+    }
+    MPI_Bcast(&context.partnerLambda, 1, MPI_INT, 0, cr->commMyGroup.comm());
+}
+
 } // namespace gmx
 #endif
 
@@ -1169,10 +1187,25 @@ static void test_for_replica_exchange(FILE*                 fplog,
         if (plumedForceProvider)
         {
             auto& plumed = *plumedForceProvider->plumedHandle();
-            int          partner = select_plumed_partner(fplog, ms, re, step);
-            plumed.cmd("GREX setPartner", &partner);
-            plumed.cmd("GREX calculate");
-            plumed.cmd("GREX shareAllDeltaBias");
+            if (plumedForceProvider->usesPreUpdateExchange())
+                GMX_RELEASE_ASSERT(plumedForceProvider->context().exchangeReady,
+                                   "PLUMED exchange energies must precede bias updates");
+            else
+            {
+                int partner = select_plumed_partner(fplog, ms, re, step);
+                plumed.cmd("GREX setPartner", &partner);
+                plumed.cmd("GREX calculate");
+                plumed.cmd("GREX shareAllDeltaBias");
+            }
+        }
+#endif
+#if GMX_LIB_MPI
+        std::vector<real> differences;
+        if (plumedForceProvider && plumedForceProvider->usesPreUpdateExchange())
+        {
+            differences.assign(re->nrepl, 0);
+            differences[re->repl] = plumedForceProvider->context().exchangeDelta;
+            gmx_sum_sim(re->nrepl, differences.data(), ms);
         }
 #endif
         for (i = 1; i < re->nrepl; i++)
@@ -1189,16 +1222,24 @@ static void test_for_replica_exchange(FILE*                 fplog,
                 {
                     auto& plumed = *plumedForceProvider->plumedHandle();
                     real adb, bdb;
-                    plumed.cmd(("GREX getDeltaBias " + std::to_string(a)).c_str(), &adb);
-                    plumed.cmd(("GREX getDeltaBias " + std::to_string(b)).c_str(), &bdb);
-                    // Native lambda exchange already includes these physical potential
-                    // differences. GREX needs the true energies for the ENERGY CV, but
-                    // acceptance must count their contribution only once.
-                    const auto& physical = plumedForceProvider->context().nativePhysicalDeltas;
-                    if (!physical.empty())
+                    if (plumedForceProvider->usesPreUpdateExchange())
                     {
-                        adb -= physical[a];
-                        bdb -= physical[b];
+                        adb = differences[a];
+                        bdb = differences[b];
+                    }
+                    else
+                    {
+                        plumed.cmd(("GREX getDeltaBias " + std::to_string(a)).c_str(), &adb);
+                        plumed.cmd(("GREX getDeltaBias " + std::to_string(b)).c_str(), &bdb);
+                        // Native lambda exchange already includes these physical potential
+                        // differences. GREX needs the true energies for the ENERGY CV, but
+                        // acceptance must count their contribution only once.
+                        const auto& physical = plumedForceProvider->context().nativePhysicalDeltas;
+                        if (!physical.empty())
+                        {
+                            adb -= physical[a];
+                            bdb -= physical[b];
+                        }
                     }
                     real correction = adb * re->beta[a] + bdb * re->beta[b];
                     delta += correction;
@@ -1438,7 +1479,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     gmx_bool bThisReplicaExchanged = FALSE;
 
 #if GMX_LIB_MPI
-    if (plumedForceProvider)
+    if (plumedForceProvider && !plumedForceProvider->usesPreUpdateExchange())
     {
         auto&        context = plumedForceProvider->context();
         auto& plumed = *plumedForceProvider->plumedHandle();

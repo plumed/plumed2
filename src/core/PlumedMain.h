@@ -232,6 +232,9 @@ private:
 /// Set to true if on an exchange step
   bool exchangeStep=false;
 
+/// True while a forward pass evaluates energy without applying forces or updating history.
+  bool calculationOnly_=false;
+
 /// Flag for restart
   bool restart=false;
 
@@ -422,7 +425,11 @@ public:
   /**
     Perform the forward loop on active actions.
   */
-  void justCalculate();
+  void justCalculate(bool calculationOnly=false);
+/// Whether the current forward pass must leave calculation-time statistics unchanged.
+  bool isCalculationOnly() const {
+    return calculationOnly_;
+  }
   /**
     Backward propagate and update.
     Shortcut for backwardPropagate() + update()

@@ -1846,7 +1846,7 @@ void EMMIVOX::calculate() {
   if(dbfact_>0) {
     double acc = 0.0;
     // do Monte Carlo
-    if(step%MCBstride_==0 && !getExchangeStep() && step>0) {
+    if(step%MCBstride_==0 && !getExchangeStep() && !plumed.isCalculationOnly() && step>0) {
       doMonteCarloBfact();
     }
     // calculate acceptance ratio

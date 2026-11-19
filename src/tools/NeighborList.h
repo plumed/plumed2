@@ -67,6 +67,8 @@ private:
   size_t nallpairs_;
   unsigned stride_=0;
   unsigned lastupdate_=0;
+/// Keep the next local step invalidated when a trial precedes this step's normal calculation.
+  long long lastExchangeStep_=-1;
 /// Initialize the neighbor list with all possible pairs
   void initialize();
 /// Return the pair of indexes in the positions array

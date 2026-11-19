@@ -126,7 +126,10 @@ class Suite(analytic.Suite):
             argument = "e" if kind == "metad-energy" else "d"
             value = energy if argument == "e" else distance
             for hill in hills[replica]:
-                if round(hill["time"] / 0.0001) <= step:
+                hill_step = round(hill["time"] / 0.0001)
+                if hill_step < step or (
+                    getattr(self.args, "bias_order", "pre") == "post" and hill_step == step
+                ):
                     scaled = (value - hill[argument]) / hill["sigma_" + argument]
                     result += hill["height"] * max(
                         0.0,
@@ -425,6 +428,7 @@ def main():
     parser.add_argument("--pme", action="store_true")
     parser.add_argument("--expect-energy-failure", action="store_true")
     parser.add_argument("--filter", default="")
+    parser.add_argument("--bias-order", choices=["pre", "post"], default="pre")
     parser.add_argument(
         "--launcher",
         default="/opt/local/bin/mpiexec-openmpi-mp --host localhost:{n} --bind-to none -n {n}"
@@ -449,6 +453,7 @@ def main():
         mdrun_args=options.mdrun_args,
         atol=3e-5,
         rtol=3e-5,
+        bias_order=options.bias_order,
     )
     suite = Suite(args)
     cases = cases_for(options.quick, options.pme)

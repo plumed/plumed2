@@ -1,0 +1,3 @@
+type=make
+plumed_modules="generic colvar bias isdb"
+extra_files="${extra_files} ../../isdb/rt-cs2backbone/data/CAshifts.dat ../../isdb/rt-cs2backbone/data/CBshifts.dat ../../isdb/rt-cs2backbone/data/Cshifts.dat ../../isdb/rt-cs2backbone/data/HAshifts.dat ../../isdb/rt-cs2backbone/data/Hshifts.dat ../../isdb/rt-cs2backbone/data/Nshifts.dat ../../isdb/rt-cs2backbone/data/camshift.db ../../isdb/rt-cs2backbone/data/template.pdb"
