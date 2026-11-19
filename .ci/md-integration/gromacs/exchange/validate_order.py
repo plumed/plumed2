@@ -195,10 +195,12 @@ def main():
                         continue
                     step = int(step_match[1])
                     vectors = {}
-                    for kind, atom, values in re.findall(
+                    for vector_kind, atom, values in re.findall(
                         r"\b([xf])\[\s*(\d+)\]\s*=\{([^}]+)\}", frame
                     ):
-                        vectors[kind, int(atom)] = list(map(float, values.split(",")))
+                        vectors[vector_kind, int(atom)] = list(
+                            map(float, values.split(","))
+                        )
                     if len(vectors) != 4:
                         raise AssertionError("Missing trajectory positions/forces")
                     dx = [b - a for a, b in zip(vectors["x", 0], vectors["x", 1])]
