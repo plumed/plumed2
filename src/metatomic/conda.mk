@@ -1,4 +1,4 @@
 # Options: see conda/module-options.md (repository root).
-# The native interface in this source supports metatomic-torch 0.1.12 through 0.1.x.
-CONDA_HOST_REQUIREMENTS = "libmetatomic-torch >=0.1.12,<0.2" libmetatensor-torch libmetatensor "libtorch * cpu_generic*"
-CONDA_RUN_REQUIREMENTS = "libmetatomic-torch >=0.1.12,<0.2" libmetatensor-torch libmetatensor "libtorch * cpu_generic*"
+# metatomic-core has no conda-forge package yet: the module builds without it,
+# and METATOMIC then stops with an error saying the libraries are missing.
+CONDA_UNAVAILABLE_LIBRARIES = metatomic

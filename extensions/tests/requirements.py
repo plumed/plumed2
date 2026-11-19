@@ -131,7 +131,9 @@ expected = {
     "fourier": {"fourier:fftw"},
     "pytorch": {"pytorch:libtorch"},
     "isdb-pytorch": {"isdb-pytorch:libtorch"},
-    "metatomic": {"metatomic:libmetatomic", "metatomic:libtorch"},
+    # the TorchScript tests add "metatomic:libtorch" in their own config;
+    # the ones running a metatomic-core model do not need LibTorch
+    "metatomic": {"metatomic:libmetatomic"},
     "ttsketch": {"ttsketch:libitensor", "ttsketch:libhdf5"},
 }
 for module, needs in expected.items():

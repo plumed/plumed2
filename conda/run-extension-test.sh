@@ -20,7 +20,7 @@ conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
 cmp "$kernel" "$task/kernel-before"
 # Output-specific host requirements must keep unrelated native stacks out of
 # lightweight extensions, even though all modules share one build environment.
-for record in "$prefix"/conda-meta/{libtorch,libboost,libmetatomic-torch}-*.json; do
+for record in "$prefix"/conda-meta/{libtorch,libboost}-*.json; do
   test ! -e "$record"
 done
 python extensions/tests/chemfiles.py --prefix "$prefix"
@@ -63,8 +63,7 @@ from pathlib import Path
 reports = Path(sys.argv[1]) / "lib/plumed/plugins"
 for module, feature in [
     ("drr", "BOOST_SERIALIZATION"), ("fourier", "FFTW"),
-    ("isdb-pytorch", "LIBTORCH"), ("pytorch", "LIBTORCH"), ("metatomic", "LIBMETATOMIC"),
-    ("metatomic", "LIBTORCH"), ("ttsketch", "LIBHDF5"),
+    ("isdb-pytorch", "LIBTORCH"), ("pytorch", "LIBTORCH"), ("ttsketch", "LIBHDF5"),
 ]:
     report = json.loads((reports / (module + ".json")).read_text())
     assert report["optional_features"][feature], report
