@@ -20,7 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ReactiveVoronoiCuda.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
@@ -31,6 +34,8 @@
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <numeric>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -174,7 +179,46 @@ protected:
   struct Assignment {
     std::vector<PairData> pairs;
     std::vector<double> occupancy;
+    std::shared_ptr<ReactiveVoronoiCuda> cuda;
   };
+
+  struct CudaNeighbors {
+    // The offsets index centers grouped by assigned atom.
+    std::vector<int> offsets;
+    std::vector<int> centers;
+    unsigned long version=0;
+  };
+
+  struct SharedEvaluation {
+    unsigned consumers=1;
+    double firstKappa=0;
+    bool mixedKappa=false;
+    bool valid=false;
+    long long step=0;
+    std::vector<Vector> positions;
+    Tensor box;
+    std::vector<PairData> geometry;
+    std::map<double,Assignment> assignments;
+    std::map<double,std::shared_ptr<ReactiveVoronoiCuda>> cuda;
+    CudaNeighbors cudaNeighbors;
+    bool haveNeighborReference=false;
+    std::vector<Vector> neighborReferencePositions;
+    Tensor neighborReferenceBox;
+  };
+  std::shared_ptr<SharedEvaluation> shared_;
+  bool noShare_=false;
+  unsigned long evaluations_=0, hits_=0, geometryHits_=0;
+  Assignment independent_;
+  std::shared_ptr<ReactiveVoronoiCuda> independentCuda_;
+  CudaNeighbors independentCudaNeighbors_;
+  std::string backend_="CPU", cudaLibrary_;
+  std::string autoCudaFailure_;
+  std::string lastBackendMessage_;
+  void logBackend(const std::string&, const std::string&);
+  std::shared_ptr<ReactiveVoronoiCuda> cudaContext();
+  bool sharedCoordinatesMatch() const;
+  Assignment computeAssignment();
+  void packCudaNeighbors(CudaNeighbors&);
 
   bool pbc_;
   bool serial_;
@@ -186,7 +230,7 @@ protected:
   double kappa_;
   double neighborCutoff_;
   double neighborSkin_;
-  std::unique_ptr<NeighborList> neighborList_;
+  std::shared_ptr<NeighborList> neighborList_;
   std::vector<AtomNumber> centers_;
   std::vector<AtomNumber> assigned_;
   std::vector<double> reference_;
@@ -205,7 +249,7 @@ protected:
                                      const std::string&, bool) const;
   bool neighborListNeedsUpdate();
   void saveNeighborListReference();
-  Assignment calculateAssignment();
+  const Assignment& calculateAssignment();
   std::vector<double> defects(const Assignment&) const;
   void addAssignmentDerivatives(const Assignment&, const std::vector<double>&,
                                 std::vector<Vector>&, Tensor&);
@@ -216,6 +260,7 @@ protected:
 public:
   explicit SoftVoronoiBase(const ActionOptions&);
   void prepare() override;
+  ~SoftVoronoiBase() override;
 };
 
 void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
@@ -224,6 +269,9 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
   keys.add("compulsory","KAPPA","Positive soft-assignment sharpness in inverse PLUMED length units");
   keys.add("compulsory","REFERENCE",
            "One intended occupancy broadcast to all CENTERS, or one value per CENTER in CENTERS order");
+  keys.add("compulsory","BACKEND","CPU","Assignment backend: CPU, CUDA, or opt-in AUTO detection");
+  keys.add("optional","CUDA_LIBRARY","Optional FP64 CUDA library path; defaults to libReactiveVoronoiCuda plus the shared-library extension");
+  keys.addFlag("NO_SHARE",false,"Disable instance-local reuse of compatible assignment calculations");
   keys.addFlag("SERIAL",false,"Perform the calculation redundantly on each rank for debugging");
   keys.addFlag("NLIST",false,"Use an approximate neighbor-list truncation of the assignment candidates");
   keys.add("optional","NL_CUTOFF","Candidate cutoff in PLUMED length units; every ASSIGNED atom must retain at least one CENTER");
@@ -420,6 +468,22 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   parseVector("REFERENCE",reference_);
   broadcastOrCheck(reference_,centers_.size(),"REFERENCE");
 
+  parse("BACKEND",backend_);
+  parse("CUDA_LIBRARY",cudaLibrary_);
+  std::transform(backend_.begin(),backend_.end(),backend_.begin(),
+  [](const char value) {
+    return static_cast<char>(std::toupper(static_cast<unsigned char>(value)));
+  });
+  if(backend_!="CPU" && backend_!="CUDA" && backend_!="AUTO") {
+    error("BACKEND must be CPU, CUDA or AUTO");
+  }
+  if(backend_!="CPU" && cudaLibrary_.empty()) {
+    cudaLibrary_="libReactiveVoronoiCuda.so";
+  }
+  if(backend_=="CUDA" && comm.Get_size()!=1) {
+    error("CUDA prototype requires a single MPI rank");
+  }
+  parseFlag("NO_SHARE",noShare_);
   parseFlag("SERIAL",serial_);
   bool noPbc=false;
   parseFlag("NOPBC",noPbc);
@@ -505,6 +569,29 @@ std::vector<unsigned> SoftVoronoiBase::mapSelection(
 
 void SoftVoronoiBase::finishSetup(const std::string& displayName) {
   checkRead();
+  // Compatible actions share the candidate-list history as well as each evaluation.
+  if(!noShare_) {
+    for(auto* other: plumed.getActionSet().select<SoftVoronoiBase*>()) {
+      if(other->shared_ && other->centers_==centers_ &&
+          other->assigned_==assigned_ && other->pbc_==pbc_ &&
+          other->serial_==serial_ && other->backend_==backend_ &&
+          other->cudaLibrary_==cudaLibrary_ && other->neighborCutoff_==neighborCutoff_ &&
+          other->neighborSkin_==neighborSkin_ &&
+          other->neighborList_->getStride()==neighborList_->getStride() &&
+          other->useCellList_==useCellList_) {
+        shared_=other->shared_;
+        ++shared_->consumers;
+        shared_->mixedKappa=shared_->mixedKappa || shared_->firstKappa!=kappa_;
+        neighborList_=other->neighborList_;
+        log.printf("  sharing reactive Voronoi geometry with %s\n",other->getLabel().c_str());
+        break;
+      }
+    }
+    if(!shared_) {
+      shared_=std::make_shared<SharedEvaluation>();
+      shared_->firstKappa=kappa_;
+    }
+  }
   addValueWithDerivatives();
   setNotPeriodic();
   // PLUMED 2.8 needs the full atom list to preserve absolute-index mapping.
@@ -539,18 +626,21 @@ void SoftVoronoiBase::prepare() {
 }
 
 bool SoftVoronoiBase::neighborListNeedsUpdate() {
-  if(neighborSkin_<=0.0 || !haveNeighborReference_) {
+  const bool haveReference=shared_ ? shared_->haveNeighborReference : haveNeighborReference_;
+  const auto& referencePositions=shared_ ? shared_->neighborReferencePositions : neighborReferencePositions_;
+  const Tensor& referenceBox=shared_ ? shared_->neighborReferenceBox : neighborReferenceBox_;
+  if(neighborSkin_<=0.0 || !haveReference) {
     return false;
   }
   const std::vector<Vector>& positions=getPositions();
-  if(positions.size()!=neighborReferencePositions_.size()) {
+  if(positions.size()!=referencePositions.size()) {
     return true;
   }
   if(pbc_) {
     const Tensor box=getPbc().getBox();
     for(unsigned i=0; i<3; ++i) {
       for(unsigned j=0; j<3; ++j) {
-        if(box(i,j)!=neighborReferenceBox_(i,j)) {
+        if(box(i,j)!=referenceBox(i,j)) {
           return true;
         }
       }
@@ -559,9 +649,9 @@ bool SoftVoronoiBase::neighborListNeedsUpdate() {
   const double thresholdSquared=0.25*neighborSkin_*neighborSkin_;
   for(unsigned i=0; i<positions.size(); ++i) {
     const Vector displacement=pbc_ ?
-                              pbcDistance(neighborReferencePositions_[i],
+                              pbcDistance(referencePositions[i],
                                           positions[i]) :
-                              delta(neighborReferencePositions_[i],
+                              delta(referencePositions[i],
                                     positions[i]);
     if(displacement.modulo2()>thresholdSquared) {
       return true;
@@ -574,23 +664,205 @@ void SoftVoronoiBase::saveNeighborListReference() {
   if(neighborSkin_<=0.0) {
     return;
   }
-  neighborReferencePositions_=getPositions();
-  if(pbc_) {
-    neighborReferenceBox_=getPbc().getBox();
+  if(shared_) {
+    shared_->neighborReferencePositions=getPositions();
+    if(pbc_) {
+      shared_->neighborReferenceBox=getPbc().getBox();
+    }
+    shared_->haveNeighborReference=true;
+  } else {
+    neighborReferencePositions_=getPositions();
+    if(pbc_) {
+      neighborReferenceBox_=getPbc().getBox();
+    }
+    haveNeighborReference_=true;
   }
-  haveNeighborReference_=true;
 }
 
-SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
-  // Refresh the buffered candidate list on schedule or after a safe-skin exit.
-  if(neighborList_->getStride()>0) {
-    const bool updateList=invalidateList_ || neighborListNeedsUpdate();
-    if(updateList) {
-      neighborList_->update(getPositions());
-      saveNeighborListReference();
+SoftVoronoiBase::~SoftVoronoiBase() {
+  log.printf("  reactive Voronoi %s: assignments=%lu cache_hits=%lu geometry_hits=%lu\n",
+             getLabel().c_str(),evaluations_,hits_,geometryHits_);
+}
+
+bool SoftVoronoiBase::sharedCoordinatesMatch() const {
+  if(!shared_->valid || shared_->step!=getStep() ||
+      shared_->positions.size()!=getPositions().size()) {
+    return false;
+  }
+  const auto& positions=getPositions();
+  for(unsigned i=0; i<positions.size(); ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      if(positions[i][k]!=shared_->positions[i][k]) {
+        return false;
+      }
     }
   }
+  const Tensor& box=getPbc().getBox();
+  for(unsigned i=0; i<3; ++i) {
+    for(unsigned j=0; j<3; ++j) {
+      if(box(i,j)!=shared_->box(i,j)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
+const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
+  if(!shared_ || shared_->consumers==1) {
+    ++evaluations_;
+    independent_=computeAssignment();
+    return independent_;
+  }
+  if(!sharedCoordinatesMatch()) {
+    shared_->valid=false;
+    shared_->geometry.clear();
+    shared_->assignments.clear();
+    shared_->positions=getPositions();
+    shared_->box=getPbc().getBox();
+    shared_->step=getStep();
+  } else {
+    const auto found=shared_->assignments.find(kappa_);
+    if(found!=shared_->assignments.end()) {
+      ++hits_;
+      return found->second;
+    }
+  }
+  ++evaluations_;
+  Assignment result=computeAssignment();
+  auto inserted=shared_->assignments.emplace(kappa_,std::move(result));
+  shared_->valid=true;
+  return inserted.first->second;
+}
+
+void SoftVoronoiBase::logBackend(const std::string& selected,
+                                 const std::string& reason) {
+  const std::string message=selected+" ("+reason+")";
+  if(message!=lastBackendMessage_) {
+    log.printf("  reactive Voronoi %s requested %s; selected %s\n",
+               getLabel().c_str(),backend_.c_str(),message.c_str());
+    lastBackendMessage_=message;
+  }
+}
+
+std::shared_ptr<ReactiveVoronoiCuda> SoftVoronoiBase::cudaContext() {
+  if(backend_=="CPU") {
+    logBackend("CPU","shared evaluation enabled unless NO_SHARE is set");
+    return nullptr;
+  }
+  std::string unsupported;
+  if(comm.Get_size()!=1) {
+    unsupported="multiple MPI ranks";
+  } else if(pbc_) {
+    const Tensor& box=getPbc().getBox();
+    for(unsigned i=0; i<3; ++i) {
+      if(!std::isfinite(box(i,i)) || box(i,i)<=0) {
+        unsupported="PBC requires a finite positive orthorhombic box";
+      }
+      for(unsigned j=0; j<3; ++j) {
+        if(i!=j && box(i,j)!=0) {
+          unsupported="triclinic PBC requires the CPU backend";
+        }
+      }
+    }
+  }
+  if(!unsupported.empty()) {
+    if(backend_=="CUDA") {
+      error("CUDA backend does not support "+unsupported);
+    }
+    logBackend("CPU",unsupported);
+    return nullptr;
+  }
+  if(!autoCudaFailure_.empty()) {
+    logBackend("CPU",autoCudaFailure_);
+    return nullptr;
+  }
+  auto& context=shared_ ? shared_->cuda[kappa_] : independentCuda_;
+  if(!context) {
+    try {
+      context=std::make_shared<ReactiveVoronoiCuda>(
+                cudaLibrary_,centers_.size(),assigned_.size(),plumed.getGpuDeviceId(),neighborCutoff_>0);
+    } catch(const std::exception& failure) {
+      if(backend_=="CUDA") {
+        error(std::string("CUDA initialization failed: ")+failure.what());
+      }
+      autoCudaFailure_=std::string("AUTO initialization fallback: ")+failure.what();
+      logBackend("CPU",autoCudaFailure_);
+      return nullptr;
+    }
+  }
+  const std::string device=context->device()>=0 ?
+                           "device "+std::to_string(context->device()) :
+                           "current device (legacy backend library)";
+  logBackend("CUDA",device+(neighborCutoff_>0 ? "; NLIST assignment and assignment derivatives" :
+                            "; assignment and assignment derivatives"));
+  return context;
+}
+
+void SoftVoronoiBase::packCudaNeighbors(CudaNeighbors& neighbors) {
+  const auto count=neighborList_->size();
+  if(count>static_cast<unsigned>(std::numeric_limits<int>::max())) {
+    error("CUDA NLIST exceeds the supported number of candidate pairs");
+  }
+  neighbors.offsets.assign(assigned_.size()+1,0);
+  for(unsigned p=0; p<count; ++p) {
+    const auto pair=neighborList_->getClosePair(p);
+    if(pair.first>=centers_.size() || pair.second<centers_.size() ||
+        pair.second-centers_.size()>=assigned_.size()) {
+      error("internal CUDA NLIST pair mapping is invalid");
+    }
+    ++neighbors.offsets[pair.second-centers_.size()+1];
+  }
+  std::partial_sum(neighbors.offsets.begin(),neighbors.offsets.end(),neighbors.offsets.begin());
+  auto cursor=neighbors.offsets;
+  neighbors.centers.resize(count);
+  for(unsigned p=0; p<count; ++p) {
+    const auto pair=neighborList_->getClosePair(p);
+    neighbors.centers[cursor[pair.second-centers_.size()]++]=pair.first;
+  }
+}
+
+SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
+  const auto context=cudaContext();
+  auto& neighbors=shared_ ? shared_->cudaNeighbors : independentCudaNeighbors_;
+  // CPU and CUDA use the same rebuild and safe-skin criteria.
+  if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
+      (invalidateList_ || neighborListNeedsUpdate())) {
+    neighborList_->update(getPositions());
+    saveNeighborListReference();
+    ++neighbors.version;
+    neighbors.offsets.clear();
+  }
+  if(context) {
+    const Tensor& box=getPbc().getBox();
+    double diagonal[3];
+    for(unsigned axis=0; axis<3; ++axis) {
+      diagonal[axis]=box(axis,axis);
+    }
+    Assignment result;
+    result.cuda=context;
+    result.occupancy.resize(centers_.size());
+    std::vector<double> positions(3*getPositions().size());
+    for(unsigned atom=0; atom<getPositions().size(); ++atom) {
+      for(unsigned axis=0; axis<3; ++axis) {
+        positions[3*atom+axis]=getPosition(atom)[axis];
+      }
+    }
+    // Calculation failures propagate for both CUDA and AUTO. Invalid geometry
+    // must remain an error after a backend has been successfully initialized.
+    if(neighborCutoff_>0) {
+      if(neighbors.offsets.empty()) {
+        packCudaNeighbors(neighbors);
+      }
+      const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
+                          std::numeric_limits<double>::infinity();
+      context->forwardNeighbors(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data(),
+                                cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
+    } else {
+      context->forward(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data());
+    }
+    return result;
+  }
   // Split candidate pairs into contiguous MPI-owned ranges.
   const unsigned numberOfPairs=neighborList_->size();
   const unsigned stride=serial_ ? 1 : comm.Get_size();
@@ -603,6 +875,11 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   const double negativeInfinity=-std::numeric_limits<double>::infinity();
 
   Assignment result;
+  const bool reuseGeometry=shared_ && shared_->valid &&
+                           shared_->geometry.size()==localPairCount;
+  if(reuseGeometry) {
+    ++geometryHits_;
+  }
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(
@@ -690,15 +967,16 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       recordFailure(boxFailure);
       return;
     }
-    pair.distance=pbc_ ?
-                  pbcDistance(centerPosition,assignedPosition) :
-                  delta(centerPosition,assignedPosition);
+    pair.distance=reuseGeometry ? shared_->geometry[pairIndex-start].distance :
+                  (pbc_ ? pbcDistance(centerPosition,assignedPosition) :
+                   delta(centerPosition,assignedPosition));
     displacementAvailable=true;
     if(!finiteVector(pair.distance)) {
       recordFailure(InvalidDisplacement);
       return;
     }
-    pair.length=pair.distance.modulo();
+    pair.length=reuseGeometry ? shared_->geometry[pairIndex-start].length :
+                pair.distance.modulo();
     lengthAvailable=true;
     if(!std::isfinite(pair.length)) {
       recordFailure(InvalidLength);
@@ -709,7 +987,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       return;
     }
     if(filterCandidatePairs_ && pair.length>neighborCutoff_) {
-      pair.length=-1.0;
+      pair.score=std::numeric_limits<double>::quiet_NaN();
       return;
     }
     pair.score=-kappa_*pair.length;
@@ -840,11 +1118,14 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     error(invalidPairMessage(selectedFailure));
   }
 
+  if(shared_ && shared_->mixedKappa && !reuseGeometry) {
+    shared_->geometry=result.pairs;
+  }
   if(filterCandidatePairs_) {
     result.pairs.erase(
       std::remove_if(result.pairs.begin(),result.pairs.end(),
     [](const PairData& pair) {
-      return pair.length<0.0;
+      return std::isnan(pair.score);
     }),result.pairs.end());
   }
   for(unsigned j=0; j<assigned_.size(); ++j) {
@@ -938,6 +1219,20 @@ void SoftVoronoiBase::addAssignmentDerivatives(
     error("internal defect derivative has the wrong size");
   }
 
+  if(assignment.cuda) {
+    std::vector<double> gradient(3*derivatives.size());
+    double boxGradient[9];
+    assignment.cuda->backward(derivativeByDefect.data(),gradient.data(),boxGradient);
+    for(unsigned i=0; i<derivatives.size(); ++i)
+      for(unsigned k=0; k<3; ++k) {
+        derivatives[i][k]+=gradient[3*i+k];
+      }
+    for(unsigned i=0; i<3; ++i)
+      for(unsigned j=0; j<3; ++j) {
+        virial(i,j)+=boxGradient[3*i+j];
+      }
+    return;
+  }
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(assignment.pairs);
@@ -1243,6 +1538,25 @@ renormalized.  Prefer exact mode for derivative validation and for small or
 moderate systems.  Use NLIST only after a value-and-force convergence scan
 demonstrates a useful speed/accuracy tradeoff for the target system.
 
+## Shared and CUDA assignment backends
+
+BACKEND=CPU is the default. Compatible actions in one PLUMED instance share
+geometry and, for equal KAPPA, weights and occupancies. NO_SHARE selects an
+independent CPU reference. Consumer-specific selections and reductions retain
+their own meanings.
+
+BACKEND=CUDA explicitly requests the optional FP64 CUDA library.
+BACKEND=AUTO selects a compatible available backend and logs the choice.
+CUDA_LIBRARY supplies its path; the default library name on Linux is
+libReactiveVoronoiCuda.so. The CUDA implementation currently supports complete
+exponential assignments, one MPI rank, orthorhombic PBC and NOPBC. AUTO uses
+CPU for triclinic boxes or multiple MPI ranks. CUDA NLIST reuses the
+CPU-built candidate list and applies the same cutoff each evaluation. OPES, scalar reductions
+and direct distance/position terms execute on CPU.
+
+The plugin README describes compilation, device selection and examples.
+Choose a backend using matched numerical checks and workload timings.
+
 ## CPU parallelism and practical scaling
 
 The exact calculation evaluates $N_{\mathrm{centers}}
@@ -1448,7 +1762,7 @@ VoronoiCoordination::VoronoiCoordination(const ActionOptions& ao):
 }
 
 void VoronoiCoordination::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
   std::vector<double> derivativeByDefect(centers_.size(),0.0);
   double value=0.0;
@@ -1745,7 +2059,7 @@ VoronoiDistance::VoronoiDistance(const ActionOptions& ao):
 }
 
 void VoronoiDistance::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
   std::vector<double> derivativeByDefect(centers_.size(),0.0);
   std::vector<Vector> derivatives(getNumberOfAtoms());
@@ -2051,9 +2365,9 @@ VoronoiPosition::VoronoiPosition(const ActionOptions& ao):
 }
 
 void VoronoiPosition::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
-  std::vector<double> displacement(selected_.size(),0.0);
+  std::vector<Vector> imagePositions(selected_.size());
   std::vector<double> function(selected_.size(),0.0);
   std::vector<double> weight(selected_.size(),0.0);
   std::vector<double> weightDerivative(selected_.size(),0.0);
@@ -2068,15 +2382,16 @@ void VoronoiPosition::calculate() {
     const Vector relative=pbc_ ?
                           pbcDistance(reference,getPosition(i)) :
                           delta(reference,getPosition(i));
-    displacement[s]=relative[axis_];
-    if(!std::isfinite(displacement[s])) {
+    const double displacement=relative[axis_];
+    imagePositions[s]=pbc_ ? reference+relative : getPosition(i);
+    if(!std::isfinite(displacement)) {
       error("VORONOI_POSITION displacement is non-finite");
     }
     function[s]=absolute_ ?
-                std::fabs(displacement[s]) : displacement[s];
+                std::fabs(displacement) : displacement;
     functionDerivative[s]=absolute_ ?
-                          (displacement[s]>0.0 ? 1.0 :
-                           (displacement[s]<0.0 ? -1.0 : 0.0)) : 1.0;
+                          (displacement>0.0 ? 1.0 :
+                           (displacement<0.0 ? -1.0 : 0.0)) : 1.0;
 
     const bool included=
       sign_=="ALL" ||
@@ -2116,11 +2431,8 @@ void VoronoiPosition::calculate() {
       Vector directDerivative;
       directDerivative[axis_]=directScalar;
       derivatives[i]+=directDerivative;
-      Vector imagePosition=getPosition(i);
-      if(pbc_) {
-        imagePosition[axis_]=origin_+displacement[s];
-      }
-      virial-=Tensor(imagePosition,directDerivative);
+      // A triclinic lattice translation can change every Cartesian component.
+      virial-=Tensor(imagePositions[s],directDerivative);
     }
   }
 
