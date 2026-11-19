@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/PlumedModules.cmake")
+
 # CMake-native reimplementation of the PLUMED build-time generators.
 #
 # Mirrors maketools/makecmd, makeModuleMap, xxd, update-version.sh and the
@@ -35,7 +37,7 @@ endfunction()
 # contains it (same content as maketools/makeModuleMap).
 function(plumed_make_module_map src_root out_file)
   set(_rows "")
-  file(GLOB _mt_files "${src_root}/src/*/module.type")
+  file(GLOB _mt_files "${src_root}/src/*/module.yml")
   file(GLOB _plugin_dirs "${src_root}/plugins/*")
   foreach(_plugin IN LISTS _plugin_dirs)
     if(IS_DIRECTORY "${_plugin}")
@@ -178,9 +180,9 @@ function(plumed_generate_config src_root out_dir)
   # selected CMake modules and a build-system-specific source/toolchain hash.
   if(NOT DEFINED MODULES)
     set(MODULES "")
-    file(GLOB _types "${src_root}/src/*/module.type")
+    file(GLOB _types "${src_root}/src/*/module.yml")
     foreach(_type IN LISTS _types)
-      file(STRINGS "${_type}" _kind LIMIT_COUNT 1)
+      plumed_read_module("${_type}" _kind _use)
       if(_kind STREQUAL "always" OR _kind STREQUAL "default-on")
         get_filename_component(_directory "${_type}" DIRECTORY)
         get_filename_component(_module "${_directory}" NAME)
@@ -191,7 +193,8 @@ function(plumed_generate_config src_root out_dir)
   string(JOIN " " _builtin_modules ${MODULES})
   set(_identity "cmake-static;${PLUMED_VERSION_LONG};${MODULE_TOOLCHAIN};${MODULES};${MODULE_DEFINITIONS}")
   file(GLOB _identity_sources "${src_root}/src/*/*.cpp"
-       "${src_root}/src/*/*.h" "${src_root}/src/*/*.c")
+       "${src_root}/src/*/*.h" "${src_root}/src/*/*.c"
+       "${src_root}/src/*/module.yml")
   list(SORT _identity_sources)
   foreach(_source IN LISTS _identity_sources)
     if(NOT _source STREQUAL "${src_root}/src/config/version.h")

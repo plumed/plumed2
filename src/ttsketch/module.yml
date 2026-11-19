@@ -1,4 +1,18 @@
 name: ttsketch
+type: default-off
+use: [core, tools, bias]
 authors: Nils E. Strand, Siyao Yang, Yuehaw Khoo, and Aaron R. Dinner
 description: TT-Metadynamics, a variant of metadynamics where the bias potential is periodically compressed into a tensor train (TT); useful for high-dimensional bias potentials (many CVs)
 dois: ["10.1021/acs.jctc.6c00487"]
+
+# Packaging options: see conda/module-options.md.
+# Build against serial HDF5, but allow ABI-compatible MPI variants at runtime.
+# Keep the module enabled without ITensor while compulsory libraries are reviewed.
+conda:
+  requirements:
+    host:
+    - hdf5 * nompi_*
+    run:
+    - hdf5
+  unavailable_libraries:
+  - ITensor

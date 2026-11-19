@@ -25,6 +25,7 @@ jobs:
     - uses: actions/checkout@v6
     - name: Check default requirements and configure module selection
       run: |
+        python3 -m pip install -r extensions/requirements.txt
         python3 extensions/tests/kernel_requirements.py
         python3 extensions/tests/configure_selection.py
         python3 extensions/tests/cmake_selection.py
@@ -78,7 +79,7 @@ jobs:
       run: .ci/check-warnings build.log
 
   # Build with all the optional modules disabled, so that only the ones of type "always" are compiled
-  # (see src/*/module.type). It checks that they do not depend on optional modules and that make and
+  # (see type: in src/*/module.yml). It checks that they do not depend on optional modules and that make and
   # make install work without cltools. Build only: the regtests need plumed info and plumed driver,
   # which are in cltools.
   modules-none:

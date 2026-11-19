@@ -18,4 +18,5 @@ as they reflect local wishes!
 Users can control the addition of these files by using the --enable-modules option
 of configure.
 
-The type of the module can be set by adding a file module.type (see e.g. core/module.type)
+The type and native dependencies are declared in module.yml (see core/module.yml).
+See ../conda/module-options.md for the shared declaration format.

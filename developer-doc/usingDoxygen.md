@@ -370,6 +370,8 @@ The <i> module.yml </i> file is a Yaml file with the following structure:
 
 \verbatim
 name: name of module
+type: default-off
+use: [core, tools]
 authors: authors of module
 description: description of module
 dois: ["doi1", "doi2", "doi2"]
@@ -377,6 +379,10 @@ tags:
   TAG1: description of TAG1
   TAG2: description of TAG2
 \endverbatim
+
+This file also owns the module build settings (`type` and `use`) and optional
+`conda` packaging policy; see conda/module-options.md. Infrastructure modules may
+omit documentation fields and do not acquire manual pages simply by having a declaration.
 
 As you can see you use this file to provide information on the name, authors and description of the module.  You can also include a list of DOIs for papers that should be cited on the 
 module's documentation page.

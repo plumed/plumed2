@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 
+module_header="$(cd "$(dirname "$0")" && pwd)/module-header"
 # first argument is name of txt file to be updated
 file="$1"
 
@@ -81,9 +82,9 @@ modules=$(
 cd ../
 for dir in *
 do
-  if test -f "$dir/module.type"
+  if test -f "$dir/module.yml"
   then
-    mtype="$(cat "$dir/module.type")"
+    mtype="$("$module_header" type "$dir/module.yml")" || exit 1
     is=""
     case "$mtype" in
     (always) is=on ;;
@@ -103,7 +104,7 @@ do
     echo "module $dir $is ($mtype)"
   fi
 done
-)
+) || exit 1
 
 {
 echo "# version strings"

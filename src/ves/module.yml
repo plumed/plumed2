@@ -1,4 +1,6 @@
 name: ves
+type: default-off
+use: [bias, cltools, core, tools, lepton]
 authors: Omar Valsson, Michele Invernizzi, Pablo Piaggi and Benjamin Pampel
 description: implementations of methods based on Variationally Enhanced Sampling (VES)
 dois: ["10.1103/PhysRevLett.113.090601"]
@@ -8,3 +10,10 @@ tags:
   VES_TARGETDIST: target distributions for variationally enhanced sampling
   VES_OPTIMIZER: optimizers for variationally enhanced sampling
   VES_UTILS: utilities for variationally enhanced sampling
+
+# Packaging options: see conda/module-options.md.
+
+conda:
+  tests:
+    regtests:
+    - ves/rt-le-1d-static-bias

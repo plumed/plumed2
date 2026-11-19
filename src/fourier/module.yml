@@ -1,4 +1,20 @@
 name: fourier
+type: default-off
+use: [core, gridtools]
 authors: Edoardo Baldi and Gareth Tribello
 description: tools for performing a 2D fast fourier transform of a function on a grid
 dois: ["10.1088/1361-648X/aa893d"]
+
+# Packaging options: see conda/module-options.md.
+
+conda:
+  requirements:
+    host:
+    - fftw * nompi_*
+    run:
+    - fftw * nompi_*
+  tests:
+    regtests:
+    - fourier/rt-fftw
+    packages:
+    - plumed-ext-symfunc

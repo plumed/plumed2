@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from conda_policy import read_policy, validate_backend
+from metadata import read_header, read_metadata
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -121,13 +122,13 @@ def feature_guards(directory):
 
 def generate_catalog(write=True):
     modules = {}
-    for module_type in sorted((ROOT / "src").glob("*/module.type")):
+    for module_type in sorted((ROOT / "src").glob("*/module.yml")):
         directory = module_type.parent
-        makefile = (directory / "Makefile").read_text()
-        use = re.search(r"^USE\s*[:?+]?=([^\n]*)", makefile, re.MULTILINE)
+        header = read_header(module_type)
+        read_metadata(module_type)
         modules[directory.name] = {
-            "type": module_type.read_text().strip(),
-            "source_use": use[1].split() if use else [],
+            "type": header["type"],
+            "source_use": header["use"],
             "feature_guards": feature_guards(directory),
             "conda": conda_requirements(directory),
             "about": module_license(directory),

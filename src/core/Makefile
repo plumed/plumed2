@@ -1,4 +1,3 @@
-USE=config tools lepton small_vector mpiwrap
 
 # generic makefile
 include ../maketools/make.module

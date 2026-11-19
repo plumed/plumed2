@@ -4,7 +4,7 @@ import json
 import shutil
 import requests
 import subprocess
-import yaml
+import sys
 import glob
 import numpy as np
 from pathlib import Path
@@ -15,6 +15,9 @@ from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript,
 import networkx as nx
 from multiprocessing import Pool, cpu_count
 import functools
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "extensions"))
+from metadata import read_header, read_metadata
 
 PLUMED = "plumed"
 
@@ -442,7 +445,7 @@ The two kinds of syntax can be combined and, for example, `./configure --enable-
    
 ## Module dependencies
 
-The table below lists the direct native dependencies declared in each module's `USE=` line in its Makefile. The same list appears on each module page.
+The table below lists the direct native dependencies declared in each module's `use:` field in `module.yml`. The same list appears on each module page.
 Always-compiled components, such as `core` and `tools`, are supplied by the PLUMED kernel. Components without their own action documentation are shown without a link.
 
 A shortcut can also invoke actions from other modules at runtime. These action requirements are included in the [dependency graph](modulegraph.md), but they are
@@ -460,7 +463,7 @@ make install
 
 This builds VES, PAMM and any native dependencies that are missing from the base, including adjmat. It does not rebuild the kernel.
 The libraries must match the exact base version and build. Distributions can provide them as packages such as `plumed-ext-ves`.
-Their package dependencies include the native module dependencies from `USE=`, but not shortcut requirements.
+Their package dependencies include the native module dependencies from `use:`, but not shortcut requirements.
 
 Installed modules are loaded automatically from `lib/plumed/plugins` beside the loaded kernel. Set `PLUMED_PLUGIN_PATH` to a colon-separated list of additional
 registration directories when libraries are installed in separate prefixes, as with HPC environment modules. Include the directories of their native dependencies too.
@@ -536,10 +539,8 @@ def addSpecialGroupsToPage(file, groups):
 
 
 def getModuleType(module):
-    if not Path("../../src/" + module + "/module.type").is_file():
-        return "always"
-    with open("../../src/" + module + "/module.type") as f:
-        return f.read().strip()
+    declaration = Path("../../src") / module / "module.yml"
+    return read_header(declaration)["type"] if declaration.is_file() else "always"
 
 
 def drawModuleNode(index, key, of):
@@ -554,19 +555,15 @@ def drawModuleNode(index, key, of):
         raise Exception("don't know how to draw node of type " + getModuleType(key))
 
 
-def getModuleRequirementsFromMakefile(thismodule):
-    makefile = Path(__file__).resolve().parent.parent / "src" / thismodule / "Makefile"
-    with makefile.open() as f:
-        for line in f:
-            declaration, _, _ = line.partition("#")
-            key, separator, value = declaration.partition("=")
-            if separator and key.strip() == "USE":
-                return value.split()
-    return []
+def getModuleRequirements(thismodule):
+    declaration = (
+        Path(__file__).resolve().parent.parent / "src" / thismodule / "module.yml"
+    )
+    return read_header(declaration)["use"]
 
 
 def formatModuleRequirements(thismodule, documented_modules):
-    dependencies = getModuleRequirementsFromMakefile(thismodule)
+    dependencies = getModuleRequirements(thismodule)
     return (
         ", ".join(
             '<a href="../module_' + name + '">' + name + "</a>"
@@ -591,9 +588,9 @@ def createModuleGraph(version, plumed_syntax):
             for req in value["needs"]:
                 if plumed_syntax[req]["module"] != thismodule:
                     requires[thismodule].add(plumed_syntax[req]["module"])
-    # Get dependencies from Makefiles
+    # Get direct native dependencies from module declarations
     for thismodule in requires.keys():
-        for conn in getModuleRequirementsFromMakefile(thismodule):
+        for conn in getModuleRequirements(thismodule):
             if conn in requires.keys():
                 requires[thismodule].add(conn)
 
@@ -615,9 +612,9 @@ PLUMED to include it during the configure stage by using:
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).
 
-This graph combines native `USE=` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
+This graph combines native `use:` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
 The complete direct native dependency lists are given in the [module table](modules.md#module-dependencies) and on each module page.
-Only the native `USE=` dependencies determine separately installed module packages.
+Only the native `use:` dependencies determine separately installed module packages.
 
 <pre class=\"mermaid\">
 """
@@ -723,8 +720,7 @@ Only the native `USE=` dependencies determine separately installed module packag
 
 def getModuleDictionary(modname):
     if os.path.exists("../../src/" + modname + "/module.yml"):
-        with open("../../src/" + module + "/module.yml") as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata("../../src/" + modname + "/module.yml")
         return moddict
     return {
         "name": modname,
@@ -736,8 +732,7 @@ def getModuleDictionary(modname):
 
 def getPluginDictionary(plugname):
     if os.path.exists("../../plugins/" + plugname + "/plugin.yml"):
-        with open("../../plugins/" + plugname + "/plugin.yml") as f:
-            plugdict = yaml.load(f, Loader=yaml.BaseLoader)
+        plugdict = read_metadata("../../plugins/" + plugname + "/plugin.yml")
         return plugdict
     return {
         "name": plugname,
@@ -1682,8 +1677,7 @@ if (
     # Read in all the module pages
     tagdictionary = {}
     for file in glob.glob("../src/*/module.yml"):
-        with open(file) as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata(file)
         if "tags" in moddict:
             for key, value in moddict["tags"].items():
                 if key in tagdictionary.keys():

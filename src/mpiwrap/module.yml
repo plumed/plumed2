@@ -1,0 +1,3 @@
+name: mpiwrap
+type: always
+use: [config, tools, thread_mpi]

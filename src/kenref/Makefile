@@ -1,4 +1,3 @@
-USE=core tools bias
 
 #generic makefile
 include ../maketools/make.module
@@ -16,7 +15,7 @@ CPPFLAGS += -DKENREF_DOUBLE
 # Only the goals that actually COMPILE this module may demand the flags. Everything else has to work on a
 # tree configured WITHOUT kenref, because PLUMED's own tooling runs those goals across every module dir
 # regardless of what is enabled -- `maketools/plumedcheck` shells out to `make show_used_modules` (with
-# stderr discarded) to learn the module's USE= list, and `make clean`/`links` run on unconfigured trees.
+# stderr discarded) to learn the module's use: list, and `make clean`/`links` run on unconfigured trees.
 # When an $(error) fires there, make prints nothing on stdout, plumedcheck silently records NO used
 # modules for kenref, and then reports every `#include "dir/file.h"` in this module as
 # `include_non_used_module` -- with cppcheck losing its include configuration on top of that. The
@@ -43,6 +42,6 @@ else ifeq ($(kenref_needs_flags),yes)
 endif
 
 # The forwarded KEnRef source file's own quoted PLUMED includes ("tools/Communicator.h" etc.) resolve
-# relative to that file's directory, not this one: `-I.` picks up the USE= header symlinks created here,
+# relative to that file's directory, not this one: `-I.` picks up the use: header symlinks created here,
 # `-I..` picks up PLUMED's src/ root.
 CPPFLAGS += -I. -I..

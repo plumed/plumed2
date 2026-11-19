@@ -1,4 +1,3 @@
-USE=
 
 # Imported implementation files are flat, namespaced translation units.
 ADDCPPFLAGS += -I. -DTHREAD_PTHREADS -DHAVE_UNISTD_H \

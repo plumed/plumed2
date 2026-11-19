@@ -1,4 +1,6 @@
 name: kenref
+type: default-off
+use: [core, tools, bias]
 authors: Amr Alhossary and Colin Smith
 description: kinetic ensemble refinement of a replica ensemble against NMR observables
 dois:
@@ -6,3 +8,9 @@ dois:
   - 10.1007/s10858-019-00288-8
 tags:
   KENREF: bias that restrains an ensemble of replicas against NMR relaxation observables
+
+# Packaging options: see conda/module-options.md.
+# Keep the module enabled without the separately distributed KEnRef core library.
+conda:
+  unavailable_libraries:
+  - kenref_core

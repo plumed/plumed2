@@ -10,7 +10,10 @@ source = Path(__file__).resolve().parents[2]
 with tempfile.TemporaryDirectory(prefix="plumed-configure-modules-") as scratch:
     root = Path(scratch)
     shutil.copy2(source / "configure", root / "configure")
-    for declaration in (source / "src").glob("*/module.type"):
+    (root / "src/maketools").mkdir(parents=True)
+    for name in ("module-header", "module-header.awk"):
+        shutil.copy2(source / "src/maketools" / name, root / "src/maketools" / name)
+    for declaration in (source / "src").glob("*/module.yml"):
         target = root / declaration.relative_to(source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(declaration, target)

@@ -203,13 +203,15 @@ BEGINFILE{
     gsub(/-/,"_",module_namespace);
     if(!(module in module_type)){
       path=filepath
-      sub("/.*$","/module.type",path);
+      sub("/.*$","/module.yml",path);
 # detect module type
-      if((getline < path > 0) ){
-        module_type[module]=$0
+      while((getline line < path)>0) {
+        if(line !~ /^type: /) continue;
+        sub(/^type: /,"",line);
+        module_type[module]=line
         information("module_type","module " module " has type '" module_type[module] "'" );
 # DOC: :wrong_module_type:
-# DOC: Module type as indicated in the `module.type` file located in the module directory is not valid.
+# DOC: Module type as indicated in the `module.yml` file located in the module directory is not valid.
 # DOC: The admitted types are: `default-on`, which means the module is on by default, `default-off`, which means that
 # DOC: they should be explicitly enabled, and `always`, which means they are always required.
         if(!(module_type[module] in allowed_module_types)) error("wrong_module_type","module " module " has a wrong module type '" module_type[module] "'");
@@ -233,7 +235,7 @@ BEGINFILE{
         }
         information("used_modules",module " uses:" used_modules_here)
 # DOC: :used_wrapper_module:
-# DOC: Wrapper module should not be used in other modules (via `USE=wrapper` in `Makefile`).
+# DOC: Wrapper module should not be used in other modules (via `use: [wrapper]` in `module.yml`).
 # DOC: The reason is that this makes `libplumedKernel` dependent on the PLUMED wrappers.
 # DOC: An exception is the `main` module, which needs to use the `wrapper` module.
 # DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface

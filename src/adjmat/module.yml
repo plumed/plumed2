@@ -1,6 +1,13 @@
 name: adjmat
+type: default-off
+use: [core, tools]
 authors: Gareth Tribello
 description: methods for calculating adjacency matrices
 dois: []
 tags: 
   MATRIX: action that calculates an adjacency matrix between atoms
+
+# Packaging options: see conda/module-options.md.
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.
+conda: {}

@@ -21,7 +21,7 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
 # PLUMED_MODULES has the syntax of ./configure --enable-modules: "reset" (the
-# default: the "always" and "default-on" modules of the src/*/module.type
+# default: the "always" and "default-on" modules of the src/*/module.yml
 # files), "all", "none" (the "always" modules only), or a ":" separated list
 # such as "+ves:+funnel:-isdb". Modules that need a library this build does
 # not support (drr, fourier, metatomic, pytorch, ttsketch) compile without it,
@@ -29,13 +29,14 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 # drops in that case, is never compiled.
 set(PLUMED_MODULES "reset" CACHE STRING
     "Modules to compile, with the syntax of ./configure --enable-modules")
+include(${PLUMED_SRC}/cmake-msvc/PlumedModules.cmake)
 set(_all_modules)
 set(_always_modules)
 set(_default_modules)
-file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
+file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.yml)
 list(SORT _module_type_files)
 foreach(_mt ${_module_type_files})
-    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    plumed_read_module("${_mt}" _type _use)
     get_filename_component(_dir ${_mt} DIRECTORY)
     get_filename_component(_mod ${_dir} NAME)
     list(APPEND _all_modules ${_mod})
@@ -87,12 +88,10 @@ if(kenref IN_LIST MODULES)
     message(STATUS "PLUMED_MODULES: kenref needs the KEnRef library, not supported by this build: skipped")
     list(REMOVE_ITEM MODULES kenref)
 endif()
-# As src/maketools/check_module.sh: the modules listed in the USE line of the
-# Makefile of an enabled module must be enabled
+# As src/maketools/check_module.sh: the dependencies listed in module.yml
+# of an enabled module must be enabled
 foreach(_mod ${MODULES})
-    file(STRINGS ${PLUMED_SRC}/src/${_mod}/Makefile _use REGEX "^USE[ \t]*=")
-    string(REGEX REPLACE "^USE[ \t]*=" "" _use "${_use}")
-    separate_arguments(_use)
+    plumed_read_module("${PLUMED_SRC}/src/${_mod}/module.yml" _type _use)
     foreach(_dep ${_use})
         if(_dep IN_LIST _all_modules AND NOT _dep IN_LIST MODULES)
             message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} depends on ${_dep}, which is disabled")
@@ -345,12 +344,12 @@ foreach(_h ${_has})
     string(APPEND _config_txt "has ${_h} on\n")
 endforeach()
 string(APPEND _config_txt "\n")
-file(GLOB _module_types ${PLUMED_SRC}/src/*/module.type)
+file(GLOB _module_types ${PLUMED_SRC}/src/*/module.yml)
 list(SORT _module_types)
 foreach(_mt ${_module_types})
     get_filename_component(_dir ${_mt} DIRECTORY)
     get_filename_component(_mod ${_dir} NAME)
-    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    plumed_read_module("${_mt}" _type _use)
     if(_mod IN_LIST MODULES)
         string(APPEND _config_txt "module ${_mod} on (${_type})\n")
     else()

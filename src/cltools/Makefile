@@ -1,4 +1,3 @@
-USE=core config tools xdrfile
 
 # generic makefile
 include ../maketools/make.module

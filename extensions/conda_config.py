@@ -1,4 +1,4 @@
-"""Shared recipe and build policy operations for conda.mk."""
+"""Shared recipe and build policy operations for module YAML declarations."""
 
 import json
 import os
@@ -92,7 +92,7 @@ def force_use_keys(policy, indent):
 def write_variants(path, policies):
     combined = merge_policies(policies)
     template = path.with_suffix(path.suffix + ".in")
-    text = "# Generated from module conda.mk files; see conda/module-options.md.\n"
+    text = "# Generated from module.yml/plugin.yml declarations; see conda/module-options.md.\n"
     if template.exists():
         keep = True
         for line in template.read_text().splitlines():
@@ -131,7 +131,7 @@ def regression_selection(catalog):
         for fixture in policy["test_regtests"]:
             path = Path(fixture)
             if path.is_absolute() or ".." in path.parts:
-                raise ValueError(f"Invalid CONDA_TEST_REGTESTS path: {fixture}")
+                raise ValueError(f"Invalid conda.tests.regtests path: {fixture}")
             packages = (
                 ["plumed-ext-" + name]
                 if module["type"] == "default-off" or policy["dummy_package"]
@@ -148,7 +148,7 @@ def regression_selection(catalog):
                 }
             )
     return {
-        "description": "Generated from module conda.mk test selections",
+        "description": "Generated from module YAML test selections",
         "tests": tests,
     }
 
@@ -266,9 +266,7 @@ def check_features(catalog, module, prefix):
                     command, env=dict(os.environ, PLUMED_AUTOLOAD="1"), check=False
                 )
                 if (result.returncode == 0) != (expected == 0):
-                    raise ValueError(
-                        f"{name}: {feature} violates CONDA_{field.upper()}"
-                    )
+                    raise ValueError(f"{name}: {feature} violates conda.{field}")
 
 
 if __name__ == "__main__":

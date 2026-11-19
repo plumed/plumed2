@@ -259,6 +259,12 @@ AC_DEFUN([PLUMED_OPENMP],
 
 ##################################################################
 
+# Validate the restricted build fields with a POSIX reader, without Python.
+for modules_file in src/*/module.yml; do
+  src/maketools/module-header type "$modules_file" >/dev/null ||
+    AC_MSG_ERROR([invalid module declaration $modules_file])
+done
+
 AC_MSG_NOTICE([Optional modules are disabled by default])
 rm -f src/*.on src/*.off
 
@@ -279,7 +285,7 @@ AC_ARG_ENABLE([modules],
      case "$modules_name" in
        (+*|-*) modules_name=${modules_name#?} ;;
      esac
-     if test -f "src/$modules_name/module.type"; then
+     if test -f "src/$modules_name/module.yml"; then
        modules_words="$modules_words $modules_word"
      else
        modules_words="$modules_words `echo "$modules_word" | sed 's/+/ +/g' | sed 's/-/ -/g'`"
@@ -291,20 +297,28 @@ AC_ARG_ENABLE([modules],
      (none)
        AC_MSG_NOTICE([Disabling all optional modules])
        rm -f src/*.off src/*.on
-       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+       for modules_file in src/*/module.yml; do
+         if test "$(src/maketools/module-header type "$modules_file")" = default-on; then
+           touch "${modules_file%/module.yml}.off"
+         fi
+       done ;;
      (all)
        AC_MSG_NOTICE([Enabling all optional modules])
        rm -f src/*.off src/*.off
-       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+       for modules_file in src/*/module.yml; do
+         if test "$(src/maketools/module-header type "$modules_file")" = default-off; then
+           touch "${modules_file%/module.yml}.on"
+         fi
+       done ;;
      (reset)
         AC_MSG_NOTICE([Resetting modules to default])
         rm -f src/*.on src/*.off ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
-       if grep -q always src/$modules_mod/module.type ; then
+       if test "$(src/maketools/module-header type "src/$modules_mod/module.yml")" = always ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which is always enabled])
        fi
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
@@ -312,14 +326,14 @@ AC_ARG_ENABLE([modules],
        touch src/$modules_mod.off ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
        rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      (*)
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])

@@ -94,29 +94,28 @@ else existing in the code. In this respect, before merging your contribution, th
 the name of some of the keywords that you added.
 
 The first step in writing your new feature will thus be to create a sub-directory within src in which to hold your new feature.  Before you 
-write any c++ code you will need to create two files within this directory. The first of these files will be called module.type and will 
-just contain the following text:
+write any c++ code you will need to create a module.yml and a Makefile in this directory.
+The module.yml contains build settings alongside the documentation metadata described in \ref usingDoxygen:
 
 \verbatim
-default-off
+name: newmodule
+type: default-off
+use: [core, tools, multicolvar]
 \endverbatim
 
-By setting this file up this way you ensure that your module is not compiled unless the user specifically asks for it to be compiled at
-configure time.  Explanations on how to configure PLUMED to include your module will appear in the documentation for the module automatically.
-Furthermore, the procedure for compiling with your code enabled is relatively straightforward.
+`default-off` ensures that the module is compiled only when explicitly requested.
+The direct native dependencies belong in `use`, with the exact single-line syntax
+shown above. Most modules need core and tools; other dependencies depend on the
+implementation. See conda/module-options.md for the declaration format and optional
+Conda packaging settings. Native configure and Make do not require Python to read
+these build fields.
 
-The second file you will need to create is the Makefile.  An example module Makefile is shown below:
+The Makefile contains the executable build rules, usually just:
 
 \verbatim
-USE=core tools vesselbase multicolvar
 # generic makefile
 include ../maketools/make.module
 \endverbatim
-
-You should only need to modify the first line of this file - the line starting with USE=.  This line is used to tell PLUMED at compile time
-what other modules are required in order for this module to function.  This module relies on functionality that is contained in the core, tools, 
-vesselbase and multicolvar modules and so these modules are all required during compilation of this particular module.  For your new module you 
-will most likely always need to use core and tools.  The other modules that are required will depend on what you are implementing.
 
 The last thing you will need to do before you start programming is that you will need to modify the .gitignore file in the src directory in order 
 to stop git from ignoring your new module directory.   If you look in the .gitignore file you will see that it reads something like this:

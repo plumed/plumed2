@@ -1,4 +1,6 @@
 name: secondarystructure
+type: default-on
+use: [core, tools]
 authors: Gareth Tribello 
 description: variables for detecting the degree of secondary structure in a protein
 dois: ["10.1021/ct900202f"]

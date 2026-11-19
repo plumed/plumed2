@@ -1,0 +1,19 @@
+name: tools
+type: always
+use: [core, lapack, lepton, small_vector, xdrfile, mpiwrap, gemmi]
+
+# Packaging options: see conda/module-options.md.
+# Build against serial HDF5, but allow ABI-compatible MPI variants at runtime.
+# Retain the main package's configured FFTW capability and actual OpenBLAS provider.
+conda:
+  requirements:
+    host:
+    - hdf5 * nompi_*
+    - zlib
+    - libopenblas
+    - fftw * nompi_*
+    run:
+    - hdf5
+    - zlib
+    - libopenblas
+    - fftw * nompi_*

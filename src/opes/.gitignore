@@ -7,7 +7,6 @@
 !/Makefile
 !/README
 !/COPYRIGHT
-!/module.type
+!/module.yml
 !/postprocessing
 !/module.md
-!/module.yml

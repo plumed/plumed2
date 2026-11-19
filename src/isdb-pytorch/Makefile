@@ -1,4 +1,3 @@
-USE=colvar core tools
 
 include ../maketools/make.module
 CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror

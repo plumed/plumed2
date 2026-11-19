@@ -3,7 +3,8 @@
 set -e
 export LC_ALL=C
 output=ModuleBuild.inc
-modules=$(../maketools/find_modules.sh | tr '\n' ' ')
+modules=$(../maketools/find_modules.sh)
+modules=$(printf '%s\n' "$modules" | tr '\n' ' ')
 if command -v sha256sum >/dev/null 2>&1; then
   hash=sha256sum
 else
@@ -18,7 +19,7 @@ build=$({
   # Generated config/version.h is excluded to avoid timestamps/git metadata.
   # Hash each file (name + content) in a few batched processes rather than
   # forking once per file: there are thousands of sources.
-  (cd ..; find . -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name Makefile \) \
+  (cd ..; find . -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name Makefile -o -name module.yml \) \
       ! -path './config/version.h' -print0 | sort -z | xargs -0 $hash)
 } | $hash | awk '{print $1}')
 {
