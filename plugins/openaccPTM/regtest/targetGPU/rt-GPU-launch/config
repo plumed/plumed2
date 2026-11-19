@@ -1,0 +1,12 @@
+type=driver
+# The actions computed by ANTIBETARMSD_SCALAR_ACC, PARABETARMSD_SCALAR_ACC and ALPHARMSD_SCALAR_ACC queue their
+# work on the GPU in Action::launch(): b1, a1 and p1 before any of them waits for its results; p2 after
+# FIT_TO_TEMPLATE has moved the atoms (at the first step it is queued with the others, and that work is
+# discarded with Action::cancelLaunch()).
+# The references were computed on the CPU (the same input without USEGPU)
+extra_files="../../../../../regtest/secondarystructure/rt33/amyloid.pdb ../../../../../regtest/secondarystructure/rt33/amyloid.xyz"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz amyloid.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+# keep the first two lines of each frame (number of atoms and virial) and the forces on one atom every 10
+function plumed_regtest_after(){
+  awk 'NR==1{natoms=$1} {i=(NR-1)%(natoms+2); if(i<2 || (i-2)%10==0) print}' forces > forces.tmp && mv forces.tmp forces
+}
