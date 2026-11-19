@@ -13,7 +13,7 @@ set -x
 #
 # The metatomic-torch plugin is not released yet, so this is the head of the
 # pull request adding it to metatomic.
-METATOMIC_COMMIT=9b01833e390aba3884a2f0ef4c2ace328dc356d4
+METATOMIC_COMMIT=28b30995575a4821b63256bb27da8c54d5ff6ff8
 PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
 
 # PLUMED's CI exports the flags linking the kernel against LibTorch. CMake hands
