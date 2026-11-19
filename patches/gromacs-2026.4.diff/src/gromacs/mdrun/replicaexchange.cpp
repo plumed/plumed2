@@ -246,7 +246,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     if (plumedForceProvider && plumedForceProvider->context().hrex)
     {
         if (ir->efep != FreeEnergyPerturbationType::No)
-            gmx_fatal(FARGS, "-hrex cannot be combined with native free-energy lambda exchange");
+            gmx_fatal(FARGS, "-hrex cannot be combined with native free-energy mode; use -replex without -hrex for native lambda exchange");
         check_multi_int(fplog, *ms, int(ir->coulombtype), "HREX electrostatics", FALSE);
         check_multi_int(fplog, *ms, ir->nkx, "HREX PME nx", FALSE);
         check_multi_int(fplog, *ms, ir->nky, "HREX PME ny", FALSE);
@@ -918,7 +918,7 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
 static int select_plumed_partner(FILE* fplog, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step)
 {
     auto* plumedForceProvider = re->plumedForceProvider;
-    PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
+    auto& plumed = *plumedForceProvider->plumedHandle();
     if (re->patternStep != step)
     {
         int custom = 0;
@@ -974,7 +974,7 @@ int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* 
 
 void plumed_hrex_cache_foreign(PlumedForceProvider* provider, real* energy)
 {
-    PLMD::Plumed(provider->plumedHandle()).cmd("GREX cacheLocalUSwap", energy);
+    provider->plumedHandle()->cmd("GREX cacheLocalUSwap", energy);
 }
 } // namespace gmx
 #endif
@@ -1168,7 +1168,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
 #if GMX_LIB_MPI
         if (plumedForceProvider)
         {
-            PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
+            auto& plumed = *plumedForceProvider->plumedHandle();
             int          partner = select_plumed_partner(fplog, ms, re, step);
             plumed.cmd("GREX setPartner", &partner);
             plumed.cmd("GREX calculate");
@@ -1187,7 +1187,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
 #if GMX_LIB_MPI
                 if (plumedForceProvider)
                 {
-                    PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
+                    auto& plumed = *plumedForceProvider->plumedHandle();
                     real adb, bdb;
                     plumed.cmd(("GREX getDeltaBias " + std::to_string(a)).c_str(), &adb);
                     plumed.cmd(("GREX getDeltaBias " + std::to_string(b)).c_str(), &bdb);
@@ -1441,7 +1441,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     if (plumedForceProvider)
     {
         auto&        context = plumedForceProvider->context();
-        PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
+        auto& plumed = *plumedForceProvider->plumedHandle();
         // Workers enter the GREX collective in prepare(), so cache physical
         // energies on every rank before that call. Native lambda exchange has
         // already evaluated the other Hamiltonians at the local configuration.

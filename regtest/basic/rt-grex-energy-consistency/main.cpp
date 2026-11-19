@@ -120,10 +120,23 @@ int run(MPI_Comm world, int, char**) {
   evaluate(false,true);
   evaluate(true,false,true);
   evaluate(false,false,false,true);
-  evaluate(true,false,true,false,true);
+  bool rejected=false;
+  try {
+    evaluate(true,false,true,false,true);
+  } catch(const std::exception& error) {
+    if(std::string(error.what()).find("requires bias force STRIDE to divide the exchange interval")==std::string::npos) {
+      throw;
+    }
+    rejected=true;
+  }
+  if(!rejected) {
+    throw std::runtime_error("Off-stride GREX attempt was not rejected");
+  }
+  // The restriction is on replica exchange, not calculation-only MCMC trials.
+  evaluate(true,true,false,false,true);
   MPI_Barrier(world);
   if(rank==0) {
-    std::ofstream("output")<<"ENERGY cross-Hamiltonian evaluation: pass\nPost-update bias consistency: pass\nDirect energy-only evaluation: pass\nLambda ENERGY without physical double counting: pass\nReplica-fixed parameter retained on foreign coordinates: pass\nOff-stride exchange bias evaluation: pass\n";
+    std::ofstream("output")<<"ENERGY cross-Hamiltonian evaluation: pass\nPost-update bias consistency: pass\nDirect energy-only evaluation: pass\nLambda ENERGY without physical double counting: pass\nReplica-fixed parameter retained on foreign coordinates: pass\nOff-stride exchange rejection and calculation-only trial: pass\n";
   }
   return 0;
 }

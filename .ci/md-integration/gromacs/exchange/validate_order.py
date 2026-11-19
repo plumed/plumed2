@@ -95,8 +95,9 @@ def main():
                 bias=kind,
                 hrex=hrex,
                 stride=stride,
-                pace=5 if stride == 1 else 2 * stride,
+                pace=5 if stride == 1 else 3 * stride,
             )
+            interval = 5 if stride == 1 else stride
             directory = suite.setup(case)
             command = suite.launch(2) + [
                 "-multidir",
@@ -109,7 +110,7 @@ def main():
                 "-plumed",
                 "plumed.dat",
                 "-replex",
-                "5",
+                str(interval),
                 "-reseed",
                 "2026",
                 "-notunepme",
@@ -133,7 +134,7 @@ def main():
                 for step in range(32):
                     if step % stride == 0:
                         expected[step, 0] += 1
-                    if step in range(5, 31, 5):
+                    if step in range(interval, 31, interval):
                         expected[step, 1] += 2
                 if counts != expected:
                     raise AssertionError(
@@ -144,7 +145,10 @@ def main():
                     (local / "run.log").read_text(),
                     re.M,
                 )
-                if force_count is None or int(force_count[1]) != 32 + 6 * hrex:
+                if (
+                    force_count is None
+                    or int(force_count[1]) != 32 + (31 // interval) * hrex
+                ):
                     raise AssertionError("Unexpected physical force evaluation count")
                 # The full force trajectory must retain normal MTS scaling.
                 suite.run(
@@ -251,6 +255,49 @@ def main():
             results.append(item)
             (root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
             print(case["name"], "pass", flush=True)
+    # Reject attempts on off-stride bias steps before using their acceptance.
+    for hrex, kind, stride in itertools.product(
+        [False, True], ["coordinate", "energy", "metad", "metad-energy"], [4, 10]
+    ):
+        case = dict(
+            name=f"reject-stride-{kind}-h{int(hrex)}-s{stride}",
+            n=2,
+            ranks=1,
+            bias=kind,
+            hrex=hrex,
+            stride=stride,
+            pace=2 * stride,
+        )
+        directory = suite.setup(case)
+        command = suite.launch(2) + [
+            "-multidir",
+            "rep0",
+            "rep1",
+            "-s",
+            "topol.tpr",
+            "-deffnm",
+            "run",
+            "-plumed",
+            "plumed.dat",
+            "-replex",
+            "5",
+            "-notunepme",
+            "-pin",
+            "off",
+        ]
+        command += shlex.split(args.mdrun_args)
+        if hrex:
+            command += ["-hrex"]
+        code = suite.run(command, directory, "mdrun.log", check=False)
+        if (
+            code == 0
+            or "requires bias force STRIDE to divide the exchange interval"
+            not in (directory / "mdrun.log").read_text()
+        ):
+            raise AssertionError(f"Missing STRIDE/replex rejection: {case['name']}")
+        results.append(dict(case=case, status="pass", invalid_stride_rejected=True))
+        (root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
+        print(case["name"], "pass", flush=True)
     # Native lambda cross energies must not trigger another physical force call.
     lambda_spec = importlib.util.spec_from_file_location(
         "lambda_suite", location / "validate_lambda.py"

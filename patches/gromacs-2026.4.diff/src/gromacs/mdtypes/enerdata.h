@@ -105,6 +105,7 @@ public:
     double deltaH(int lambdaIndex) const { return energies_[1 + lambdaIndex] - energies_[0]; }
 
     //! Potential-only difference, excluding the kinetic/constraint terms in deltaH().
+    //! Slot 0 is the current lambda; slot 1+i is lambda-list state i (zero-based).
     double deltaPotentialEnergy(int lambdaIndex) const
     {
         GMX_ASSERT(finalizedPotentialContributions_, "Should be finalized");
@@ -224,6 +225,7 @@ private:
     const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas_;
     //! Storage for foreign lambda energies
     std::vector<double> energies_;
+    //! Partial potentials with the same current/foreign layout as energies_.
     std::vector<double> potentialEnergies_;
     //! Storage for foreign lambda dH/dlambda
     std::vector<gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, double>> dhdl_;

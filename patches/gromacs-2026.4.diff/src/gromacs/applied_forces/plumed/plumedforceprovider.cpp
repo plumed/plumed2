@@ -83,9 +83,9 @@
 namespace gmx
 {
 
-void* PlumedForceProvider::plumedHandle() const
+PLMD::Plumed* PlumedForceProvider::plumedHandle() const
 {
-    return plumed_->toVoid();
+    return plumed_.get();
 }
 
 PlumedForceProvider::~PlumedForceProvider() = default;

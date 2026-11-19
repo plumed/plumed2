@@ -1454,7 +1454,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 
     if (plumedForceProvider)
     {
-        PLMD::Plumed      plumed(plumedForceProvider->plumedHandle());
+        auto& plumed = *plumedForceProvider->plumedHandle();
         std::vector<real> biases(nlim);
         int               exchange = 1;
         plumed.cmd("setExchangeStep", &exchange);

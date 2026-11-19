@@ -369,8 +369,24 @@ def cases_for(quick=False, pme=False):
                     "ranks": 1,
                     "bias": kind,
                     "stride": 10,
+                    "expected_failure": "requires bias force STRIDE to divide the exchange interval",
                 }
             )
+    if not quick and not pme:
+        cases += [
+            dict(name=kind + "-stride5", n=2, ranks=1, bias=kind, stride=5)
+            for kind in ("energy", "lambda-coordinate", "lambda-energy")
+        ]
+        cases.append(
+            dict(
+                name="hrex-free-energy-rejected",
+                n=2,
+                ranks=1,
+                bias="energy",
+                hrex=True,
+                expected_failure="-hrex cannot be combined with native free-energy mode",
+            )
+        )
     if pme:
         cases = [
             {

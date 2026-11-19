@@ -55,7 +55,13 @@ int main(int argc, char** argv)
             gmx_enerdata_t           energy(1, nullptr);
             gmx::ForceProviderOutput output(&force, &energy);
             provider.calculateForces(input, &output);
-            PLMD::Plumed plumed(provider.plumedHandle());
+            const auto savedForces = f;
+            matrix savedVirial;
+            copy_mat(force.getVirial(), savedVirial);
+            if (std::abs(f[0][0] - real(0.9)) > 1e-6
+                || std::abs(savedVirial[0][0] - real(0.2025)) > 1e-6)
+                throw std::runtime_error("Unexpected normal restraint force/virial");
+            auto& plumed = *provider.plumedHandle();
 #if GMX_LIB_MPI
             plumed.cmd("GREX init");
 #endif
@@ -87,6 +93,16 @@ int main(int argc, char** argv)
             if (std::abs(before - real(0.2025)) > 1e-6 || std::abs(after - before) > 1e-6
                 || std::abs(snapshot - before) > 1e-6)
                 throw std::runtime_error("PLUMED retains the temporary force input box");
+            for (int i = 0; i < DIM; ++i)
+            {
+                for (int j = 0; j < DIM; ++j)
+                    if (force.getVirial()[i][j] != savedVirial[i][j])
+                        throw std::runtime_error("Trial evaluation changed the normal virial");
+                for (int atom = 0; atom < 2; ++atom)
+                    if (f[atom][i] != savedForces[atom][i])
+                        throw std::runtime_error("Trial evaluation changed the normal forces");
+            }
+            std::cout << "normal nonzero forces and virial preserved exactly\n";
         }
         // Two live providers/collections must coexist and remain independent.
         gmx::PlumedForceProvider firstProvider(options), secondProvider(options);

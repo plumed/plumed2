@@ -96,8 +96,8 @@ public:
     PlumedForceProvider* plumedForceProvider() override { return this; }
     //! Mutable exchange/MCMC data, valid for this provider's lifetime.
     PlumedContext& context() { return context_; }
-    //! Non-owning Plumed::toVoid() handle for runtime-wrapper calls from the MD engine.
-    void* plumedHandle() const;
+    //! Non-owning access to the provider-owned PLUMED object from the MD engine.
+    PLMD::Plumed* plumedHandle() const;
     /*! @brief Sets the global atom indices list
      * param[in] globalAtomIndices  the, optional, list of global atom indices
      */

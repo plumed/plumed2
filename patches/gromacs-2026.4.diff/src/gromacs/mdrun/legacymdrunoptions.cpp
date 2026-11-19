@@ -169,7 +169,10 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
     domdecOptions.numCells[YY] = roundToInt(realddxyz[YY]);
     domdecOptions.numCells[ZZ] = roundToInt(realddxyz[ZZ]);
 
-#if GMX_LIB_MPI
+#if !GMX_LIB_MPI
+    if (replExParams.plumedHrex)
+        gmx_fatal(FARGS, "-hrex requires GROMACS built with external MPI (GMX_MPI=ON, GMX_THREAD_MPI=OFF)");
+#endif
     if (replExParams.plumedHrex)
     {
         if (!opt2bSet("-plumed", gmx::ssize(filenames), filenames.data())
@@ -180,7 +183,6 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         if (mdrunOptions.tunePme)
             gmx_fatal(FARGS, "-hrex requires -notunepme for consistent trial-energy settings");
     }
-#endif
 
     return 1;
 }

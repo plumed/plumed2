@@ -3,4 +3,4 @@ Post-update bias consistency: pass
 Direct energy-only evaluation: pass
 Lambda ENERGY without physical double counting: pass
 Replica-fixed parameter retained on foreign coordinates: pass
-Off-stride exchange bias evaluation: pass
+Off-stride exchange rejection and calculation-only trial: pass

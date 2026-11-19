@@ -198,7 +198,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
             plumedForceProvider->context().lambdaState = freeEnergyPerturbationData_->currentFEPState();
         // Ask at execution time, not when tasks for future steps are queued.
         // The normal provider call performs sharing, forces and the one update.
-        PLMD::Plumed plumed(plumedForceProvider->plumedHandle());
+        auto& plumed = *plumedForceProvider->plumedHandle();
         long int     plumedStep = step;
         plumed.cmd("setStepLong", &plumedStep);
         if (inputrec_->bExpanded)

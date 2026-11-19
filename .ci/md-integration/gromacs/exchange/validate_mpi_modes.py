@@ -150,6 +150,26 @@ def main():
         (suite.root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
         print(name, item["status"], item.get("error", ""), flush=True)
 
+    suite.run([options.gmx, "mdrun", "-h"], template, "help.log")
+    if "-[no]hrex" not in (template / "help.log").read_text():
+        raise AssertionError("The thread-MPI CLI must advertise -hrex")
+    results.append(dict(name="hrex-advertised", status="pass"))
+    code = suite.run(
+        [options.gmx, "mdrun", "-s", "topol.tpr", "-hrex", "-ntmpi", "1"],
+        template,
+        "hrex-rejected.log",
+        check=False,
+    )
+    if (
+        code == 0
+        or "-hrex requires GROMACS built with external MPI"
+        not in (template / "hrex-rejected.log").read_text()
+    ):
+        raise AssertionError(
+            "The thread-MPI -hrex diagnostic must require external MPI"
+        )
+    results.append(dict(name="hrex-external-mpi-required", status="pass"))
+    (suite.root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
     for ranks in (1, 2):
         for legacy in (False, True):
             run_case(
