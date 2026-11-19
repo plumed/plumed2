@@ -474,13 +474,8 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   }
 
   // Get number of threads for OpenMP
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>nactive_tasks ) {
-    nt=nactive_tasks/stride/10;
-  }
-  if( nt==0 ) {
-    nt=1;
-  }
+  // all the threads, or one with few tasks (never a number in between, see OpenMP::getGoodNumThreads)
+  const unsigned nt=nactive_tasks/stride/10>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
 
   #pragma omp parallel num_threads(nt)
   {

@@ -613,13 +613,8 @@ void ParallelTaskManager<T>::runAllTasks() {
     const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) {
-      nt=nactive_tasks/stride/10;
-    }
-    if( nt==0 ) {
-      nt=1;
-    }
+    // all the threads, or one with few tasks (never a number in between, see OpenMP::getGoodNumThreads)
+    const unsigned nt=nactive_tasks/stride/10>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
 
     // an exception must not leave an OpenMP parallel region (it calls std::terminate):
     // the first one thrown by a task is stored and thrown again after the region
@@ -736,13 +731,8 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) {
-      nt=nactive_tasks/stride/10;
-    }
-    if( nt==0 ) {
-      nt=1;
-    }
+    // all the threads, or one with few tasks (never a number in between, see OpenMP::getGoodNumThreads)
+    const unsigned nt=nactive_tasks/stride/10>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
     // the per-thread buffers are sized at setup, and the number of threads cannot grow after init
     plumed_massert( nt<=omp_forces.size(), "more OpenMP threads than when " + action->getLabel() + " was set up" );
     #pragma omp parallel num_threads(nt)

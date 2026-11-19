@@ -42,8 +42,8 @@ namespace {
 /// Threads to copy n atoms: none for the small actions, where opening a parallel region costs more than the copy
 unsigned atomCopyThreads(const std::size_t n) {
   constexpr std::size_t minAtomsPerThread=16384;
-  const std::size_t m=n/minAtomsPerThread;
-  return m<2 ? 1 : std::min<std::size_t>(m,OpenMP::getNumThreads());
+  // all the threads or one, see OpenMP::getGoodNumThreads
+  return n<2*minAtomsPerThread ? 1 : OpenMP::getGoodNumThreads<Vector>(nullptr,n);
 }
 }
 

@@ -269,7 +269,9 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   // loops. No exceptions inside the parallel region: invalid cells are checked after it
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt=nranges;
+  // all the threads or one (see OpenMP::getGoodNumThreads): the loops over the atoms are
+  // shared by the team, the loops over the ranges work with any number of threads
+  const unsigned nt=nranges<2 ? 1 : OpenMP::getGoodNumThreads(pos.data(),nat);
 #endif
   #pragma omp parallel num_threads(nt)
   {
@@ -612,8 +614,8 @@ void LinkCells::createNeighborList( unsigned nat,
   unsigned maxneigh=1;
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
-  const unsigned nt=(pos.size()>=minAtomsPerThreadNeighborList)?
-                    std::min<unsigned>(OpenMP::getNumThreads(),pos.size()/minAtomsPerThreadNeighborList) : 1;
+  // all the threads or one, see OpenMP::getGoodNumThreads
+  const unsigned nt=pos.size()<2*minAtomsPerThreadNeighborList ? 1 : OpenMP::getGoodNumThreads(pos.data(),pos.size());
 #endif
   #pragma omp parallel num_threads(nt)
   {

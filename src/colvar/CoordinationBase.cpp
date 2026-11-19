@@ -209,7 +209,8 @@ void CoordinationBase::calculate() {
 void CoordinationBase::sumAndSetDerivatives() {
   comm.Sum(&mpiDeriv[0][0],3*mpiDeriv.size());
   const unsigned n=mpiDeriv.size();
-  [[maybe_unused]] const unsigned nt=std::min(OpenMP::getNumThreads(),std::max(1u,n/4096));
+  // all the threads or one, see OpenMP::getGoodNumThreads
+  [[maybe_unused]] const unsigned nt=n<2*4096 ? 1 : OpenMP::getGoodNumThreads(mpiDeriv);
   #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<n; ++i) {
     setAtomsDerivatives(i,mpiDeriv[i]);
@@ -244,7 +245,8 @@ void CoordinationBase::calculateBlocks() {
   const unsigned b1=std::min(nblocks,b0+perRank);
   // the result does not depend on the number of threads: use only those that have enough pairs
   const std::size_t npairs=std::size_t(b1-b0)*rowsPerBlock*ncols/(singleGroup?2:1);
-  [[maybe_unused]] const unsigned nt=std::min<std::size_t>({OpenMP::getNumThreads(),std::max<std::size_t>(1,b1-b0),std::max<std::size_t>(1,npairs/4096)});
+  // (and then all of them, never a number in between, see OpenMP::getGoodNumThreads)
+  [[maybe_unused]] const unsigned nt=std::min<std::size_t>(b1-b0,npairs/4096)>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
 
   blockColumns.resize(std::size_t(nblocks)*ncols);
   blockValue.assign(nblocks,0.0);
@@ -388,7 +390,8 @@ void CoordinationBase::calculateList() {
   const unsigned start=std::min(nn,rank*elementsPerRank);
   const unsigned end=std::min(nn,start+elementsPerRank);
   const unsigned natoms=getNumberOfAtoms();
-  const unsigned nt=std::min(OpenMP::getNumThreads(),std::max(1u,(end-start)/1024));
+  // all the threads or one, see OpenMP::getGoodNumThreads
+  const unsigned nt=(end-start)/1024>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
 
   threadDeriv.resize(nt);
   threadValue.assign(nt,0.0);

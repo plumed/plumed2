@@ -24,6 +24,8 @@
 
 #include <vector>
 
+#include <cstddef>
+
 namespace PLMD {
 
 namespace OpenMP {
@@ -70,7 +72,12 @@ unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
     m=numThreads;
   } else {
     //it is better to use either all the active threads or only one
-    //this solves a performance problem as explained in issue #415
+    //this solves a performance problem as explained in issue #415:
+    //with the GNU OpenMP runtime a region with fewer threads than the previous one (but more
+    //than one) destroys the threads that are not needed, and the next larger region creates new
+    //ones. When PLUMED runs inside an MD code these are the threads of the MD code: the new ones
+    //lose the core the MD code had assigned to each of them and all run on the core of the
+    //calling thread. So a number in between must never be passed to num_threads
     m=1;
   }
   return m;

@@ -36,11 +36,8 @@ namespace PLMD {
 /// It is called outside the pragmas (and only with OpenMP), so that the call is visible also to static analysis.
 static unsigned getCopyNumThreads( const std::size_t& n ) {
   constexpr std::size_t minElementsPerThread=32768;
-  const std::size_t m=n/minElementsPerThread;
-  if( m<2 ) {
-    return 1;
-  }
-  return std::min<std::size_t>( m, OpenMP::getNumThreads() );
+  // all the threads or one, see OpenMP::getGoodNumThreads
+  return n<2*minElementsPerThread ? 1 : OpenMP::getGoodNumThreads<double>( nullptr, n );
 }
 #endif
 
