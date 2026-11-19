@@ -575,9 +575,14 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
   // shift of each link, in lattice vectors, from the original positions (a shift of the
   // parent does not change the minimum image); it is stored in the child
   std::vector<std::array<int,3> > shift(pos.size(), std::array<int,3> {0,0,0});
-  // opening an OpenMP region costs microseconds even with one thread, and this is called
-  // for every action at every step: the loops are run in a region only with more than one thread
-  const unsigned nt=OpenMP::getGoodNumThreads(pos);
+  // A link costs a few nanoseconds, opening an OpenMP region microseconds at best, and
+  // much more inside an MD code whose own threads are busy or pinned (tens of milliseconds
+  // per step were measured for a molecule of 200 atoms). This is called for every action
+  // at every step: threads are used only when each of them has many links, and then all
+  // of them (see issue #415)
+  constexpr std::size_t minLinksPerThread=4096;
+  const unsigned allThreads=OpenMP::getNumThreads();
+  const unsigned nt = (allThreads>1 && nlinks>=minLinksPerThread*allThreads) ? allThreads : 1;
   auto linkShift=[&](const std::size_t l) {
     const Vector & a = pos[par(l)];
     const Vector & b = pos[chi(l)];
