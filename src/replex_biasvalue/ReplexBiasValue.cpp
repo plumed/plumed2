@@ -167,13 +167,20 @@ bias: REPLEX_BIASVALUE ...
   ARG=cv1,cv2
   SHAPE=2,3
   COEFFICIENTS={
-    {0   0}  # bias[0,0]
-    {0 0.5}  # bias[0,1]
-    {0   1}  # bias[0,2]
-    {1   0}  # bias[1,0]
-    {1 0.5}  # bias[1,1]
-    {1   1}  # bias[1,2]
+    {0   0}
+    {0 0.5}
+    {0   1}
+    {1   0}
+    {1 0.5}
+    {1   1}
   }
+  # row-major ordering:
+  # bias[0,0]
+  # bias[0,1]
+  # bias[0,2]
+  # bias[1,0]
+  # bias[1,1]
+  # bias[1,2]
   PACE=100
 ...
 ```
