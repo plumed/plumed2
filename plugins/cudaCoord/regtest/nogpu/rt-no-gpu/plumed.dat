@@ -1,0 +1,2 @@
+# loading the plugin does not need a GPU
+LOAD FILE=../../../../CudaCoordination.so
