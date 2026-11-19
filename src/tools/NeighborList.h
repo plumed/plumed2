@@ -49,6 +49,8 @@ private:
   bool serial_;
   bool do_pbc_;
   bool useCellList_=false;
+/// With two lists, the cells are used only if both have more atoms than this
+  static constexpr std::size_t cellsMinimumGroup=8;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;

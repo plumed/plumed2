@@ -180,6 +180,26 @@ NeighborList::pairIDs NeighborList::getIndexPair(const unsigned ipair) const {
   return index;
 }
 
+namespace {
+/// The visitor of NeighborList::update: appends to kept the candidates B within the
+/// cutoff from A (with a single list, only those that come after A)
+struct KeepPairs {
+  unsigned* kept;
+  std::size_t n;
+  unsigned A;
+  double d2;
+  bool twoLists;
+  const unsigned* lists;
+  inline void operator()( const std::size_t j, const Vector& d ) {
+    const unsigned B=lists[j];
+    // no branch: whether a candidate is within the cutoff, and whether it
+    // comes after A in a single list, cannot be predicted
+    kept[n]=B;
+    n+=( (modulo2(d)<=d2) & (twoLists | (B>A)) );
+  }
+};
+}
+
 void NeighborList::update(const std::vector<Vector>& positions) {
   neighbors_.clear();
   // check if positions array has the correct length
@@ -196,13 +216,19 @@ void NeighborList::update(const std::vector<Vector>& positions) {
   // and the results are reproducible.
   std::vector<std::vector<unsigned>> thread_flat_nl(nt);
 
-  if(useCellList_) {
+  // with two lists and one of them small, the cells (sorting all the atoms) cost more than
+  // one distance per pair: the plain search is used (about the same cost with 8 atoms)
+  const bool useCells = useCellList_ && !(style_==NNStyle::TwoList && std::min(nlist0_,nlist1_)<=cellsMinimumGroup);
+  if(useCells) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
     LinkCells cells(comm);
     cells.setCutoff(distance_);
     // smaller cells: fewer candidate pairs beyond the cutoff
     cells.setSubdivision(LinkCells::maxSubdivision);
+    // with few atoms in a large box most cells would be empty, and visiting them
+    // would cost more than the search
+    cells.setLimitCellsByAtoms(true);
     if(do_pbc_) {
       cells.setupCells(make_const_view(positions),*pbc_);
     } else {
@@ -213,18 +239,24 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     plumed_assert(style_!=NNStyle::Pair) << "Cell list should not be active with a Pair NL";
     const bool twoLists = style_==NNStyle::TwoList;
     const std::size_t nA=nlist0_;
+    // When the cell of an atom fixes its periodic image, the minimum image distance is not
+    // needed for each candidate pair (they are many more than the pairs within the cutoff):
+    // the candidates are stored with their wrapped positions and searched on a LinkCellsView
+    const bool useShifts=cells.cellsFixImages();
     LinkCells::CellCollection listA;
     LinkCells::CellCollection listB;
     if(twoLists) {
       listA = cells.getCollection(View{positions.data(),nlist0_},
                                   View<const unsigned> {indexesForCells.data(),nlist0_});
       listB = cells.getCollection(View{positions.data()+nlist0_,nlist1_},
-                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_});
+                                  View<const unsigned> {indexesForCells.data()+nlist0_,nlist1_},
+                                  useShifts);
       plumed_assert((listA.lcell_lists.size()+listB.lcell_lists.size()) == positions.size())
           << listA.lcell_lists.size()<<"+"<<listB.lcell_lists.size() <<"==" <<positions.size();
     } else {
       listA = cells.getCollection(View{positions.data(),nA},
-                                  View<const unsigned> {indexesForCells.data(),nA});
+                                  View<const unsigned> {indexesForCells.data(),nA},
+                                  useShifts);
     }
     const LinkCells::CellCollection& candidates = twoLists ? listB : listA;
     // cells are split among processes
@@ -232,24 +264,17 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     const unsigned cellsPerRank=(ncells+stride-1)/stride;
     const unsigned cstart=std::min(rank*cellsPerRank,ncells);
     const unsigned cend=std::min(cstart+cellsPerRank,ncells);
-    // When the cell of an atom fixes its periodic image, the minimum image distance is not
-    // needed for each candidate pair (they are many more than the pairs within the cutoff):
-    // the candidates are wrapped in the box once, in the order of the cells, and each run
-    // of cells comes with its lattice vector
-    const bool useShifts=cells.cellsFixImages();
-    std::vector<Vector> cellpos;
-    if(useShifts) {
-      cellpos.resize(candidates.lcell_lists.size());
-      for(std::size_t j=0; j<cellpos.size(); ++j) {
-        cellpos[j]=cells.wrapPosition(positions[candidates.lcell_lists[j]]);
-      }
-    }
+    const LinkCellsView view = useShifts ? cells.getView(candidates,do_pbc_) : LinkCellsView{};
+    // the largest number of candidates of an atom: the atoms in the most populated cells
+    const std::size_t side=2*view.nsub+1;
+    const std::size_t nsearched=side*side*side;
+    const std::size_t maxcandidates=useShifts ? candidates.getMaximimumCombination(nsearched) : 0;
     #pragma omp parallel num_threads(nt)
     {
       auto & private_flat_nl=thread_flat_nl[OpenMP::getThreadNum()];
       std::vector<unsigned> cells_required(cells.getNumberOfCells());
-      std::array<LinkCells::CellRun,LinkCells::maxRuns> runs;
-      std::vector<unsigned> kept;
+      // one more element: a candidate is written before it is known if it is kept
+      std::vector<unsigned> kept(maxcandidates+1);
       #pragma omp for schedule(static) nowait
       for(unsigned c=cstart; c<cend; ++c) {
         auto atomsInC= listA.getCellIndexes(c);
@@ -258,27 +283,9 @@ void NeighborList::update(const std::vector<Vector>& positions) {
         }
         if(useShifts) {
           for (auto A : atomsInC) {
-            Vector posA;
-            const unsigned nruns=cells.getNeighborRuns(positions[A],candidates,do_pbc_,posA,runs);
-            std::size_t ncandidates=0;
-            for (unsigned r=0; r<nruns; ++r) {
-              ncandidates+=runs[r].end-runs[r].begin;
-            }
-            // one more element: a candidate is written before it is known if it is kept
-            if(kept.size()<ncandidates+1) {
-              kept.resize(ncandidates+1);
-            }
-            std::size_t nkept=0;
-            for (unsigned r=0; r<nruns; ++r) {
-              const Vector shift=runs[r].shift-posA;
-              for (std::size_t j=runs[r].begin; j<runs[r].end; ++j) {
-                const unsigned B=candidates.lcell_lists[j];
-                // no branch: whether a candidate is within the cutoff, and whether it
-                // comes after A in a single list, cannot be predicted
-                kept[nkept]=B;
-                nkept+=( (modulo2(cellpos[j]+shift)<=d2) & (twoLists | (B>A)) );
-              }
-            }
+            KeepPairs keep{kept.data(),0,A,d2,twoLists,view.lists};
+            forEachCandidate(view,positions[A],keep);
+            const std::size_t nkept=keep.n;
             const std::size_t first=private_flat_nl.size();
             private_flat_nl.resize(first+2*nkept);
             for (std::size_t k=0; k<nkept; ++k) {

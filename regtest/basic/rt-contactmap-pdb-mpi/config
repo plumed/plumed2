@@ -1,0 +1,5 @@
+type=driver
+# same input as rt-contactmap-pdb, with the contacts split between the MPI ranks
+mpiprocs=2
+extra_files="../rt-contactmap-pdb/plumed.dat ../rt-contactmap-pdb/native.pdb ../rt-contactmap-pdb/traj.xyz"
+arg="--plumed plumed.dat --ixyz traj.xyz"

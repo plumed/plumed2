@@ -31,7 +31,23 @@ namespace PLMD {
 namespace isdb {
 
 void SAXS::getOnebeadparam(std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv) {
+  // Populate one-bead SAXS parameter tables for all supported residue types.
+  //
+  // Output layout:
+  //   - parameter_vac : coefficients for vacuum form-factor representation
+  //   - parameter_mix : coefficients for mixed/combined representation
+  //   - parameter_solv: coefficients for solvent-related contribution
+  //
+  // For each residue index (e.g. TRP, TYR, ...), we append a fixed-length,
+  // order-dependent set of coefficients. The numeric constants are calibrated
+  // reference values and must remain in this exact order to preserve model
+  // compatibility and reproducibility.
+  //
+  // Maintenance note:
+  //   This function is intentionally data-heavy. When updating values, keep
+  //   per-residue grouping intact and preserve coefficient ordering.
 
+  // Solvent-parameter coefficients (7-term series) by residue.
   parameter_solv[TRP].push_back(60737.60249988003);
   parameter_solv[TRP].push_back(-77.75716755173752);
   parameter_solv[TRP].push_back(-205962.98557711052);
@@ -874,6 +890,21 @@ void SAXS::getOnebeadparam(std::vector<std::vector<long double> > &parameter_vac
   parameter_vac[BASE_U].push_back(313.23997718445014);
 }
 
+// Populate one-bead SAXS fitting coefficients for the hydrogen-stripped model ("sansH").
+//
+// This routine initializes three parameter tables:
+//   - parameter_vac_H : coefficients in vacuum
+//   - parameter_mix_H : coefficients in mixed representation
+//   - parameter_solv_H: coefficients in solvent
+//
+// For each residue/base index (e.g., TRP, TYR, ...), values are appended in a fixed order.
+// Downstream SAXS calculations assume both the number of coefficients and their ordering are
+// unchanged. Therefore, edits must preserve ordering and table completeness across all entries.
+//
+// Maintenance note:
+//   Coefficients are pre-fitted constants. If refitting is required, regenerate the full set
+//   from the fitting pipeline and update all related tables consistently rather than editing
+//   isolated values by hand.
 void SAXS::getOnebeadparam_sansH(std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H) {
   parameter_solv_H[TRP].push_back(60737.60249988011);
   parameter_solv_H[TRP].push_back(-77.77344118516487);

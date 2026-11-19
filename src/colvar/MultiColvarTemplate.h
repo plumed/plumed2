@@ -88,6 +88,9 @@ public:
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const MultiColvarInput& actiondata );
+/// All the components of a task have the same force indices: getForceIndices fills the
+/// rows of force_indices it gets (one on the CPU, see ParallelTaskManager::gatherSharedIndexForces)
+  static constexpr bool forceIndicesSharedByComponents = true;
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
@@ -335,13 +338,14 @@ void MultiColvarTemplate<CV,myPTM>::performTask( std::size_t task_index,
   ColvarOutput cvout { output.values,
                        local_ndev,
                        output.derivatives.data() };
-  CV::calculateCV( ColvarInput{actiondata.mode,
-                               actiondata.nindices_per_task,
-                               input.inputdata+pos_start,
-                               input.inputdata+mass_start,
-                               input.inputdata+charge_start,
-                               *input.pbc},
-                   cvout );
+  ColvarInput cvin{actiondata.mode,
+                   actiondata.nindices_per_task,
+                   input.inputdata+pos_start,
+                   input.inputdata+mass_start,
+                   input.inputdata+charge_start,
+                   *input.pbc};
+  cvin.noderiv = input.noderiv;
+  CV::calculateCV( cvin, cvout );
 }
 
 template <class CV, typename myPTM>
@@ -357,7 +361,8 @@ void MultiColvarTemplate<CV,myPTM>::getForceIndices( std::size_t task_index,
     const MultiColvarInput& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  for(unsigned i=0; i<input.ncomponents; ++i) {
+  // all the components have the same indices: fill the rows that force_indices has
+  for(unsigned i=0; i<force_indices.tot_indices.size(); ++i) {
     std::size_t m=0;
     std::size_t base = 3*task_index*actiondata.nindices_per_task;
     for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {

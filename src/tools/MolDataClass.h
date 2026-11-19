@@ -51,6 +51,13 @@ public:
   static bool isTerminalGroup( const std::string& type, const std::string& residuename );
 /// Used to interpret special symbols - currently phi and psi and omega
   static void specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers );
+/// Return true if symbol is one of the hydrogen-bond symbols (hbdonors, hbacceptors, polarhydrogens)
+  static bool isHbondSymbol( const std::string& symbol );
+/// The atoms of the hydrogen-bond symbols: the N and O atoms (hbacceptors), the hydrogens whose closest C, N or O atom is an N or O atom
+/// closer than bondCutoff (polarhydrogens) and those N and O atoms (hbdonors).
+/// The elements are taken from the element column, or from the first letter of the atom name if it is empty; ions are excluded.
+/// bondCutoff is in the units of the positions of mypdb; distances are computed without periodic boundary conditions
+  static void hbondSymbol( const std::string& symbol, const PDB& mypdb, double bondCutoff, std::vector<AtomNumber>& numbers );
 };
 
 }

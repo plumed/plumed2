@@ -32,6 +32,7 @@
 #include "tools/OpenACC.h"
 
 #include <exception>
+#include <type_traits>
 
 namespace PLMD {
 
@@ -322,6 +323,17 @@ struct ForcesOutput {
 //           = T::virialSize;
 // } //namespace PTMUtils
 
+/// True if the action declares `static constexpr bool forceIndicesSharedByComponents = true`:
+/// all the components of a task have the same force indices, and getForceIndices
+/// fills only as many rows as the ForceIndexHolder it gets has
+template <typename CV, typename=void>
+struct sharesForceIndices : std::false_type {};
+
+template <typename CV>
+struct sharesForceIndices<CV,std::void_t<decltype(CV::forceIndicesSharedByComponents)>> {
+  static constexpr bool value = CV::forceIndicesSharedByComponents;
+};
+
 template <typename CV, typename=void>
 struct cvprecision {
   typedef double type;
@@ -363,6 +375,12 @@ protected:
   std::size_t nthreaded_forces;
 /// This holds the values before we pass them to the value
   std::vector<precision> value_stash;
+/// The active tasks done by this MPI process, when the tasks are shared by row
+  std::vector<unsigned> owned_tasks;
+/// The generation of the row distribution of the action when the value stash was last cleared completely
+  unsigned stash_generation=0;
+/// Make the list of the active tasks of the rows of this MPI process
+  const std::vector<unsigned>& getOwnedTasks( const std::vector<unsigned>& partialTaskList );
 /// A temporary set of vectors for holding forces over threads
   std::vector<std::vector<precision> > omp_forces;
 /// This structs is used to pass data between the parallel interface and the function caller
@@ -412,6 +430,13 @@ public:
                                         const ForceIndexHolder& force_indices,
                                         const ForceInput& fdata,
                                         View<precision> forces );
+/// Gather both kinds of forces when all the components share the force indices (one row
+/// in force_indices): the force on each index is summed over the components, then added once
+  static void gatherSharedIndexForces( const ParallelActionsInput& input,
+                                       const ForceIndexHolder& force_indices,
+                                       const ForceInput& fdata,
+                                       View<double> forces,
+                                       View<precision> unsafe_forces );
 };
 
 struct defaultPTM {
@@ -554,10 +579,21 @@ void ParallelTaskManager<T>::runAllTasks() {
   myinput.setupArguments( argumentsMap );
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
-  if( value_stash.size()!=totalvals ) {
-    value_stash.resize(totalvals);
+  const auto & rowdist = action->getRowDistribution();
+  if( rowdist.localOutput && value_stash.size()==totalvals && stash_generation==rowdist.generation ) {
+    // the values are not summed over the MPI processes: only the rows of this process were written
+    const std::size_t rowsize = action->getNumberOfTasksPerRow()*myinput.nscalars;
+    const std::size_t nrows = rowsize>0 ? totalvals/rowsize : 0;
+    for(std::size_t r=comm.Get_rank(); r<nrows; r+=comm.Get_size()) {
+      std::fill_n( value_stash.begin()+r*rowsize, rowsize, precision(0.0) );
+    }
+  } else {
+    if( value_stash.size()!=totalvals ) {
+      value_stash.resize(totalvals);
+    }
+    std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
+    stash_generation=rowdist.generation;
   }
-  std::fill (value_stash.begin(),value_stash.end(), precision(0.0));
   if( useacc ) {
     // there should not be any available path to get here
     plumed_merror("to use the USEGPU flag you need to LOAD a plugin like \"openaccPTM\"");
@@ -569,6 +605,12 @@ void ParallelTaskManager<T>::runAllTasks() {
       stride=1;
       rank=0;
     }
+    // the tasks of this process: those of its rows, if the tasks are shared by row (see
+    // ActionWithVector::getRowDistribution), otherwise one every stride
+    const std::vector<unsigned> & mytasks = rowdist.byRow ? getOwnedTasks( partialTaskList ) : partialTaskList;
+    const unsigned first = rowdist.byRow ? 0 : rank;
+    const unsigned step = rowdist.byRow ? 1 : stride;
+    const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
@@ -587,9 +629,9 @@ void ParallelTaskManager<T>::runAllTasks() {
       std::vector<precision> buffer( workspace_size );
       std::vector<precision> derivatives( nderivatives_per_task );
       #pragma omp for nowait
-      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
+      for(unsigned i=first; i<nmytasks; i+=step) {
         try {
-          std::size_t task_index = partialTaskList[i];
+          std::size_t task_index = mytasks[i];
           std::size_t val_pos = task_index*myinput.nscalars;
           auto myout = ParallelActionsOutput::create ( myinput.nscalars,
                        value_stash.data()+val_pos,
@@ -611,12 +653,25 @@ void ParallelTaskManager<T>::runAllTasks() {
       std::rethrow_exception( exception );
     }
     // MPI Gather everything
-    if( !serial ) {
+    if( !serial && !rowdist.localOutput ) {
       comm.Sum( value_stash );
     }
   }
-// And transfer the value to the output values
-  action->transferStashToValues( partialTaskList, value_stash );
+// And transfer the value to the output values: if they were not summed, only the rows of this process are known
+  action->transferStashToValues( action->getRowDistribution().localOutput ? owned_tasks : partialTaskList, value_stash );
+}
+
+template <class T>
+const std::vector<unsigned>& ParallelTaskManager<T>::getOwnedTasks( const std::vector<unsigned>& partialTaskList ) {
+  const std::size_t tasksPerRow = action->getNumberOfTasksPerRow();
+  const unsigned stride=comm.Get_size(), rank=comm.Get_rank();
+  owned_tasks.resize(0);
+  for(const auto t : partialTaskList) {
+    if( (t/tasksPerRow)%stride==rank ) {
+      owned_tasks.push_back(t);
+    }
+  }
+  return owned_tasks;
 }
 
 template<typename prec>
@@ -651,12 +706,19 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
   // having to gather forces across multiple nodes
   if( reset_forces ) {
     // Clear force buffer
-    std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+    if constexpr( std::is_same_v<precision,double> ) {
+      action->clearForcesForApply( forcesForApply );
+    } else {
+      std::fill (forces.ffa.begin(),forces.ffa.end(), precision(0.0));
+    }
   }
   // Get all the input data so we can broadcast it to the GPU
   myinput.noderiv = false;
+  // The tasks of this process, if the tasks are shared by row (see ActionWithVector::getRowDistribution)
+  const auto & rowdist = action->getRowDistribution();
+  const std::vector<unsigned> & mytasks = rowdist.byRow ? getOwnedTasks( partialTaskList ) : partialTaskList;
   // Retrieve the forces from the values
-  action->transferForcesToStash( partialTaskList, value_stash );
+  action->transferForcesToStash( mytasks, value_stash );
 
   if( useacc ) {
     // there should not be any available path to get here
@@ -669,6 +731,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       stride=1;
       rank=0;
     }
+    const unsigned first = rowdist.byRow ? 0 : rank;
+    const unsigned step = rowdist.byRow ? 1 : stride;
+    const unsigned nmytasks = mytasks.size();
 
     // Get number of threads for OpenMP
     unsigned nt=OpenMP::getNumThreads();
@@ -687,12 +752,15 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       std::vector<precision> buffer( workspace_size );
       std::vector<precision> fake_vals( myinput.sizeOfFakeVals() );
       std::vector<precision> derivatives( nderivatives_per_task );
-      std::vector<std::size_t> indices(ForceIndexHolder::indexesPerScalar(myinput));
+      // when the components share the force indices only one row of indices is needed
+      constexpr bool sharedIndices = sharesForceIndices<T>::value;
+      const std::size_t nindexrows = sharedIndices ? 1 : myinput.ncomponents;
+      std::vector<std::size_t> indices(ForceIndexHolder::indexesPerScalar(nindexrows,myinput.nderivatives_per_scalar));
 
-      auto force_indices = ForceIndexHolder::create( myinput,indices.data() );
+      auto force_indices = ForceIndexHolder::create( nindexrows, myinput.nderivatives_per_scalar, indices.data() );
       #pragma omp for nowait
-      for(unsigned i=rank; i<nactive_tasks; i+=stride) {
-        std::size_t task_index = partialTaskList[i];
+      for(unsigned i=first; i<nmytasks; i+=step) {
+        std::size_t task_index = mytasks[i];
         auto myout = ParallelActionsOutput::create( myinput.nscalars,
                      fake_vals.data(),
                      derivatives.size(),
@@ -732,19 +800,29 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
                                             derivatives.data()
                                             + j*myinput.ncomponents*myinput.nderivatives_per_scalar );
 
-            // Gather forces that are thread safe
-            gatherThreadSafeForces( myinput,
-                                    force_indices,
-                                    finput,
-                                    View<double>(forces.ffa.data(),
-                                                 forces.ffa.size()) );
-
-            // Gather forces that are not thread safe
-            gatherThreadUnsafeForces( myinput,
+            if constexpr( sharedIndices ) {
+              gatherSharedIndexForces( myinput,
+                                       force_indices,
+                                       finput,
+                                       View<double>(forces.ffa.data(),
+                                                    forces.ffa.size()),
+                                       View<precision>(omp_forces[t].data(),
+                                           omp_forces[t].size()) );
+            } else {
+              // Gather forces that are thread safe
+              gatherThreadSafeForces( myinput,
                                       force_indices,
                                       finput,
-                                      View<precision>(omp_forces[t].data(),
-                                          omp_forces[t].size()) );
+                                      View<double>(forces.ffa.data(),
+                                                   forces.ffa.size()) );
+
+              // Gather forces that are not thread safe
+              gatherThreadUnsafeForces( myinput,
+                                        force_indices,
+                                        finput,
+                                        View<precision>(omp_forces[t].data(),
+                                            omp_forces[t].size()) );
+            }
           }
         }
       }
@@ -755,7 +833,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     forces.update();
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
     if( !serial ) {
-      comm.Sum( forcesForApply );
+      action->sumForcesOverProcesses( forcesForApply );
     }
   }
 }
@@ -784,6 +862,29 @@ void ParallelTaskManager<T>::gatherThreadUnsafeForces(const ParallelActionsInput
         d<force_indices.tot_indices[i]; ++d) {
       forces[ force_indices.indices[i][d] - input.threadunsafe_forces_start ]
       += ff*fdata.deriv[i][d];
+    }
+  }
+}
+
+template <class T>
+void ParallelTaskManager<T>::gatherSharedIndexForces( const ParallelActionsInput& input,
+    const ForceIndexHolder& force_indices,
+    const ForceInput& fdata,
+    View<double> forces,
+    View<precision> unsafe_forces ) {
+  const std::size_t nsafe = force_indices.threadsafe_derivatives_end[0];
+  const std::size_t ntot = force_indices.tot_indices[0];
+  for(std::size_t d=0; d<ntot; ++d) {
+    // starting from the first product (not from zero) gives the same result as the
+    // two functions above when there is only one component
+    double ff = fdata.force[0]*fdata.deriv[0][d];
+    for(unsigned i=1; i<input.ncomponents; ++i) {
+      ff += fdata.force[i]*fdata.deriv[i][d];
+    }
+    if( d<nsafe ) {
+      forces[ force_indices.indices[0][d] ] += ff;
+    } else {
+      unsafe_forces[ force_indices.indices[0][d] - input.threadunsafe_forces_start ] += ff;
     }
   }
 }

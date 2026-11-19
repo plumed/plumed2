@@ -34,8 +34,18 @@
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 #include "tools/Tree.h"
+#include "tools/OpenMP.h"
 
 namespace PLMD {
+
+namespace {
+/// Threads to copy n atoms: none for the small actions, where opening a parallel region costs more than the copy
+unsigned atomCopyThreads(const std::size_t n) {
+  constexpr std::size_t minAtomsPerThread=16384;
+  const std::size_t m=n/minAtomsPerThread;
+  return m<2 ? 1 : std::min<std::size_t>(m,OpenMP::getNumThreads());
+}
+}
 
 ActionAtomistic::~ActionAtomistic() {
 // empty destructor to delete unique_ptr
@@ -128,7 +138,10 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   }
 
   // Add the dependencies to the actions that we require
+  const auto nunique=unique.size();
   Tools::removeDuplicates(unique);
+  // (the atoms that are not in unique are virtual atoms, one per value)
+  atomsAreUnique=(unique.size()==nunique);
   value_depends.resize(0);
   for(unsigned i=0; i<requirements.size(); ++i ) {
     if( !requirements[i] ) {
@@ -440,31 +453,31 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     }
   }
   const bool copyMassesAndCharges=!(massesAndChargesRetrieved && constantMassesAndCharges);
-  unsigned j = 0;
+  std::size_t j = 0;
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
-    auto & xp=xpos[nn]->data;
-    auto & yp=ypos[nn]->data;
-    auto & zp=zpos[nn]->data;
+    const double* const xp=xpos[nn]->data.data();
+    const double* const yp=ypos[nn]->data.data();
+    const double* const zp=zpos[nn]->data.data();
+    const std::size_t* const kk=a.second.data();
+    const std::size_t n=a.second.size();
+    Vector* const pos=actionPositions.data()+j;
+    [[maybe_unused]] const unsigned nt=atomCopyThreads(n);
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<n; ++i) {
+      pos[i][0] = xp[kk[i]];
+      pos[i][1] = yp[kk[i]];
+      pos[i][2] = zp[kk[i]];
+    }
     if( copyMassesAndCharges ) {
-      auto & ch=chargev[nn]->data;
-      auto & ma=masv[nn]->data;
-      for(const auto & kk : a.second) {
-        actionPositions[j][0] = xp[kk];
-        actionPositions[j][1] = yp[kk];
-        actionPositions[j][2] = zp[kk];
-        charges[j] = ch[kk];
-        masses[j] = ma[kk];
-        j++;
-      }
-    } else {
-      for(const auto & kk : a.second) {
-        actionPositions[j][0] = xp[kk];
-        actionPositions[j][1] = yp[kk];
-        actionPositions[j][2] = zp[kk];
-        j++;
+      const auto & ch=chargev[nn]->data;
+      const auto & ma=masv[nn]->data;
+      for(std::size_t i=0; i<n; ++i) {
+        charges[j+i] = ch[kk[i]];
+        masses[j+i] = ma[kk[i]];
       }
     }
+    j+=n;
   }
   massesAndChargesRetrieved=constantMassesAndCharges;
 }
@@ -483,17 +496,21 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
     plumed_dbg_assert(ind<forcesToApply.size()) << "problem setting forces in " << getLabel();
-    auto & xp=xpos[nn]->inputForce;
-    auto & yp=ypos[nn]->inputForce;
-    auto & zp=zpos[nn]->inputForce;
-    for(const auto & kk : a.second) {
-      xp[kk] += forcesToApply[ind];
-      ind++;
-      yp[kk] += forcesToApply[ind];
-      ind++;
-      zp[kk] += forcesToApply[ind];
-      ind++;
+    double* const xp=xpos[nn]->inputForce.data();
+    double* const yp=ypos[nn]->inputForce.data();
+    double* const zp=zpos[nn]->inputForce.data();
+    const std::size_t* const kk=a.second.data();
+    const std::size_t n=a.second.size();
+    const double* const f=forcesToApply.data()+ind;
+    // an atom requested twice would be written by two threads
+    [[maybe_unused]] const unsigned nt=atomsAreUnique ? atomCopyThreads(n) : 1;
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<n; ++i) {
+      xp[kk[i]] += f[3*i];
+      yp[kk[i]] += f[3*i+1];
+      zp[kk[i]] += f[3*i+2];
     }
+    ind+=3*n;
   }
 
   setForcesOnCell( forcesToApply, ind );

@@ -124,6 +124,10 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// With MPI each row of the matrix can be computed by one process only (not on the GPU, where the rows are not shared)
+  bool canDistributeRows() const override {
+    return std::is_same_v<myPTM,defaultPTM> && !taskmanager.runInSerial() && !no_thread_gather;
+  }
   void getAtomicInputData( std::vector<double>& inputdata ) const override;
   void getAtomicInputData( std::vector<float>& inputdata ) const override;
   std::string writeInGraph() const override {

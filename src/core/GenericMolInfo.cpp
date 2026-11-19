@@ -242,6 +242,9 @@ std::map<std::string,std::string> GenericMolInfo::getSpecialKeywords() {
   mapkeys.insert( std::pair<std::string,std::string>("@ions","all the ions") );
   mapkeys.insert( std::pair<std::string,std::string>("@hydrogens","all hydrogen atoms") );
   mapkeys.insert( std::pair<std::string,std::string>("@nonhydrogens","all non hydrogen atoms") );
+  mapkeys.insert( std::pair<std::string,std::string>("@hbacceptors","all N and O atoms (the hydrogen-bond acceptors of HBONDS)") );
+  mapkeys.insert( std::pair<std::string,std::string>("@hbdonors","the N and O atoms bonded to a hydrogen (the hydrogen-bond donors of HBONDS)") );
+  mapkeys.insert( std::pair<std::string,std::string>("@polarhydrogens","the hydrogens bonded to an N or O atom, i.e. whose closest C, N or O atom is an N or O atom within 0.13 nm (the hydrogens of HBONDS)") );
   mapkeys.insert( std::pair<std::string,std::string>("@phi-","the four atoms that are required to calculate the phi dihedral for") );
   mapkeys.insert( std::pair<std::string,std::string>("@psi-","the four atoms that are required to calculate the psi dihedral for") );
   mapkeys.insert( std::pair<std::string,std::string>("@omega-","the four atoms that are required to calculate the omega dihedral for") );
@@ -522,7 +525,12 @@ void GenericMolInfo::interpretSymbol( const std::string& symbol, std::vector<Ato
     }
     return;
   }
-  MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );
+  if(MolDataClass::isHbondSymbol(symbol)) {
+    // 0.13 nm in the units of the structure (Angstrom with natural units, as in checkWhole)
+    MolDataClass::hbondSymbol( symbol, pdb, usingNaturalUnits() ? 1.3 : 0.13/getUnits().getLength(), atoms );
+  } else {
+    MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );
+  }
   if(atoms.empty()) {
     error(symbol + " not found in your MOLINFO structure");
   }

@@ -40,6 +40,8 @@ namespace colvar {
 template <typename T=double>
 struct ColvarInput {
   unsigned mode;
+/// if true, the derivatives (and the virial) are not needed
+  bool noderiv=false;
   const Pbc& pbc;
   View2D<const T,helpers::dynamic_extent,3> pos;
   View<const T> mass;
@@ -78,6 +80,9 @@ void  ColvarInput<T>::setBoxDerivativesNoPbc( const ColvarInput<T>& inpt, Colvar
   // the virial is accumulated in local variables: building a Tensor for each atom
   // and subtracting it made the loop stall on the store-to-load forwarding of the temporary.
   // The sums are in double, as before, also when T is float
+  if( inpt.noderiv ) {
+    return;
+  }
   const unsigned nat=inpt.pos.size();
   for(unsigned i=0; i<out.ncomponents; ++i) {
     double v00=0, v01=0, v02=0, v10=0, v11=0, v12=0, v20=0, v21=0, v22=0;
