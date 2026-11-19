@@ -70,6 +70,29 @@ q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 NLI
 The distances in this example are in angstroms. Choose the cutoff and buffer
 for the actual atom selections and length units.
 
+## Using CUDA Voronoi with other actions and force fields
+
+The existing cudaCoord plugin and the CUDA Voronoi backend can run in the
+same PLUMED input. Load cudaCoord through LOAD and select the Voronoi
+backend on the Voronoi action.
+
+~~~plumed
+LOAD FILE=./CudaCoordination.so
+c: CUDACOORDINATION GROUPA=1,2 GROUPB=3,4 R_0=0.32 D_MAX=1.25
+q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=CUDA
+PRINT ARG=c,q FILE=COLVAR
+~~~
+
+The example uses PLUMED's default length unit (nm). Make the Voronoi
+library available on the dynamic-library search path or set CUDA_LIBRARY
+on the action. The two plugins keep their own GPU data and can use the same
+device. The MD engine can also use that device for the potential, as in
+the single-GPU DeePMD examples. The CV's backend is chosen independently of
+the potential. For a CPU force field, the default shared CPU CV requires no
+CUDA library. BACKEND=CUDA can instead offload the Voronoi assignment if
+the run and GPU meet the requirements above. Coordinates and bias
+derivatives pass through the regular host PLUMED interface.
+
 ## Building the optional library
 
 The PLUMED core builds with a normal C++ compiler and keeps CUDA headers

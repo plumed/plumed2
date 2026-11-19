@@ -584,7 +584,11 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
           other->useCellList_==useCellList_) {
         shared_=other->shared_;
         ++shared_->consumers;
-        shared_->mixedKappa=shared_->mixedKappa || shared_->firstKappa!=kappa_;
+        // Use the same ordering as the assignment cache for exact KAPPA keys.
+        const auto less=shared_->assignments.key_comp();
+        shared_->mixedKappa=shared_->mixedKappa ||
+                            less(shared_->firstKappa,kappa_) ||
+                            less(kappa_,shared_->firstKappa);
         neighborList_=other->neighborList_;
         log.printf("  sharing reactive Voronoi geometry with %s\n",other->getLabel().c_str());
         break;
