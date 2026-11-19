@@ -84,7 +84,7 @@ need no second pass. The vectors of the expanded input are computed (on the GPU)
 
 On one A100 (8 CPU threads), for 144 peptides of 8 residues (20160 atoms, 370800 pairs of strands, about 5000 of them
 within `STRANDS_CUTOFF=1`), [ALPHARMSD](ALPHARMSD.md), ANTIBETARMSD and PARABETARMSD together take 1.8 ms per step
-(6.1 ms on 32 CPU cores, 12.5 ms on 8); ANTIBETARMSD with `STRANDS_CUTOFF=0` takes 0.6 ms (2.4 ms on 32 CPU cores). For a single protein,
+(6.1 ms on 32 CPU cores, 12.5 ms on 8). For a single protein,
 with a few hundred residues, the CPU is faster: the time on the GPU is then set by the cost of starting the kernels and of
 the transfers (about 0.3 ms per step for ALPHARMSD).
 
