@@ -174,7 +174,7 @@ that copy, enables `__PLUMED_WRAPPER_MPI_HOST_ADAPTER`, and calls `injectMPIImpl
 after creating the PLUMED object and querying its API. Older kernels receive
 one main-rank warning to use the same MPI library as LAMMPS or upgrade PLUMED;
 their original communicator setup continues. The patch also raises the tested
-API upper bound from 11 to 13 and adds PLUMED 2.11 to the supported-version
+API upper bound from 11 to 14 and adds PLUMED 2.11 to the supported-version
 message, retaining LAMMPS's rejection of newer, untested APIs. No other LAMMPS
 logic is changed.
 CI verifies that reversing the patch restores all tracked sources. CMake uses
