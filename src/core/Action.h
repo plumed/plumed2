@@ -23,6 +23,7 @@
 #define __PLUMED_core_Action_h
 #include <iomanip>
 #include <vector>
+#include <cstdint>
 #include <string>
 #include <set>
 #include "tools/Keywords.h"
@@ -77,6 +78,7 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
   friend class ActionShortcut;
+  friend class PlumedMain;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
   const std::string actionName;
@@ -132,6 +134,18 @@ private:
 
 /// The set of default arguments that we are using
   std::string defaults;
+
+/// See setLaunchable(): whether launch() and launchApply() should be called
+  bool launchable=false;
+  bool applyLaunchable=false;
+/// launch() (launchApply()) was called and calculate() (apply()) has not used it yet
+  bool launched=false;
+  bool applyLaunched=false;
+/// The forward loop in which this action was calculated last
+  std::uint64_t forwardLoop=0;
+/// The versions of the atoms and of the box when launch() was called
+  std::uint64_t launchAtomsVersion=0;
+  std::uint64_t launchBoxVersion=0;
 public:
 
 /// Reference to main plumed object
@@ -300,6 +314,45 @@ public:
 /// This method is called one time per step.
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
+
+/// Start the calculation without waiting for its result.
+/// Only called for the actions that asked for it with setLaunchable(), before calculate() and
+/// possibly before the calculate() of other actions that come first in the input: as soon as all the
+/// actions this one depends on have been calculated. It is meant for actions that run on another device
+/// (e.g. a GPU): they queue their work here, and wait for it in calculate(), so that the work of
+/// several actions overlaps. The atoms have been retrieved. launch() must not change anything other
+/// actions can see (values, derivatives, forces): calculate() does, where it should ask whether
+/// the work was queued with takeLaunch(), and do it there if not: launch() is not called in every case
+/// (e.g. with numerical derivatives, or when calculate() is called more than once in a step).
+  virtual void launch() {}
+
+/// Discard the work started by launch().
+/// Called instead of using it when another action changed the atoms or the box after launch():
+/// the atoms are then retrieved again and calculate() is called as if launch() had not been.
+/// It should wait for the queued work if that reads or writes data of this action.
+  virtual void cancelLaunch() {}
+
+/// Start apply() without waiting for its result, see launch().
+/// Called as soon as all the actions that depend on this one have been applied,
+/// so that the forces on its values are final. apply() should ask takeApplyLaunch().
+  virtual void launchApply() {}
+
+protected:
+/// Ask that launch() is called before calculate(), and launchApply() before apply()
+  void setLaunchable( bool forward, bool backward=false );
+/// To be used once in calculate(): true if the work was queued by launch() (and it is still valid)
+  bool takeLaunch() {
+    const bool l=launched;
+    launched=false;
+    return l;
+  }
+/// To be used once in apply(): true if the work was queued by launchApply()
+  bool takeApplyLaunch() {
+    const bool l=applyLaunched;
+    applyLaunched=false;
+    return l;
+  }
+public:
 
 /// Before Update.
 /// This is a special method that is called just

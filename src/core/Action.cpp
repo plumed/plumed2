@@ -235,6 +235,18 @@ void Action::parseFlag(const std::string&key,bool & t) {
   }
 }
 
+void Action::setLaunchable( const bool forward, const bool backward ) {
+  launchable=forward;
+  applyLaunchable=backward;
+  // the loops over the actions look for launchable actions only after this
+  if(forward) {
+    plumed.useLaunch=true;
+  }
+  if(backward) {
+    plumed.useLaunchApply=true;
+  }
+}
+
 void Action::addDependency(Action*action) {
   bool found=false;
   for(const auto & d : after ) {

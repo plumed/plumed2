@@ -46,6 +46,7 @@ class SelectMassCharge;
 class ActionAtomistic :
   virtual public Action {
   friend class Group;
+  friend class PlumedMain;
   friend class DomainDecomposition;
   friend class colvar::SelectMassCharge;
   friend class ActionWithVirtualAtom;
@@ -78,6 +79,8 @@ class ActionAtomistic :
 
   bool                  donotretrieve;
   bool                  donotforce;
+/// This action has changed the shared positions or forces of the atoms (e.g. FIT_TO_TEMPLATE)
+  bool                  modifiesGlobalAtoms=false;
 
   // EMST
   GenericMolInfo* actionMoldat{nullptr};
@@ -331,6 +334,7 @@ Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_
 
 inline
 void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
+  modifiesGlobalAtoms=true;
   xpos[a.first]->data[a.second]=pos[0];
   ypos[a.first]->data[a.second]=pos[1];
   zpos[a.first]->data[a.second]=pos[2];

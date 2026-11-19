@@ -31,6 +31,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
 #include "ActionToPutData.h"
+#include "PbcAction.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
 #include "GREX.h"
@@ -1577,6 +1578,81 @@ void PlumedMain::waitData() {
   }
 }
 
+std::uint64_t PlumedMain::boxVersion(const ActionAtomistic* aa) {
+  if(!aa || !aa->boxValue) {
+    return 0;
+  }
+  PbcAction* pbca=aa->boxValue->getPntrToAction()->castToPbcAction();
+  return pbca ? pbca->getPbc().getVersion() : 0;
+}
+
+void PlumedMain::launchAhead(const std::size_t first) {
+  for(std::size_t k=first; k<actionSet.size(); ++k) {
+    Action* a=actionSet[k].get();
+    if(!a->isActive()) {
+      continue;
+    }
+    ActionAtomistic* aa=a->castToActionAtomistic();
+    // what comes after an action that changes the atoms is launched after it
+    if(k>first && aa && aa->modifiesGlobalAtoms) {
+      break;
+    }
+    if(!a->launchable || a->launched || a->checkNumericalDerivatives()) {
+      continue;
+    }
+    ActionWithValue* av=a->castToActionWithValue();
+    if(av && av->calculateOnUpdate()) {
+      continue;
+    }
+    bool ready=true;
+    for(const Action* d : a->getDependencies()) {
+      if(d->forwardLoop!=forwardLoop) {
+        ready=false;
+        break;
+      }
+    }
+    if(!ready) {
+      continue;
+    }
+    if(aa) {
+      aa->retrieveAtoms();
+    }
+    a->launch();
+    a->launched=true;
+    a->launchAtomsVersion=atomsVersion;
+    a->launchBoxVersion=boxVersion(aa);
+  }
+}
+
+void PlumedMain::launchApplyAhead(const std::size_t first) {
+  launchPending.clear();
+  for(std::size_t k=first+1; k-->0;) {
+    Action* a=actionSet[k].get();
+    if(!a->isActive()) {
+      continue;
+    }
+    const ActionAtomistic* aa=a->castToActionAtomistic();
+    // these actions change the forces on all the atoms, also on the virtual ones
+    if(k<first && aa && aa->modifiesGlobalAtoms) {
+      break;
+    }
+    if(a->applyLaunchable && !a->applyLaunched) {
+      bool ready=true;
+      for(const Action* q : launchPending) {
+        if(const_cast<Action*>(q)->checkForDependency(a)) {
+          ready=false;
+          break;
+        }
+      }
+      if(ready) {
+        a->launchApply();
+        a->applyLaunched=true;
+      }
+    }
+    launchPending.push_back(a);
+  }
+}
+
 void PlumedMain::justCalculate() {
   if(!active) {
     return;
@@ -1600,6 +1676,9 @@ void PlumedMain::justCalculate() {
     }
   }
 
+  forwardLoop++;
+  // the atoms are new: a launch that was not used (after an error) is not valid any more
+  atomsVersion++;
   // the counter is incremented at the top of the loop so that the labels of the
   // detailed timers stay aligned also after the actions skipped with continue
   int iaction=-1;
@@ -1638,16 +1717,33 @@ void PlumedMain::justCalculate() {
             continue ;
           }
         }
-        {
-          if(aa)
-            if(aa->isActive()) {
-              aa->retrieveAtoms();
-            }
+        // the atoms of a launched action were retrieved before launch()
+        bool launched=false;
+        if(useLaunch) {
+          if(p->launchable && !p->launched) {
+            launchAhead(iaction);
+          }
+          if(p->launched && (p->launchAtomsVersion!=atomsVersion || p->launchBoxVersion!=boxVersion(aa))) {
+            // an action in between changed the atoms or the box: the work is done again
+            p->cancelLaunch();
+            p->launched=false;
+          }
+          launched=p->launched;
+        }
+        if(aa && !launched) {
+          aa->retrieveAtoms();
         }
         if(p->checkNumericalDerivatives()) {
           p->calculateNumericalDerivatives();
         } else {
           p->calculate();
+        }
+        if(useLaunch) {
+          p->launched=false;
+          p->forwardLoop=forwardLoop;
+          if(aa && aa->modifiesGlobalAtoms) {
+            atomsVersion++;
+          }
         }
         traceActionNonFinite(actionSet,*p,step,"forward",true,false,comm);
 
@@ -1706,7 +1802,13 @@ void PlumedMain::backwardPropagate() {
         swh=stopwatch.startStop("5A " + spaces + actionNumberLabel+" "+p->getLabel());
       }
 
+      if(useLaunchApply && p->applyLaunchable && !p->applyLaunched) {
+        launchApplyAhead(actionSet.size()-1-iaction);
+      }
       p->apply();
+      if(useLaunchApply) {
+        p->applyLaunched=false;
+      }
       traceActionNonFinite(actionSet,*p,step,"backward",false,true,comm);
     }
     iaction++;
