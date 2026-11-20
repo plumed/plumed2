@@ -7,10 +7,14 @@ getGoodNumThreads with returns "PLUMED_NUM_THREADS": true
 Pointer version:
 getGoodNumThreads(pointer) with a small vector returns 1: true
 getGoodNumThreads(pointer) with returns "PLUMED_NUM_THREADS": true
-getGoodNumThreads(pointer) with enough bytes for half of the threads returns 1: true
+getGoodNumThreads(pointer) with one element less returns 1: true
 Version with a minimum number of elements per thread:
 getGoodNumThreads(n,10) with 10 elements per thread returns "PLUMED_NUM_THREADS": true
 getGoodNumThreads(n,10) with one element less returns 1: true
 getGoodNumThreads(n,0) is getGoodNumThreads(n,1): true
+TimedLoop:
+before the calibration runs it returns 1: true
+with enough work for all the threads it returns "PLUMED_NUM_THREADS": true
+with less work it returns 1: true
 After setting the number of threads to 3:
 getNumThreads reaturns 3: true

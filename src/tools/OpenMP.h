@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include <chrono>
 #include <cstddef>
 
 namespace PLMD {
@@ -67,32 +68,36 @@ OpenMP runtime a region with fewer threads than the previous one (but more than 
 destroys the threads that are not needed, and the next larger region creates new ones
 (issue #415). When PLUMED runs inside an MD code these are the threads of the MD code:
 the new ones lose the core the MD code had assigned to each of them and all run on the
-core of the calling thread. Both functions below return getNumThreads() or 1.
+core of the calling thread. The functions below return getNumThreads() or 1.
 
-A loop is shared only when each thread gets enough work to pay for the region, which
-costs about a microsecond when the threads are awake. The thresholds assume awake threads:
-when PLUMED is called by an MD code the threads may have gone to sleep, and waking them
-costs tens of microseconds, once per step if all the regions of the step are close. Whether
-that pays is a property of the whole input, and is chosen with the number of threads.
+A parallel region costs 1 to 6 microseconds (4 to 32 threads), so a loop uses the threads only
+if each thread gets about 10 microseconds of serial work, or more. Measured with GROMACS
+(GPU-resident, 4 threads, Leonardo): copy loops with 1 kB per thread made an input with many
+small actions 6% slower, 8 kB per thread made an input copying 6829 atoms 16% faster and left
+the first unchanged.
+
+These thresholds assume that the threads are awake. Inside an MD code that calls PLUMED at
+every step they are: the OpenMP runtime keeps them spinning for about a millisecond after a
+region (OMP_WAIT_POLICY=active, which never lets them sleep, changed nothing in the runs above).
+If PLUMED is called after a longer idle time, waking them costs 20 to 45 microseconds per
+thread, and an input with small actions is faster with one thread (PLUMED_NUM_THREADS=1).
 
 - Loops that do a few operations for each element of an array (copy, zero, sum, scale)
-  use getGoodNumThreads(array): the work is measured by the bytes of the array.
-  The default of PLUMED_CACHELINE_SIZE (512: 1 kB per thread) is lower than what these
-  loops need (16 to 32 kB per thread in a first measurement): until the default is
-  calibrated, some of them (data passing, atom copies, clearing derivatives) also
-  require a minimum number of elements.
+  use getGoodNumThreads(array): at least 2*PLUMED_CACHELINE_SIZE bytes per thread, 8 kB
+  with the default.
 - Loops whose elements cost much more than reading them (a pair with a switching
-  function, the search of the neighbors of an atom, a task of an action) use
+  function, a link of a molecule, the search of the neighbors of an atom) use
   getGoodNumThreads(n,minPerThread) with the number of elements each thread needs.
+- Loops whose elements have a cost that is not known in advance (the tasks of an action,
+  from a fraction of a microsecond to milliseconds) use a TimedLoop.
 */
 
-/// All the threads if each of them gets at least 2*getCachelineSize() bytes of an array of
-/// n elements of type T (the first argument only gives the type), else one.
-/// The factor two is because the array is not necessarily aligned to the cache lines.
+/// All the threads for an array of n elements of type T (the first argument only gives the
+/// type) with at least 2*getCachelineSize() bytes per thread, else one.
 template<typename T>
 unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
   const unsigned numThreads=getNumThreads();
-  return n*sizeof(T)/(2*getCachelineSize())>=numThreads ? numThreads : 1;
+  return std::size_t(n)*sizeof(T)/(2*getCachelineSize())>=numThreads ? numThreads : 1;
 }
 
 /// All the threads if each of them gets at least minPerThread of the n elements of a loop, else one.
@@ -101,6 +106,54 @@ inline unsigned getGoodNumThreads(const std::size_t n,const std::size_t minPerTh
   const unsigned numThreads=getNumThreads();
   return n/(minPerThread>0 ? minPerThread : 1)>=numThreads ? numThreads : 1;
 }
+
+/// All the threads or one for a loop whose cost per element is not known in advance: it is
+/// measured. The first calibrationRuns runs are serial and timed. Then the loop uses all the
+/// threads if its elements give each thread at least minMicrosecondsPerThread of serial work,
+/// estimated with the fastest serial run per element. The serial runs are always timed.
+/// \code
+/// const unsigned nt=timedLoop.getNumThreads(n);
+/// const auto start=OpenMP::TimedLoop::now();
+/// #pragma omp parallel for num_threads(nt)
+/// ...
+/// timedLoop.record(start,n,nt);
+/// \endcode
+class TimedLoop {
+public:
+  using Clock=std::chrono::steady_clock;
+/// Serial work each thread needs (see above)
+  static constexpr double minMicrosecondsPerThread=10.0;
+/// Serial runs before the threads can be used
+  static constexpr unsigned calibrationRuns=2;
+/// Number of threads for a run of n elements
+  unsigned getNumThreads(const std::size_t n) const {
+    const unsigned all=OpenMP::getNumThreads();
+    if( all==1 || n==0 || serialRuns<calibrationRuns ) {
+      return 1;
+    }
+    return microsecondsPerElement*n>=minMicrosecondsPerThread*all ? all : 1;
+  }
+/// The start of a run
+  static Clock::time_point now() {
+    return Clock::now();
+  }
+/// Record a run of n elements with nt threads that began at start: only the serial runs are used
+  void record(const Clock::time_point start,const std::size_t n,const unsigned nt) {
+    if( nt!=1 || n==0 ) {
+      return;
+    }
+    const double us=std::chrono::duration<double,std::micro>(Clock::now()-start).count()/n;
+    if( serialRuns==0 || us<microsecondsPerElement ) {
+      microsecondsPerElement=us;
+    }
+    if( serialRuns<calibrationRuns ) {
+      serialRuns++;
+    }
+  }
+private:
+  unsigned serialRuns=0;
+  double microsecondsPerElement=0.0;
+};
 
 /// Get a reasonable number of threads so as to access to vector v
 template<typename T>

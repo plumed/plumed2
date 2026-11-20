@@ -211,9 +211,11 @@ Notice that:
 - Using OpenMP can give results that are slightly different because of numerical round off and different order in summations. This should be harmless.
 - The optimum number of threads is not necessary "all of them", nor should be equal to the number of threads used to parallelize the MD calculation. 
 - Not all CVs are parallelized with openMP. 
-- You might also want to tune the environmental variable PLUMED\_CACHELINE\_SIZE.
-  The default of 512 is the size of cache lines on your machine. The PLUMED\_CACHELINE\_SIZE variable is used
-  by PLUMED to decrease the number of threads to be used in each loop so as to avoid clashes in memory access. This variable is expected to affect performance only, not results.
+- A loop uses either all the threads or only one: small loops use one thread. If all the actions of your input
+  are small, one thread (`PLUMED_NUM_THREADS=1`) may be the fastest choice, in particular if PLUMED is not called
+  at every step, as the threads then fall asleep and waking them costs time.
+- The environmental variable PLUMED\_CACHELINE\_SIZE (default 4096) sets the work each thread needs in the loops that copy or
+  sum arrays: twice this number of bytes per thread. This variable is expected to affect performance only, not results.
 
 On Linux, PLUMED keeps its dynamically linked OpenMP runtime resident when a
 kernel is unloaded, since idle worker threads can otherwise access unloaded

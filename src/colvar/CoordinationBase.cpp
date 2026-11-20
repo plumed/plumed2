@@ -209,8 +209,8 @@ void CoordinationBase::calculate() {
 void CoordinationBase::sumAndSetDerivatives() {
   comm.Sum(&mpiDeriv[0][0],3*mpiDeriv.size());
   const unsigned n=mpiDeriv.size();
-  // all the threads or one, see OpenMP::getGoodNumThreads
-  [[maybe_unused]] const unsigned nt=n<2*4096 ? 1 : OpenMP::getGoodNumThreads(mpiDeriv);
+  // all the threads or one, see OpenMP.h
+  [[maybe_unused]] const unsigned nt=OpenMP::getGoodNumThreads(mpiDeriv);
   #pragma omp parallel for num_threads(nt)
   for(unsigned i=0; i<n; ++i) {
     setAtomsDerivatives(i,mpiDeriv[i]);

@@ -473,9 +473,10 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
     rank=0;
   }
 
-  // Get number of threads for OpenMP
-  // a task costs much more than reading it: at least 10 tasks per thread (see OpenMP.h)
-  [[maybe_unused]] const unsigned nt=OpenMP::getGoodNumThreads(nactive_tasks/stride,10);
+  // Get number of threads for OpenMP: the cost of a task is measured (see OpenMP.h)
+  const std::size_t nlocal=nactive_tasks/stride;
+  const unsigned nt=forcesLoop.getNumThreads(nlocal);
+  const auto start=OpenMP::TimedLoop::now();
 
   #pragma omp parallel num_threads(nt)
   {
@@ -510,6 +511,7 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
       outforces[i] += omp_forces[i];
     }
   }
+  forcesLoop.record(start,nlocal,nt);
   // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
   if( !taskmanager.runInSerial() ) {
     comm.Sum( outforces );

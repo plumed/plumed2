@@ -28,16 +28,11 @@
 namespace PLMD {
 
 #ifdef _OPENMP
-/// Number of threads used to copy n elements between the arrays of the MD code and PLUMED.
-/// These loops do very little work per element, so for the system sizes that are typical in MD
-/// starting the threads (and waking them up, as PLUMED is called once per step) costs more than
-/// the copy itself: with 4 threads, copying the positions of 7000 atoms took 5 to 10 times longer
-/// than with one thread. Threads are thus only used when each one has at least this many elements.
+/// Number of threads used to copy n elements between the arrays of the MD code and PLUMED
+/// (see OpenMP.h: PLUMED is called once per step, often with the threads asleep).
 /// It is called outside the pragmas (and only with OpenMP), so that the call is visible also to static analysis.
 static unsigned getCopyNumThreads( const std::size_t& n ) {
-  constexpr std::size_t minElementsPerThread=32768;
-  // all the threads or one, see OpenMP::getGoodNumThreads
-  return n<2*minElementsPerThread ? 1 : OpenMP::getGoodNumThreads<double>( nullptr, n );
+  return OpenMP::getGoodNumThreads<double>( nullptr, n );
 }
 #endif
 
