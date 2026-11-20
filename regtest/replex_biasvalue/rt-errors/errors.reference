@@ -13,3 +13,4 @@ bad_rfile_missing: rejected
 bad_restart_5rep: rejected
 bad_restart_notperm: rejected
 bad_restart_notime: rejected
+bad_grex: rejected

@@ -40,6 +40,7 @@ function plumed_regtest_after() {
   printf "%s\n 4.000000 0 0 2 3\n" "$header" > bad_restart_notperm/bias_index.xvg
   bad restart_notime "PACE=2 SEED=7"
   printf "%s\n 0.000000 0 1 2 3\n" "$header" > bad_restart_notime/bias_index.xvg
+  bad grex "PACE=2 SEED=7"
 
   local traj="--ixyz ../traj.xyz" restart="--restart --initial-step 6"
   {
@@ -59,5 +60,7 @@ function plumed_regtest_after() {
     expect_error bad_restart_5rep "cannot read the state from file bias_index.xvg" $traj --kt 2.49 $restart
     expect_error bad_restart_notperm "are not a permutation of 4 replicas" $traj --kt 2.49 $restart
     expect_error bad_restart_notime "no state compatible with time" $traj --kt 2.49 $restart
+    # exchanges also done by the MD code (fake GROMACS-like exchanges of the driver)
+    expect_error bad_grex "replica exchange of the MD code" $traj --kt 2.49 --debug-grex 2
   } > errors
 }

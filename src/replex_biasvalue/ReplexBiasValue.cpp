@@ -586,6 +586,12 @@ void ReplexBiasValue::prepare() {
     first_step = false;
   }
 
+  // Abort if external exchanges (e.g. gmx -replex)
+  if (getExchangeStep()) {
+    error("cannot be used together with the replica exchange of the MD code "
+          "(e.g. GROMACS -replex)");
+  }
+
   is_exchange_step = (getStep() != 0 && getStep() % pace == 0);
   if (is_exchange_step) {
     // All the biases are computed on exchange steps
