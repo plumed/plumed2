@@ -436,6 +436,15 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   neighborCutoff_(0.0),
   neighborSkin_(0.0) {
 
+  // Constructor responsibilities:
+  // 1) Parse all user-provided keywords and atom lists.
+  // 2) Normalize/validate options and numerical parameters.
+  // 3) Initialize data structures used during per-step evaluation.
+  // Defaults in the initializer list are conservative and are tightened
+  // below once all user input has been read and checked.
+
+  // Parse the two atom groups defining Voronoi centers and assigned atoms.
+  // Validation of compatibility/cardinality is handled in subsequent checks.
   parseAtomList("CENTERS",centers_);
   parseAtomList("ASSIGNED",assigned_);
   if(centers_.empty()) {
