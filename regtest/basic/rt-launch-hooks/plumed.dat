@@ -3,6 +3,10 @@
 # The same sums are computed with POSITION.
 LOAD FILE=LaunchTest.cpp
 
+# h depends on a constant, which is never calculated, and on p12: it is launched with a and b
+c01: CONSTANT VALUE=0.1
+p12: POSITION ATOM=12 NOPBC
+h: LAUNCH_TEST_ARG ARG=c01,p12.x
 # a and b are launched together, before d is calculated
 a: LAUNCH_TEST ATOMS=1,2
 d: DISTANCE ATOMS=1,2
@@ -10,13 +14,6 @@ b: LAUNCH_TEST ATOMS=3,4
 # e depends on c: it is launched after c is calculated
 c: CENTER ATOMS=5,6
 e: LAUNCH_TEST ATOMS=c,7
-# h depends on a constant virtual atom, which is never calculated: it is launched with a and b.
-# Its value is not printed: the position of x is moved by FIT_TO_TEMPLATE at every step
-cx: CONSTANT VALUE=0.1
-c0: CONSTANT VALUE=0
-c1: CONSTANT VALUE=1
-x: ARGS2VATOM XPOS=cx YPOS=c0 ZPOS=c0 MASS=c1 CHARGE=c0
-h: LAUNCH_TEST ATOMS=x,12
 p1: POSITION ATOM=1 NOPBC
 p2: POSITION ATOM=2 NOPBC
 p3: POSITION ATOM=3 NOPBC
@@ -40,7 +37,7 @@ db: CUSTOM ARG=b,p3.x,p4.x FUNC=(x-y-z)^2 PERIODIC=NO
 de: CUSTOM ARG=e,pc.x,p7.x FUNC=(x-y-z)^2 PERIODIC=NO
 df: CUSTOM ARG=f,p8.x,p9.x FUNC=(x-y-z)^2 PERIODIC=NO
 dg: CUSTOM ARG=g,p10.x,p11.x FUNC=(x-y-z)^2 PERIODIC=NO
-PRINT ARG=a,b,e,f,g,da,db,de,df,dg FILE=colvar FMT=%8.4f
+dh: CUSTOM ARG=h,p12.x FUNC=(x-0.1-y)^2 PERIODIC=NO
+PRINT ARG=a,b,e,f,g,da,db,de,df,dg,h,dh FILE=colvar FMT=%8.4f
 
-RESTRAINT ARG=a,d,b,e,f AT=0,0,0,0,0 SLOPE=1,2,3,4,5
-RESTRAINT ARG=h AT=0 SLOPE=0
+RESTRAINT ARG=a,d,b,e,f,h AT=0,0,0,0,0,0 SLOPE=1,2,3,4,5,6

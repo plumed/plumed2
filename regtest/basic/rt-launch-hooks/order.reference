@@ -1,12 +1,12 @@
+0 launch h
 0 launch a
 0 launch b
-0 launch h
 0 launch f
+0 calculate (launched) h
 0 calculate (launched) a
 0 calculate (launched) b
 0 launch e
 0 calculate (launched) e
-0 calculate (launched) h
 0 cancelLaunch f
 0 calculate f
 0 calculate g
@@ -25,14 +25,14 @@
 0 calculate g
 0 calculate g
 0 calculate g
+10 launch h
 10 launch a
 10 launch b
-10 launch h
+10 calculate (launched) h
 10 calculate (launched) a
 10 calculate (launched) b
 10 launch e
 10 calculate (launched) e
-10 calculate (launched) h
 10 launch f
 10 calculate (launched) f
 10 calculate g
@@ -51,14 +51,14 @@
 10 calculate g
 10 calculate g
 10 calculate g
+20 launch h
 20 launch a
 20 launch b
-20 launch h
+20 calculate (launched) h
 20 calculate (launched) a
 20 calculate (launched) b
 20 launch e
 20 calculate (launched) e
-20 calculate (launched) h
 20 launch f
 20 calculate (launched) f
 20 calculate g
@@ -77,14 +77,14 @@
 20 calculate g
 20 calculate g
 20 calculate g
+30 launch h
 30 launch a
 30 launch b
-30 launch h
+30 calculate (launched) h
 30 calculate (launched) a
 30 calculate (launched) b
 30 launch e
 30 calculate (launched) e
-30 calculate (launched) h
 30 launch f
 30 calculate (launched) f
 30 calculate g
@@ -103,14 +103,14 @@
 30 calculate g
 30 calculate g
 30 calculate g
+40 launch h
 40 launch a
 40 launch b
-40 launch h
+40 calculate (launched) h
 40 calculate (launched) a
 40 calculate (launched) b
 40 launch e
 40 calculate (launched) e
-40 calculate (launched) h
 40 launch f
 40 calculate (launched) f
 40 calculate g
@@ -129,14 +129,14 @@
 40 calculate g
 40 calculate g
 40 calculate g
+50 launch h
 50 launch a
 50 launch b
-50 launch h
+50 calculate (launched) h
 50 calculate (launched) a
 50 calculate (launched) b
 50 launch e
 50 calculate (launched) e
-50 calculate (launched) h
 50 launch f
 50 calculate (launched) f
 50 calculate g
@@ -155,14 +155,14 @@
 50 calculate g
 50 calculate g
 50 calculate g
+60 launch h
 60 launch a
 60 launch b
-60 launch h
+60 calculate (launched) h
 60 calculate (launched) a
 60 calculate (launched) b
 60 launch e
 60 calculate (launched) e
-60 calculate (launched) h
 60 launch f
 60 calculate (launched) f
 60 calculate g
@@ -181,14 +181,14 @@
 60 calculate g
 60 calculate g
 60 calculate g
+70 launch h
 70 launch a
 70 launch b
-70 launch h
+70 calculate (launched) h
 70 calculate (launched) a
 70 calculate (launched) b
 70 launch e
 70 calculate (launched) e
-70 calculate (launched) h
 70 launch f
 70 calculate (launched) f
 70 calculate g
@@ -207,14 +207,14 @@
 70 calculate g
 70 calculate g
 70 calculate g
+80 launch h
 80 launch a
 80 launch b
-80 launch h
+80 calculate (launched) h
 80 calculate (launched) a
 80 calculate (launched) b
 80 launch e
 80 calculate (launched) e
-80 calculate (launched) h
 80 launch f
 80 calculate (launched) f
 80 calculate g
@@ -233,14 +233,14 @@
 80 calculate g
 80 calculate g
 80 calculate g
+90 launch h
 90 launch a
 90 launch b
-90 launch h
+90 calculate (launched) h
 90 calculate (launched) a
 90 calculate (launched) b
 90 launch e
 90 calculate (launched) e
-90 calculate (launched) h
 90 launch f
 90 calculate (launched) f
 90 calculate g
@@ -259,14 +259,14 @@
 90 calculate g
 90 calculate g
 90 calculate g
+100 launch h
 100 launch a
 100 launch b
-100 launch h
+100 calculate (launched) h
 100 calculate (launched) a
 100 calculate (launched) b
 100 launch e
 100 calculate (launched) e
-100 calculate (launched) h
 100 launch f
 100 calculate (launched) f
 100 calculate g
@@ -285,14 +285,14 @@
 100 calculate g
 100 calculate g
 100 calculate g
+110 launch h
 110 launch a
 110 launch b
-110 launch h
+110 calculate (launched) h
 110 calculate (launched) a
 110 calculate (launched) b
 110 launch e
 110 calculate (launched) e
-110 calculate (launched) h
 110 launch f
 110 calculate (launched) f
 110 calculate g

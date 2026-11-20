@@ -1,12 +1,21 @@
 #include "core/Colvar.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 #include <cstdio>
 #include <vector>
 
 // Test of Action::launch() and cancelLaunch(), see plumed.dat.
-// The value is the sum of the x coordinates of the atoms.
+// The value is the sum of the x coordinates of the atoms (LAUNCH_TEST) or of the arguments (LAUNCH_TEST_ARG).
 
 namespace PLMD {
+
+// every call is written in the file "order"
+static void writeOrder(const Action& a,const char* what) {
+  static std::FILE* fp=std::fopen("order","w");
+  std::fprintf(fp,"%ld %s %s\n",static_cast<long>(a.getStep()),what,a.getLabel().c_str());
+  std::fflush(fp);
+}
 
 class LaunchTest : public Colvar {
   double launchedSum=0.0;
@@ -18,9 +27,7 @@ class LaunchTest : public Colvar {
     return s;
   }
   void write(const char* what) {
-    static std::FILE* fp=std::fopen("order","w");
-    std::fprintf(fp,"%ld %s %s\n",static_cast<long>(getStep()),what,getLabel().c_str());
-    std::fflush(fp);
+    writeOrder(*this,what);
   }
 public:
   static void registerKeywords( Keywords& keys ) {
@@ -57,5 +64,57 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(LaunchTest,"LAUNCH_TEST")
+
+class LaunchTestArg :
+  public ActionWithValue,
+  public ActionWithArguments {
+  double launchedSum=0.0;
+  double sum() const {
+    double s=0.0;
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      s+=getArgument(i);
+    }
+    return s;
+  }
+public:
+  static void registerKeywords( Keywords& keys ) {
+    Action::registerKeywords( keys );
+    ActionWithValue::registerKeywords( keys );
+    ActionWithArguments::registerKeywords( keys );
+    keys.addInputKeyword("compulsory","ARG","scalar","the arguments");
+    keys.setValueDescription("scalar","the sum of the arguments");
+  }
+  explicit LaunchTestArg(const ActionOptions&ao):
+    Action(ao),
+    ActionWithValue(ao),
+    ActionWithArguments(ao) {
+    addValueWithDerivatives();
+    setNotPeriodic();
+    setLaunchable();
+  }
+  unsigned getNumberOfDerivatives() override {
+    return getNumberOfArguments();
+  }
+  void launch() override {
+    writeOrder(*this,"launch");
+    launchedSum=sum();
+  }
+  void calculate() override {
+    const bool launched=takeLaunch();
+    writeOrder(*this,launched ? "calculate (launched)" : "calculate");
+    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+      getPntrToValue()->addDerivative(i,1.0);
+    }
+    setValue(launched ? launchedSum : sum());
+  }
+  void apply() override {
+    if(checkForForces()) {
+      unsigned start=0;
+      addForcesOnArguments(0,getForcesToApply(),start);
+    }
+  }
+};
+
+PLUMED_REGISTER_ACTION(LaunchTestArg,"LAUNCH_TEST_ARG")
 
 }
