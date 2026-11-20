@@ -23,6 +23,7 @@
 #include "plumed/colvar/ReactiveVoronoiBackend.h"
 #include "plumed/tools/Pbc.h"
 #include <cuda_runtime.h>
+#include <algorithm>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -82,6 +83,10 @@ struct State {
   double* derivatives=nullptr;
   double* virial=nullptr;
   unsigned long long* invalid=nullptr;
+  // pinned host copies of occupancy and invalid, written by the queued forward pass
+  // (a copy to pageable memory would wait for the kernel)
+  double* hostOccupancy=nullptr;
+  unsigned long long* hostInvalid=nullptr;
   int* offsets=nullptr;
   int* candidateCenters=nullptr;
   int candidateCapacity=0;
@@ -278,6 +283,8 @@ void release(State* state) {
     cudaFree(state->derivatives);
     cudaFree(state->virial);
     cudaFree(state->invalid);
+    cudaFreeHost(state->hostOccupancy);
+    cudaFreeHost(state->hostInvalid);
     cudaFree(state->offsets);
     cudaFree(state->candidateCenters);
     if(state->stream) {
@@ -319,15 +326,18 @@ State* createState(int numCenters, int numAssigned, int mdDevice) {
       !checkCuda(cudaMalloc(&state->sensitivity,numCenters*sizeof(double))) ||
       !checkCuda(cudaMalloc(&state->derivatives,3*numAtoms*sizeof(double))) ||
       !checkCuda(cudaMalloc(&state->virial,9*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->invalid,sizeof(*state->invalid)))) {
+      !checkCuda(cudaMalloc(&state->invalid,sizeof(*state->invalid))) ||
+      !checkCuda(cudaMallocHost(&state->hostOccupancy,numCenters*sizeof(double))) ||
+      !checkCuda(cudaMallocHost(&state->hostInvalid,sizeof(*state->hostInvalid)))) {
     release(state);
     return nullptr;
   }
   return state;
 }
 
+// queues the forward pass, finishForward waits for it
 int runForward(State& state, const double* positions, const PLMD::Pbc& box, bool pbc,
-               double kappa, double* occupancy, bool useNeighbors, double cutoff,
+               double kappa, bool useNeighbors, double cutoff,
                const int* offsets, const int* centers, int count) {
   DeviceScope scope(state.device);
   if(!scope.valid()) {
@@ -382,15 +392,23 @@ int runForward(State& state, const double* positions, const PLMD::Pbc& box, bool
   } else {
     forwardKernel<denseThreads,false><<<state.numAssigned,denseThreads,0,state.stream>>>(state);
   }
-  unsigned long long invalid=noFailure;
   if(!checkCuda(cudaGetLastError()) ||
-      !checkCuda(cudaMemcpyAsync(occupancy,state.occupancy,state.numCenters*sizeof(double),
+      !checkCuda(cudaMemcpyAsync(state.hostOccupancy,state.occupancy,state.numCenters*sizeof(double),
                                  cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaMemcpyAsync(&invalid,state.invalid,sizeof(invalid),
-                                 cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaStreamSynchronize(state.stream))) {
+      !checkCuda(cudaMemcpyAsync(state.hostInvalid,state.invalid,sizeof(*state.hostInvalid),
+                                 cudaMemcpyDeviceToHost,state.stream))) {
     return 1;
   }
+  return 0;
+}
+
+int waitForward(State& state, double* occupancy) {
+  DeviceScope scope(state.device);
+  if(!scope.valid() || !checkCuda(cudaStreamSynchronize(state.stream))) {
+    return 1;
+  }
+  std::copy(state.hostOccupancy,state.hostOccupancy+state.numCenters,occupancy);
+  const unsigned long long invalid=*state.hostInvalid;
   if(invalid==noFailure) {
     return 0;
   }
@@ -450,29 +468,33 @@ public:
     return state_->device;
   }
 
-  void forward(const double* positions, const PLMD::Pbc& box, bool pbc,
-               double kappa, double* occupancy) override {
-    if(runForward(*state_,positions,box,pbc,kappa,occupancy,false,0,nullptr,nullptr,0)!=0) {
+  void forward(const double* positions, const PLMD::Pbc& box, bool pbc, double kappa) override {
+    if(runForward(*state_,positions,box,pbc,kappa,false,0,nullptr,nullptr,0)!=0) {
       throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
     }
   }
 
-  void forwardNeighbors(const double* positions, const PLMD::Pbc& box, bool pbc,
-                        double kappa, double* occupancy, double cutoff,
-                        const std::vector<int>& offsets, const std::vector<int>& centers,
+  void forwardNeighbors(const double* positions, const PLMD::Pbc& box, bool pbc, double kappa,
+                        double cutoff, const std::vector<int>& offsets, const std::vector<int>& centers,
                         unsigned long version) override {
     const bool upload=uploadedNeighborVersion_!=version;
-    const int status=runForward(*state_,positions,box,pbc,kappa,occupancy,true,cutoff,
-                                upload ? offsets.data() : nullptr,
-                                upload ? centers.data() : nullptr,
-                                upload ? static_cast<int>(centers.size()) : 0);
+    if(runForward(*state_,positions,box,pbc,kappa,true,cutoff,
+                  upload ? offsets.data() : nullptr,
+                  upload ? centers.data() : nullptr,
+                  upload ? static_cast<int>(centers.size()) : 0)!=0) {
+      throw std::runtime_error("CUDA reactive Voronoi NLIST forward failed; check geometry and CUDA diagnostics");
+    }
+    uploadedNeighborVersion_=version;
+  }
+
+  void finishForward(double* occupancy) override {
+    const int status=waitForward(*state_,occupancy);
     if(status==2) {
       throw std::runtime_error("an ASSIGNED atom has no CENTER inside the candidate list");
     }
     if(status!=0) {
-      throw std::runtime_error("CUDA reactive Voronoi NLIST forward failed; check geometry and CUDA diagnostics");
+      throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
     }
-    uploadedNeighborVersion_=version;
   }
 
   void backward(const double* sensitivity, double* derivatives, double* virial) override {

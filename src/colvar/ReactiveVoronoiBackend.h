@@ -45,13 +45,16 @@ public:
   };
   virtual ~ReactiveVoronoiBackend() = default;
   virtual int device() const = 0;
-  virtual void forward(const double* positions, const Pbc& box, bool pbc,
-                       double kappa, double* occupancy) = 0;
-  /// The backend can reuse the uploaded candidate list for the same version.
-  virtual void forwardNeighbors(const double* positions, const Pbc& box, bool pbc,
-                                double kappa, double* occupancy, double cutoff,
-                                const std::vector<int>& offsets, const std::vector<int>& centers,
-                                unsigned long version) = 0;
+  /// Queues the soft assignment (e.g. on a GPU) without waiting for it, see Action::launch().
+  /// The positions can be reused as soon as this returns. finishForward() gives the occupancy.
+  virtual void forward(const double* positions, const Pbc& box, bool pbc, double kappa) = 0;
+  /// The same with a candidate list. The backend can reuse the uploaded candidate list for the same version.
+  virtual void forwardNeighbors(const double* positions, const Pbc& box, bool pbc, double kappa,
+                                double cutoff, const std::vector<int>& offsets,
+                                const std::vector<int>& centers, unsigned long version) = 0;
+  /// Waits for the last forward() or forwardNeighbors() and writes the occupancy of each center.
+  /// Invalid geometry is reported here (InvalidPair) or by the forward call.
+  virtual void finishForward(double* occupancy) = 0;
   virtual void backward(const double* sensitivity, double* derivatives, double* virial) = 0;
 };
 

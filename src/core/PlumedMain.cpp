@@ -1577,6 +1577,59 @@ void PlumedMain::waitData() {
   }
 }
 
+void PlumedMain::prepareLaunch() {
+  launchQueue.clear();
+  launchBarriers.clear();
+  for(std::size_t k=0; k<actionSet.size(); ++k) {
+    Action* a=actionSet[k].get();
+    if(!a->isActive()) {
+      continue;
+    }
+    const ActionAtomistic* aa=a->castToActionAtomistic();
+    if(aa && aa->modifiesGlobalAtoms) {
+      launchBarriers.push_back(k);
+    }
+    ActionWithValue* av=a->castToActionWithValue();
+    if(a->launchable && !a->checkNumericalDerivatives() && !(av && av->calculateOnUpdate())) {
+      launchQueue.push_back(k);
+    }
+  }
+}
+
+void PlumedMain::launchReady(const std::size_t done) {
+  // what comes after an action that moves the atoms is launched when that action has been calculated
+  const auto barrier=std::upper_bound(launchBarriers.begin(),launchBarriers.end(),done);
+  const std::size_t limit = barrier==launchBarriers.end() ? actionSet.size() : *barrier;
+  std::size_t kept=0;
+  for(std::size_t i=0; i<launchQueue.size(); ++i) {
+    const std::size_t k=launchQueue[i];
+    if(k<=done) {
+      // reached before being launched: calculated as usual
+      continue;
+    }
+    Action* a=actionSet[k].get();
+    bool ready=k<limit && !a->launched;
+    for(const Action* d : a->getDependencies()) {
+      // the inactive dependencies are constant (see Action::setupConstantValues())
+      if(!ready || (d->isActive() && d->forwardLoop!=forwardLoop)) {
+        ready=false;
+        break;
+      }
+    }
+    if(!ready) {
+      launchQueue[kept++]=k;
+      continue;
+    }
+    if(ActionAtomistic* aa=a->castToActionAtomistic()) {
+      aa->retrieveAtoms();
+    }
+    a->launch();
+    a->launched=true;
+    a->launchAtomsVersion=atomsVersion;
+  }
+  launchQueue.resize(kept);
+}
+
 void PlumedMain::justCalculate() {
   if(!active) {
     return;
@@ -1600,6 +1653,12 @@ void PlumedMain::justCalculate() {
     }
   }
 
+  forwardLoop++;
+  // the atoms are new: a launch that was not used (after an error) is not valid any more
+  atomsVersion++;
+  if(useLaunch) {
+    prepareLaunch();
+  }
   // the counter is incremented at the top of the loop so that the labels of the
   // detailed timers stay aligned also after the actions skipped with continue
   int iaction=-1;
@@ -1638,16 +1697,32 @@ void PlumedMain::justCalculate() {
             continue ;
           }
         }
-        {
-          if(aa)
-            if(aa->isActive()) {
-              aa->retrieveAtoms();
-            }
+        // the atoms of a launched action were retrieved before launch()
+        bool launched=false;
+        if(useLaunch) {
+          if(p->launched && p->launchAtomsVersion!=atomsVersion) {
+            // an action in between changed the atoms (or the box, which is changed only with them): the work is done again
+            p->cancelLaunch();
+            p->launched=false;
+          }
+          launched=p->launched;
+        }
+        if(aa && !launched) {
+          aa->retrieveAtoms();
         }
         if(p->checkNumericalDerivatives()) {
           p->calculateNumericalDerivatives();
         } else {
           p->calculate();
+        }
+        if(useLaunch) {
+          p->launched=false;
+          p->forwardLoop=forwardLoop;
+          if(aa && aa->modifiesGlobalAtoms) {
+            atomsVersion++;
+          }
+          // the actions that were waiting for this one are started
+          launchReady(iaction);
         }
         traceActionNonFinite(actionSet,*p,step,"forward",true,false,comm);
 

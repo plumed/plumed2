@@ -576,6 +576,7 @@ inline void rotateVector( const Tensor& r, const double x, const double y, const
 }
 
 void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;
@@ -590,6 +591,7 @@ void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
 }
 
 void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;
@@ -606,6 +608,7 @@ void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
 }
 
 void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;

@@ -23,6 +23,7 @@
 #define __PLUMED_core_Action_h
 #include <iomanip>
 #include <vector>
+#include <cstdint>
 #include <string>
 #include <set>
 #include "tools/Keywords.h"
@@ -77,6 +78,7 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
   friend class ActionShortcut;
+  friend class PlumedMain;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
   const std::string actionName;
@@ -132,6 +134,15 @@ private:
 
 /// The set of default arguments that we are using
   std::string defaults;
+
+/// See setLaunchable(): whether launch() should be called
+  bool launchable=false;
+/// launch() was called and calculate() has not used it yet
+  bool launched=false;
+/// The forward loop in which this action was calculated last
+  std::uint64_t forwardLoop=0;
+/// The version of the atoms when launch() was called (see PlumedMain::atomsVersion)
+  std::uint64_t launchAtomsVersion=0;
 public:
 
 /// Reference to main plumed object
@@ -300,6 +311,31 @@ public:
 /// This method is called one time per step.
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
+
+/// Start the calculation without waiting for its result (e.g. queue the work on a GPU), see setLaunchable().
+/// Called as soon as the actions this one depends on have been calculated, possibly before the calculate()
+/// of actions that come first in the input, with the atoms already retrieved. It must not change what other
+/// actions can see (values, derivatives, forces). calculate() collects the result if takeLaunch() is true,
+/// and otherwise does all the work: launch() is not always called (e.g. with numerical derivatives).
+  virtual void launch() {}
+
+/// Discard the work started by launch().
+/// Called instead of using it when another action changed the atoms (e.g. FIT_TO_TEMPLATE) after launch():
+/// the atoms are then retrieved again and calculate() is called as if launch() had not been.
+/// It should wait for the queued work if that reads or writes data of this action.
+  virtual void cancelLaunch() {}
+
+protected:
+/// Ask that launch() is called before calculate()
+/// (unless the environment variable PLUMED_LAUNCH is set to "no"). It writes in the log.
+  void setLaunchable();
+/// To be used once in calculate(): true if the work was queued by launch() (and it is still valid)
+  bool takeLaunch() {
+    const bool l=launched;
+    launched=false;
+    return l;
+  }
+public:
 
 /// Before Update.
 /// This is a special method that is called just
