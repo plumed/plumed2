@@ -553,9 +553,12 @@ class TestVimSyntax(unittest.TestCase):
 
     def run_vim(self, body, *, kind="plumed", settings=""):
         errors = self.root / "errors"
+        # Windows runners can select Git's MSYS Vim. Its command-line parser
+        # treats backslashes in native Windows paths as escapes. Keep all paths
+        # relative to cwd so native and MSYS editors resolve them consistently.
         source = (
             "execute 'source ' . fnameescape("
-            + json.dumps(str(self.syntax / (kind + ".vim")))
+            + json.dumps("syntax/" + kind + ".vim")
             + ")\n"
         )
         script = self.root / "check.vim"
@@ -575,7 +578,7 @@ class TestVimSyntax(unittest.TestCase):
             + 'return map(PlumedComplete(0,strpart(a:text,start)),"type(v:val)==type({}) ? v:val.word : v:val")\nendfunction\n'
             + body
             + "\nif !empty(v:errors)\ncall writefile(v:errors,"
-            + json.dumps(str(errors))
+            + json.dumps("errors")
             + ")\ncquit\nendif\nqa!\n"
         )
         result = subprocess.run(
@@ -587,9 +590,9 @@ class TestVimSyntax(unittest.TestCase):
                 "NONE",
                 "-n",
                 "-es",
-                "-V1" + str(self.root / "vim.log"),
+                "-V1vim.log",
                 "-S",
-                str(script),
+                script.name,
             ],
             check=False,
             cwd=self.root,
@@ -640,7 +643,6 @@ class TestVimSyntax(unittest.TestCase):
         (self.root / "my refs/ref1.pdb").touch()
         (self.root / "headers1").mkdir()
         (self.root / "ref[1].pdb").touch()
-        absolute = self.root.as_posix() + "/my refs/ref1"
         self.run_vim(
             "call assert_equal(['{my refs/'],Candidates('MOLINFO STRUCTURE=my'))\n"
             "call assert_equal(['my refs/ref1.pdb}'],Candidates('MOLINFO STRUCTURE={my refs/ref1'))\n"
@@ -648,17 +650,14 @@ class TestVimSyntax(unittest.TestCase):
             "call assert_equal(['my refs/'],Candidates('LOAD INCLUDE_PATH={other:my'))\n"
             "call assert_equal(['ref[1].pdb'],Candidates('RMSD REFERENCE=ref[1]'))\n"
             "call assert_equal(['../'],Candidates('LOAD FILE=..'))\n"
-            "call assert_equal(["
-            + json.dumps(absolute + ".pdb}")
-            + "],Candidates("
-            + json.dumps("MOLINFO STRUCTURE={" + absolute)
-            + "))"
+            "let absolute=getcwd() . '/my refs/ref1'\n"
+            "call assert_equal([absolute . '.pdb}'],Candidates('MOLINFO STRUCTURE={' . absolute))"
         )
 
     def test_colvar_selection_is_local_and_uses_preceding_header(self):
         source = (
             "execute 'source ' . fnameescape("
-            + json.dumps(str(self.syntax / "plumedf.vim"))
+            + json.dumps("syntax/plumedf.vim")
             + ")\n"
         )
         self.run_vim(
