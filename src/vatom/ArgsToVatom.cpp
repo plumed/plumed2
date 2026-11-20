@@ -210,6 +210,10 @@ ArgsToVatom::ArgsToVatom(const ActionOptions& ao):
     log.printf("  creating atom at x=%s, y=%s and z=%s \n", xpos[0]->getName().c_str(), ypos[0]->getName().c_str(), zpos[0]->getName().c_str() );
   }
   log.printf("  mass of atom is %s and charge is %s \n", mass[0]->getName().c_str(), charge[0]->getName().c_str() );
+  // a constant position would not follow the box (virial) and would be moved by FIT_TO_TEMPLATE at every step
+  if( xpos[0]->isConstant() && ypos[0]->isConstant() && zpos[0]->isConstant() ) {
+    error("the position of the atom is constant: use FIXEDATOM (with SCALED_COMPONENTS for FRACTIONAL)");
+  }
   // Request the arguments
   requestArguments(xpos);
   // Create the components to hold the atom
