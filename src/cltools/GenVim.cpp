@@ -149,7 +149,17 @@ std::string fillDictionaryTemplate(std::string source,
     throw std::runtime_error("@PLUMED_DICTIONARY@ must be on its own line");
   }
 
-  std::string dictionaries;
+  // Keep static copies useful for MODULE value completion too. Separately
+  // installed module candidates are supplied by the Vim runtime cache.
+  std::string dictionaries="let b:plumedModules=[";
+  const auto modules=config::getBuiltInModules();
+  for(std::size_t i=0; i<modules.size(); ++i) {
+    if(i) {
+      dictionaries+=',';
+    }
+    dictionaries+=quoteVimString(modules[i]);
+  }
+  dictionaries+="]\n";
   for(const auto& action : actions) {
     Keywords keys;
     actionRegister().getKeywords(images,action,keys);
