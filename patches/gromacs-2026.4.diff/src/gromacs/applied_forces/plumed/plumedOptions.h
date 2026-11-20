@@ -70,6 +70,7 @@ struct PlumedOptions
     StartingBehavior      startingBehavior_{};
     bool                  active_{ false };
     bool                  replex_{ false };
+    bool                  hrex_{ false };
     //! The input record, for the step from which a restarted simulation continues
     const t_inputrec*     inputrec_{ nullptr };
     //! Whether each atom is a virtual site, empty if there are none
@@ -100,6 +101,8 @@ public:
      * @param replex true when mdrun was started with -replex
      */
     void setReplex(bool replex);
+    //! Set the general Hamiltonian exchange option before creating the provider.
+    void setHrex(bool hrex);
     /*! @brief Sets the address of the input record
      * @param inputrec the input record (its init_step is read when the module is set up)
      */

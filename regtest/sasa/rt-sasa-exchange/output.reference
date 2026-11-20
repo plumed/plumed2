@@ -1,0 +1,16 @@
+SASA_LCPO-rejected-sparse-after: pass
+SASA_LCPO-rejected-sparse-before: pass
+SASA_LCPO-rejected-dense-after: pass
+SASA_LCPO-rejected-dense-before: pass
+SASA_LCPO-accepted-sparse-after: pass
+SASA_LCPO-accepted-sparse-before: pass
+SASA_LCPO-accepted-dense-after: pass
+SASA_LCPO-accepted-dense-before: pass
+SASA_HASEL-rejected-sparse-after: pass
+SASA_HASEL-rejected-sparse-before: pass
+SASA_HASEL-rejected-dense-after: pass
+SASA_HASEL-rejected-dense-before: pass
+SASA_HASEL-accepted-sparse-after: pass
+SASA_HASEL-accepted-sparse-before: pass
+SASA_HASEL-accepted-dense-after: pass
+SASA_HASEL-accepted-dense-before: pass

@@ -1830,7 +1830,7 @@ void EMMI::calculate() {
 
   // do regression
   if(nregres_>0) {
-    if(step%nregres_==0 && !getExchangeStep()) {
+    if(step%nregres_==0 && !getExchangeStep() && !plumed.isCalculationOnly()) {
       scale_ = doRegression();
     }
     // set scale component
@@ -1838,7 +1838,7 @@ void EMMI::calculate() {
   }
 
   // write model overlap to file
-  if(ovstride_>0 && step%ovstride_==0) {
+  if(ovstride_>0 && step%ovstride_==0 && !getExchangeStep() && !plumed.isCalculationOnly()) {
     write_model_overlap(step);
   }
 
@@ -1970,12 +1970,12 @@ void EMMI::calculate() {
   if(noise_!=2) {
 
     // do Montecarlo
-    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) {
+    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep() && !plumed.isCalculationOnly()) {
       doMonteCarlo();
     }
 
     // print status
-    if(step%statusstride_==0) {
+    if(step%statusstride_==0 && !getExchangeStep() && !plumed.isCalculationOnly()) {
       print_status(step);
     }
 

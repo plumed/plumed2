@@ -54,6 +54,7 @@ class GREX:
   std::vector<double> allDeltaBias;
   std::string buffer;
   int myreplica;
+  long long int previousExchangeStep=-1;
 public:
   explicit GREX(PlumedMain&);
   ~GREX();

@@ -589,12 +589,12 @@ void Rescale::calculate() {
   getPntrToComponent("accgamma")->set(accgamma);
 
   // do MC at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) {
+  if(step%MCstride_==0&&!getExchangeStep()&&!plumed.isCalculationOnly()) {
     doMonteCarlo(igamma, ene, args, bargs);
   }
 
   // add well-tempered like bias
-  if(step%Biaspace_==0) {
+  if(step%Biaspace_==0&&!getExchangeStep()&&!plumed.isCalculationOnly()) {
     // get updated igamma
     const unsigned newigamma = getSelector();
     // add "Gaussian"
@@ -603,7 +603,7 @@ void Rescale::calculate() {
   }
 
   // print bias
-  if(step%Biasstride_==0) {
+  if(step%Biasstride_==0&&!getExchangeStep()&&!plumed.isCalculationOnly()) {
     print_bias(step);
   }
 

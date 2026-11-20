@@ -124,6 +124,8 @@ class HBonds : public Colvar {
   std::unique_ptr<NeighborList> nl;
   unsigned nlStride=0;
   bool firsttime=true;
+  // Rebuild both after a foreign trial and after a possible accepted swap.
+  long long lastExchangeStep_=-1;
   bool invalidateList=true;
 /// hydrogens of donor i are hydrogens[hfirst[i]..hfirst[i+1]), as indexes in the positions array
   std::vector<unsigned> hfirst;
@@ -366,6 +368,12 @@ void HBonds::prepare() {
     // the list is also updated on exchange steps, where the coordinates are swapped
     invalidateList=firsttime || getStep()%nlStride==0 || getExchangeStep();
     firsttime=false;
+    if(getExchangeStep()) {
+      lastExchangeStep_=getStep();
+    }
+    if(lastExchangeStep_==getStep()) {
+      firsttime=true;
+    }
   }
 }
 

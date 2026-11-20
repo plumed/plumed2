@@ -66,6 +66,9 @@ jobs:
           fi
           mkdir -p "$RUNNER_TEMP/md-logs"
 
+      - name: Verify the distributed GROMACS patch baseline
+        run: python .ci/md-integration/gromacs/check-patch-baseline.py gromacs
+
       - name: Patch GROMACS and verify unpatching
         working-directory: gromacs
         env:
@@ -74,12 +77,21 @@ jobs:
           # Exercise the installed patcher and installed Plumed.h, then prove
           # that unpatching restores all tracked source files exactly.
           plumed patch -p --runtime -e "$PATCH_ENGINE" > "$RUNNER_TEMP/md-logs/patch.log" 2>&1
+          if find . -name '*.rej' -print -quit | grep -q .; then
+            echo 'GROMACS patch contains rejected hunks' >&2
+            exit 1
+          fi
           cmp Plumed.h "$HOME/plumed-md/include/plumed/wrapper/Plumed.h"
           plumed patch -r -e "$PATCH_ENGINE" > "$RUNNER_TEMP/md-logs/unpatch.log" 2>&1
           git diff --exit-code
           test ! -e Plumed.h && test ! -L Plumed.h
           test ! -e Plumed.inc && test ! -e Plumed.cmake
+          test ! -e src/gromacs/mdrun/plumedexchange.h
           plumed patch -p --runtime -e "$PATCH_ENGINE" > "$RUNNER_TEMP/md-logs/repatch.log" 2>&1
+          if find . -name '*.rej' -print -quit | grep -q .; then
+            echo 'GROMACS repatch contains rejected hunks' >&2
+            exit 1
+          fi
           git diff > "$RUNNER_TEMP/md-logs/gromacs.patch"
 
       - name: Build CPU-only GROMACS with OpenMP
@@ -107,6 +119,20 @@ jobs:
             --results "$RUNNER_TEMP/md-results" \
             2>&1 | tee "$RUNNER_TEMP/md-logs/validation.log"
           cat "$RUNNER_TEMP/md-logs/validation.log" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate biased exchange, HREX, lambda exchange and MCMC
+        run: |
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            kernel="$HOME/plumed-md/lib/libplumedKernel.dylib"
+          else
+            kernel="$HOME/plumed-md/lib/libplumedKernel.so"
+          fi
+          gmx="$RUNNER_TEMP/gromacs-build/bin/gmx_mpi"
+          if [[ "$BACKEND" == tmpi ]]; then gmx="$RUNNER_TEMP/gromacs-build/bin/gmx"; fi
+          bash .ci/md-integration/gromacs/check-exchange.sh "$gmx" "$kernel" \
+            "$RUNNER_TEMP/md-results/exchange-tests" \
+            2>&1 | tee "$RUNNER_TEMP/md-logs/exchange-validation.log"
+          cat "$RUNNER_TEMP/md-logs/exchange-validation.log" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Preserve build logs, inputs, and numerical results
         if: always()

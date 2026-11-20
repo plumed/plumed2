@@ -18,7 +18,7 @@ index 1774748..dfa44f2 100644
 +                   "The loaded PLUMED kernel does not support MPI injection. Ensure that PLUMED "
 +                   "uses the same MPI library as LAMMPS, or upgrade the PLUMED kernel.");
 +#endif
-+  if ((api_version < 5) || (api_version > 13))
++  if ((api_version < 5) || (api_version > 14))
 @@ -75 +86 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
 -               "Only Plumed 2.4.x, 2.5.x, 2.6.x, 2.7.x, 2.8.x, 2.9.x, 2.10.x are tested and supported.");
 +               "Only Plumed 2.4.x, 2.5.x, 2.6.x, 2.7.x, 2.8.x, 2.9.x, 2.10.x, 2.11.x are tested and supported.");

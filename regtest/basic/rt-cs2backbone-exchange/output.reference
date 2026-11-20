@@ -1,0 +1,8 @@
+rejected-sparse-after: pass
+rejected-sparse-before: pass
+rejected-dense-after: pass
+rejected-dense-before: pass
+accepted-sparse-after: pass
+accepted-sparse-before: pass
+accepted-dense-after: pass
+accepted-dense-before: pass

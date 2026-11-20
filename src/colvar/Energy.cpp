@@ -62,8 +62,14 @@ number of required replicas.
     kernels in the 2.9 and 2.10 series stop with an error when an ENERGY CV is
     defined and the host supplies a foreign physical energy through GREX.
 
-    Native GROMACS lambda replica exchange does not supply these energies through
-    GREX and remains unsupported when ENERGY is biased. See \issue{115}.
+    Native GROMACS lambda replica exchange also requires the engine to supply
+    the cross-Hamiltonian potential energy. The updated GROMACS 2026.4 patch
+    reuses its native cross potentials. With command API version 14 or newer it
+    binds the foreign physical energy directly for a pre-update bias trial;
+    with older 2.11 kernels it supplies the existing GREX energy caches and
+    removes their physical contribution because native acceptance already
+    includes it. Older GROMACS patches do not supply this value, so a new kernel
+    alone does not fix lambda exchange with ENERGY. See \issue{115}.
 
 */
 //+ENDPLUMEDOC

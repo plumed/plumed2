@@ -370,7 +370,9 @@ private:
   /// the partner (partner_cv) and the CVs at the previous update (last_cv)
   struct {
     bool attempted=false;
+    long long step=-1;
     std::vector<double> partner_cv;
+    std::vector<double> previous_partner_cv;
     std::vector<double> last_cv;
   } exchange_;
   // variable for selector
@@ -1143,7 +1145,11 @@ void PBMetaD::calculate() {
   // The MD code does not tell whether the exchange is accepted: with ADAPTIVE=DIFF this is
   // detected at the next update, comparing the CVs with those of the partner (see updateFlexibleBins)
   if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) {
+    if(exchange_.attempted && exchange_.step<getStep()) {
+      exchange_.previous_partner_cv=exchange_.partner_cv;
+    }
     exchange_.attempted=true;
+    exchange_.step=getStep();
     exchange_.partner_cv=cv;
   }
   std::vector<double> bias;
@@ -1201,7 +1207,10 @@ void PBMetaD::updateFlexibleBins(bool nowAddAHill) {
     for(unsigned i=0; i<nargs; ++i) {
       cv[i]=getArgument(i);
     }
-    if(exchange_.attempted && exchange_.last_cv.size()==nargs) {
+    const auto* partner=(exchange_.step<getStep()
+                         ? (exchange_.attempted ? &exchange_.partner_cv : nullptr)
+                         : (exchange_.previous_partner_cv.empty() ? nullptr : &exchange_.previous_partner_cv));
+    if(partner && exchange_.last_cv.size()==nargs) {
       // the exchange has been accepted if the CVs are now closer to those of the partner than
       // to their own value at the previous update (distances in units of the current fluctuations)
       double dpartner=0.0;
@@ -1209,7 +1218,7 @@ void PBMetaD::updateFlexibleBins(bool nowAddAHill) {
       for(unsigned i=0; i<nargs; i++) {
         const std::vector<double> var=flexbin_[i].getMatrix();
         const double s2=(var.size()>0 && var[0]>0.0 ? var[0] : 1.0);
-        const double dp=difference(i,exchange_.partner_cv[i],cv[i]);
+        const double dp=difference(i,(*partner)[i],cv[i]);
         const double dl=difference(i,exchange_.last_cv[i],cv[i]);
         dpartner+=dp*dp/s2;
         down+=dl*dl/s2;
@@ -1221,7 +1230,10 @@ void PBMetaD::updateFlexibleBins(bool nowAddAHill) {
         }
       }
     }
-    exchange_.attempted=false;
+    exchange_.previous_partner_cv.clear();
+    if(exchange_.step<getStep()) {
+      exchange_.attempted=false;
+    }
     exchange_.last_cv=cv;
   }
   for(unsigned i=0; i<nargs; i++) {
@@ -1419,7 +1431,9 @@ void PBMetaD::writeCheckpoint(CheckpointWriter& w) {
       w.endSection();
     }
     w.write("exchange_attempted",exchange_.attempted);
+    w.write("exchange_step",exchange_.step);
     w.write("exchange_partner_cv",exchange_.partner_cv);
+    w.write("exchange_previous_partner_cv",exchange_.previous_partner_cv);
     w.write("exchange_last_cv",exchange_.last_cv);
     w.endSection();
   }
@@ -1475,7 +1489,15 @@ void PBMetaD::readCheckpoint(CheckpointReader& r) {
       r.endSection();
     }
     r.read("exchange_attempted",exchange_.attempted);
+    exchange_.step=-1;
+    if(r.has("exchange_step")) {
+      r.read("exchange_step",exchange_.step);
+    }
     r.read("exchange_partner_cv",exchange_.partner_cv);
+    exchange_.previous_partner_cv.clear();
+    if(r.has("exchange_previous_partner_cv")) {
+      r.read("exchange_previous_partner_cv",exchange_.previous_partner_cv);
+    }
     r.read("exchange_last_cv",exchange_.last_cv);
     r.endSection();
   }

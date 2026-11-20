@@ -174,7 +174,7 @@ that copy, enables `__PLUMED_WRAPPER_MPI_HOST_ADAPTER`, and calls `injectMPIImpl
 after creating the PLUMED object and querying its API. Older kernels receive
 one main-rank warning to use the same MPI library as LAMMPS or upgrade PLUMED;
 their original communicator setup continues. The patch also raises the tested
-API upper bound from 11 to 13 and adds PLUMED 2.11 to the supported-version
+API upper bound from 11 to 14 and adds PLUMED 2.11 to the supported-version
 message, retaining LAMMPS's rejection of newer, untested APIs. No other LAMMPS
 logic is changed.
 CI verifies that reversing the patch restores all tracked sources. CMake uses
@@ -330,3 +330,28 @@ python3 .ci/md-integration/amber/check.py --mode serial \
   --sander /path/to/build/AmberTools/src/sander/sander \
   --kernel /path/to/libplumedKernel.dylib --results /tmp/amber-serial-results
 ```
+
+## Replica exchange and expanded-ensemble coverage
+
+The pinned GROMACS 2026.4 builds run `gromacs/check-exchange.sh`. Native MPI jobs
+check ordinary biased exchange, general Hamiltonian exchange, and native lambda
+exchange with coordinate, ENERGY and depositing metadynamics biases against
+independent energy oracles. GREX evaluates both biases after the ordinary PLUMED
+update, using the same updated history with the 2.11 kernel. Candidate ENERGY
+values and native physical terms are checked without double counting.
+
+Each simulation/rank discovers its own PLUMED provider through the existing
+force-provider collection. Native MPI and thread-MPI jobs both run successful
+lambda-MCMC cases with coordinate/ENERGY biases and metadynamics, one and two
+ranks, modular and supported legacy simulators, modular restart equivalence,
+and hybrid OpenMP. Thread-MPI replica exchange remains unsupported by GROMACS.
+Simultaneous expanded ensemble and replica exchange remains unsupported.
+Replica exchange with models that evolve internal parameters in `calculate()`
+(e.g. METAINFERENCE, EMMI and RESCALE) remains outside this focused validation.
+The patch retains legacy auxiliary-evaluation semantics for advanced histories
+and samplers; the broader kernel redesign is not part of this revision.
+
+The actual-provider fixture checks retained box bindings and simultaneous
+provider/collection isolation with 200,000 concurrent lookups. Every numerical
+case retains its commands, inputs and results JSON. GPU execution requires
+separate validation on an appropriate host.

@@ -1,0 +1,10 @@
+coordination-rejected-after: pass
+coordination-rejected-before: pass
+coordination-accepted-after: pass
+coordination-accepted-before: pass
+coordination-MCMC: pass
+voronoi-rejected-after: pass
+voronoi-rejected-before: pass
+voronoi-accepted-after: pass
+voronoi-accepted-before: pass
+voronoi-MCMC: pass

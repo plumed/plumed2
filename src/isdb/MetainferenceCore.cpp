@@ -1420,7 +1420,7 @@ double MetainferenceCore::doMonteCarlo(const std::vector<double> &mean_) {
   }
 
   // do not run MC if this is a replica-exchange trial
-  if(!action_.getExchangeStep()) {
+  if(!action_.getExchangeStep() && !action_.plumed.isCalculationOnly()) {
 
     // Create std::vector of random sigma indices
     std::vector<unsigned> indices;
