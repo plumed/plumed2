@@ -201,6 +201,10 @@ struct KeepPairs {
 }
 
 void NeighborList::update(const std::vector<Vector>& positions) {
+  update(positions,*pbc_);
+}
+
+void NeighborList::update(const std::vector<Vector>& positions, const Pbc& pbc) {
   neighbors_.clear();
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
@@ -230,7 +234,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
     // would cost more than the search
     cells.setLimitCellsByAtoms(true);
     if(do_pbc_) {
-      cells.setupCells(make_const_view(positions),*pbc_);
+      cells.setupCells(make_const_view(positions),pbc);
     } else {
       // without pbc the cells must enclose the atoms: cells built on the periodic
       // box would split close pairs across the planes where scaled coordinates wrap
@@ -306,7 +310,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
               }
               // the cells contain all the pairs within the cutoff, and many more:
               // only the pairs within the cutoff are kept
-              const Vector distance=do_pbc_ ? pbc_->distance(positions[A],positions[B]) :
+              const Vector distance=do_pbc_ ? pbc.distance(positions[A],positions[B]) :
                                     delta(positions[A],positions[B]);
               if(modulo2(distance)<=d2) {
                 private_flat_nl.push_back(A);
@@ -343,7 +347,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
             pairs[j]= {index0,index1};
             distances[j]=delta(positions[index0],positions[index1]);
           }
-          pbc_->apply(VectorView(distances[0].data(),count));
+          pbc.apply(VectorView(distances[0].data(),count));
           for(unsigned j=0; j<count; ++j) {
             if(modulo2(distances[j])<=d2) {
               private_flat_nl.push_back(pairs[j].first);
@@ -355,7 +359,7 @@ void NeighborList::update(const std::vector<Vector>& positions) {
         #pragma omp for schedule(static) nowait
         for(unsigned int i=start; i<end; ++i) {
           auto [index0, index1 ] = getIndexPair(i);
-          const Vector distance=do_pbc_ ? pbc_->distance(positions[index0],positions[index1]) :
+          const Vector distance=do_pbc_ ? pbc.distance(positions[index0],positions[index1]) :
                                 delta(positions[index0],positions[index1]);
           double value=modulo2(distance);
           if(value<=d2) {
