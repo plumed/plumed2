@@ -134,7 +134,10 @@ def check():
         ):
             result = subprocess.run(command, capture_output=True, text=True)
             assert result.returncode != 0
-            assert "module.type is obsolete, use module.yml" in result.stderr
+            # CMake wraps diagnostics according to the temporary path length.
+            assert "module.type is obsolete, use module.yml" in " ".join(
+                result.stderr.split()
+            ), (command, result.stderr)
     print(
         "Module declarations: shell/Python/Make agreement; invalid headers rejected by shell/Python/CMake"
     )
