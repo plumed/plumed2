@@ -59,28 +59,47 @@ unsigned getThreadNum();
 /// get cacheline size
 unsigned getCachelineSize();
 
-/// Get a reasonable number of threads so as to access to an array of size s located at x
+/*
+How many threads a parallel loop uses.
+
+All the threads (getNumThreads()) or one, never a number in between. With the GNU
+OpenMP runtime a region with fewer threads than the previous one (but more than one)
+destroys the threads that are not needed, and the next larger region creates new ones
+(issue #415). When PLUMED runs inside an MD code these are the threads of the MD code:
+the new ones lose the core the MD code had assigned to each of them and all run on the
+core of the calling thread. Both functions below return getNumThreads() or 1.
+
+A loop is shared only when each thread gets enough work to pay for the region, which
+costs about a microsecond when the threads are awake. The thresholds assume awake threads:
+when PLUMED is called by an MD code the threads may have gone to sleep, and waking them
+costs tens of microseconds, once per step if all the regions of the step are close. Whether
+that pays is a property of the whole input, and is chosen with the number of threads.
+
+- Loops that do a few operations for each element of an array (copy, zero, sum, scale)
+  use getGoodNumThreads(array): the work is measured by the bytes of the array.
+  The default of PLUMED_CACHELINE_SIZE (512: 1 kB per thread) is lower than what these
+  loops need (16 to 32 kB per thread in a first measurement): until the default is
+  calibrated, some of them (data passing, atom copies, clearing derivatives) also
+  require a minimum number of elements.
+- Loops whose elements cost much more than reading them (a pair with a switching
+  function, the search of the neighbors of an atom, a task of an action) use
+  getGoodNumThreads(n,minPerThread) with the number of elements each thread needs.
+*/
+
+/// All the threads if each of them gets at least 2*getCachelineSize() bytes of an array of
+/// n elements of type T (the first argument only gives the type), else one.
+/// The factor two is because the array is not necessarily aligned to the cache lines.
 template<typename T>
 unsigned getGoodNumThreads(const T* /*getTheType*/,unsigned n) {
-  // this is more or less the equivalent of writing "unsigned getGoodNumThreads<T>(unsigned n)"
+  const unsigned numThreads=getNumThreads();
+  return n*sizeof(T)/(2*getCachelineSize())>=numThreads ? numThreads : 1;
+}
 
-  // a factor two is necessary since there is no guarantee that x is aligned
-  // to cache line boundary
-  unsigned m=n*sizeof(T)/(2*getCachelineSize());
-  unsigned numThreads=getNumThreads();
-  if(m>=numThreads) {
-    m=numThreads;
-  } else {
-    //it is better to use either all the active threads or only one
-    //this solves a performance problem as explained in issue #415:
-    //with the GNU OpenMP runtime a region with fewer threads than the previous one (but more
-    //than one) destroys the threads that are not needed, and the next larger region creates new
-    //ones. When PLUMED runs inside an MD code these are the threads of the MD code: the new ones
-    //lose the core the MD code had assigned to each of them and all run on the core of the
-    //calling thread. So a number in between must never be passed to num_threads
-    m=1;
-  }
-  return m;
+/// All the threads if each of them gets at least minPerThread of the n elements of a loop, else one.
+/// For loops whose elements cost much more than reading them, see above.
+inline unsigned getGoodNumThreads(const std::size_t n,const std::size_t minPerThread) {
+  const unsigned numThreads=getNumThreads();
+  return n/(minPerThread>0 ? minPerThread : 1)>=numThreads ? numThreads : 1;
 }
 
 /// Get a reasonable number of threads so as to access to vector v

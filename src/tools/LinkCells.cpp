@@ -258,8 +258,10 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   // ranges do not share the cells, nor the parts of the lists they write, and the atoms
   // of each cell are in increasing order, whatever the number of ranges and of threads.
   // Each range goes twice through the cells of all the atoms (about a nanosecond per atom),
-  // which is cheap compared to finding the cells only with enough atoms per range
-  const unsigned nranges=std::max( 1u, std::min( std::min<unsigned>( OpenMP::getNumThreads(), nat/minAtomsPerThread ), ncellstot ) );
+  // which is cheap compared to finding the cells only with enough atoms per range.
+  // All the threads, with at least minAtomsPerThread atoms each, or one (see OpenMP.h)
+  const unsigned nt=OpenMP::getGoodNumThreads( nat, minAtomsPerThread );
+  const unsigned nranges=std::max( 1u, std::min( nt, ncellstot ) );
   rangetots.resize( nranges );
   // the transposed matrices used by Pbc::realToScaled and Pbc::scaledToReal
   const Tensor invBoxT=transpose( mypbc.getInvBox() );
@@ -267,12 +269,8 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   unsigned invalid=0;
   // the three steps share one parallel region, separated by the implicit barriers of the
   // loops. No exceptions inside the parallel region: invalid cells are checked after it
-#ifdef _OPENMP
-  // without OpenMP nt would be unused (an error with -Werror)
-  // all the threads or one (see OpenMP::getGoodNumThreads): the loops over the atoms are
-  // shared by the team, the loops over the ranges work with any number of threads
-  const unsigned nt=nranges<2 ? 1 : OpenMP::getGoodNumThreads(pos.data(),nat);
-#endif
+  // the loops over the atoms are shared by the team, the loops over the ranges work
+  // with any number of threads
   #pragma omp parallel num_threads(nt)
   {
     // 1. the cell of each atom (and its position wrapped in the box)
@@ -614,8 +612,8 @@ void LinkCells::createNeighborList( unsigned nat,
   unsigned maxneigh=1;
 #ifdef _OPENMP
   // without OpenMP nt would be unused (an error with -Werror)
-  // all the threads or one, see OpenMP::getGoodNumThreads
-  const unsigned nt=pos.size()<2*minAtomsPerThreadNeighborList ? 1 : OpenMP::getGoodNumThreads(pos.data(),pos.size());
+  // the search of the neighbors of an atom costs much more than reading it (see OpenMP.h)
+  const unsigned nt=OpenMP::getGoodNumThreads( pos.size(), minAtomsPerThreadNeighborList );
 #endif
   #pragma omp parallel num_threads(nt)
   {

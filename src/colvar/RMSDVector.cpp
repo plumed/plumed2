@@ -474,8 +474,8 @@ void RMSDVector::applyNonZeroRankForces( std::vector<double>& outforces ) {
   }
 
   // Get number of threads for OpenMP
-  // all the threads, or one with few tasks (never a number in between, see OpenMP::getGoodNumThreads)
-  const unsigned nt=nactive_tasks/stride/10>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
+  // a task costs much more than reading it: at least 10 tasks per thread (see OpenMP.h)
+  [[maybe_unused]] const unsigned nt=OpenMP::getGoodNumThreads(nactive_tasks/stride,10);
 
   #pragma omp parallel num_threads(nt)
   {

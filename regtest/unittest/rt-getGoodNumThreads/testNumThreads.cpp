@@ -45,6 +45,16 @@ int main(int, char **) {
               ? "true"
               : "false")
       << '\n';
+  out << "getGoodNumThreads(pointer) with enough bytes for half of the threads returns 1: "
+      << (OpenMP::getGoodNumThreads(ptd, cachelineSize/2) == 1 ? "true" : "false") << '\n';
+  out << "Version with a minimum number of elements per thread:\n";
+  out << "getGoodNumThreads(n,10) with 10 elements per thread returns \"PLUMED_NUM_THREADS\": "
+      << (OpenMP::getGoodNumThreads(10*requestedThreads, 10) == requestedThreads ? "true" : "false") << '\n';
+  out << "getGoodNumThreads(n,10) with one element less returns 1: "
+      << (OpenMP::getGoodNumThreads(10*requestedThreads-1, 10) == 1 ? "true" : "false") << '\n';
+  out << "getGoodNumThreads(n,0) is getGoodNumThreads(n,1): "
+      << (OpenMP::getGoodNumThreads(requestedThreads, 0) == requestedThreads
+          && OpenMP::getGoodNumThreads(requestedThreads-1, 0) == 1 ? "true" : "false") << '\n';
   out << "After setting the number of threads to 3:\n";
   OpenMP::setNumThreads(3);
   out << "getNumThreads reaturns 3: "

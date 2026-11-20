@@ -243,10 +243,10 @@ void CoordinationBase::calculateBlocks() {
   const unsigned perRank=(nblocks+stride-1)/stride;
   const unsigned b0=std::min(nblocks,rank*perRank);
   const unsigned b1=std::min(nblocks,b0+perRank);
-  // the result does not depend on the number of threads: use only those that have enough pairs
+  // the result does not depend on the number of threads: threads only with a block each
+  // and at least 4096 pairs each (see OpenMP.h)
   const std::size_t npairs=std::size_t(b1-b0)*rowsPerBlock*ncols/(singleGroup?2:1);
-  // (and then all of them, never a number in between, see OpenMP::getGoodNumThreads)
-  [[maybe_unused]] const unsigned nt=std::min<std::size_t>(b1-b0,npairs/4096)>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
+  [[maybe_unused]] const unsigned nt=b1-b0<OpenMP::getNumThreads() ? 1 : OpenMP::getGoodNumThreads(npairs,4096);
 
   blockColumns.resize(std::size_t(nblocks)*ncols);
   blockValue.assign(nblocks,0.0);
@@ -390,8 +390,8 @@ void CoordinationBase::calculateList() {
   const unsigned start=std::min(nn,rank*elementsPerRank);
   const unsigned end=std::min(nn,start+elementsPerRank);
   const unsigned natoms=getNumberOfAtoms();
-  // all the threads or one, see OpenMP::getGoodNumThreads
-  const unsigned nt=(end-start)/1024>=OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
+  // the pairs are computed in batches: at least a batch per thread (see OpenMP.h)
+  const unsigned nt=OpenMP::getGoodNumThreads(end-start,coordinationBatch);
 
   threadDeriv.resize(nt);
   threadValue.assign(nt,0.0);

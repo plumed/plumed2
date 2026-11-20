@@ -65,12 +65,13 @@ public:
   };
 /// The largest value accepted by setSubdivision
   static constexpr unsigned maxSubdivision=LinkCellsView::maxSubdivision;
+/// Minimum number of atoms per thread when searching the neighbors of the atoms
+/// (createNeighborList, NeighborList::update)
+  static constexpr unsigned minAtomsPerThreadNeighborList=256;
 private:
 /// Minimum number of atoms per thread when building the lists of the atoms in the cells
 /// (see resetCollection)
   static constexpr unsigned minAtomsPerThread=1024;
-/// Minimum number of atoms per thread when building the neighbor lists in createNeighborList
-  static constexpr unsigned minAtomsPerThreadNeighborList=256;
 /// Maximum total number of cells
   static constexpr double maxNumberOfCells=1048576;
 /// With setLimitCellsByAtoms(true) the cells are at most this many times the atoms in them

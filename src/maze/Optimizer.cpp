@@ -328,8 +328,8 @@ Optimizer::Optimizer(const ActionOptions& ao)
   rank_ = comm.Get_rank();
 
   unsigned int nn = neighbor_list_->size();
-  // all the threads, or one with few pairs (never a number in between, see OpenMP::getGoodNumThreads)
-  n_threads_ = nn / stride_ / 10 >= OpenMP::getNumThreads() ? OpenMP::getNumThreads() : 1;
+  // at least 10 pairs per thread (see OpenMP.h)
+  n_threads_ = OpenMP::getGoodNumThreads(nn / stride_, 10);
 
   if (keywords.exists("OPTIMIZER_STRIDE")) {
     parse("OPTIMIZER_STRIDE", optimizer_stride_);

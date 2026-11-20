@@ -209,7 +209,6 @@ void NeighborList::update(const std::vector<Vector>& positions, const Pbc& pbc) 
   // check if positions array has the correct length
   plumed_assert(positions.size()==fullatomlist_.size());
 
-  const unsigned nt=(serial_)? 1 : OpenMP::getNumThreads();
   const unsigned stride=(serial_)? 1 : comm.Get_size();
   const unsigned rank  =(serial_)? 0 : comm.Get_rank();
   const double d2=distance_*distance_;
@@ -218,11 +217,20 @@ void NeighborList::update(const std::vector<Vector>& positions, const Pbc& pbc) 
   // concatenated in thread order, and the lists of the processes in rank order:
   // the order of the pairs does not depend on the number of threads and processes,
   // and the results are reproducible.
-  std::vector<std::vector<unsigned>> thread_flat_nl(nt);
 
   // with two lists and one of them small, the cells (sorting all the atoms) cost more than
   // one distance per pair: the plain search is used (about the same cost with 8 atoms)
   const bool useCells = useCellList_ && !(style_==NNStyle::TwoList && std::min(nlist0_,nlist1_)<=cellsMinimumGroup);
+  // Without the cells the pairs are computed in batches of batchSize
+  constexpr unsigned batchSize=1024;
+  // All the threads or one (see OpenMP.h). They share the atoms of the first list (with the
+  // cells), whose neighbors are searched, or the pairs (without), at least a batch each.
+  // The list is updated every few steps, often for a few atoms.
+  const std::size_t natomsSearched=(style_==NNStyle::TwoList ? nlist0_ : fullatomlist_.size());
+  const unsigned nt=serial_ ? 1 :
+                    useCells ? OpenMP::getGoodNumThreads(natomsSearched/stride,LinkCells::minAtomsPerThreadNeighborList) :
+                    OpenMP::getGoodNumThreads(nallpairs_/stride,batchSize);
+  std::vector<std::vector<unsigned>> thread_flat_nl(nt);
   if(useCells) {
     std::vector<unsigned> indexesForCells(fullatomlist_.size());
     std::iota(indexesForCells.begin(),indexesForCells.end(),0);
@@ -325,7 +333,6 @@ void NeighborList::update(const std::vector<Vector>& positions, const Pbc& pbc) 
     const std::size_t elementsPerRank = (nallpairs_+stride-1)/stride;
     const unsigned start= std::min<std::size_t>(rank*elementsPerRank,nallpairs_);
     const unsigned end = std::min<std::size_t>(start + elementsPerRank, nallpairs_);
-    constexpr unsigned batchSize=1024;
     const unsigned work=end>start ? end-start : 0;
     // Small lists do not amortize initializing the per-thread batch buffers.
     // PAIR lists are linear searches and also perform better without batching.
