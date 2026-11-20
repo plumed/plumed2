@@ -3,11 +3,11 @@
 # The same sums are computed with POSITION.
 LOAD FILE=LaunchTest.cpp
 
-# h depends on a constant, which is never calculated, and on p12: it is launched with a and b
+# h depends on a constant, which is never calculated, and on p12: it is launched as soon as p12 is calculated
 c01: CONSTANT VALUE=0.1
 p12: POSITION ATOM=12 NOPBC
 h: LAUNCH_TEST_ARG ARG=c01,p12.x
-# a and b are launched together, before d is calculated
+# a and b are launched as soon as the positions are available: before p12 and h, which come first in the input
 a: LAUNCH_TEST ATOMS=1,2
 d: DISTANCE ATOMS=1,2
 b: LAUNCH_TEST ATOMS=3,4

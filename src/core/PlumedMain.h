@@ -295,9 +295,15 @@ private:
   std::uint64_t forwardLoop=0;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
   std::uint64_t atomsVersion=0;
-/// Calls Action::launch() for the action at position first and for the ones that follow it and can
-/// already be calculated: the ones that depend only on actions that have been calculated
-  void launchAhead(std::size_t first);
+/// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
+/// and of the active actions that move the atoms (both increasing)
+  std::vector<std::size_t> launchQueue;
+  std::vector<std::size_t> launchBarriers;
+/// Fills launchQueue and launchBarriers at the start of the forward loop
+  void prepareLaunch();
+/// Called when the action at position done has been calculated: calls Action::launch() for the actions
+/// of launchQueue whose dependencies have all been calculated, up to the next action that moves the atoms
+  void launchReady(std::size_t done);
 public:
 /// Number of replicas, and the index of this one, as seen from every rank.
 /// Set by updateReplicaIdentity(); see getNumberOfReplicas().
