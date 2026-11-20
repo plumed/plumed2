@@ -88,6 +88,8 @@ class CLToolMain:
   Communicator&comm=*comm_fwd;
   static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
+  /// Recognized global options, also used by shell completion.
+  static std::vector<std::string> getGlobalOptions();
   CLToolMain();
   ~CLToolMain();
   /**

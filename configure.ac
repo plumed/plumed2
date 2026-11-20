@@ -1938,7 +1938,7 @@ AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
 if test -z "$BASH_COMPLETION_DIR" ; then
   AC_MSG_WARN([**** Bash completion for plumed will not be installed, please add the following two lines to your bashrc])
   AC_MSG_WARN([**** _$program_name() { eval "\$($program_name --no-mpi completion 2>/dev/null)";}])
-  AC_MSG_WARN([**** complete -F _$program_name -o default $program_name])
+  AC_MSG_WARN([**** complete -F _$program_name -o default -o filenames $program_name])
 fi
 
 if test $mpi = true; then

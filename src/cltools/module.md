@@ -19,7 +19,7 @@ In case this does not work, you might have to add the following lines to your .b
 
 ````
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
-complete -F _plumed -o default plumed
+complete -F _plumed -o default -o filenames plumed
 ````
 
 ## Effect
@@ -57,6 +57,11 @@ Also notice that every time you use the `<TAB>` key to autocomplete the command 
 This should allow the correct commands and options to be reported depending on the exact `plumed` command
 in the current execution path. For instance, if you have multiple PLUMED versions installed with
 env modules, you should be able to see the commands available in the currently loaded version.
+
+Explicit global `--load` and `--load-module` selections before the tool name are
+also used for completion. The generated function queries the same executable
+again with those modules loaded, so the profile snippets above need no changes.
+
 Clearly, this feature will only be available if `plumed` can run on this machine (that is: will not work
 if you are cross compiling). This is not a problem since you are not expecting to run the `plumed` command
 in this specific case.
@@ -66,12 +71,14 @@ in this specific case.
 At configure time if the variable `BASH_COMPLETION_DIR` is defined it will be used to decide where PLUMED
 autocompletion should be installed. Otherwise, configure will look for the presence of the `bash-completion` package
 and, in case it is installed on the same prefix as PLUMED, also PLUMED autocompletion will be installed.
-Finally, if none of these two conditions are satisfied, autocompletion will not be enabled. You will
+The installed completion filename and registration use the configured executable
+name, including a `--program-suffix`. Uninstall also removes that completion file.
+Finally, if none of these two conditions are satisfied, autocompletion will not be installed automatically. You will
 have to change your bashrc file once adding the following lines:
 
 ````
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
-complete -F _plumed -o default plumed
+complete -F _plumed -o default -o filenames plumed
 ````
 
 The command `plumed completion` just writes on its standard output the body of a bash function that is
@@ -83,6 +90,19 @@ will be used. This is what will happen if you load an older PLUMED version for w
 In future PLUMED versions the `plumed completion` command might return more sophisticated functions. You should
 be able to benefit of these features without ever changing your bash configuration file again.
 
+Module names are suggested after `--load-module`, while `--load` suggests shared
+libraries and directories. Both use the context of the executable being completed.
+Completion preserves shell options and handles quoted paths and Readline word
+breaks such as `=`. Existing profile snippets remain supported; on Bash 3 an old
+registration is upgraded to filename quoting on its first filename completion,
+using Bash's default filename fallback for that invocation.
+
+The `completion --list commands`, `--list global-options`, `--list options
+--command TOOL`, `--list modules`, and `--list installed-modules` queries return
+plain candidates, one per line. `modules` includes the kernel and visible loaded
+modules; `installed-modules` also includes discovered registrations without loading
+their libraries. Selection still performs compatibility/dependency checks.
+
 ## Multiple versions and suffixes
 
 If you have multiple versions of PLUMED installed in separate env modules there is nothing more to do.
@@ -92,7 +112,7 @@ consistently add more lines to your profile file. For instance, if you installed
 
 ````
 _plumed() { eval "$(plumed --no-mpi completion 2>/dev/null)";}
-complete -F _plumed -o default plumed
+complete -F _plumed -o default -o filenames plumed
 _plumed_mpi() { eval "$(plumed_mpi --no-mpi completion 2>/dev/null)";}
-complete -F _plumed_mpi -o default plumed_mpi
+complete -F _plumed_mpi -o default -o filenames plumed_mpi
 ````

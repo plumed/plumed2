@@ -15,5 +15,6 @@ manual --vim: ok
 manual --spelling: ok
 manual of a cltool: ok
 completion: ok
+completion options: ok
 gen_json: ok
 gen_json: valid json

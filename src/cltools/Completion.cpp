@@ -23,7 +23,10 @@
 #include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "config/Config.h"
-#include "core/ActionRegister.h"
+#include "core/CLToolMain.h"
+#include "core/ModuleLoader.h"
+#include "tools/DLLoader.h"
+#include <sstream>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -33,11 +36,12 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS completion
 /*
-Dumps the body of a bash function to be used for auto completion.
+Generate a Bash completion function body or list completion candidates.
 
-You typically will not need to use this command it is involved during complation and is
-used to construct everything that is required for the autocompletion functionality that
-is described [here](module_cltools.md).
+With no options this command emits the function body used by the profile snippet
+described [here](module_cltools.md). The snippet queries the executable at completion
+time, including explicit global module selections. `--list` emits plain candidates
+for the completion function, and `--command` selects a tool for its option list.
 
 ## Examples
 
@@ -64,6 +68,8 @@ PLUMED_REGISTER_CLTOOL(Completion,"completion")
 
 void Completion::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
+  keys.add("optional","--list","list commands, global-options, options, modules or installed-modules, one per line");
+  keys.add("optional","--command","tool whose options should be listed");
 }
 
 Completion::Completion(const CLToolOptions& co ):
@@ -77,42 +83,67 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
 // cppcheck-suppress syntaxError
     , 0x00
   };
-  std::fprintf(out,"local cmds=\"help -h --help modules");
-// Build list of available C++ tools:
-  std::vector<std::string> availableCxx=cltoolRegister().list();
-// Build list of available shell tools:
-  std::vector<std::string> tmp=Tools::ls(std::string(config::getPlumedRoot()+"/scripts"));
-  for(unsigned j=0; j<tmp.size(); ++j) {
-    size_t ff=tmp[j].find(".sh");
-    if(ff==std::string::npos) {
-      tmp[j].erase();
+  std::string list, command;
+  parse("--list",list);
+  parse("--command",command);
+  if(!list.empty()) {
+    std::vector<std::string> candidates;
+    if(list=="commands") {
+      candidates=cltoolRegister().list();
+      candidates.push_back("help");
+      candidates.push_back("modules");
+      for(auto script:Tools::ls(config::getPlumedRoot()+"/scripts")) {
+        if(script.size()>3 && script.compare(script.size()-3,3,".sh")==0) {
+          candidates.push_back(script.substr(0,script.size()-3));
+        }
+      }
+    } else if(list=="global-options") {
+      candidates=CLToolMain::getGlobalOptions();
+    } else if(list=="options") {
+      if(command=="modules") {
+        candidates= {"--module", "--list", "--has", "--has-feature", "-q", "--help"};
+      } else {
+        candidates=cltoolRegister().getKeys(command);
+        static const char scripts [] = {
+#include "completion-scripts.h"
+          , 0x00
+        };
+        std::istringstream rows(scripts);
+        std::string row;
+        while(std::getline(rows,row)) {
+          const auto tab=row.find('\t');
+          if(tab!=std::string::npos && row.substr(0,tab)==command) {
+            std::istringstream options(row.substr(tab+1));
+            std::string option;
+            while(options>>option) {
+              candidates.push_back(option);
+            }
+          }
+        }
+      }
+    } else if(list=="modules") {
+      DLLoader loader;
+      ModuleLoader::inheritContext(loader);
+      candidates=ModuleLoader::modules(loader);
+    } else if(list=="installed-modules") {
+      candidates=ModuleLoader::installedModules();
     } else {
-      tmp[j].erase(ff);
+      std::fprintf(stderr,"Unknown completion list: %s\n",list.c_str());
+      return 1;
     }
-  }
-  for(unsigned j=0; j<availableCxx.size(); j++) {
-    std::fprintf(out," %s",availableCxx[j].c_str());
-  }
-  for(unsigned j=0; j<tmp.size(); ++j)
-    if(tmp[j].length()>0) {
-      std::fprintf(out," %s",tmp[j].c_str());
+    for(auto candidate:candidates) {
+      if(list!="options") {
+        std::fprintf(out,"%s\n",candidate.c_str());
+        continue;
+      }
+      std::replace(candidate.begin(),candidate.end(),'/',' ');
+      std::istringstream aliases(candidate);
+      std::string alias;
+      while(aliases>>alias) {
+        std::fprintf(out,"%s\n",alias.c_str());
+      }
     }
-  std::fprintf(out,"\"\n");
-  std::fprintf(out,"local cmd_keys_modules=\"--module --list --has --has-feature -q --help\"\n");
-
-  //here I am looping on the copies,
-  //since I want to preprocess the string before printing it
-  for(std::string cmd:availableCxx) {
-    std::vector<std::string> keys=cltoolRegister().getKeys(cmd);
-// handle - sign (convert to underscore)
-    std::replace(cmd.begin(),cmd.end(),'-','_');
-    std::fprintf(out,"local cmd_keys_%s=\"",cmd.c_str());
-    for(std::string key: keys) {
-// handle --help/-h
-      std::replace(key.begin(),key.end(),'/',' ');
-      std::fprintf(out," %s",key.c_str());
-    }
-    std::fprintf(out,"\"\n");
+    return 0;
   }
 
   std::fprintf(out,"%s\n",completion);
@@ -123,7 +154,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
                "## ADD THESE COMMANDS TO YOUR .bashrc FILE:\n"
                "############################################\n"
                "# _%s() { eval \"$(%s --no-mpi completion 2>/dev/null)\";}\n"
-               "# complete -F _%s -o default %s\n"
+               "# complete -F _%s -o default -o filenames %s\n"
                "############################################\n",
                plumedName.c_str(),
                plumedName.c_str(),
