@@ -259,9 +259,10 @@ void LinkCells::resetCollection(LinkCells::CellCollection &collection,
   // of each cell are in increasing order, whatever the number of ranges and of threads.
   // Each range goes twice through the cells of all the atoms (about a nanosecond per atom),
   // which is cheap compared to finding the cells only with enough atoms per range.
-  // All the threads, with at least minAtomsPerThread atoms each, or one (see OpenMP.h)
+  // All the threads, with at least minAtomsPerThread atoms each, or one (see OpenMP.h),
+  // and at most one range per thread
   const unsigned nt=OpenMP::getGoodNumThreads( nat, minAtomsPerThread );
-  const unsigned nranges=std::max( 1u, std::min( nt, ncellstot ) );
+  const unsigned nranges=std::max( 1u, std::min( { nt, ncellstot, nat/minAtomsPerRange } ) );
   rangetots.resize( nranges );
   // the transposed matrices used by Pbc::realToScaled and Pbc::scaledToReal
   const Tensor invBoxT=transpose( mypbc.getInvBox() );
