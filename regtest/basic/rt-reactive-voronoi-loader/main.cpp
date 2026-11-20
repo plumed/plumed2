@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -132,11 +133,50 @@ void exactNeighborSettings() {
         "only the actions with identical neighbor settings should share");
 }
 
+// Action::launch(): a, s and c start their assignment before q is calculated; s and q share
+// their evaluation (q uses the one started by s); c comes after WRAPAROUND, so at the first step its
+// launch is cancelled and it is computed again. The test backend fails if finishForward() is called
+// without a forward(), and gives the occupancy only in finishForward().
+void launched() {
+  const std::string voronoi=": "+input+" BACKEND=CUDA";
+  {
+    System system("launched");
+    system.read("LOAD FILE="+backend);
+    system.read("a"+voronoi+" NO_SHARE");
+    system.read("s"+voronoi);
+    system.read("WRAPAROUND ATOMS=2 AROUND=1");
+    system.read("c"+voronoi+" NO_SHARE");
+    system.declare(" BACKEND=CUDA");
+    system.read("PRINT ARG=a,s,c FILE=launched.colvar");
+    system.evaluate(0);
+    system.positions[3]=0.6;
+    system.evaluate(1);
+  }
+  const std::string report=log("launched");
+  check(report.find("started as soon as possible (launch)")!=std::string::npos &&
+        report.find("sharing reactive Voronoi geometry with s")!=std::string::npos,
+        "launched: the actions should be launched, and q should share with s");
+  std::ifstream colvar("launched.colvar");
+  std::string line;
+  unsigned rows=0;
+  while(std::getline(colvar,line)) {
+    if(line.empty() || line[0]=='#') {
+      continue;
+    }
+    double time,a,s,c;
+    std::istringstream(line)>>time>>a>>s>>c;
+    check(a==1.0 && s==1.0 && c==1.0,"launched: wrong values "+line);
+    ++rows;
+  }
+  check(rows==2,"launched: wrong number of steps");
+}
+
 }
 
 int main() {
   try {
     exactNeighborSettings();
+    launched();
     const std::string cuda=" BACKEND=CUDA";
     const std::string automatic=" BACKEND=AUTO";
     positive("full",cuda,"selected CUDA (device 0",0);

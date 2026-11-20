@@ -181,6 +181,8 @@ protected:
     std::vector<PairData> pairs;
     std::vector<double> occupancy;
     std::shared_ptr<ReactiveVoronoiBackend> cuda;
+    // the backend was asked for the occupancy, and finishAssignment() has not waited for it yet
+    bool pending=false;
   };
 
   struct CudaNeighbors {
@@ -218,7 +220,26 @@ protected:
   void logBackend(const std::string&, const std::string&);
   std::shared_ptr<ReactiveVoronoiBackend> cudaContext();
   bool sharedCoordinatesMatch() const;
-  Assignment computeAssignment();
+  void resetSharedEvaluation();
+  // with wait false only the work of the backend is started (nothing on the CPU)
+  Assignment computeAssignment(bool wait=true);
+  void finishAssignment(Assignment&);
+  // calls the backend, with the error messages of the action
+  template<typename Call> void callBackend(Call call) {
+    // Calculation failures propagate for both CUDA and AUTO. Invalid geometry
+    // must remain an error after a backend has been successfully initialized.
+    try {
+      call();
+    } catch(const ReactiveVoronoiBackend::InvalidPair& failure) {
+      std::ostringstream message;
+      message << failure.what() << " step=" << getStep()
+              << " center_atom=" << centers_.at(failure.center).serial()
+              << " assigned_atom=" << assigned_.at(failure.assigned).serial();
+      error(message.str());
+    } catch(const std::exception& failure) {
+      error(std::string(failure.what())+" step="+std::to_string(getStep()));
+    }
+  }
   void packCudaNeighbors(CudaNeighbors&);
 
   bool pbc_;
@@ -261,6 +282,9 @@ protected:
 public:
   explicit SoftVoronoiBase(const ActionOptions&);
   void prepare() override;
+  // the assignment on the GPU is started here, see Action::launch()
+  void launch() override;
+  void cancelLaunch() override;
   ~SoftVoronoiBase() override;
 };
 
@@ -604,6 +628,10 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
   }
   addValueWithDerivatives();
   setNotPeriodic();
+  if(backend_!="CPU") {
+    // the assignment on the GPU is started as soon as the atoms are available
+    setLaunchable();
+  }
   // PLUMED 2.8 needs the full atom list to preserve absolute-index mapping.
   requestAtoms(neighborList_->getFullAtomList());
   log.printf("  %s assigns %u atoms over %u centers with kappa %g\n",
@@ -718,23 +746,74 @@ bool SoftVoronoiBase::sharedCoordinatesMatch() const {
   return true;
 }
 
+void SoftVoronoiBase::finishAssignment(Assignment& assignment) {
+  if(assignment.pending) {
+    assignment.pending=false;
+    callBackend([&]() {
+      assignment.cuda->finishForward(assignment.occupancy.data());
+    });
+  }
+}
+
+// The cache of the shared evaluation is emptied when the positions or the box change
+void SoftVoronoiBase::resetSharedEvaluation() {
+  shared_->valid=false;
+  shared_->geometry.clear();
+  shared_->assignments.clear();
+  shared_->positions=getPositions();
+  shared_->box=getPbc().getBox();
+  shared_->step=getStep();
+}
+
+void SoftVoronoiBase::launch() {
+  // only the assignment is started: its derivatives need the value of the action
+  if(!shared_ || shared_->consumers==1) {
+    independent_=computeAssignment(false);
+    evaluations_+=independent_.pending ? 1 : 0;
+    return;
+  }
+  if(!sharedCoordinatesMatch()) {
+    resetSharedEvaluation();
+  } else if(shared_->assignments.count(kappa_)) {
+    // started (or computed) by another action
+    return;
+  }
+  Assignment result=computeAssignment(false);
+  if(result.pending) {
+    ++evaluations_;
+    shared_->assignments.emplace(kappa_,std::move(result));
+    shared_->valid=true;
+  }
+}
+
+void SoftVoronoiBase::cancelLaunch() {
+  // the atoms have been moved after launch(): the assignment is computed again (the work queued
+  // by launch() comes first on the same stream). A shared one is discarded when the positions differ
+  if(!shared_ || shared_->consumers==1) {
+    independent_.pending=false;
+  }
+}
+
 const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
   if(!shared_ || shared_->consumers==1) {
-    ++evaluations_;
-    independent_=computeAssignment();
+    // launch() started it, if it is pending
+    if(!independent_.pending) {
+      ++evaluations_;
+      independent_=computeAssignment();
+    }
+    finishAssignment(independent_);
     return independent_;
   }
   if(!sharedCoordinatesMatch()) {
-    shared_->valid=false;
-    shared_->geometry.clear();
-    shared_->assignments.clear();
-    shared_->positions=getPositions();
-    shared_->box=getPbc().getBox();
-    shared_->step=getStep();
+    resetSharedEvaluation();
   } else {
     const auto found=shared_->assignments.find(kappa_);
     if(found!=shared_->assignments.end()) {
-      ++hits_;
+      if(found->second.pending) {
+        finishAssignment(found->second);
+      } else {
+        ++hits_;
+      }
       return found->second;
     }
   }
@@ -839,8 +918,11 @@ void SoftVoronoiBase::packCudaNeighbors(CudaNeighbors& neighbors) {
   }
 }
 
-SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
+SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment(const bool wait) {
   const auto context=cudaContext();
+  if(!context && !wait) {
+    return Assignment();
+  }
   auto& neighbors=shared_ ? shared_->cudaNeighbors : independentCudaNeighbors_;
   // CPU and CUDA use the same rebuild and safe-skin criteria.
   if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
@@ -861,28 +943,22 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
         positions[3*atom+axis]=getPosition(atom)[axis];
       }
     }
-    // Calculation failures propagate for both CUDA and AUTO. Invalid geometry
-    // must remain an error after a backend has been successfully initialized.
-    try {
+    if(neighborCutoff_>0 && neighbors.offsets.empty()) {
+      packCudaNeighbors(neighbors);
+    }
+    callBackend([&]() {
       if(neighborCutoff_>0) {
-        if(neighbors.offsets.empty()) {
-          packCudaNeighbors(neighbors);
-        }
         const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
                             std::numeric_limits<double>::infinity();
-        context->forwardNeighbors(positions.data(),getPbc(),pbc_,kappa_,result.occupancy.data(),
+        context->forwardNeighbors(positions.data(),getPbc(),pbc_,kappa_,
                                   cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
       } else {
-        context->forward(positions.data(),getPbc(),pbc_,kappa_,result.occupancy.data());
+        context->forward(positions.data(),getPbc(),pbc_,kappa_);
       }
-    } catch(const ReactiveVoronoiBackend::InvalidPair& failure) {
-      std::ostringstream message;
-      message << failure.what() << " step=" << getStep()
-              << " center_atom=" << centers_.at(failure.center).serial()
-              << " assigned_atom=" << assigned_.at(failure.assigned).serial();
-      error(message.str());
-    } catch(const std::exception& failure) {
-      error(std::string(failure.what())+" step="+std::to_string(getStep()));
+    });
+    result.pending=true;
+    if(wait) {
+      finishAssignment(result);
     }
     return result;
   }
@@ -1579,7 +1655,10 @@ selected backend. CUDA supports a single MPI rank with axis-aligned
 orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
 applies the same cutoff at each evaluation. OPES, scalar reductions and direct
 distance/position terms execute on CPU. Floating-point CUDA reductions may
-differ in the last digits between runs.
+differ in the last digits between runs. With CUDA or AUTO the assignment on the
+GPU is started in advance, so that it can overlap with the work of other actions
+(see PLUMED\_LAUNCH in [the page on actions](actions.md)); its derivatives are
+computed when the action is reached.
 
 The plugin README describes compilation, device selection and examples.
 Choose a backend using matched numerical checks and workload timings.
