@@ -33,14 +33,18 @@
 
 #include <algorithm>
 #include <cmath>
+#ifndef __HIP__
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_reduce.cuh>
+#endif
 #include <memory>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#ifndef __HIP__
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#endif
 
 // cfloat for DLB_EPSILON and FLT_EPSILON
 #include <cfloat>
@@ -257,9 +261,9 @@ template <typename calculateFloat>
 __device__ __forceinline__ void warpReduce3 (calculateFloat (&v)[3]) {
 #pragma unroll
   for (unsigned offset = 16; offset > 0; offset /= 2) {
-    v[0] += __shfl_down_sync (0xffffffffu, v[0], offset);
-    v[1] += __shfl_down_sync (0xffffffffu, v[1], offset);
-    v[2] += __shfl_down_sync (0xffffffffu, v[2], offset);
+    v[0] += __shfl_down_sync (CUDAHELPERS::warpMask(), v[0], offset, 32);
+    v[1] += __shfl_down_sync (CUDAHELPERS::warpMask(), v[1], offset, 32);
+    v[2] += __shfl_down_sync (CUDAHELPERS::warpMask(), v[2], offset, 32);
   }
 }
 
