@@ -35,7 +35,8 @@ function plumed_regtest_after(){
   cltools_check "manual --vim" "ATOMS" $plumed_nompi manual --action DISTANCE --vim
   cltools_check "manual --spelling" "ATOMS" $plumed_nompi manual --action DISTANCE --spelling
   cltools_check "manual of a cltool" "plumed" $plumed_nompi manual --action driver
-  cltools_check "completion" "cmd_keys_driver" $plumed_nompi completion
+  cltools_check "completion" "complete -F" $plumed_nompi completion
+  cltools_check "completion options" "^--plumed$" $plumed_nompi completion --list options --command driver
   cltools_check "gen_json" '"DISTANCE"' $plumed_nompi gen_json --actions actions.txt
 # the output of gen_json should be valid json
   $plumed_nompi gen_json --actions actions.txt > syntax.json 2> /dev/null

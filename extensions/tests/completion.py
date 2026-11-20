@@ -2,6 +2,7 @@
 
 import os
 import shlex
+import shutil
 import tempfile
 from pathlib import Path
 import subprocess
@@ -164,16 +165,39 @@ def check_installation(shell, program, root, env):
     source = Path(__file__).resolve().parents[2]
     with tempfile.TemporaryDirectory(dir=root, prefix="bash-install-") as scratch:
         stage = Path(scratch)
+        # Conda tests an installed package from an unconfigured checkout.
+        # Exercise the actual Makefile in a private tree with explicit install
+        # paths, independently of any developer build/configuration snapshot.
+        fixture = stage / "source"
+        for relative in (
+            "src/lib/Makefile",
+            "src/lib/bash.completion",
+            "src/maketools/find_modules.sh",
+            "src/maketools/make.rules",
+            "src/maketools/confirm_uninstall",
+        ):
+            target = fixture / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source / relative, target)
+        (fixture / "scripts").mkdir()
+        (fixture / "Makefile.conf").write_text(
+            "GCCDEP=c++\n"
+            "SOEXT=" + env["TEST_SOEXT"] + "\n"
+            "bindir=/prefix/bin\nlibdir=/prefix/lib\n"
+            "includedir=/prefix/include\nhtmldir=/prefix/share/doc/plumed\n"
+        )
         completions = stage / "prefix/share/bash-completion/completions"
         binary = stage / "prefix/bin"
         binary.mkdir(parents=True)
+        unrelated = binary / "unrelated"
+        unrelated.write_text("keep this file\n")
         names = ("plumed", "plumed_mpi")
         for name in names:
             subprocess.run(
                 [
                     "make",
                     "-C",
-                    str(source / "src/lib"),
+                    str(fixture / "src/lib"),
                     "install-bash-completion",
                     "DESTDIR=" + str(stage),
                     "BASH_COMPLETION_DIR=/prefix/share/bash-completion/completions",
@@ -268,7 +292,7 @@ printf '%s\n' "${COMPREPLY[@]}"
                 [
                     "make",
                     "-C",
-                    str(source / "src/lib"),
+                    str(fixture / "src/lib"),
                     "uninstall",
                     "DESTDIR=" + str(stage),
                     "BASH_COMPLETION_DIR=/prefix/share/bash-completion/completions",
@@ -281,4 +305,5 @@ printf '%s\n' "${COMPREPLY[@]}"
                 timeout=30,
             )
             assert not (completions / name).exists(), name
-            assert (binary / name).exists(), name
+            assert not (binary / name).exists(), name
+            assert unrelated.read_text() == "keep this file\n"
