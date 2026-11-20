@@ -341,9 +341,9 @@ def main():
                 load=mode in ("cuda", "auto"),
             )
             assert code != 0, directory
-            assert re.search(
-                expected, (directory / "stdout.log").read_text(), re.I
-            ), directory
+            assert re.search(expected, (directory / "stdout.log").read_text(), re.I), (
+                directory
+            )
             results["negative"].append(dict(case=name, mode=mode, returncode=code))
     for name, changed_atom, definition in [
         ("coincident-assigned", 4, "VORONOI_COORDINATION " + common),
@@ -390,9 +390,9 @@ def main():
                 reference = data
                 continue
             log = (directory / "stdout.log").read_text()
-            assert (
-                "selected CPU" in log and "No CUDA device is available" in log
-            ), directory
+            assert "selected CPU" in log and "No CUDA device is available" in log, (
+                directory
+            )
             errors = {
                 key: compare(reference[key], data[key], directory / key) for key in data
             }
