@@ -88,7 +88,7 @@ try:
                 if shell
                 else b"\n"
             )
-            assert decode("completion-scripts.xxd") == expected
+            assert decode("completion-scripts.h") == expected
         catalogue = Path(directory) / "ModuleMap.inc"
         script = Path(directory) / "catalogue.cmake"
         script.write_text(

@@ -105,7 +105,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
       } else {
         candidates=cltoolRegister().getKeys(command);
         static const char scripts [] = {
-#include "completion-scripts.xxd"
+#include "completion-scripts.h"
           , 0x00
         };
         std::istringstream rows(scripts);

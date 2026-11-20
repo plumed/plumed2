@@ -222,7 +222,7 @@ function(plumed_generate_config src_root out_dir)
   message(STATUS "  Config.inc / version.h / Makefile.conf.xxd (version ${PLUMED_VERSION_LONG}, git ${PLUMED_VERSION_GIT})")
 endfunction()
 
-# --- completion.xxd / completion-scripts.xxd ------------------------------
+# --- completion.xxd / completion-scripts.h ------------------------------
 # Match src/cltools/Makefile: keep the function body separate from the
 # shell-neutral script-option records. Bash is optional on Windows; without
 # it, embed an empty catalogue (a newline keeps the C++ byte array nonempty).
@@ -249,7 +249,7 @@ function(plumed_generate_completion src_root out_dir)
   endif()
   set(_tmp "${out_dir}/completion-scripts.txt")
   file(WRITE "${_tmp}" "${_content}")
-  plumed_xxd_file("${_tmp}" "${out_dir}/completion-scripts.xxd")
+  plumed_xxd_file("${_tmp}" "${out_dir}/completion-scripts.h")
   file(REMOVE "${_tmp}")
-  message(STATUS "  completion.xxd / completion-scripts.xxd (bash: ${_bash})")
+  message(STATUS "  completion.xxd / completion-scripts.h (bash: ${_bash})")
 endfunction()

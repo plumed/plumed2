@@ -132,7 +132,7 @@ set(PPM_INC ${PLUMED_GEN}/PlumedMainEnum.inc ${PLUMED_GEN}/PlumedMainMap.inc
             ${PLUMED_GEN}/ActionDescriptions.inc)
 set(CONFIG_OUT ${PLUMED_GEN}/Config.inc ${PLUMED_GEN}/version.h
                ${PLUMED_GEN}/Makefile.conf.xxd ${PLUMED_GEN}/ModuleBuild.inc)
-set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd ${PLUMED_GEN}/completion-scripts.xxd)
+set(COMPLETION_XXD ${PLUMED_GEN}/completion.xxd ${PLUMED_GEN}/completion-scripts.h)
 # The module map is built from every module source; make the generation
 # command depend on them so that it is rerun when actions are added/removed.
 file(GLOB _generator_inputs CONFIGURE_DEPENDS

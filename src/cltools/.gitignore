@@ -10,3 +10,6 @@
 !/*.sh
 !/module.md
 !/module.yml
+
+# Generated completion option records.
+/completion-scripts.h
