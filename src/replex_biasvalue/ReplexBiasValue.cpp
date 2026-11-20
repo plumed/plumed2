@@ -59,10 +59,15 @@ steps. Using NEX=2 ensures all neighboring pairs are attempted once per exchange
 step.
 
 By default the number of variables $N$ provided with ARG should match the number
-of replicas in the multi-simulation $M$, and will correspond to a different bias
+of replicas $M$ in the multi-simulation, and will correspond to a different bias
 each. Alternatively, the bias ladder can be constructed as any linear
 combination of the $N$ input variables. In that case, the COEFFICIENTS keyword
-should specify the appropriate $M \times N$ matrix (see examples below).
+should specify the appropriate $M \times N$ matrix $(c_{ij})$ (see examples below)
+and biases $i = 1, ..., M$ will be computed as
+
+$$
+V_i = \sum_j^N c_{ij} x_j.
+$$
 
 One can also perform multidimensional replica exchange on a grid. In this case
 one must provide a SHAPE keyword specifying the size of each of the $D$
@@ -82,12 +87,13 @@ order starting from the last one.
     single common PLUMED input file and avoiding the `@replicas:` syntax.
 
 !!! note
-    When running with GROMACS, use
+    This action cannot be combined with replica exchange provided by the MD
+    code. For example, when running with GROMACS, use
     ```bash
     mdrun -multidir … -plumed …
     ```
-    *without* `-replex`. This action replaces GROMACS’s replica exchange and the
-    two should not be combined.
+    *without* `-replex`.
+
 
 ## Examples
 
@@ -100,6 +106,7 @@ cv1: DISTANCE ATOMS=1,2
 cv2: DISTANCE ATOMS=3,4
 #ENDHIDDEN
 
+# 4 replicas switching from cv1 to cv2
 bias: REPLEX_BIASVALUE ...
   ARG=cv1,cv2
   COEFFICIENTS={
@@ -109,10 +116,12 @@ bias: REPLEX_BIASVALUE ...
     {0.0 1.0}
   }
   PACE=100
+  NEX=10
+  SEED=42
 ...
 ```
 
-If $N=1$ a vector can be given to imply different scalings of the same bias
+If $N=1$, a vector can be given to imply different scalings of the same bias
 function:
 
 ```plumed
@@ -149,6 +158,8 @@ bias: REPLEX_BIASVALUE ...
   #   {  0    0    0    0  1.0}
   # }
   PACE=100
+  NEX=100
+  SEED=1312
 ...
 ```
 
@@ -215,7 +226,7 @@ and vice versa corresponds to finding the inverse permutation, that is the
 permutation that sorts the indices, e.g. `np.argsort`).
 
 ```bash
-# This should be the inverse operation:
+# This should be the inverse operation to the previous one
 gmx trjcat -f rep?/muxed.xtc -demux rep0/replica_index.xvg -o rep?/traj.xtc
 ```
 
@@ -226,11 +237,6 @@ statistics are given (accepted/attempted, acceptance ratio, average acceptance
 probability), counted over this run only. The VERBOSE flag can be used to output
 statistics after each exchange step (average over NEX attempts).
 
-## Output components
-
-The current bias index, `<label>.index`, can be useful for printing with
-[PRINT](PRINT.md). The contribution of each input variable (weighted by its
-corresponding coefficient) can be accessed with `<label>.<arg>_bias`.
 
 ## Restart
 
@@ -380,6 +386,7 @@ void ReplexBiasValue::registerKeywords(Keywords &keys) {
   keys.use("RESTART");
   keys.addOutputComponent("_bias", "default", "scalar",
                           "the contribution of each argument to the bias, "
+                          "scaled by the coefficient, "
                           "named after the argument");
   keys.addOutputComponent("index", "default", "scalar",
                           "the index of the bias currently applied on this replica");
