@@ -182,7 +182,7 @@ loaded while PLUMED uses it, and the host must supply communicators compatible w
 
 ### Overlapping the work of GPU actions
 
-Some actions that run on a GPU (e.g. the ones in `plugins/cudaCoord` and `plugins/openaccPTM`) start their work as soon as the
+Some actions that run on a GPU (e.g. the ones in `plugins/cudaCoord` and `plugins/openaccPTM`, and [SAXS](SAXS.md) with `USEGPU`) start their work as soon as the
 actions they depend on have been calculated, and wait for its result only when PLUMED reaches them in the input. In this way the work of several of them
 overlaps, also with the actions computed on the CPU in between. The log says so for each of these actions. To compare timings, or to debug,
 you can switch this off by setting the environment variable PLUMED\_LAUNCH to `no`: the results are the same.

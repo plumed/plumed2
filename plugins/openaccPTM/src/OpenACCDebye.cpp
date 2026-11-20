@@ -38,8 +38,9 @@ namespace isdb {
 
 namespace {
 
-/// All the transfers and the kernels of a call are queued here, the host waits once
-constexpr int saxsQueue=1;
+/// All the transfers and the kernels are queued here, the host waits once in finish()
+/// (another queue than the one of the other actions of the plugin, so that their work can overlap)
+constexpr int saxsQueue=2;
 
 /// Uploads data to a device buffer only if it differs from the previous upload
 /// (the form factors change only when the solvation is updated, the q values never).
@@ -227,24 +228,26 @@ class OpenACCDebye :
   std::vector<double> hsum_;
   std::vector<double> hgrad_;
   std::vector<double> hforces_;
-  /// sizes and rows of the last compute, used by contract
+  /// sizes and rows of the last start, used by finish and contract
   std::size_t n_=0;
   std::size_t numq_=0;
   std::size_t nmine_=0;
   std::size_t first_=0;
   std::size_t stride_=1;
   bool computed_=false;
+  /// the derivatives were downloaded by start
+  bool deriv_=false;
 public:
   explicit OpenACCDebye(Action& action);
   ~OpenACCDebye() override;
   OpenACCDebye(const OpenACCDebye&)=delete;
   OpenACCDebye& operator=(const OpenACCDebye&)=delete;
-  void compute(const std::vector<Vector>& pos,
-               const std::vector<double>& ff,
-               const std::vector<double>& q,
-               unsigned first, unsigned stride,
-               std::vector<double>& sum,
-               std::vector<Vector>* deriv) override;
+  void start(const std::vector<Vector>& pos,
+             const std::vector<double>& ff,
+             const std::vector<double>& q,
+             unsigned first, unsigned stride,
+             bool deriv) override;
+  void finish(std::vector<double>& sum, std::vector<Vector>* deriv) override;
   void contract(const std::vector<double>& w,
                 std::vector<Vector>& forces) override;
 };
@@ -260,24 +263,22 @@ OpenACCDebye::~OpenACCDebye() {
   buf_.reset();
 }
 
-void OpenACCDebye::compute(const std::vector<Vector>& pos,
-                           const std::vector<double>& ff,
-                           const std::vector<double>& q,
-                           const unsigned first, const unsigned stride,
-                           std::vector<double>& sum,
-                           std::vector<Vector>* deriv) {
+void OpenACCDebye::start(const std::vector<Vector>& pos,
+                         const std::vector<double>& ff,
+                         const std::vector<double>& q,
+                         const unsigned first, const unsigned stride,
+                         const bool deriv) {
   const std::size_t n=pos.size();
   const std::size_t numq=q.size();
   plumed_assert(ff.size()==n*numq);
-  plumed_assert(sum.size()==numq);
   plumed_assert(stride>0);
-  plumed_assert(!deriv || deriv->size()==n*numq);
   n_=n;
   numq_=numq;
   first_=first;
   stride_=stride;
   nmine_ = first<n ? (n-1-first)/stride+1 : 0;
   computed_=true;
+  deriv_=deriv;
   const std::size_t nmine=nmine_;
   const std::size_t nrows=nmine*numq;
   if(nrows==0) {
@@ -388,15 +389,29 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
     hgrad_.resize(3*nrows);
     b.grad.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
   }
-  acc_wait(saxsQueue);
+}
 
+void OpenACCDebye::finish(std::vector<double>& sum, std::vector<Vector>* deriv) {
+  plumed_massert(computed_, "finish called before start");
+  const std::size_t n=n_;
+  const std::size_t numq=numq_;
+  const std::size_t nmine=nmine_;
+  plumed_assert(sum.size()==numq);
+  plumed_assert(!deriv || deriv->size()==n*numq);
+  if(nmine==0) {
+    return;
+  }
+  {
+    ACC::DeviceScope scope(device_.id());
+    acc_wait(saxsQueue);
+  }
   for(std::size_t k=0; k<numq; ++k) {
     sum[k]+=hsum_[k];
   }
-  if(deriv) {
+  if(deriv && deriv_) {
     auto & d=*deriv;
     for(std::size_t m=0; m<nmine; ++m) {
-      const std::size_t i=first+m*stride;
+      const std::size_t i=first_+m*stride_;
       for(std::size_t k=0; k<numq; ++k) {
         const std::size_t r=m*numq+k;
         d[k*n+i]+=Vector(hgrad_[3*r],hgrad_[3*r+1],hgrad_[3*r+2]);
@@ -407,7 +422,7 @@ void OpenACCDebye::compute(const std::vector<Vector>& pos,
 
 void OpenACCDebye::contract(const std::vector<double>& w,
                             std::vector<Vector>& forces) {
-  plumed_massert(computed_, "contract called before compute");
+  plumed_massert(computed_, "contract called before start");
   plumed_assert(w.size()==numq_);
   plumed_assert(forces.size()==n_);
   const std::size_t numq=numq_;
@@ -415,7 +430,7 @@ void OpenACCDebye::contract(const std::vector<double>& w,
   if(nmine==0) {
     return;
   }
-  // compute has chosen the GPU
+  // start has chosen the GPU
   ACC::DeviceScope scope(device_.id());
   auto & b=*buf_;
   b.w.resize(numq);

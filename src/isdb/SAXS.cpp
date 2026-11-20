@@ -149,6 +149,7 @@ plugins, that must be loaded with [LOAD](LOAD.md) before SAXS/SANS (see plugins/
 PLUMED sources). The GPU is the one assigned to PLUMED by the MD code, otherwise the one the MD code
 is using, or the first one (see the documentation of the plugin). With MPI each rank computes a share
 of the sum on its own GPU; with SERIAL only the first rank uses its GPU and the results are shared with the others.
+The sum can be started in advance, so that it overlaps with the work of other actions (see PLUMED\_LAUNCH in [the page on actions](actions.md)).
 
 ````
 LOAD FILE=/path/to/plumedOpenACC.so
@@ -379,6 +380,8 @@ SAXS::SAXS(const ActionOptions&ao):
       error("cannot use the GPU" + (failure.empty() ? std::string(" (failure on another rank)") : ": " + failure));
     }
     log.printf("  using GPU to calculate the Debye sum\n");
+    // the Debye sum is queued on the GPU as soon as the atoms are available
+    setLaunchable();
   } else if(!gpu_backend.empty()) {
     error("GPU_BACKEND can only be used together with USEGPU");
   }
@@ -1340,12 +1343,8 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
   std::vector<double> sum(numq,0);
   if(has_rows_) {
     if(usegpu_) {
-      ff_flat_.resize(static_cast<std::size_t>(size)*numq);
-      for(unsigned i=0; i<size; ++i) {
-        std::copy(FF_value[i].begin(), FF_value[i].end(), ff_flat_.begin()+static_cast<std::size_t>(i)*numq);
-      }
-      // with DOSCORE the derivatives stay on the GPU and are contracted later
-      backend_->compute(pos, ff_flat_, q_list, first_row_, row_stride_, sum, getDoScore() ? nullptr : &deriv);
+      // the work was queued by launch(); with DOSCORE the derivatives stay on the GPU and are contracted later
+      backend_->finish(sum, getDoScore() ? nullptr : &deriv);
     } else {
       debye_cpu(pos, sum, deriv);
     }
@@ -1408,7 +1407,10 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv, c
   }
 }
 
-void SAXS::calculate() {
+void SAXS::launch() {
+  // the state of the SANS deuteration, restored by cancelLaunch()
+  launchFirstStep_=isFirstStep;
+  launchRandomDeut_=random_deut_;
   if(pbc) {
     makeWhole();
   }
@@ -1417,11 +1419,8 @@ void SAXS::calculate() {
   const size_t numq = q_list.size();
   const size_t beads_size = onebead ? nres : size;
 
-  // the derivatives of the intensities with respect to the beads, [k*beads_size+i]
-  // (with USEGPU and DOSCORE they stay on the GPU)
-  std::vector<Vector> bd_deriv((usegpu_ && getDoScore()) ? 0 : numq*beads_size);
-
-  std::vector<Vector> beads_pos(beads_size);
+  std::vector<Vector> & beads_pos(beads_pos_);
+  beads_pos.resize(beads_size);
   if(onebead) {
     // centres of mass of the beads; the derivative of a bead position with respect
     // to one of its atoms is the weight of the atom (mass of the atom / mass of the bead)
@@ -1541,9 +1540,42 @@ void SAXS::calculate() {
     }
   }
 
+  // the Debye sum on the GPU is queued here, and waited for in calculate()
+  if(usegpu_ && has_rows_) {
+    ff_flat_.resize(beads_size*numq);
+    for(unsigned i=0; i<beads_size; ++i) {
+      std::copy(FF_value[i].begin(), FF_value[i].end(), ff_flat_.begin()+i*numq);
+    }
+    backend_->start(beads_pos, ff_flat_, q_list, first_row_, row_stride_, !getDoScore());
+  }
+}
+
+void SAXS::cancelLaunch() {
+  // the queued work reads beads_pos_, that is about to be computed again
+  if(usegpu_ && has_rows_) {
+    std::vector<double> sum(q_list.size());
+    backend_->finish(sum, nullptr);
+  }
+  isFirstStep=launchFirstStep_;
+  random_deut_=launchRandomDeut_;
+}
+
+void SAXS::calculate() {
+  if(!takeLaunch()) {
+    launch();
+  }
+  const size_t size = getNumberOfAtoms();
+  const size_t numq = q_list.size();
+  const size_t beads_size = onebead ? nres : size;
+  const std::vector<Vector> & beads_pos(beads_pos_);
+
+  // the derivatives of the intensities with respect to the beads, [k*beads_size+i]
+  // (with USEGPU and DOSCORE they stay on the GPU)
+  std::vector<Vector> bd_deriv((usegpu_ && getDoScore()) ? 0 : numq*beads_size);
+
   // with DOSCORE the derivatives of the intensities are first contracted with the
   // derivatives of the score, and only then summed over the ranks
-  calculate_cpu(beads_pos, bd_deriv, !getDoScore());
+  calculate_cpu(beads_pos_, bd_deriv, !getDoScore());
 
   std::vector<double> chi2_dq;
   if(chi2 && !getDoScore()) {
