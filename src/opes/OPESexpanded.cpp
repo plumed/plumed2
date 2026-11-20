@@ -444,14 +444,19 @@ OPESexpanded::OPESexpanded(const ActionOptions&ao)
       plumed_merror("RESTART requested, but file '"+restartFileName+"' was not found!\n  Set RESTART=NO or provide a restart file");
     }
     if(NumWalkers_>1) { //make sure that all walkers are doing the same thing
-      std::vector<unsigned long long> all_counter(NumWalkers_);
+      // Preserve the full counter on platforms with 32-bit unsigned long too.
+      // The MPI provider need only support unsigned long, not unsigned long long.
+      const std::vector<unsigned long> counter_words= {static_cast<unsigned long>(counter_&0xffffffffULL),
+                                                       static_cast<unsigned long>(counter_>>32)
+                                                      };
+      std::vector<unsigned long> all_counter(2*NumWalkers_);
       if(comm.Get_rank()==0) {
-        multi_sim_comm.Allgather(counter_,all_counter);
+        multi_sim_comm.Allgather(counter_words,all_counter);
       }
       comm.Bcast(all_counter,0);
       bool same_number_of_steps=true;
       for(unsigned w=1; w<NumWalkers_; w++)
-        if(all_counter[0]!=all_counter[w]) {
+        if(all_counter[0]!=all_counter[2*w] || all_counter[1]!=all_counter[2*w+1]) {
           same_number_of_steps=false;
         }
       plumed_massert(same_number_of_steps,"RESTART - not all walkers are reading the same file!");

@@ -32,9 +32,11 @@
 #include "tools/TypeUtils.h"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <type_traits>
+#include <utility>
 
 namespace PLMD {
 namespace secondarystructure {
@@ -83,9 +85,19 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void readBackboneAtoms( ActionShortcut* action, PlumedMain& plumed, const std::string& backnames, std::vector<unsigned>& chain_lengths, std::vector<std::string>& all_atoms );
+  /// Read LESS_THAN, or R_0, D_0, NN and MM, in a shortcut: ltmap is the switching function. The rational function defined
+  /// by R_0, D_0, NN and MM gets the D_MAX that the other actions use for these keywords (where the function is 1e-5): it is
+  /// then stretched to be zero at D_MAX. Returns true if LESS_THAN was used
   static bool readShortcutWords( std::string& ltmap, ActionShortcut* action );
-  /// Read TYPE, NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action that computes the distances
-  static std::string readDistanceAction( ActionShortcut* action, bool& nopbc );
+  /// Read TYPE (returned in upper case), NOPBC and USEGPU in a shortcut: returns the name and the keywords of the action
+  /// that computes the distances
+  static std::string readDistanceAction( ActionShortcut* action, std::string& type, bool& nopbc, bool& usegpu );
+  /// The pairs of strands of three residues that could form a parallel or antiparallel sheet with the given STYLE (all, inter
+  /// or intra), in the order of the SEGMENT keywords of PARABETARMSD and ANTIBETARMSD. Each strand is given by the position
+  /// of its first atom in the list of the backbone atoms (a strand is 15 consecutive atoms: N, CA, CB, C and O of three
+  /// residues); chain_lengths contains the number of backbone atoms of each chain
+  static void getSheetPairs( Action* action, const std::vector<unsigned>& chain_lengths, bool parallel, const std::string& style,
+                             std::vector<std::pair<unsigned,unsigned> >& pairs );
   /// Append " SEGMENTnum=nlist[0],nlist[1],..." to line
   static void addSegment( std::string& line, unsigned num, const std::vector<unsigned>& nlist );
   /// Append " STRUCTUREnum=x0,y0,z0,x1,..." (in Angstrom) to line
@@ -125,14 +137,29 @@ bool SecondaryStructureBase<T,myPTM>::readShortcutWords( std::string& ltmap, Act
     action->parse("D_0",d_0);
     action->parse("MM",mm);
     ltmap = "RATIONAL R_0=" + r_0 + " D_0=" + d_0 + " NN=" + nn + " MM=" + mm;
+    // as SwitchingFunction::set(nn,mm,r0,d0)
+    double r0, d0;
+    int n, m;
+    Tools::convert( r_0, r0 );
+    Tools::convert( d_0, d0 );
+    Tools::convert( nn, n );
+    Tools::convert( mm, m );
+    if( m==0 ) {
+      m=2*n;
+    }
+    if( n==m ) {
+      action->error("NN and MM must be different");
+    }
+    std::string dmax;
+    Tools::convert( d0+r0*std::pow( 0.00001, 1.0/(n-m) ), dmax );
+    ltmap += " D_MAX=" + dmax;
     return false;
   }
   return true;
 }
 
 template <class T,typename myPTM>
-std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, bool& nopbc ) {
-  std::string type;
+std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut* action, std::string& type, bool& nopbc, bool& usegpu ) {
   action->parse("TYPE",type);
   // RMSD only accepts upper case names
   std::transform( type.begin(), type.end(), type.begin(), [](unsigned char c) {
@@ -144,12 +171,97 @@ std::string SecondaryStructureBase<T,myPTM>::readDistanceAction( ActionShortcut*
   if( nopbc ) {
     line += " NOPBC";
   }
-  bool usegpu=false;
   action->parseFlag("USEGPU",usegpu);
   if( usegpu ) {
     line += " USEGPU";
   }
   return line;
+}
+
+template <class T,typename myPTM>
+void SecondaryStructureBase<T,myPTM>::getSheetPairs( Action* action, const std::vector<unsigned>& chains, const bool parallel,
+    const std::string& style, std::vector<std::pair<unsigned,unsigned> >& pairs ) {
+  bool intra_chain(false), inter_chain(false);
+  if( Tools::caseInSensStringCompare(style, "all") ) {
+    intra_chain=true;
+    inter_chain=true;
+  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
+    inter_chain=true;
+  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
+    intra_chain=true;
+  } else {
+    action->error( style + " is not a valid directive for the STYLE keyword");
+  }
+  pairs.resize(0);
+  if( intra_chain ) {
+    unsigned nprevious=0;
+    for(unsigned i=0; i<chains.size(); ++i) {
+      if( chains[i]<40 ) {
+        action->error( std::string("segment of backbone is not long enough to form ") + (parallel ? "a parallel beta sheet" : "an antiparallel beta hairpin")
+                       + ". Each backbone fragment must contain a minimum of 8 residues");
+      }
+      const unsigned nres=chains[i]/5;
+      if( chains[i]%5!=0 ) {
+        action->error("backbone segment received does not contain a multiple of five residues");
+      }
+      if( parallel ) {
+        // the two strands are separated by at least three residues
+        for(unsigned ires=0; ires+8<nres; ires++) {
+          for(unsigned jres=ires+6; jres+2<nres; jres++) {
+            pairs.emplace_back( nprevious+5*ires, nprevious+5*jres );
+          }
+        }
+      } else {
+        // the strands are i,i+1,i+2 and j-2,j-1,j, separated by at least two residues
+        for(unsigned ires=0; ires+7<nres; ires++) {
+          for(unsigned jres=ires+7; jres<nres; jres++) {
+            pairs.emplace_back( nprevious+5*ires, nprevious+5*(jres-2) );
+          }
+        }
+      }
+      nprevious+=chains[i];
+    }
+  }
+  if( inter_chain ) {
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
+      action->error("there is only one chain defined so cannot use inter_chain option");
+    }
+    for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
+      unsigned iprev=0;
+      for(unsigned i=0; i<ichain; ++i) {
+        iprev+=chains[i];
+      }
+      const unsigned inres=chains[ichain]/5;
+      if( chains[ichain]%5!=0 ) {
+        action->error("backbone segment received does not contain a multiple of five residues");
+      }
+      if( inres<3 ) {
+        // A strand contains three residues. Without this the unsigned subtraction in the loop below wraps around
+        continue;
+      }
+      for(unsigned ires=0; ires<inres-2; ++ires) {
+        for(unsigned jchain=0; jchain<ichain; ++jchain) {
+          unsigned jprev=0;
+          for(unsigned i=0; i<jchain; ++i) {
+            jprev+=chains[i];
+          }
+          const unsigned jnres=chains[jchain]/5;
+          if( chains[jchain]%5!=0 ) {
+            action->error("backbone segment received does not contain a multiple of five residues");
+          }
+          if( jnres<3 ) {
+            continue;
+          }
+          for(unsigned jres=0; jres<jnres-2; ++jres) {
+            pairs.emplace_back( iprev+5*ires, jprev+5*jres );
+          }
+        }
+      }
+    }
+  }
+  if( pairs.empty() ) {
+    action->error("it is not possible to build any segment of backbone that could form a sheet with the residues and the STYLE that were given");
+  }
 }
 
 template <class T,typename myPTM>
@@ -212,8 +324,11 @@ void SecondaryStructureBase<T,myPTM>::registerKeywords( Keywords& keys ) {
              "As such if you define portions of the chain with fewer than N residues PLUMED stops with an error.");
     keys.add("optional","LESS_THAN","calculate the number of segments of residues that are within a certain target distance of this secondary structure type. "
              "This quantity is calculated using $\\sum_i \\sigma(s_i)$, where $\\sigma(s)$ is the switching function given here. "
-             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component");
-    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm");
+             "With this keyword the value of the action is the vector of the distances and the number of segments is the lessthan component. "
+             "Give a D_MAX in this switching function (e.g. LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12 D_MAX=1.42}) to make it zero beyond D_MAX, "
+             "as the one defined by R_0, NN, MM and D_0");
+    keys.add("optional","R_0","The r_0 parameter of the switching function, in the length units of UNITS. The default is 0.08 nm. "
+             "The switching function is stretched to be zero at the distance where it is 1e-5 (its D_MAX in the expanded input)");
     keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
     keys.add("compulsory","NN","8","The n parameter of the switching function");
     keys.add("compulsory","MM","12","The m parameter of the switching function");

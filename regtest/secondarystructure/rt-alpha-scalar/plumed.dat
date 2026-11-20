@@ -1,0 +1,10 @@
+MOLINFO STRUCTURE=amyloid.pdb
+a1: ALPHARMSD RESIDUES=all R_0=0.1
+a2: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=6 MM=10}
+a3: ALPHARMSD RESIDUES=all NOPBC R_0=0.12
+# the same numbers from the vectors of the expanded input, which are only computed if they are used
+s1: SUM ARG=a1_lt PERIODIC=NO
+s2: SUM ARG=a2_lt PERIODIC=NO
+s3: SUM ARG=a3_lt PERIODIC=NO
+RESTRAINT ARG=a1,a2.lessthan,a3 AT=0,0,0 KAPPA=1,2,3
+PRINT ARG=a1,s1,a2.lessthan,s2,a3,s3 FILE=colvar FMT=%10.6f
