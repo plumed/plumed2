@@ -21,7 +21,9 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // FP64 streamed assignments with optional buffered center lists.
 #include "plumed/colvar/ReactiveVoronoiBackend.h"
+#include "plumed/tools/Pbc.h"
 #include <cuda_runtime.h>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <new>
@@ -79,13 +81,14 @@ struct State {
   double* sensitivity=nullptr;
   double* derivatives=nullptr;
   double* virial=nullptr;
-  int* invalid=nullptr;
+  unsigned long long* invalid=nullptr;
   int* offsets=nullptr;
   int* candidateCenters=nullptr;
   int candidateCapacity=0;
   double cutoff=0;
   bool useNeighbors=false;
   double box[3] {};
+  double inverseBox[3] {};
   double kappa=0;
   bool pbc=false;
   cudaStream_t stream=nullptr;
@@ -123,11 +126,31 @@ __device__ double distance(const State state, int center, int assigned,
     displacement[axis]=state.positions[3*(state.numCenters+assigned)+axis]-
                        state.positions[3*center+axis];
     if(state.pbc) {
-      displacement[axis]-=nearbyint(displacement[axis]/state.box[axis])*state.box[axis];
+      // Match Pbc::distance, including its choice of image at a half-box tie.
+      const double scaled=__dmul_rn(displacement[axis],state.inverseBox[axis]);
+      displacement[axis]=PLMD::Tools::pbc(scaled)*state.box[axis];
     }
     squared+=displacement[axis]*displacement[axis];
   }
   return sqrt(squared);
+}
+
+// The maximum score is rounded to FP64 before the reduction. Round each
+// recomputed score the same way so its shift is exactly zero at the maximum,
+// even when a large finite KAPPA would amplify an FMA rounding residual.
+__device__ double assignmentScore(double kappa, double length) {
+  return __dmul_rn(-kappa,length);
+}
+
+enum PairFailure : unsigned { nonfiniteDistance, zeroDistance, nonfiniteScore, failureKinds };
+constexpr unsigned long long noFailure=ULLONG_MAX;
+constexpr unsigned long long emptyList=noFailure-1;
+
+// Lower keys win, so every launch reports the same offending pair. The two
+// signed-int selection sizes leave room for the reason code and sentinels.
+__device__ void recordFailure(const State& state, int center, int assigned, PairFailure reason) {
+  const auto pair=static_cast<unsigned long long>(center)*state.numAssigned+assigned;
+  atomicMin(state.invalid,pair*failureKinds+reason);
 }
 
 template<int threads, bool useNeighbors>
@@ -143,12 +166,12 @@ __global__ void forwardKernel(State state) {
     double displacement[3];
     const double length=distance(state,center,assigned,displacement);
     if(!isfinite(length) || length<=2.220446049250313e-16) {
-      atomicExch(state.invalid,1);
+      recordFailure(state,center,assigned,isfinite(length) ? zeroDistance : nonfiniteDistance);
     }
     if(!useNeighbors || length<=state.cutoff) {
-      const double score=-state.kappa*length;
+      const double score=assignmentScore(state.kappa,length);
       if(!isfinite(score)) {
-        atomicExch(state.invalid,1);
+        recordFailure(state,center,assigned,nonfiniteScore);
       }
       maximum=fmax(maximum,score);
     }
@@ -156,7 +179,7 @@ __global__ void forwardKernel(State state) {
   maximum=reduce<threads>(maximum,true,scratch);
   if(useNeighbors && maximum==-INFINITY) {
     if(thread==0) {
-      atomicCAS(state.invalid,0,2);
+      atomicMin(state.invalid,emptyList);
     }
     return;
   }
@@ -166,7 +189,7 @@ __global__ void forwardKernel(State state) {
     double displacement[3];
     const double length=distance(state,center,assigned,displacement);
     if(!useNeighbors || length<=state.cutoff) {
-      normalization+=exp(-state.kappa*length-maximum);
+      normalization+=exp(assignmentScore(state.kappa,length)-maximum);
     }
   }
   normalization=reduce<threads>(normalization,false,scratch);
@@ -181,7 +204,7 @@ __global__ void forwardKernel(State state) {
     if(useNeighbors && length>state.cutoff) {
       continue;
     }
-    const double weight=exp(-state.kappa*length-maximum)/normalization;
+    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
     atomicAdd(state.occupancy+center,weight);
   }
 }
@@ -203,7 +226,7 @@ __global__ void backwardKernel(State state) {
     if(useNeighbors && length>state.cutoff) {
       continue;
     }
-    const double weight=exp(-state.kappa*length-maximum)/normalization;
+    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
     mean+=weight*state.sensitivity[center];
   }
   mean=reduce<threads>(mean,false,scratch);
@@ -216,7 +239,7 @@ __global__ void backwardKernel(State state) {
     if(useNeighbors && length>state.cutoff) {
       continue;
     }
-    const double weight=exp(-state.kappa*length-maximum)/normalization;
+    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
     const double radial=-state.kappa*weight*(state.sensitivity[center]-mean)/length;
     for(int axis=0; axis<3; ++axis) {
       const double gradient=radial*displacement[axis];
@@ -296,14 +319,14 @@ State* createState(int numCenters, int numAssigned, int mdDevice) {
       !checkCuda(cudaMalloc(&state->sensitivity,numCenters*sizeof(double))) ||
       !checkCuda(cudaMalloc(&state->derivatives,3*numAtoms*sizeof(double))) ||
       !checkCuda(cudaMalloc(&state->virial,9*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->invalid,sizeof(int)))) {
+      !checkCuda(cudaMalloc(&state->invalid,sizeof(*state->invalid)))) {
     release(state);
     return nullptr;
   }
   return state;
 }
 
-int runForward(State& state, const double* positions, const double* box, bool pbc,
+int runForward(State& state, const double* positions, const PLMD::Pbc& box, bool pbc,
                double kappa, double* occupancy, bool useNeighbors, double cutoff,
                const int* offsets, const int* centers, int count) {
   DeviceScope scope(state.device);
@@ -344,16 +367,14 @@ int runForward(State& state, const double* positions, const double* box, bool pb
   state.pbc=pbc;
   state.kappa=kappa;
   for(int axis=0; axis<3; ++axis) {
-    state.box[axis]=box[axis];
-    if(pbc && (!std::isfinite(box[axis]) || box[axis]<=0)) {
-      return 1;
-    }
+    state.box[axis]=box.getBox()(axis,axis);
+    state.inverseBox[axis]=box.getInvBox()(axis,axis);
   }
   const size_t numAtoms=static_cast<size_t>(state.numCenters)+state.numAssigned;
   if(!checkCuda(cudaMemcpyAsync(state.positions,positions,3*numAtoms*sizeof(double),
                                 cudaMemcpyHostToDevice,state.stream)) ||
       !checkCuda(cudaMemsetAsync(state.occupancy,0,state.numCenters*sizeof(double),state.stream)) ||
-      !checkCuda(cudaMemsetAsync(state.invalid,0,sizeof(int),state.stream))) {
+      !checkCuda(cudaMemsetAsync(state.invalid,0xff,sizeof(*state.invalid),state.stream))) {
     return 1;
   }
   if(useNeighbors) {
@@ -361,16 +382,27 @@ int runForward(State& state, const double* positions, const double* box, bool pb
   } else {
     forwardKernel<denseThreads,false><<<state.numAssigned,denseThreads,0,state.stream>>>(state);
   }
-  int invalid=0;
+  unsigned long long invalid=noFailure;
   if(!checkCuda(cudaGetLastError()) ||
       !checkCuda(cudaMemcpyAsync(occupancy,state.occupancy,state.numCenters*sizeof(double),
                                  cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaMemcpyAsync(&invalid,state.invalid,sizeof(int),
+      !checkCuda(cudaMemcpyAsync(&invalid,state.invalid,sizeof(invalid),
                                  cudaMemcpyDeviceToHost,state.stream)) ||
       !checkCuda(cudaStreamSynchronize(state.stream))) {
     return 1;
   }
-  return invalid;
+  if(invalid==noFailure) {
+    return 0;
+  }
+  if(invalid==emptyList) {
+    return 2;
+  }
+  const auto pair=invalid/failureKinds;
+  const char* reasons[]= {"non-finite CENTER-ASSIGNED distance", "zero or near-zero CENTER-ASSIGNED distance",
+                          "non-finite KAPPA times CENTER-ASSIGNED distance"
+                         };
+  throw PLMD::colvar::ReactiveVoronoiBackend::InvalidPair(pair/state.numAssigned,pair%state.numAssigned,
+      reasons[invalid%failureKinds]);
 }
 
 int runBackward(State& state, const double* sensitivity, double* derivatives, double* virial) {
@@ -418,14 +450,14 @@ public:
     return state_->device;
   }
 
-  void forward(const double* positions, const double* box, bool pbc,
+  void forward(const double* positions, const PLMD::Pbc& box, bool pbc,
                double kappa, double* occupancy) override {
     if(runForward(*state_,positions,box,pbc,kappa,occupancy,false,0,nullptr,nullptr,0)!=0) {
       throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
     }
   }
 
-  void forwardNeighbors(const double* positions, const double* box, bool pbc,
+  void forwardNeighbors(const double* positions, const PLMD::Pbc& box, bool pbc,
                         double kappa, double* occupancy, double cutoff,
                         const std::vector<int>& offsets, const std::vector<int>& centers,
                         unsigned long version) override {

@@ -756,6 +756,10 @@ std::shared_ptr<ReactiveVoronoiBackend> SoftVoronoiBase::cudaContext() {
     unsupported="multiple MPI ranks";
   } else if(pbc_) {
     const Tensor& box=getPbc().getBox();
+    const double determinant=box.determinant();
+    if(!getPbc().isSet() || !std::isfinite(determinant) || std::fabs(determinant)<=1.0e-14) {
+      error("non-finite or degenerate periodic box at step="+std::to_string(getStep()));
+    }
     for(unsigned i=0; i<3; ++i) {
       if(!std::isfinite(box(i,i)) || box(i,i)<=0) {
         unsupported="PBC requires a finite positive orthorhombic box";
@@ -839,11 +843,6 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
     neighbors.offsets.clear();
   }
   if(context) {
-    const Tensor& box=getPbc().getBox();
-    double diagonal[3];
-    for(unsigned axis=0; axis<3; ++axis) {
-      diagonal[axis]=box(axis,axis);
-    }
     Assignment result;
     result.cuda=context;
     result.occupancy.resize(centers_.size());
@@ -862,13 +861,19 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment() {
         }
         const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
                             std::numeric_limits<double>::infinity();
-        context->forwardNeighbors(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data(),
+        context->forwardNeighbors(positions.data(),getPbc(),pbc_,kappa_,result.occupancy.data(),
                                   cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
       } else {
-        context->forward(positions.data(),diagonal,pbc_,kappa_,result.occupancy.data());
+        context->forward(positions.data(),getPbc(),pbc_,kappa_,result.occupancy.data());
       }
+    } catch(const ReactiveVoronoiBackend::InvalidPair& failure) {
+      std::ostringstream message;
+      message << failure.what() << " step=" << getStep()
+              << " center_atom=" << centers_.at(failure.center).serial()
+              << " assigned_atom=" << assigned_.at(failure.assigned).serial();
+      error(message.str());
     } catch(const std::exception& failure) {
-      error(failure.what());
+      error(std::string(failure.what())+" step="+std::to_string(getStep()));
     }
     return result;
   }
@@ -1234,7 +1239,7 @@ void SoftVoronoiBase::addAssignmentDerivatives(
     try {
       assignment.cuda->backward(derivativeByDefect.data(),gradient.data(),boxGradient);
     } catch(const std::exception& failure) {
-      error(failure.what());
+      error(std::string(failure.what())+" step="+std::to_string(getStep()));
     }
     for(unsigned i=0; i<derivatives.size(); ++i)
       for(unsigned k=0; k<3; ++k) {

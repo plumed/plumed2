@@ -25,21 +25,30 @@
 #include "core/RegisterBase.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace PLMD {
+class Pbc;
 namespace colvar {
 
 /// Optional backend for the soft assignment and its contracted derivatives.
 class ReactiveVoronoiBackend {
 public:
+  /// Indices refer to the center and assigned selections of this context.
+  struct InvalidPair : std::runtime_error {
+    unsigned center;
+    unsigned assigned;
+    InvalidPair(unsigned c, unsigned a, const char* message):
+      std::runtime_error(message), center(c), assigned(a) {}
+  };
   virtual ~ReactiveVoronoiBackend() = default;
   virtual int device() const = 0;
-  virtual void forward(const double* positions, const double* box, bool pbc,
+  virtual void forward(const double* positions, const Pbc& box, bool pbc,
                        double kappa, double* occupancy) = 0;
   /// The backend can reuse the uploaded candidate list for the same version.
-  virtual void forwardNeighbors(const double* positions, const double* box, bool pbc,
+  virtual void forwardNeighbors(const double* positions, const Pbc& box, bool pbc,
                                 double kappa, double* occupancy, double cutoff,
                                 const std::vector<int>& offsets, const std::vector<int>& centers,
                                 unsigned long version) = 0;

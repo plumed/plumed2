@@ -46,7 +46,9 @@ size, reduction groups, host transfers and the MD workload. The CPU default
 keeps existing inputs reproducible, and small groups can favor CPU execution.
 An initialization fallback persists for the action's lifetime. Changes between
 orthorhombic and triclinic boxes select a compatible backend on each request.
-Calculation errors after successful CUDA initialization propagate normally.
+Calculation errors after successful CUDA initialization stop the calculation.
+For a rejected center–assigned pair, the message includes the MD step and
+the atom numbers from the input selections.
 
 The currently supported CUDA domain is orthorhombic PBC or NOPBC and a
 single rank, with either complete assignments or NLIST. AUTO falls back to
@@ -84,8 +86,8 @@ PRINT ARG=c,q FILE=COLVAR
 ~~~
 
 The example uses PLUMED's default length unit (nm). The two plugins keep
-their own GPU data and can use the same device. The MD engine can also use that device for the potential, as in
-the single-GPU DeePMD examples. The CV's backend is chosen independently of
+their own GPU data and can use the same device. The MD engine can also use
+that device for the potential, as in the single-GPU DeePMD examples. The CV's backend is chosen independently of
 the potential. For a CPU force field, the default shared CPU CV requires no
 CUDA library. BACKEND=CUDA can instead offload the Voronoi assignment if
 the run and GPU meet the requirements above. Coordinates and bias
@@ -163,6 +165,10 @@ Run the CPU and missing-plugin fallback cases on a CPU-only host with:
 ~~~bash
 python3 regtest/backend_checks.py --plumed /absolute/path/bin/plumed --cpu-only
 ~~~
+
+With a CUDA toolkit, `make CUDA_ARCH=sm_80 check-nogpu` also tests loading
+the real plugin with no visible GPU. It checks the numerical CPU fallback
+for AUTO and the initialization error for an explicit CUDA request.
 
 In a configured PLUMED source build, the native CPU regression is available
 through PLUMED's test harness.

@@ -161,6 +161,33 @@ def main():
                 dict(geometry=geometry, mode=mode, errors=errors)
             )
 
+    # At half the box length two images have the same distance but opposite
+    # derivatives. Check the image convention against the independent CPU CV.
+    half_box_frames = [
+        [[0, 0, 0], [1, 0, 0], [x, 0, 0]] for x in (2, -2, 6, 2.000001, 1.999999)
+    ]
+    for mode, backend in modes.items():
+        directory, code = run(
+            "half-box-" + mode,
+            [
+                "q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 SELECT=1 KAPPA=1 REFERENCE=0 POWER=1"
+                + backend,
+                "PRINT ARG=q FILE=values FMT=%.17g",
+                "DUMPDERIVATIVES ARG=q FILE=derivatives FMT=%.17g",
+            ],
+            box="4,4,4",
+            frames=half_box_frames,
+            load=mode in ("cuda", "auto"),
+        )
+        assert code == 0, directory
+        data = {key: read_numbers(directory / key) for key in ("values", "derivatives")}
+        if mode == "independent":
+            reference = data
+        errors = {
+            key: compare(reference[key], data[key], directory / key) for key in data
+        }
+        results["positive"].append(dict(geometry="half-box", mode=mode, errors=errors))
+
     # Keep the box fixed. The second center is outside the initial buffered
     # list and enters the true cutoff before the scheduled rebuild at step 10.
     # The following frame moves below half the skin and reuses the new list.
@@ -224,6 +251,26 @@ def main():
         derivatives = read_numbers(directory / "derivatives")
         assert derivatives and all(row[-1] == 0.0 for row in derivatives), directory
         results["positive"].append(dict(geometry="buffer-only-score", mode=mode))
+
+    # A single center has unit occupancy and zero derivatives. With a large
+    # finite KAPPA, fusing the score multiplication with the softmax shift
+    # can otherwise leave a large residual even at the maximum.
+    for mode, backend in modes.items():
+        directory, code = run(
+            "large-finite-score-" + mode,
+            [
+                "q: VORONOI_COORDINATION CENTERS=1 ASSIGNED=2 KAPPA=1e308 REFERENCE=0 NOPBC"
+                + backend,
+                "PRINT ARG=q FILE=values FMT=%.17g",
+                "DUMPDERIVATIVES ARG=q FILE=derivatives FMT=%.17g",
+            ],
+            coordinates=[[0, 0, 0], [0.43, 0.19, 0]],
+            load=mode in ("cuda", "auto"),
+        )
+        assert code == 0 and read_numbers(directory / "values")[0][1] == 1.0, directory
+        derivatives = read_numbers(directory / "derivatives")
+        assert derivatives and all(row[-1] == 0.0 for row in derivatives), directory
+        results["positive"].append(dict(geometry="large-finite-score", mode=mode))
 
     invalid = [
         (
@@ -294,9 +341,9 @@ def main():
                 load=mode in ("cuda", "auto"),
             )
             assert code != 0, directory
-            assert re.search(expected, (directory / "stdout.log").read_text(), re.I), (
-                directory
-            )
+            assert re.search(
+                expected, (directory / "stdout.log").read_text(), re.I
+            ), directory
             results["negative"].append(dict(case=name, mode=mode, returncode=code))
     for name, changed_atom, definition in [
         ("coincident-assigned", 4, "VORONOI_COORDINATION " + common),
@@ -321,6 +368,40 @@ def main():
     strict_cases = [
         ("missing-plugin", "", "7,8,9", False, "No CUDA Voronoi backend is available")
     ]
+    if arguments.cpu_only and plugin:
+        # The plugin is loaded here, so this exercises device discovery
+        # separately from the missing-plugin case.
+        reference = None
+        for tag, backend in (("independent", "NO_SHARE"), ("auto", "BACKEND=AUTO")):
+            directory, code = run(
+                "no-device-" + tag,
+                [
+                    "q: VORONOI_COORDINATION " + common + " " + backend,
+                    "PRINT ARG=q FILE=values FMT=%.17g",
+                    "DUMPDERIVATIVES ARG=q FILE=derivatives FMT=%.17g",
+                ],
+                load=tag == "auto",
+            )
+            assert code == 0, directory
+            data = {
+                key: read_numbers(directory / key) for key in ("values", "derivatives")
+            }
+            if reference is None:
+                reference = data
+                continue
+            log = (directory / "stdout.log").read_text()
+            assert (
+                "selected CPU" in log and "No CUDA device is available" in log
+            ), directory
+            errors = {
+                key: compare(reference[key], data[key], directory / key) for key in data
+            }
+            results["positive"].append(
+                dict(geometry="no-device", mode=tag, errors=errors)
+            )
+        strict_cases.append(
+            ("no-device-cuda", "", "7,8,9", True, "No CUDA device is available")
+        )
     if not arguments.cpu_only:
         strict_cases += [
             (
@@ -348,6 +429,74 @@ def main():
         log = (directory / "stdout.log").read_text()
         assert "label v" in log and reason in log, directory
         results["negative"].append(dict(case=name, returncode=code))
+    for mode, backend in modes.items():
+        directory, code = run(
+            "degenerate-box-" + mode,
+            [
+                "q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 KAPPA=1 REFERENCE=0"
+                + backend,
+                "PRINT ARG=q FILE=values",
+            ],
+            coordinates=[[0, 0, 0], [1e-6, 0, 0], [2.2e-6, 0, 0]],
+            box="4e-6,4e-6,4e-6",
+            load=mode in ("cuda", "auto"),
+        )
+        log = (directory / "stdout.log").read_text()
+        assert code != 0 and "label q" in log and "degenerate" in log, directory
+        results["negative"].append(
+            dict(case="degenerate-box", mode=mode, returncode=code)
+        )
+
+    if not arguments.cpu_only:
+        for name, suffix in [
+            ("full", ""),
+            ("buffered", " NLIST NL_CUTOFF=3 NL_STRIDE=1"),
+        ]:
+            directory, code = run(
+                "invalid-pair-" + name,
+                [
+                    "q: VORONOI_COORDINATION CENTERS=4,1 ASSIGNED=3,2 KAPPA=1 REFERENCE=0 BACKEND=AUTO"
+                    + suffix,
+                    "PRINT ARG=q FILE=values",
+                ],
+                frames=[
+                    [[0, 0, 0], [1, 0, 0], [2, 0, 0], [2.5, 0, 0]],
+                    [[0, 0, 0], [1, 0, 0], [2, 0, 0], [1, 0, 0]],
+                ],
+                load=True,
+            )
+            log = (directory / "stdout.log").read_text()
+            assert code != 0 and "label q" in log, directory
+            assert (
+                "zero or near-zero CENTER-ASSIGNED distance step=1 center_atom=4 assigned_atom=2"
+                in log
+            ), directory
+            results["negative"].append(
+                dict(case="invalid-pair-" + name, returncode=code)
+            )
+        for name, coordinate, kappa, reason in (
+            ("nonfinite-distance", "1e200", "1", "non-finite CENTER-ASSIGNED distance"),
+            (
+                "overflow-score",
+                "2",
+                "1e308",
+                "non-finite KAPPA times CENTER-ASSIGNED distance",
+            ),
+        ):
+            directory, code = run(
+                name,
+                [
+                    f"q: VORONOI_COORDINATION CENTERS=1 ASSIGNED=2 REFERENCE=0 KAPPA={kappa} NOPBC BACKEND=CUDA",
+                    "PRINT ARG=q FILE=values",
+                ],
+                coordinates=[[0, 0, 0], [coordinate, 0, 0]],
+                load=True,
+            )
+            log = (directory / "stdout.log").read_text()
+            assert (
+                code != 0 and reason + " step=0 center_atom=1 assigned_atom=2" in log
+            ), directory
+            results["negative"].append(dict(case=name, returncode=code))
     results["status"] = "PASSED"
     (work / "RESULTS.json").write_text(json.dumps(results, indent=2) + "\n")
     print(json.dumps(results, indent=2))

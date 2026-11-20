@@ -23,14 +23,14 @@ public:
     return 0;
   }
 
-  void forward(const double* x, const double*, bool, double, double* occupancy) override {
+  void forward(const double* x, const PLMD::Pbc&, bool, double, double* occupancy) override {
     if(separation(x)<=0.0) {
-      throw std::runtime_error("test backend forward failed");
+      throw InvalidPair(0,0,"test backend forward failed");
     }
     occupancy[0]=1.0;
   }
 
-  void forwardNeighbors(const double* x, const double* box, bool pbc, double kappa,
+  void forwardNeighbors(const double* x, const PLMD::Pbc& box, bool pbc, double kappa,
                         double* occupancy, double cutoff,
                         const std::vector<int>& offsets, const std::vector<int>& centers,
                         unsigned long) override {

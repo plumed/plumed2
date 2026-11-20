@@ -143,7 +143,7 @@ int main() {
     positive("buffered",automatic+neighbors,"selected CUDA (device 0; NLIST");
     positive("sheared",automatic,"selected CPU (triclinic", -1,true);
     rejects("invalid-device",cuda,"context creation failed",0.5,1);
-    rejects("coincident",automatic,"test backend forward failed",0.0);
+    rejects("coincident",automatic,"test backend forward failed step=0 center_atom=1 assigned_atom=2",0.0);
     rejects("outside",automatic+neighbors,"no CENTER inside the candidate list",1.2);
 
     // A plugin loaded by a live PLUMED instance is not available to a

@@ -3,7 +3,7 @@ NVCC ?= nvcc
 CUDA_ARCH ?= native
 NVCCFLAGS ?= -O3 -std=c++17
 
-.PHONY: all clean check astyle
+.PHONY: all clean check check-nogpu astyle
 all:
 
 ifneq ($(filter-out clean astyle,$(or $(MAKECMDGOALS),all)),)
@@ -27,6 +27,8 @@ $(TARGET): src/ReactiveVoronoiCuda.cu $(PLUMED_KERNEL)
 
 check: all
 	$(MAKE) -C regtest check PLUMED="$(PLUMED)" LIBRARY="$(abspath $(TARGET))"
+check-nogpu: all
+	CUDA_VISIBLE_DEVICES="" $(MAKE) -C regtest check-nogpu PLUMED="$(PLUMED)" LIBRARY="$(abspath $(TARGET))"
 endif
 
 astyle:
