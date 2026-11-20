@@ -3,14 +3,13 @@
 #include <cstdio>
 #include <vector>
 
-// Test of Action::launch(), cancelLaunch() and launchApply(), see plumed.dat.
+// Test of Action::launch() and cancelLaunch(), see plumed.dat.
 // The value is the sum of the x coordinates of the atoms.
 
 namespace PLMD {
 
 class LaunchTest : public Colvar {
   double launchedSum=0.0;
-  double launchedForce=0.0;
   double sum() const {
     double s=0.0;
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
@@ -37,7 +36,7 @@ public:
     addValueWithDerivatives();
     setNotPeriodic();
     requestAtoms(atoms);
-    setLaunchable( true, true );
+    setLaunchable();
   }
   void launch() override {
     write("launch");
@@ -54,18 +53,6 @@ public:
     }
     setBoxDerivativesNoPbc();
     setValue(launched ? launchedSum : sum());
-  }
-  void launchApply() override {
-    write("launchApply");
-    launchedForce=getPntrToValue()->getForce();
-  }
-  void apply() override {
-    const bool launched=takeApplyLaunch();
-    write(launched ? "apply (launched)" : "apply");
-    if(launched && launchedForce!=getPntrToValue()->getForce()) {
-      error("the force changed after launchApply()");
-    }
-    Colvar::apply();
   }
 };
 

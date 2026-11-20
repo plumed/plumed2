@@ -1,17 +1,22 @@
-# Action::launch() and Action::launchApply(): LAUNCH_TEST writes in the file "order"
-# when they are called, and computes the sum of the x coordinates of its atoms from
-# the positions it had in launch(). The same sums are computed with POSITION.
+# Action::launch(): LAUNCH_TEST writes in the file "order" when it is called, and computes
+# the sum of the x coordinates of its atoms from the positions it had in launch().
+# The same sums are computed with POSITION.
 LOAD FILE=LaunchTest.cpp
 
 # a and b are launched together, before d is calculated
 a: LAUNCH_TEST ATOMS=1,2
 d: DISTANCE ATOMS=1,2
 b: LAUNCH_TEST ATOMS=3,4
-# m depends on b: in the backward loop b is launched only after m is applied
-m: CUSTOM ARG=b FUNC=x*x PERIODIC=NO
 # e depends on c: it is launched after c is calculated
 c: CENTER ATOMS=5,6
 e: LAUNCH_TEST ATOMS=c,7
+# h depends on a constant virtual atom, which is never calculated: it is launched with a and b.
+# Its value is not printed: the position of x is moved by FIT_TO_TEMPLATE at every step
+cx: CONSTANT VALUE=0.1
+c0: CONSTANT VALUE=0
+c1: CONSTANT VALUE=1
+x: ARGS2VATOM XPOS=cx YPOS=c0 ZPOS=c0 MASS=c1 CHARGE=c0
+h: LAUNCH_TEST ATOMS=x,12
 p1: POSITION ATOM=1 NOPBC
 p2: POSITION ATOM=2 NOPBC
 p3: POSITION ATOM=3 NOPBC
@@ -37,4 +42,5 @@ df: CUSTOM ARG=f,p8.x,p9.x FUNC=(x-y-z)^2 PERIODIC=NO
 dg: CUSTOM ARG=g,p10.x,p11.x FUNC=(x-y-z)^2 PERIODIC=NO
 PRINT ARG=a,b,e,f,g,da,db,de,df,dg FILE=colvar FMT=%8.4f
 
-RESTRAINT ARG=a,d,m,e,f AT=0,0,0,0,0 SLOPE=1,2,3,4,5
+RESTRAINT ARG=a,d,b,e,f AT=0,0,0,0,0 SLOPE=1,2,3,4,5
+RESTRAINT ARG=h AT=0 SLOPE=0

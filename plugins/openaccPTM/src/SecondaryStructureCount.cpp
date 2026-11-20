@@ -85,8 +85,6 @@ class SecondaryStructureCountACC : public SecondaryStructureCount {
   unsigned hcount_=0;
   const Pbc* dpbc_=nullptr;
   const SwitchingFunctionAccelerable* dsw_=nullptr;
-  /// Queues the copy of the positions and the list of the pairs or, without a list, the whole calculation
-  void enqueueStep();
   /// Queues the kernel of the segments, the sums and the copy of the results
   void enqueueSegments();
 public:
@@ -95,6 +93,7 @@ public:
   ~SecondaryStructureCountACC() override;
   SecondaryStructureCountACC(const SecondaryStructureCountACC&)=delete;
   SecondaryStructureCountACC& operator=(const SecondaryStructureCountACC&)=delete;
+  /// Queues the copy of the positions and the list of the pairs or, without a list, the whole calculation
   void launch() override;
   void cancelLaunch() override;
   void calculate() override;
@@ -122,7 +121,7 @@ SecondaryStructureCountACC::SecondaryStructureCountACC(const ActionOptions&ao):
   }
   log.printf("  computed on the GPU\n");
   // the work on the GPU is queued as soon as the atoms are available, see Action::launch()
-  setLaunchable( true );
+  setLaunchable();
 }
 
 SecondaryStructureCountACC::~SecondaryStructureCountACC() {
@@ -134,7 +133,7 @@ SecondaryStructureCountACC::~SecondaryStructureCountACC() {
   buf_.reset();
 }
 
-void SecondaryStructureCountACC::enqueueStep() {
+void SecondaryStructureCountACC::launch() {
   const unsigned npairs=pairs.size();
   const unsigned natoms=getNumberOfAtoms();
   const unsigned stride=comm.Get_size();
@@ -302,10 +301,6 @@ void SecondaryStructureCountACC::enqueueSegments() {
   b.derivatives.copyFromDeviceAsync( hder_.data(), accQueue );
 }
 
-void SecondaryStructureCountACC::launch() {
-  enqueueStep();
-}
-
 void SecondaryStructureCountACC::cancelLaunch() {
   // the queued work reads the positions of this action, that are about to change
   if( nmine_>0 ) {
@@ -317,7 +312,7 @@ void SecondaryStructureCountACC::cancelLaunch() {
 void SecondaryStructureCountACC::calculate() {
   // unless launch() did it already
   if( !takeLaunch() ) {
-    enqueueStep();
+    launch();
   }
   const unsigned natoms=getNumberOfAtoms();
   const unsigned stride=comm.Get_size();

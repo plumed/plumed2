@@ -79,7 +79,8 @@ class ActionAtomistic :
 
   bool                  donotretrieve;
   bool                  donotforce;
-/// This action has changed the shared positions or forces of the atoms (e.g. FIT_TO_TEMPLATE)
+/// This action has changed the shared positions of the atoms (e.g. FIT_TO_TEMPLATE).
+/// An action that changes the box must also set it (see PlumedMain::justCalculate())
   bool                  modifiesGlobalAtoms=false;
 
   // EMST

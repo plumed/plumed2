@@ -1086,7 +1086,6 @@ public:
   // active methods:
   static void registerKeywords (Keywords &keys);
   /// Queues all the GPU work of the step (lists, kernels, transfers) without waiting for it
-  void enqueueStep();
   void launch() override;
   void cancelLaunch() override;
   void calculate() override;
@@ -1367,7 +1366,7 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
 }
 
 template <typename calculateFloat>
-void CudaCoordination<calculateFloat>::enqueueStep() {
+void CudaCoordination<calculateFloat>::launch() {
   // all the GPU work of the step is done on the GPU of the action
   CUDAHELPERS::deviceGuard guard (gpu);
   if (needsListUpdate()) {
@@ -1435,11 +1434,6 @@ void CudaCoordination<calculateFloat>::enqueueStep() {
 }
 
 template <typename calculateFloat>
-void CudaCoordination<calculateFloat>::launch() {
-  enqueueStep();
-}
-
-template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::cancelLaunch() {
   // the neighbor lists may have been built with the atoms as they were before
   // another action moved them: they are built again (on all the processes)
@@ -1456,7 +1450,7 @@ template <typename calculateFloat>
 void CudaCoordination<calculateFloat>::calculate() {
   // the work of the step is queued here, unless launch() did it already
   if (!takeLaunch()) {
-    enqueueStep();
+    launch();
   }
   Tensor virial;
   double coordination=0.0;
@@ -1612,7 +1606,7 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     mpiActive( comm.Get_rank()== 0),
     cells(comm) {
   // the work on the GPU is queued as soon as the atoms are available, see Action::launch()
-  setLaunchable (true);
+  setLaunchable();
   std::vector<AtomNumber> GroupA;
   parseAtomList ("GROUPA", GroupA);
   std::vector<AtomNumber> GroupB;

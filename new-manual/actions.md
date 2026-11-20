@@ -180,6 +180,13 @@ The host owns MPI initialization and finalization. Provider selection applies to
 compatible repeated injections retain the first provider and do not add functions to it. Provider code must remain
 loaded while PLUMED uses it, and the host must supply communicators compatible with that provider.
 
+### Overlapping the work of GPU actions
+
+Some actions that run on a GPU (e.g. the ones in `plugins/cudaCoord` and `plugins/openaccPTM`) start their work as soon as the
+actions they depend on have been calculated, and wait for its result only when PLUMED reaches them in the input. In this way the work of several of them
+overlaps, also with the actions computed on the CPU in between. The log says so for each of these actions. To compare timings, or to debug,
+you can switch this off by setting the environment variable PLUMED\_LAUNCH to `no`: the results are the same.
+
 ### OpenMP
 
 If your compiler supports openMP then the features of PLUMED that use it have it enabled by default.  However, if you want to disable 

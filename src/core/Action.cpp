@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Action.h"
-#include <cstdlib>
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
@@ -38,6 +37,7 @@
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
 namespace PLMD {
 
 Keywords ActionOptions::emptyKeys;
@@ -236,28 +236,17 @@ void Action::parseFlag(const std::string&key,bool & t) {
   }
 }
 
-void Action::setLaunchable( bool forward, bool backward ) {
-  // PLUMED_LAUNCH=no: launch() and launchApply() are never called, and the actions do all their
-  // work in calculate() and apply(). Results are the same: it is meant to compare timings and to debug
-  if(const char* e=std::getenv("PLUMED_LAUNCH")) {
-    if(std::string(e)=="no") {
-      forward=backward=false;
-    }
-  }
-  if(forward || backward) {
-    log.printf("  the work of this action is started as soon as possible (launch), set PLUMED_LAUNCH=no to disable\n");
-  } else if(std::getenv("PLUMED_LAUNCH")) {
+void Action::setLaunchable() {
+  // PLUMED_LAUNCH=no: the actions do all their work in calculate(), with the same results (to compare timings and to debug)
+  const char* e=std::getenv("PLUMED_LAUNCH");
+  if(e && std::string(e)=="no") {
     log.printf("  the work of this action is not started in advance (PLUMED_LAUNCH=no)\n");
+    return;
   }
-  launchable=forward;
-  applyLaunchable=backward;
-  // the loops over the actions look for launchable actions only after this
-  if(forward) {
-    plumed.useLaunch=true;
-  }
-  if(backward) {
-    plumed.useLaunchApply=true;
-  }
+  log.printf("  the work of this action is started as soon as possible (launch), set PLUMED_LAUNCH=no to disable\n");
+  launchable=true;
+  // the forward loop looks for launchable actions only after this
+  plumed.useLaunch=true;
 }
 
 void Action::addDependency(Action*action) {

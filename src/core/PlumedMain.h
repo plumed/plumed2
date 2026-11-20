@@ -54,7 +54,6 @@ namespace PLMD {
 
 
 
-class Action;
 class ActionAtomistic;
 class ActionPilot;
 class ActionForInterface;
@@ -288,24 +287,18 @@ public:
 /// GpuDevice Identifier
   int gpuDeviceId=-1;
 
-/// Some action asked for Action::launch() (Action::launchApply()), see Action::setLaunchable().
-/// Until then the loops over the actions do nothing more than before
+private:
+/// Some action asked for Action::launch(), see Action::setLaunchable().
+/// Until then the forward loop does nothing more than before
   bool useLaunch=false;
-  bool useLaunchApply=false;
 /// Counts the forward loops, see Action::forwardLoop
   std::uint64_t forwardLoop=0;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
   std::uint64_t atomsVersion=0;
-/// The actions that still have to be applied, used by launchApplyAhead()
-  std::vector<const Action*> launchPending;
 /// Calls Action::launch() for the action at position first and for the ones that follow it and can
 /// already be calculated: the ones that depend only on actions that have been calculated
   void launchAhead(std::size_t first);
-/// Calls Action::launchApply() for the action at position first and for the ones that precede it
-/// and can already be applied: the ones no action still to be applied depends on
-  void launchApplyAhead(std::size_t first);
-/// The version of the box an action reads (0 if it does not read atoms)
-  static std::uint64_t boxVersion(const ActionAtomistic* aa);
+public:
 /// Number of replicas, and the index of this one, as seen from every rank.
 /// Set by updateReplicaIdentity(); see getNumberOfReplicas().
   int nReplicas=1;

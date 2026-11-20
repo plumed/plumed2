@@ -639,7 +639,6 @@ Vector ActionAtomistic::getTotalForceOnAllAtoms() const {
 }
 
 Vector ActionAtomistic::rotateForcesOnAllAtoms(const Tensor& rotation) {
-  modifiesGlobalAtoms=true;
   Vector totForce;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & fx=xpos[j]->inputForce;
