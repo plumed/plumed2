@@ -1,3 +1,3 @@
 PRINT ARG=cv FILE=no-gradients.colvar: exit code 0
 BIASVALUE ARG=cv: exit code 1
-forces were applied to this METATOMIC action, but the model did not compute gradients of 'feature' with respect to positions. metatomic only computes gradients of energies with automatic differentiation, models used as biased CVs must compute these gradients explicitly
+forces were applied to this METATOMIC action, but no gradients of 'feature' with respect to positions are available. Either the model did not compute them -- metatomic only computes gradients of energies with automatic differentiation, so models used as biased CVs must compute them explicitly -- or PLUMED did not request them, which happens when the action was set up without derivatives and forces were applied to it afterwards
