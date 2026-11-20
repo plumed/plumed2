@@ -128,6 +128,12 @@ class TestVimCache(unittest.TestCase):
             + "  sleep 20m\n let tries+=1\n endwhile\n"
             + " call assert_notequal(a:previous,get(b:,'plumed_cache_path',''),get(g:,'plumed_cache_error','refresh timeout'))\n"
             + "endfunction\n"
+            + "function! WaitForFailure()\n"
+            + " let tries=0\n"
+            + f" while get(g:,'plumed_cache_error','') !~# 'gen_vim failed' && tries < {CACHE_WAIT_TRIES}\n"
+            + "  sleep 20m\n let tries+=1\n endwhile\n"
+            + " call assert_match('gen_vim failed',get(g:,'plumed_cache_error',''))\n"
+            + "endfunction\n"
             + settings
             + "\n"
             + "setfiletype plumed\n"
@@ -250,11 +256,12 @@ class TestVimCache(unittest.TestCase):
     def test_failed_refresh_preserves_previous_generation(self):
         self.run_vim(
             "call WaitForCache()\nlet previous=b:plumed_cache_path\n"
-            "let $PLUMED_TEST_FAIL='1'\nPlumedRefresh\nsleep 500m\n"
+            "let $PLUMED_TEST_FAIL='1'\nPlumedRefresh\ncall WaitForFailure()\n"
             "call assert_equal(previous,b:plumed_cache_path)\n"
             "call assert_true(filereadable(previous . '/help/CACHE_ACTION.txt'))\n"
-            "call assert_match('gen_vim failed',get(g:,'plumed_cache_error',''))\n"
-            "let $PLUMED_TEST_FAIL=''\nPlumedRefresh\ncall WaitForRefresh(previous)"
+            "let $PLUMED_TEST_FAIL=''\nPlumedRefresh\ncall WaitForRefresh(previous)",
+            # Exercise a failure that completes after the former fixed 500ms wait.
+            env={"PLUMED_TEST_DELAY": "0.8"},
         )
         self.assertEqual(len(self.calls()), 3)
 
@@ -435,9 +442,8 @@ class TestVimCache(unittest.TestCase):
 
     def test_failure_and_missing_executable_preserve_static_syntax(self):
         self.run_vim(
-            "sleep 500m\ncall assert_true(has_key(b:plumedDictionary,'DISTANCE'))\n"
+            "call WaitForFailure()\ncall assert_true(has_key(b:plumedDictionary,'DISTANCE'))\n"
             "call assert_false(has_key(b:plumedDictionary,'CACHE_ACTION'))\n"
-            "call assert_match('gen_vim failed',get(g:,'plumed_cache_error',''))\n"
             "call plumed#Update(0)\nsleep 200m",
             env={"PLUMED_TEST_FAIL": "1"},
         )
