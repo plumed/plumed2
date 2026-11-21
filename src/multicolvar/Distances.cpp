@@ -340,6 +340,8 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
   keys.addFlag("SQUARED",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
   keys.addDeprecatedFlag("LOWMEM","");
   keys.reset_style("ATOMS","atoms");
   MultiColvarShortcuts::shortcutKeywords( keys );
@@ -390,6 +392,16 @@ Distances::Distances(const ActionOptions& ao):
     parseFlag("USEGPU",gpu);
     if( gpu ) {
       dline += " USEGPU";
+    }
+    bool serial;
+    parseFlag("SERIAL",serial);
+    if( serial ) {
+      dline += " SERIAL";
+    }
+    bool multigpu;
+    parseFlag("MULTIGPU",multigpu);
+    if( multigpu ) {
+      dline += " MULTIGPU";
     }
   } else {
     dline += " COMPONENTS";

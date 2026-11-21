@@ -1,4 +1,5 @@
 LOAD FILE=../../../../plumedOpenACC.so
+# the chain of Q6 written out (Q6 USEGPU computes the sums without the matrix), on the GPU
   
 # Compute sigma(r_ij) and the (x_ij,y_ij,z_ij) vectors
 q6mat: CONTACT_MATRIX ...
@@ -6,10 +7,10 @@ GROUP=@mdatoms COMPONENTS USEGPU
 SWITCH={RATIONAL  D_0=3.0 R_0=1.5}
 ...
 # Evaluate the Y_l^m values for each bond
-q6sh: SPHERICAL_HARMONIC ARG=q6mat.x,q6mat.y,q6mat.z,q6mat.w L=6
+q6sh: SPHERICAL_HARMONIC ARG=q6mat.x,q6mat.y,q6mat.z,q6mat.w L=6 USEGPU
 # Calculate the vector of q_lm(i) values
 aones: ONES SIZE=@natoms
-q6sp: MATRIX_VECTOR_PRODUCT ARG=q6sh.*,aones
+q6sp: MATRIX_VECTOR_PRODUCT ARG=q6sh.*,aones USEGPU
 # Evaluate the |q_l(i)| values
 q6norm2: COMBINE ...
 PERIODIC=NO ARG=q6sp.*

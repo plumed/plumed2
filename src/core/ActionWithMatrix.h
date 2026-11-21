@@ -95,7 +95,8 @@ protected:
   void getColumnBookeepingArrays( RequiredMatrixElements& outmat );
 /// With AVOID_THREAD_GATHER the forces are gathered in two passes that are not combined across MPI processes:
 /// stop with an error if the action is parallelised with MPI (serial is the SERIAL flag of the task manager,
-/// so this is called by the derived actions after it has been read)
+/// so this is called by the derived actions after it has been read). The GPU versions of the openaccPTM
+/// plugin do combine them, and are not stopped
   void checkThreadGatherWithMPI( const bool serial );
 public:
   static void registerKeywords( Keywords& keys );

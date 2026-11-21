@@ -392,6 +392,10 @@ protected:
   std::size_t workspace_size;
 /// This holds data for that the underlying action needs to do the calculation
   input_type actiondata;
+/// Incremented whenever actiondata may have changed, i.e. by setActionInput and by the non-const
+/// getActionInput: the GPU task manager of the openaccPTM plugin copies actiondata to the device
+/// again only when this changes
+  unsigned long actiondata_generation=0;
 //// This is used internally to get the number of elements in the value stash
   std::size_t getValueStashSize() const ;
 /// This is used internally to gather the forces on the threads
@@ -412,6 +416,10 @@ public:
 /// Get the action input so we can use it
   input_type& getActionInput();
   const input_type& getActionInput() const ;
+/// A number that changes whenever the action input may have changed (see actiondata_generation)
+  unsigned long getActionInputGeneration() const {
+    return actiondata_generation;
+  }
 /// Is the calculation running in serial
   bool runInSerial() const {
     return serial;
@@ -542,10 +550,13 @@ void ParallelTaskManager<T>::setNForceScalars( const unsigned& n ) {
 template <class T>
 void ParallelTaskManager<T>::setActionInput( const input_type& adata ) {
   actiondata=adata;
+  ++actiondata_generation;
 }
 
 template <class T>
 typename ParallelTaskManager<T>::input_type& ParallelTaskManager<T>::getActionInput() {
+  // the caller may change the input through the reference
+  ++actiondata_generation;
   return actiondata;
 }
 

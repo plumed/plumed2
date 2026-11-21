@@ -588,7 +588,8 @@ private:
                               int l,
                               const std::string& sep,
                               const std::string& vlab,
-                              bool usegpu = false);
+                              const std::string& flags = "",
+                              const std::string& normAction = "");
 public:
   static void registerKeywords( Keywords& keys );
   explicit Steinhardt(const ActionOptions&);
@@ -618,6 +619,14 @@ void Steinhardt::registerKeywords( Keywords& keys ) {
   keys.setValueDescription("vector",
                            "the norms of the vectors of spherical harmonic coefficients");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  // without MASK, the sums of the spherical harmonics are computed without the contact matrix
+  // (on the GPU by the openaccPTM plugin)
+  keys.addActionNameSuffix("_SUMS");
+  keys.addActionNameSuffix("_DENOM_SUMS");
+  keys.addActionNameSuffix("_SUMSACC");
+  keys.addActionNameSuffix("_NORM");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao):
@@ -633,7 +642,11 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
 
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  bool serial, multigpu;
+  parseFlag("SERIAL",serial);
+  parseFlag("MULTIGPU",multigpu);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"") + (multigpu?" MULTIGPU":"");
 
   std::string sp_str;
   parse("SPECIES",sp_str);
@@ -641,51 +654,58 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
   parse("SPECIESA",specA);
   std::string specB;
   parse("SPECIESB",specB);
-  CoordinationNumbers::expandMatrix( true,
-                                     getShortcutLabel(),
-                                     sp_str,
-                                     specA,
-                                     specB,
-                                     this );
   int l;
-  std::string sph_input = getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
-                          + getShortcutLabel() + "_mat.x,"
-                          + getShortcutLabel() + "_mat.y,"
-                          + getShortcutLabel() + "_mat.z,"
-                          + getShortcutLabel() + "_mat.w";
-
   if( getName()=="Q1" ) {
-    sph_input +=" L=1";
     l=1;
   } else if( getName()=="Q3" ) {
-    sph_input += " L=3";
     l=3;
   } else if( getName()=="Q4" ) {
-    sph_input += " L=4";
     l=4;
   } else if( getName()=="Q6" ) {
-    sph_input += " L=6";
     l=6;
   } else {
     plumed_merror("invalid input");
   }
-  readInputLine( sph_input + doUSEGPU);
-
-  // Input for denominator (coord)
+  std::string lstr;
+  Tools::convert( l, lstr );
+  std::string mask;
+  const std::string matinp = CoordinationNumbers::contactMatrixInput( getShortcutLabel(), sp_str, specA, specB, this, mask );
+  // the coordination numbers, that divide the sums of the spherical harmonics
+  const std::string denomLab = getShortcutLabel() + "_denom";
+  // the sums without the contact matrix, if possible
+  const std::string fused = CoordinationNumbers::fusedAction( usegpu, mask, getName(), this );
+  // The contact matrix, the spherical harmonics and the vector of ones are created also with
+  // the fused action, as inputs can use their labels: they are computed only if something uses them
+  readInputLine( getShortcutLabel() + "_mat: CONTACT_MATRIX" + matinp + " COMPONENTS"
+                 + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
+  readInputLine( getShortcutLabel() + "_sh: SPHERICAL_HARMONIC ARG="
+                 + getShortcutLabel() + "_mat.x,"
+                 + getShortcutLabel() + "_mat.y,"
+                 + getShortcutLabel() + "_mat.z,"
+                 + getShortcutLabel() + "_mat.w L=" + lstr + doUSEGPU );
   ActionWithValue* av = plumed.getActionSet()
                         .selectWithLabel<ActionWithValue*>( getShortcutLabel() + "_mat");
   plumed_assert( av && av->getNumberOfComponents()>0 && (av->copyOutput(0))->getRank()==2 );
   std::string size;
   Tools::convert( (av->copyOutput(0))->getShape()[1], size );
   readInputLine( getShortcutLabel() + "_denom_ones: ONES SIZE=" + size );
-  readInputLine( getShortcutLabel() + "_denom: MATRIX_VECTOR_PRODUCT "
-                 "ARG=" + getShortcutLabel() + "_mat.w,"
-                 + getShortcutLabel() + "_denom_ones"
-                 + doUSEGPU);
-  readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
-                 "ARG=" + getShortcutLabel() + "_sh.*,"
-                 + getShortcutLabel() + "_denom_ones"
-                 + doUSEGPU);
+  if( fused.length()>0 ) {
+    // the sums of the spherical harmonics over the neighbours, and the coordination numbers
+    // (on the CPU only SERIAL applies)
+    const std::string flags = usegpu ? doUSEGPU : std::string(serial ? " SERIAL" : "");
+    readInputLine( getShortcutLabel() + "_sp: " + fused + matinp + flags );
+    // computed in the same pass over the neighbours by the sums
+    readInputLine( denomLab + ": " + getName() + "_DENOM_SUMS SUMS=" + getShortcutLabel() + "_sp" );
+  } else {
+    readInputLine( denomLab + ": MATRIX_VECTOR_PRODUCT "
+                   "ARG=" + getShortcutLabel() + "_mat.w,"
+                   + getShortcutLabel() + "_denom_ones"
+                   + doUSEGPU);
+    readInputLine( getShortcutLabel() + "_sp: MATRIX_VECTOR_PRODUCT "
+                   "ARG=" + getShortcutLabel() + "_sh.*,"
+                   + getShortcutLabel() + "_denom_ones"
+                   + doUSEGPU);
+  }
 
   // If we are doing VMEAN determine sum of vector components
   std::string snum;
@@ -699,7 +719,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
       //realImg is "r" or "i"
       return getShortcutLabel() + "_" +realImg + "mn-" + numstr + ": CUSTOM "
       "ARG=" + getShortcutLabel() + "_sp." +realImg + "m-" + numstr + ","
-      + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO";
+      + denomLab + " FUNC=x/y PERIODIC=NO";
     };
     // Divide all components by coordination numbers
     for(int i=-l; i<=l; ++i) {
@@ -732,7 +752,7 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "ms",
-                           usegpu );
+                           "" ); // the norm of a vector of scalars: on the CPU
   }
   if( do_vsum ) {
     auto makeString=[&](const std::string& numstr,
@@ -754,20 +774,24 @@ Steinhardt::Steinhardt( const ActionOptions& ao):
                            l,
                            "_",
                            "mz",
-                           usegpu );
+                           "" ); // the norm of a vector of scalars: on the CPU
   }
 
-  // Now calculate the total length of the vector
+  // Now calculate the total length of the vector: always on the CPU, as the
+  // sum of 2l+1 squares per atom is cheaper than moving the 2(2l+1) vectors to the GPU.
+  // The norm is one action (COMBINE and the square root are created too, as inputs can use
+  // the label of the square: it is computed only if something uses it)
   createVectorNormInput( getShortcutLabel() + "_sp",
                          getShortcutLabel() + "_norm",
                          l,
                          ".",
                          "m",
-                         usegpu );
+                         serial?" SERIAL":"",
+                         getName() );
   // And take average
   readInputLine( getShortcutLabel() + ": CUSTOM "
                  "ARG=" + getShortcutLabel() + "_norm,"
-                 + getShortcutLabel() + "_denom FUNC=x/y PERIODIC=NO");
+                 + denomLab + " FUNC=x/y PERIODIC=NO");
   multicolvar::MultiColvarShortcuts::expandFunctions( getShortcutLabel(),
       getShortcutLabel(), "", this );
 }
@@ -777,7 +801,8 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
                                         const int l,
                                         const std::string& sep,
                                         const std::string& vlab,
-                                        const bool usegpu) {
+                                        const std::string& flags,
+                                        const std::string& normAction ) {
   std::string norm_input = olab + "2: COMBINE PERIODIC=NO POWERS=";
   std::string snum = getSymbol( -l );
   std::string arg_inp = "";
@@ -791,8 +816,12 @@ void Steinhardt::createVectorNormInput( const std::string& ilab,
     norm_input += comma + "2,2";
     comma=",";
   }
-  readInputLine( norm_input + " ARG=" + arg_inp + (usegpu?" USEGPU":"") );
-  readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  readInputLine( norm_input + " ARG=" + arg_inp + flags );
+  if( normAction.length()>0 ) {
+    readInputLine( olab + ": " + normAction + "_NORM ARG=" + arg_inp );
+  } else {
+    readInputLine( olab + ": CUSTOM ARG=" + olab + "2 FUNC=sqrt(x) PERIODIC=NO");
+  }
 }
 
 std::string Steinhardt::getSymbol( const int m ) {

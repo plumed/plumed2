@@ -67,8 +67,41 @@ LOAD FILE=/path/to/plumedOpenACC.so
 CONTACT_MATRIX GROUP=1-1000 SWITCH={EXP D_0=0.2 R_0=0.1 D_MAX=0.66} USEGPU
 ``` 
 
-When PLUMED runs with MPI (e.g. an MD code with several MPI ranks), the actions with `USEGPU` are computed by rank 0 only,
-on its GPU, and the results are sent to the other ranks. The other ranks do not use the GPU and wait for rank 0.
+When PLUMED runs with MPI (e.g. an MD code with several MPI ranks, or `mpirun -np 4 plumed driver`), the actions with `USEGPU`
+are computed by the first rank, on its GPU, and the results are sent to the other ranks. With `MULTIGPU` (accepted by the actions
+and by the shortcuts that take `USEGPU`) the tasks are split in blocks between the ranks, each rank computes its block on its GPU
+(see below), and the results are summed, as for the CPU version; `SERIAL` restores the default. `MULTIGPU` is not the default
+because, for most actions, a call is dominated by work on the CPU (copies of the input, of the results and of the forces) that
+does not decrease with the number of ranks, while the sums over the ranks add more: on Leonardo (A100) splitting
+[COORDINATIONNUMBER](COORDINATIONNUMBER.md) or [Q6](Q6.md) of 20000 atoms or a [DISTANCES](DISTANCES.md) of 100000 between
+2 or 4 GPUs was slower than using one (measured with the contact matrices, before the sums described below). It pays off when
+the calculation on the GPU dominates.
+
+The forces of the matrices are gathered in one pass, adding with atomics the forces that several rows touch. The low memory
+version (`AVOID_THREAD_GATHER`), which computes the matrix again column by column, was the default on the GPU, but it makes the
+backward pass about two times slower ([CONTACT_MATRIX](CONTACT_MATRIX.md) of 20000 atoms on an A100).
+
+### Coordination numbers and Steinhardt parameters
+
+With `USEGPU`, [COORDINATIONNUMBER](COORDINATIONNUMBER.md) and [Q1](Q1.md), [Q3](Q3.md), [Q4](Q4.md), [Q6](Q6.md) (and so
+[LOCAL_Q1](LOCAL_Q1.md), ..., [LOCAL_AVERAGE](LOCAL_AVERAGE.md) that use their output) compute the sums over the neighbours
+of each atom on the GPU in a single pass, without building the contact matrix (`COORDINATIONNUMBER_SUMSACC`, `Q6_SUMSACC`, ...,
+see `src/NeighborSums.cpp`): only the positions and the linked cells go to the GPU, and only the sums and the forces on the atoms
+come back. These are the actions that the CPU uses without `USEGPU` (`src/symfunc/NeighborSums.h` in PLUMED), with the same
+kernels: the linked cells are built on the CPU and searched on the GPU, in any box, one GPU thread per atom. With up to 512
+atoms in `SPECIESA` (e.g. one ion against all the water molecules) the cells are not built: the GPU threads share the atoms of
+`SPECIESB` in blocks, and the partial sums of each atom are added in order by a second kernel. With `SPECIES` the force on each
+atom is gathered from its own neighbours (no atomics); with `SPECIESA` and `SPECIESB` the forces on the second group are added
+with atomics.
+For Q1, ..., Q6 the coordination numbers (the denominators) are computed in the same pass as the sums of the spherical harmonics,
+and the forces of the spherical harmonics are contracted pair by pair, without storing the derivatives of the $2(2l+1)$ components.
+The results are those of the CPU version (in double precision). On one A100 (8 CPU threads), ms per step:
+COORDINATIONNUMBER 3.6 (20000 atoms) and 16 (100000), Q6 12.6 and 58; on 32 CPU cores 4.0, 22, 15.7 and 90.
+This is not used with `MASK`, and for [COORDINATION_MOMENTS](COORDINATION_MOMENTS.md): the contact matrix is then computed
+on the GPU as before. The actions of the contact matrix (e.g. `q6_mat`, `q6_sh`) are still created, and are computed (on the GPU)
+only when another action uses them.
+For Q1, ..., Q6 the norm of the vector of the $2l+1$ sums (`Q6_NORM`, as [COMBINE](COMBINE.md) and the square root) is always
+computed on the CPU, which is faster than moving the $2(2l+1)$ vectors to the GPU and back.
 
 ### Secondary structure
 
@@ -95,8 +128,12 @@ several GPUs and do not interfere with an MD code that keeps its data on the GPU
 
 1. the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
 2. the GPU the MD code is using (the one whose CUDA context is current when PLUMED is called, as for GROMACS 2025 and 2026), otherwise
-3. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM` (e.g. for [driver](driver.md), where there is no MD code).
-   With `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU.
+3. with several GPUs on the node, and if `ACC_DEVICE_NUM` is not set, GPU number (local rank % number of GPUs), where the local rank
+   is the rank of the process within its node, as set by the MPI launcher (`OMPI_COMM_WORLD_LOCAL_RANK`, `MPI_LOCALRANKID`, `SLURM_LOCALID`, ...).
+   This is what happens with [driver](driver.md), where there is no MD code: e.g. `mpirun -np 4 plumed driver` on a node with 4 GPUs
+   uses one GPU per rank, otherwise
+4. the default OpenACC device: the first GPU, or the one set with `ACC_DEVICE_NUM`.
+   With `CUDA_VISIBLE_DEVICES` (or `srun --gpus-per-task=1`) each rank can be given its own GPU.
 
 The GPU of an action is chosen the first time it is computed, and it does not change afterwards. It is written in the log,
 in the same way for all the actions, e.g. `d runs on GPU 1` for an action labelled `d` (or `d runs on the host` when OpenACC
@@ -152,6 +189,7 @@ The next section contains a list of the actions that can take the USEGPU command
 - isdb
    - [SAXS](SAXS.md) and [SANS](SANS.md), see below
 - symfunc
+   - [COORDINATIONNUMBER](COORDINATIONNUMBER.md)
    - [Q1](Q1.md)
    - [Q3](Q3.md)
    - [Q4](Q4.md)
@@ -190,7 +228,7 @@ SAXS ...
 (This example is not highlighted only because the manual is built without the plugin.)
 
 - The GPU is chosen as for the other actions (see above): there is no `DEVICEID` keyword.
-- Differently from the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
+- As for the other actions, with MPI the rows of the Debye sum are split over the ranks, each one using its own
   GPU (or sharing one), and the results are summed. With `SERIAL` only the first rank computes on its GPU and the results
   are shared with the others.
 - With `DOSCORE` the derivatives of the intensities stay on the GPU and only the forces are copied back. Without it the
