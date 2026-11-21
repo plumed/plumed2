@@ -405,9 +405,8 @@ void Center::calculate() {
     updateMassAndCharge();
   }
 
-  deriv.resize(getNumberOfAtoms());
-
   if(dophases) {
+    deriv.resize(getNumberOfAtoms());
     dcenter_sin.resize(getNumberOfAtoms());
     dcenter_cos.resize(getNumberOfAtoms());
     Vector center_sin;
@@ -475,12 +474,10 @@ void Center::calculate() {
     setPosition(matmul(c,box2pi));
   } else {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      double w=weights[i];
-      pos+=w*getPosition(i);
-      deriv[i]=w*Tensor::identity();
+      pos+=weights[i]*getPosition(i);
     }
     setPosition(pos);
-    setAtomsDerivatives(deriv);
+    setAtomsDerivativesIsotropic(weights);
   }
 }
 
