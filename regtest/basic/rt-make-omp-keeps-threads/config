@@ -1,0 +1,5 @@
+type=make
+# The caller sets 4 threads with setNumOMPthreads, as GROMACS does with -ntomp.
+# PLUMED_NUM_THREADS takes precedence over it (the CI sets it to 2): with 2 threads
+# PLUMED would destroy two threads of the caller, which is what this test detects.
+unset PLUMED_NUM_THREADS

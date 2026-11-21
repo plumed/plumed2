@@ -77,20 +77,14 @@ void ActionWithValue::clearInputForces( const bool& force ) {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
-  // Opening an OpenMP region costs microseconds and this is called for every
-  // active action at every step: use threads only when there is enough to clear.
+  // This is called for every active action at every step: threads only when there is
+  // enough to clear (see OpenMP.h)
 #ifdef _OPENMP
-  constexpr std::size_t minPerThread=32768;
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt>1 ) {
-    std::size_t tot=0;
-    for(const auto & v : values) {
-      tot+=v->data.size();
-    }
-    if( tot<2*minPerThread ) {
-      nt=1;
-    }
+  std::size_t tot=0;
+  for(const auto & v : values) {
+    tot+=v->data.size();
   }
+  const unsigned nt=OpenMP::getGoodNumThreads<double>(nullptr,tot);
   if( nt>1 && values.size()>=nt ) {
     #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<values.size(); i++) {
@@ -101,7 +95,7 @@ void ActionWithValue::clearDerivatives( const bool& force ) {
   if( nt>1 ) {
     // a few values with many derivatives (e.g. a colvar of many atoms): the threads share each value
     for(const auto & v : values) {
-      v->clearDerivatives(false,std::min<std::size_t>(nt,std::max<std::size_t>(1,v->data.size()/minPerThread)));
+      v->clearDerivatives(false,OpenMP::getGoodNumThreads(v->data));
     }
     return;
   }
@@ -394,7 +388,8 @@ bool ActionWithValue::checkForForces() {
   // Each element is computed as in the serial loop below, so the result does not change.
   constexpr unsigned chunk=4096;
   const unsigned nchunks=(nder+chunk-1)/chunk;
-  const unsigned ntder=(nt==1 && nchunks>=16) ? std::min(OpenMP::getNumThreads(),nchunks/8) : 1;
+  // all the threads or one, see OpenMP.h
+  const unsigned ntder=nt==1 ? OpenMP::getGoodNumThreads(forcesForApply) : 1;
   if( ntder>1 ) {
     double* const dest=forcesForApply.data();
     #pragma omp parallel for num_threads(ntder)

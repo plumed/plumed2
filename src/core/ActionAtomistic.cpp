@@ -39,11 +39,9 @@
 namespace PLMD {
 
 namespace {
-/// Threads to copy n atoms: none for the small actions, where opening a parallel region costs more than the copy
+/// Threads to copy n atoms (see OpenMP.h)
 unsigned atomCopyThreads(const std::size_t n) {
-  constexpr std::size_t minAtomsPerThread=16384;
-  const std::size_t m=n/minAtomsPerThread;
-  return m<2 ? 1 : std::min<std::size_t>(m,OpenMP::getNumThreads());
+  return OpenMP::getGoodNumThreads<Vector>(nullptr,n);
 }
 }
 

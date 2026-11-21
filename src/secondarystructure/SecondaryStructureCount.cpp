@@ -243,13 +243,8 @@ void SecondaryStructureCount::calculate() {
   const unsigned natoms=getNumberOfAtoms();
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  unsigned nt=OpenMP::getNumThreads();
-  if( nt*stride*10>npairs ) {
-    nt=npairs/stride/10;
-  }
-  if( nt==0 ) {
-    nt=1;
-  }
+  // a pair of strands costs much more than reading it: at least 10 pairs per thread (see OpenMP.h)
+  const unsigned nt=OpenMP::getGoodNumThreads(npairs/stride,10);
   if( omp_derivatives.size()<nt ) {
     omp_derivatives.resize(nt);
   }
