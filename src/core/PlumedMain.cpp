@@ -1487,7 +1487,11 @@ void PlumedMain::prepareDependencies() {
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
-    if(pilots[i]->onStep()) {
+    auto* value=exchangeStep ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
+    // Calculation-only exchange trials need the full potential even when an
+    // MTS bias does not apply forces on this MD step.
+    const bool exchangeBias=exchangeStep && value && value->exists(value->getLabel()+".bias");
+    if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
       active=true;
     }
