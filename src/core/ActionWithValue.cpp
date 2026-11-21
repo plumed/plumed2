@@ -372,9 +372,12 @@ bool ActionWithValue::checkForForces() {
     forcesForApply.resize( nder );
   }
 
+  // many values are split over the ranks (asked only if there are more than 4 values,
+  // Get_size is not free in some builds)
+  const bool splitOverRanks=ncp>4 && ncp>static_cast<unsigned>(4*comm.Get_size());
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+  if(splitOverRanks) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
@@ -407,7 +410,7 @@ bool ActionWithValue::checkForForces() {
         }
       }
     }
-    if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+    if(splitOverRanks) {
       comm.Sum(&forcesForApply[0],nder);
     }
     return true;
@@ -454,7 +457,7 @@ bool ActionWithValue::checkForForces() {
     }
   }
 
-  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+  if(splitOverRanks) {
     comm.Sum(&forcesForApply[0],nder);
   }
   return true;

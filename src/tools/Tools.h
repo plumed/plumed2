@@ -531,7 +531,10 @@ bool Tools::parseVector(
 }
 template<typename T>
 void Tools::removeDuplicates(std::vector<T>& vec) {
-  std::sort(vec.begin(), vec.end());
+  // lists of atoms are often sorted already: checking is much cheaper than sorting
+  if(!std::is_sorted(vec.begin(), vec.end())) {
+    std::sort(vec.begin(), vec.end());
+  }
   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 

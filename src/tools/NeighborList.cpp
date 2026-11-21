@@ -37,6 +37,7 @@
 #include <numeric>
 #include <cstdlib>
 #include <limits>
+#include <functional>
 
 #pragma GCC diagnostic error "-Wswitch"
 
@@ -105,9 +106,12 @@ NeighborList::NeighborList(const std::vector<AtomNumber>& list0,
 NeighborList::~NeighborList()=default;
 
 void NeighborList::initialize() {
+  // With the link cells the pairs within the cutoff are found from the cells: all the pairs
+  // are never stored nor indexed, so the two limits below on their number do not apply.
+  const bool allPairsIndexed=!(useCellList_ && stride_>0);
   constexpr const char* envKey="PLUMED_IGNORE_NL_MEMORY_ERROR";
   //this checks the upper limit of the memory
-  if(!std::getenv(envKey)) {
+  if(allPairsIndexed && !std::getenv(envKey)) {
     //blocking memory allocation on more than 10 GB of memory
     //A single list of more than 50000 atoms
     //two different lists of more than 35355 atoms each (lista*listb < max, see below)
@@ -121,8 +125,8 @@ void NeighborList::initialize() {
                      "You can skip this error by exporting \""+envKey+"\"";
     }
   }
-  // pairs are indexed with unsigned integers (getClosePair, size): this limit cannot be skipped
-  plumed_assert(nallpairs_ <= std::numeric_limits<unsigned>::max())
+  // all the pairs are indexed with unsigned integers (getClosePair, size): this limit cannot be skipped
+  plumed_assert(!allPairsIndexed || nallpairs_ <= std::numeric_limits<unsigned>::max())
       << "A NeighborList cannot handle " << nallpairs_ << " pairs (the maximum is "
       << std::numeric_limits<unsigned>::max() << ")";
   try {
@@ -452,18 +456,29 @@ void NeighborList::setRequestList() {
     fullToRequest_[neighbors_[i].second]=0;
   }
   requestlist_.clear();
-  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
-    if(fullToRequest_[i]!=unused) {
-      requestlist_.push_back(fullatomlist_[i]);
+  if(std::adjacent_find(fullatomlist_.begin(),fullatomlist_.end(),std::greater_equal<AtomNumber>())==fullatomlist_.end()) {
+    // the full list is sorted and without repetitions (e.g. GROUPA=1 GROUPB=2-100):
+    // the used atoms are collected already sorted, and their positions are counted
+    for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+      if(fullToRequest_[i]!=unused) {
+        fullToRequest_[i]=requestlist_.size();
+        requestlist_.push_back(fullatomlist_[i]);
+      }
     }
-  }
-  Tools::removeDuplicates(requestlist_);
-  // position of each used atom in the sorted list, so that the pairs can be renumbered without searches
-  for(unsigned i=0; i<fullatomlist_.size(); ++i) {
-    if(fullToRequest_[i]!=unused) {
-      auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), fullatomlist_[i]);
-      plumed_dbg_assert(p!=requestlist_.end() && *p==fullatomlist_[i]);
-      fullToRequest_[i]=p-requestlist_.begin();
+  } else {
+    for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+      if(fullToRequest_[i]!=unused) {
+        requestlist_.push_back(fullatomlist_[i]);
+      }
+    }
+    Tools::removeDuplicates(requestlist_);
+    // position of each used atom in the sorted list, so that the pairs can be renumbered without searches
+    for(unsigned i=0; i<fullatomlist_.size(); ++i) {
+      if(fullToRequest_[i]!=unused) {
+        auto p = std::lower_bound(requestlist_.begin(), requestlist_.end(), fullatomlist_[i]);
+        plumed_dbg_assert(p!=requestlist_.end() && *p==fullatomlist_[i]);
+        fullToRequest_[i]=p-requestlist_.begin();
+      }
     }
   }
   reduced=false;
