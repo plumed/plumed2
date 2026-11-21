@@ -152,7 +152,7 @@ Modules and plugins
 -------------------
 
 The source code is organized in modules, one for each directory of `src`.
-The `module.type` file of each module says when it is compiled:
+The `type:` field in each module's `module.yml` says when it is compiled:
 
 * `always`: the basic infrastructure (e.g. `core`, `tools`), always compiled;
 * `default-on`: the common actions (e.g. `bias`, `colvar`, `function`,
@@ -161,6 +161,9 @@ The `module.type` file of each module says when it is compiled:
 * `default-off`: specialized methods and modules that need external libraries
   (e.g. `ves`, `funnel`, `drr`, `sasa`, `pytorch`, `metatomic`), compiled only
   when they are requested.
+
+The same YAML file declares native dependencies in `use:` and optional packaging
+policy in `conda:`; see the [declaration reference](conda/module-options.md).
 
 Modules are selected when PLUMED is configured, with a `:`-separated list:
 

@@ -29,20 +29,20 @@ builtin = set(
 build_id = subprocess.check_output(
     [str(plumed), "--module-build-id"], env=environment, text=True
 ).strip()
-generate_catalog()
+catalog = generate_catalog()
 modules = args.enable_extension_modules.replace(":", " ").split()
 if modules == ["all"]:
     modules = [
-        p.parent.name
-        for p in sorted((root / "src").glob("*/module.type"))
-        if p.read_text().strip() == "default-off" and p.parent.name not in builtin
+        name
+        for name, module in catalog["modules"].items()
+        if module["type"] == "default-off" and name not in builtin
     ]
 if not modules:
     parser.error("select at least one extension module")
 for name in modules:
     if (
         not name.replace("_", "").replace("-", "").isalnum()
-        or not (root / "src" / name / "module.type").is_file()
+        or name not in catalog["modules"]
     ):
         parser.error(f"unknown module: {name}")
     if name in builtin:

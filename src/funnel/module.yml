@@ -1,4 +1,6 @@
 name: funnel
+type: default-off
+use: [core, tools, colvar, bias]
 authors: Stefano Raniolo and Vittorio Limongelli
 description: a collective variable and a bias action necessary to perform Funnel-Metadynamics on Molecular Dynamics simulations
 dois: ["10.1073/pnas.1303186110", "10.1038/s41596-020-0342-4"]

@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/PlumedModules.cmake")
+
 # CMake-native reimplementation of the PLUMED build-time generators.
 #
 # Mirrors maketools/makecmd, makeModuleMap, xxd, update-version.sh and the
@@ -35,7 +37,7 @@ endfunction()
 # contains it (same content as maketools/makeModuleMap).
 function(plumed_make_module_map src_root out_file)
   set(_rows "")
-  file(GLOB _mt_files "${src_root}/src/*/module.type")
+  file(GLOB _mt_files "${src_root}/src/*/module.yml")
   file(GLOB _plugin_dirs "${src_root}/plugins/*")
   foreach(_plugin IN LISTS _plugin_dirs)
     if(IS_DIRECTORY "${_plugin}")
@@ -149,6 +151,7 @@ endfunction()
 
 # --- Config.inc / version.h / Makefile.conf.xxd --------------------------
 function(plumed_generate_config src_root out_dir)
+  plumed_check_obsolete_modules("${src_root}")
   plumed_read_version("${src_root}")
 
   # Config.inc: the substitutions that src/config/Makefile does with sed for
@@ -178,9 +181,9 @@ function(plumed_generate_config src_root out_dir)
   # selected CMake modules and a build-system-specific source/toolchain hash.
   if(NOT DEFINED MODULES)
     set(MODULES "")
-    file(GLOB _types "${src_root}/src/*/module.type")
+    file(GLOB _types "${src_root}/src/*/module.yml")
     foreach(_type IN LISTS _types)
-      file(STRINGS "${_type}" _kind LIMIT_COUNT 1)
+      plumed_read_module("${_type}" _kind _use)
       if(_kind STREQUAL "always" OR _kind STREQUAL "default-on")
         get_filename_component(_directory "${_type}" DIRECTORY)
         get_filename_component(_module "${_directory}" NAME)
@@ -200,6 +203,8 @@ function(plumed_generate_config src_root out_dir)
       string(APPEND _identity ";${_relative}:${_digest}")
     endif()
   endforeach()
+  plumed_module_headers("${src_root}" _headers)
+  string(APPEND _identity "${_headers}")
   file(SHA256 "${src_root}/CMakeLists.txt" _cmake_digest)
   string(SHA256 _build_id "${_identity};${_cmake_digest}")
   file(WRITE "${out_dir}/ModuleBuild.inc"

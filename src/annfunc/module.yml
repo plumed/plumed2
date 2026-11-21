@@ -1,4 +1,6 @@
 name: annfunc
+type: default-off
+use: [core, function]
 authors: Wei Chen and Andrew Ferguson
 description: an implementation of a fully-connected feedforward neural network 
 dois: ["10.1002/jcc.25520"]

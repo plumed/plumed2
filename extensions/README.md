@@ -117,21 +117,22 @@ GPU numerical validation uses the channel-based Colab notebook after publication
 The inventory and conda recipes, including `conda/plumed/meta.yaml`, are generated files and are not tracked. Run
 `python3 extensions/conda_recipe.py` before invoking conda-build directly;
 `conda/run-conda-build.sh` does this automatically. Configure and extension builds
-regenerate the inventory themselves. The generators read `module.type`, exact
-Makefile `USE` dependencies, source `__PLUMED_HAS_*` guards, module license files,
-and module-local `conda.mk` declarations. See the complete
+regenerate the inventory themselves. The generators read `type`, direct native `use` dependencies and `conda` policy
+from `module.yml` (or `plugin.yml`), source `__PLUMED_HAS_*` guards and module license files.
+Install the metadata tools with `python -m pip install -r extensions/requirements.txt`. See the complete
 [configuration reference](../conda/module-options.md) for build tools, supported
 platforms, variants, flags, feature policy and tests:
 
-```make
-CONDA_HOST_REQUIREMENTS = libboost-devel
-CONDA_RUN_REQUIREMENTS = libboost
-# Libraries without a verified conda-forge package are recorded, not required:
-CONDA_UNAVAILABLE_LIBRARIES = example-library
+```yaml
+conda:
+  requirements:
+    host: [libboost-devel]
+    run: [libboost]
+  unavailable_libraries: [example-library]
 ```
 
-Quote MatchSpecs containing spaces. Conda selectors are supported at the end of
-a declaration, for example `# [linux]`. These files are manually curated inputs and are never overwritten by the
+Use explicit `spec`/`selector` mappings for conditional requirements. These files
+are manually curated inputs and are never overwritten by the
 generators. They declare package policy;
 compiler probes only decide which feature macros and native links to enable.
 The base recipe is generated from `conda/plumed/meta.yaml.in` and the requirements
@@ -195,7 +196,7 @@ contract as source modules.
 
 `conda install plumed-ext-pycv` installs the pycv plugin and its companion Python
 extension for the environment's Python minor version. The recipe builds Python
-3.11–3.15 variants declared in `plugins/pycv/conda.mk`. Every variant
+3.11–3.15 variants declared in `plugins/pycv/plugin.yml`. Every variant
 links to and pins the same main `plumed` package, without bundling another kernel.
 Python and NumPy are plugin runtime requirements; pybind11 is needed only to build.
 
@@ -289,7 +290,7 @@ main kernel bytes.
 
 ### Modules moved into the kernel
 
-Set `CONDA_DUMMY_PACKAGE = yes` in a kernel-built module's `conda.mk` to retain
+Set `conda: {dummy_package: true}` in a kernel-built module's `module.yml` to retain
 its historical `plumed-ext-<name>` package as an empty compatibility output.
 The generated package pins the exact main kernel and installs no module library
 or registration. Its test requires the module in the static kernel config.
