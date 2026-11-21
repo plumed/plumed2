@@ -40,6 +40,9 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 class ActionWithVirtualAtom:
   public ActionAtomistic,
   public ActionWithValue {
+/// The weights of the last setAtomsDerivativesIsotropic() (null after setAtomsDerivatives()):
+/// apply() uses them instead of the derivatives
+  const std::vector<double>* isotropicWeights=nullptr;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -51,6 +54,11 @@ protected:
   void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
+/// Set the derivatives of a virtual atom that is a weighted sum of the positions of its atoms
+/// (the derivative with respect to atom i is w[i] times the identity, e.g. CENTER and COM without PHASES).
+/// The forces are then applied with the weights, without the 3x3 derivatives of each atom.
+/// w must not change until apply() has been called.
+  void setAtomsDerivativesIsotropic(const std::vector<double> &w);
 /// Set the box derivatives.
 /// This should be a vector of size 3. First index corresponds
 /// to the components of the virtual atom.
@@ -104,6 +112,7 @@ void ActionWithVirtualAtom::setCharge(double c) {
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d) {
+  isotropicWeights=nullptr;
   unsigned jj=0;
   Value* xval=getPntrToComponent(0);
   Value* yval=getPntrToComponent(1);
