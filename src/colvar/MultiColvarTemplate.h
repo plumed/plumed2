@@ -56,7 +56,7 @@ public:
   using precision = typename cvprecision<CV>::type;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
-  constexpr static size_t virialSize = 9;
+  static constexpr size_t virialSize = 9;
 private:
 /// The parallel task manager
   PTM taskmanager;

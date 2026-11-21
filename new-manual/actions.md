@@ -193,31 +193,32 @@ you can switch this off by setting the environment variable PLUMED\_LAUNCH to `n
 If your compiler supports openMP then the features of PLUMED that use it have it enabled by default.  However, if you want to disable 
 these features you can do so by configuring PLUMED with the option  `--disable-openmp`.
 
-When you use PLUMED with some MD codes the number of OpenMD threads is set automatically by the MD code. If, however, you are using [driver](driver.md),
-another [command line tool](module_cltools.md) or an MD code that does not set the number of OpenMD threads to be used you will need to set the environment 
-variable PLUMED\_NUM\_THREADS equal to the number of threads you wish PLUMED to use at runtime.  To be clear, you can use the PLUMED\_NUM\_THREADS to set 
-the number of threads to use with PLUMED even if your MD code has an option for setting the number of threads.  With gromacs for instance you can ensure
-that PLUMED runs on 8 threads by using the following commands: 
+When you use PLUMED with some MD codes the number of OpenMP threads is set automatically by the MD code (e.g. GROMACS uses the number given with `-ntomp`).
+If, however, you are using [driver](driver.md), another [command line tool](module_cltools.md) or an MD code that does not set the number of OpenMP threads
+you will need to set the environment variable PLUMED\_NUM\_THREADS equal to the number of threads you wish PLUMED to use at runtime.
+PLUMED\_NUM\_THREADS takes precedence over the number set by the MD code. With gromacs, for instance:
 
 ```bash
-export PLUMED_NUM_THREADS=8
-mdrun -plumed
-```
-
-or by using this single command:
-
-```bash
+# GROMACS and PLUMED use 8 threads
 mdrun -plumed -ntomp 8
+# GROMACS uses 8 threads, PLUMED one
+PLUMED_NUM_THREADS=1 mdrun -plumed -ntomp 8
 ```
 
-In the first case PLLUMED uses 8 OpenMP threads while gromacs only uses 1 (this is usually sub optimal).
-In the second case GROMACS and plumed will the same number of OpenMP threads.
+__Inside an MD code that uses OpenMP threads, set PLUMED\_NUM\_THREADS only to 1 or to the number of threads of the MD code.__
+PLUMED and the MD code share the same OpenMP threads. With the GNU OpenMP runtime (libgomp, the one of GCC) a parallel region with fewer
+threads than the previous one, but more than one, destroys the threads that it does not use, and the next larger region creates new ones.
+The new threads do not have the cores that the MD code assigned to its threads (e.g. GROMACS with `-pin on`) and all run on the core of the main thread.
+With fewer threads in PLUMED than in the MD code (e.g. `PLUMED_NUM_THREADS=2` and `-ntomp 4`) this happens at every step:
+in a GROMACS simulation on 4 threads it made the run about 30 times slower. With more threads in PLUMED than in the MD code the extra threads are created at
+every step, and they run on the core of the main thread. PLUMED writes a warning in the log when PLUMED\_NUM\_THREADS replaces a different number of
+threads set by the MD code. For the same reason every loop in PLUMED uses either all the threads or one.
 
 Notice that:
 
 - Using OpenMP is likely to improve the performance, but could also slow down the code in some case.
 - Using OpenMP can give results that are slightly different because of numerical round off and different order in summations. This should be harmless.
-- The optimum number of threads is not necessary "all of them", nor should be equal to the number of threads used to parallelize the MD calculation. 
+- The optimum number of threads is not necessarily "all of them". Inside an MD code that uses OpenMP threads, use the threads of the MD code or one (see above).
 - Not all CVs are parallelized with openMP. 
 - A loop uses either all the threads or only one: small loops use one thread. If all the actions of your input
   are small, one thread (`PLUMED_NUM_THREADS=1`) may be the fastest choice, in particular if PLUMED is not called

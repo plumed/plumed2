@@ -57,7 +57,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "GREXMap.inc"
   };
 

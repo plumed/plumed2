@@ -515,7 +515,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "PlumedMainMap.inc"
   };
 
@@ -1035,6 +1035,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           if(nt==0) {
             nt=1;
           }
+          numThreadsFromEngine=nt;
           // while an initialized PLUMED instance exists the number of threads can only decrease
           if(!OpenMP::setNumThreads(nt)) {
             std::string msg="WARNING: setNumOMPthreads("+std::to_string(nt)+") ignored: the number of OpenMP threads cannot be increased "
@@ -1281,6 +1282,17 @@ void PlumedMain::init() {
   OpenMP::lockNumThreads();
   numThreadsLocked=true;
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+#ifdef _OPENMP
+  // PLUMED shares the OpenMP threads of the MD code: with the GNU OpenMP runtime, a region with a different
+  // number of threads (other than 1) replaces some of them at every step (see OpenMP.h).
+  // PLUMED_NUM_THREADS takes precedence over setNumOMPthreads.
+  if(numThreadsFromEngine>0 && OpenMP::getNumThreads()>1 && OpenMP::getNumThreads()!=numThreadsFromEngine) {
+    log<<"WARNING: PLUMED uses "<<OpenMP::getNumThreads()<<" OpenMP threads, but the MD code set "<<numThreadsFromEngine<<" (PLUMED_NUM_THREADS takes precedence).\n"
+       <<"  PLUMED uses the OpenMP threads of the MD code: with the GNU OpenMP runtime a different number of threads (other than 1)\n"
+       <<"  makes the runtime destroy and create threads at every step, and the new ones run on the core of the main thread\n"
+       <<"  (this can make the MD code much slower). Unset PLUMED_NUM_THREADS, or set it to 1 or "<<numThreadsFromEngine<<".\n";
+  }
+#endif
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
     plumed_assert(pp);

@@ -21,6 +21,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include <cmath>
 #ifdef _OPENMP
 #if _OPENMP >= 201307
@@ -213,7 +214,7 @@ void memFusionP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
 #endif
 #endif
   for (unsigned i = 0; i < UMEM.size(); i++) {
@@ -301,7 +302,7 @@ void memFusionP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(ZTailDistance, PositionS_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(ZTailDistance, PositionS_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
 #endif
 #endif
   for (unsigned i = 0; i < TAILS.size(); i++) {
@@ -448,7 +449,7 @@ void memFusionP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(TailPosition,d_Xsc_Mem_dx,d_Xcc_Mem_dx,d_Ysc_Mem_dy,d_Ycc_Mem_dy,d_Xsc_Mem_dz,d_Xcc_Mem_dz,d_Ysc_Mem_dz,d_Ycc_Mem_dz,d_sx_Mem_dx,d_sy_Mem_dy,d_cx_Mem_dx,d_cy_Mem_dy,d_sx_Mem_dz,d_sy_Mem_dz,d_cx_Mem_dz,d_cy_Mem_dz,d_ws_Mem_dz,ri_Mem,x,fradial_Mem) reduction(vec_double_plus: Nsp_Mem, Axs_Mem, Ays_Mem)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(TailPosition,d_Xsc_Mem_dx,d_Xcc_Mem_dx,d_Ysc_Mem_dy,d_Ycc_Mem_dy,d_Xsc_Mem_dz,d_Xcc_Mem_dz,d_Ysc_Mem_dz,d_Ycc_Mem_dz,d_sx_Mem_dx,d_sy_Mem_dy,d_cx_Mem_dx,d_cy_Mem_dy,d_sx_Mem_dz,d_sy_Mem_dz,d_cx_Mem_dz,d_cy_Mem_dz,d_ws_Mem_dz,ri_Mem,x,fradial_Mem) reduction(vec_double_plus: Nsp_Mem, Axs_Mem, Ays_Mem)
 #endif
 #endif
   for (unsigned i = 0; i < TAILS.size(); i++) {
@@ -538,7 +539,7 @@ void memFusionP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(aux)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(aux)
 #endif
 #endif
   for (unsigned i = 0; i < TAILS.size(); i++) {

@@ -161,6 +161,8 @@ private:
   bool  initialized=false;
 /// True if OpenMP::lockNumThreads() was called at init (it is undone in the destructor)
   bool numThreadsLocked=false;
+/// Number of OpenMP threads set by the MD code with setNumOMPthreads (0 if it did not set it)
+  unsigned numThreadsFromEngine=0;
 /// Name of MD engine
   std::string MDEngine{"mdcode"};
 
