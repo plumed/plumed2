@@ -659,34 +659,6 @@ static void findMultiplicativeFactors( const lepton::ExpressionTreeNode& node, s
   }
 }
 
-/// True if the expression is zero only when one of the variables in zeroVars is zero:
-/// a product of these variables, nonzero constants, powers and denominators. If each of
-/// these variables has a zero derivative when it is zero, so has the expression when it
-/// is zero. This is not true of the expressions found by findMultiplicativeFactors:
-/// w*sin(y) is zero also when sin(y) is, and its derivative is then w*cos(y)
-static bool isZeroOnlyWhenFactorsAre( const lepton::ExpressionTreeNode& node, const std::set<std::string>& zeroVars ) {
-  const lepton::Operation& op = node.getOperation();
-  switch( op.getId() ) {
-  case lepton::Operation::VARIABLE:
-    return zeroVars.count( op.getName() )>0;
-  case lepton::Operation::MULTIPLY:
-    return isZeroOnlyWhenFactorsAre( node.getChildren()[0], zeroVars ) && isZeroOnlyWhenFactorsAre( node.getChildren()[1], zeroVars );
-  case lepton::Operation::DIVIDE:
-  case lepton::Operation::NEGATE:
-  case lepton::Operation::SQUARE:
-  case lepton::Operation::CUBE:
-    return isZeroOnlyWhenFactorsAre( node.getChildren()[0], zeroVars );
-  case lepton::Operation::MULTIPLY_CONSTANT: {
-    const double c=dynamic_cast<const lepton::Operation::MultiplyConstant&>(op).getValue();
-    return std::isfinite(c) && c!=0 && isZeroOnlyWhenFactorsAre( node.getChildren()[0], zeroVars );
-  }
-  case lepton::Operation::POWER_CONSTANT:
-    return dynamic_cast<const lepton::Operation::PowerConstant&>(op).getValue()>0 && isZeroOnlyWhenFactorsAre( node.getChildren()[0], zeroVars );
-  default:
-    return false;
-  }
-}
-
 void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& options ) {
   // Read in the variables
   unsigned nargs = action->getNumberOfArguments();
@@ -732,13 +704,11 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   // beyond its cutoff) all the derivatives of the function are also zero, so the
   // evaluation can be skipped. This is decided on the lepton parse tree: the
   // previous string based check got wrong expressions such as x*cos(y)+1 or exp(x)*y.
-  const lepton::ParsedExpression parsed=lepton::Parser::parse(f.func).optimize(lepton::Constants());
-  std::set<std::string> factors, zeroVars;
-  findMultiplicativeFactors( parsed.getRootNode(), factors );
+  std::set<std::string> factors;
+  findMultiplicativeFactors( lepton::Parser::parse(f.func).optimize(lepton::Constants()).getRootNode(), factors );
   for(unsigned i=0; i<f.var.size(); ++i) {
     if( factors.count(f.var[i])>0 && action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
       f.check_multiplication_vars.push_back(i);
-      zeroVars.insert( f.var[i] );
     }
   }
   if( f.check_multiplication_vars.size()>0 ) {
@@ -762,11 +732,7 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   if( f.zerowhenallzero ) {
     action->log.printf("  not calculating when all arguments are zero \n");
   }
-  // The value of the function can also be zero because of the other factors (e.g. sin(y)
-  // in w*sin(y)): its derivatives are zero when it is zero only for a product of the
-  // variables above (actions that use the function skip the forces of its zero elements)
-  options.derivativeZeroIfValueIsZero = f.check_multiplication_vars.size()>0
-                                        && isZeroOnlyWhenFactorsAre( parsed.getRootNode(), zeroVars );
+  options.derivativeZeroIfValueIsZero = f.check_multiplication_vars.size()>0;
 }
 
 std::string Custom::getFunctionString( const std::string& func ) {

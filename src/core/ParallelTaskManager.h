@@ -756,6 +756,9 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       #pragma omp for nowait
       for(unsigned i=first; i<nmytasks; i+=step) {
         std::size_t task_index = mytasks[i];
+        // the tasks may add to their values (e.g. the sums of MATRIX_VECTOR_PRODUCT): they start
+        // from zero, as in runAllTasks, otherwise they hold the sum of all the tasks of this thread
+        std::fill( fake_vals.begin(), fake_vals.end(), precision(0.0) );
         auto myout = ParallelActionsOutput::create( myinput.nscalars,
                      fake_vals.data(),
                      derivatives.size(),
