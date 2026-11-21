@@ -136,6 +136,9 @@ pure-serial Communicator checks take inputs shown by their usage messages.
 `check-provider-discovery.sh` also checks lazy discovery of a sibling
 `libplumed-mpi-provider` adapter, relocated/symlinked kernel paths, rejection of invalid
 installed providers, and precedence over automatic compilation.
+It also checks that all selection paths share one initial environment snapshot,
+that subsequent changes to either setting are ignored, and that caching
+absent settings still permits later host injection and default discovery.
 
 Launcher and runtime selection checks live with the launcher regression:
 `regtest/basic/rt-mpiwrap-launcher/check-thread-mpi-cli.sh`,

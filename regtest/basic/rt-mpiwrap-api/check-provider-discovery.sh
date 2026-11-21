@@ -53,6 +53,7 @@ ln -s "../relocated lib/libplumedKernel.$extension" "$tmp/kernel links/kernel.$e
 export MPIW_TEST_KERNEL_PATH="$tmp/kernel links/kernel.$extension"
 cp "$tmp/provider.so" "$tmp/relocated lib/libplumed-mpi-provider.$extension"
 "$tmp/test" installed
+"$tmp/test" cached-environment
 [[ $(wc -l < "$tmp/compiler.log") -eq 2 ]]
 MPIW_TEST_REJECT_DESCRIPTOR=1 "$tmp/test" installed-invalid
 [[ $(wc -l < "$tmp/compiler.log") -eq 2 ]]
@@ -72,6 +73,9 @@ printf 'invalid library\n' > "$tmp/relocated lib/libplumed-mpi-provider.$extensi
 # Injection and explicit environment selection bypass even an invalid sibling.
 "$tmp/test" injection
 "$tmp/test" environment
+"$tmp/test" forced-environment
+"$tmp/test" forced-injection
+"$tmp/test" invalid-force
 [[ $(wc -l < "$tmp/compiler.log") -eq 3 ]]
 rm "$tmp/relocated lib/libplumed-mpi-provider.$extension"
 ln -s missing-provider "$tmp/relocated lib/libplumed-mpi-provider.$extension"

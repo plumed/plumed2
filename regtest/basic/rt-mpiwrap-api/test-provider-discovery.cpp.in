@@ -84,13 +84,51 @@ namespace mpiwrap {
 int main(int argc, char **argv) {
   using namespace PLMD::mpiwrap;
   assert(argc==2);
-  assert(!provider_installed());
-  ensure_provider_selected();
-  (void)COMM_SELF();
-  assert(!provider_installed());
-  int flag=-1;
-  assert(Initialized(&flag)==0 && flag==0);
   const std::string mode(argv[1]);
+  const bool environment_selected=mode=="environment" || mode=="forced-environment" || mode=="forced-injection";
+  if(environment_selected) {
+    // Supply configuration before any selection path can snapshot it.
+    const std::string library=std::string(std::getenv("MPIW_TEST_ROOT"))+"/provider.so";
+    assert(setenv("PLUMED_MPI_WRAPPER",library.c_str(),1)==0);
+    if(mode!="environment") {
+      assert(setenv("PLUMED_MPI_WRAPPER_FORCE","1",1)==0);
+    }
+  }
+  assert(!provider_installed());
+  if(mode=="invalid-force") {
+    assert(setenv("PLUMED_MPI_WRAPPER_FORCE","invalid",1)==0);
+    try {
+      ensure_provider_selected();
+    } catch(const std::runtime_error &error) {
+      assert(std::string(error.what()).find("PLUMED_MPI_WRAPPER_FORCE must be 0 or 1")!=std::string::npos);
+      assert(!provider_installed());
+      return 0;
+    }
+    throw std::runtime_error("selection ignored invalid force setting");
+  }
+  if(mode=="forced-injection") {
+    assert(forceEnvironmentProvider());
+  }
+  ensure_provider_selected();
+  if(!environment_selected) {
+    (void)COMM_SELF();
+  }
+  assert(provider_installed()==environment_selected);
+  int flag=-1;
+  assert(Initialized(&flag)==0 && flag==int(environment_selected));
+  if(mode=="cached-environment" || environment_selected) {
+    // All paths must ignore changes to both absent and present settings.
+    assert(setenv("PLUMED_MPI_WRAPPER","/missing-provider.so",1)==0);
+    assert(setenv("PLUMED_MPI_WRAPPER_FORCE","invalid",1)==0);
+    for(int i=0; i<10; ++i) {
+      ensure_provider_selected();
+      if(!environment_selected) {
+        (void)COMM_SELF();
+      }
+      assert(provider_installed()==environment_selected);
+    }
+    assert(forceEnvironmentProvider()==(mode=="forced-environment" || mode=="forced-injection"));
+  }
   if(mode=="installed-invalid") {
     try {
       ensure_provider_for_communicator();
@@ -112,10 +150,10 @@ int main(int argc, char **argv) {
     const std::string compiler=std::string(std::getenv("MPIW_TEST_ROOT"))+"/mock-mpicc";
     assert(setenv("MPICC",compiler.c_str(),1)==0);
   }
-  if(mode=="environment") {
-    const std::string library=std::string(std::getenv("MPIW_TEST_ROOT"))+"/provider.so";
-    assert(setenv("PLUMED_MPI_WRAPPER",library.c_str(),1)==0);
-  } else if(mode=="injection") {
+  if(mode=="injection") {
+    // A cached serial fallback must still permit later host injection.
+    assert(setenv("PLUMED_MPI_WRAPPER","/missing-provider.so",1)==0);
+    assert(!forceEnvironmentProvider());
     const std::string library=std::string(std::getenv("MPIW_TEST_ROOT"))+"/provider.so";
     void *handle=dlopen(library.c_str(),RTLD_NOW|RTLD_LOCAL);
     assert(handle);
@@ -136,6 +174,9 @@ int main(int argc, char **argv) {
   assert(Comm_rank(comm,&rank)==0 && rank==38);
   comm=Comm_f2c(static_cast<MPI_Fint>(native));
   assert(Comm_rank(comm,&rank)==0 && rank==38);
+  // Communicator binding cannot change an already installed provider.
+  assert(setenv("PLUMED_MPI_WRAPPER","/missing-provider.so",1)==0);
+  assert(setenv("PLUMED_MPI_WRAPPER_FORCE","invalid",1)==0);
   ensure_provider_for_communicator(); // Never compile twice after installation.
 }
 #endif
