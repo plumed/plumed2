@@ -85,7 +85,9 @@ class SecondaryStructureCountACC : public SecondaryStructureCount {
   unsigned hcount_=0;
   const Pbc* dpbc_=nullptr;
   const SwitchingFunctionAccelerable* dsw_=nullptr;
-  /// Queues the kernel of the segments, the sums and the copy of the results
+  /// Queues the kernel of the segments and the sums (the results are downloaded in calculate():
+  /// a download into pageable host memory returns only when it is done, so in launch() it
+  /// would make launch() wait for the GPU)
   void enqueueSegments();
 public:
   static void registerKeywords( Keywords& keys );
@@ -210,8 +212,7 @@ void SecondaryStructureCountACC::launch() {
         dactive[slot]=p;
       }
     }
-    // the number of pairs in the list is needed to go on: calculate() waits for it
-    b.count.copyFromDeviceAsync( &hcount_, accQueue );
+    // the number of pairs in the list is needed to go on: calculate() reads it
   } else {
     nactive_=nmine;
     enqueueSegments();
@@ -296,9 +297,6 @@ void SecondaryStructureCountACC::enqueueSegments() {
     }
     dsums[c]=t;
   }
-  hsums_.resize( segmentColumns );
-  b.sums.copyFromDeviceAsync( hsums_.data(), accQueue );
-  b.derivatives.copyFromDeviceAsync( hder_.data(), accQueue );
 }
 
 void SecondaryStructureCountACC::cancelLaunch() {
@@ -319,12 +317,17 @@ void SecondaryStructureCountACC::calculate() {
   double value=0.0;
   if( nmine_>0 ) {
     ACC::DeviceScope scope(device_.id());
+    auto& b=*buf_;
     if( uselist_ ) {
+      b.count.copyFromDeviceAsync( &hcount_, accQueue );
       acc_wait( accQueue );
       nactive_=hcount_;
       enqueueSegments();
     }
     if( nactive_>0 ) {
+      hsums_.resize( segmentColumns );
+      b.sums.copyFromDeviceAsync( hsums_.data(), accQueue );
+      b.derivatives.copyFromDeviceAsync( hder_.data(), accQueue );
       acc_wait( accQueue );
       value=hsums_[0];
       for(unsigned j=0; j<9; ++j) {

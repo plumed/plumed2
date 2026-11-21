@@ -38,8 +38,10 @@ namespace isdb {
 
 namespace {
 
-/// All the transfers and the kernels are queued here, the host waits once in finish()
-/// (another queue than the one of the other actions of the plugin, so that their work can overlap)
+/// The uploads and the kernels are queued in start(), the downloads and the wait are in finish()
+/// (another queue than the one of the other actions of the plugin, so that their work can overlap).
+/// A download into pageable host memory returns only when it is done, i.e. after the kernels:
+/// queued in start(), it would make start() (and Action::launch()) wait for the GPU.
 constexpr int saxsQueue=2;
 
 /// Uploads data to a device buffer only if it differs from the previous upload
@@ -235,7 +237,7 @@ class OpenACCDebye :
   std::size_t first_=0;
   std::size_t stride_=1;
   bool computed_=false;
-  /// the derivatives were downloaded by start
+  /// start computed the derivatives
   bool deriv_=false;
 public:
   explicit OpenACCDebye(Action& action);
@@ -382,13 +384,6 @@ void OpenACCDebye::start(const std::vector<Vector>& pos,
     }
     dsum[k]=t;
   }
-
-  hsum_.resize(numq);
-  b.sum.copyFromDeviceAsync(hsum_.data(), saxsQueue);
-  if(deriv) {
-    hgrad_.resize(3*nrows);
-    b.grad.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
-  }
 }
 
 void OpenACCDebye::finish(std::vector<double>& sum, std::vector<Vector>* deriv) {
@@ -401,14 +396,23 @@ void OpenACCDebye::finish(std::vector<double>& sum, std::vector<Vector>* deriv) 
   if(nmine==0) {
     return;
   }
+  const bool withDeriv = deriv && deriv_;
   {
     ACC::DeviceScope scope(device_.id());
+    auto & b=*buf_;
+    // downloads here and not in start(), see saxsQueue
+    hsum_.resize(numq);
+    b.sum.copyFromDeviceAsync(hsum_.data(), saxsQueue);
+    if(withDeriv) {
+      hgrad_.resize(3*nmine*numq);
+      b.grad.copyFromDeviceAsync(hgrad_.data(), saxsQueue);
+    }
     acc_wait(saxsQueue);
   }
   for(std::size_t k=0; k<numq; ++k) {
     sum[k]+=hsum_[k];
   }
-  if(deriv && deriv_) {
+  if(withDeriv) {
     auto & d=*deriv;
     for(std::size_t m=0; m<nmine; ++m) {
       const std::size_t i=first_+m*stride_;
