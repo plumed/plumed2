@@ -1,0 +1,22 @@
+# 3x1x2 grid of biases (odd size, dimension of size 1), several sweeps per
+# exchange step, statistics as a flat list in the log
+d: DISTANCE ATOMS=1,2
+left: CUSTOM ARG=d FUNC=100*(x-0.15)^2 PERIODIC=NO
+right: CUSTOM ARG=d FUNC=100*(x-0.35)^2 PERIODIC=NO
+
+# bias[i,0,j] is bias 2*i + j
+bias: REPLEX_BIASVALUE ...
+  ARG=left,right
+  SHAPE=3,1,2
+  COEFFICIENTS={
+    {1.0 0.0} {1.0 0.5}
+    {0.5 0.0} {0.5 0.5}
+    {0.2 0.0} {0.2 0.5}
+  }
+  PACE=2
+  NEX=3
+  SEED=5
+  VERBOSE
+...
+
+PRINT ARG=d,bias.bias,bias.index FILE=COLVAR FMT=%8.4f

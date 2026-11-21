@@ -1,0 +1,7 @@
+# One argument scaled differently in each bias (COEFFICIENTS as a vector)
+d: DISTANCE ATOMS=1,2
+b: CUSTOM ARG=d FUNC=100*(x-0.25)^2 PERIODIC=NO
+
+bias: REPLEX_BIASVALUE ARG=b COEFFICIENTS=0.2,1.0,3.0 PACE=2 SEED=3
+
+PRINT ARG=d,bias.bias,bias.b_bias,bias.index FILE=COLVAR FMT=%8.4f

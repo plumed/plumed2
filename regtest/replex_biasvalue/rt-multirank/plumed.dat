@@ -1,0 +1,19 @@
+# Three biases interpolating between two arguments (M x N matrix with zeros:
+# an argument with a zero coefficient is computed only on exchange steps)
+d: DISTANCE ATOMS=1,2
+left: CUSTOM ARG=d FUNC=100*(x-0.15)^2 PERIODIC=NO
+right: CUSTOM ARG=d FUNC=100*(x-0.35)^2 PERIODIC=NO
+
+bias: REPLEX_BIASVALUE ...
+  ARG=left,right
+  COEFFICIENTS={
+    {1.0 0.0}
+    {0.5 0.5}
+    {0.0 1.0}
+  }
+  PACE=2
+  SEED=11
+  TEMP=300
+...
+
+PRINT ARG=d,bias.bias,bias.left_bias,bias.right_bias,bias.index FILE=COLVAR FMT=%8.4f
