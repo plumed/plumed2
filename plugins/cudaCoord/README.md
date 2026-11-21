@@ -38,11 +38,13 @@ The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it
 
 ## Which GPU is used
 
-The GPU is chosen as in the openaccPTM plugin, so that the two behave in the same way on a node with several GPUs:
-the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
-the GPU the MD code is using (the current one of the CUDA runtime when the action is created, by default the first one;
-with `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log (e.g. `c runs on GPU 1` for an
-action labelled `c`). With MPI only the first rank uses the GPU.
+The GPU is chosen by PLUMED (`PLMD::GpuDevice`, in `src/core/GpuDevice.h`) as for the openaccPTM plugin, so that the two
+behave in the same way on a node with several GPUs: the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId`
+command, as the GROMACS and NAMD patches do when GROMACS or NAMD use CUDA), otherwise the GPU the MD code is using (the
+one whose CUDA context is current when the action is created), otherwise, with several GPUs, the rank of the process in
+its node modulo the number of GPUs, otherwise the current one of the CUDA runtime (by default the first one; with
+`CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
+(e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
 Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
 `make check-gpu` (on a node with GPUs) checks this, see `../openaccPTM/gpucheck`.
 
