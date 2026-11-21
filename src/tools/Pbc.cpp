@@ -561,6 +561,7 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
     rowlen[k]=std::sqrt(box(k,0)*box(k,0)+box(k,1)*box(k,1)+box(k,2)*box(k,2));
   }
   const double safe=0.5*hmin;
+  const bool ortho = type==orthorombic;
   // the scalar code avoids temporaries in memory, which are slow here
   const double i00=invBox(0,0), i01=invBox(0,1), i02=invBox(0,2);
   const double i10=invBox(1,0), i11=invBox(1,1), i12=invBox(1,2);
@@ -592,7 +593,8 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
       n0=rnd(s0);
       n1=rnd(s1);
       n2=rnd(s2);
-      ok=std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
+      // in an orthorhombic box the rounding is the minimum image at any distance
+      ok=ortho || std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
     }
     if(!ok) {
       // far from the parent (or not finite): minimum image from distance()
