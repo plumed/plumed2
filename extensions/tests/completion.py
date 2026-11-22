@@ -36,7 +36,14 @@ def check_bash(shell, program, root, env):
         (["--load", str(library), "metadata_tool", "--pr"], ["--probe"], None),
         (
             ["--load-module=feature_b", "metadata_tool", "--mode", ""],
-            ["alpha", "two words", "$literal"],
+            [
+                "alpha",
+                "two words",
+                "$literal",
+                "key=value",
+                "scope:word",
+                "address@host",
+            ],
             None,
         ),
         (
@@ -53,6 +60,29 @@ def check_bash(shell, program, root, env):
             ["--load-module=feature_b", "metadata_tool", "--probe", "--mode", "al"],
             ["alpha"],
             None,
+        ),
+        (
+            ["--load-module=feature_b", "metadata_tool", "--mode", "key", "=", "val"],
+            ["value"],
+            None,
+        ),
+        (
+            ["--load-module=feature_b", "metadata_tool", "--mode", "scope", ":", "wo"],
+            ["word"],
+            None,
+        ),
+        (
+            [
+                "--load-module=feature_b",
+                "metadata_tool",
+                "--mode",
+                "address",
+                "@",
+                "ho",
+            ],
+            ["host"],
+            shlex.quote(program)
+            + " --load-module=feature_b metadata_tool --mode address@ho",
         ),
     ):
         setup = r"""
@@ -157,23 +187,28 @@ def check_bash_readline(shell, program, root, env):
         os.write(descriptor, setup.encode())
         drain()
         for suffix, expected in (
-            (" --load library\t", "library = quoted $literal.so"),
-            (" --load lib-d\tchild\t", "lib-dir/child.so"),
-            (" driver --ixt\t", "--ixtc"),
+            (" --load library\t", ["--load", "library = quoted $literal.so"]),
+            (" --load lib-d\tchild\t", ["--load", "lib-dir/child.so"]),
+            (" driver --ixt\t", ["driver", "--ixtc"]),
+            (
+                " --load-module=feature_b metadata_tool --mode key=val\t",
+                ["--load-module=feature_b", "metadata_tool", "--mode", "key=value"],
+            ),
+            (
+                " --load-module=feature_b metadata_tool --mode scope:wo\t",
+                ["--load-module=feature_b", "metadata_tool", "--mode", "scope:word"],
+            ),
+            (
+                " --load-module=feature_b metadata_tool --mode address@ho\t",
+                ["--load-module=feature_b", "metadata_tool", "--mode", "address@host"],
+            ),
         ):
             os.write(descriptor, (shlex.quote(program) + suffix).encode())
             output = drain()
             os.write(descriptor, b"\x18\x14")
             output += drain()
             actual = re.findall(r"(?:^|\r?\n)<([^\r\n]*)>", output)
-            assert actual == [
-                program,
-                *(
-                    ["--load", expected]
-                    if suffix.startswith(" --load")
-                    else ["driver", expected]
-                ),
-            ], (shell, suffix, actual, output)
+            assert actual == [program, *expected], (shell, suffix, actual, output)
     finally:
         os.kill(pid, signal.SIGKILL)
         os.close(descriptor)

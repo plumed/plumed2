@@ -35,7 +35,7 @@ public:
     auto result=CLTool::complete(arguments);
     if(result.option=="--mode") {
       result.files=false;
-      result.candidates= {"alpha","two words","$literal"};
+      result.candidates= {"alpha","two words","$literal","key=value","scope:word","address@host"};
     }
     return result;
   }

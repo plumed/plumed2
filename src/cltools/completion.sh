@@ -2,7 +2,9 @@
     local plumed_executable=${COMP_WORDS[0]} plumed_cur plumed_prev=""
     local plumed_word="" plumed_quote="" plumed_char plumed_next plumed_line
     local plumed_index plumed_command="" plumed_value="" plumed_kind=commands
-    local plumed_trim="" plumed_original=${COMP_WORDS[COMP_CWORD]}
+    # Bash passes the actual Readline replacement fragment as $2. In Bash 3
+    # COMP_WORDS can still contain a larger word such as key=value.
+    local plumed_trim="" plumed_original=${2-${COMP_WORDS[COMP_CWORD]}}
     local plumed_command_index=0 plumed_file_prefix="" plumed_context_prefix=""
     local plumed_output plumed_header=yes plumed_start plumed_duplicate
     local LC_ALL=C
@@ -41,7 +43,7 @@
       # Also support completion callers which provide COMP_WORDS alone.
       for ((plumed_index=0; plumed_index<=COMP_CWORD; plumed_index++)); do
         plumed_word=${COMP_WORDS[plumed_index]}
-        if ((${#plumed_words[@]})) && [[ "$plumed_word" == = || ${plumed_words[${#plumed_words[@]}-1]} == *= ]]; then
+        if ((${#plumed_words[@]})) && [[ "$plumed_word" == = || "$plumed_word" == : || ${plumed_words[${#plumed_words[@]}-1]} == *= || ${plumed_words[${#plumed_words[@]}-1]} == *: ]]; then
           plumed_words[${#plumed_words[@]}-1]+=$plumed_word
         else
           plumed_words+=("$plumed_word")
@@ -98,13 +100,22 @@
         fi
         plumed_cur=${plumed_cur#"$plumed_context_prefix"}
       fi
-      for plumed_value in "${plumed_candidates[@]}"; do
-        if [[ -n "$plumed_value" && "$plumed_value" == "$plumed_cur"* ]]; then
-          COMPREPLY+=("${plumed_file_prefix}${plumed_value}")
-        fi
-      done
-      if [[ "$plumed_kind" == words ]]; then return 0; fi
     fi
+
+    # Return only the Readline fragment being replaced, for literal tool values
+    # as well as filenames (e.g. the value after '=' or ':').
+    if [[ "$plumed_cur" == *"$plumed_original" ]]; then
+      plumed_trim=${plumed_cur:0:${#plumed_cur}-${#plumed_original}}
+      if [[ -z ${2+x} && ( -z "$plumed_trim" || "${COMP_WORDBREAKS-=:}" != *"${plumed_trim: -1}"* ) ]]; then
+        plumed_trim=""
+      fi
+    fi
+    for plumed_value in "${plumed_candidates[@]}"; do
+      if [[ -n "$plumed_value" && "$plumed_value" == "$plumed_cur"* ]]; then
+        COMPREPLY+=("${plumed_file_prefix}${plumed_value#"$plumed_trim"}")
+      fi
+    done
+    if [[ "$plumed_kind" == words ]]; then return 0; fi
 
     if [[ "$plumed_kind" == libraries || "$plumed_kind" == files ]]; then
       # Mark filenames for Readline quoting without changing shell options.
@@ -120,10 +131,6 @@
           eval "${plumed_registration/complete /complete -o filenames }"
           return 0
         fi
-      fi
-      if [[ "$plumed_cur" == *"$plumed_original" ]]; then
-        plumed_trim=${plumed_cur:0:${#plumed_cur}-${#plumed_original}}
-        case "$plumed_trim" in *'='|*':') ;; *) plumed_trim="" ;; esac
       fi
       while IFS= read -r plumed_value; do
         if [[ -d "$plumed_value" ]]; then
@@ -142,6 +149,6 @@
     fi
     plumed_output=$("$plumed_executable" --no-mpi "${plumed_load_options[@]}" completion --list "$plumed_kind" --command "$plumed_command" 2>/dev/null) || return 0
     while IFS= read -r plumed_value; do
-      if [[ -n "$plumed_value" && "$plumed_value" == "$plumed_cur"* ]]; then COMPREPLY+=("$plumed_value"); fi
+      if [[ -n "$plumed_value" && "$plumed_value" == "$plumed_cur"* ]]; then COMPREPLY+=("${plumed_value#"$plumed_trim"}"); fi
     done <<< "$plumed_output"
     return 0
