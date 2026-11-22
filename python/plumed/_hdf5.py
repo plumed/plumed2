@@ -33,7 +33,7 @@ from numbers import Integral
 from ._errors import FormatError
 
 
-def is_hdf5(file, format):
+def is_hdf5(file, format, *, writing=False):
     if format not in (None, "text", "hdf5"):
         raise ValueError("format must be None, 'text', or 'hdf5'")
     if format is not None:
@@ -45,7 +45,28 @@ def is_hdf5(file, format):
         if isinstance(file, (str, os.PathLike))
         else getattr(file, "name", "")
     )
-    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5"))
+    if not writing and isinstance(file, (str, os.PathLike)):
+        from . import _archive
+
+        if _archive.recognizes(file):
+            return True
+        try:
+            with open(file, "rb") as stream:
+                offset = 0
+                while offset <= 65536:
+                    stream.seek(offset)
+                    signature = stream.read(8)
+                    if signature == b"\x89HDF\r\n\x1a\n":
+                        return True
+                    if len(signature) != 8:
+                        break
+                    offset = offset * 2 if offset else 512
+                stream.seek(0)
+                if stream.read(10).startswith(b"#! FIELDS"):
+                    return False
+        except FileNotFoundError:
+            pass
+    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5", ".h5.tar"))
 
 
 def _h5py():
@@ -177,10 +198,20 @@ class _Reader:
         self.stack = ExitStack()
         self._closed = False
         try:
-            self.file = _open(self.stack, file, "r")
-            self.blocks = _blocks(self.file)
+            from . import _archive
+
+            self.archive = _archive.recognizes(file)
+            if self.archive:
+                self.file = None
+                self.blocks = []
+                self.archive_blocks = _archive.blocks(file)
+                self.stack.callback(self.archive_blocks.close)
+            else:
+                self.file = _open(self.stack, file, "r")
+                self.blocks = _blocks(self.file)
             if usecols is not None and not callable(usecols):
                 usecols = list(usecols)
+            self.usecols = usecols
             self.selected = [_columns(names, usecols) for _, names, _, _ in self.blocks]
             self.size = (
                 _integer(chunksize, "chunksize", True)
@@ -216,7 +247,7 @@ class _Reader:
             self.index_col = index_col
             self.mode, self.process = enable_constants, process
             self.offset = self.emitted = 0
-            self._iterator = self._frames()
+            self._iterator = self._coalesced() if self.archive else self._frames()
         except BaseException:
             self.close()
             raise
@@ -227,9 +258,19 @@ class _Reader:
 
         h5py = _h5py()
         simple_skip = self.skip_func is None and not self.skip_set
-        for (group, names, constants, length), selected in zip(
-            self.blocks, self.selected
-        ):
+        if self.archive:
+
+            def descriptions():
+                for description, block in self.archive_blocks:
+                    self.logical_block = block
+                    selected = _columns(description[1], self.usecols)
+                    self.selected = [selected]
+                    yield description, selected
+
+            inputs = descriptions()
+        else:
+            inputs = zip(self.blocks, self.selected)
+        for (group, names, constants, length), selected in inputs:
 
             def finish(df, constants=constants):
                 if self.index_col is not None and self.index_col is not False:
@@ -307,6 +348,35 @@ class _Reader:
             self.offset += length
             if self.limit is not None and self.emitted >= self.limit:
                 return
+
+    def _coalesced(self):
+        import pandas as pd
+
+        pending = None
+        previous = None
+        frames = self._frames()
+        try:
+            for frame in frames:
+                block = self.logical_block
+                if pending is not None and block != previous:
+                    if len(pending) or self.limit == 0:
+                        yield pending
+                    pending = None
+                constants = getattr(frame, "plumed_constants", None)
+                pending = frame if pending is None else pd.concat([pending, frame])
+                if constants is not None:
+                    pending.plumed_constants = constants
+                previous = block
+                while len(pending) >= self.size:
+                    result = pending.iloc[: self.size]
+                    if constants is not None:
+                        result.plumed_constants = constants
+                    yield result
+                    pending = pending.iloc[self.size :]
+            if pending is not None and (len(pending) or self.limit == 0):
+                yield pending
+        finally:
+            frames.close()
 
     def __iter__(self):
         return self
@@ -438,6 +508,12 @@ def _field_name(value):
 
 
 def write(df, file):
+    if isinstance(file, (str, os.PathLike)) and os.fspath(file).lower().endswith(
+        ".h5.tar"
+    ):
+        from . import _archive
+
+        return _archive.write(df, file)
     import numpy as np
     import pandas as pd
 

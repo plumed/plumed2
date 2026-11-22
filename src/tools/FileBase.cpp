@@ -169,6 +169,9 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
   }
   std::string ret=path;
   std::string ext=Tools::extension(path);
+  if(path.size()>=7 && path.compare(path.size()-7,7,".h5.tar")==0) {
+    ext="h5.tar";
+  }
 
 // These are the recognized extensions so far:
 // gz xtc trr

@@ -323,6 +323,9 @@ def check_optional_libraries(bundled, executable):
         p.cmd("init")
         p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
         p.cmd("readInputLine", f"PRINT ARG=d FILE={table.as_posix()}")
+        archive = directory / "colvar.h5.tar"
+        p.cmd("readInputLine", f"PRINT ARG=d FILE={archive.as_posix()}")
+        p.cmd("readInputLine", "FLUSH STRIDE=1")
         # the arrays must stay alive until calc
         box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
         forces = array.array("d", [0] * 6)
@@ -335,6 +338,22 @@ def check_optional_libraries(bundled, executable):
             p.cmd("setForces", forces)
             p.cmd("setVirial", virial)
             p.cmd("calc")
+            # Exercise the Windows static-HDF5 build while the writer is alive.
+            live = subprocess.run(
+                [str(executable), "--no-mpi", "h5cat", str(archive)],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=directory,
+            )
+            live_rows = [
+                line.split()
+                for line in live.stdout.splitlines()
+                if not line.startswith("#")
+            ]
+            assert [float(row[1]) for row in live_rows] == [
+                float(i + 1) for i in range(step + 1)
+            ]
         p.finalize()
         if h5py is not None:
             with h5py.File(table, "r") as f:

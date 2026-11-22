@@ -56,6 +56,9 @@ bool available();
 
 /// True if the file is an HDF5 table (by its extension, .h5)
 bool isH5(const std::string& path);
+/// Content detection for input; suffixes only select output encodings.
+bool isTable(const std::string& path);
+bool isArchive(const std::string& path);
 
 /// A value of a field
 struct Value {
@@ -82,6 +85,8 @@ class Writer {
 public:
 /// Create the file, or open it to append to its last block (append)
   Writer(const std::string& path,bool append);
+/// Set the maximum records per archive member (ordinary HDF5 is unaffected).
+  Writer(const std::string& path,bool append,std::size_t batchSize);
   ~Writer();
   Writer(const Writer&)=delete;
   Writer& operator=(const Writer&)=delete;
@@ -99,11 +104,15 @@ class Reader {
   std::unique_ptr<Impl> impl;
 public:
   explicit Reader(const std::string& path);
+/// A closed, ordinary HDF5 image (owned by the reader).
+  explicit Reader(const std::vector<char>& image);
   ~Reader();
   Reader(const Reader&)=delete;
   Reader& operator=(const Reader&)=delete;
 /// The next line; false at the end of the table
   bool getline(std::string& line);
+/// Stream exact typed rows; newBlock marks a logical schema/constant transition.
+  bool readRow(std::vector<Field>& fields,std::vector<Field>& constants,bool* newBlock=nullptr);
 };
 
 /// Number of rows of every block of a table
@@ -111,6 +120,9 @@ std::vector<unsigned long long> rows(const std::string& path);
 
 /// Keep the first keep[b] rows of block b (the blocks beyond keep.size() are removed).
 /// The rows removed are written, with the same structure, in the table backup (if not empty).
+/// Locate a time cut by visiting only trailing batches (headers supply earlier counts).
+std::vector<unsigned long long> keepBefore(const std::string& path,double time,bool& hasTime,bool& increasing);
+
 void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup);
 
 }

@@ -20,13 +20,18 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "H5Table.h"
+#include "H5Archive.h"
+#include "FileTools.h"
 #include "Exception.h"
 #include "Tools.h"
 #include <cmath>
+#include <array>
+#include <cstring>
 #include <cstdio>
 #include <deque>
 #include <filesystem>
 #include <mutex>
+#include <limits>
 #include <utility>
 
 #ifdef __PLUMED_HAS_LIBHDF5
@@ -37,7 +42,30 @@ namespace PLMD {
 namespace h5table {
 
 bool isH5(const std::string& path) {
-  return Tools::extension(path)=="h5";
+  return Tools::extension(path)=="h5" || Tools::extension(path)=="hdf5" || isArchive(path);
+}
+
+bool isArchive(const std::string& path) {
+  return path.size()>=7 && path.compare(path.size()-7,7,".h5.tar")==0;
+}
+
+bool isTable(const std::string& path) {
+  if(Archive::recognizes(path)) {
+    return true;
+  }
+  unique_FILE file(fopenUTF8(path,"rb"));
+  if(file) {
+    for(long offset=0; offset<=65536; offset=offset?offset*2:512) {
+      std::array<char,8> signature= {};
+      if(std::fseek(file.get(),offset,SEEK_SET)!=0 || std::fread(signature.data(),1,8,file.get())!=8) {
+        break;
+      }
+      if(std::memcmp(signature.data(),"\211HDF\r\n\032\n",8)==0) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 std::string Value::text() const {
@@ -71,6 +99,8 @@ bool Value::operator==(const Value& v) const {
   return d==v.d || (std::isnan(d) && std::isnan(v.d));
 }
 
+Writer::Writer(const std::string& path,bool append):Writer(path,append,4096) {}
+
 #ifndef __PLUMED_HAS_LIBHDF5
 
 bool available() {
@@ -84,7 +114,7 @@ namespace {
 }
 
 struct Writer::Impl {};
-Writer::Writer(const std::string& path,bool) {
+Writer::Writer(const std::string& path,bool,std::size_t) {
   noHDF5(path);
 }
 Writer::~Writer()=default;
@@ -98,12 +128,23 @@ struct Reader::Impl {};
 Reader::Reader(const std::string& path) {
   noHDF5(path);
 }
+Reader::Reader(const std::vector<char>&) {
+  noHDF5("HDF5 image");
+}
 Reader::~Reader()=default;
 bool Reader::getline(std::string&) {
   return false;
 }
 
+bool Reader::readRow(std::vector<Field>&,std::vector<Field>&,bool*) {
+  return false;
+}
+
 std::vector<unsigned long long> rows(const std::string& path) {
+  noHDF5(path);
+}
+
+std::vector<unsigned long long> keepBefore(const std::string& path,double,bool&,bool&) {
   noHDF5(path);
 }
 
@@ -438,7 +479,22 @@ Id openFile(const std::string& path,unsigned flags) {
   Id f(H5Fopen(path.c_str(),flags,H5P_DEFAULT),H5Fclose);
   check(f>=0,path,"cannot open the file");
   check(H5Aexists(f,"plumed_format")>0 && readAttribute(f,"plumed_format",path).s=="plumed-table",path,"not a table written by PLUMED");
+  check(H5Aexists(f,"plumed_format_version")>0 && readAttribute(f,"plumed_format_version",path).i==1,path,"unsupported PLUMED HDF5 table version");
   return f;
+}
+
+Id openImage(const std::vector<char>& image) {
+  const std::string path="PLUMED HDF5 batch image";
+  Id properties(H5Pcreate(H5P_FILE_ACCESS),H5Pclose);
+  check(H5Pset_fapl_core(properties,65536,false)>=0,path,"cannot select memory driver");
+  check(!image.empty() && H5Pset_file_image(properties,const_cast<char*>(image.data()),image.size())>=0,path,"cannot load memory image");
+  static unsigned long long sequence=0;
+  const auto name="plumed-memory-batch-"+std::to_string(++sequence);
+  Id file(H5Fopen(name.c_str(),H5F_ACC_RDONLY,properties),H5Fclose);
+  check(file>=0,path,"cannot open memory image");
+  check(H5Aexists(file,"plumed_format")>0 && readAttribute(file,"plumed_format",path).s=="plumed-table",path,"not a PLUMED table");
+  check(H5Aexists(file,"plumed_format_version")>0 && readAttribute(file,"plumed_format_version",path).i==1,path,"unsupported PLUMED HDF5 version");
+  return file;
 }
 
 }
@@ -451,6 +507,30 @@ struct Writer::Impl {
   Signature sig;
   std::vector<Column> columns;
   std::size_t buffered=0;
+  std::unique_ptr<Archive> archive;
+  std::unique_ptr<BatchFile> staging;
+  std::unique_ptr<Writer> batch;
+  std::size_t batchSize=4096,batchRecords=0,batchBytes=0;
+  std::vector<unsigned long long> counts;
+  bool failed=false;
+  void publishBatch() {
+    check(!failed,path,"a previous batch publication failed; close and reopen the archive");
+    if(!batch) {
+      return;
+    }
+    try {
+      batch->flush();
+      batch.reset(); // Close HDF5 handles before publishing the bytes.
+      archive->add(staging->image(),counts.size()-1,batchRecords);
+      staging.reset();
+      batchRecords=0;
+      batchBytes=0;
+    } catch(...) {
+      failed=true;
+      throw;
+    }
+  }
+
   void writeBuffer() {
     for(auto & c : columns) {
       appendRows(c,path);
@@ -486,10 +566,29 @@ struct Writer::Impl {
   }
 };
 
-Writer::Writer(const std::string& path,bool append):
+Writer::Writer(const std::string& path,bool append,std::size_t batchSize):
   impl(std::make_unique<Impl>()) {
   Lock lock(hdf5Mutex());
   impl->path=path;
+  check(batchSize>0,path,"batch size must be positive");
+  impl->batchSize=batchSize;
+  if(isArchive(path)) {
+    impl->archive=std::make_unique<Archive>(path,true,append);
+    for(const auto& member:impl->archive->members()) {
+      if(member.block>=impl->counts.size()) {
+        impl->counts.push_back(0);
+      }
+      impl->counts.back()+=member.rows;
+    }
+    if(!impl->counts.empty()) {
+      Id file=openImage(impl->archive->image(impl->archive->members().size()-1));
+      check(countBlocks(file)==1,path,"each archive batch must contain exactly one block");
+      Id group(H5Gopen2(file,"block_0",H5P_DEFAULT),H5Gclose);
+      std::vector<Column> columns;
+      impl->sig=readSignature(group,columns,path);
+    }
+    return;
+  }
   std::error_code ec;
   if(append && std::filesystem::exists(path,ec)) {
     impl->file=openFile(path,H5F_ACC_RDWR);
@@ -515,7 +614,12 @@ Writer::Writer(const std::string& path,bool append):
 Writer::~Writer() {
   Lock lock(hdf5Mutex());
   try {
-    impl->writeBuffer();
+    if(impl->archive) {
+      impl->publishBatch();
+      impl->archive->finish();
+    } else {
+      impl->writeBuffer();
+    }
   } catch(...) {
   }
 }
@@ -528,6 +632,30 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
     s.types.push_back(f.value.type);
   }
   s.constants=constants;
+  if(impl->archive) {
+    check(!impl->failed,impl->path,"a previous batch publication failed; close and reopen the archive");
+    if(!impl->counts.empty() && !(impl->sig==s)) {
+      impl->publishBatch();
+    }
+    if(!impl->batch) {
+      impl->staging=std::make_unique<BatchFile>();
+      impl->batch=std::make_unique<Writer>(impl->staging->path,false);
+    }
+    impl->batch->addRow(fields,constants);
+    if(impl->counts.empty() || !(impl->sig==s)) {
+      impl->counts.push_back(0);
+    }
+    ++impl->counts.back();
+    impl->sig=s;
+    ++impl->batchRecords;
+    for(const auto& f:fields) {
+      impl->batchBytes+=f.value.type==Value::String?f.value.s.size():8;
+    }
+    if(impl->batchRecords>=impl->batchSize || impl->batchBytes>=64*1024*1024) {
+      impl->publishBatch();
+    }
+    return;
+  }
   if(impl->block<0 || !(s==impl->sig)) {
     impl->newBlock(s);
   }
@@ -541,13 +669,20 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
 
 void Writer::flush() {
   Lock lock(hdf5Mutex());
+  if(impl->archive) {
+    impl->publishBatch();
+    return;
+  }
   impl->writeBuffer();
-  H5Fflush(impl->file,H5F_SCOPE_GLOBAL);
+  check(H5Fflush(impl->file,H5F_SCOPE_GLOBAL)>=0,impl->path,"cannot flush HDF5 file");
 }
 
 std::vector<unsigned long long> Writer::rows() {
   Lock lock(hdf5Mutex());
   flush();
+  if(impl->archive) {
+    return impl->counts;
+  }
   std::vector<unsigned long long> r;
   for(int b=0; b<=impl->block; b++) {
     Id g(H5Gopen2(impl->file,blockName(b).c_str(),H5P_DEFAULT),H5Gclose);
@@ -561,45 +696,108 @@ std::vector<unsigned long long> Writer::rows() {
 struct Reader::Impl {
   std::string path;
   Id file;
-  unsigned nblocks=0;
-  unsigned block=0;
-  bool loaded=false;
+  std::unique_ptr<Archive> archive;
+  std::size_t member=0;
+  unsigned nblocks=0,block=0;
+  bool loaded=false,haveSignature=false,newBlock=false;
+  std::uint64_t archiveBlock=0;
+  Signature sig;
   std::vector<Column> columns;
-  unsigned long long nrows=0;
-  unsigned long long row=0;
+  unsigned long long nrows=0,row=0,chunkStart=0;
   std::deque<std::string> pending;
   bool load() {
-    if(block>=nblocks) {
-      return false;
+    while(block>=nblocks) {
+      if(!archive || member>=archive->members().size()) {
+        return false;
+      }
+      columns.clear();
+      file=openImage(archive->image(member++));
+      nblocks=countBlocks(file);
+      check(nblocks==1,path,"each TAR batch must contain exactly one HDF5 block");
+      block=0;
     }
-    Id g(H5Gopen2(file,blockName(block).c_str(),H5P_DEFAULT),H5Gclose);
-    check(g>=0,path,"cannot open group "+blockName(block));
-    const Signature sig=readSignature(g,columns,path);
-    nrows=0;
-    for(auto & c : columns) {
-      readRows(c.dataset,c,0,0,path);
-      nrows=c.size();
+    Id group(H5Gopen2(file,blockName(block++).c_str(),H5P_DEFAULT),H5Gclose);
+    check(group>=0,path,"cannot open table block");
+    const auto next=readSignature(group,columns,path);
+    if(archive) {
+      const auto logical=archive->members()[member-1].block;
+      if(haveSignature && logical==archiveBlock) {
+        check(sig==next,path,"schema/constants change within a logical archive block");
+      }
+      newBlock=!haveSignature || logical!=archiveBlock;
+      archiveBlock=logical;
+    } else {
+      newBlock=true;
+    }
+    sig=next;
+    haveSignature=true;
+    nrows=columns.empty()?0:datasetRows(columns[0].dataset);
+    for(const auto& column:columns) {
+      check(datasetRows(column.dataset)==nrows,path,"columns have inconsistent lengths");
+    }
+    if(archive) {
+      check(nrows==archive->members()[member-1].rows,path,"batch row count disagrees with TAR header");
     }
     row=0;
-    pending.push_back("#! FIELDS "+join(sig.names));
-    for(const auto & c : sig.constants) {
-      pending.push_back("#! SET "+c.name+" "+c.value.text());
+    chunkStart=0;
+    if(newBlock) {
+      pending.push_back("#! FIELDS "+join(sig.names));
+      for(const auto& c:sig.constants) {
+        pending.push_back("#! SET "+c.name+" "+c.value.text());
+      }
     }
-    block++;
     loaded=true;
     return true;
   }
+  void data(std::vector<Field>& fields,std::vector<Field>& constants) {
+    if(columns[0].size()==0 || row-chunkStart>=columns[0].size()) {
+      chunkStart=row;
+      for(auto& c:columns) {
+        readRows(c.dataset,c,row,std::min<unsigned long long>(4096,nrows-row),path);
+      }
+    }
+    fields.resize(columns.size());
+    for(std::size_t k=0; k<columns.size(); ++k) {
+      fields[k]=Field{columns[k].name,columns[k].get(row-chunkStart)};
+    }
+    constants=sig.constants;
+    ++row;
+  }
 };
 
-Reader::Reader(const std::string& path):
-  impl(std::make_unique<Impl>()) {
+Reader::Reader(const std::string& path):impl(std::make_unique<Impl>()) {
   Lock lock(hdf5Mutex());
   impl->path=path;
-  impl->file=openFile(path,H5F_ACC_RDONLY);
+  if(Archive::recognizes(path)) {
+    impl->archive=std::make_unique<Archive>(path);
+  } else {
+    impl->file=openFile(path,H5F_ACC_RDONLY);
+    impl->nblocks=countBlocks(impl->file);
+  }
+}
+Reader::Reader(const std::vector<char>& image):impl(std::make_unique<Impl>()) {
+  Lock lock(hdf5Mutex());
+  impl->path="HDF5 batch image";
+  impl->file=openImage(image);
   impl->nblocks=countBlocks(impl->file);
 }
-
 Reader::~Reader()=default;
+
+bool Reader::readRow(std::vector<Field>& fields,std::vector<Field>& constants,bool* newBlock) {
+  Lock lock(hdf5Mutex());
+  while(!impl->loaded || impl->row>=impl->nrows) {
+    if(!impl->load()) {
+      return false;
+    }
+  }
+  impl->pending.clear();
+  if(newBlock) {
+    *newBlock=impl->newBlock;
+  }
+  impl->newBlock=false;
+  impl->data(fields,constants);
+  return true;
+}
 
 bool Reader::getline(std::string& line) {
   Lock lock(hdf5Mutex());
@@ -610,11 +808,12 @@ bool Reader::getline(std::string& line) {
       return true;
     }
     if(impl->loaded && impl->row<impl->nrows) {
+      std::vector<Field> fields,constants;
+      impl->data(fields,constants);
       line.clear();
-      for(const auto & c : impl->columns) {
-        line+=(line.empty()?"":" ")+c.get(impl->row).text();
+      for(const auto& f:fields) {
+        line+=(line.empty()?"":" ")+f.value.text();
       }
-      impl->row++;
       return true;
     }
     if(!impl->load()) {
@@ -625,6 +824,17 @@ bool Reader::getline(std::string& line) {
 
 std::vector<unsigned long long> rows(const std::string& path) {
   Lock lock(hdf5Mutex());
+  if(Archive::recognizes(path)) {
+    Archive archive(path);
+    std::vector<unsigned long long> result;
+    for(const auto& member:archive.members()) {
+      if(member.block>=result.size()) {
+        result.push_back(0);
+      }
+      result.back()+=member.rows;
+    }
+    return result;
+  }
   Id f=openFile(path,H5F_ACC_RDONLY);
   std::vector<unsigned long long> r;
   const unsigned nb=countBlocks(f);
@@ -637,8 +847,146 @@ std::vector<unsigned long long> rows(const std::string& path) {
   return r;
 }
 
+std::vector<unsigned long long> keepBefore(const std::string& path,double cut,bool& hasTime,bool& increasing) {
+  Lock lock(hdf5Mutex());
+  Archive archive(path);
+  std::vector<unsigned long long> keep;
+  for(const auto& member:archive.members()) {
+    if(member.block>=keep.size()) {
+      keep.push_back(0);
+    }
+    keep.back()+=member.rows;
+  }
+  hasTime=false;
+  increasing=true;
+  double next=std::numeric_limits<double>::infinity();
+  for(std::size_t k=archive.members().size(); k>0; --k) {
+    const auto& member=archive.members()[k-1];
+    Reader reader(archive.image(k-1));
+    std::vector<Field> fields,constants;
+    std::vector<double> times;
+    while(reader.readRow(fields,constants)) {
+      bool found=false;
+      for(const auto& field:fields) {
+        if(field.name=="time") {
+          double time=0;
+          if(field.value.type==Value::Double) {
+            time=field.value.d;
+          } else if(field.value.type==Value::Int) {
+            time=static_cast<double>(field.value.i);
+          } else {
+            check(Tools::convertNoexcept(field.value.s,time),path,"invalid time field in batch");
+          }
+          times.push_back(time);
+          found=true;
+          hasTime=true;
+          break;
+        }
+      }
+      if(!found) {
+        hasTime=false;
+        return {};
+      }
+    }
+    check(times.size()==member.rows,path,"batch row count disagrees with TAR header");
+    for(std::size_t j=times.size(); j>0; --j) {
+      const double time=times[j-1];
+      if(time<cut) {
+        return keep;
+      }
+      if(time>next) {
+        increasing=false;
+      }
+      next=time;
+      --keep[member.block];
+    }
+    while(!keep.empty() && keep.back()==0) {
+      keep.pop_back();
+    }
+  }
+  return keep;
+}
+
 void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
   Lock lock(hdf5Mutex());
+  if(Archive::recognizes(path)) {
+    Archive archive(path,true,true);
+    std::vector<unsigned long long> current;
+    for(const auto& member:archive.members()) {
+      if(member.block>=current.size()) {
+        current.push_back(0);
+      }
+      current.back()+=member.rows;
+    }
+    check(keep.size()<=current.size(),path,"fewer blocks than expected");
+    for(std::size_t b=0; b<keep.size(); ++b) {
+      check(keep[b]<=current[b],path,"fewer rows than expected");
+      if(b+1<keep.size()) {
+        check(keep[b]==current[b],path,"archive trimming requires a retained prefix");
+      }
+    }
+    if(keep==current) {
+      return;
+    }
+    std::vector<unsigned long long> before(current.size(),0);
+    std::size_t first=0;
+    unsigned long long retained=0;
+    for(; first<archive.members().size(); ++first) {
+      const auto& member=archive.members()[first];
+      const auto wanted=member.block<keep.size()?keep[member.block]:0;
+      if(before[member.block]+member.rows>wanted) {
+        retained=wanted-before[member.block];
+        break;
+      }
+      before[member.block]+=member.rows;
+    }
+    check(first<archive.members().size(),path,"cannot locate trim boundary");
+    std::vector<char> replacement;
+    std::unique_ptr<Archive> saved;
+    if(!backup.empty()) {
+      saved=std::make_unique<Archive>(backup,true,false);
+    }
+    const auto cutBlock=archive.members()[first].block;
+    if(retained) {
+      BatchFile keptFile,removedFile;
+      {
+        Writer kept(keptFile.path,false);
+        std::unique_ptr<Writer> removed;
+        if(saved) {
+          removed=std::make_unique<Writer>(removedFile.path,false);
+        }
+        Reader reader(archive.image(first));
+        std::vector<Field> fields,constants;
+        unsigned long long row=0;
+        while(reader.readRow(fields,constants)) {
+          if(row++<retained) {
+            kept.addRow(fields,constants);
+          } else if(removed) {
+            removed->addRow(fields,constants);
+          }
+        }
+        check(row==archive.members()[first].rows,path,"batch row count disagrees with TAR header");
+        kept.flush();
+        if(removed) {
+          removed->flush();
+        }
+      }
+      replacement=keptFile.image();
+      if(saved) {
+        saved->add(removedFile.image(),0,archive.members()[first].rows-retained);
+      }
+    }
+    if(saved) {
+      for(std::size_t k=first+(retained?1:0); k<archive.members().size(); ++k) {
+        const auto& member=archive.members()[k];
+        saved->add(archive.image(k),member.block-cutBlock,member.rows);
+      }
+      saved->finish(); // Preserve the discarded tail before changing the source.
+    }
+    archive.replaceTail(first,replacement,cutBlock,retained);
+    archive.finish();
+    return;
+  }
   std::unique_ptr<Writer> out;
   {
     Id f=openFile(path,H5F_ACC_RDWR);

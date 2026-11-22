@@ -1,0 +1,8 @@
+standard TAR extraction and exact typed batches: OK
+typed export/rebatch, content detection and option validation: OK
+boundary-only trim, unchanged prefix, discarded-row backup and append: OK
+incomplete header/data/padding recovery and append: OK
+interrupted tail transaction readback and writer replay: OK
+append and trim do not interpret retained-prefix payloads: OK
+live snapshots, writer exclusion, process kill and restart: OK
+extensible numbering and complete trim with backup: OK

@@ -45,6 +45,10 @@ expected = Path("reference.txt").read_bytes().replace(b"\r\n", b"\n")
 assert expected.count(b"#! FIELDS") == 2
 assert b"1.2345678901234567" in expected
 assert b"#! SET description a constant with spaces" in expected
+success(
+    "h5convert", "--input", "first.h5", "--output", "first.h5.tar", "--batch-size", "1"
+)
+assert success("h5cat", "first.h5.tar") == expected
 print("named conversion: OK")
 
 assert success("h5convert", "--input", "first.h5", "--output", "-") == expected
@@ -92,7 +96,8 @@ failure("h5cat", "--unknown")
 failure("h5cat", "missing.h5")
 failure("h5cat", "input")
 failure("h5convert", "--input", "-", "--output", "-")
-failure("h5convert", "--input", "first.h5", "--output", "other.h5")
+assert success("h5convert", "--input", "first.h5", "--output", "other.h5") == b""
+assert success("h5cat", "other.h5") == expected
 failure("h5convert", "--input", "first.h5", "--output", "missing-dir/output")
 print("invalid arguments, files and output path: OK")
 

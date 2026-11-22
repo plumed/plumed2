@@ -22,10 +22,14 @@
 #include "CLTool.h"
 #include "core/CLToolRegister.h"
 #include "tools/H5Table.h"
+#include "tools/H5Archive.h"
 #include "tools/FileTools.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
 #include <cstdio>
+#include <filesystem>
+#include <memory>
+#include <limits>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -35,18 +39,21 @@ namespace cltools {
 
 //+PLUMEDOC TOOLS h5convert
 /*
-Convert a PLUMED file between text and HDF5.
+Convert a PLUMED file between text, HDF5 and HDF5 batches in TAR.
 
 The files that PLUMED writes field by field (e.g. with [PRINT](PRINT.md), the hills of
 [METAD](METAD.md), the kernels of [OPES_METAD](OPES_METAD.md)) are written in HDF5 format
 when their name ends with `.h5` (see [Files](Files.md)). This tool converts such a file
 to the equivalent text file, with the numbers written with all their digits, and a text
 file to HDF5, so that the tools that read text files can be used on HDF5 files and vice versa.
-The direction of the conversion is given by the extensions of the two files.
+Input tables are detected by content; the output extension selects text, `.h5`
+or `.h5.tar`. HDF5-to-HDF5 and TAR rebatching preserve exact stored types.
 
 ```plumed
 plumed h5convert --input COLVAR.h5 --output COLVAR
 plumed h5convert --input HILLS --output HILLS.h5
+plumed h5convert --input HILLS --output HILLS.h5.tar --batch-size 10000
+plumed h5convert --input HILLS.h5.tar --output HILLS.h5
 ```
 
 Use `-` as the text filename to read from standard input or write to standard output:
@@ -56,7 +63,9 @@ plumed h5convert --input - --output HILLS.h5 < HILLS
 plumed h5convert --input COLVAR.h5 --output - > COLVAR
 ```
 
-Standard input and output support text only; the other filename must end in `.h5`.
+Standard input and output support text only; the output must be binary when reading text from stdin.
+`--batch-size` is a positive maximum data-record count for `.h5.tar` output only;
+schema changes and the memory limit can produce shorter batches.
 For quick inspection and concatenation of HDF5 tables, see [h5cat](h5cat.md).
 
 When a text file is converted, the values that are numbers are stored as double precision
@@ -76,10 +85,14 @@ public:
     if(result.option=="--input" || result.option=="--output") {
       result.candidates.push_back("-");
     }
+    if(result.option=="--batch-size") {
+      result.files=false;
+      result.candidates= {"4096"};
+    }
     return result;
   }
   std::string description()const override {
-    return "convert a PLUMED file between text and HDF5 (.h5)";
+    return "convert PLUMED text, HDF5 and TAR batch tables";
   }
 };
 
@@ -88,7 +101,8 @@ PLUMED_REGISTER_CLTOOL(H5Convert,"h5convert")
 void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--input","the file to convert (- for text standard input)");
-  keys.add("compulsory","--output","the converted file (HDF5 if its extension is .h5, text otherwise; - for text standard output)");
+  keys.add("optional","--batch-size","maximum data records per TAR batch (positive integer; default 4096)");
+  keys.add("compulsory","--output","the converted file (HDF5 for .h5, TAR batches for .h5.tar, text otherwise; - for text standard output)");
 }
 
 H5Convert::H5Convert(const CLToolOptions& co ):
@@ -127,16 +141,36 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   std::string input,output;
   parse("--input",input);
   parse("--output",output);
-  const bool fromH5=h5table::isH5(input);
+  const bool fromH5=input!="-" && h5table::isTable(input);
   const bool toH5=h5table::isH5(output);
-  if(fromH5==toH5) {
-    error("one of the two files (and only one) must be an HDF5 file (extension .h5)");
+  std::string batchOption;
+  parse("--batch-size",batchOption);
+  std::size_t batchSize=4096;
+  if(!batchOption.empty()) {
+    unsigned long long count=0;
+    if(!h5table::isArchive(output) || batchOption[0]=='-' ||
+        !Tools::convertNoexcept(batchOption,count) || count==0 || count>std::numeric_limits<std::size_t>::max()) {
+      error("--batch-size requires a positive integer and .h5.tar output");
+    }
+    batchSize=static_cast<std::size_t>(count);
+  }
+  if(!fromH5 && !toH5) {
+    error("at least one file must be an HDF5 table or .h5.tar archive");
+  }
+  if(input!="-" && output!="-") {
+    std::error_code ec;
+    if(std::filesystem::equivalent(pathFromUTF8(input),pathFromUTF8(output),ec) || input==output) {
+      error("input and output must be different files");
+    }
   }
   if(!toH5) {
     h5table::Reader reader(input);
     unique_FILE outputFile;
+    std::unique_ptr<h5table::BatchFile> staging;
     if(output!="-") {
-      outputFile.reset(fopenUTF8(output,"w"));
+      const auto parent=pathFromUTF8(output).parent_path();
+      staging=std::make_unique<h5table::BatchFile>(parent.empty()?".":pathToUTF8(parent));
+      outputFile.reset(fopenUTF8(staging->path,"wb"));
       if(!outputFile) {
         error("cannot open "+output);
       }
@@ -145,6 +179,26 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
     if(outputFile && std::fclose(outputFile.release())!=0) {
       error("cannot close "+output);
     }
+    if(staging) {
+      staging->publish(output);
+    }
+    return 0;
+  }
+  const auto parent=pathFromUTF8(output).parent_path();
+  h5table::BatchFile staging(parent.empty()?".":pathToUTF8(parent));
+  if(h5table::isArchive(output)) {
+    staging.path+=".h5.tar";
+  }
+  auto writer=std::make_unique<h5table::Writer>(staging.path,false,batchSize);
+  if(fromH5) {
+    h5table::Reader reader(input);
+    std::vector<h5table::Field> fields,constants;
+    while(reader.readRow(fields,constants)) {
+      writer->addRow(fields,constants);
+    }
+    writer->flush();
+    writer.reset();
+    staging.publish(output);
     return 0;
   }
   IFile ifile;
@@ -155,7 +209,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   }
   ifile.allowNoEOL();
   std::string line;
-  h5table::Writer writer(output,false);
+
   std::vector<std::string> names;
   std::vector<h5table::Field> constants;
   std::vector<h5table::Field> row;
@@ -178,19 +232,21 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
         row[i].name=names[i];
         row[i].value=textValue(words[i]);
       }
-      writer.addRow(row,constants);
+      writer->addRow(row,constants);
     }
   }
   if(std::ferror(ifile.getFILE())) {
     error("cannot read "+input);
   }
-  writer.flush();
+  writer->flush();
+  writer.reset();
+  staging.publish(output);
   return 0;
 }
 
 //+PLUMEDOC TOOLS h5cat
 /*
-Write PLUMED HDF5 tables to standard output as text.
+Write PLUMED HDF5 tables and `.h5.tar` batch archives to standard output as text.
 
 Supply one or more filenames as positional arguments. Each table is converted to
 text with full numerical precision, using the same representation as
@@ -199,6 +255,7 @@ each file's field headers and constants. Rows are neither sorted nor deduplicate
 
 ```plumed
 plumed h5cat COLVAR.h5
+plumed h5cat COLVAR.h5.tar
 plumed h5cat COLVAR.0.h5 COLVAR.1.h5 > combined.txt
 ```
 

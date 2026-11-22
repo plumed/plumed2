@@ -11,3 +11,7 @@ h5convert equals split: OK
 h5convert equals unsplit: OK
 h5convert equals stream: OK
 h5convert equals stream unsplit: OK
+h5cat TAR file: OK
+h5convert batch option: OK
+h5convert batch count: OK
+h5convert equals batch count: OK

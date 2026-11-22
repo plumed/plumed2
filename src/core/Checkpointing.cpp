@@ -265,6 +265,29 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   // the lines of the restart step are removed too, since the step is computed again
   // (unless keepRestartStep); times are printed with a few digits, hence the half timestep
   const double tcut=(engineRestartStep+(keepRestartStep?0.5:-0.5))*dt;
+  if(h5table::isArchive(fname)) {
+    bool hasTime=false,increasing=true;
+    const auto keep=h5table::keepBefore(fname,tcut,hasTime,increasing);
+    if(!hasTime) {
+      log<<"  WARNING: file "<<fname<<" has no time field and is not trimmed at the restart step\n";
+      return;
+    }
+    if(!increasing) {
+      log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
+      return;
+    }
+    const auto current=h5table::rows(fname);
+    if(keep!=current) {
+      unsigned long long removed=0;
+      for(std::size_t b=0; b<current.size(); ++b) {
+        removed+=current[b]-(b<keep.size()?keep[b]:0);
+      }
+      const auto backup=trimmedBackupName(fname);
+      h5table::truncate(fname,keep,backup);
+      log<<"  file "<<fname<<": "<<removed<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" moved to "<<backup<<"\n";
+    }
+    return;
+  }
   // keepEnd: end of the last line with a time before tcut (the tail starts there,
   // including the comment lines that follow it); offsets in uncompressed bytes
   long long offset=0,keepEnd=0;

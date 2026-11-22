@@ -137,3 +137,79 @@ PLUMED will write files named COLVAR.0.gz, COLVAR.1.gz, test.0.HILLS, test.1.HIL
 etc. This is useful since the preserved extension makes it easy
 to process the files later.
 
+
+## Append-only HDF5 batches in TAR
+
+Use `.h5.tar` to write an uncompressed TAR archive of independent HDF5 batches:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=COLVAR.h5.tar
+METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.h5.tar
+FLUSH STRIDE=1000
+```
+
+Each member (`batch_1.h5`, `batch_2.h5`, ...) is an ordinary file in the same
+PLUMED HDF5 version-1 layout described above. Standard TAR tools can list or
+extract the members; h5py and standard HDF5 tools can read each extracted batch.
+PLUMED's native readers, `h5cat`, and Python `read_as_pandas` read the archive as
+one table, preserving types, column order, constants and schema changes. Input
+is detected by content, so an archive or ordinary HDF5 table can be renamed.
+An archive itself is not a single HDF5 file:
+
+```sh
+plumed h5cat COLVAR.h5.tar
+plumed h5convert --input COLVAR.h5.tar --output COLVAR.h5
+plumed h5convert --input COLVAR --output COLVAR.h5.tar --batch-size 10000
+plumed h5convert --input COLVAR.h5.tar --output smaller.h5.tar --batch-size 1000
+```
+
+A flush publishes pending records as a completed batch; an empty flush adds
+nothing. Simulation batches also close at 4096 records, approximately 64 MiB of
+field values, or a change of schema/constants. `FLUSH STRIDE` counts simulation
+steps, so it need not equal the number of records in a batch. The regular global
+flushes, checkpoints, action-specific flushes and final close also publish data.
+The converter's `--batch-size N` sets a positive maximum number of data records
+per output TAR member; schema changes and the memory limit may make batches
+smaller. Python `write_pandas` also selects this representation for `.h5.tar`.
+
+Appending writes only the new batch and does not copy or scan prior payloads.
+Completed batches are closed before publication, aligned to 4096-byte boundaries
+and synchronized with the operating system. The payload is synchronized behind
+an empty TAR header before publishing and synchronizing its real header. This
+costs two fixed synchronizations per batch. An unfinished or torn publication
+header ends the recoverable prefix; a damaged header is diagnosed. Live readers see a finite prefix;
+reopen a reader to see new batches. After interruption, a partial last member is
+ignored and a restarted writer removes only that incomplete tail. At least one
+completed batch is required to recover any saved data. As with other durable
+file I/O, protection from machine/power loss depends on the filesystem and device
+honoring synchronization; it does not protect against arbitrary storage damage.
+
+Checkpoint trimming scans TAR headers to obtain offsets, block numbers and row
+counts. It leaves complete retained batches untouched, discards the tail, and
+rewrites at most the batch containing the cut. Time-based restarts inspect
+batches backwards until finding the cut. The existing backup policy is retained:
+removed rows go to `bck.trimmed.X.filename.h5.tar`. Copying that discarded data
+necessarily costs time and space proportional to the data being saved, but the
+retained prefix is not copied. Exact checkpoint restoration retains its existing
+policy of truncating without a discarded-row backup.
+
+A transient `filename.plumed-trim` recovery record protects the boundary batch
+while trimming; PLUMED readers use it after interruption and the next writer
+replays and removes it. Keep that record together with the archive if moving an
+interrupted trim. An empty `.plumed-lock` sidecar enforces one writer and may
+remain after close. A reader already open before a restart/trimming operation
+should be reopened. Ordinary simulation appends do not change earlier batches.
+Normal close adds only the final batch and TAR end markers. Export to one ordinary
+HDF5 file is an explicit conversion and requires reading the entire trajectory.
+
+The archive needs no additional TAR library. Its restricted USTAR profile uses
+regular numbered members (no compression, links, PAX extensions or directories).
+Each header has `uname=plumed-h5-v1` and `gname=BLOCK:ROWS`, with consecutive
+zero-based logical blocks; these metadata allow header-only row accounting.
+There is exactly one HDF5 block per member. Numbering is decimal without fixed
+width and follows archive order. The declared member size includes up to 4095
+legal trailing zero bytes to align the next header. Individual members must fit
+USTAR's size field (less than 8 GiB); smaller batches avoid that limit. TAR's
+checksum covers its header, just as ordinary HDF5 files do not gain a separate
+payload checksum merely by being stored as rotated files.

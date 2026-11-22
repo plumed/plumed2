@@ -81,7 +81,16 @@ PLUMED HDF5 tables. Install the optional pandas and HDF5 dependencies with
     plumed.write_pandas(data, "COLVAR-copy.h5")
     plumed.write_pandas(data, "COLVAR")  # convert back to text
 
-The filename extensions ``.h5`` and ``.hdf5`` select HDF5 automatically.
+Named input tables are detected by content, including ordinary HDF5 files and
+PLUMED's uncompressed ``.h5.tar`` batch archives. Output extensions ``.h5`` and
+``.hdf5`` select ordinary HDF5; ``.h5.tar`` selects independent HDF5 batches in
+standard TAR. Archives retain exact typed values and support chunked reading
+without extracting all members. For example::
+
+    data = plumed.read_as_pandas("COLVAR.h5.tar")
+    plumed.write_pandas(data, "COLVAR-copy.h5.tar")
+    plumed.write_pandas(data, "COLVAR-exported.h5")
+
 Use ``format='hdf5'`` for anonymous binary streams or other filenames;
 ``format='text'`` explicitly selects text. Open ``h5py.File`` objects are also
 accepted. Supplied files/streams remain open. Internally opened files are

@@ -101,7 +101,7 @@ IFile& IFile::open(const std::string&mypath) {
     plumed_error() << "file " << mypath << " cannot be found";
   }
   fp=fopenUTF8(path,"r");
-  if(h5table::isH5(path)) {
+  if(h5table::isTable(path)) {
     // an HDF5 table, read as the lines of the equivalent text file
     h5reader=std::make_unique<h5table::Reader>(path);
   } else if(Tools::extension(path)=="gz") {

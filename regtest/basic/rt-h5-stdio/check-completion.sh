@@ -34,3 +34,8 @@ h5_complete_case 'h5convert equals split' 'plumed h5convert --input=fir' first.h
 h5_complete_case 'h5convert equals unsplit' 'plumed h5convert --input=fir' --input=first.h5 h5convert --input=fir
 h5_complete_case 'h5convert equals stream' 'plumed h5convert --output=-' - h5convert --output = -
 h5_complete_case 'h5convert equals stream unsplit' 'plumed h5convert --output=-' --output=- h5convert --output=-
+
+h5_complete_case 'h5cat TAR file' 'plumed h5cat first.h5.t' first.h5.tar h5cat first.h5.t
+h5_complete_case 'h5convert batch option' 'plumed h5convert --b' --batch-size h5convert --b
+h5_complete_case 'h5convert batch count' 'plumed h5convert --batch-size 4' 4096 h5convert --batch-size 4
+h5_complete_case 'h5convert equals batch count' 'plumed h5convert --batch-size=4' --batch-size=4096 h5convert --batch-size=4

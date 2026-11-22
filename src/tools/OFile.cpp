@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "OFile.h"
+#include "H5Archive.h"
 #include "Exception.h"
 #include "FileTools.h"
 #include "core/Action.h"
@@ -520,6 +521,10 @@ OFile& OFile::open(const std::string&setpath) {
         // trimmed at the first row (see h5open)
         trimPending_=plumed && !enforceNoTrim_ && plumed->checkpointing.trimsAtRestart() && !(action && action->getNoTrim());
       } else {
+        if(h5table::isArchive(path) && std::filesystem::exists(pathFromUTF8(path+".plumed-trim"))) {
+          h5table::Archive recovered(path,true,true);
+          recovered.finish();
+        }
         backupFile( backstring, path );
       }
     }

@@ -182,8 +182,9 @@ def read_as_pandas(
         Passed to pandas for text files; applied to table data for HDF5 files.
 
     format : {'text', 'hdf5'} or None, optional
-        By default, .h5 and .hdf5 filenames and h5py.File objects select HDF5;
-        other inputs select text. Specify 'hdf5' for anonymous binary streams.
+        Ordinary HDF5 tables and PLUMED .h5.tar archives are detected by content
+        for named inputs; h5py.File objects select HDF5. Specify 'hdf5' for
+        anonymous binary streams. Archives are streamed one batch at a time.
         HDF5 support requires the optional h5py package.
 
     Returns
@@ -493,6 +494,7 @@ def write_pandas(df, file_or_path=None, format=None):
         internally opened files are closed. A supplied h5py.File must be empty.
     format : {'text', 'hdf5'} or None, optional
         Infer HDF5 from .h5/.hdf5 filenames or h5py.File objects by default.
+        A .h5.tar filename selects a TAR of independent HDF5 batches.
         Use format='hdf5' for binary streams. Requires h5py. Output uses the
         native PLUMED table layout, not pandas' PyTables layout. Numeric columns
         are stored as float64 or signed int64; strings use UTF-8 bytes. Missing
@@ -512,7 +514,7 @@ def write_pandas(df, file_or_path=None, format=None):
 
     from . import _hdf5
 
-    if _hdf5.is_hdf5(file_or_path, format):
+    if _hdf5.is_hdf5(file_or_path, format, writing=True):
         return _hdf5.write(df, file_or_path)
 
     # check if there is an index. if so, write it as an additional field
