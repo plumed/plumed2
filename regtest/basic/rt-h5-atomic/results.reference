@@ -1,7 +1,7 @@
 legacy layout, typed values and atomic append: OK
 path aliases, permissions and regular-file validation where supported: OK
 live reader and competing writer exclusion: OK
-open readers retain the previous immutable snapshot: OK
+held readers obey platform replacement rules and preserve snapshots: OK
 restart trimming publishes a new snapshot and preserves removed rows: OK
 process death preserves committed data and permits restart: OK
 interrupted flush exposes only complete old or new snapshots: OK

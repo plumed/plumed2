@@ -331,16 +331,23 @@ p.finalize()
 """
     with temporary_directory() as temporary:
         directory = Path(temporary)
-        producer = subprocess.Popen(
-            [sys.executable, "-c", script],
-            cwd=directory,
-            env=dict(os.environ, PLUMED_H5_ATOMIC="1", HDF5_USE_FILE_LOCKING="TRUE"),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+
+        def produce():
+            return subprocess.Popen(
+                [sys.executable, "-c", script],
+                cwd=directory,
+                env=dict(
+                    os.environ, PLUMED_H5_ATOMIC="1", HDF5_USE_FILE_LOCKING="TRUE"
+                ),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+
+        producer = produce()
         old_reader = None
+        shared_file = None
 
         def converted():
             subprocess.run(
@@ -372,7 +379,40 @@ p.finalize()
             )
             assert converted() == [1.0]
             if h5py is not None:
-                old_reader = h5py.File(directory / "live.h5", "r")
+                if WINDOWS:
+                    # Default Windows HDF5 opens omit delete sharing. An open
+                    # file object with that sharing supports held snapshots.
+                    import msvcrt
+
+                    api = ctypes.WinDLL("kernel32", use_last_error=True)
+                    create = api.CreateFileW
+                    create.argtypes = [
+                        ctypes.c_wchar_p,
+                        ctypes.c_uint32,
+                        ctypes.c_uint32,
+                        ctypes.c_void_p,
+                        ctypes.c_uint32,
+                        ctypes.c_uint32,
+                        ctypes.c_void_p,
+                    ]
+                    create.restype = ctypes.c_void_p
+                    handle = create(
+                        str(directory / "live.h5"),
+                        0x80000000,
+                        1 | 2 | 4,
+                        None,
+                        3,
+                        0x80,
+                        None,
+                    )
+                    assert handle != ctypes.c_void_p(-1).value, ctypes.get_last_error()
+                    descriptor = msvcrt.open_osfhandle(
+                        handle, os.O_RDONLY | os.O_BINARY
+                    )
+                    shared_file = os.fdopen(descriptor, "rb")
+                    old_reader = h5py.File(shared_file, "r")
+                else:
+                    old_reader = h5py.File(directory / "live.h5", "r")
             producer.stdin.write("\n")
             producer.stdin.flush()
             stage = producer.stdout.readline().strip()
@@ -392,6 +432,29 @@ p.finalize()
                 producer.communicate(timeout=30)
             if old_reader is not None:
                 old_reader.close()
+            if shared_file is not None:
+                shared_file.close()
+        if WINDOWS and h5py is not None:
+            # A default HDF5 reader blocks replacement on Windows. Refusal
+            # must leave the committed snapshot intact and readable.
+            producer = produce()
+            try:
+                stage = producer.stdout.readline().strip()
+                assert stage == "committed0", (
+                    stage,
+                    producer.stderr.read() if not stage else "",
+                )
+                with h5py.File(directory / "live.h5", "r") as blocker:
+                    output, errors = producer.communicate("\n", timeout=30)
+                    assert producer.returncode != 0 and not output
+                    assert "delete-sharing readers required" in errors, errors
+                    assert list(blocker["block_0/d"][:]) == [1.0]
+                    assert converted() == [1.0]
+                assert converted() == [1.0]
+            finally:
+                if producer.poll() is None:
+                    producer.kill()
+                    producer.communicate(timeout=30)
 
 
 def check_optional_libraries(bundled, executable):

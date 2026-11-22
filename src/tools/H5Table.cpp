@@ -382,7 +382,7 @@ public:
     std::vector<char> storage(sizeof(FILE_RENAME_INFO)+bytes);
     auto* rename=reinterpret_cast<FILE_RENAME_INFO*>(storage.data());
     // FileRenameInfoEx + POSIX semantics preserve existing readers of the old
-    // inode, including HDF5 clients which do not request delete sharing.
+    // inode. Windows readers must also have requested FILE_SHARE_DELETE.
     const DWORD flags=0x00000001|0x00000002;
     std::memcpy(storage.data(),&flags,sizeof(flags));
     rename->RootDirectory=nullptr;
@@ -390,9 +390,11 @@ public:
     std::memcpy(rename->FileName,destination.data(),bytes);
     const bool renamed=SetFileInformationByHandle(file,static_cast<FILE_INFO_BY_HANDLE_CLASS>(22),
                        rename,static_cast<DWORD>(storage.size()))!=0;
+    const DWORD renameError=renamed?ERROR_SUCCESS:GetLastError();
     const bool synced=renamed && FlushFileBuffers(file)!=0;
     CloseHandle(file);
-    check(renamed,path,"cannot atomically publish snapshot (POSIX rename semantics required)");
+    check(renamed,path,"cannot atomically publish snapshot (Windows error "+
+          std::to_string(renameError)+"; POSIX rename semantics and delete-sharing readers required)");
     pending.clear();
     published=std::move(next);
     check(synced,path,"cannot synchronize published snapshot");

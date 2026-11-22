@@ -98,12 +98,40 @@ try:
     stage(reader, "opened")
     advance(writer, "buffered2")
     assert run("read", path) == first
+    if os.name == "nt":
+        # The native Windows HDF5 driver omits FILE_SHARE_DELETE.
+        output, errors = reader.communicate("\n", timeout=30)
+        assert reader.returncode == 0 and not errors
+        assert output.replace("\r\n", "\n") == first
+        reader = None
     advance(writer, "committed2")
     assert run("read", path) == both
-    output, errors = reader.communicate("\n", timeout=30)
-    assert reader.returncode == 0 and not errors
-    assert output.replace("\r\n", "\n") == first
-    print("open readers retain the previous immutable snapshot: OK")
+    if reader is not None:
+        output, errors = reader.communicate("\n", timeout=30)
+        assert reader.returncode == 0 and not errors
+        assert output.replace("\r\n", "\n") == first
+    if os.name == "nt":
+        blocked = spawn("worker", "blocked.h5")
+        blocker = None
+        try:
+            stage(blocked, "committed1")
+            blocker = spawn("hold-reader", "blocked.h5")
+            stage(blocker, "opened")
+            advance(blocked, "buffered2")
+            output, errors = blocked.communicate("\n", timeout=30)
+            assert blocked.returncode != 0 and not output
+            assert "cannot atomically publish snapshot" in errors, errors
+            assert run("read", "blocked.h5") == first
+            output, errors = blocker.communicate("\n", timeout=30)
+            assert blocker.returncode == 0 and not errors
+            assert output.replace("\r\n", "\n") == first
+            run("append", "blocked.h5")
+            assert run("read", "blocked.h5") == both
+        finally:
+            kill(blocked)
+            if blocker is not None:
+                kill(blocker)
+    print("held readers obey platform replacement rules and preserve snapshots: OK")
     advance(writer, "closed")
 finally:
     kill(writer)
@@ -113,12 +141,17 @@ finally:
 reader = spawn("hold-reader", path)
 try:
     stage(reader, "opened")
+    if os.name == "nt":
+        output, errors = reader.communicate("\n", timeout=30)
+        assert reader.returncode == 0 and not errors
+        assert output.replace("\r\n", "\n") == both
     run("trim", path)
     assert run("read", path) == first
     assert run("read", str(path) + ".removed.h5") == second_header + second_row
-    output, errors = reader.communicate("\n", timeout=30)
-    assert reader.returncode == 0 and not errors
-    assert output.replace("\r\n", "\n") == both
+    if os.name != "nt":
+        output, errors = reader.communicate("\n", timeout=30)
+        assert reader.returncode == 0 and not errors
+        assert output.replace("\r\n", "\n") == both
 finally:
     kill(reader)
 print("restart trimming publishes a new snapshot and preserves removed rows: OK")

@@ -106,7 +106,8 @@ handles, synchronizes it, and atomically replaces the published filename. It
 also requests synchronization of the containing directory on POSIX systems.
 Ordinary HDF5 readers can inspect the last published snapshot during the run;
 readers that already opened a snapshot continue reading that snapshot. The
-on-disk column layout and existing native, h5py and pandas readers are unchanged.
+on-disk column layout is unchanged. On POSIX systems existing native, h5py and
+pandas readers need no changes; Windows readers have the sharing constraint below.
 
 A successful explicit flush publishes all rows accepted so far. A full internal
 buffer (4096 rows) also publishes a snapshot. Use [FLUSH](FLUSH.md) to control
@@ -129,7 +130,12 @@ cleanup and may remain after a crash. They are not used for recovery and can be
 removed once no writer is using them. Do not delete or replace an active lock
 file. Existing snapshots are also locked for reading to exclude cooperating in-place HDF5
 writers. On Windows, publication requires POSIX replacement semantics (modern
-Windows/NTFS); unsupported replacements fail without modifying the old snapshot.
+Windows/NTFS). Readers that remain open during replacement must request
+`FILE_SHARE_DELETE`; an ordinary Windows HDF5/h5py file open usually does not.
+Close those readers before the next publication, or open the file with delete
+sharing and pass that file object to h5py. A blocking reader or unsupported
+replacement causes an explicit publication error and preserves the old snapshot.
+This Windows constraint also applies to a native reader held across a flush.
 
 Snapshot creation uses filesystem cloning when supported on macOS/Linux.
 Otherwise it copies the entire previously published file, so frequent flushes
