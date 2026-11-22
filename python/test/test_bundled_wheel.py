@@ -296,6 +296,104 @@ p.finalize()
         assert [float(row[1]) for row in rows] == [1.0, 2.0], rows
 
 
+def check_atomic_hdf5(executable):
+    """Exercise live publication/recovery in every bundled HDF5 platform build."""
+    try:
+        import h5py
+    except ImportError:
+        h5py = None
+    script = r"""
+import array
+import sys
+import plumed
+p = plumed.Plumed()
+p.cmd("setMDEngine", "python")
+p.cmd("setNatoms", 2)
+p.cmd("setLogFile", "producer.log")
+p.cmd("init")
+p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
+p.cmd("readInputLine", "PRINT ARG=d FILE=live.h5")
+p.cmd("readInputLine", "FLUSH STRIDE=1")
+box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
+forces = array.array("d", [0] * 6)
+virial = array.array("d", [0] * 9)
+for step in range(2):
+    positions = array.array("d", [0, 0, 0, 0, 0, step + 1.0])
+    p.cmd("setStep", step)
+    p.cmd("setBox", box)
+    p.cmd("setPositions", positions)
+    p.cmd("setForces", forces)
+    p.cmd("setVirial", virial)
+    p.cmd("calc")
+    print("committed" + str(step), flush=True)
+    assert sys.stdin.readline()
+p.finalize()
+"""
+    with temporary_directory() as temporary:
+        directory = Path(temporary)
+        producer = subprocess.Popen(
+            [sys.executable, "-c", script],
+            cwd=directory,
+            env=dict(os.environ, PLUMED_H5_ATOMIC="1", HDF5_USE_FILE_LOCKING="TRUE"),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        old_reader = None
+
+        def converted():
+            subprocess.run(
+                [
+                    str(executable),
+                    "--no-mpi",
+                    "h5convert",
+                    "--input",
+                    "live.h5",
+                    "--output",
+                    "snapshot.txt",
+                ],
+                cwd=directory,
+                check=True,
+                capture_output=True,
+                timeout=30,
+            )
+            return [
+                float(line.split()[-1])
+                for line in (directory / "snapshot.txt").read_text().splitlines()
+                if not line.startswith("#")
+            ]
+
+        try:
+            stage = producer.stdout.readline().strip()
+            assert stage == "committed0", (
+                stage,
+                producer.stderr.read() if not stage else "",
+            )
+            assert converted() == [1.0]
+            if h5py is not None:
+                old_reader = h5py.File(directory / "live.h5", "r")
+            producer.stdin.write("\n")
+            producer.stdin.flush()
+            stage = producer.stdout.readline().strip()
+            assert stage == "committed1", (
+                stage,
+                producer.stderr.read() if not stage else "",
+            )
+            assert converted() == [1.0, 2.0]
+            if old_reader is not None:
+                assert list(old_reader["block_0/d"][:]) == [1.0]
+            producer.kill()
+            producer.communicate(timeout=30)
+            assert converted() == [1.0, 2.0]
+        finally:
+            if producer.poll() is None:
+                producer.kill()
+                producer.communicate(timeout=30)
+            if old_reader is not None:
+                old_reader.close()
+
+
 def check_optional_libraries(bundled, executable):
     """HDF5 and chemfiles, linked statically in the kernel, and the opes module."""
     config = (resource_root() / "src" / "config" / "config.txt").read_text()
@@ -308,6 +406,7 @@ def check_optional_libraries(bundled, executable):
     for symbol in ("H5Fopen", "chfl_version", "deflate", "lzma_code"):
         assert not hasattr(kernel, symbol), symbol
     check_other_hdf5(executable)
+    check_atomic_hdf5(executable)
     try:
         # the HDF5 library of h5py, loaded in the same process
         import h5py
