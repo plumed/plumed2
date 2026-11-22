@@ -22,11 +22,11 @@
 #include "CLTool.h"
 #include "core/CLToolRegister.h"
 #include "tools/H5Table.h"
+#include "tools/FileTools.h"
 #include "tools/IFile.h"
 #include "tools/Tools.h"
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <string>
 #include <vector>
 
@@ -49,6 +49,16 @@ plumed h5convert --input COLVAR.h5 --output COLVAR
 plumed h5convert --input HILLS --output HILLS.h5
 ```
 
+Use `-` as the text filename to read from standard input or write to standard output:
+
+```plumed
+plumed h5convert --input - --output HILLS.h5 < HILLS
+plumed h5convert --input COLVAR.h5 --output - > COLVAR
+```
+
+Standard input and output support text only; the other filename must end in `.h5`.
+For quick inspection and concatenation of HDF5 tables, see [h5cat](h5cat.md).
+
 When a text file is converted, the values that are numbers are stored as double precision
 numbers (with the digits that are in the text file) and the others as strings.
 
@@ -70,8 +80,8 @@ PLUMED_REGISTER_CLTOOL(H5Convert,"h5convert")
 
 void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--input","the file to convert");
-  keys.add("compulsory","--output","the converted file (HDF5 if its extension is .h5, text otherwise)");
+  keys.add("compulsory","--input","the file to convert (- for text standard input)");
+  keys.add("compulsory","--output","the converted file (HDF5 if its extension is .h5, text otherwise; - for text standard output)");
 }
 
 H5Convert::H5Convert(const CLToolOptions& co ):
@@ -80,6 +90,15 @@ H5Convert::H5Convert(const CLToolOptions& co ):
 }
 
 namespace {
+/// Write the full-precision text representation, without taking ownership of out.
+void writeH5Text(h5table::Reader& reader,const std::string& input,FILE* out) {
+  std::string line;
+  while(reader.getline(line)) {
+    plumed_massert(std::fprintf(out,"%s\n",line.c_str())>=0,"cannot write converted text for "+input);
+  }
+  plumed_massert(std::fflush(out)==0,"cannot flush converted text for "+input);
+}
+
 /// a value read from a text file: a number if it is one (without evaluating expressions such as pi)
 h5table::Value textValue(const std::string& s) {
   h5table::Value v;
@@ -106,21 +125,29 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   if(fromH5==toH5) {
     error("one of the two files (and only one) must be an HDF5 file (extension .h5)");
   }
-  // the lines of the input file, as text (an HDF5 table gives the lines of the equivalent text file)
-  IFile ifile;
-  ifile.open(input);
-  ifile.allowNoEOL();
-  std::string line;
   if(!toH5) {
-    std::ofstream ofs(output);
-    if(!ofs) {
-      error("cannot open "+output);
+    h5table::Reader reader(input);
+    unique_FILE outputFile;
+    if(output!="-") {
+      outputFile.reset(fopenUTF8(output,"w"));
+      if(!outputFile) {
+        error("cannot open "+output);
+      }
     }
-    while(ifile.getline(line)) {
-      ofs<<line<<"\n";
+    writeH5Text(reader,input,outputFile ? outputFile.get() : out);
+    if(outputFile && std::fclose(outputFile.release())!=0) {
+      error("cannot close "+output);
     }
     return 0;
   }
+  IFile ifile;
+  if(input=="-") {
+    ifile.link(in);
+  } else {
+    ifile.open(input);
+  }
+  ifile.allowNoEOL();
+  std::string line;
   h5table::Writer writer(output,false);
   std::vector<std::string> names;
   std::vector<h5table::Field> constants;
@@ -147,9 +174,85 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
       writer.addRow(row,constants);
     }
   }
+  if(std::ferror(ifile.getFILE())) {
+    error("cannot read "+input);
+  }
   writer.flush();
   return 0;
 }
+
+//+PLUMEDOC TOOLS h5cat
+/*
+Write PLUMED HDF5 tables to standard output as text.
+
+Supply one or more filenames as positional arguments. Each table is converted to
+text with full numerical precision, using the same representation as
+[h5convert](h5convert.md). Files are concatenated in argument order, including
+each file's field headers and constants. Rows are neither sorted nor deduplicated.
+
+```plumed
+plumed h5cat COLVAR.h5
+plumed h5cat COLVAR.0.h5 COLVAR.1.h5 > combined.txt
+```
+
+The output can also be piped to tools such as `less` or `awk`. Use `--` before a
+filename starting with `-`. Input must be named HDF5 tables written by PLUMED;
+standard input and arbitrary HDF5 containers are not supported. Filenames need
+not end in `.h5`. An unreadable or invalid file stops the command with a nonzero
+exit status; text from preceding files may already have been written.
+
+*/
+//+ENDPLUMEDOC
+
+class H5Cat:
+  public CLTool {
+  std::vector<std::string> inputs;
+public:
+  static void registerKeywords(Keywords& keys) {
+    CLTool::registerKeywords(keys);
+    keys.addFlag("--",false,"end option processing; remaining arguments are filenames");
+  }
+  explicit H5Cat(const CLToolOptions& co): CLTool(co) {
+    inputdata=inputType::commandline;
+  }
+  bool readInput(int argc,char** argv,FILE* in,FILE* out) override {
+    inputs.clear();
+    bool options=true;
+    for(int i=1; i<argc; ++i) {
+      const std::string arg=argv[i];
+      if(options && (arg=="--help" || arg=="-h")) {
+        std::fprintf(out,"Usage: plumed h5cat [--] FILE...\n\n"
+                     "Write one or more PLUMED HDF5 tables as text to standard output,\n"
+                     "in argument order, preserving headers, constants and all rows.\n"
+                     "Use -- before filenames starting with -. Standard input is not supported.\n");
+        return false;
+      }
+      if(options && arg=="--") {
+        options=false;
+      } else if(options && !arg.empty() && arg[0]=='-') {
+        error("unknown option "+arg+"; use -- before filenames starting with -");
+      } else {
+        inputs.push_back(arg);
+      }
+    }
+    if(inputs.empty()) {
+      error("at least one HDF5 filename is required; use h5cat --help for help");
+    }
+    return true;
+  }
+  int main(FILE* in,FILE* out,Communicator& pc) override {
+    for(const auto& input : inputs) {
+      h5table::Reader reader(input);
+      writeH5Text(reader,input,out);
+    }
+    return 0;
+  }
+  std::string description()const override {
+    return "concatenate PLUMED HDF5 tables as text";
+  }
+};
+
+PLUMED_REGISTER_CLTOOL(H5Cat,"h5cat")
 
 }
 }

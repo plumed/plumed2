@@ -109,7 +109,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CLTool(const CLToolOptions& co );
 /// Read the arguments from the command line
-  bool readInput( int argc, char**argv, FILE* in, FILE*out );
+/// Override to implement a tool with positional arguments.
+  virtual bool readInput( int argc, char**argv, FILE* in, FILE*out );
 /// virtual function mapping to the specific main for each tool
   virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool

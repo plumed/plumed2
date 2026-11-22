@@ -3,6 +3,7 @@
     local plumed_word="" plumed_quote="" plumed_char plumed_next plumed_line
     local plumed_index plumed_command="" plumed_value="" plumed_kind=commands
     local plumed_trim="" plumed_original=${COMP_WORDS[COMP_CWORD]}
+    local plumed_end_options=no plumed_stdio=no plumed_file_prefix=""
     local LC_ALL=C
     COMPREPLY=()
 
@@ -64,6 +65,7 @@
         esac
       else
         plumed_prev=$plumed_word
+        if [[ "$plumed_word" == -- ]]; then plumed_end_options=yes; fi
       fi
     done
     if [[ -z "$plumed_command" ]]; then
@@ -77,6 +79,18 @@
       esac
     elif [[ "$plumed_command" == modules && ( "$plumed_prev" == --module || "$plumed_prev" == --has ) ]]; then
       plumed_kind=modules
+    elif [[ "$plumed_command" == h5cat && "$plumed_end_options" == yes ]]; then
+      plumed_kind=files
+    elif [[ "$plumed_command" == h5convert && ( "$plumed_prev" == --input || "$plumed_prev" == --output || "$plumed_cur" == --input=* || "$plumed_cur" == --output=* ) ]]; then
+      plumed_kind=files
+      plumed_stdio=yes
+      case "$plumed_cur" in
+        --input=*|--output=*)
+          case "$plumed_original" in
+            --input=*|--output=*) plumed_file_prefix=${plumed_original%%=*}= ;;
+          esac
+          plumed_cur=${plumed_cur#*=} ;;
+      esac
     elif [[ "$plumed_cur" == -* ]]; then
       plumed_kind=options
     else
@@ -102,13 +116,18 @@
         plumed_trim=${plumed_cur:0:${#plumed_cur}-${#plumed_original}}
         case "$plumed_trim" in *'='|*':') ;; *) plumed_trim="" ;; esac
       fi
+      if [[ "$plumed_stdio" == yes && - == "$plumed_cur"* ]]; then
+        COMPREPLY+=("${plumed_file_prefix}-")
+      fi
       while IFS= read -r plumed_value; do
         if [[ -d "$plumed_value" ]]; then
           plumed_value+=/
         elif [[ "$plumed_kind" == libraries ]]; then
           case "$plumed_value" in *.so|*.so.*|*.dylib|*.dll) ;; *) continue ;; esac
         fi
-        COMPREPLY+=("${plumed_value#"$plumed_trim"}")
+        # '-' is the stream token for h5convert, even if a file has that name.
+        if [[ "$plumed_stdio" == yes && "$plumed_value" == - ]]; then continue; fi
+        COMPREPLY+=("${plumed_file_prefix}${plumed_value#"$plumed_trim"}")
       done < <(compgen -f -- "$plumed_cur")
       return 0
     fi
