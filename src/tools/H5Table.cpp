@@ -335,13 +335,16 @@ public:
     }
     check(!pending.empty(),path,"cannot reserve a private snapshot name");
     std::error_code ec;
-    const bool copy=append && std::filesystem::exists(target,ec);
+    const bool exists=std::filesystem::exists(target,ec);
     check(!ec,path,"cannot inspect published snapshot: "+ec.message());
-    if(copy) {
+    if(exists) {
       const auto permissions=std::filesystem::status(target,ec).permissions();
       check(!ec,path,"cannot inspect published snapshot permissions");
       std::filesystem::permissions(pathFromUTF8(pending),permissions,ec);
       check(!ec,path,"cannot preserve snapshot permissions");
+    }
+    const bool copy=append && exists;
+    if(copy) {
       bool cloned=false;
 #ifdef __APPLE__
       std::filesystem::remove(pathFromUTF8(pending));

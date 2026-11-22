@@ -71,6 +71,14 @@ print("legacy layout, typed values and atomic append: OK")
 if os.name != "nt":
     run("once", "private.h5")
     os.chmod("private.h5", 0o600)
+    run("once", "private.h5", atomic="0")
+    assert stat.S_IMODE(Path("private.h5").stat().st_mode) == 0o600
+    previous_umask = os.umask(0o022)
+    try:
+        run("once", "private.h5")
+    finally:
+        os.umask(previous_umask)
+    assert stat.S_IMODE(Path("private.h5").stat().st_mode) == 0o600
     run("append", "private.h5")
     assert stat.S_IMODE(Path("private.h5").stat().st_mode) == 0o600
     alias = Path("alias.h5")
