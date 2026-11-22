@@ -17,3 +17,10 @@ rank, SLURM: GPU 1 (process 3 of the node, from SLURM_LOCALID, with 2 GPUs)
 rank, not a number: GPU 1 (the default)
 rank, negative: GPU 1 (the default)
 caller CUDA device: -1
+caller CUDA device, fake driver: 3
+caller CUDA device, fake driver, no context: -1
+PLUMED:   a runs on GPU 2 (assigned by the MD code)
+PLUMED:   chosen: 2
+PLUMED:   b runs on GPU 1 (the GPU the MD code is using; the GPU 2 assigned by the MD code is not among the 2 available)
+PLUMED:   chosen: 1
+PLUMED:   chosen: -1

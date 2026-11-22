@@ -1,8 +1,33 @@
 #include "plumed/core/GpuDevice.h"
+#include "plumed/core/ActionAnyorder.h"
+#include "plumed/core/ActionRegister.h"
+#include "plumed/core/PlumedMain.h"
 #include <cstdlib>
 #include <fstream>
+#include <string>
+#if defined(__PLUMED_HAS_DLOPEN) && defined(__linux__)
+#include <dlfcn.h>
+#endif
 
 using namespace PLMD;
+
+// An action that chooses its GPU as the plugins do, with an invented runtime
+class GpuDeviceTest : public ActionAnyorder {
+public:
+  static void registerKeywords(Keywords& keys) {
+    ActionAnyorder::registerKeywords(keys);
+    keys.add("compulsory","NDEVICES","the number of GPUs the runtime sees");
+    keys.add("compulsory","CALLER","-1","the GPU of the caller");
+  }
+  explicit GpuDeviceTest(const ActionOptions& ao): Action(ao), ActionAnyorder(ao) {
+    GpuDevice::Runtime r;
+    parse("NDEVICES",r.ndevices);
+    parse("CALLER",r.callerDevice);
+    checkRead();
+    log.printf("  chosen: %d\n",GpuDevice::choose(*this,r));
+  }
+};
+PLUMED_REGISTER_ACTION(GpuDeviceTest,"GPU_DEVICE_TEST")
 
 // The choice of the GPU made for the plugins (GpuDevice::choose), without GPUs:
 // the plugin tells what its runtime sees, here it is invented.
@@ -57,5 +82,40 @@ int main() {
   clearRank();
   // only that it can be called: there is no CUDA context here
   out<<"caller CUDA device: "<<GpuDevice::callerCudaDevice()<<"\n";
+#if defined(__PLUMED_HAS_DLOPEN) && defined(__linux__)
+  // a fake CUDA driver (libcuda.so.1, built by the config of this test) with a current
+  // context on device 3, and then none; without dlopen the reference lines are written here
+  if(void* lib=dlopen("./libcuda.so.1",RTLD_NOW|RTLD_GLOBAL)) {
+    auto setDevice=reinterpret_cast<void(*)(int)>(dlsym(lib,"fakeSetDevice"));
+    setDevice(3);
+    out<<"caller CUDA device, fake driver: "<<GpuDevice::callerCudaDevice()<<"\n";
+    setDevice(-1);
+    out<<"caller CUDA device, fake driver, no context: "<<GpuDevice::callerCudaDevice()<<"\n";
+  } else {
+    out<<"no fake driver: "<<dlerror()<<"\n";
+  }
+#else
+  out<<"caller CUDA device, fake driver: 3\n";
+  out<<"caller CUDA device, fake driver, no context: -1\n";
+#endif
+  // the choice of an action, with the GPU assigned by the MD code, written in its log
+  {
+    PlumedMain pm;
+    int natoms=1;
+    int md=2;
+    pm.cmd("setNatoms",&natoms);
+    pm.cmd("setLogFile","gpu.log");
+    pm.cmd("setGpuDeviceId",&md);
+    pm.cmd("init");
+    pm.cmd("readInputLine","a: GPU_DEVICE_TEST NDEVICES=4");
+    pm.cmd("readInputLine","b: GPU_DEVICE_TEST NDEVICES=2 CALLER=1");
+    pm.cmd("readInputLine","c: GPU_DEVICE_TEST NDEVICES=0");
+  }
+  std::ifstream log("gpu.log");
+  for(std::string line; std::getline(log,line);) {
+    if(line.find("runs on GPU")!=std::string::npos || line.find("chosen:")!=std::string::npos) {
+      out<<line<<"\n";
+    }
+  }
   return 0;
 }

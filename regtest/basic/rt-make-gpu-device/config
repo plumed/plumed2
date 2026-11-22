@@ -1,1 +1,7 @@
 type=make
+
+# a fake CUDA driver, with the soname of the real one, for GpuDevice::callerCudaDevice()
+function plumed_regtest_before(){
+  { $plumed_nompi info --configuration ; printf 'libcuda.so.1: fakecuda.c\n\t$(CC) -shared -fPIC -Wl,-soname,libcuda.so.1 $< -o $@\n' ; } > fakecuda.make
+  make -f fakecuda.make libcuda.so.1 > /dev/null 2>&1 || true
+}
