@@ -354,7 +354,7 @@ void KDEGridTools<K,P>::expandGridBounds( KDEGridTools<K,P>& g, P& p, const Tens
 
 template <class K, class P>
 void KDEGridTools<K,P>::getExtentOfKernels( const unsigned& iarg, const unsigned& ndim, P& p, const std::vector<Value*>& args, double& lcoord, double& ucoord ) {
-  unsigned lindex, uindex;
+  unsigned lindex = 0, uindex = 0;
   lcoord = std::numeric_limits<double>::max();
   ucoord = -std::numeric_limits<double>::max();
   bool bandwidthsAllSame = K::bandwidthsAllSame( ndim, args );
