@@ -71,6 +71,13 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit H5Convert(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
+  Completion complete(const std::vector<std::string>& arguments) const override {
+    auto result=CLTool::complete(arguments);
+    if(result.option=="--input" || result.option=="--output") {
+      result.candidates.push_back("-");
+    }
+    return result;
+  }
   std::string description()const override {
     return "convert a PLUMED file between text and HDF5 (.h5)";
   }

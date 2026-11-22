@@ -34,6 +34,26 @@ def check_bash(shell, program, root, env):
         ),
         (["--load", str(library), "metadata-tool", "--hy"], ["--hyphen"], None),
         (["--load", str(library), "metadata_tool", "--pr"], ["--probe"], None),
+        (
+            ["--load-module=feature_b", "metadata_tool", "--mode", ""],
+            ["alpha", "two words", "$literal"],
+            None,
+        ),
+        (
+            ["--load", str(library), "metadata_tool", "--mode=al"],
+            ["--mode=alpha"],
+            None,
+        ),
+        (
+            ["--load-module=feature_b", "metadata_tool", "--mode", "=", "two"],
+            ["two words"],
+            None,
+        ),
+        (
+            ["--load-module=feature_b", "metadata_tool", "--probe", "--mode", "al"],
+            ["alpha"],
+            None,
+        ),
     ):
         setup = r"""
 _plumed() { eval "$("${COMP_WORDS[0]}" --no-mpi completion 2>/dev/null)"; }
