@@ -404,6 +404,11 @@ public:
     const bool synced=fsync(descriptor)==0;
     ::close(descriptor);
     check(synced,path,"cannot synchronize snapshot directory");
+#ifdef F_FULLFSYNC
+    // The directory change follows the first device-cache flush. Request a
+    // second full synchronization after its fsync before acknowledging commit.
+    published->sync(path);
+#endif
 #endif
   }
 };
