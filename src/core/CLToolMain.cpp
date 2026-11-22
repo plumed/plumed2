@@ -213,6 +213,40 @@ std::vector<std::string> CLToolMain::getGlobalOptions() {
           "--module-build-id", "--list-modules", "--load", "--tmpi-threads"};
 }
 
+std::vector<std::string> CLToolMain::getModuleOptions() {
+  return {"--module","--list","--has","--has-feature","-q","--quiet","-h","--help"};
+}
+
+CLTool::Completion CLToolMain::completeModules(const std::vector<std::string>& arguments) {
+  CLTool::Completion result;
+  DLLoader loader;
+  ModuleLoader::inheritContext(loader);
+  std::string module;
+  bool moduleValue=false,names=false,features=false;
+  for(std::size_t i=0; i+1<arguments.size(); ++i) {
+    const auto& word=arguments[i];
+    if(moduleValue) {
+      module=word;
+      moduleValue=false;
+    } else if(word=="--module") {
+      moduleValue=true;
+    } else if(word=="--has") {
+      names=true;
+      features=false;
+    } else if(word=="--has-feature") {
+      features=true;
+      names=false;
+    }
+  }
+  const std::string current=arguments.empty()?"":arguments.back();
+  if(moduleValue || ((names || features) && (current.empty() || current[0]!='-'))) {
+    result.candidates=features && !moduleValue?ModuleLoader::features(loader,module):ModuleLoader::modules(loader);
+  } else {
+    result.candidates=getModuleOptions();
+  }
+  return result;
+}
+
 int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   int i;
   bool printhelp=false;

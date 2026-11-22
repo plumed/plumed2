@@ -16,5 +16,9 @@ manual --spelling: ok
 manual of a cltool: ok
 completion: ok
 completion options: ok
+completion tool context: ok
+completion tool argument: ok
+completion script context: ok
+completion all tools: yes
 gen_json: ok
 gen_json: valid json
