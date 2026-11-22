@@ -280,7 +280,9 @@ class Snapshot {
 public:
   explicit Snapshot(const std::string& original) {
     std::error_code ec;
-    const auto resolved=std::filesystem::weakly_canonical(pathFromUTF8(original),ec);
+    const auto absolute=std::filesystem::absolute(pathFromUTF8(original),ec);
+    check(!ec,original,"cannot make snapshot path absolute");
+    const auto resolved=std::filesystem::weakly_canonical(absolute,ec);
     check(!ec,original,"cannot resolve snapshot path");
     path=pathToUTF8(resolved);
     owner=std::make_unique<FileLock>(path+".plumed-lock",true,true);
@@ -400,7 +402,8 @@ public:
     published=std::move(next);
     const std::string directory=pathToUTF8(pathFromUTF8(path).parent_path());
     const int descriptor=::open(directory.c_str(),O_RDONLY);
-    check(descriptor>=0,path,"cannot open snapshot directory for synchronization");
+    check(descriptor>=0,path,"cannot open snapshot directory for synchronization: "+
+          std::string(std::strerror(errno)));
     const bool synced=fsync(descriptor)==0;
     ::close(descriptor);
     check(synced,path,"cannot synchronize snapshot directory");
