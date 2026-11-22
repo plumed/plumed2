@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "H5Table.h"
+#include "FileTools.h"
 #include "Exception.h"
 #include "Tools.h"
 #include <cmath>
@@ -28,9 +29,32 @@
 #include <filesystem>
 #include <mutex>
 #include <utility>
+#include <cerrno>
+#include <cstring>
+#include <random>
 
 #ifdef __PLUMED_HAS_LIBHDF5
 #include <hdf5.h>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#ifdef __APPLE__
+#include <sys/clonefile.h>
+#elif defined(__linux__)
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#endif
+#endif
 #endif
 
 namespace PLMD {
@@ -173,6 +197,216 @@ void check(bool ok,const std::string& path,const std::string& what) {
     plumed_merror("HDF5 error on file "+path+": "+what);
   }
 }
+
+bool atomicOutput() {
+  std::string value;
+  if(!getenvUTF8("PLUMED_H5_ATOMIC",value) || value=="0") {
+    return false;
+  }
+  plumed_massert(value=="1","PLUMED_H5_ATOMIC must be 0 or 1");
+  return true;
+}
+
+/// OS locks are independent of HDF5 handles: published snapshots are protected
+/// against in-place writers while remaining readable by ordinary HDF5 clients.
+class FileLock {
+#ifdef _WIN32
+  HANDLE handle=INVALID_HANDLE_VALUE;
+#else
+  int descriptor=-1;
+#endif
+public:
+  FileLock(const std::string& path,bool exclusive,bool create=false,bool writable=false) {
+#ifdef _WIN32
+    handle=CreateFileW(pathFromUTF8(path).c_str(),
+                       GENERIC_READ|((create || writable)?GENERIC_WRITE:0),
+                       FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
+                       create?OPEN_ALWAYS:OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    check(handle!=INVALID_HANDLE_VALUE,path,"cannot open publication lock");
+    OVERLAPPED position= {};
+    if(!LockFileEx(handle,LOCKFILE_FAIL_IMMEDIATELY|(exclusive?LOCKFILE_EXCLUSIVE_LOCK:0),
+                   0,1,0,&position)) {
+      CloseHandle(handle);
+      handle=INVALID_HANDLE_VALUE;
+      check(false,path,"file is already open for writing or cannot be locked");
+    }
+#else
+    int flags=(create?O_CREAT:0)|((create || writable)?O_RDWR:O_RDONLY);
+#ifdef O_CLOEXEC
+    flags|=O_CLOEXEC;
+#endif
+    descriptor=::open(path.c_str(),flags,0666);
+    check(descriptor>=0,path,"cannot open publication lock: "+std::string(std::strerror(errno)));
+    if(flock(descriptor,(exclusive?LOCK_EX:LOCK_SH)|LOCK_NB)!=0) {
+      ::close(descriptor);
+      descriptor=-1;
+      check(false,path,"file is already open for writing or cannot be locked");
+    }
+#endif
+  }
+  FileLock(const FileLock&)=delete;
+  FileLock& operator=(const FileLock&)=delete;
+  ~FileLock() {
+#ifdef _WIN32
+    if(handle!=INVALID_HANDLE_VALUE) {
+      CloseHandle(handle);
+    }
+#else
+    if(descriptor>=0) {
+      ::close(descriptor);
+    }
+#endif
+  }
+  void sync(const std::string& path) {
+#ifdef _WIN32
+    check(FlushFileBuffers(handle)!=0,path,"cannot synchronize snapshot data");
+#else
+    check(fsync(descriptor)==0,path,"cannot synchronize snapshot data");
+#ifdef F_FULLFSYNC
+    if(fcntl(descriptor,F_FULLFSYNC)!=0) {
+      check(errno==EINVAL || errno==ENOTSUP,path,"cannot synchronize device buffers");
+    }
+#endif
+#endif
+  }
+};
+
+/// A private work file and an immutable, atomically published v1 table.
+class Snapshot {
+  std::string path;
+  std::string pending;
+  std::unique_ptr<FileLock> owner;
+  std::unique_ptr<FileLock> published;
+public:
+  explicit Snapshot(const std::string& original) {
+    std::error_code ec;
+    const auto resolved=std::filesystem::weakly_canonical(pathFromUTF8(original),ec);
+    check(!ec,original,"cannot resolve snapshot path");
+    path=pathToUTF8(resolved);
+    owner=std::make_unique<FileLock>(path+".plumed-lock",true,true);
+    const bool exists=std::filesystem::exists(resolved,ec);
+    check(!ec,original,"cannot inspect snapshot path: "+ec.message());
+    if(exists) {
+      check(std::filesystem::is_regular_file(resolved,ec) && !ec,original,
+            "atomic output requires a regular file");
+    }
+    if(exists) {
+      published=std::make_unique<FileLock>(path,false);
+    }
+  }
+  ~Snapshot() {
+    if(!pending.empty()) {
+      std::error_code ec;
+      std::filesystem::remove(pathFromUTF8(pending),ec);
+    }
+  }
+  std::pair<std::string,bool> prepare(bool append) {
+    plumed_assert(pending.empty());
+    const auto target=pathFromUTF8(path);
+    const auto directory=target.parent_path();
+    // Reserve a unique name with exclusive creation; never reuse a work file
+    // left by a crashed process.
+    std::random_device random;
+    for(unsigned attempt=0; attempt<128; ++attempt) {
+      const auto temporary=directory/pathFromUTF8("."+pathToUTF8(target.filename())+".pending."+
+                           std::to_string(random())+"."+std::to_string(random()));
+      const std::string candidate=pathToUTF8(temporary);
+#ifdef _WIN32
+      HANDLE file=CreateFileW(temporary.c_str(),GENERIC_READ|GENERIC_WRITE,
+                              FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+                              nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);
+      if(file!=INVALID_HANDLE_VALUE) {
+        CloseHandle(file);
+        pending=candidate;
+        break;
+      }
+      check(GetLastError()==ERROR_FILE_EXISTS,path,"cannot create private snapshot");
+#else
+      const int file=::open(candidate.c_str(),O_CREAT|O_EXCL|O_RDWR,0666);
+      if(file>=0) {
+        ::close(file);
+        pending=candidate;
+        break;
+      }
+      check(errno==EEXIST,path,"cannot create private snapshot");
+#endif
+    }
+    check(!pending.empty(),path,"cannot reserve a private snapshot name");
+    std::error_code ec;
+    const bool copy=append && std::filesystem::exists(target,ec);
+    check(!ec,path,"cannot inspect published snapshot: "+ec.message());
+    if(copy) {
+      const auto permissions=std::filesystem::status(target,ec).permissions();
+      check(!ec,path,"cannot inspect published snapshot permissions");
+      std::filesystem::permissions(pathFromUTF8(pending),permissions,ec);
+      check(!ec,path,"cannot preserve snapshot permissions");
+      bool cloned=false;
+#ifdef __APPLE__
+      std::filesystem::remove(pathFromUTF8(pending));
+      cloned=clonefile(path.c_str(),pending.c_str(),0)==0;
+#elif defined(__linux__) && defined(FICLONE)
+      const int source=::open(path.c_str(),O_RDONLY);
+      const int destination=::open(pending.c_str(),O_RDWR);
+      if(source>=0 && destination>=0) {
+        cloned=ioctl(destination,FICLONE,source)==0;
+      }
+      if(source>=0) {
+        ::close(source);
+      }
+      if(destination>=0) {
+        ::close(destination);
+      }
+#endif
+      if(!cloned) {
+        std::filesystem::copy_file(target,pathFromUTF8(pending),
+                                   std::filesystem::copy_options::overwrite_existing,ec);
+        check(!ec,path,"cannot copy the published snapshot: "+ec.message());
+      }
+    }
+    return {pending,copy};
+  }
+  void publish() {
+    plumed_assert(!pending.empty());
+    auto next=std::make_unique<FileLock>(pending,false,false,true);
+    next->sync(path);
+#ifdef _WIN32
+    const auto source=pathFromUTF8(pending);
+    const auto destination=pathFromUTF8(path).native();
+    HANDLE file=CreateFileW(source.c_str(),DELETE|GENERIC_READ|GENERIC_WRITE,
+                            FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
+                            OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    check(file!=INVALID_HANDLE_VALUE,path,"cannot open snapshot for publication");
+    const DWORD bytes=static_cast<DWORD>(destination.size()*sizeof(wchar_t));
+    std::vector<char> storage(sizeof(FILE_RENAME_INFO)+bytes);
+    auto* rename=reinterpret_cast<FILE_RENAME_INFO*>(storage.data());
+    // FileRenameInfoEx + POSIX semantics preserve existing readers of the old
+    // inode, including HDF5 clients which do not request delete sharing.
+    const DWORD flags=0x00000001|0x00000002;
+    std::memcpy(storage.data(),&flags,sizeof(flags));
+    rename->RootDirectory=nullptr;
+    rename->FileNameLength=bytes;
+    std::memcpy(rename->FileName,destination.data(),bytes);
+    const bool renamed=SetFileInformationByHandle(file,static_cast<FILE_INFO_BY_HANDLE_CLASS>(22),
+                       rename,static_cast<DWORD>(storage.size()))!=0;
+    const bool synced=renamed && FlushFileBuffers(file)!=0;
+    CloseHandle(file);
+    check(renamed,path,"cannot atomically publish snapshot (POSIX rename semantics required)");
+    pending.clear();
+    published=std::move(next);
+    check(synced,path,"cannot synchronize published snapshot");
+#else
+    check(renameUTF8(pending,path)==0,path,"cannot atomically publish snapshot");
+    pending.clear();
+    published=std::move(next);
+    const std::string directory=pathToUTF8(pathFromUTF8(path).parent_path());
+    const int descriptor=::open(directory.c_str(),O_RDONLY);
+    check(descriptor>=0,path,"cannot open snapshot directory for synchronization");
+    const bool synced=fsync(descriptor)==0;
+    ::close(descriptor);
+    check(synced,path,"cannot synchronize snapshot directory");
+#endif
+  }
+};
 
 std::string blockName(unsigned b) {
   return "block_"+std::to_string(b);
@@ -451,6 +685,17 @@ struct Writer::Impl {
   Signature sig;
   std::vector<Column> columns;
   std::size_t buffered=0;
+  bool atomic=false;
+  bool append=false;
+  bool committed=false;
+  std::unique_ptr<Snapshot> snapshot;
+  std::unique_ptr<Writer> staging;
+  void prepareSnapshot() {
+    if(!staging) {
+      const auto work=snapshot->prepare(append || committed);
+      staging.reset(new Writer(work.first,work.second,false));
+    }
+  }
   void writeBuffer() {
     for(auto & c : columns) {
       appendRows(c,path);
@@ -487,9 +732,19 @@ struct Writer::Impl {
 };
 
 Writer::Writer(const std::string& path,bool append):
+  Writer(path,append,atomicOutput()) {
+}
+
+Writer::Writer(const std::string& path,bool append,bool atomic):
   impl(std::make_unique<Impl>()) {
   Lock lock(hdf5Mutex());
   impl->path=path;
+  if(atomic) {
+    impl->atomic=true;
+    impl->append=append;
+    impl->snapshot=std::make_unique<Snapshot>(path);
+    return;
+  }
   std::error_code ec;
   if(append && std::filesystem::exists(path,ec)) {
     impl->file=openFile(path,H5F_ACC_RDWR);
@@ -515,13 +770,25 @@ Writer::Writer(const std::string& path,bool append):
 Writer::~Writer() {
   Lock lock(hdf5Mutex());
   try {
-    impl->writeBuffer();
+    if(impl->atomic) {
+      flush();
+    } else {
+      impl->writeBuffer();
+    }
   } catch(...) {
   }
 }
 
 void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& constants) {
   Lock lock(hdf5Mutex());
+  if(impl->atomic) {
+    impl->prepareSnapshot();
+    impl->staging->addRow(fields,constants);
+    if(++impl->buffered>=4096) {
+      flush();
+    }
+    return;
+  }
   Signature s;
   for(const auto & f : fields) {
     s.names.push_back(f.name);
@@ -541,13 +808,28 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
 
 void Writer::flush() {
   Lock lock(hdf5Mutex());
+  if(impl->atomic) {
+    if(!impl->staging && impl->committed) {
+      return;
+    }
+    impl->prepareSnapshot();
+    impl->staging->flush();
+    impl->staging.reset();
+    impl->snapshot->publish();
+    impl->committed=true;
+    impl->buffered=0;
+    return;
+  }
   impl->writeBuffer();
-  H5Fflush(impl->file,H5F_SCOPE_GLOBAL);
+  check(H5Fflush(impl->file,H5F_SCOPE_GLOBAL)>=0,impl->path,"cannot flush the file");
 }
 
 std::vector<unsigned long long> Writer::rows() {
   Lock lock(hdf5Mutex());
   flush();
+  if(impl->atomic) {
+    return h5table::rows(impl->path);
+  }
   std::vector<unsigned long long> r;
   for(int b=0; b<=impl->block; b++) {
     Id g(H5Gopen2(impl->file,blockName(b).c_str(),H5P_DEFAULT),H5Gclose);
@@ -637,7 +919,8 @@ std::vector<unsigned long long> rows(const std::string& path) {
   return r;
 }
 
-void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
+namespace {
+void truncateInPlace(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
   Lock lock(hdf5Mutex());
   std::unique_ptr<Writer> out;
   {
@@ -682,10 +965,24 @@ void truncate(const std::string& path,const std::vector<unsigned long long>& kee
         check(H5Ldelete(f,blockName(b).c_str(),H5P_DEFAULT)>=0,path,"cannot remove "+blockName(b));
       }
     }
-    H5Fflush(f,H5F_SCOPE_GLOBAL);
+    check(H5Fflush(f,H5F_SCOPE_GLOBAL)>=0,path,"cannot flush the trimmed file");
   }
   if(out) {
     out->flush();
+  }
+}
+}
+
+void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
+  Lock lock(hdf5Mutex());
+  if(atomicOutput()) {
+    Snapshot snapshot(path);
+    const auto work=snapshot.prepare(true);
+    check(work.second,path,"cannot trim a missing table");
+    truncateInPlace(work.first,keep,backup);
+    snapshot.publish();
+  } else {
+    truncateInPlace(path,keep,backup);
   }
 }
 

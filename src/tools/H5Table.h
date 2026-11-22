@@ -76,9 +76,13 @@ struct Field {
 };
 
 /// Writes a table: rows are buffered and written in chunks (flush() writes them all)
+/// PLUMED_H5_ATOMIC=1 publishes immutable v1 snapshots at flush/buffer boundaries;
+/// the default (0) writes in place. See Files.md for cost and durability limits.
 class Writer {
   struct Impl;
   std::unique_ptr<Impl> impl;
+  /// Internal staging writer; atomic=false prevents recursive publication.
+  Writer(const std::string& path,bool append,bool atomic);
 public:
 /// Create the file, or open it to append to its last block (append)
   Writer(const std::string& path,bool append);

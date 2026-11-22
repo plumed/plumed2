@@ -86,6 +86,59 @@ field can be HDF5 tables: the files written as free text (e.g. those of [DUMPATO
 (WALKERS_N of [METAD](METAD.md)) are text files too, since every walker reads the files of the others while they are
 written (with WALKERS_MPI the hills can be an HDF5 table).
 
+### Live inspection and atomic HDF5 output
+
+The default HDF5 writer updates the file in place. HDF5 locks prevent another
+process from reading it while that writer is open; interruption during an update
+can also leave an inconsistent file. `FLUSH` writes buffered data but does not
+close the default writer or make its updates atomic.
+
+Set the environment variable `PLUMED_H5_ATOMIC=1` **in the process writing the
+tables** to opt into atomic publication. `PLUMED_H5_ATOMIC=0` (the default)
+retains in-place writing. Other values are errors. For example:
+
+```sh
+PLUMED_H5_ATOMIC=1 plumed driver --plumed plumed.dat --ixyz traj.xyz
+```
+
+Atomic mode writes to a private file in the same directory, closes all its HDF5
+handles, synchronizes it, and atomically replaces the published filename. It
+also requests synchronization of the containing directory on POSIX systems.
+Ordinary HDF5 readers can inspect the last published snapshot during the run;
+readers that already opened a snapshot continue reading that snapshot. The
+on-disk column layout and existing native, h5py and pandas readers are unchanged.
+
+A successful explicit flush publishes all rows accepted so far. A full internal
+buffer (4096 rows) also publishes a snapshot. Use [FLUSH](FLUSH.md) to control
+publication more frequently. Rows still buffered or present only in the private
+work file are not committed. After process termination, the published filename
+contains a complete committed snapshot; restarting/appending uses that file and
+does not reuse an orphaned work file. Restart trimming uses atomic publication
+too. The protocol requests OS/device synchronization, but power-loss durability
+depends on the filesystem and storage honoring these requests; it does not
+protect against failed storage or provide a transaction across multiple files.
+Call an explicit flush when acknowledgement of publication errors is required:
+as with ordinary C++ output destruction, destructor errors cannot be returned
+to the caller.
+
+Atomic mode requires a regular output file, working file locks and atomic
+replacement on the output filesystem. A small `filename.h5.plumed-lock` file
+coordinates writers and is retained after close; its OS lock disappears on
+process exit. Private `.filename.h5.pending.*` files are removed on normal
+cleanup and may remain after a crash. They are not used for recovery and can be
+removed once no writer is using them. Do not delete or replace an active lock
+file. Existing snapshots are also locked for reading to exclude cooperating in-place HDF5
+writers. On Windows, publication requires POSIX replacement semantics (modern
+Windows/NTFS); unsupported replacements fail without modifying the old snapshot.
+
+Snapshot creation uses filesystem cloning when supported on macOS/Linux.
+Otherwise it copies the entire previously published file, so frequent flushes
+on large tables can be expensive and require space for another snapshot.
+Choose a flush interval appropriate to this cost. Atomic mode is opt-in so
+existing runs do not acquire this overhead unexpectedly. This mode does not
+retrofit live reading or crash recovery to files currently being written by
+the default in-place writer.
+
 Grids (e.g. GRID_WFILE of [METAD](METAD.md), [DUMPGRID](DUMPGRID.md)) and state files (STATE_WFILE of
 [OPES_METAD](OPES_METAD.md)) can be HDF5 tables too, with a row for every point of the grid as in the text files.
 With their full precision, a restart from a grid (GRID_RFILE) or from a state (STATE_RFILE) gives the same bias as
