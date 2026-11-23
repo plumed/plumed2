@@ -34,7 +34,7 @@ EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -91,12 +91,169 @@
+@@ -91,12 +91,188 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
  #include "GlobalMasterSymmetry.h"
@@ -44,6 +44,14 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +#include "../Plumed.h"
 +#include <cstdlib>
 +#include <utility>
++#ifdef NAMD_CUDA
++// the GPU used by NAMD is passed to PLUMED
++#include "DeviceCUDA.h"
++#ifdef WIN32
++#define __thread __declspec(thread)
++#endif
++extern __thread DeviceCUDA *deviceCUDA;
++#endif
 +// END PLUMED
  #include "GlobalMasterFreeEnergy.h"
  #include "GlobalMasterColvars.h"
@@ -115,6 +123,17 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +    cmd("setMDEngine","namd");
 +
 +    cmd("setLog",stdout);
++
++#ifdef NAMD_CUDA
++    // The PLUMED actions that run on a GPU (plugins) use the GPU of this PE,
++    // the one that calls PLUMED, unless the user chooses otherwise
++    int plumedApi=0;
++    cmd("getApiVersion",&plumedApi);
++    if(plumedApi>9 && deviceCUDA){
++      int gpu=deviceCUDA->getDeviceID();
++      cmd("setGpuDeviceId",&gpu);
++    }
++#endif
 +
 +    double dt=spar->dt;
 +    cmd("setTimestep",&dt);
@@ -204,7 +223,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
  
  #include "DeviceCUDA.h"
  #ifdef NAMD_CUDA
-@@ -1044,10 +1201,15 @@
+@@ -1044,10 +1220,15 @@
              masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());
