@@ -33,7 +33,7 @@ From the plugin directory of a plumed source directory (`regtest/scripts` links 
  - `make check` runs all the tests (it needs a GPU)
  - `make check-nogpu` runs only the tests that do not need a GPU (in `regtest/nogpu`: loading the plugin, input errors, the error when there is no GPU)
 
-The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits and runs `make check-nogpu`.
+The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits, and with HIP with the oldest and the newest tested ROCm versions, and runs `make check-nogpu`.
 
 ## Limitations
 

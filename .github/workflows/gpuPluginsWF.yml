@@ -5,7 +5,8 @@ name: GPU plugins
 # errors, the error when there is no GPU). The kernels themselves need a real GPU.
 #
 # Both plugins are compiled with more than one version of the CUDA toolkit, taken from conda-forge
-# (no driver is needed to compile).
+# (no driver is needed to compile). cudaCoord is also compiled with HIP (AMD GPUs), with the
+# oldest and the newest supported ROCm versions, taken from the apt repository of AMD.
 
 on:
   workflow_call:
@@ -87,3 +88,67 @@ jobs:
             make -C ../reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
           echo "::endgroup::"
         done
+
+  cudaCoord-hip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # the oldest (see the README of the plugin) and the newest ROCm versions that are tested
+        rocm: ["6.2.4", "7.2.4"]
+    env:
+      PLUMED_CCACHE_SIZE: 100M
+      # no GPU on the runner: the code is compiled for MI250 and MI300
+      HIP_ARCHITECTURES: "gfx90a gfx942"
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-gpuplugins-hip${{ matrix.rocm }}-hash-${{ github.sha }}
+        restore-keys: |
+          ccache-reset1-${{ steps.image.outputs.os }}-gpuplugins-hip${{ matrix.rocm }}-hash-
+          ccache-reset1-${{ steps.image.outputs.os }}-gpuplugins-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+        # PLUMED with MPI, as in the CUDA job: hipcc does not use mpic++, so configure.sh
+        # asks mpic++ where mpi.h is
+        mpi: true
+
+    - name: Build and install PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch --prefix="$HOME/opt"
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+
+    - name: Install ROCm ${{ matrix.rocm }}
+      # only the HIP compiler and runtime, rocThrust, rocPRIM and hipCUB
+      run: |
+        sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+        wget -q https://repo.radeon.com/rocm/rocm.gpg.key -O - | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${{ matrix.rocm }} noble main" \
+          | sudo tee /etc/apt/sources.list.d/rocm.list
+        printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/rocm-pin-600
+        sudo apt-get update -q
+        sudo apt-get install -y -q --no-install-recommends rocm-hip-runtime-dev rocthrust-dev rocprim-dev hipcub-dev
+        /opt/rocm/bin/hipcc --version
+
+    - name: Build and test cudaCoord with HIP
+      run: |
+        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
+        export PATH="/opt/rocm/bin:$PATH"
+        export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+        cd plugins/cudaCoord
+        USE_HIP=1 ./configure.sh
+        make USE_HIP=1 -j 4
+        make USE_HIP=1 check-nogpu
+        # the program of "make check-gpu" is only compiled: running it needs GPUs
+        make -C ../openaccPTM/gpucheck USE_HIP=1 device_check

@@ -2,7 +2,8 @@ type=driver
 arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
 export PLUMED_STACK_TRACE=no
 # Without a GPU, a correct input must stop with a clear error (not a crash or a
-# CUDA exception). The GPUs are hidden with CUDA_VISIBLE_DEVICES, so that the test
+# CUDA exception). The GPUs are hidden with CUDA_VISIBLE_DEVICES (HIP_VISIBLE_DEVICES for
+# the HIP build), so that the test
 # gives the same result on machines with and without GPUs (and without a driver).
 # Each line of the table below is: name|action|keywords
 
@@ -11,7 +12,7 @@ plumed_regtest_after() {
   while IFS='|' read -r name action keywords ; do
     printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: %s %s\nPRINT ARG=gpu FILE=colvar_%s\n' "$action" "$keywords" "$name" > nogpu_$name.dat
     rc=0
-    CUDA_VISIBLE_DEVICES=-1 $plumed driver --plumed nogpu_$name.dat --ixyz traj-nopbc.xyz > nogpu_$name.out 2> nogpu_$name.err || rc=$?
+    CUDA_VISIBLE_DEVICES=-1 HIP_VISIBLE_DEVICES=-1 $plumed driver --plumed nogpu_$name.dat --ixyz traj-nopbc.xyz > nogpu_$name.out 2> nogpu_$name.err || rc=$?
     if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "no GPU available" nogpu_$name.out nogpu_$name.err ; then
       echo "$name: stopped with an error" >> errors
     else
