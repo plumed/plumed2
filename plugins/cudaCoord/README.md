@@ -53,6 +53,9 @@ its node modulo the number of GPUs, otherwise the current one of the CUDA runtim
 `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
 (e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
 Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
+With HIP (AMD GPUs) the plugin shares the runtime with the MD code, and the GPU the MD code is using is the current one of
+the HIP runtime: the rank is not used, and without an MD code (`plumed driver`) every process uses the first GPU, unless
+`HIP_VISIBLE_DEVICES` gives each rank its own GPU.
 `make check-gpu` (on a node with GPUs; `make USE_HIP=1 check-gpu` for AMD GPUs) checks this, see `../openaccPTM/gpucheck`.
 
 ## Performance notes

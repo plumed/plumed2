@@ -48,15 +48,21 @@ inline void cudaCheck (cudaError_t const err, const char *what) {
 /// plugin: the GPU assigned to PLUMED by the MD code (cmd "setGpuDeviceId"),
 /// otherwise the GPU the MD code is using, otherwise, with several GPUs, the rank
 /// of the process in its node modulo the number of GPUs, otherwise the current
-/// one of the CUDA runtime (by default the first one)
+/// one of the CUDA runtime (by default the first one).
+/// With HIP the runtime is a shared library, the same one the MD code uses: its
+/// current GPU is the GPU the MD code is using, so the rank is never used
 /// @return the GPU, -1 if there is none
 inline int chooseGPU (const PLMD::Action &action) {
   PLMD::GpuDevice::Runtime runtime;
   if (cudaGetDeviceCount (&runtime.ndevices) != cudaSuccess || runtime.ndevices <= 0) {
     return -1;
   }
+#ifdef __HIP__
+  cudaCheck (cudaGetDevice (&runtime.callerDevice), "cudaGetDevice");
+#else
   // before the runtime of the plugin is used in this thread
   runtime.callerDevice = PLMD::GpuDevice::callerCudaDevice();
+#endif
   cudaCheck (cudaGetDevice (&runtime.runtimeDevice), "cudaGetDevice");
   return PLMD::GpuDevice::choose (action, runtime);
 }
