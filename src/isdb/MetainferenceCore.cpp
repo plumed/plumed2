@@ -1938,6 +1938,11 @@ void MetainferenceCore::loadState(const State& s) {
 void MetainferenceCore::beginEvaluation() {
   const long long int step=action_.getStep();
   if(step!=baseStep_) {
+    for(auto& selector : sigma_mean2_last_) {
+      for(auto& history : selector) {
+        history.beginStep();
+      }
+    }
     // first evaluation of this step: it starts from the state kept by the last update()
     if(committedSaved_) {
       base_=std::move(committed_);
@@ -2032,9 +2037,9 @@ void MetainferenceCore::update() {
       for(unsigned i=0; i<narg; ++i) {
         SigmaMeanHistory& h=sigma_mean2_last_[pendingSelector_][i];
         if(optsigmamean_stride_>0) {
-          h.push(pendingSigmaMean2_[i]);
-        } else if(pendingSigmaMean2_[i]>h.get(0)) {
-          h.setFirst(pendingSigmaMean2_[i]);
+          h.commitPush(pendingSigmaMean2_[i]);
+        } else {
+          h.commitRaiseFirst(pendingSigmaMean2_[i]);
         }
       }
       historyPending_=false;

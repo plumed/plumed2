@@ -48,6 +48,30 @@ class SigmaMeanHistory {
   unsigned first_=0;
   unsigned n_=0;
   double max_=0.;
+  // One committed insertion can overwrite at most one ring entry. Keep an
+  // O(1) undo record so same-step trials can read the start-of-step window.
+  bool replayBase_=false;
+  unsigned baseFirst_=0,baseSize_=0,baseIndex_=0;
+  double baseMax_=0.,baseValue_=0.;
+  double baseGet(unsigned k) const {
+    const unsigned i=(baseFirst_+k)%buf_.size();
+    return i==baseIndex_ ? baseValue_ : buf_[i];
+  }
+  void saveReplayBase(unsigned index) {
+    if(!replayBase_) {
+      baseFirst_=first_;
+      baseSize_=n_;
+      baseMax_=max_;
+      baseIndex_=index;
+      baseValue_=buf_[index];
+      replayBase_=true;
+    } else {
+      buf_[baseIndex_]=baseValue_;
+      first_=baseFirst_;
+      n_=baseSize_;
+      max_=baseMax_;
+    }
+  }
   void recomputeMax() {
     max_=get(0);
     for(unsigned k=1; k<n_; ++k) {
@@ -72,6 +96,7 @@ public:
   void clear() {
     first_=0;
     n_=0;
+    replayBase_=false;
   }
   /// add a value, removing the oldest one if the history is full
   void push(const double v) {
@@ -99,36 +124,59 @@ public:
   }
   /// the maximum that push(v) would give, without changing the history
   double maxAfterPush(const double v) const {
-    if(n_<buf_.size()) {
-      return (n_==0||max_<v) ? v : max_;
+    const unsigned size=replayBase_ ? baseSize_ : n_;
+    const double maximum=replayBase_ ? baseMax_ : max_;
+    auto at=[&](unsigned k) {
+      return replayBase_ ? baseGet(k) : get(k);
+    };
+    if(size<buf_.size()) {
+      return (size==0||maximum<v) ? v : maximum;
     }
-    if(max_<v) {
+    if(maximum<v) {
       return v;
     }
-    if(buf_[first_]!=max_) {
-      return max_;
+    // maximum is one of the stored entries; a smaller oldest entry cannot evict it.
+    if(at(0)<maximum) {
+      return maximum;
     }
     // the oldest value, which would be removed, is the maximum
     double m=v;
-    for(unsigned k=1; k<n_; ++k) {
-      if(m<get(k)) {
-        m=get(k);
+    for(unsigned k=1; k<size; ++k) {
+      if(m<at(k)) {
+        m=at(k);
       }
     }
     return m;
   }
   /// the maximum that setFirst(v) would give if v is larger than the oldest value, without changing the history
   double maxAfterRaiseFirst(const double v) const {
-    if(!(v>get(0))) {
-      return max_;
+    const unsigned size=replayBase_ ? baseSize_ : n_;
+    auto at=[&](unsigned k) {
+      return replayBase_ ? baseGet(k) : get(k);
+    };
+    if(!(v>at(0))) {
+      return replayBase_ ? baseMax_ : max_;
     }
     double m=v;
-    for(unsigned k=1; k<n_; ++k) {
-      if(m<get(k)) {
-        m=get(k);
+    for(unsigned k=1; k<size; ++k) {
+      if(m<at(k)) {
+        m=at(k);
       }
     }
     return m;
+  }
+  void beginStep() {
+    replayBase_=false;
+  }
+  void commitPush(double value) {
+    saveReplayBase(n_==buf_.size() ? first_ : (first_+n_)%buf_.size());
+    push(value);
+  }
+  void commitRaiseFirst(double value) {
+    saveReplayBase(first_);
+    if(value>get(0)) {
+      setFirst(value);
+    }
   }
   /// the stored values, from the oldest
   std::vector<double> values() const {
