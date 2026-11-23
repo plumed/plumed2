@@ -352,6 +352,7 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
     }
 
     optimizer_ = opt_pntrs_[0];
+    addDependency(optimizer_);
     log.printf(
       "maze> Optimizer linked: %s.\n",
       optimizer_->get_label().c_str()
@@ -404,7 +405,7 @@ void OptimizerBias::calculate() {
     optimizer_->value_z_->get()
   );
 
-  if (getStep() == 0) {
+  if (getStep() == 0 && !isCalculationOnly()) {
     cv0_=cv;
   }
 
@@ -419,7 +420,7 @@ void OptimizerBias::calculate() {
   bias_ = alpha_ * delta_cv * delta_cv;
   force_ = 2.0 * sign * alpha_ * fabs(delta_cv);
 
-  if (getStep() % biasing_stride_ == 0) {
+  if (getStep() % biasing_stride_ == 0 && !isCalculationOnly()) {
     biasing_direction_ = opt_direction;
     cv0_ = cv;
     total_distance_ += dot;
