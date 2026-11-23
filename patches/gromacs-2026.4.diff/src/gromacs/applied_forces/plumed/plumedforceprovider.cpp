@@ -83,9 +83,74 @@
 namespace gmx
 {
 
-PLMD::Plumed* PlumedForceProvider::plumedHandle() const
+void PlumedForceProvider::exchangePattern(int replicas, int* order)
 {
-    return plumed_.get();
+    int custom = 0;
+    plumed_->cmd("getExchangesFlag", &custom);
+    if (custom > 0)
+    {
+        plumed_->cmd("setNumberOfReplicas", &replicas);
+        plumed_->cmd("getExchangesList", order);
+    }
+}
+
+void PlumedForceProvider::calculateExchange(int partner)
+{
+    plumed_->cmd("GREX setPartner", &partner);
+    plumed_->cmd("GREX calculate");
+    plumed_->cmd("GREX shareAllDeltaBias");
+}
+
+real PlumedForceProvider::exchangeDelta(int replica)
+{
+    real bias = 0;
+    plumed_->cmd(("GREX getDeltaBias " + std::to_string(replica)).c_str(), &bias);
+    return bias;
+}
+
+void PlumedForceProvider::cacheExchangeCurrent(real energy)
+{
+    plumed_->cmd("GREX cacheLocalUNow", &energy);
+}
+
+void PlumedForceProvider::cacheExchangeForeign(real energy)
+{
+    plumed_->cmd("GREX cacheLocalUSwap", &energy);
+}
+
+void PlumedForceProvider::prepareExchange()
+{
+    plumed_->cmd("GREX prepare");
+}
+
+real PlumedForceProvider::lambdaTrialBias(int64_t step, int state, real physicalEnergy)
+{
+    long int plumedStep  = step;
+    context_.lambdaState = state;
+    context_.trialEnergy = physicalEnergy;
+    plumed_->cmd("setStepLong", &plumedStep);
+    plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
+    plumed_->cmd("setEnergy", &context_.trialEnergy);
+    int exchange = 1;
+    plumed_->cmd("setExchangeStep", &exchange);
+    try
+    {
+        plumed_->cmd("prepareCalc");
+        // The flag activates off-stride biases; lambda trials do not change
+        // coordinates and must not be reported as foreign-coordinate exchanges.
+        exchange = 0;
+        plumed_->cmd("setExchangeStep", &exchange);
+        plumed_->cmd("performCalcNoForces");
+    }
+    catch (...)
+    {
+        exchange = 0;
+        plumed_->cmd("setExchangeStep", &exchange);
+        throw;
+    }
+    real bias = 0;
+    plumed_->cmd("getBias", &bias);
+    return bias;
 }
 
 PlumedForceProvider::~PlumedForceProvider() = default;
@@ -240,7 +305,7 @@ try
     if (context_.hrexTrial)
         return;
 #endif
-    if (!prepareStepIsCalled_)
+    if (!prepareStepIsCalled_ || checkpointViaCallback_)
     {
         checkpointRequested_ = 1;
     }
@@ -318,7 +383,7 @@ try
     }
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
 
-    if (!prepareStepIsCalled_)
+    if (!prepareStepIsCalled_ || checkpointViaCallback_)
     {
         // writeCheckpointData() runs only on the main rank: pass its request to all ranks
         if (forceProviderInput.mpiComm_.isParallel())
@@ -428,6 +493,15 @@ catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was preparing the step\n:") + ex.what()));
+}
+
+bool PlumedForceProvider::prepareModularStep(int64_t step)
+{
+    const bool needsEnergy = prepareStep(step, false);
+    // The modular checkpoint helper invokes writeCheckpointData() before forces,
+    // independently of dependency preparation. Keep that notification path active.
+    checkpointViaCallback_ = true;
+    return needsEnergy;
 }
 
 bool PlumedForceProvider::applyAfterPotentialEnergy(bool           energyWasComputed,

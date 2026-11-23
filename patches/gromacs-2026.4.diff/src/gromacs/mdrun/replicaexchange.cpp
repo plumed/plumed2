@@ -83,17 +83,6 @@
 
 #include "plumedexchange.h"
 
-#if GMX_LIB_MPI
-// Temporary runtime wrapper bridge, matching the force provider's loader mode.
-#define __PLUMED_WRAPPER_FORTRAN 0
-#define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#define __PLUMED_WRAPPER_EXTERN 0
-#define __PLUMED_WRAPPER_CXX 1
-#define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#define __PLUMED_HAS_DLOPEN
-#include "../../../Plumed.h"
-#endif
-
 //! Helps cut off probability values.
 constexpr int c_probabilityCutoff = 100;
 
@@ -203,9 +192,18 @@ static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, 
     qall[re->repl] = q;
     gmx_sum_sim(ms->numSimulations_, qall, ms);
 
-    /* PLUMED: allow exchanges between replicas with identical native properties,
-       as in the older PLUMED patches. */
-    bDiff = TRUE;
+    bDiff = FALSE;
+    for (s = 1; s < ms->numSimulations_; s++)
+    {
+        if (std::fabs(qall[s] - qall[0]) > 1e-5) /* Each quantity normally has 2-4 significant digits */
+        {
+            bDiff = TRUE;
+        }
+    }
+
+    if (re->plumedForceProvider)
+        bDiff = TRUE;
+
 
     if (bDiff)
     {
@@ -418,8 +416,36 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
         re->ind[i] = i;
     }
 
-    /* PLUMED: retain the supplied replica order and allow equal temperatures,
-       as in the older PLUMED patches (including bias-exchange patterns). */
+    if (!plumedForceProvider && re->type < ReplicaExchangeType::EndSingle)
+    {
+
+        for (i = 0; i < re->nrepl; i++)
+        {
+            for (j = i + 1; j < re->nrepl; j++)
+            {
+                if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
+                {
+                    /* Unordered replicas are supposed to work, but there
+                     * is still an issues somewhere.
+                     * Note that at this point still re->ind[i]=i.
+                     */
+                    gmx_fatal(FARGS,
+                              "Replicas with indices %d < %d have %ss %g > %g, please order your "
+                              "replicas on increasing %s",
+                              i,
+                              j,
+                              enumValueToString(re->type),
+                              re->q[re->type][i],
+                              re->q[re->type][j],
+                              enumValueToString(re->type));
+                }
+                else if (re->q[re->type][re->ind[j]] == re->q[re->type][re->ind[i]])
+                {
+                    gmx_fatal(FARGS, "Two replicas have identical %ss", enumValueToString(re->type));
+                }
+            }
+        }
+    }
 
     /* keep track of all the swaps, starting with the initial placement. */
     snew(re->allswaps, re->nrepl);
@@ -918,16 +944,9 @@ static real calc_delta(FILE* fplog, gmx_bool bPrint, struct gmx_repl_ex* re, int
 static int select_plumed_partner(FILE* fplog, const gmx_multisim_t* ms, gmx_repl_ex* re, int64_t step)
 {
     auto* plumedForceProvider = re->plumedForceProvider;
-    auto& plumed = *plumedForceProvider->plumedHandle();
     if (re->patternStep != step)
     {
-        int custom = 0;
-        plumed.cmd("getExchangesFlag", &custom);
-        if (custom > 0)
-        {
-            plumed.cmd("setNumberOfReplicas", &re->nrepl);
-            plumed.cmd("getExchangesList", re->ind);
-        }
+        plumedForceProvider->exchangePattern(re->nrepl, re->ind);
         std::vector<int> seen(re->nrepl, 0);
         for (int i = 0; i < re->nrepl; ++i)
         {
@@ -974,7 +993,7 @@ int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* 
 
 void plumed_hrex_cache_foreign(PlumedForceProvider* provider, real* energy)
 {
-    provider->plumedHandle()->cmd("GREX cacheLocalUSwap", energy);
+    provider->cacheExchangeForeign(*energy);
 }
 } // namespace gmx
 #endif
@@ -1168,11 +1187,8 @@ static void test_for_replica_exchange(FILE*                 fplog,
 #if GMX_LIB_MPI
         if (plumedForceProvider)
         {
-            auto& plumed = *plumedForceProvider->plumedHandle();
-            int          partner = select_plumed_partner(fplog, ms, re, step);
-            plumed.cmd("GREX setPartner", &partner);
-            plumed.cmd("GREX calculate");
-            plumed.cmd("GREX shareAllDeltaBias");
+            int partner = select_plumed_partner(fplog, ms, re, step);
+            plumedForceProvider->calculateExchange(partner);
         }
 #endif
         for (i = 1; i < re->nrepl; i++)
@@ -1187,10 +1203,8 @@ static void test_for_replica_exchange(FILE*                 fplog,
 #if GMX_LIB_MPI
                 if (plumedForceProvider)
                 {
-                    auto& plumed = *plumedForceProvider->plumedHandle();
-                    real adb, bdb;
-                    plumed.cmd(("GREX getDeltaBias " + std::to_string(a)).c_str(), &adb);
-                    plumed.cmd(("GREX getDeltaBias " + std::to_string(b)).c_str(), &bdb);
+                    real adb = plumedForceProvider->exchangeDelta(a);
+                    real bdb = plumedForceProvider->exchangeDelta(b);
                     // Native lambda exchange already includes these physical potential
                     // differences. GREX needs the true energies for the ENERGY CV, but
                     // acceptance must count their contribution only once.
@@ -1441,7 +1455,6 @@ gmx_bool replica_exchange(FILE*                 fplog,
     if (plumedForceProvider)
     {
         auto&        context = plumedForceProvider->context();
-        auto& plumed = *plumedForceProvider->plumedHandle();
         // Workers enter the GREX collective in prepare(), so cache physical
         // energies on every rank before that call. Native lambda exchange has
         // already evaluated the other Hamiltonians at the local configuration.
@@ -1477,10 +1490,10 @@ gmx_bool replica_exchange(FILE*                 fplog,
             }
             // Global energies contribute on the main rank only; worker zeros
             // avoid multiplying them by the number of ranks in the replica.
-            plumed.cmd("GREX cacheLocalUNow", &currentEnergy);
-            plumed.cmd("GREX cacheLocalUSwap", &foreignEnergy);
+            plumedForceProvider->cacheExchangeCurrent(currentEnergy);
+            plumedForceProvider->cacheExchangeForeign(foreignEnergy);
         }
-        plumed.cmd("GREX prepare");
+        plumedForceProvider->prepareExchange();
     }
 #endif
 

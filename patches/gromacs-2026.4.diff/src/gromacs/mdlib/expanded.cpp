@@ -71,14 +71,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "expanded_internal.h"
-#    define __PLUMED_WRAPPER_CXX 1
-#    define __PLUMED_WRAPPER_LIBCXX11 1
-#    define __PLUMED_WRAPPER_EXTERN 0
-#    define __PLUMED_WRAPPER_FORTRAN 0
-#    define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#    define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#    define __PLUMED_HAS_DLOPEN
-#    include "../../../Plumed.h"
+
 
 static void init_df_history_weights(df_history_t* dfhist, const t_expanded* expand, int nlim)
 {
@@ -1454,37 +1447,19 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 
     if (plumedForceProvider)
     {
-        auto& plumed = *plumedForceProvider->plumedHandle();
         std::vector<real> biases(nlim);
-        int               exchange = 1;
-        plumed.cmd("setExchangeStep", &exchange);
-        auto evaluate = [&](int lambdaState)
+        auto              evaluate = [&](int lambdaState)
         {
-            long int plumedStep      = step;
-            plumedForceProvider->context().lambdaState = lambdaState;
-            plumedForceProvider->context().trialEnergy =
+            const real energy =
                     plumedForceProvider->context().mainRank
                             ? enerd->term[InteractionFunction::PotentialEnergy]
                                       + enerd->foreignLambdaTerms.deltaPotentialEnergy(lambdaState)
                             : 0;
-            // Reopen input bindings at the same MD step; do not update history,
-            // propagate forces, or write ordinary output for a lambda trial.
-            plumed.cmd("setStepLong", &plumedStep);
-            plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
-            plumed.cmd("setEnergy", &plumedForceProvider->context().trialEnergy);
-            plumed.cmd("prepareCalc");
-            plumed.cmd("performCalcNoForces");
-            real bias = 0;
-            plumed.cmd("getBias", &bias);
-            return bias;
+            return plumedForceProvider->lambdaTrialBias(step, lambdaState, energy);
         };
         for (i = 0; i < nlim; ++i)
             biases[i] = evaluate(i);
-        // Statistics/ordinary output still refer to the original state on this
-        // step. GROMACS applies the MCMC result for the next MD step.
         evaluate(fep_state);
-        exchange = 0;
-        plumed.cmd("setExchangeStep", &exchange);
         const real referenceBeta =
                 1 / ((ir->bSimTemp ? simtemp->temperatures[fep_state] : expand->mc_temp) * gmx::c_boltz);
         for (i = 0; i < nlim; ++i)

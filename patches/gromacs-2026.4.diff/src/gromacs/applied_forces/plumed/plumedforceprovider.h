@@ -96,8 +96,14 @@ public:
     PlumedForceProvider* plumedForceProvider() override { return this; }
     //! Mutable exchange/MCMC data, valid for this provider's lifetime.
     PlumedContext& context() { return context_; }
-    //! Non-owning access to the provider-owned PLUMED object from the MD engine.
-    PLMD::Plumed* plumedHandle() const;
+    //! The wrapper and its configuration remain private to the provider translation unit.
+    void exchangePattern(int replicas, int* order);
+    void calculateExchange(int partner);
+    real exchangeDelta(int replica);
+    void cacheExchangeCurrent(real energy);
+    void cacheExchangeForeign(real energy);
+    void prepareExchange();
+    real lambdaTrialBias(int64_t step, int state, real physicalEnergy);
     /*! @brief Sets the global atom indices list
      * param[in] globalAtomIndices  the, optional, list of global atom indices
      */
@@ -122,6 +128,8 @@ public:
      * \param[in] isCheckpointingStep  whether GROMACS writes a checkpoint at \p step
      */
     bool prepareStep(int64_t step, bool isCheckpointingStep) override;
+    //! Modular simulation preparation; checkpoint notifications arrive via the callback.
+    bool prepareModularStep(int64_t step);
     //! Whether PLUMED asked to stop the simulation during the last calculation
     bool requestsStop() const override;
     /*! \brief Passes the potential energy to PLUMED and applies energy biases
@@ -159,6 +167,8 @@ private:
     std::optional<int64_t> preparedStep_;
     //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation
     bool prepareStepIsCalled_ = false;
+    //! Modular simulation learns about checkpoints through writeCheckpointData().
+    bool checkpointViaCallback_ = false;
     //! Set on the main rank by writeCheckpointData(), passed to PLUMED by calculateForces()
     int checkpointRequested_ = 0;
     //! Step for which prepareStep() was last called
