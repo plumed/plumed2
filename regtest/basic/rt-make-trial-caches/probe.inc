@@ -26,11 +26,14 @@ int runProbe(int argc,char**argv) {
      <<"ATOM      2  AR  ARG A   2      10.000   0.000   0.000  1.00  0.00\n"
      <<"ATOM      3  AR  ARG A   3      30.000   0.000   0.000  1.00  0.00\nEND\n";
   ref.close();
-  if(action=="piv") {
+  if(action=="coordination") {
+    p.cmd("readInputLine","c: COORDINATION GROUPA=1 GROUPB=2 R_0=0.7 NLIST NL_CUTOFF=2.5 NL_STRIDE=10 NOPBC");
+    p.cmd("readInputLine","a: RESTRAINT ARG=c AT=0 KAPPA=1");
+  } else if(action=="piv") {
     p.cmd("readInputLine","c: PIV PRECISION=100000 REF_FILE=ref.pdb PIVATOMS=1 ATOMTYPES=AR ONLYDIRECT SFACTOR=1 SORT=1 SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");
     p.cmd("readInputLine","a: RESTRAINT ARG=c AT=0 KAPPA=1");
-  } else if(action=="pines") {
-    p.cmd("readInputLine","c: PINES REF_FILE=ref.pdb N_BLOCKS=1 BLOCK1={G1={ATOMID=0} G2={ATOMID={1 2}} SIZE=1 BUFFER=0 PL_REFRESH=1} SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");
+  } else if((action=="pines" || action=="pines-cadence")) {
+    p.cmd("readInputLine","c: PINES REF_FILE=ref.pdb N_BLOCKS=1 BLOCK1={G1={ATOMID=0} G2={ATOMID={1 2}} SIZE=1 BUFFER=0 PL_REFRESH="+(action=="pines-cadence" ? std::string("10") : std::string("1"))+"} SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");
     p.cmd("readInputLine","a: RESTRAINT ARG=c.ELEMENT-0 AT=0 KAPPA=1");
   } else if(action=="emmi") {
     std::ofstream atoms("atoms.pdb");
@@ -63,7 +66,7 @@ int runProbe(int argc,char**argv) {
   std::array<double,9>x{{0,0,0,2,0,0,4,0,0}},f{},v{},box{{10,0,0,0,10,0,0,0,10}};
   std::array<double,3>mass{{1,1,1}};
   auto bind=[&](int step,bool foreign) {
-    x[3]=foreign?3.5:2.;
+    x[3]=foreign?3.5:(action=="pines-cadence" ? (step<3?3.99:4.01) : 2.);
     f.fill(0);
     v.fill(0);
     p.cmd("setStep",step);
@@ -76,14 +79,14 @@ int runProbe(int argc,char**argv) {
   std::cout<<std::setprecision(17);
   for(int step=0; step<5; step++) {
     bind(step,mode==2);
-    if(mode==3) {
+    if(mode==3 || mode==6) {
       p.cmd("prepareDependencies");
     }
     p.cmd("calc");
     double bias=0;
     p.cmd("getBias",&bias);
     std::cout<<"normal "<<step<<" "<<bias<<" "<<f[3]<<"\n";
-    if(mode==1 && step==2) {
+    if((mode==1 || mode==6) && step==2) {
       bind(step,true);
       p.cmd("setExchangeStep",1);
       p.cmd("prepareCalc");

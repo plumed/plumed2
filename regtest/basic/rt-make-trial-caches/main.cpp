@@ -45,13 +45,25 @@ Result evaluate(std::string action,int mode) {
 
 int main() {
   for(const std::string action : {
-        "piv","pines","emmi","funcpath-full"
+        "coordination","piv","pines","emmi","funcpath-full"
       }) {
     const auto control=evaluate(action,0),trial=evaluate(action,1),foreign=evaluate(action,2),duplicate=evaluate(action,3);
     if(control.normal!=trial.normal || control.normal!=duplicate.normal ||
         std::abs(trial.trial-foreign.normal[2][1])>1.e-12) {
       throw std::runtime_error(action+": trial geometry or normal-state restoration failed");
     }
+  }
+  if(evaluate("coordination",0).normal!=evaluate("coordination",6).normal) {
+    throw std::runtime_error("duplicate preparation lost the post-trial list rebuild");
+  }
+  bool pinesRejected=false;
+  try {
+    evaluate("pines-cadence",1);
+  } catch(const std::exception& error) {
+    pinesRejected=std::string(error.what()).find("require PL_REFRESH=1")!=std::string::npos;
+  }
+  if(!pinesRejected) {
+    throw std::runtime_error("unsafe reduced PINES trial refresh cadence was accepted");
   }
   if(evaluate("funcpath",0).normal!=evaluate("funcpath",3).normal) {
     throw std::runtime_error("duplicate path preparation changed the normal bias");

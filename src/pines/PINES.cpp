@@ -30,6 +30,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <vector>
 #include <tuple>
+#include <memory>
 #include <cstddef>
 
 #include "core/ActionWithVirtualAtom.h"
@@ -98,7 +99,6 @@ private:
   long long preparedStep_=-1;
   std::uint64_t preparedEvaluation_=0;
   bool preparedExchange_=false;
-  bool trialGeometry_=false;
   bool driver_mode;
   bool freeze_selection;
   std::vector<int> steps_since_update;
@@ -741,6 +741,13 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 }
 
 void PINES::prepare() {
+  if(getExchangeStep()) {
+    for(int n=0; n<N_Blocks; ++n) {
+      if(nstride[n]>1 && !all_g1g2_pairs[n]) {
+        error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
+      }
+    }
+  }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
       preparedExchange_==getExchangeStep()) {
     return;
@@ -749,7 +756,7 @@ void PINES::prepare() {
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
   preparedExchange_=getExchangeStep();
-  if(getExchangeStep() || trialGeometry_) {
+  if(getExchangeStep()) {
     // A trial can bring a previously discarded pair arbitrarily close. Request
     // every candidate before sharing data, then choose the list in calculate().
     listreducedall.clear();
@@ -807,7 +814,35 @@ void PINES::prepare() {
 
 void PINES::calculate() {
   const long step = plumed.getStep();
-  const bool refreshGeometry=isCalculationOnly() || trialGeometry_;
+  const bool refreshGeometry=isCalculationOnly();
+  if(refreshGeometry) {
+    for(int n=0; n<N_Blocks; ++n) {
+      if(nstride[n]>1 && !all_g1g2_pairs[n]) {
+        error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
+      }
+    }
+  }
+  // Trials need their own nearest pairs, but must not change the ordinary
+  // PL_REFRESH phase, buffered membership, or frozen selection after rejection.
+  auto selection=std::tie(vecMaxHeapVecs,listreduced,PL_atoms_ref_coords,
+                          stale_tolerance,delta_pd,r_tolerance,latched_pairs,
+                          preupdated_block,isFirstBuild,steps_since_update,
+                          inited_step,evaluation_);
+  auto snapshot=[&]() {
+    return std::apply([](const auto&... values) {
+      return std::make_tuple(values...);
+    },selection);
+  };
+  using Selection=decltype(snapshot());
+  struct RestoreSelection {
+    decltype(selection)& target;
+    std::unique_ptr<Selection> saved;
+    ~RestoreSelection() {
+      if(saved) {
+        target=std::move(*saved);
+      }
+    }
+  } restore {selection,refreshGeometry ? std::make_unique<Selection>(snapshot()) : nullptr};
   if(refreshGeometry) {
     for(const auto& block : listall) {
       for(const auto& atom : block) {
@@ -820,7 +855,6 @@ void PINES::calculate() {
       buildMaxHeapVecBlock(n,mypdb,vecMaxHeapVecs[n]);
     }
   }
-  trialGeometry_=isCalculationOnly();
   if (inited_step == -1) {
     for (int n =0; n < N_Blocks; n++) {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
