@@ -2,6 +2,11 @@ name: GROMACS integration
 
 on:
   workflow_call:
+    inputs:
+      os:
+        description: Runner OS whose PLUMED artifact this workflow consumes
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-15]
+        os: ["${{ inputs.os }}"]
         mpi: [tmpi, openmpi, mpich]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90

@@ -54,9 +54,13 @@ including all four serial AmberTools/LAMMPS jobs. Both serial engines also
 passed local Apple Silicon builds and numerical validation, including LAMMPS
 with one and two OpenMP threads.
 
-The reusable `md-gromacs.yml`, `md-lammps.yml` and `md-amber.yml` are called by the parent after
-the PLUMED artifacts are ready. Further engines can have separate reusable
-workflows sharing those artifacts. LAMMPS and AmberTools injection/header
+The parent calls `md-platform.yml` independently for each OS with fail-fast
+disabled. Within each call, the serial PLUMED build unlocks that OS's reusable
+`md-gromacs.yml`, `md-lammps.yml` and `md-amber.yml` workflows. Ubuntu tests can
+start as soon as the Ubuntu artifact is ready, even while macOS is queued or
+has failed. Each engine workflow receives a required `os` input and tests its
+three backends on that OS only; the full matrix still contains 20 jobs.
+Further engines can have separate reusable workflows sharing those artifacts. LAMMPS and AmberTools injection/header
 edits stay local to these tests, rather than adding entries to the distributed
 `plumed patch` collection.
 
@@ -355,3 +359,25 @@ The actual-provider fixture checks retained box bindings and simultaneous
 provider/collection isolation with 200,000 concurrent lookups. Every numerical
 case retains its commands, inputs and results JSON. GPU execution requires
 separate validation on an appropriate host.
+
+The real-MPI exchange suite also runs a four-replica checkpoint regression with
+two neutral, noninteracting particles per replica. Swap 0/1 accepts at step 200,
+while swap 2/3 rejects. With `-cpt 0`, all replicas must checkpoint at steps 200
+and 400, independently of the extra neighbor searches caused by accepted swaps.
+Both an ordinary control and shared MAXENT with zero force weights are checked;
+the latter exposes a checkpoint-barrier/ensemble-broadcast deadlock in the old
+schedule. Runs have a bounded timeout that terminates the MPI process group.
+Ordinary exchange, two ranks per replica with domain decomposition, and HREX
+must all restart from the intermediate step-200 native/PLUMED checkpoint set
+with bitwise-identical full-precision traces and MAXENT multiplier files.
+This test uses native MAXENT without transfer or exchange-group extensions.
+
+The HREX list regression uses 64 neutral Lennard-Jones atoms and a tight
+automatic buffer tolerance to generate distinct local radii. All replicas
+must use their maximum radius at startup and restart, before DD/list setup.
+It covers heterogeneous and homogeneous Hamiltonians, NVT, isotropic NPT,
+two ranks per replica with DD, explicit buffers, and an ordinary-exchange
+control. Independent pair sums check energies, forces and all nine virial
+components, cross energies and accepted/rejected trials. Negative cases retain
+physical-cutoff mismatch rejection and reject a maximum radius that cannot fit
+all boxes. Native/PLUMED checkpoint synchronization is also checked.
