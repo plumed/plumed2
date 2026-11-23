@@ -21,6 +21,8 @@ member 2: time 4
 member 2: time 5
 member 2: time 6
 member 2: time 7
+repacked with tar: IDENTICAL
+not a TAR file in a format that PLUMED reads (POSIX ustar or pax, GNU; not compressed)
 interrupted: rows read after the interruption: 29
 file COLVAR.h5.tar: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.h5.tar
 file COLVAR.h5.tar: 5 lines written at or after the restart step 30 moved to bck.trimmed.0.COLVAR.h5.tar

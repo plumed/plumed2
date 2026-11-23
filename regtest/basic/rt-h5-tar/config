@@ -98,6 +98,13 @@ function plumed_regtest_after() {
     echo "members of COLVAR.h5.tar: $(tar tf COLVAR.h5.tar | wc -l | tr -d ' ')"
     mkdir members ; ( cd members && tar xf ../COLVAR.h5.tar )
     $plumed h5cat members/batch_00000002.h5 | grep -v '^#' | awk '{print "member 2: time",$1}'
+    # the members packed again by the tar of the system (the default format of GNU tar, or of bsdtar)
+    ( cd members && tar cf ../repacked.h5.tar batch_*.h5 )
+    $plumed h5convert --input repacked.h5.tar --output repacked.txt
+    echo "repacked with tar: $(compare COLVAR repacked.txt)"
+    # a compressed archive is not read
+    gzip -c COLVAR.h5.tar > compressed.h5.tar
+    $plumed h5cat compressed.h5.tar 2>&1 | grep -o "not a TAR file.*" | head -n 1
     echo "interrupted: rows read after the interruption: $(cat interrupted/rows_after_interruption)"
     grep -h "restart step" restart/out2 interrupted/out2 signal/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
     grep -h "truncated from" checkpoint/out2 | sed 's/^PLUMED: *//' | sed 's/from [0-9]* to [0-9]* bytes/from N to M bytes/' | LC_ALL=C sort

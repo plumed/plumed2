@@ -81,10 +81,35 @@ bool getOctal(const char* p,unsigned n,unsigned long long& v) {
   return true;
 }
 
+bool getDecimal(const std::string& t,unsigned long long& v) {
+  v=0;
+  for(const char c : t) {
+    if(c<'0' || c>'9' || v>(~0ULL)/10-9) {
+      return false;
+    }
+    v=v*10+(c-'0');
+  }
+  return !t.empty();
+}
+
 /// a valid ustar header, and the size of its entry
+/// (POSIX ustar, pax and GNU formats; the size in octal, or in base 256 as GNU tar writes large sizes)
 bool validTarHeader(const char* h,unsigned long long& size) {
   unsigned long long sum=0;
-  return std::memcmp(h+257,"ustar",5)==0 && getOctal(h+148,8,sum) && sum==tarChecksum(h) && getOctal(h+124,12,size);
+  if(std::memcmp(h+257,"ustar",5)!=0 || !getOctal(h+148,8,sum) || sum!=tarChecksum(h)) {
+    return false;
+  }
+  if(static_cast<unsigned char>(h[124])&0x80) {
+    size=0;
+    for(unsigned k=125; k<136; k++) {
+      if(size>>56) {
+        return false;
+      }
+      size=(size<<8)|static_cast<unsigned char>(h[k]);
+    }
+    return (static_cast<unsigned char>(h[124])&0x7f)==0;
+  }
+  return getOctal(h+124,12,size);
 }
 
 bool hasArchiveExtension(const std::string& path) {
@@ -739,9 +764,12 @@ Scan scanEntries(std::istream& in,unsigned long long size,const std::string& pat
         readHeader(o);
         unsigned long long m=0;
         if(validTarHeader(h.data(),m)) {
-          s.damage="invalid TAR header at byte "+std::to_string(s.end);
+          s.damage="the archive is damaged: invalid TAR header at byte "+std::to_string(s.end);
           break;
         }
+      }
+      if(s.damage.empty() && s.end==0) {
+        s.damage="not a TAR file in a format that PLUMED reads (POSIX ustar or pax, GNU; not compressed)";
       }
       break;
     }
@@ -750,7 +778,38 @@ Scan scanEntries(std::istream& in,unsigned long long size,const std::string& pat
       // written in part
       break;
     }
-    // the other entries (directories, extended headers, ...) are skipped
+    if(h[156]=='x') {
+      // a pax extended header: its size record replaces the size of the next entry
+      std::string records(n,'\0');
+      in.seekg(s.end+tarRecord);
+      in.read(records.data(),n);
+      check(static_cast<bool>(in),path,"cannot read the file");
+      const unsigned long long header=next;
+      s.end=next;
+      for(std::size_t p=0; p<records.size();) {
+        // "length key=value\n"
+        unsigned long long length=0;
+        const std::size_t sp=records.find(' ',p);
+        if(sp==std::string::npos || !getDecimal(records.substr(p,sp-p),length) || length==0 || p+length>records.size()) {
+          break;
+        }
+        const std::string record=records.substr(sp+1,p+length-sp-2);
+        if(record.compare(0,5,"size=")==0 && size-header>=tarRecord) {
+          unsigned long long m=0;
+          if(getDecimal(record.substr(5),m)) {
+            readHeader(header);
+            unsigned long long ignored=0;
+            if(validTarHeader(h.data(),ignored) && header+tarRecord+tarPadded(m)<=size && (h[156]=='0' || h[156]=='\0')) {
+              s.members.push_back({header,header+tarRecord,m});
+              s.end=header+tarRecord+tarPadded(m);
+            }
+          }
+        }
+        p+=length;
+      }
+      continue;
+    }
+    // the other entries (directories, other extended headers, ...) are skipped
     if(h[156]=='0' || h[156]=='\0') {
       s.members.push_back({s.end,s.end+tarRecord,n});
     }
@@ -773,7 +832,7 @@ Scan scanArchive(const std::string& path) {
 }
 
 void checkNotDamaged(const Scan& s,const std::string& path) {
-  check(s.damage.empty(),path,"the archive is damaged: "+s.damage);
+  check(s.damage.empty(),path,s.damage);
 }
 
 /// make what has been written to the file durable (it survives a crash of the machine)

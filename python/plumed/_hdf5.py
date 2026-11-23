@@ -96,28 +96,31 @@ def _is_archive(file):
 
 
 def _tar_size(h):
-    """The size of the entry of a valid ustar header, otherwise None."""
+    """The size of the entry of a valid header (POSIX ustar or pax, GNU), otherwise None."""
     if h[257:262] != b"ustar":
         return None
     try:
         stored = int(h[148:156].replace(b"\0", b" ").strip() or b"x", 8)
-        size = int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
+        if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
+            return None
+        if h[124] == 0x80:  # base 256 (GNU tar, large sizes)
+            return int.from_bytes(h[125:136], "big")
+        return int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
     except ValueError:
         return None
-    if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
-        return None
-    return size
 
 
 def _scan(f, file_size):
     """(header offset, data offset, size) of the regular members."""
-    members, end = [], 0
+    members, end, pax_size = [], 0, None
     while file_size - end >= 512:
         f.seek(end)
         h = f.read(512)
         if h == bytes(512):
             break  # end-of-archive marker, or a member not published
         size = _tar_size(h)
+        if size is not None and pax_size is not None:
+            size, pax_size = pax_size, None
         if size is None:
             # the header of the last member, written in part, unless valid entries follow
             for o in range(end + 512, file_size - 511, 512):
@@ -126,11 +129,23 @@ def _scan(f, file_size):
                     raise FormatError(
                         f"The archive is damaged: invalid TAR header at byte {end}"
                     )
+            if end == 0:
+                raise FormatError(
+                    "Not a TAR file in a format that PLUMED reads "
+                    "(POSIX ustar or pax, GNU; not compressed)"
+                )
             break
         following = end + 512 + (size + 511) // 512 * 512
         if following > file_size:
             break  # written in part
-        if h[156:157] in (b"0", b"\0"):
+        if h[156:157] == b"x":
+            # pax extended header: its size record applies to the next entry
+            f.seek(end + 512)
+            for record in f.read(size).split(b"\n"):
+                key, _, value = record.partition(b" ")[2].partition(b"=")
+                if key == b"size" and value.isdigit():
+                    pax_size = int(value)
+        elif h[156:157] in (b"0", b"\0"):
             members.append((end, end + 512, size))
         end = following
     return members
