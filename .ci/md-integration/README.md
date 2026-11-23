@@ -367,3 +367,13 @@ Ordinary exchange, two ranks per replica with domain decomposition, and HREX
 must all restart from the intermediate step-200 native/PLUMED checkpoint set
 with bitwise-identical full-precision traces and MAXENT multiplier files.
 This test uses native MAXENT without transfer or exchange-group extensions.
+
+The HREX list regression uses 64 neutral Lennard-Jones atoms and a tight
+automatic buffer tolerance to generate distinct local radii. All replicas
+must use their maximum radius at startup and restart, before DD/list setup.
+It covers heterogeneous and homogeneous Hamiltonians, NVT, isotropic NPT,
+two ranks per replica with DD, explicit buffers, and an ordinary-exchange
+control. Independent pair sums check energies, forces and all nine virial
+components, cross energies and accepted/rejected trials. Negative cases retain
+physical-cutoff mismatch rejection and reject a maximum radius that cannot fit
+all boxes. Native/PLUMED checkpoint synchronization is also checked.
