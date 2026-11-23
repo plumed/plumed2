@@ -1,0 +1,20 @@
+mpiprocs=2
+type=driver
+plumed_modules=isdb
+extra_files="../rt-saxs-onebead-lcpo/protein.pdb ../rt-saxs-onebead-lcpo/traj.xyz"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 3 --length-units A"
+function plumed_regtest_before() {
+  awk 'NR==1{n=$1} NR<=n+2{a[NR]=$0} END{for(f=0;f<8;f++)for(i=1;i<=n+2;i++)print a[i]}' traj.xyz > traj.0.xyz
+  cp traj.0.xyz traj.1.xyz
+  mkdir noexchange
+  (cd noexchange; cp ../plumed.dat ../protein.pdb ../traj.0.xyz ../traj.1.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 --length-units A > out 2> err)
+}
+function plumed_regtest_after() {
+  {
+    for file in saxs sans; do
+      for r in 0 1; do
+        if cmp -s "$file.$r" "noexchange/$file.$r"; then echo "$file.$r IDENTICAL"; else echo "$file.$r DIFFERENT"; fi
+      done
+    done
+  } > comparison
+}

@@ -1411,6 +1411,21 @@ void SAXS::launch() {
   // the state of the SANS deuteration, restored by cancelLaunch()
   launchFirstStep_=isFirstStep;
   launchRandomDeut_=random_deut_;
+  launchFormFactorRandom_=formFactorRandom_;
+  launchRandomValid_=formFactorRandomValid_;
+  const bool scheduledRefresh=isFirstStep || getStep()%solv_stride==0;
+  launchPreserveRandom_=onebead && (isCalculationOnly() || (trialGeometry_ && !scheduledRefresh));
+  if(onebead) {
+    if(launchPreserveRandom_ && formFactorRandomValid_) {
+      random_deut_=formFactorRandom_;
+    } else if(scheduledRefresh && !isCalculationOnly()) {
+      formFactorRandom_=random_deut_;
+      formFactorRandomValid_=true;
+    }
+    if(isCalculationOnly() || trialGeometry_) {
+      isFirstStep=true;
+    }
+  }
   if(pbc) {
     makeWhole();
   }
@@ -1558,6 +1573,11 @@ void SAXS::cancelLaunch() {
   }
   isFirstStep=launchFirstStep_;
   random_deut_=launchRandomDeut_;
+  formFactorRandom_=launchFormFactorRandom_;
+  formFactorRandomValid_=launchRandomValid_;
+  if(onebead) {
+    trialGeometry_=true;
+  }
 }
 
 void SAXS::calculate() {
@@ -1795,6 +1815,15 @@ void SAXS::calculate() {
     }
     setBoxDerivatives(chi2_val, -chi2_box_deriv);
     setBoxDerivatives(chi2red_val, -invdof*chi2_box_deriv);
+  }
+  if(launchPreserveRandom_) {
+    random_deut_=launchRandomDeut_;
+  }
+  if(onebead) {
+    if(isCalculationOnly()) {
+      isFirstStep=launchFirstStep_;
+    }
+    trialGeometry_=isCalculationOnly();
   }
 }
 
