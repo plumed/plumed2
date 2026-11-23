@@ -228,6 +228,8 @@ def check_installation(shell, program, root, env):
             "src/lib/Makefile",
             "src/lib/bash.completion",
             "src/maketools/find_modules.sh",
+            "src/maketools/module-header",
+            "src/maketools/module-header.awk",
             "src/maketools/make.rules",
             "src/maketools/confirm_uninstall",
         ):
