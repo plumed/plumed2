@@ -1,0 +1,2 @@
+p: PLUMED FILE=guest.dat
+PRINT ARG=p.bias FILE=COLVAR FMT=%.17g

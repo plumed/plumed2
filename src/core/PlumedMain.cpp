@@ -1552,9 +1552,9 @@ void PlumedMain::shareData() {
   }
 }
 
-void PlumedMain::performCalcNoUpdate() {
+void PlumedMain::performCalcNoUpdate(bool calculationOnly) {
   waitData();
-  justCalculate();
+  justCalculate(calculationOnly);
   backwardPropagate();
   resetInputs();
 }

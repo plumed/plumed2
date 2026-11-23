@@ -368,6 +368,7 @@ void Plumed::prepare() {
     }
   }
   if(root) {
+    p.setExchangeStep(getExchangeStep());
     p.cmd("prepareDependencies");
   }
   int ene=0;
@@ -474,7 +475,7 @@ void Plumed::calculate() {
     p.cmd("shareData");
   }
   if(root) {
-    p.cmd("performCalcNoUpdate");
+    p.performCalcNoUpdate(isCalculationOnly());
   }
 
   int s=forces.size();
