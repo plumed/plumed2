@@ -31,10 +31,69 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./Makefile" << \EOF_EOF
  	$(SBLIB) \
  	$(COLVARSLIB) \
 EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/BackEnd.C" << \EOF_EOF
+--- ./src/BackEnd.C.preplumed
++++ ./src/BackEnd.C
+@@ -271,10 +271,13 @@
+ 
+   master_init(argc, argv);
+ }
+ 
+ void cuda_finalize();
++// PLUMED
++void plumedFinalize();
++// END PLUMED
+ 
+ // called on proc 0 by front end
+ void BackEnd::exit(int status) {
+   float cpuTime = CmiCpuTimer() - cpuTime_start;
+   float wallTime = CmiWallTimer() - wallTime_start;
+@@ -282,10 +285,13 @@
+ 	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
+ 	    wallTime, cpuTime, memusage_MB());
+ #ifdef NAMD_TCL
+   Tcl_Finalize();
+ #endif
++  // PLUMED: finalized before the GPUs are released
++  plumedFinalize();
++  // END PLUMED
+ #if defined(NAMD_CUDA) || defined(NAMD_HIP)
+   cuda_finalize();
+ #ifdef __APPLE__
+ #if 0 && CMK_MULTICORE
+   CmiPrintf("EXITING ABNORMALLY TO AVOID HANGING CUDA RUNTIME THREADS\n");
+EOF_EOF
+patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeGlobal.C" << \EOF_EOF
+--- ./src/ComputeGlobal.C.preplumed
++++ ./src/ComputeGlobal.C
+@@ -753,10 +753,22 @@
+ 	//	CkPrintf("*** ComputeGlobal::sendData PE (%d) about to double stow\n");
+ 	comm->stowSuspendULT();
+ 	comm->stowSuspendULT();
+ 	// and the one in sendComputeGlobalResults
+ 	//	comm->stowSuspendULT();
++	// PLUMED
++	// This PE does not receive the results of this step (recvComputeGlobalResults is
++	// called only by the PEs that sent data), so it would miss a change of the requested
++	// atoms, e.g. from none of its atoms to some: it would then never send them, and the
++	// GlobalMasterServer would wait for them forever. The new configuration is applied here.
++	{
++	  ComputeGlobalResultsMsg *resultsMsg = CkpvAccess(ComputeGlobalResultsMsg_instance);
++	  if (resultsMsg && resultsMsg->reconfig) {
++	    configure(resultsMsg->newaid, resultsMsg->newgdef, resultsMsg->newgridobjid);
++	  }
++	}
++	// END PLUMED
+       }
+ #endif      
+       delete msg;
+     }
+   NAMD_EVENT_START(1, NamdProfileEvent::GM_GRESULTS);
+EOF_EOF
 patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -89,12 +89,219 @@
+@@ -89,12 +89,249 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
  #include "GlobalMasterSymmetry.h"
@@ -51,6 +110,14 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +#include "Tensor.h"
 +#include "Molecule.h"
 +#include "PatchData.h"
++#if defined(NAMD_CUDA) && !defined(NAMD_HIP)
++// the GPU used by NAMD is passed to PLUMED
++#include "DeviceCUDA.h"
++#ifdef WIN32
++#define __thread __declspec(thread)
++#endif
++extern __thread DeviceCUDA *deviceCUDA;
++#endif
 +// END PLUMED
  #include "GlobalMasterFreeEnergy.h"
  #include "GlobalMasterColvars.h"
@@ -77,20 +144,23 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  NodeReduction *nodeReduction;
 +#endif
 +  // NAMD does not destroy the GlobalMaster objects when it terminates.
-+  // The PLUMED object is thus finalized (files are closed) at exit.
++  // The PLUMED object is thus finalized (files are closed) by BackEnd::exit
++  // (see plumedFinalize below), or at exit if NAMD stops in another way.
 +  static GlobalMasterPlumed* & instance()
 +  {
 +    static GlobalMasterPlumed* p=NULL;
 +    return p;
 +  }
++public:
 +  static void finalizeAtExit()
 +  {
 +    if(instance()){
 +      // the temporary takes the ownership and finalizes PLUMED when it goes out of scope
 +      PLMD::Plumed tmp(std::move(static_cast<PLMD::Plumed&>(*instance())));
++      // only once
++      instance()=NULL;
 +    }
 +  }
-+public:
 +  GlobalMasterPlumed()
 +  {
 +    spar=Node::Object()->simParameters;
@@ -119,6 +189,17 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +    cmd("setMDEngine","namd");
 +
 +    cmd("setLog",stdout);
++
++#if defined(NAMD_CUDA) && !defined(NAMD_HIP)
++    // The PLUMED actions that run on a GPU (plugins) use the GPU of this PE,
++    // the one that calls PLUMED, unless the user chooses otherwise
++    int plumedApi=0;
++    cmd("getApiVersion",&plumedApi);
++    if(plumedApi>9 && deviceCUDA){
++      int gpu=deviceCUDA->getDeviceID();
++      cmd("setGpuDeviceId",&gpu);
++    }
++#endif
 +
 +    double dt=spar->dt;
 +    cmd("setTimestep",&dt);
@@ -249,12 +330,20 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +    share();
 +  }
 +};
++
++// Called by BackEnd::exit before NAMD releases the GPUs (cuda_finalize resets them):
++// the PLUMED actions that run on a GPU (plugins) free their memory while the GPU is
++// still there. Without this, PLUMED would be finalized at exit, after the reset.
++void plumedFinalize()
++{
++  GlobalMasterPlumed::finalizeAtExit();
++}
  
  #include "ComputeNonbondedMICKernel.h"
  #include "PatchData.h"
  #include "NamdEventsProfiling.h"
  #include "DeviceCUDA.h"
-@@ -1039,10 +1246,15 @@
+@@ -1039,10 +1276,15 @@
              masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());

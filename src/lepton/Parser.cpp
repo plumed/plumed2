@@ -322,7 +322,7 @@ Operation* Parser::getOperatorOperation(const std::string& name) {
 
 Operation* Parser::getFunctionOperation(const std::string& name, const map<string, CustomFunction*>& customFunctions) {
 
-    const static map<string, Operation::Id> opMap = []() {
+    static const map<string, Operation::Id> opMap = []() {
         map<string, Operation::Id> opMap;
         opMap["sqrt"] = Operation::SQRT;
         opMap["exp"] = Operation::EXP;

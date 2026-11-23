@@ -25,6 +25,22 @@ For the impatient use:
 
 This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
 
+Completion also offers filenames after `LOAD FILE=`, `MOLINFO STRUCTURE=`,
+`RMSD REFERENCE=` and related reference-structure options, `INCLUDE FILE=` and
+`READ FILE=`. Relative paths are completed against Vim's current working
+directory (`:pwd`); use the directory from which you will run PLUMED.
+Directories remain available so you can continue completing a nested path.
+Paths containing spaces are enclosed in PLUMED's braces. `LOAD INCLUDE_PATH=`
+completes directories in its colon-separated list.
+
+`LOAD MODULE=` completes built-in module names and names advertised by the
+selected installation's registration files, including registrations exposed by
+`PLUMED_PLUGIN_PATH` when `PLUMED_AUTOLOAD=0`. Registered names are suggestions;
+the module loader checks compatibility and dependencies when you run PLUMED.
+The editor does not execute `LOAD` statements in the input. Module candidates
+reuse the runtime cache described below; static syntax copies offer built-in
+module names only.
+
 - If you want to fold multi-line statements, type
 
 ````
@@ -101,6 +117,42 @@ and `PLUMED_MODULE_OVERRIDE`, is respected. No Python support in Vim is required
 If you copy Vim support files manually, copy the entire `vim` directory, including
 `autoload` and `templates`, to retain runtime generation. Copying only the
 generated syntax and help continues to work as static Vim support.
+
+## Large files
+
+Vim normally starts highlighting partway through a file when you jump to a
+distant line. This can lose the context of a long multiline PLUMED action or
+an earlier `ENDPLUMED`. For accurate highlighting from the beginning, set this
+before loading the PLUMED syntax:
+
+```vim
+let g:plumed_syntax_sync = 'fromstart'
+```
+
+Parsing from the beginning can be slow in very large input files, especially
+after edits. Alternatively, request a finite lookback:
+
+```vim
+let g:plumed_syntax_sync = 'bounded'
+let g:plumed_syntax_minlines = 200
+```
+
+A finite lookback cannot guarantee correct context inside regions longer than
+that lookback. Leaving `plumed_syntax_sync` unset retains Vim's normal policy.
+Help and completion query exact context without permanently enabling full-file
+synchronization for later redraws.
+
+Very wide COLVAR rows encounter a separate limit: Vim's `synmaxcol` option
+normally stops highlighting at column 3000. To raise that limit, set:
+
+```vim
+let g:plumedf_synmaxcol = 10000
+" For PLUMED input buffers, the corresponding setting is:
+let g:plumed_synmaxcol = 10000
+```
+
+Zero removes the limit, which can slow down extremely wide files. These
+settings apply when the syntax is loaded and do not change other filetypes.
 
 ## Configuration
 
@@ -381,6 +433,15 @@ in the file and tags provided in the `FIELDS` line.
 The highlighted column can be moved back and forth using `:PPlus` and `:PMinus`.
 Adding a count to the command will move the highlighted column more. E.g. `:2PPlus` will move
 the column to the right twice.
+
+You can also select a field by name, for example `:PCol time`. Names are resolved
+against the nearest preceding `#! FIELDS` header, so files containing repeated
+headers are supported. `:PField` reports the number and name of the field under
+the cursor. Each COLVAR buffer keeps its own selected column.
+
+Colors can be customized with the `plumedFOdd`, `plumedFEven` and
+`plumedFSelected` highlight groups. The syntax preserves existing highlight
+definitions. Set `g:plumed_shortcuts` to zero to leave the function keys unmapped.
 
 If you have a long output file, it might be convenient to split it with
 `:split` so that one of the two windows will only show the header. The other window

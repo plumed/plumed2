@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
 namespace PLMD {
 
 Keywords ActionOptions::emptyKeys;
@@ -233,6 +234,19 @@ void Action::parseFlag(const std::string&key,bool & t) {
       plumed_error();
     }
   }
+}
+
+void Action::setLaunchable() {
+  // PLUMED_LAUNCH=no: the actions do all their work in calculate(), with the same results (to compare timings and to debug)
+  const char* e=std::getenv("PLUMED_LAUNCH");
+  if(e && std::string(e)=="no") {
+    log.printf("  the work of this action is not started in advance (PLUMED_LAUNCH=no)\n");
+    return;
+  }
+  log.printf("  the work of this action is started as soon as possible (launch), set PLUMED_LAUNCH=no to disable\n");
+  launchable=true;
+  // the forward loop looks for launchable actions only after this
+  plumed.useLaunch=true;
 }
 
 void Action::addDependency(Action*action) {

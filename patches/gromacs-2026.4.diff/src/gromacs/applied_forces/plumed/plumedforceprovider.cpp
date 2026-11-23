@@ -182,6 +182,13 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
         plumed_->cmd("setNumOMPthreads", &numOmpThreads);
     }
 
+    if (plumedAPIversion_ > 9 && options.gpuDeviceId_ >= 0)
+    {
+        /* The PLUMED actions that run on a GPU use the GPU of this rank,
+           instead of guessing it from the CUDA context of the calling thread. */
+        plumed_->cmd("setGpuDeviceId", &options.gpuDeviceId_);
+    }
+
     if (isMultiSim(options.ms_))
     {
         /* Hand PLUMED the multi-replica communicators. This is what populates

@@ -315,6 +315,15 @@ struct PlumedInputFilename
     const t_inputrec* inputrec_{};
 };
 
+/*! \libinternal \brief Provides the GPU used by this rank to the PLUMED module,
+ *  for the PLUMED actions that run on a GPU
+ */
+struct PlumedGpuDevice
+{
+    //! The index of the GPU as CUDA numbers it, -1 if there is none or GROMACS does not use CUDA
+    int id_{ -1 };
+};
+
 /*! \libinternal \brief Provides the constant ensemble temperature
  */
 struct EnsembleTemperature
@@ -521,6 +530,7 @@ struct MDModulesNotifiers
      *                              Allows a modules to indicate whether it
      *                              handle short-range coulomb interactions
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
+     * \tparam PlumedGpuDevice& Allows the PLUMED module to know the GPU used by this rank
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -540,7 +550,8 @@ struct MDModulesNotifiers
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
                            MDModulesDirectProvider*,
-                           const PlumedInputFilename&>::type simulationSetupNotifier_;
+                           const PlumedInputFilename&,
+                           const PlumedGpuDevice&>::type simulationSetupNotifier_;
 
     /*! \brief Handles subscribing and calling callbacks during a running simulation.
      *

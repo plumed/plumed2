@@ -2,6 +2,8 @@
 """Check CMake selection of hyphenated modules after upstream integration."""
 
 import os
+import re
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -42,6 +44,51 @@ try:
                 expression,
                 selected,
             )
+        # Exercise the generator without Bash, as on a minimal Windows host,
+        # and with script names/options that must survive the record protocol.
+        fixture = Path(directory) / "source with ' quote"
+        (fixture / "src/cltools").mkdir(parents=True)
+        (fixture / "scripts").mkdir()
+        body = b"# completion body\n"
+        (fixture / "src/cltools/completion.sh").write_bytes(body)
+        for name in ("tool-name", "tool_name", "tool.extra"):
+            (fixture / "scripts" / (name + ".sh")).write_text(
+                "printf '%s\\n' --first --second\n"
+            )
+        bash = shutil.which("bash")
+        for shell in ("", *([bash] if bash else [])):
+            output = Path(directory) / ("with-bash" if shell else "without-bash")
+            output.mkdir()
+            driver = Path(directory) / "completion.cmake"
+            driver.write_text(
+                f'include("{source.as_posix()}/cmake-msvc/PlumedGenerate.cmake")\n'
+                f'set(_bash "{Path(shell).as_posix() if shell else ""}")\n'
+                f'plumed_generate_completion("{fixture.as_posix()}" "{output.as_posix()}")\n'
+            )
+            subprocess.run(
+                [os.environ.get("CMAKE", "cmake"), "-P", str(driver)],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+
+            def decode(name):
+                return bytes(
+                    int(value, 16)
+                    for value in re.findall(
+                        r"0x([0-9a-f]{2})", (output / name).read_text()
+                    )
+                )
+
+            assert decode("completion.xxd") == body
+            expected = (
+                b"tool-name\t--first --second\ntool.extra\t--first --second\n"
+                b"tool_name\t--first --second\n"
+                if shell
+                else b"\n"
+            )
+            assert decode("completion-scripts.h") == expected
         catalogue = Path(directory) / "ModuleMap.inc"
         script = Path(directory) / "catalogue.cmake"
         script.write_text(
@@ -68,4 +115,4 @@ finally:
         config_snapshot.unlink(missing_ok=True)
     else:
         config_snapshot.write_bytes(original_config)
-print("CMake hyphenated and legacy module selection passed")
+print("CMake module selection and completion generation passed")

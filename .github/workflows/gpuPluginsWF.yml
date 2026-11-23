@@ -4,8 +4,8 @@ name: GPU plugins
 # installed PLUMED, and the tests that do not need a GPU are run (loading the plugin, input
 # errors, the error when there is no GPU). The kernels themselves need a real GPU.
 #
-# cudaCoord is compiled with more than one version of the CUDA toolkit, taken from conda-forge
-# (no driver is needed to compile, and the runtime is linked statically by nvcc).
+# Both plugins are compiled with more than one version of the CUDA toolkit, taken from conda-forge
+# (no driver is needed to compile).
 
 on:
   workflow_call:
@@ -68,7 +68,7 @@ jobs:
           "$HOME/cuda-$v/bin/nvcc" --version
         done
 
-    - name: Build and test cudaCoord
+    - name: Build and test CUDA plugins
       run: |
         export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
         cd plugins/cudaCoord
@@ -81,5 +81,9 @@ jobs:
           ./configure.sh
           make -j 4
           make check-nogpu
+          make -C ../reactive-voronoi-cuda clean
+          # Voronoi uses shared cudart. Set an explicit architecture on the GPU-less runner.
+          LD_LIBRARY_PATH="$HOME/cuda-$v/lib:$HOME/cuda-$v/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}" \
+            make -C ../reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
           echo "::endgroup::"
         done

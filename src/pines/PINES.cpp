@@ -45,6 +45,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
+#include "tools/OpenMP.h"
 
 
 
@@ -289,11 +290,8 @@ bool PINES::atomMatchesFilters(int n, int g, AtomNumber ind, int resid, const st
 }
 
 void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair<double, AtomPair>>& heap) {
-#ifdef _OPENMP
-  int nthreads = omp_get_max_threads();
-#else
-  int nthreads = 1;
-#endif
+  // the threads of the loop below (see tools/OpenMP.h)
+  const int nthreads = OpenMP::getNumThreads();
   std::vector<std::vector<std::pair<double, AtomPair>>> thread_heaps(nthreads);
 
 
@@ -306,7 +304,7 @@ void PINES::buildMaxHeapVecBlock(int n, const PDB& refpdb, std::vector<std::pair
 
   heap.clear();
 #ifdef _OPENMP
-  #pragma omp parallel for schedule(dynamic)
+  #pragma omp parallel for schedule(dynamic) num_threads(nthreads)
 #endif
   for (int i = 0; i < static_cast<int>(block_groups_atom_list[n][0].size()); i++) {
     AtomNumber ind0 = block_groups_atom_list[n][0][i];
@@ -391,7 +389,7 @@ void PINES::updateBlockPairList(int n, std::vector<std::pair<double, AtomPair>>&
   plumed_massert(!listreducedall_vec.empty(), "positions requested before requestAtoms");
 
 #ifdef _OPENMP
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
 #endif
   for (int i = 0; i < tot_num_pairs[n]; i++) {
     AtomNumber ind0 = heap[i].second.alpha_group;
@@ -826,7 +824,7 @@ void PINES::calculate() {
   }
   const Vector zeroVec(0., 0., 0.);
 #ifdef _OPENMP
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OpenMP::getNumThreads())
 #endif
   for (unsigned j = 0; j < ann_deriv.size(); j++) {
     for (unsigned i = 0; i < ann_deriv[j].size(); i++) {
@@ -835,7 +833,7 @@ void PINES::calculate() {
   }
 
 #ifdef _OPENMP
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OpenMP::getNumThreads())
 #endif
   for (int n = 0; n < N_Blocks; n++) {
     PIV[n].resize(block_lengths[n]);

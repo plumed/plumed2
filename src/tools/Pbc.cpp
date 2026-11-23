@@ -561,6 +561,7 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
     rowlen[k]=std::sqrt(box(k,0)*box(k,0)+box(k,1)*box(k,1)+box(k,2)*box(k,2));
   }
   const double safe=0.5*hmin;
+  const bool ortho = type==orthorombic;
   // the scalar code avoids temporaries in memory, which are slow here
   const double i00=invBox(0,0), i01=invBox(0,1), i02=invBox(0,2);
   const double i10=invBox(1,0), i11=invBox(1,1), i12=invBox(1,2);
@@ -575,9 +576,9 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
   // shift of each link, in lattice vectors, from the original positions (a shift of the
   // parent does not change the minimum image); it is stored in the child
   std::vector<std::array<int,3> > shift(pos.size(), std::array<int,3> {0,0,0});
-  // opening an OpenMP region costs microseconds even with one thread, and this is called
-  // for every action at every step: the loops are run in a region only with more than one thread
-  const unsigned nt=OpenMP::getGoodNumThreads(pos);
+  // A link costs about 10 nanoseconds: at least 1000 links, about 10 microseconds, per thread
+  // (see OpenMP.h). This is called for every molecule at every step, and most are small.
+  const unsigned nt=OpenMP::getGoodNumThreads(nlinks,1000);
   auto linkShift=[&](const std::size_t l) {
     const Vector & a = pos[par(l)];
     const Vector & b = pos[chi(l)];
@@ -592,7 +593,8 @@ void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
       n0=rnd(s0);
       n1=rnd(s1);
       n2=rnd(s2);
-      ok=std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
+      // in an orthorhombic box the rounding is the minimum image at any distance
+      ok=ortho || std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
     }
     if(!ok) {
       // far from the parent (or not finite): minimum image from distance()

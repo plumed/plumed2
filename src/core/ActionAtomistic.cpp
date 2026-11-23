@@ -39,11 +39,9 @@
 namespace PLMD {
 
 namespace {
-/// Threads to copy n atoms: none for the small actions, where opening a parallel region costs more than the copy
+/// Threads to copy n atoms (see OpenMP.h)
 unsigned atomCopyThreads(const std::size_t n) {
-  constexpr std::size_t minAtomsPerThread=16384;
-  const std::size_t m=n/minAtomsPerThread;
-  return m<2 ? 1 : std::min<std::size_t>(m,OpenMP::getNumThreads());
+  return OpenMP::getGoodNumThreads<Vector>(nullptr,n);
 }
 }
 
@@ -99,17 +97,21 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     clearDependencies();
   }
   unique.clear();
+  unique.reserve(nat);
   std::vector<bool> requirements( xpos.size(), false );
   if( boxValue ) {
     addDependency( boxValue->getPntrToAction() );
   }
+  // the atoms of the first position value (the atoms of the MD code) are found without a search
+  const std::size_t nfirst=xpos.empty() ? 0 : xpos[0]->getNumberOfValues();
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) {
       std::string num;
       Tools::convert( indexes[i].serial(),num );
       error("atom " + num + " out of range");
     }
-    atom_value_ind[i] = getValueIndices( indexes[i] );
+    atom_value_ind[i] = indexes[i].index()<nfirst ? std::pair<std::size_t,std::size_t>(0,indexes[i].index())
+                        : getValueIndices( indexes[i] );
     requirements[atom_value_ind[i].first] = true;
     if( atom_value_ind[i].first==0 ) {
       unique.push_back(indexes[i]);
@@ -121,20 +123,19 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   atom_value_ind_grouped.clear();
   massesAndChargesRetrieved=false;
 
-  if(atom_value_ind.size()>0) {
-    auto prev_nn=atom_value_ind[0].first;
-    atom_value_ind_grouped.push_back(
-      std::pair<std::size_t,std::vector<std::size_t>>(
-        prev_nn, {}));
-    atom_value_ind_grouped.back().second.push_back(atom_value_ind[0].second);
-    for(unsigned i=1; i<atom_value_ind.size(); i++) {
-      auto nn = atom_value_ind[i].first;
-      auto kk = atom_value_ind[i].second;
-      if(nn!=prev_nn)
-        atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
-      atom_value_ind_grouped.back().second.push_back(kk);
-      prev_nn=nn;
+  // consecutive atoms from the same value form a group
+  for(std::size_t i=0; i<atom_value_ind.size();) {
+    const auto nn=atom_value_ind[i].first;
+    std::size_t j=i+1;
+    while(j<atom_value_ind.size() && atom_value_ind[j].first==nn) {
+      ++j;
     }
+    std::vector<std::size_t> kk(j-i);
+    for(std::size_t l=i; l<j; ++l) {
+      kk[l-i]=atom_value_ind[l].second;
+    }
+    atom_value_ind_grouped.emplace_back(nn,std::move(kk));
+    i=j;
   }
 
   // Add the dependencies to the actions that we require
@@ -576,6 +577,7 @@ inline void rotateVector( const Tensor& r, const double x, const double y, const
 }
 
 void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;
@@ -590,6 +592,7 @@ void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
 }
 
 void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;
@@ -606,6 +609,7 @@ void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
 }
 
 void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter) {
+  modifiesGlobalAtoms=true;
   for(unsigned j=0; j<xpos.size(); ++j) {
     auto & xp=xpos[j]->data;
     auto & yp=ypos[j]->data;

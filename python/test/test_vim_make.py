@@ -499,6 +499,222 @@ class TestVimCache(unittest.TestCase):
         )
         self.assertEqual(self.calls(), [])
 
+    def test_unloaded_registered_module_candidates_and_warm_cache(self):
+        plugins = self.root / "plugins"
+        plugins.mkdir()
+        (plugins / "fixture.plumed").write_text(
+            "module vim_fixture\nbuild fixture\nlibrary absent.so\n"
+        )
+        body = (
+            "call WaitForCache()\ncall setline(1,'LOAD MODULE=vim_')\n"
+            "let b:plumedDictionary.LOAD=[{'word':'MODULE=','menu':'(option)'}]\n"
+            "call PlumedDefineSyntax()\nset virtualedit=onemore\ncall cursor(1,17)\n"
+            "let start=PlumedComplete(1,'')\n"
+            "call assert_equal(['vim_fixture'],PlumedComplete(0,strpart(getline(1),start)))"
+        )
+        environment = {"PLUMED_PLUGIN_PATH": str(plugins), "PLUMED_AUTOLOAD": "0"}
+        self.run_vim(body, env=environment)
+        self.run_vim(body, env=environment)
+        self.assertEqual(len(self.calls()), 1)
+
+
+@unittest.skipUnless(shutil.which("vim"), "Vim is unavailable")
+class TestVimSyntax(unittest.TestCase):
+    """Exercise editor semantics without requiring a compiled PLUMED kernel."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="plumed syntax ")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        self.syntax = self.root / "syntax"
+        self.syntax.mkdir()
+        keywords = {
+            "DISTANCE": [("ATOMS", "numbered"), ("LABEL=", "label")],
+            "ENERGY": [("LABEL=", "label")],
+            "LOAD": [
+                ("FILE=", "option"),
+                ("MODULE=", "option"),
+                ("INCLUDE_PATH=", "option"),
+            ],
+            "MOLINFO": [("STRUCTURE=", "option")],
+            "RMSD": [("REFERENCE=", "option")],
+            "PRINT": [("FILE=", "option")],
+            "INCLUDE": [("FILE=", "option")],
+            "READ": [("FILE=", "option")],
+        }
+        dictionary = "let b:plumedModules=['core','colvar']\n"
+        for action, entries in keywords.items():
+            dictionary += "let b:plumedDictionary[" + json.dumps(action) + "]="
+            dictionary += (
+                json.dumps(
+                    [{"word": word, "menu": "(" + menu + ")"} for word, menu in entries]
+                )
+                + "\n"
+            )
+        template = (ROOT / "vim/templates/plumed.vim.in").read_text()
+        (self.syntax / "plumed.vim").write_text(
+            template.replace("@PLUMED_DICTIONARY@", dictionary)
+        )
+        shutil.copy2(ROOT / "vim/templates/plumedf.vim", self.syntax)
+
+    def run_vim(self, body, *, kind="plumed", settings=""):
+        errors = self.root / "errors"
+        # Windows runners can select Git's MSYS Vim. Its command-line parser
+        # treats backslashes in native Windows paths as escapes. Keep all paths
+        # relative to cwd so native and MSYS editors resolve them consistently.
+        source = (
+            "execute 'source ' . fnameescape("
+            + json.dumps("syntax/" + kind + ".vim")
+            + ")\n"
+        )
+        script = self.root / "check.vim"
+        script.write_text(
+            "set nocompatible nomore\nset virtualedit=onemore\n"
+            "if exists('+shellslash')\nset shellslash\nendif\n"
+            "let g:plumed_vim_dynamic=0\n"
+            + settings
+            + "\n"
+            + source
+            + "function! Group(row,col)\nreturn synIDattr(synID(a:row,a:col,1),'name')\nendfunction\n"
+            + "function! Color(row,col)\nreturn synIDattr(synIDtrans(synID(a:row,a:col,1)),'name')\nendfunction\n"
+            + "function! Candidates(text)\nbwipeout!\n"
+            + source
+            + "call setline(1,a:text)\ncall cursor(1,strlen(a:text)+1)\n"
+            + "let start=PlumedComplete(1,'')\n"
+            + 'return map(PlumedComplete(0,strpart(a:text,start)),"type(v:val)==type({}) ? v:val.word : v:val")\nendfunction\n'
+            + body
+            + "\nif !empty(v:errors)\ncall writefile(v:errors,"
+            + json.dumps("errors")
+            + ")\ncquit\nendif\nqa!\n"
+        )
+        result = subprocess.run(
+            [
+                shutil.which("vim"),
+                "-Nu",
+                "NONE",
+                "-i",
+                "NONE",
+                "-n",
+                "-es",
+                "-V1vim.log",
+                "-S",
+                script.name,
+            ],
+            check=False,
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            timeout=VIM_TIMEOUT,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            (errors.read_text() if errors.exists() else "")
+            + result.stdout
+            + result.stderr,
+        )
+
+    def test_action_keyword_boundaries_and_label_menu(self):
+        self.run_vim(
+            "call setline(1,['d: DISTANCE_UNKNOWN ATOMS=1,2','PRINT FILE9=x','ENERGY ATOMS=1,2','DISTANCE ATOMS2=1,2'])\n"
+            "call assert_equal('',Group(1,4))\n"
+            "call assert_notequal('plumedKeywordsPRINT',Group(2,7))\n"
+            "call assert_notequal('plumedKeywordsENERGY',Group(3,8))\n"
+            "call assert_equal('plumedKeywordsDISTANCE',Group(4,10))\n"
+            "call assert_equal(['DISTANCE'],Candidates('dist'))\n"
+            "call assert_equal([],Candidates('DIST.'))"
+        )
+
+    def test_file_structure_and_module_values(self):
+        (self.root / "plugin.cpp").touch()
+        (self.root / "ref1.pdb").touch()
+        (self.root / "structures").mkdir()
+        (self.root / "structures/ref2.cif").touch()
+        self.run_vim(
+            "call assert_equal(['plugin.cpp'],Candidates('LOAD FILE=plu'))\n"
+            "call assert_equal(['ref1.pdb'],Candidates('MOLINFO STRUCTURE=ref1'))\n"
+            "call assert_equal(['structures/ref2.cif'],Candidates('RMSD REFERENCE=structures/ref2'))\n"
+            "call assert_equal(['ref1.pdb'],Candidates('INCLUDE FILE=ref1'))\n"
+            "call assert_equal(['ref1.pdb'],Candidates('READ FILE=ref1'))\n"
+            "call assert_equal(['colvar','core'],Candidates('LOAD MODULE=co'))\n"
+            "call assert_equal([],Candidates('# LOAD FILE=plu'))\n"
+            "call assert_equal([],Candidates('PRINT FILE=plu'))\n"
+            "call Candidates('LOAD FILE=plu')\n"
+            "call feedkeys(\"A\\<C-X>\\<C-O>\\<C-Y>\\<Esc>\",'xt')\n"
+            "call assert_equal('LOAD FILE=plugin.cpp',getline(1))"
+        )
+
+    def test_paths_with_spaces_braces_and_directory_lists(self):
+        (self.root / "my refs").mkdir()
+        (self.root / "my refs/ref1.pdb").touch()
+        (self.root / "headers1").mkdir()
+        (self.root / "ref[1].pdb").touch()
+        self.run_vim(
+            "call assert_equal(['{my refs/'],Candidates('MOLINFO STRUCTURE=my'))\n"
+            "call assert_equal(['my refs/ref1.pdb}'],Candidates('MOLINFO STRUCTURE={my refs/ref1'))\n"
+            "call assert_equal(['headers1/'],Candidates('LOAD INCLUDE_PATH=other:head'))\n"
+            "call assert_equal(['my refs/'],Candidates('LOAD INCLUDE_PATH={other:my'))\n"
+            "call assert_equal(['ref[1].pdb'],Candidates('RMSD REFERENCE=ref[1]'))\n"
+            "call assert_equal(['../'],Candidates('LOAD FILE=..'))\n"
+            "let absolute=getcwd() . '/my refs/ref1'\n"
+            "call assert_equal([absolute . '.pdb}'],Candidates('MOLINFO STRUCTURE={' . absolute))"
+        )
+
+    def test_colvar_selection_is_local_and_uses_preceding_header(self):
+        source = (
+            "execute 'source ' . fnameescape("
+            + json.dumps("syntax/plumedf.vim")
+            + ")\n"
+        )
+        self.run_vim(
+            "call setline(1,['#! FIELDS time d','0 1','#! FIELDS d time','2 3'])\n"
+            "let first=bufnr()\ncall cursor(2,1)\nPCol time\n"
+            "call assert_equal(1,b:plumedf_column)\ncall assert_equal('Todo',Color(2,1))\n"
+            "call cursor(4,3)\ncall assert_equal(\"\\n2: time\",execute('PField'))\n"
+            "PCol time\ncall assert_equal(2,b:plumedf_column)\n"
+            "new\n" + source + "call setline(1,['#! FIELDS x y','0 1'])\n1PCol\n"
+            "execute 'buffer! ' . first\ncall assert_equal('Todo',Color(2,3))\n"
+            "call assert_notequal('Todo',Color(2,1))\n"
+            "new\ncall assert_equal(0,exists(':PCol'))",
+            kind="plumedf",
+        )
+
+    def test_user_colors_shortcuts_and_wide_colvar_rows(self):
+        self.run_vim(
+            "call assert_equal('',maparg('<F3>','n'))\n"
+            "call setline(1,repeat('1 ',2100))\n"
+            "call assert_notequal('',Group(1,3501))\n1PCol\n"
+            "call assert_equal('Error',Color(1,1))",
+            kind="plumedf",
+            settings="let g:plumed_shortcuts=0\nlet g:plumedf_synmaxcol=0\nhighlight link plumedFSelected Error",
+        )
+        self.run_vim(
+            "call assert_equal('',maparg('<F2>','n'))\n"
+            "call setline(1,'DISTANCE ATOMS=1,2')\ncall assert_equal('Error',Color(1,1))\n"
+            "new\ncall assert_equal(0,exists(':PHelp'))",
+            settings="let g:plumed_shortcuts=0\nhighlight link plumedActionDISTANCE Error",
+        )
+
+    def test_explicit_full_sync_covers_long_regions(self):
+        self.run_vim(
+            "call setline(1,['d: DISTANCE ...']+repeat(['# filler'],5000)+['ATOMS=1,2','...'])\n"
+            "call assert_equal('plumedKeywordsDISTANCE',Group(5002,1))\n"
+            "call cursor(5002,1)\ncall assert_equal('DISTANCE',PlumedGuessRegion())\n"
+            "call assert_equal('plumedKeywordsDISTANCE',Group(5002,1))",
+            settings="let g:plumed_syntax_sync='fromstart'",
+        )
+
+    def test_help_closes_locally_and_context_query_restores_sync(self):
+        (self.root / "help").mkdir()
+        (self.root / "help/DISTANCE.txt").write_text("Distance help\n")
+        self.run_vim(
+            "call setline(1,'DISTANCE ATOMS=1,2')\n"
+            "let policy=execute('syntax sync')\ncall cursor(1,5)\n"
+            "PHelp\ncall assert_equal(['Distance help'],getline(1,'$'))\n"
+            "PHelp\ncall assert_equal(1,winnr('$'))\n"
+            "call assert_equal(policy,execute('syntax sync'))"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
