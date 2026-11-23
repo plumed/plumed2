@@ -132,6 +132,8 @@ private:
   bool ignore_time;
   bool ignore_forces;
   bool cloned_file;
+  bool hasOrdinaryValue=false;
+  long long ordinaryStep=0;
   unsigned nlinesPerStep;
 /// number of times the file has been advanced to the next line by this action (state of the checkpoint)
   long long nadvanced=0;
@@ -348,6 +350,14 @@ void Read::readCheckpoint(CheckpointReader& r) {
 }
 
 void Read::prepare() {
+  if(hasOrdinaryValue && ordinaryStep==getStep()) {
+    return;
+  }
+  if(isCalculationOnly() || getExchangeStep()) {
+    // GREX can prepare its snapshot before the ordinary calculation. Do not
+    // consume the stream here; calculate() validates an actual auxiliary use.
+    return;
+  }
   if( !cloned_file ) {
     double du_time;
     if( !ifile->scanField("time",du_time) ) {
@@ -362,6 +372,14 @@ void Read::prepare() {
 }
 
 void Read::calculate() {
+  if(isCalculationOnly()) {
+    if(!hasOrdinaryValue || ordinaryStep!=getStep()) {
+      error("READ auxiliary evaluations require an ordinary value from the current step");
+    }
+    return;
+  }
+  hasOrdinaryValue=true;
+  ordinaryStep=getStep();
   std::string smin, smax;
   for(unsigned i=0; i<readvals.size(); ++i) {
 // .get  returns the raw pointer
