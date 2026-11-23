@@ -35,13 +35,15 @@ namespace h5table {
 \ingroup TOOLBOX
 Tables of fields (the files written with OFile::printField) stored in HDF5 files.
 
-A file whose name ends with `.h5` is written in HDF5 format (with libhdf5, see
-`./configure --enable-libhdf5`). Layout, version 1:
+Simulations write them as archives of tables (`.h5.tar`, see below); a single HDF5 file (`.h5`)
+is read, and written only from scratch (by h5convert), never appended to: HDF5 updates it in place,
+so that an interrupted run could damage it. Requires libhdf5 (`./configure --enable-libhdf5`).
+Layout of a table, version 1:
 - the root group has the attribute `plumed_format` = "plumed-table" and `plumed_format_version` = 1;
 - the table is made of blocks, `block_0`, `block_1`, ...: a new block starts when the fields
   change (where a text file would print a new `#! FIELDS` header), i.e. when the names or the
   types of the columns or the values of the constant fields change;
-- every column of a block is an extendable 1-D dataset with the name of the field (doubles,
+- every column of a block is a 1-D dataset with the name of the field (doubles,
   64-bit integers, or strings), in the order given by the attribute `plumed_columns` of the block
   (names separated by spaces);
 - the constant fields (`#! SET` in text files) are attributes of the block, listed in order in
@@ -75,6 +77,9 @@ bool isH5(const std::string& path);
 /// True if the file is an archive of tables: by its content if it exists, otherwise by its extension (.h5.tar)
 bool isArchive(const std::string& path);
 
+/// True if the name of the file ends with .h5.tar
+bool isArchiveName(const std::string& path);
+
 /// True if the file is an HDF5 table or an archive, by its extension or by its content: for the files that are read
 bool isTable(const std::string& path);
 
@@ -101,8 +106,8 @@ class Writer {
   struct Impl;
   std::unique_ptr<Impl> impl;
 public:
-/// Create the file, or open it to append to its last block (append); rows are written every batch rows
-/// (in an archive, a member every batch rows at most)
+/// Create the file, or open it to append to it (append, only for an archive); rows are written
+/// every batch rows (in an archive, a member every batch rows at most)
   Writer(const std::string& path,bool append,std::size_t batch=4096);
   ~Writer();
   Writer(const Writer&)=delete;
@@ -111,8 +116,6 @@ public:
   void addRow(const std::vector<Field>& fields,const std::vector<Field>& constants);
 /// Write the buffered rows and flush the file
   void flush();
-/// Number of rows of every block in the file (after writing the buffered rows)
-  std::vector<unsigned long long> rows();
 };
 
 /// Reads a table as the lines of the equivalent text file
@@ -127,14 +130,6 @@ public:
 /// The next line; false at the end of the table
   bool getline(std::string& line);
 };
-
-/// Number of rows of every block of a table
-std::vector<unsigned long long> rows(const std::string& path);
-
-/// Keep the first keep[b] rows of block b (the blocks beyond keep.size() are removed).
-/// The rows removed are written, with the same structure, in the table backup (if not empty).
-/// An archive can only lose its last rows: the members before the first row removed are not modified.
-void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup);
 
 /// Copy a table (or archive) into a new table (or archive), with the values as they are
 /// (an archive with members of batch rows at most)

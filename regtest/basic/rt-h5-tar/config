@@ -64,6 +64,13 @@ function plumed_regtest_before() {
   head -c 512 /dev/zero >> unpublished.h5.tar
   head -c 2048 ../traj.xyz >> unpublished.h5.tar
   cd ..
+  # F) a file written as free text cannot be an HDF5 table, and a single HDF5 file (.h5) is not written
+  mkdir errors ; cd errors
+  echo "PRINT_NDX ATOMS=1-4 FILE=atoms.h5.tar" > freetext.dat
+  $plumed driver --plumed freetext.dat --ixyz ../part.xyz > out1 2> err1
+  { echo "d1: DISTANCE ATOMS=1,2" ; echo "PRINT ARG=d1 FILE=COLVAR.h5" ; } > single.dat
+  $plumed driver --plumed single.dat --ixyz ../part.xyz > out2 2> err2
+  cd ..
   # E) the MD engine sends the checkpoint signal (every 10 steps): the files are flushed at the start
   # of those steps, so that the restart from step 30 cuts the archive at the end of a member
   mkdir signal ; cd signal ; cp ../plumed.dat .
@@ -109,6 +116,8 @@ function plumed_regtest_after() {
     grep -h "restart step" restart/out2 interrupted/out2 signal/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
     grep -h "truncated from" checkpoint/out2 | sed 's/^PLUMED: *//' | sed 's/from [0-9]* to [0-9]* bytes/from N to M bytes/' | LC_ALL=C sort
     grep -h "damaged" damaged/err | head -n 1 | sed 's/^.*\(the archive is damaged\)/\1/'
+    grep -h "HDF5 tables" errors/err1 | head -n 1 | sed 's/^.*\(HDF5 tables\)/\1/'
+    grep -h "PLUMED writes HDF5 tables" errors/err2 | head -n 1 | sed 's/^.*\(PLUMED writes HDF5 tables\)/\1/'
     for f in torn unpublished ; do
       echo "damaged/$f.h5.tar rows: $($plumed h5cat damaged/$f.h5.tar | grep -vc '^#')"
     done

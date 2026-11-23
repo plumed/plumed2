@@ -290,10 +290,10 @@ if(MSVC AND PLUMED_MSVC_DEBUG_INFO)
 endif()
 
 # --------------------------------------------------- optional libraries
-# HDF5 tables (.h5 files) and more trajectory formats in the driver (chemfiles).
+# HDF5 tables (.h5.tar and .h5 files) and more trajectory formats in the driver (chemfiles).
 # The python package links static copies of them, built by
 # python/build_dependencies.py and found with CMAKE_PREFIX_PATH.
-option(PLUMED_ENABLE_HDF5 "HDF5 tables (.h5 files), with the HDF5 library" OFF)
+option(PLUMED_ENABLE_HDF5 "HDF5 tables (.h5.tar and .h5 files), with the HDF5 library" OFF)
 option(PLUMED_ENABLE_CHEMFILES "More trajectory formats in the driver, with chemfiles" OFF)
 if(PLUMED_ENABLE_HDF5 OR PLUMED_ENABLE_CHEMFILES)
     # a static HDF5 or chemfiles may need the zlib they were built with

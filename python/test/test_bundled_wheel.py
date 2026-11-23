@@ -249,7 +249,7 @@ p.cmd("setNatoms", 2)
 p.cmd("setLogFile", "log")
 p.cmd("init")
 p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
-p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5")
+p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5.tar")
 # the arrays must stay alive until calc
 box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
 forces = array.array("d", [0] * 6)
@@ -281,7 +281,7 @@ p.finalize()
                 "--no-mpi",
                 "h5convert",
                 "--input",
-                "other.h5",
+                "other.h5.tar",
                 "--output",
                 "other.txt",
             ],

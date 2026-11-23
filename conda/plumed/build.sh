@@ -30,7 +30,7 @@ if [[ $(uname) == "Darwin" ]]; then
 fi
 
 # libraries are explicitly listed here due to --disable-libsearch
-# (hdf5 for the HDF5 tables, files with extension .h5: the same library as h5py and other packages in the environment)
+# (hdf5 for the HDF5 tables, files with extension .h5.tar: the same library as h5py and other packages in the environment)
 # Link the actual provider SONAME, not a switchable BLAS/LAPACK symlink.
 if [[ $(uname) == Darwin ]]; then
   blas_library="$PREFIX/lib/libopenblas.0.dylib"

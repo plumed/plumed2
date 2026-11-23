@@ -153,6 +153,10 @@ bool isArchive(const std::string& path) {
   }
 }
 
+bool isArchiveName(const std::string& path) {
+  return hasArchiveExtension(path);
+}
+
 bool isH5(const std::string& path) {
   return Tools::extension(path)=="h5" || hasArchiveExtension(path);
 }
@@ -211,9 +215,6 @@ Writer::Writer(const std::string& path,bool,std::size_t) {
 Writer::~Writer()=default;
 void Writer::addRow(const std::vector<Field>&,const std::vector<Field>&) {}
 void Writer::flush() {}
-std::vector<unsigned long long> Writer::rows() {
-  return {};
-}
 
 struct Reader::Impl {};
 Reader::Reader(const std::string& path) {
@@ -222,14 +223,6 @@ Reader::Reader(const std::string& path) {
 Reader::~Reader()=default;
 bool Reader::getline(std::string&) {
   return false;
-}
-
-std::vector<unsigned long long> rows(const std::string& path) {
-  noHDF5(path);
-}
-
-void truncate(const std::string& path,const std::vector<unsigned long long>&,const std::string&) {
-  noHDF5(path);
 }
 
 void copy(const std::string& input,const std::string&,std::size_t) {
@@ -1090,16 +1083,9 @@ Writer::Writer(const std::string& path,bool append,std::size_t batch):
     }
     impl->tar.reset(fopenUTF8(path,exists ? "r+b" : "w+b"));
     check(impl->tar!=nullptr,path,"cannot open the file");
-  } else if(exists) {
-    impl->file=openFile(path,H5F_ACC_RDWR);
-    const unsigned nb=countBlocks(impl->file);
-    if(nb>0) {
-      impl->block=nb-1;
-      impl->group=Id(H5Gopen2(impl->file,blockName(nb-1).c_str(),H5P_DEFAULT),H5Gclose);
-      check(impl->group>=0,path,"cannot open group "+blockName(nb-1));
-      impl->sig=readSignature(impl->group,impl->columns,path);
-    }
   } else {
+    // a single HDF5 file is only written from scratch (h5convert): it would be modified in place
+    check(!exists,path,"a single HDF5 file cannot be appended to: convert it into an archive (.h5.tar) with plumed h5convert");
     impl->file=Id(H5Fcreate(path.c_str(),H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT),H5Fclose);
     check(impl->file>=0,path,"cannot create the file");
     writeRoot(impl->file,path);
@@ -1144,22 +1130,6 @@ void Writer::flush() {
   if(!impl->archive) {
     H5Fflush(impl->file,H5F_SCOPE_GLOBAL);
   }
-}
-
-std::vector<unsigned long long> Writer::rows() {
-  Lock lock(hdf5Mutex());
-  flush();
-  if(impl->archive) {
-    return h5table::rows(impl->path);
-  }
-  std::vector<unsigned long long> r;
-  for(int b=0; b<=impl->block; b++) {
-    Id g(H5Gopen2(impl->file,blockName(b).c_str(),H5P_DEFAULT),H5Gclose);
-    std::vector<Column> cols;
-    readSignature(g,cols,impl->path);
-    r.push_back(blockRows(cols));
-  }
-  return r;
 }
 
 struct Reader::Impl {
@@ -1424,98 +1394,6 @@ unsigned long long trimArchive(const std::string& path,double tcut,const std::st
     return 0;
   }
   return cutArchive(path,files,k,r,backup);
-}
-
-std::vector<unsigned long long> rows(const std::string& path) {
-  Lock lock(hdf5Mutex());
-  Files files(path);
-  std::vector<unsigned long long> r;
-  Signature last;
-  forEachBlock(files,path,[&](std::size_t,const Signature& sig,std::vector<Column>&,unsigned long long n) {
-    // in an archive, consecutive blocks with the same signature are the same block of the table
-    if(files.isArchive() && !r.empty() && sig==last) {
-      r.back()+=n;
-    } else {
-      r.push_back(n);
-    }
-    last=sig;
-  });
-  return r;
-}
-
-void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
-  Lock lock(hdf5Mutex());
-  if(isArchive(path)) {
-    // the rows to keep are the first ones of the table: find the member with the first row removed
-    completeTrim(path);
-    const auto current=rows(path);
-    check(keep.size()<=current.size(),path,"the table has fewer blocks than expected");
-    unsigned long long total=0;
-    for(std::size_t b=0; b<keep.size(); b++) {
-      check(keep[b]<=current[b],path,"block "+std::to_string(b)+" has fewer rows than expected");
-      check(b+1==keep.size() || keep[b]==current[b],path,"only the last rows of an archive can be removed");
-      total+=keep[b];
-    }
-    Files files(path);
-    unsigned long long seen=0;
-    std::size_t k=files.size();
-    unsigned long long r=0;
-    // (all the members are read: this function is not used at restarts, see trimArchive)
-    std::vector<unsigned long long> perMember(files.size(),0);
-    forEachBlock(files,path,[&](std::size_t m,const Signature&,std::vector<Column>&,unsigned long long n) {
-      perMember[m]+=n;
-    });
-    for(std::size_t m=0; m<perMember.size(); m++) {
-      if(seen+perMember[m]>total) {
-        k=m;
-        r=total-seen;
-        break;
-      }
-      seen+=perMember[m];
-    }
-    if(k<files.size()) {
-      cutArchive(path,files,k,r,backup);
-    }
-    return;
-  }
-  std::unique_ptr<Writer> out;
-  {
-    Id f=openFile(path,H5F_ACC_RDWR);
-    const unsigned nb=countBlocks(f);
-    check(keep.size()<=nb,path,"the table has fewer blocks than expected");
-    for(unsigned b=0; b<nb; b++) {
-      Id g(H5Gopen2(f,blockName(b).c_str(),H5P_DEFAULT),H5Gclose);
-      std::vector<Column> cols;
-      const Signature sig=readSignature(g,cols,path);
-      const unsigned long long n=blockRows(cols);
-      const unsigned long long k= b<keep.size() ? keep[b] : 0;
-      check(k<=n,path,"block "+std::to_string(b)+" has fewer rows than expected");
-      if(k==n && b<keep.size()) {
-        continue;
-      }
-      // the rows removed are kept in the backup
-      if(backup.length()>0 && n>k) {
-        if(!out) {
-          out=std::make_unique<Writer>(backup,false);
-        }
-        copyRows(*out,sig,cols,k,n,path);
-      }
-      if(b<keep.size()) {
-        const hsize_t kk=k;
-        for(auto & c : cols) {
-          check(H5Dset_extent(c.dataset,&kk)>=0,path,"cannot shrink the dataset of field "+c.name);
-        }
-      } else {
-        cols.clear();
-        g.reset();
-        check(H5Ldelete(f,blockName(b).c_str(),H5P_DEFAULT)>=0,path,"cannot remove "+blockName(b));
-      }
-    }
-    H5Fflush(f,H5F_SCOPE_GLOBAL);
-  }
-  if(out) {
-    out->flush();
-  }
 }
 
 void copy(const std::string& input,const std::string& output,std::size_t batch) {

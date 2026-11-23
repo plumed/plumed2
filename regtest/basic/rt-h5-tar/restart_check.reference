@@ -39,6 +39,8 @@ file COLVAR.h5.tar truncated from N to M bytes
 file HILLS truncated from N to M bytes
 file HILLS.h5.tar truncated from N to M bytes
 the archive is damaged: invalid TAR header at byte 0
+HDF5 tables (.h5.tar) can only be written field by field (as PRINT does): this file is written as free text, use another extension
+PLUMED writes HDF5 tables as archives (.h5.tar), which survive an interrupted run and can be read while they are written: use the extension .h5.tar (a single .h5 file can be read, and written with plumed h5convert)
 damaged/torn.h5.tar rows: 60
 damaged/unpublished.h5.tar rows: 60
 renamed.h5 rows: 60

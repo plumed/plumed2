@@ -26,15 +26,15 @@ function plumed_regtest_before() {
 
 function plumed_regtest_after() {
   {
-    $plumed h5convert --input KERNELS.h5 --output KERNELS.h5.txt
-    echo "KERNELS.h5 as text: $(compare KERNELS KERNELS.h5.txt)"
+    $plumed h5convert --input KERNELS.h5.tar --output KERNELS.h5.tar.txt
+    echo "KERNELS.h5.tar as text: $(compare KERNELS KERNELS.h5.tar.txt)"
     for f in KERNELS COLVAR ; do
-      $plumed h5convert --input $f.h5 --output $f.h5.txt
-      $plumed h5convert --input restart/$f.h5 --output restart/$f.h5.txt
-      if cmp -s $f.h5.txt restart/$f.h5.txt ; then echo "restart/$f.h5 IDENTICAL" ; else echo "restart/$f.h5 DIFFERENT" ; fi
+      $plumed h5convert --input $f.h5.tar --output $f.h5.tar.txt
+      $plumed h5convert --input restart/$f.h5.tar --output restart/$f.h5.tar.txt
+      if cmp -s $f.h5.tar.txt restart/$f.h5.tar.txt ; then echo "restart/$f.h5.tar IDENTICAL" ; else echo "restart/$f.h5.tar DIFFERENT" ; fi
     done
     # the bias restarted from the HDF5 table (full precision) is the same as the one restarted from text (17 digits)
-    awk '!/^#/{d=$2-$3; if(d<0) d=-d; if(d>1e-10) bad=1} END{print "restart: o.bias and ot.bias " (bad?"DIFFERENT":"SAME")}' restart/COLVAR.h5.txt
+    awk '!/^#/{d=$2-$3; if(d<0) d=-d; if(d>1e-10) bad=1} END{print "restart: o.bias and ot.bias " (bad?"DIFFERENT":"SAME")}' restart/COLVAR.h5.tar.txt
     grep -h "restart step" restart/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
   } > restart_check
 }

@@ -491,12 +491,12 @@ class HDF5IO(unittest.TestCase):
 
         run_dir = self.path.with_name("native-restart")
         run_dir.mkdir()
-        table = run_dir / "COLVAR.h5"
+        table = run_dir / "COLVAR.h5.tar"
         # Seed rows before, at, and after the restart step using only Python.
         initial = pd.DataFrame({"time": [0, 1, 2], "d": [10.0, 20.0, 30.0]})
         plumed.write_pandas(initial, table)
         (run_dir / "plumed.dat").write_text(
-            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.h5\n"
+            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.h5.tar\n"
         )
         trajectory = run_dir / "traj.xyz"
         trajectory.write_text(
@@ -521,7 +521,7 @@ class HDF5IO(unittest.TestCase):
             text=True,
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        result = plumed.read_as_pandas(run_dir / "COLVAR.h5", enable_conversion=False)
+        result = plumed.read_as_pandas(table, enable_conversion=False)
         self.assertEqual(result["time"].tolist(), [0, 1, 2])
         np.testing.assert_allclose(result["d"], [10.0, 1.0, 2.0])
 
