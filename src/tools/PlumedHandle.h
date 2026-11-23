@@ -100,6 +100,8 @@ public:
 /// Internal guest context propagation, including kernels using the local C++ interface.
   void setExchangeStep(bool exchange);
 /// Evaluate a guest without updating it; no new public MD command is introduced.
+/// Loaded guests need API >= 4, or >= 9 for calculationOnly (performCalcNoForces).
+/// These checks establish command availability, not the presence of action fixes.
   void performCalcNoUpdate(bool calculationOnly);
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;

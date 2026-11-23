@@ -113,13 +113,16 @@ void PlumedHandle::performCalcNoUpdate(bool calculationOnly) {
   if(local) {
     local->performCalcNoUpdate(calculationOnly);
   } else {
-    if(calculationOnly) {
-      int api=0;
-      cmd("getApiVersion",&api);
-      if(api<13) {
-        plumed_error()<<"This loaded guest kernel cannot safely evaluate auxiliary nested calculations; use the current kernel";
-      }
+    int api=0;
+    cmd("getApiVersion",&api);
+    if(api<4) {
+      plumed_error()<<"This loaded guest kernel does not support performCalcNoUpdate (requires API >= 4)";
     }
+    if(calculationOnly && api<9) {
+      plumed_error()<<"This loaded guest kernel does not support performCalcNoForces (requires API >= 9)";
+    }
+    // API versions describe command availability, not the action state fixes.
+    // A backported guest retains its API version and must contain those fixes.
     cmd(calculationOnly ? "performCalcNoForces" : "performCalcNoUpdate");
   }
 }

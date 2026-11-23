@@ -436,6 +436,9 @@ void Plumed::prepare() {
 void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   if(root) {
+    // A lambda trial can enable exchange dependencies during prepare(), then
+    // clear the foreign-coordinate flag before calculation. Forward that change.
+    p.setExchangeStep(getExchangeStep());
     p.cmd("setStopFlag",&stop);
   }
   Tensor box=getPbc().getBox();
