@@ -1,4 +1,6 @@
 name: bias
+type: default-on
+use: [core, tools]
 authors: The PLUMED core developers
 description: bias potentials that can be used to force rare events to occur in MD simulations 
 dois: ["10.1021/ct5007086"]

@@ -1,4 +1,6 @@
 name: multicolvar
+type: default-on
+use: [core, tools]
 authors: Gareth Tribello
 description: tools for working with vectors of collective variables
 dois: []

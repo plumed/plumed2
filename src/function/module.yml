@@ -1,6 +1,13 @@
 name: functions
+type: default-on
+use: [core, tools]
 authors: The PLUMED core developers
 description: actions that take arguments as input and that return values
 dois: []
 tags:
   FUNCTION: actions that take in one or multiple arguments and that return one or multiple arguments
+
+# Packaging options: see conda/module-options.md.
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.
+conda: {}

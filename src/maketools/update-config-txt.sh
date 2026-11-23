@@ -81,9 +81,9 @@ modules=$(
 cd ../
 for dir in *
 do
-  if test -f "$dir/module.type"
+  if test -f "$dir/module.yml"
   then
-    mtype="$(cat "$dir/module.type")"
+    mtype="$(maketools/module-header type "$dir/module.yml")" || exit 1
     is=""
     case "$mtype" in
     (always) is=on ;;
@@ -103,7 +103,7 @@ do
     echo "module $dir $is ($mtype)"
   fi
 done
-)
+) || exit 1
 
 {
 echo "# version strings"

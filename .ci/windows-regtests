@@ -48,7 +48,14 @@ mkdir -p "$out"
 
 cd "$root/regtest"
 if [[ $mode = modules ]]; then
-  dirs=$(cd ../src && grep -l default-off */module.type | sed 's|/module.type||')
+  dirs=$(
+    for declaration in "$root"/src/*/module.yml; do
+      if [[ $("$root/src/maketools/module-header" type "$declaration") == default-off ]]; then
+        directory=${declaration%/module.yml}
+        printf '%s\n' "${directory##*/}"
+      fi
+    done
+  )
 else
   dirs="basic gridtools isdb liquid_crystal multicolvar opes refdist secondarystructure"
 fi

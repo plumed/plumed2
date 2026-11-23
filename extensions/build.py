@@ -90,12 +90,10 @@ base_kernel = base / "lib" / f"libplumedKernel.{soext}"
 # USE describes source dependencies. Of these, only omitted modules are separate
 # libraries. No shortcut/action dependency inference is performed.
 def dependencies(name):
-    text = (root / "src" / name / "Makefile").read_text()
-    match = re.search(r"^USE\s*[:?+]?=([^\n]*)", text, re.MULTILINE)
     return [
         dep
-        for dep in (match[1].split() if match else [])
-        if dep not in builtin and (root / "src" / dep / "module.type").exists()
+        for dep in catalog["modules"][name]["source_use"]
+        if dep not in builtin and dep in catalog["modules"]
     ]
 
 
