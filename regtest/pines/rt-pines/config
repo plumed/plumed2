@@ -1,3 +1,11 @@
 type=driver
 plumed_modules=pines
 arg="--plumed plumed.dat --mf_xtc rt_traj.xtc"
+
+# PL_REFRESH=1 requests every candidate atom on each evaluation. Keep the
+# derivative oracle sparse: omitted entries are zero, and indices refer to the
+# complete requested atom list rather than a changing reduced list.
+function plumed_regtest_after() {
+  awk '/^#/ || $3!=0 || $4!=0 || $5!=0 || $6!=0' derivs > sparse
+  mv sparse derivs
+}

@@ -778,7 +778,13 @@ void PINES::prepare() {
   bool heap_refreshed = false;
   bool stale_refresh_prep = false;
   for (int n = 0; n < N_Blocks; n++) {
-    if (steps_since_update[n] == 0 || plumed.getStep() == 0 || driver_mode || (int)vecMaxHeapVecs[n].size() != tot_num_pairs[n]) {
+    if(nstride[n]==1 && !all_g1g2_pairs[n]) {
+      // Select from current coordinates in calculate(), after all candidates
+      // have been shared. A previous-frame reduced list misses accepted swaps.
+      listreduced[n]=listall[n];
+      stale_refresh_prep=true;
+      steps_since_update[n]=-1;
+    } else if (steps_since_update[n] == 0 || plumed.getStep() == 0 || driver_mode || (int)vecMaxHeapVecs[n].size() != tot_num_pairs[n]) {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
       heap_refreshed = true;
     } else if((steps_since_update[n] >= nstride[n] || stale_tolerance[n]) && !all_g1g2_pairs[n]) {
@@ -851,7 +857,9 @@ void PINES::calculate() {
         }
       }
     }
-    for(int n=0; n<N_Blocks; ++n) {
+  }
+  for(int n=0; n<N_Blocks; ++n) {
+    if(refreshGeometry || (nstride[n]==1 && !all_g1g2_pairs[n])) {
       buildMaxHeapVecBlock(n,mypdb,vecMaxHeapVecs[n]);
     }
   }
