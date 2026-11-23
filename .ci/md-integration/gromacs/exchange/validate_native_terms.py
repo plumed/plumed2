@@ -203,9 +203,7 @@ def main():
     # Preserve native startup validation when the PLUMED provider is inactive.
     case = dict(name="identical-native-replicas-rejected", n=2, ranks=1, bias="none")
     root = native.analytic.Suite.setup(suite, case)
-    code = suite.run(
-        common + ["-deffnm", "run"], root, "rejected.log", check=False
-    )
+    code = suite.run(common + ["-deffnm", "run"], root, "rejected.log", check=False)
     diagnostic = " ".join((root / "rejected.log").read_text().split()).lower()
     if not code or not any(
         text in diagnostic for text in ("nothing to exchange", "identical")
