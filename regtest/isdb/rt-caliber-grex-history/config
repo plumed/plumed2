@@ -8,7 +8,10 @@ function plumed_regtest_before() {
     awk -v r=$r 'BEGIN{for(f=0;f<30;f++){print 2; print "10 10 10"; print "X 0 0 0"; printf "X %.15g 0 0\n", 1+(r?1:-1)*0.8/(f+1)}}' > traj.$r.xyz
   done
   mkdir noexchange
-  (cd noexchange; cp ../plumed.dat ../target.dat ../traj.*.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 > out 2> err)
+  if ! (cd noexchange; cp ../plumed.dat ../target.dat ../traj.*.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 > out 2> err); then
+    echo "FAILURE: CALIBER control simulation did not finish"
+    return 1
+  fi
 }
 function plumed_regtest_after() {
   for r in 0 1 ; do

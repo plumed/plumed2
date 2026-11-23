@@ -550,7 +550,10 @@ loaded old guests lacking the required existing commands and KEnRef's stateful
 coupled driver cannot safely provide arbitrary auxiliary evaluations and are
 rejected. Reduced path neighbor lists must be disabled for auxiliary path
 calculations. PINES auxiliary evaluations with reduced candidate lists require
-PL_REFRESH=1; accepting a swap cannot safely reuse the old selected pairs. Python/custom callbacks must ensure their own calculate functions
+PL_REFRESH=1; accepting a swap cannot safely reuse the old selected pairs. PIV
+auxiliary evaluations similarly require UPDATEPIV=1 rather than held values.
+READ reuses its ordinary record from the current step during post-update trials;
+an auxiliary evaluation without such a current ordinary record is rejected. Python/custom callbacks must ensure their own calculate functions
 are free of persistent side effects: the kernel cannot roll back arbitrary
 external globals or file writes, and no new Python callback API is introduced.
 
