@@ -437,6 +437,10 @@ bool Action::getExchangeStep()const {
   return plumed.getExchangeStep();
 }
 
+bool Action::isCalculationOnly()const {
+  return plumed.isCalculationOnly();
+}
+
 std::string Action::cite(const std::string&s) {
   return plumed.cite(s);
 }

@@ -288,15 +288,18 @@ void MovingRestraint::readCheckpoint(CheckpointReader& r) {
 void MovingRestraint::calculate() {
   double ene=0.0;
   double totf2=0.0;
+  const bool trial=isCalculationOnly();
   unsigned narg=getNumberOfArguments();
   long long int now=getStep();
   if(now<=step[0]) {
     kk=kappa[0];
     aa=at[0];
-    oldaa=at[0];
-    oldk=kappa[0];
-    olddpotdk.resize(narg);
-    oldf.resize(narg);
+    if(!trial) {
+      oldaa=at[0];
+      oldk=kappa[0];
+      olddpotdk.resize(narg);
+      oldf.resize(narg);
+    }
   } else if(now>=step[step.size()-1]) {
     kk=kappa[step.size()-1];
     aa=at[step.size()-1];
@@ -333,7 +336,7 @@ void MovingRestraint::calculate() {
       f[i]=0.0;
       dpotdk[i]=0.0;
     }
-    if(oldaa.size()==aa.size() && oldf.size()==f.size()) {
+    if(!trial && oldaa.size()==aa.size() && oldf.size()==f.size()) {
       work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     }
     valueWork[i]->set(work[i]);
@@ -343,10 +346,12 @@ void MovingRestraint::calculate() {
     totf2+=f[i]*f[i];
   }
   valueTotWork->set(tot_work);
-  oldf=f;
-  oldaa=aa;
-  oldk=kk;
-  olddpotdk=dpotdk;
+  if(!trial) {
+    oldf=f;
+    oldaa=aa;
+    oldk=kk;
+    olddpotdk=dpotdk;
+  }
   setBias(ene);
   valueForce2->set(totf2);
 }

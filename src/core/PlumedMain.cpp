@@ -1561,7 +1561,7 @@ void PlumedMain::performCalcNoUpdate() {
 
 void PlumedMain::performCalcNoForces() {
   waitData();
-  justCalculate();
+  justCalculate(true);
 }
 
 void PlumedMain::performCalc() {
@@ -1646,10 +1646,19 @@ void PlumedMain::launchReady(const std::size_t done) {
   launchQueue.resize(kept);
 }
 
-void PlumedMain::justCalculate() {
+void PlumedMain::justCalculate(bool calculationOnly) {
   if(!active) {
     return;
   }
+  // Restore the context even if an action throws, or an evaluation is nested.
+  struct RestoreContext {
+    bool& flag;
+    bool previous;
+    ~RestoreContext() {
+      flag=previous;
+    }
+  } restore {calculationOnly_,calculationOnly_};
+  calculationOnly_=calculationOnly || exchangeStep;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;

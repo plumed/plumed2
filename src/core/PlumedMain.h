@@ -295,6 +295,8 @@ private:
   bool useLaunch=false;
 /// Counts the forward loops, see Action::forwardLoop
   std::uint64_t forwardLoop=0;
+/// Internal evaluation context; no additional MD command or API version is needed.
+  bool calculationOnly_=false;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
   std::uint64_t atomsVersion=0;
 /// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
@@ -445,7 +447,11 @@ public:
   /**
     Perform the forward loop on active actions.
   */
-  void justCalculate();
+  void justCalculate(bool calculationOnly=false);
+/// Whether this forward evaluation must leave persistent action state unchanged.
+  bool isCalculationOnly() const {
+    return calculationOnly_ || exchangeStep;
+  }
   /**
     Backward propagate and update.
     Shortcut for backwardPropagate() + update()

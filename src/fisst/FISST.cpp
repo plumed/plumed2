@@ -591,7 +591,8 @@ void FISST::writeOutObservable() {
 
 
 void FISST::calculate() {
-  if(getStep() == 0 ) {
+  const bool trial=isCalculationOnly();
+  if(getStep() == 0 && !trial) {
     if(b_write_restart_) {
       writeOutRestart();
     }
@@ -600,7 +601,7 @@ void FISST::calculate() {
     }
   }
 
-  if(! b_freeze_) {
+  if(! b_freeze_ && !trial) {
     if(b_restart_ && b_first_restart_sample_) {
       //dont' update statistics if restarting and first sample
       b_first_restart_sample_ = false;
@@ -612,11 +613,11 @@ void FISST::calculate() {
   apply_bias();
 
   //check about writing restart file
-  if(b_write_restart_ && getStep()>0 && getStep()%period_==0) {
+  if(!trial && b_write_restart_ && getStep()>0 && getStep()%period_==0) {
     writeOutRestart();
   }
   // observable_freq_ is zero (and the modulo is a division by zero) without OUT_OBSERVABLE
-  if(b_write_observable_ && getStep()>0 && getStep()%observable_freq_==0) {
+  if(!trial && b_write_observable_ && getStep()>0 && getStep()%observable_freq_==0) {
     compute_observable_weight();
     writeOutObservable();
   }

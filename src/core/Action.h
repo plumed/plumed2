@@ -433,6 +433,9 @@ public:
   virtual void readAtomsFromPDB( const PDB&  ) {}
 /// Check if we are on an exchange step
   bool getExchangeStep()const;
+/// True for auxiliary forward evaluations, including GREX and no-force trials.
+/// This is an internal action contract, not a new MD command.
+  bool isCalculationOnly()const;
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);
