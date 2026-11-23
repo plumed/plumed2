@@ -29,8 +29,8 @@ int runProbe(int argc,char**argv) {
   if(action=="coordination") {
     p.cmd("readInputLine","c: COORDINATION GROUPA=1 GROUPB=2 R_0=0.7 NLIST NL_CUTOFF=2.5 NL_STRIDE=10 NOPBC");
     p.cmd("readInputLine","a: RESTRAINT ARG=c AT=0 KAPPA=1");
-  } else if(action=="piv") {
-    p.cmd("readInputLine","c: PIV PRECISION=100000 REF_FILE=ref.pdb PIVATOMS=1 ATOMTYPES=AR ONLYDIRECT SFACTOR=1 SORT=1 SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");
+  } else if((action=="piv" || action=="piv-cadence")) {
+    p.cmd("readInputLine",std::string("c: PIV ")+(action=="piv-cadence" ? "UPDATEPIV=10 " : "")+"PRECISION=100000 REF_FILE=ref.pdb PIVATOMS=1 ATOMTYPES=AR ONLYDIRECT SFACTOR=1 SORT=1 SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");
     p.cmd("readInputLine","a: RESTRAINT ARG=c AT=0 KAPPA=1");
   } else if((action=="pines" || action=="pines-cadence")) {
     p.cmd("readInputLine","c: PINES REF_FILE=ref.pdb N_BLOCKS=1 BLOCK1={G1={ATOMID=0} G2={ATOMID={1 2}} SIZE=1 BUFFER=0 PL_REFRESH="+(action=="pines-cadence" ? std::string("10") : std::string("1"))+"} SWITCH1={RATIONAL R_0=0.7 MM=12 NN=4}");

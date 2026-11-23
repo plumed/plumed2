@@ -56,6 +56,15 @@ int main() {
   if(evaluate("coordination",0).normal!=evaluate("coordination",6).normal) {
     throw std::runtime_error("duplicate preparation lost the post-trial list rebuild");
   }
+  bool pivRejected=false;
+  try {
+    evaluate("piv-cadence",1);
+  } catch(const std::exception& error) {
+    pivRejected=std::string(error.what()).find("require UPDATEPIV=1")!=std::string::npos;
+  }
+  if(!pivRejected) {
+    throw std::runtime_error("unsafe held PIV trial value was accepted");
+  }
   bool pinesRejected=false;
   try {
     evaluate("pines-cadence",1);

@@ -245,7 +245,7 @@ void PIV::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ATOMTYPES","The atom types to use for PIV.");
   keys.add("optional","SFACTOR","Scale the PIV-distance by such block-specific factor");
   keys.add("optional","VOLUME","Scale atom-atom distances by the cubic root of the cell volume. The input volume is used to scale the R_0 value of the switching function. ");
-  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated.");
+  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated. Auxiliary replica/lambda or no-force evaluations require UPDATEPIV=1.");
   keys.addFlag("TEST",false,"Print the actual and reference PIV and exit");
   keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as specified in the Pdb file");
   keys.addFlag("ONLYCROSS",false,"Use only cross-terms (A-B, A-C, B-C, ...) in PIV");
@@ -362,6 +362,9 @@ PIV::PIV(const ActionOptions&ao):
   // UPDATEPIV
   if(keywords.exists("UPDATEPIV")) {
     parse("UPDATEPIV",updatePIV);
+  }
+  if(updatePIV<1) {
+    error("UPDATEPIV must be greater than zero");
   }
 
   // Test
@@ -782,6 +785,9 @@ PIV::PIV(const ActionOptions&ao):
 }
 
 void PIV::calculate() {
+  if(isCalculationOnly() && updatePIV!=1) {
+    error("Auxiliary PIV evaluations require UPDATEPIV=1; held values cannot safely follow replica or lambda trials");
+  }
 
   // Local variables
 
