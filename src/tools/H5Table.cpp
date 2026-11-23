@@ -81,17 +81,6 @@ bool getOctal(const char* p,unsigned n,unsigned long long& v) {
   return true;
 }
 
-bool getDecimal(const std::string& t,unsigned long long& v) {
-  v=0;
-  for(const char c : t) {
-    if(c<'0' || c>'9' || v>(~0ULL)/10-9) {
-      return false;
-    }
-    v=v*10+(c-'0');
-  }
-  return !t.empty();
-}
-
 /// a valid ustar header, and the size of its entry
 /// (POSIX ustar, pax and GNU formats; the size in octal, or in base 256 as GNU tar writes large sizes)
 bool validTarHeader(const char* h,unsigned long long& size) {
@@ -671,6 +660,17 @@ std::vector<char> tableImage(const Signature& s,std::vector<Column>& columns,con
 // that is not published, or whose header was written in part: the readers ignore it, and the
 // writer removes it when it appends to the archive.
 
+bool getDecimal(const std::string& t,unsigned long long& v) {
+  v=0;
+  for(const char c : t) {
+    if(c<'0' || c>'9' || v>(~0ULL)/10-9) {
+      return false;
+    }
+    v=v*10+(c-'0');
+  }
+  return !t.empty();
+}
+
 unsigned long long tarPadded(unsigned long long n) {
   return (n+tarRecord-1)/tarRecord*tarRecord;
 }
@@ -1235,7 +1235,7 @@ bool Reader::getline(std::string& line) {
 namespace {
 /// call f(file,signature,columns,rows) for every block of every file of a table, with the columns open
 template<class F>
-void forEachBlock(Files& files,const std::string& path,F f,std::size_t from=0) {
+void forEachBlock(Files& files,const std::string& path,const F& f,std::size_t from=0) {
   for(std::size_t k=from; k<files.size(); k++) {
     Id file=files.open(k);
     const unsigned nb=countBlocks(file);

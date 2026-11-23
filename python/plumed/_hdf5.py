@@ -334,8 +334,10 @@ class _Reader:
                 h5py = _h5py()
                 handle = file
                 if not hasattr(file, "read"):
-                    # closed by the stack, with the reader
-                    handle = self.stack.enter_context(open(file, "rb"))  # noqa: SIM115
+                    # kept open with the reader, closed by its stack
+                    self.archive = open(file, "rb")  # noqa: SIM115
+                    self.stack.callback(self.archive.close)
+                    handle = self.archive
                 self.blocks = []
                 for source, offset, size in _archive_members(handle, _name(file)):
                     member = self.stack.enter_context(
