@@ -143,6 +143,13 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
         plumed_->cmd("setNumOMPthreads", &numOmpThreads);
     }
 
+    if (plumedAPIversion_ > 9 && options.gpuDeviceId_ >= 0)
+    {
+        /* The PLUMED actions that run on a GPU use the GPU of this rank,
+           instead of guessing it from the CUDA context of the calling thread. */
+        plumed_->cmd("setGpuDeviceId", &options.gpuDeviceId_);
+    }
+
     if (isMultiSim(options.ms_))
     {
         if (MAIN(options.cr_))
@@ -221,7 +228,11 @@ try
     plumed_->cmd("setPositions", &(forceProviderInput.x_.data()->as_vec()[0]));
     plumed_->cmd("setMasses", forceProviderInput.massT_.data());
     plumed_->cmd("setCharges", forceProviderInput.chargeA_.data());
-    plumed_->cmd("setBox", &forceProviderInput.box_[0][0]);
+    /* PLUMED keeps the pointer and reads the box when it calculates. When it needs the energy
+       that happens in applyAfterPotentialEnergy(), after forceProviderInput (which owns its
+       copy of the box) has been destroyed: PLUMED is given a copy that lives as long as this object. */
+    copy_mat(forceProviderInput.box_, plumedBox_);
+    plumed_->cmd("setBox", &plumedBox_[0][0]);
 
     if (preparedStep_ == lstep)
     {

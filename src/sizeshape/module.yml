@@ -1,4 +1,6 @@
 name: sizeshape
+type: default-off
+use: [core, tools, colvar]
 authors: Subarna Sasmal and Glen M Hocky
 description: Linear projection in size and shape space
 dois: ["10.1021/acs.jctc.3c00051", "10.1021/acs.jctc.1c01290"]

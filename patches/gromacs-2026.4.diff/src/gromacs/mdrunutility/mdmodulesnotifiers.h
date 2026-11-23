@@ -308,9 +308,20 @@ struct PlumedInputFilename
     std::optional<std::string> plumedFilename_{};
     //! Whether replica exchange is active (-replex), needed by PLUMED's GREX setup
     bool replex_{};
+    //! Whether general Hamiltonian exchange was requested with -hrex.
+    bool hrex_{};
     //! The input record: after a restart from a checkpoint its init_step is the step from which
     //! the simulation continues, which PLUMED needs (it is read when the module is set up)
     const t_inputrec* inputrec_{};
+};
+
+/*! \libinternal \brief Provides the GPU used by this rank to the PLUMED module,
+ *  for the PLUMED actions that run on a GPU
+ */
+struct PlumedGpuDevice
+{
+    //! The index of the GPU as CUDA numbers it, -1 if there is none or GROMACS does not use CUDA
+    int id_{ -1 };
 };
 
 /*! \libinternal \brief Provides the constant ensemble temperature
@@ -519,6 +530,7 @@ struct MDModulesNotifiers
      *                              Allows a modules to indicate whether it
      *                              handle short-range coulomb interactions
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
+     * \tparam PlumedGpuDevice& Allows the PLUMED module to know the GPU used by this rank
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -538,7 +550,8 @@ struct MDModulesNotifiers
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
                            MDModulesDirectProvider*,
-                           const PlumedInputFilename&>::type simulationSetupNotifier_;
+                           const PlumedInputFilename&,
+                           const PlumedGpuDevice&>::type simulationSetupNotifier_;
 
     /*! \brief Handles subscribing and calling callbacks during a running simulation.
      *

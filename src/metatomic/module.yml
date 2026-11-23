@@ -1,4 +1,15 @@
 name: metatomic
+type: default-off
+use: [core]
 authors: Guillaume Fraux
 description: Using arbitrary machine learning models as collective variables
 dois: []
+
+# Packaging options: see conda/module-options.md.
+# The native interface in this source supports metatomic-torch 0.1.12 through 0.1.x.
+conda:
+  requirements:
+    host: ['libmetatomic-torch >=0.1.12,<0.2', libmetatensor-torch, libmetatensor, libtorch
+        * cpu_generic*]
+    run: ['libmetatomic-torch >=0.1.12,<0.2', libmetatensor-torch, libmetatensor, libtorch
+        * cpu_generic*]

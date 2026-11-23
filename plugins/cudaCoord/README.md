@@ -29,9 +29,11 @@ The tests are run in the same way, with `make USE_HIP=1 check` and `make USE_HIP
 
 ### How to tests
 
-Assuming you are using this plugin from the plugin directory of a plumed source directory:
- - `cd regtest; ln -s ../../../regtest/scripts .`
- - `make check`
+From the plugin directory of a plumed source directory (`regtest/scripts` links to the scripts of the plumed regtests):
+ - `make check` runs all the tests (it needs a GPU)
+ - `make check-nogpu` runs only the tests that do not need a GPU (in `regtest/nogpu`: loading the plugin, input errors, the error when there is no GPU)
+
+The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits and runs `make check-nogpu`.
 
 ## Limitations
 
@@ -43,11 +45,13 @@ Assuming you are using this plugin from the plugin directory of a plumed source 
 
 ## Which GPU is used
 
-The GPU is chosen as in the openaccPTM plugin, so that the two behave in the same way on a node with several GPUs:
-the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId` command; the GROMACS 2024 patch does it), otherwise
-the GPU the MD code is using (the current one of the CUDA runtime when the action is created, by default the first one;
-with `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log (e.g. `c runs on GPU 1` for an
-action labelled `c`). With MPI only the first rank uses the GPU.
+The GPU is chosen by PLUMED (`PLMD::GpuDevice`, in `src/core/GpuDevice.h`) as for the openaccPTM plugin, so that the two
+behave in the same way on a node with several GPUs: the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId`
+command, as the GROMACS and NAMD patches do when GROMACS or NAMD use CUDA), otherwise the GPU the MD code is using (the
+one whose CUDA context is current when the action is created), otherwise, with several GPUs, the rank of the process in
+its node modulo the number of GPUs, otherwise the current one of the CUDA runtime (by default the first one; with
+`CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
+(e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
 Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
 `make check-gpu` (on a node with GPUs; `make USE_HIP=1 check-gpu` for AMD GPUs) checks this, see `../openaccPTM/gpucheck`.
 
@@ -68,4 +72,4 @@ Since PLUMED receives the positions and returns the forces through host memory, 
 
 ## Current TODO
  
- - Integrate the CI
+ - Run the GPU tests in CI (it needs a runner with a GPU)

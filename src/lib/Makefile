@@ -3,7 +3,11 @@
 VERSION = $(shell if test -f ../../VERSION.txt ; then grep -v \\\# ../../VERSION.txt ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
-KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
+selected_modules := $(shell ../maketools/find_modules.sh || echo __INVALID_MODULE_HEADER__)
+ifneq ($(filter __INVALID_MODULE_HEADER__,$(selected_modules)),)
+$(error Invalid module.yml; see the diagnostic above)
+endif
+KERNEL_MODULES := $(addprefix ../,$(selected_modules))
 
 # This adds modules which are built anyway and linked with some ad hoc procedure
 DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
@@ -353,10 +357,7 @@ ifdef python_bin
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/python"
 	cp -R install/python/plumed "$(DESTDIR)$(libdir)/$(program_name)/python/"
 endif
-ifdef BASH_COMPLETION_DIR
-	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
-	cp bash.completion "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
-endif
+	$(MAKE) install-bash-completion
 	mkdir -p "$(DESTDIR)$(libdir)/$(program_name)/fortran"
 	cp ../../fortran/plumed.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
 	cp ../../fortran/plumed_f08.f90 "$(DESTDIR)$(libdir)/$(program_name)/fortran/"
@@ -466,6 +467,19 @@ install/python.stamp: ../../python/plumed.c ../../python/plumed.pyx ../../python
 	touch $@
 endif
 
+# Render the command binding at install time, including configured suffixes.
+.PHONY: install-bash-completion uninstall-bash-completion
+install-bash-completion:
+ifdef BASH_COMPLETION_DIR
+	mkdir -p "$(DESTDIR)$(BASH_COMPLETION_DIR)"
+	bash -c 'cat "$$1"; printf "\ncomplete -F _plumed -o default -o filenames %q\n" "$$2"' bash-completion bash.completion "$(program_name)" > "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
+endif
+
+uninstall-bash-completion:
+ifdef BASH_COMPLETION_DIR
+	rm -f "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
+endif
+
 uninstall:
 	@echo WARNING
 	@echo I will remove the following files now
@@ -477,8 +491,12 @@ uninstall:
 	@echo "$(DESTDIR)$(bindir)/$(program_name)-config"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name).$(SOEXT)"
 	@echo "$(DESTDIR)$(libdir)/lib$(program_name)Kernel.$(SOEXT)"
+ifdef BASH_COMPLETION_DIR
+	@echo "$(DESTDIR)$(BASH_COMPLETION_DIR)/$(program_name)"
+endif
 	../maketools/confirm_uninstall
 	@echo Removing previously installed files
+	$(MAKE) uninstall-bash-completion
 	rm -fr "$(DESTDIR)$(libdir)/$(program_name)"
 	rm -fr "$(DESTDIR)$(htmldir)"
 	rm -fr "$(DESTDIR)$(includedir)/$(program_name)"

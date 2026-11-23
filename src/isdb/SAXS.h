@@ -98,6 +98,11 @@ private:
   std::unique_ptr<SAXSDebyeBackend> backend_;
   // the form factors as a single array, ff_flat_[i*numq+k], for the backend
   std::vector<double> ff_flat_;
+  // the positions of the beads (of the atoms without ONEBEAD), computed in launch()
+  std::vector<Vector> beads_pos_;
+  // isFirstStep and random_deut_ before launch(), restored by cancelLaunch()
+  bool launchFirstStep_=true;
+  Random launchRandomDeut_;
   bool onebead;
   bool resolution;
   bool chi2;
@@ -273,6 +278,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit SAXS(const ActionOptions&);
+  // makeWhole, positions of the beads, form factors and, with USEGPU, the Debye sum is queued on the GPU
+  void launch() override;
+  void cancelLaunch() override;
   void calculate() override;
 };
 

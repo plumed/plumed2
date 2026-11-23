@@ -6,7 +6,7 @@
 !/*.h
 !/Makefile
 !/README
-!/module.type
+!/module.yml
 !/COPYRIGHT
 !/import.sh
 !/import.py

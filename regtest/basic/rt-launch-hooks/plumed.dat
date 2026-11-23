@@ -1,0 +1,43 @@
+# Action::launch(): LAUNCH_TEST writes in the file "order" when it is called, and computes
+# the sum of the x coordinates of its atoms from the positions it had in launch().
+# The same sums are computed with POSITION.
+LOAD FILE=LaunchTest.cpp
+
+# h depends on a constant, which is never calculated, and on p12: it is launched as soon as p12 is calculated
+c01: CONSTANT VALUE=0.1
+p12: POSITION ATOM=12 NOPBC
+h: LAUNCH_TEST_ARG ARG=c01,p12.x
+# a and b are launched as soon as the positions are available: before p12 and h, which come first in the input
+a: LAUNCH_TEST ATOMS=1,2
+d: DISTANCE ATOMS=1,2
+b: LAUNCH_TEST ATOMS=3,4
+# e depends on c: it is launched after c is calculated
+c: CENTER ATOMS=5,6
+e: LAUNCH_TEST ATOMS=c,7
+p1: POSITION ATOM=1 NOPBC
+p2: POSITION ATOM=2 NOPBC
+p3: POSITION ATOM=3 NOPBC
+p4: POSITION ATOM=4 NOPBC
+pc: POSITION ATOM=c NOPBC
+p7: POSITION ATOM=7 NOPBC
+# f comes after an action that moves the atoms. At the first step this is not known yet:
+# f is launched with a and b, and the launch is cancelled. Then it is launched after FIT_TO_TEMPLATE
+FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=SIMPLE
+f: LAUNCH_TEST ATOMS=8,9
+p8: POSITION ATOM=8 NOPBC
+p9: POSITION ATOM=9 NOPBC
+# with numerical derivatives it is never launched
+g: LAUNCH_TEST ATOMS=10,11 NUMERICAL_DERIVATIVES
+p10: POSITION ATOM=10 NOPBC
+p11: POSITION ATOM=11 NOPBC
+
+# the squared differences: all zero
+da: CUSTOM ARG=a,p1.x,p2.x FUNC=(x-y-z)^2 PERIODIC=NO
+db: CUSTOM ARG=b,p3.x,p4.x FUNC=(x-y-z)^2 PERIODIC=NO
+de: CUSTOM ARG=e,pc.x,p7.x FUNC=(x-y-z)^2 PERIODIC=NO
+df: CUSTOM ARG=f,p8.x,p9.x FUNC=(x-y-z)^2 PERIODIC=NO
+dg: CUSTOM ARG=g,p10.x,p11.x FUNC=(x-y-z)^2 PERIODIC=NO
+dh: CUSTOM ARG=h,p12.x FUNC=(x-0.1-y)^2 PERIODIC=NO
+PRINT ARG=a,b,e,f,g,da,db,de,df,dg,h,dh FILE=colvar FMT=%8.4f
+
+RESTRAINT ARG=a,d,b,e,f,h AT=0,0,0,0,0,0 SLOPE=1,2,3,4,5,6

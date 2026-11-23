@@ -69,7 +69,7 @@ void retainRuntime() {
 
 ///singleton struct to treat the openMP setting as a global variables, but with a layer of encapsulation
 struct OpenMPVars {
-  unsigned cacheline_size=512;
+  unsigned cacheline_size=4096;
   bool cache_set=false;
   unsigned num_threads=1;
   bool nt_env_set=false;

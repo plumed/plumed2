@@ -121,9 +121,9 @@ plumed --version        # runs with no module / no LD_LIBRARY_PATH
 - At **build time**, `libc++` must also be on `LD_LIBRARY_PATH` (configure runs test programs that have no
   rpath yet) — normally provided by loading your compiler/toolchain module.
 
-## Patching GROMACS (2026.x)
+## Patching GROMACS (2026.4)
 
-Running KEnRef-on-PLUMED-**on-GROMACS** needs GROMACS **2026.x (pref. 2026.4)**, patched with `plumed patch`
+Running KEnRef-on-PLUMED-**on-GROMACS** needs GROMACS **2026.4**, patched with `plumed patch`
 (native `-DGMX_USE_PLUMED=ON` compiles but isn't full integration on its own). `build-and-patch.sh` does this;
 manually:
 

@@ -49,6 +49,20 @@ int main(int, char **) {
     }
     report << "\n";
   }
+  {
+    // with the link cells all the pairs are never stored: no error, even beyond the unsigned limit
+    report << "Single list, link cells:\n";
+    std::string prepend="["+std::to_string(nat0)+"]";
+    try{
+      auto nl = NeighborList(list0, serial, do_pbc, pbc, cm, 0.1, 1, true);
+      report << prepend << "Constructed, ready before the first update: "
+              << check(!nl.ready());
+    } catch ( PLMD::Exception & error ){
+      report << prepend <<"Exception text: "
+              << error.what();
+    }
+    report << "\n";
+  }
   //doing the same thing with two lists
   
   std::vector<AtomNumber> list1(nat1);

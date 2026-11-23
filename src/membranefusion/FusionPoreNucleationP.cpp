@@ -21,6 +21,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "colvar/Colvar.h"
 #include "core/ActionRegister.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include <cmath>
 #ifdef _OPENMP
 #if _OPENMP >= 201307
@@ -254,7 +255,7 @@ void fusionPoreNucleationP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(uMemAngle, lMemAngle) reduction(+:ZuMemcos, ZuMemsin, ZlMemcos, ZlMemsin)
 #endif
 #endif
   for (unsigned i = 0; i < UMEM.size(); i++) {
@@ -333,7 +334,7 @@ void fusionPoreNucleationP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(ZTailDistance, PositionS_Mem, s1_Mem, s2_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(ZTailDistance, PositionS_Mem, s1_Mem, s2_Mem, TailPosition, x, aux) reduction(vec_double_plus:Fs_Mem, sx_Mem, sy_Mem, cx_Mem, cy_Mem)
 #endif
 #endif
   for (unsigned i = 0; i < TAILS.size(); i++) {
@@ -489,7 +490,7 @@ void fusionPoreNucleationP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(distCylinder, aux, condition1, condition2, condition3, ZMemDistance, PositionS, Position, x) reduction(vec_double_plus:Fs, sx, sy, cx, cy)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(distCylinder, aux, condition1, condition2, condition3, ZMemDistance, PositionS, Position, x) reduction(vec_double_plus:Fs, sx, sy, cx, cy)
 #endif
 #endif
   for (unsigned i = 0; i < chainBeads; i++) {
@@ -636,7 +637,7 @@ void fusionPoreNucleationP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(d_Xsc_dx,d_Xcc_dx,d_Ysc_dy,d_Ycc_dy,d_Xsc_dz,d_Xcc_dz,d_Ysc_dz,d_Ycc_dz,d_sx_dx,d_sy_dy,d_cx_dx,d_cy_dy,d_sx_dz,d_sy_dz,d_cx_dz,d_cy_dz,d_ws_dz,ri,x,fradial) reduction(vec_double_plus: Nsp, Axs, Ays)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(d_Xsc_dx,d_Xcc_dx,d_Ysc_dy,d_Ycc_dy,d_Xsc_dz,d_Xcc_dz,d_Ysc_dz,d_Ycc_dz,d_sx_dx,d_sy_dy,d_cx_dx,d_cy_dy,d_sx_dz,d_sy_dz,d_cx_dz,d_cy_dz,d_ws_dz,ri,x,fradial) reduction(vec_double_plus: Nsp, Axs, Ays)
 #endif
 #endif
   for (unsigned i = 0; i < chainBeads; i++) {
@@ -726,7 +727,7 @@ void fusionPoreNucleationP::calculate() {
 
 #ifdef _OPENMP
 #if _OPENMP >= 201307
-  #pragma omp parallel for private(aux)
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads()) private(aux)
 #endif
 #endif
   for (unsigned i = 0; i < chainBeads; i++) {

@@ -22,7 +22,7 @@
 #define __PLUMED_cuda_helpers_cuh
 
 #include "cuda_to_hip.h"
-
+#include "plumed/core/GpuDevice.h"
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/View.h"
@@ -43,23 +43,22 @@ inline void cudaCheck (cudaError_t const err, const char *what) {
   }
 }
 
-/// @brief chooses the GPU of an action, with the same rule as the openaccPTM
-/// plugin (see plugins/openaccPTM/src/ACCDevice.h): the GPU assigned to PLUMED
-/// by the MD code (cmd "setGpuDeviceId"), otherwise the GPU the MD code is
-/// using (the current one of the CUDA runtime, by default the first one)
-/// @param mdDevice the GPU assigned by the MD code (PlumedMain::getGpuDeviceId), -1 if none
+/// @brief chooses the GPU of an action and writes it in its log. The choice is
+/// made by PLUMED (PLMD::GpuDevice in core/GpuDevice.h), as for the openaccPTM
+/// plugin: the GPU assigned to PLUMED by the MD code (cmd "setGpuDeviceId"),
+/// otherwise the GPU the MD code is using, otherwise, with several GPUs, the rank
+/// of the process in its node modulo the number of GPUs, otherwise the current
+/// one of the CUDA runtime (by default the first one)
 /// @return the GPU, -1 if there is none
-inline int chooseGPU (int const mdDevice) {
-  int ndevices = 0;
-  if (cudaGetDeviceCount (&ndevices) != cudaSuccess || ndevices == 0) {
+inline int chooseGPU (const PLMD::Action &action) {
+  PLMD::GpuDevice::Runtime runtime;
+  if (cudaGetDeviceCount (&runtime.ndevices) != cudaSuccess || runtime.ndevices <= 0) {
     return -1;
   }
-  if (mdDevice >= 0 && mdDevice < ndevices) {
-    return mdDevice;
-  }
-  int current = 0;
-  cudaCheck (cudaGetDevice (&current), "cudaGetDevice");
-  return current;
+  // before the runtime of the plugin is used in this thread
+  runtime.callerDevice = PLMD::GpuDevice::callerCudaDevice();
+  cudaCheck (cudaGetDevice (&runtime.runtimeDevice), "cudaGetDevice");
+  return PLMD::GpuDevice::choose (action, runtime);
 }
 
 /// @brief makes a GPU the current one, and then gives back to the caller (the MD

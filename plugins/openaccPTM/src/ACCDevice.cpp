@@ -22,10 +22,12 @@
 #include "ACCDevice.h"
 
 #include "plumed/core/Action.h"
-#include "plumed/core/PlumedMain.h"
+#include "plumed/core/GpuDevice.h"
 #include "plumed/tools/Log.h"
 
 #include <openacc.h>
+
+#include <cstdlib>
 
 #if defined(PLUMED_OPENACC_GPU) && defined(__linux__)
 #include <dlfcn.h>
@@ -43,12 +45,10 @@ namespace {
 struct CudaDriver {
   typedef int (*getCurrent_t)(void**);
   typedef int (*setCurrent_t)(void*);
-  typedef int (*getDevice_t)(int*);
   getCurrent_t getCurrent=nullptr;
   setCurrent_t setCurrent=nullptr;
-  getDevice_t getDevice=nullptr;
   bool ok() const {
-    return getCurrent && setCurrent && getDevice;
+    return getCurrent && setCurrent;
   }
 };
 
@@ -62,7 +62,6 @@ const CudaDriver& cudaDriver() {
       CudaDriver d;
       d.getCurrent=reinterpret_cast<CudaDriver::getCurrent_t>(dlsym(lib,"cuCtxGetCurrent"));
       d.setCurrent=reinterpret_cast<CudaDriver::setCurrent_t>(dlsym(lib,"cuCtxSetCurrent"));
-      d.getDevice=reinterpret_cast<CudaDriver::getDevice_t>(dlsym(lib,"cuCtxGetDevice"));
       if(d.ok()) {
         driver=d;
       }
@@ -101,33 +100,19 @@ public:
 
 }
 
-int currentCudaDevice() {
-  const auto & cu=cudaDriver();
-  void* ctx=nullptr;
-  int dev=-1;
-  if(cu.ok() && cu.getCurrent(&ctx)==0 && ctx && cu.getDevice(&dev)==0) {
-    return dev;
-  }
-  return -1;
-}
-
 int Device::resolve(const Action& action) {
   if(!resolved_) {
     resolved_=true;
     // the device of the caller, before its context is removed
-    const int caller=currentCudaDevice();
+    GpuDevice::Runtime runtime;
+    runtime.callerDevice=GpuDevice::callerCudaDevice();
     NoCurrentContext noContext;
-    const int ndevices=acc_get_num_devices(acc_device_not_host);
-    if(ndevices>0) {
-      const int md=action.plumed.getGpuDeviceId();
-      if(md>=0 && md<ndevices) {
-        id_=md;
-      } else if(caller>=0 && caller<ndevices) {
-        id_=caller;
-      } else {
-        id_=acc_get_device_num(acc_device_not_host);
-      }
-      action.log.printf("  %s runs on GPU %d\n",action.getLabel().c_str(),id_);
+    runtime.ndevices=acc_get_num_devices(acc_device_not_host);
+    if(runtime.ndevices>0) {
+      runtime.runtimeDevice=acc_get_device_num(acc_device_not_host);
+      runtime.runtimeDeviceSetByUser=std::getenv("ACC_DEVICE_NUM") || std::getenv("NVCOMPILER_ACC_DEVICE_NUM")
+                                     || std::getenv("PGI_ACC_DEVICE_NUM");
+      id_=GpuDevice::choose(action,runtime);
     } else {
       action.log.printf("  %s runs on the host (no GPU available to OpenACC)\n",action.getLabel().c_str());
     }

@@ -4,6 +4,8 @@ Single list:
 (tools/NeighborList.cpp:###) void PLMD::NeighborList::initialize()
 A NeighborList is trying to allocate ## GB of data for the list of neighbors
 You can skip this error by exporting "PLUMED_IGNORE_NL_MEMORY_ERROR"
+Single list, link cells:
+[100000]Constructed, ready before the first update: pass
 Double list, no pairs:
 [100000, 90000]Exception text: 
 (tools/NeighborList.cpp:###) void PLMD::NeighborList::initialize()

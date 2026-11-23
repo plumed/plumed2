@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/PlumedModules.cmake")
+
 # CMake-native reimplementation of the PLUMED build-time generators.
 #
 # Mirrors maketools/makecmd, makeModuleMap, xxd, update-version.sh and the
@@ -35,7 +37,7 @@ endfunction()
 # contains it (same content as maketools/makeModuleMap).
 function(plumed_make_module_map src_root out_file)
   set(_rows "")
-  file(GLOB _mt_files "${src_root}/src/*/module.type")
+  file(GLOB _mt_files "${src_root}/src/*/module.yml")
   file(GLOB _plugin_dirs "${src_root}/plugins/*")
   foreach(_plugin IN LISTS _plugin_dirs)
     if(IS_DIRECTORY "${_plugin}")
@@ -149,6 +151,7 @@ endfunction()
 
 # --- Config.inc / version.h / Makefile.conf.xxd --------------------------
 function(plumed_generate_config src_root out_dir)
+  plumed_check_obsolete_modules("${src_root}")
   plumed_read_version("${src_root}")
 
   # Config.inc: the substitutions that src/config/Makefile does with sed for
@@ -178,9 +181,9 @@ function(plumed_generate_config src_root out_dir)
   # selected CMake modules and a build-system-specific source/toolchain hash.
   if(NOT DEFINED MODULES)
     set(MODULES "")
-    file(GLOB _types "${src_root}/src/*/module.type")
+    file(GLOB _types "${src_root}/src/*/module.yml")
     foreach(_type IN LISTS _types)
-      file(STRINGS "${_type}" _kind LIMIT_COUNT 1)
+      plumed_read_module("${_type}" _kind _use)
       if(_kind STREQUAL "always" OR _kind STREQUAL "default-on")
         get_filename_component(_directory "${_type}" DIRECTORY)
         get_filename_component(_module "${_directory}" NAME)
@@ -200,6 +203,8 @@ function(plumed_generate_config src_root out_dir)
       string(APPEND _identity ";${_relative}:${_digest}")
     endif()
   endforeach()
+  plumed_module_headers("${src_root}" _headers)
+  string(APPEND _identity "${_headers}")
   file(SHA256 "${src_root}/CMakeLists.txt" _cmake_digest)
   string(SHA256 _build_id "${_identity};${_cmake_digest}")
   file(WRITE "${out_dir}/ModuleBuild.inc"
@@ -222,34 +227,34 @@ function(plumed_generate_config src_root out_dir)
   message(STATUS "  Config.inc / version.h / Makefile.conf.xxd (version ${PLUMED_VERSION_LONG}, git ${PLUMED_VERSION_GIT})")
 endfunction()
 
-# --- completion.xxd ------------------------------------------------------
-# Same content as { make-scripts-options.sh ; cat completion.sh ; } | xxd.
-# The scripts are run only if bash is available; otherwise a minimal set of
-# global options is embedded (the completion cltool only prints this text).
+# --- completion.xxd / completion-scripts.h ------------------------------
+# Match src/cltools/Makefile: keep the function body separate from the
+# shell-neutral script-option records. Bash is optional on Windows; without
+# it, embed an empty catalogue (a newline keeps the C++ byte array nonempty).
 function(plumed_generate_completion src_root out_dir)
+  plumed_xxd_file("${src_root}/src/cltools/completion.sh" "${out_dir}/completion.xxd")
   find_program(_bash bash)
   set(_content "")
   if(_bash)
     file(GLOB _scripts "${src_root}/scripts/*.sh")
     foreach(_s IN LISTS _scripts)
-      get_filename_component(_name "${_s}" NAME_WE)
-      string(REPLACE "-" "_" _name "${_name}")
-      execute_process(COMMAND "${_bash}" -c "PLUMED_ROOT='${src_root}' bash '${_s}' --options"
+      get_filename_component(_name "${_s}" NAME)
+      string(REGEX REPLACE "[.]sh$" "" _name "${_name}")
+      execute_process(COMMAND "${CMAKE_COMMAND}" -E env "PLUMED_ROOT=${src_root}"
+                              "${_bash}" "${_s}" --options
                       WORKING_DIRECTORY "${src_root}"
                       OUTPUT_VARIABLE _opts ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-      if(NOT _opts STREQUAL "")
-        string(APPEND _content "local cmd_keys_${_name}=\"${_opts}\"\n")
-      endif()
+      string(REPLACE "\n" " " _opts "${_opts}")
+      string(REPLACE "\r" "" _opts "${_opts}")
+      string(APPEND _content "${_name}\t${_opts}\n")
     endforeach()
   endif()
   if(_content STREQUAL "")
-    set(_content "local cmd_keys_plumed=\"--help --options --version\"\n")
+    set(_content "\n")
   endif()
-  file(READ "${src_root}/src/cltools/completion.sh" _comp)
-  string(APPEND _content "${_comp}")
-  set(_tmp "${out_dir}/completion.txt")
+  set(_tmp "${out_dir}/completion-scripts.txt")
   file(WRITE "${_tmp}" "${_content}")
-  plumed_xxd_file("${_tmp}" "${out_dir}/completion.xxd")
+  plumed_xxd_file("${_tmp}" "${out_dir}/completion-scripts.h")
   file(REMOVE "${_tmp}")
-  message(STATUS "  completion.xxd (bash: ${_bash})")
+  message(STATUS "  completion.xxd / completion-scripts.h (bash: ${_bash})")
 endfunction()

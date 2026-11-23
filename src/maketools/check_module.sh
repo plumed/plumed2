@@ -6,9 +6,10 @@ msg="ERROR: this module depends on $dir, which is presently disabled"
 
 cd ../
 
-if test -f "$dir/module.type"
+if test -f "$dir/module.yml"
 then
-  case "$(cat "$dir/module.type")" in
+  kind=$(maketools/module-header type "$dir/module.yml") || exit 1
+  case "$kind" in
   (always) exit 0 ;;
   (default-on)
     if  test -f $dir.off

@@ -1,0 +1,11 @@
+named conversion: OK
+text stdout: OK
+text pipe with and without final newline: OK
+redirected text stdin: OK
+long unterminated line from pipe: OK
+multiple files preserve order, headers and overlapping times: OK
+spaces, arbitrary extensions and option delimiter: OK
+help: OK
+invalid arguments, files and output path: OK
+stop at first failing input: OK
+output failures where /dev/full is available: OK

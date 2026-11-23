@@ -1,39 +1,32 @@
-"""Developer-owned conda.mk syntax; no Make or shell evaluation."""
+"""Module-owned YAML packaging policy; no Make or shell evaluation."""
 
 import re
-import shlex
 
-REQUIREMENTS = {
-    "BUILD_REQUIREMENTS": "build",
-    "HOST_REQUIREMENTS": "host",
-    "RUN_REQUIREMENTS": "run",
-    "TEST_REQUIREMENTS": "test",
-}
-LISTS = {
-    name.upper(): name
-    for name in (
-        "unavailable_libraries",
-        "platforms",
-        "zip_keys",
-        "configure_flags",
-        "cppflags",
-        "cxxflags",
-        "ldflags",
-        "make_args",
-        "cmake_args",
-        "required_features",
-        "optional_features",
-        "disabled_features",
-        "test_regtests",
-        "test_packages",
-        "test_commands",
-        "test_source_files",
-    )
-}
-SCALARS = {
-    "DUMMY_PACKAGE": ("dummy_package", ("yes", "no"), "no"),
-    "TEST_FORCE_REQUIREMENTS": ("test_force_requirements", ("yes", "no"), "no"),
-    "TEST_HARDWARE": ("test_hardware", ("none", "gpu"), "none"),
+from metadata import read_metadata
+
+REQUIREMENTS = ("build", "host", "run", "test")
+LISTS = (
+    "unavailable_libraries",
+    "platforms",
+    "zip_keys",
+    "configure_flags",
+    "cppflags",
+    "cxxflags",
+    "ldflags",
+    "make_args",
+    "cmake_args",
+    "required_features",
+    "optional_features",
+    "disabled_features",
+    "test_regtests",
+    "test_packages",
+    "test_commands",
+    "test_source_files",
+)
+DEFAULTS = {
+    "dummy_package": False,
+    "test_force_requirements": False,
+    "test_hardware": "none",
 }
 
 
@@ -48,76 +41,79 @@ def validate_backend(policy, backend, directory):
     for key in {"configure_flags", "make_args", "cmake_args"} - supported:
         if policy[key]:
             raise ValueError(
-                f"{directory}/conda.mk: CONDA_{key.upper()} is not supported by the {backend} backend"
+                f"{directory}: conda.{key} is not supported by the {backend} backend"
             )
 
 
-def read_policy(directory):
-    result = {key: [] for key in (*REQUIREMENTS.values(), *LISTS.values())}
-    result.update({key: default for key, _, default in SCALARS.values()})
+def read_policy(directory, metadata=None):
+    result = {key: [] for key in (*REQUIREMENTS, *LISTS)}
+    result.update(DEFAULTS)
     result["variants"] = {}
-    declaration = directory / "conda.mk"
+    declaration = directory / "module.yml"
     if not declaration.exists():
-        result["dummy_package"] = False
-        return result
-    for number, original in enumerate(declaration.read_text().splitlines(), 1):
-        line = original.strip()
-        if not line or line.startswith("#"):
-            continue
-        where = f"{declaration}:{number}"
-        match = re.fullmatch(r"CONDA_(\w+)\s*(\+?=)\s*(.*)", line)
-        if not match:
-            raise ValueError(
-                f"{where}: expected CONDA_NAME = values; see conda/module-options.md"
-            )
-        field, operator, value = match.groups()
-        selector = None
-        selected = re.search(r"\s+#\s*\[([^]]+)\]\s*$", value)
-        if selected:
-            selector, value = selected[1], value[: selected.start()]
-        values = shlex.split(value, comments=True)
-        if field in SCALARS:
-            key, allowed, _ = SCALARS[field]
+        declaration = directory / "plugin.yml"
+    if metadata is None:
+        if not declaration.exists():
+            return result
+        metadata = read_metadata(declaration)
+    policy = metadata.get("conda", {})
+    if not isinstance(policy, dict):
+        raise ValueError(f"{declaration}: conda must be a mapping")
+
+    def entries(values):
+        if not isinstance(values, list):
+            raise ValueError(f"{declaration}: expected a list")
+        normalized = []
+        for value in values:
+            entry = {"spec": value} if isinstance(value, str) else value
             if (
-                operator != "="
-                or selector
-                or len(values) != 1
-                or values[0] not in allowed
+                not isinstance(entry, dict)
+                or not {"spec"} <= set(entry) <= {"spec", "selector"}
+                or any(not isinstance(v, str) or not v.strip() for v in entry.values())
             ):
                 raise ValueError(
-                    f"{where}: CONDA_{field} must be one of {', '.join(allowed)}"
+                    f"{declaration}: expected a string or spec/selector mapping; quote versions"
                 )
-            result[key] = values[0]
-            continue
-        if field.startswith("VARIANT_"):
-            key = field[len("VARIANT_") :]
-            if not key or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", key):
-                raise ValueError(f"{where}: invalid variant dimension")
-            target = result["variants"]
-            # Retain conda's spelling, including CONDA_BUILD_SYSROOT.
-        elif field in REQUIREMENTS:
-            target, key = result, REQUIREMENTS[field]
-        elif field in LISTS:
-            target, key = result, LISTS[field]
-            if selector:
-                raise ValueError(
-                    f"{where}: selectors apply only to requirements and variant values"
-                )
+            normalized.append(dict(entry))
+        return normalized
+
+    def string_list(values):
+        if not isinstance(values, list) or any(not isinstance(v, str) for v in values):
+            raise ValueError(f"{declaration}: expected a list of strings")
+        return list(values)
+
+    for key, value in policy.items():
+        if key == "requirements":
+            if not isinstance(value, dict) or set(value) - set(REQUIREMENTS):
+                raise ValueError(f"{declaration}: unknown requirements kind")
+            for kind, values in value.items():
+                result[kind] = entries(values)
+        elif key == "variants":
+            if not isinstance(value, dict):
+                raise ValueError(f"{declaration}: variants must be a mapping")
+            for name, values in value.items():
+                if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", name):
+                    raise ValueError(f"{declaration}: invalid variant dimension")
+                result[key][name] = entries(values)
+        elif key == "tests":
+            if not isinstance(value, dict):
+                raise ValueError(f"{declaration}: tests must be a mapping")
+            for name, values in value.items():
+                target = "test_" + name
+                if target in LISTS:
+                    result[target] = string_list(values)
+                elif name == "force_requirements" and isinstance(values, bool):
+                    result[target] = values
+                elif name == "hardware" and values in ("none", "gpu"):
+                    result[target] = values
+                else:
+                    raise ValueError(f"{declaration}: invalid test setting {name}")
+        elif key == "dummy_package" and isinstance(value, bool):
+            result[key] = value
+        elif key in LISTS and not key.startswith("test_"):
+            result[key] = string_list(value)
         else:
-            raise ValueError(
-                f"{where}: unknown CONDA_{field}; see conda/module-options.md"
-            )
-        if operator == "=" or key not in target:
-            target[key] = []
-        for spec in values:
-            if field in REQUIREMENTS or field.startswith("VARIANT_"):
-                entry = {"spec": spec}
-                if selector:
-                    entry["selector"] = selector
-                target[key].append(entry)
-            else:
-                target[key].append(spec)
-    result["dummy_package"] = result["dummy_package"] == "yes"
+            raise ValueError(f"{declaration}: unknown or invalid conda setting {key}")
     reserved = {
         "--prefix",
         "--exec-prefix",
@@ -161,7 +157,7 @@ def read_policy(directory):
         keys = group.split(",")
         if len(keys) < 2 or any(key not in result["variants"] for key in keys):
             raise ValueError(
-                f"{declaration}: ZIP_KEYS needs comma-separated declared variant names"
+                f"{declaration}: zip_keys needs comma-separated declared variant names"
             )
         if len({len(result["variants"][key]) for key in keys}) != 1:
             raise ValueError(

@@ -360,6 +360,19 @@ bool ModuleLoader::available(const std::string& name,const DLLoader& loader) {
   return std::find(names.begin(),names.end(),name)!=names.end();
 }
 
+std::vector<std::string> ModuleLoader::installedModules() {
+  auto& shared=state();
+  std::lock_guard<std::recursive_mutex> lock(shared.mutex);
+  shared.discover();
+  auto names=config::getBuiltInModules();
+  for(const auto& entry:shared.catalog) {
+    names.push_back(entry.first);
+  }
+  std::sort(names.begin(),names.end());
+  names.erase(std::unique(names.begin(),names.end()),names.end());
+  return names;
+}
+
 std::vector<std::string> ModuleLoader::modules(const DLLoader& loader) {
   auto& shared=state();
   std::lock_guard<std::recursive_mutex> lock(shared.mutex);

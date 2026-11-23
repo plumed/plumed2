@@ -65,7 +65,10 @@ fi
       -e 's/-Wl,/-Xlinker /g' \
       -e 's/-f/-Xcompiler -f/g'
   #prints the rest of the file
-  grep -eDYNAMIC_LIBS -eLDFLAGS -eCXXFLAGS Make.tmp -v
+  #CXX is passed to nvcc -ccbin, that takes a compiler and not a launcher:
+  #ccache (e.g. PLUMED configured with CXX="ccache mpic++") is removed
+  grep -eDYNAMIC_LIBS -eLDFLAGS -eCXXFLAGS Make.tmp -v \
+    | sed -E -e 's/^CXX=ccache[[:space:]]+/CXX=/'
 } >Makefile.conf
 
 rm Make.tmp

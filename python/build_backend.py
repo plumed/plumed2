@@ -218,8 +218,14 @@ def _store_runtime(cached: Path) -> None:
 
 def _default_modules(source: Path) -> list[str]:
     modules = []
-    for module_type in sorted((source / "src").glob("*/module.type")):
-        kind = module_type.read_text().strip()
+    # This build helper remains usable without PyYAML (including Windows wheels).
+    import runpy
+
+    header_reader = runpy.run_path(str(source / "src/maketools/module_header.py"))
+    header_reader["check_obsolete"](source / "src")
+    read_header = header_reader["read_header"]
+    for module_type in sorted((source / "src").glob("*/module.yml")):
+        kind = read_header(module_type)["type"]
         if kind in {"always", "default-on"}:
             modules.append(module_type.parent.name)
     return modules

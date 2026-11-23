@@ -309,6 +309,24 @@ shared-library suffixes are never executed as compiler commands. The kernel
 retains the loaded provider library; temporary build files are removed after
 loading. This selection does not initialize the host MPI runtime.
 
+`initialEnvironmentSelection()` reads `PLUMED_MPI_WRAPPER` and
+`PLUMED_MPI_WRAPPER_FORCE` once, on first use, and stores an immutable snapshot,
+including when they are unset. All selection paths use this snapshot:
+`mpiwrap::ensure_provider_selected()`,
+`mpiwrap::ensure_provider_for_communicator()`, and
+`forceEnvironmentProvider()` (used by host injection). Set these variables
+before the first selection check; subsequent changes are ignored.
+
+If the snapshot requests no provider, `mpiwrap::ensure_provider_selected()`
+returns without searching for or building a default provider, preserving
+serial operation. `mpiwrap::ensure_provider_for_communicator()` additionally
+allows default discovery while no provider is installed: it looks for an
+adapter beside the loaded kernel and, if absent, builds one through `mkmpi`'s
+default compiler discovery. (PLUMED's `setMPIComm` and `setMPIFComm` commands
+call this function when receiving a native communicator.) Caching the
+environment does not prevent later host injection or default discovery.
+An installed provider is never replaced.
+
 Packages can install a prebuilt adapter beside `libplumedKernel` as
 `libplumed-mpi-provider.so` (`libplumed-mpi-provider.dylib` on macOS).
 For a custom program name, replace `plumed` with that configured name; for
@@ -323,12 +341,12 @@ silently fall back to a compiler. This discovery neither initializes MPI nor
 selects a provider during ordinary construction or capability inquiries.
 
 For troubleshooting, set `PLUMED_MPI_WRAPPER_FORCE=1` together with
-`PLUMED_MPI_WRAPPER` before any provider is installed. This makes that
+`PLUMED_MPI_WRAPPER` before the first selection check. This makes that
 environment-selected provider take precedence over an incoming injection.
-Without the force flag, injection retains priority. An absent provider path,
-an invalid force value, or a late attempt to replace an installed provider
-raises an error. Injected callback code remains host-owned, including when injection is bypassed
-by the force setting. Already published callbacks are never replaced.
+Without the force flag, injection retains priority. An absent provider path
+or an invalid force value raises an error. Injected callback code remains
+host-owned, including when injection is bypassed by the force setting.
+Already published callbacks are never replaced.
 
 ## Build an MPI executable
 
@@ -842,8 +860,9 @@ increments against a no-PLUMED baseline, and rank-count consistency. This is a
 focused integration check, not the full GROMACS upstream test suite.
 
 The distributed patch targets `v2026.4` directly, both with
-the default links and with `--include`, restoring every original source file
-byte for byte. Fresh patched and unpatched `v2026.4` thread-MPI builds passed:
+links and with `--include`. Patch/revert checks restore every original source
+file byte for byte and remove the extra bridge header. Fresh patched and
+unpatched `v2026.4` thread-MPI builds passed:
 after reverting, single-rank PLUMED use still worked and the original
 multi-rank thread-MPI rejection returned, confirming that injection was removed.
 

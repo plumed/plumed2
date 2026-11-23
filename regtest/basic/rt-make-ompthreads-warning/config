@@ -1,0 +1,4 @@
+type=make
+# PLUMED_NUM_THREADS takes precedence over the 4 threads set by the MD code with setNumOMPthreads:
+# the log must warn about it (with OpenMP)
+export PLUMED_NUM_THREADS=2

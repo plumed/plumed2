@@ -19,6 +19,8 @@ function plumed_regtest_after(){
   expect_error "PDB file with a misaligned line" "r: RMSD REFERENCE=bad.pdb TYPE=OPTIMAL"
   expect_error "grid file written by an action with another label" "d1: DISTANCE ATOMS=1,2
 m2: METAD ARG=d1 PACE=10 HEIGHT=1 SIGMA=0.1 GRID_MIN=0 GRID_MAX=1 GRID_RFILE=grid.dat"
+  expect_error "ARGS2VATOM with a constant position" "c: CONSTANT VALUE=0.1
+v: ARGS2VATOM XPOS=c YPOS=c ZPOS=c MASS=c CHARGE=c"
   # lines that end after the coordinates (no occupancy and beta, as in an input of PLUMED-NEST): occupancy and beta are 1
   printf "ATOM      1  CA  ALA A   1       1.000   2.000   3.000\nATOM      2  CA  ALA A   2       2.000   2.000   3.000\nATOM      3  CA  ALA A   3       2.000   3.000   3.000\nEND\n" > short.pdb
   awk '$1=="ATOM"{printf "%s  1.00  1.00\n",$0; next}{print}' short.pdb > full.pdb

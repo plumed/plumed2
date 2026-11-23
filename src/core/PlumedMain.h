@@ -32,6 +32,7 @@
 #include <memory>
 #include <map>
 #include <atomic>
+#include <cstdint>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -88,6 +89,7 @@ class PlumedMain:
   std::set<FileBase*> files;
 /// Forward declaration.
   ForwardDecl<Communicator> comm_fwd;
+  friend class Action;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed in this replica.
@@ -159,6 +161,8 @@ private:
   bool  initialized=false;
 /// True if OpenMP::lockNumThreads() was called at init (it is undone in the destructor)
   bool numThreadsLocked=false;
+/// Number of OpenMP threads set by the MD code with setNumOMPthreads (0 if it did not set it)
+  unsigned numThreadsFromEngine=0;
 /// Name of MD engine
   std::string MDEngine{"mdcode"};
 
@@ -284,6 +288,25 @@ public:
 
 /// GpuDevice Identifier
   int gpuDeviceId=-1;
+
+private:
+/// Some action asked for Action::launch(), see Action::setLaunchable().
+/// Until then the forward loop does nothing more than before
+  bool useLaunch=false;
+/// Counts the forward loops, see Action::forwardLoop
+  std::uint64_t forwardLoop=0;
+/// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
+  std::uint64_t atomsVersion=0;
+/// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
+/// and of the active actions that move the atoms (both increasing)
+  std::vector<std::size_t> launchQueue;
+  std::vector<std::size_t> launchBarriers;
+/// Fills launchQueue and launchBarriers at the start of the forward loop
+  void prepareLaunch();
+/// Called when the action at position done has been calculated: calls Action::launch() for the actions
+/// of launchQueue whose dependencies have all been calculated, up to the next action that moves the atoms
+  void launchReady(std::size_t done);
+public:
 /// Number of replicas, and the index of this one, as seen from every rank.
 /// Set by updateReplicaIdentity(); see getNumberOfReplicas().
   int nReplicas=1;
@@ -576,6 +599,8 @@ public:
   bool hasBeenInitialized() const ;
 /// Check if an action with the given name has been registered by default or LOADed
   bool checkAction(const std::string& action) const;
+/// Handles of libraries visible to this PLUMED instance, for plugin registers.
+  const std::vector<void*>& getLoadedLibraryHandles() const;
 };
 
 /////

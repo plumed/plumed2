@@ -175,7 +175,9 @@
 #include "gromacs/utility/vectypes.h"
 
 #include "legacysimulator.h"
+#include "plumedexchange.h"
 #include "replicaexchange.h"
+
 #include "shellfc.h"
 
 struct gmx_mdoutf;
@@ -283,6 +285,7 @@ void gmx::LegacySimulator::do_md()
     const bool doSimulatedAnnealing = initSimulatedAnnealing(*ir, ekind_, &upd);
 
     const bool useReplicaExchange = (replExParams_.exchangeInterval > 0);
+
 
     t_fcdata& fcdata = *fr_->fcdata;
 
@@ -546,9 +549,27 @@ void gmx::LegacySimulator::do_md()
                                 opt2fn("-awh", nFile_, fnm_),
                                 pullWork_);
 
+    auto* plumedForceProvider = findPlumedForceProvider(fr_->forceProviders);
+
+#if GMX_LIB_MPI
+    if (plumedForceProvider && plumedForceProvider->context().hrex
+        && (inputRec_->useMts || shellfc || awh || pullWork_ || enforcedRotation_ || ed))
+        gmx_fatal(FARGS,
+                  "-hrex trial evaluation does not support MTS, shells, AWH, pulling, rotation or "
+                  "essential dynamics");
+    if (plumedForceProvider && plumedForceProvider->context().hrex && fr_->forceProviders
+        && fr_->forceProviders->numForceProviders() != 1)
+        gmx_fatal(FARGS,
+                  "-hrex prototype supports only the PLUMED force provider; other provider side "
+                  "effects are not isolated");
+    if (plumedForceProvider && plumedForceProvider->context().hrex
+        && (simulationWork.useGpuUpdate || simulationWork.useGpuDirectCommunication))
+        gmx_fatal(FARGS, "-hrex prototype requires -update cpu and no direct GPU communication");
+#endif
+
     if (useReplicaExchange && isMainRank)
     {
-        repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_);
+        repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_, plumedForceProvider);
     }
 
     // PME tuning is only supported with PME for Coulomb. It is not supported with only LJ PME
@@ -902,6 +923,8 @@ void gmx::LegacySimulator::do_md()
         {
             /* find and set the current lambdas */
             state_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
+            if (plumedForceProvider)
+                plumedForceProvider->context().lambdaState = state_->fep_state;
 
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
                            && (!bFirstStep));
@@ -909,6 +932,10 @@ void gmx::LegacySimulator::do_md()
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
                      && do_per_step(step, replExParams_.exchangeInterval));
+#if GMX_LIB_MPI
+        if (plumedForceProvider)
+            plumedForceProvider->context().exchangeStep = bDoReplEx;
+#endif
 
         if (doSimulatedAnnealing)
         {
@@ -920,7 +947,7 @@ void gmx::LegacySimulator::do_md()
         const bool bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && do_per_step(step, ir->nstcomm));
 
         /* Determine whether or not to do Neighbour Searching */
-        const bool bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
+        bool bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
 
         /* Note that the stopHandler will cause termination at nstglobalcomm
          * steps. Since this concides with nstcalcenergy, nsttcouple and/or
@@ -1082,7 +1109,177 @@ void gmx::LegacySimulator::do_md()
         }
         clear_mat(force_vir);
 
-        checkpointHandler->decideIfCheckpointingThisStep(bNS, bFirstStep, bLastStep);
+        /* PLUMED HREX */
+#if GMX_LIB_MPI
+        const bool bHREX =
+                bDoReplEx && plumedForceProvider && plumedForceProvider->context().hrex;
+#else
+        const bool bHREX = false;
+#endif
+        // Restore/write PLUMED checkpoint state before consuming the exchange
+        // pattern RNG, including on the first step of a continuation.
+        checkpointHandler->decideIfCheckpointingThisStep(bNS || bHREX, bFirstStep, bLastStep);
+        const bool plumedStepNeedsEnergy = fr_->forceProviders != nullptr
+                && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep());
+
+#if GMX_LIB_MPI
+        if (plumedForceProvider && bHREX)
+        {
+            // gmx_enerdata_t *hrex_enerd;
+            int            nlambda = enerd_->foreignLambdaTerms.numLambdas();
+            gmx_enerdata_t hrex_enerd(enerd_->grpp.nener,
+                                      nlambda == 0 ? nullptr : &inputRec_->fepvals->all_lambda);
+            const int      partner = plumed_hrex_partner(fpLog_, cr_, ms_, repl_ex, step);
+
+            if (haveDDAtomOrdering(*cr_))
+            {
+                dd_collect_state(cr_->dd, state_, stateGlobal_);
+            }
+            else
+            {
+                copy_state_serial(state_, stateGlobal_);
+            }
+
+            if (isMainRank)
+                exchange_state(ms_, partner, stateGlobal_);
+
+            if (!haveDDAtomOrdering(*cr_))
+            {
+                copy_state_serial(stateGlobal_, state_);
+            }
+            if (haveDDAtomOrdering(*cr_))
+            {
+                dd_partition_system(fpLog_,
+                                    mdLog_,
+                                    step,
+                                    cr_->dd,
+                                    TRUE,
+                                    stateGlobal_,
+                                    topGlobal_,
+                                    *ir,
+                                    mdModulesNotifiers_,
+                                    imdSession_,
+                                    pullWork_,
+                                    state_,
+                                    &f,
+                                    mdAtoms_,
+                                    top_,
+                                    fr_,
+                                    virtualSites_,
+                                    constr_,
+                                    nrnb_,
+                                    wallCycleCounters_,
+                                    do_verbose);
+                /* as GROMACS does after repartitioning */
+                upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+                fr_->longRangeNonbondeds->updateAfterPartition(*md);
+            }
+            /* GROMACS >= 2024 takes the workload of do_force() from runScheduleWork_, which is only
+               set up later in the step: set it up here, with a pair search and the energy */
+            if (fr_->listedForcesGpu)
+            {
+                fr_->listedForcesGpu->updateHaveInteractions(top_->idef);
+            }
+            runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
+                    *ir, *fr_, pullWork_, ed ? ed->getLegacyED() : nullptr, *md, simulationWork);
+            runScheduleWork_->stepWork =
+                    setupStepWorkload(GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL
+                                              | GMX_FORCE_ENERGY | GMX_FORCE_DHDL | GMX_FORCE_NS,
+                                      ir->mtsLevels,
+                                      step,
+                                      runScheduleWork_->domainWork,
+                                      simulationWork);
+            /* PLUMED: only the energy of the swapped coordinates is needed here, so PLUMED must not
+               calculate (and e.g. deposit or print) again for the previous step inside do_force() */
+            struct TrialGuard
+            {
+                PlumedForceProvider* provider;
+                explicit TrialGuard(PlumedForceProvider* p) : provider(p) { provider->context().hrexTrial = true; }
+                ~TrialGuard() { provider->context().hrexTrial = false; }
+            };
+            {
+                TrialGuard trialGuard(plumedForceProvider);
+                do_force(fpLog_,
+                         cr_,
+                         *ir,
+                         mdModulesNotifiers_,
+                         awh.get(),
+                         enforcedRotation_,
+                         imdSession_,
+                         pullWork_,
+                         step,
+                         nrnb_,
+                         wallCycleCounters_,
+                         top_,
+                         state_->box,
+                         state_->x.arrayRefWithPadding(),
+                         state_->v.arrayRefWithPadding().unpaddedArrayRef(),
+                         &state_->hist,
+                         &f.view(),
+                         force_vir,
+                         md,
+                         &hrex_enerd,
+                         state_->lambda,
+                         fr_,
+                         *runScheduleWork_,
+                         virtualSites_,
+                         mu_tot,
+                         t,
+                         ed ? ed->getLegacyED() : nullptr,
+                         fr_->longRangeNonbondeds.get(),
+                         ddBalanceRegionHandler);
+            }
+            plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
+
+            /* exchange back */
+            if (haveDDAtomOrdering(*cr_))
+            {
+                dd_collect_state(cr_->dd, state_, stateGlobal_);
+            }
+            else
+            {
+                copy_state_serial(state_, stateGlobal_);
+            }
+
+            if (isMainRank)
+                exchange_state(ms_, partner, stateGlobal_);
+
+            if (!haveDDAtomOrdering(*cr_))
+            {
+                copy_state_serial(stateGlobal_, state_);
+            }
+            if (haveDDAtomOrdering(*cr_))
+            {
+                dd_partition_system(fpLog_,
+                                    mdLog_,
+                                    step,
+                                    cr_->dd,
+                                    TRUE,
+                                    stateGlobal_,
+                                    topGlobal_,
+                                    *ir,
+                                    mdModulesNotifiers_,
+                                    imdSession_,
+                                    pullWork_,
+                                    state_,
+                                    &f,
+                                    mdAtoms_,
+                                    top_,
+                                    fr_,
+                                    virtualSites_,
+                                    constr_,
+                                    nrnb_,
+                                    wallCycleCounters_,
+                                    do_verbose);
+                /* as GROMACS does after repartitioning */
+                upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
+                fr_->longRangeNonbondeds->updateAfterPartition(*md);
+            }
+            bNS = true;
+        }
+        /* END PLUMED HREX */
+#endif
+
 
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
@@ -1127,8 +1324,7 @@ void gmx::LegacySimulator::do_md()
         /* PLUMED */
         /* PLUMED is told here, before the force calculation, whether this step writes a
            checkpoint, so that it writes its own checkpoint data on the same step. */
-        if (fr_->forceProviders != nullptr
-            && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep()))
+        if (plumedStepNeedsEnergy)
         {
             /* setupStepWorkload() snapshots force_flags below, so PLUMED has to be
                asked for the potential energy before that, not from within do_force(). */
@@ -1393,7 +1589,8 @@ void gmx::LegacySimulator::do_md()
                                                   step,
                                                   state_->v.rvec_array(),
                                                   md->homenr,
-                                                  md->cTC);
+                                                  md->cTC,
+                                                  plumedForceProvider);
                 /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
                 if (isMainRank)
                 {
@@ -2116,7 +2313,7 @@ void gmx::LegacySimulator::do_md()
         if (bDoReplEx)
         {
             bExchanged =
-                    replica_exchange(fpLog_, cr_, ms_, repl_ex, stateGlobal_, enerd_, state_, step, t);
+                    replica_exchange(fpLog_, cr_, ms_, repl_ex, stateGlobal_, enerd_, state_, step, t, plumedForceProvider);
         }
 
         if ((bExchanged || bNeedRepartition) && haveDDAtomOrdering(*cr_))

@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from conda_policy import read_policy, validate_backend
+from metadata import check_obsolete, read_metadata
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -43,9 +44,9 @@ def kernel_requirements(modules):
     return result
 
 
-def conda_requirements(directory):
+def conda_requirements(directory, metadata=None):
     """Compatibility entry point used by inventory and external checks."""
-    return read_policy(directory)
+    return read_policy(directory, metadata)
 
 
 def module_license(directory):
@@ -120,16 +121,16 @@ def feature_guards(directory):
 
 
 def generate_catalog(write=True):
+    check_obsolete(ROOT / "src")
     modules = {}
-    for module_type in sorted((ROOT / "src").glob("*/module.type")):
-        directory = module_type.parent
-        makefile = (directory / "Makefile").read_text()
-        use = re.search(r"^USE\s*[:?+]?=([^\n]*)", makefile, re.MULTILINE)
+    for declaration in sorted((ROOT / "src").glob("*/module.yml")):
+        directory = declaration.parent
+        metadata = read_metadata(declaration)
         modules[directory.name] = {
-            "type": module_type.read_text().strip(),
-            "source_use": use[1].split() if use else [],
+            "type": metadata["type"],
+            "source_use": metadata["use"],
             "feature_guards": feature_guards(directory),
-            "conda": conda_requirements(directory),
+            "conda": conda_requirements(directory, metadata),
             "about": module_license(directory),
         }
         validate_backend(

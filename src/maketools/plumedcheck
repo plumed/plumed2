@@ -18,6 +18,12 @@ TEMP=$(mktemp -t plumed.XXXXXX)
 
 cat >$TEMP <<\EOF
 
+# Quote paths passed to the shell by awk's pipe reader.
+function shellquote(text) {
+  gsub(/'/,"'\\''",text);
+  return "'" text "'";
+}
+
 # print usage 
 function usage(){
   print "Usage:"
@@ -127,11 +133,6 @@ BEGIN{
   deprecated_headers["string.h"]=1
   deprecated_headers["tgmath.h"]=1
 
-# list of allowed module types
-  allowed_module_types["always"]=1
-  allowed_module_types["default-on"]=1
-  allowed_module_types["default-off"]=1
-
 # list of "outer modules", that is those
 # that are not included in the kernel library
   outer_modules["wrapper"]=1
@@ -201,21 +202,26 @@ BEGINFILE{
     module=ff[nf-1];
     module_namespace=module;
     gsub(/-/,"_",module_namespace);
-    if(!(module in module_type)){
-      path=filepath
-      sub("/.*$","/module.type",path);
-# detect module type
-      if((getline < path > 0) ){
-        module_type[module]=$0
-        information("module_type","module " module " has type '" module_type[module] "'" );
+    if(!(module in module_type) && module!="config" && !(module in outer_modules) &&
+       (filetype=="source" || filetype=="header")){
+      path=filepath;
+      sub("/[^/]*$","/module.yml",path);
+      command=shellquote(ENVIRON["PLUMED_MODULE_HEADER"]) " type " shellquote(path) " 2>/dev/null";
+      found=(command | getline kind);
+      status=close(command);
+      if(found>0 && status==0){
+        module_type[module]=kind;
+        information("module_type","module " module " has type '" kind "'");
+      } else {
+        module_type[module]="invalid";
 # DOC: :wrong_module_type:
-# DOC: Module type as indicated in the `module.type` file located in the module directory is not valid.
-# DOC: The admitted types are: `default-on`, which means the module is on by default, `default-off`, which means that
-# DOC: they should be explicitly enabled, and `always`, which means they are always required.
-        if(!(module_type[module] in allowed_module_types)) error("wrong_module_type","module " module " has a wrong module type '" module_type[module] "'");
+# DOC: The module's `module.yml` has missing or invalid build fields.
+# DOC: The admitted types are `default-on`, `default-off` and `always`.
+# DOC: The native `module-header` reader validates both `type` and `use` fields.
+        error("wrong_module_type","module " module " has a missing or invalid declaration " path);
       }
-      close(path)
     }
+
 # detect used modules
     if(filetype=="source" || filetype=="header") {
       if(!(module in used_modules)){
@@ -233,7 +239,7 @@ BEGINFILE{
         }
         information("used_modules",module " uses:" used_modules_here)
 # DOC: :used_wrapper_module:
-# DOC: Wrapper module should not be used in other modules (via `USE=wrapper` in `Makefile`).
+# DOC: Wrapper module should not be used in other modules (via `use: [wrapper]` in `module.yml`).
 # DOC: The reason is that this makes `libplumedKernel` dependent on the PLUMED wrappers.
 # DOC: An exception is the `main` module, which needs to use the `wrapper` module.
 # DOC: Notice that within the PLUMED library there is no need to use the external `cmd` interface
@@ -799,4 +805,4 @@ END{
 
 EOF
 
-gawk -f $TEMP $@
+PLUMED_MODULE_HEADER="$(cd "$(dirname "$0")" && pwd)/module-header" gawk -f "$TEMP" "$@"

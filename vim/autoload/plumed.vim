@@ -75,6 +75,7 @@ function! s:Describe(root) abort
   endfor
   let directories = [a:root . '/../plugins']
         \ + split($PLUMED_PLUGIN_PATH, has('win32') ? ';' : ':')
+  let modules = copy(get(g:, 'plumed_modules', []))
   for kernel in uniq(sort(kernels))
     call add(metadata, s:Stamp(kernel))
     call add(directories, fnamemodify(resolve(kernel), ':h') . '/plumed/plugins')
@@ -85,6 +86,11 @@ function! s:Describe(root) abort
       let lines = readfile(registration)
       call add(metadata, [s:Stamp(registration), lines])
       for line in lines
+        " Names are completion candidates, not a claim of ABI/dependency
+        " compatibility. Merely listing a candidate must not load its library.
+        if line =~# '^module [a-z0-9_-]\+$'
+          call add(modules, strpart(line, 7))
+        endif
         if line =~# '^library '
           let library = strpart(line, 8)
           if !s:Absolute(library)
@@ -95,7 +101,8 @@ function! s:Describe(root) abort
       endfor
     endfor
   endfor
-  return {'root': a:root, 'executable': executable, 'key': sha256(string(metadata))}
+  return {'root': a:root, 'executable': executable, 'key': sha256(string(metadata)),
+        \ 'modules': uniq(sort(modules))}
 endfunction
 
 function! s:Current(entry) abort
@@ -231,6 +238,7 @@ function! s:Update(root, force) abort
   let state = s:Describe(a:root)
   let b:plumed_cache_root = a:root
   let b:plumed_cache_key = state.key
+  let b:plumed_module_candidates = state.modules
   let state.entry = s:CacheRoot() . '/' . state.key
   let current = s:Current(state.entry)
   if empty(current) && !empty(s:temporary)

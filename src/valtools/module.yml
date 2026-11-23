@@ -1,4 +1,6 @@
 name: valtools
+type: always
+use: [core]
 authors: Gareth Tribello
 description: tools for manipulating the values that are passed between actions
 dois: []

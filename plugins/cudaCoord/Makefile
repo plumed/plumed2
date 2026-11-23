@@ -58,7 +58,7 @@ endif
 #this makes make search for files in src
 VPATH = src
 
-.PHONY: clean check check-gpu all astyle
+.PHONY: clean check check-nogpu check-gpu all astyle
 
 all: CudaCoordination.$(SOEXT)
 
@@ -88,6 +88,11 @@ clean:
 check: all
 	$(MAKE) -C regtest
 	$(MAKE) -C regtest checkfail
+
+# the tests that do not need a GPU (loading the plugin, input errors, the error
+# without a GPU): they run in CI, on machines without GPUs
+check-nogpu: all
+	$(MAKE) -C regtest checknogpu
 
 # on a node with GPUs: checks that the plugin leaves the GPU of the MD code alone
 # (the program is shared with the openaccPTM plugin, see ../openaccPTM/gpucheck)

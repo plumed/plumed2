@@ -383,6 +383,8 @@ protected:
   const std::vector<unsigned>& getOwnedTasks( const std::vector<unsigned>& partialTaskList );
 /// A temporary set of vectors for holding forces over threads
   std::vector<std::vector<precision> > omp_forces;
+/// The threads of the loops over the tasks, from the time of their serial runs (see OpenMP.h)
+  OpenMP::TimedLoop calculateLoop, forcesLoop;
 /// This structs is used to pass data between the parallel interface and the function caller
   ParallelActionsInput myinput;
   ArgumentsBookkeeping argumentsMap;
@@ -612,14 +614,10 @@ void ParallelTaskManager<T>::runAllTasks() {
     const unsigned step = rowdist.byRow ? 1 : stride;
     const unsigned nmytasks = mytasks.size();
 
-    // Get number of threads for OpenMP
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) {
-      nt=nactive_tasks/stride/10;
-    }
-    if( nt==0 ) {
-      nt=1;
-    }
+    // Get number of threads for OpenMP: the cost of a task is measured (see OpenMP.h)
+    const std::size_t nlocal=nactive_tasks/stride;
+    const unsigned nt=calculateLoop.getNumThreads(nlocal);
+    const auto start=OpenMP::TimedLoop::now();
 
     // an exception must not leave an OpenMP parallel region (it calls std::terminate):
     // the first one thrown by a task is stored and thrown again after the region
@@ -649,6 +647,7 @@ void ParallelTaskManager<T>::runAllTasks() {
         }
       }
     }
+    calculateLoop.record(start,nlocal,nt);
     if( exception ) {
       std::rethrow_exception( exception );
     }
@@ -735,14 +734,10 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
     const unsigned step = rowdist.byRow ? 1 : stride;
     const unsigned nmytasks = mytasks.size();
 
-    // Get number of threads for OpenMP
-    unsigned nt=OpenMP::getNumThreads();
-    if( nt*stride*10>nactive_tasks ) {
-      nt=nactive_tasks/stride/10;
-    }
-    if( nt==0 ) {
-      nt=1;
-    }
+    // Get number of threads for OpenMP: the cost of a task is measured (see OpenMP.h)
+    const std::size_t nlocal=nactive_tasks/stride;
+    const unsigned nt=forcesLoop.getNumThreads(nlocal);
+    const auto start=OpenMP::TimedLoop::now();
     // the per-thread buffers are sized at setup, and the number of threads cannot grow after init
     plumed_massert( nt<=omp_forces.size(), "more OpenMP threads than when " + action->getLabel() + " was set up" );
     #pragma omp parallel num_threads(nt)
@@ -758,9 +753,15 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       std::vector<std::size_t> indices(ForceIndexHolder::indexesPerScalar(nindexrows,myinput.nderivatives_per_scalar));
 
       auto force_indices = ForceIndexHolder::create( nindexrows, myinput.nderivatives_per_scalar, indices.data() );
-      #pragma omp for nowait
+      // Task-owned force entries can lie inside the range reduced by gatherThreads
+      // (e.g. the first atoms of TORSIONS_MATRIX). Finish their direct writes before
+      // any thread adds its private buffer to that range, even where it adds zero.
+      #pragma omp for
       for(unsigned i=first; i<nmytasks; i+=step) {
         std::size_t task_index = mytasks[i];
+        // the tasks may add to their values (e.g. the sums of MATRIX_VECTOR_PRODUCT): they start
+        // from zero, as in runAllTasks, otherwise they hold the sum of all the tasks of this thread
+        std::fill( fake_vals.begin(), fake_vals.end(), precision(0.0) );
         auto myout = ParallelActionsOutput::create( myinput.nscalars,
                      fake_vals.data(),
                      derivatives.size(),
@@ -830,6 +831,7 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       #pragma omp critical
       gatherThreads( ForceOutput::create(omp_forces[t], forcesForApply ) );
     }
+    forcesLoop.record(start,nlocal,nt);
     forces.update();
     // MPI Gather everything (this must be extended to the gpu thing, after makning it mpi-aware)
     if( !serial ) {

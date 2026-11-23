@@ -52,19 +52,19 @@ namespace isdb {
 class SAXSDebyeBackend {
 public:
   virtual ~SAXSDebyeBackend() = default;
-  /// Computes the contributions of the rows i = first, first+stride, ... < pos.size().
-  /// ff[i*q.size()+k] is the form factor of particle i at q[k].
-  /// The partial intensities are added to sum (q.size() elements).
-  /// If deriv is not null, the derivatives of I_k with respect to r_i are added to
-  /// (*deriv)[k*pos.size()+i] (q.size()*pos.size() elements).
-  /// The derivatives are kept for the next call to contract().
-  virtual void compute(const std::vector<Vector>& pos,
-                       const std::vector<double>& ff,
-                       const std::vector<double>& q,
-                       unsigned first, unsigned stride,
-                       std::vector<double>& sum,
-                       std::vector<Vector>* deriv) = 0;
-  /// Adds to forces[i] (pos.size() elements) the derivatives of the last compute()
+  /// Queues (e.g. on a GPU) the contributions of the rows i = first, first+stride, ... < pos.size(),
+  /// without waiting for them (see Action::launch()). ff[i*q.size()+k] is the form factor of particle i
+  /// at q[k]. pos must not change until finish(). The derivatives are kept for the next call to contract().
+  virtual void start(const std::vector<Vector>& pos,
+                     const std::vector<double>& ff,
+                     const std::vector<double>& q,
+                     unsigned first, unsigned stride,
+                     bool deriv) = 0;
+  /// Waits for the work queued by start() and adds the partial intensities to sum (q.size() elements)
+  /// and, if start() was asked for them and deriv is not null, the derivatives of I_k with respect
+  /// to r_i to (*deriv)[k*pos.size()+i] (q.size()*pos.size() elements).
+  virtual void finish(std::vector<double>& sum, std::vector<Vector>* deriv) = 0;
+  /// Adds to forces[i] (pos.size() elements) the derivatives of the last start()
   /// contracted with the weights w (q.size() elements): sum_k w[k] dI_k/dr_i.
   virtual void contract(const std::vector<double>& w,
                         std::vector<Vector>& forces) = 0;

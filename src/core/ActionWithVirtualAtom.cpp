@@ -85,18 +85,37 @@ void ActionWithVirtualAtom::apply() {
   double xf = xval->inputForce[0];
   double yf = yval->inputForce[0];
   double zf = zval->inputForce[0];
-  for(const auto & a : atom_value_ind_grouped) {
-    const auto nn=a.first;
-    auto & xp=xpos[nn]->inputForce;
-    auto & yp=ypos[nn]->inputForce;
-    auto & zp=zpos[nn]->inputForce;
-    for(const auto & kk : a.second) {
-      xp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
-      k++;
-      yp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
-      k++;
-      zp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
-      k++;
+  if(isotropicWeights) {
+    // the derivatives of x, y and z with respect to atom j are w[j] along x, y and z
+    const auto & w=*isotropicWeights;
+    unsigned j=0;
+    for(const auto & a : atom_value_ind_grouped) {
+      const auto nn=a.first;
+      auto & xp=xpos[nn]->inputForce;
+      auto & yp=ypos[nn]->inputForce;
+      auto & zp=zpos[nn]->inputForce;
+      for(const auto & kk : a.second) {
+        xp[kk] += xf*w[j];
+        yp[kk] += yf*w[j];
+        zp[kk] += zf*w[j];
+        j++;
+      }
+    }
+    k=3*j;
+  } else {
+    for(const auto & a : atom_value_ind_grouped) {
+      const auto nn=a.first;
+      auto & xp=xpos[nn]->inputForce;
+      auto & yp=ypos[nn]->inputForce;
+      auto & zp=zpos[nn]->inputForce;
+      for(const auto & kk : a.second) {
+        xp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+        k++;
+        yp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+        k++;
+        zp[kk] += xf*xval->data[1+k] + yf*yval->data[1+k] + zf*zval->data[1+k];
+        k++;
+      }
     }
   }
 
@@ -111,6 +130,29 @@ void ActionWithVirtualAtom::apply() {
   // class runs faster than the general code below.
   // if( !checkForForces() ) return ;
   // unsigned mm=0; setForcesOnAtoms( getForcesToApply(), mm );
+}
+
+void ActionWithVirtualAtom::setAtomsDerivativesIsotropic(const std::vector<double> &w) {
+  plumed_dbg_assert(w.size()==getNumberOfAtoms());
+  isotropicWeights=&w;
+  // the derivatives are still stored, for the actions that read them (e.g. DUMPDERIVATIVES)
+  double* xd=getPntrToComponent(0)->data.data()+1;
+  double* yd=getPntrToComponent(1)->data.data()+1;
+  double* zd=getPntrToComponent(2)->data.data()+1;
+  for(std::size_t j=0; j<w.size(); ++j) {
+    // w*0.0 as in w*Tensor::identity(): the same signed zeros
+    const double d=w[j];
+    const double z=d*0.0;
+    xd[3*j]=d;
+    xd[3*j+1]=z;
+    xd[3*j+2]=z;
+    yd[3*j]=z;
+    yd[3*j+1]=d;
+    yd[3*j+2]=z;
+    zd[3*j]=z;
+    zd[3*j+1]=z;
+    zd[3*j+2]=d;
+  }
 }
 
 void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d) {

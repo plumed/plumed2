@@ -1,0 +1,89 @@
+name: GPU plugins
+
+# The GPU plugins on runners without a GPU: the plugins are compiled and linked against an
+# installed PLUMED, and the tests that do not need a GPU are run (loading the plugin, input
+# errors, the error when there is no GPU). The kernels themselves need a real GPU.
+#
+# Both plugins are compiled with more than one version of the CUDA toolkit, taken from conda-forge
+# (no driver is needed to compile).
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  PLUMED_STACK_TRACE: yes
+  CC: gcc
+  CXX: g++
+
+jobs:
+  cudaCoord:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PLUMED_CCACHE_SIZE: 100M
+      # the oldest and the newest CUDA versions that are tested (conda-forge cuda-version)
+      CUDA_VERSIONS: "12.9 13.5"
+      MICROMAMBA_VERSION: 2.0.5
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-gpuplugins-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-gpuplugins-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+        # PLUMED with MPI, as on the clusters: the plugin is compiled with nvcc -ccbin mpic++,
+        # and the headers of PLUMED it includes then include mpi.h
+        mpi: true
+
+    - name: Build and install PLUMED
+      # CXX="ccache mpic++" also checks that the configure.sh of the plugin removes ccache
+      # from the compiler it passes to nvcc -ccbin
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch --prefix="$HOME/opt"
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+
+    - name: Install the CUDA toolkits
+      # only the compiler, the runtime and CCCL (thrust, cub)
+      run: |
+        mkdir -p "$HOME/micromamba"
+        curl -fsSL "https://conda.anaconda.org/conda-forge/linux-64/micromamba-${MICROMAMBA_VERSION}-0.tar.bz2" \
+          | tar -xj -C "$HOME/micromamba" bin/micromamba
+        export MAMBA_ROOT_PREFIX="$HOME/micromamba/root"
+        for v in $CUDA_VERSIONS ; do
+          "$HOME/micromamba/bin/micromamba" create -y -q -p "$HOME/cuda-$v" -c conda-forge \
+            cuda-version=$v cuda-nvcc-impl cuda-cudart-dev cuda-cccl
+          "$HOME/cuda-$v/bin/nvcc" --version
+        done
+
+    - name: Build and test CUDA plugins
+      run: |
+        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
+        cd plugins/cudaCoord
+        path0="$PATH"
+        for v in $CUDA_VERSIONS ; do
+          echo "::group::CUDA $v"
+          export PATH="$HOME/cuda-$v/bin:$path0"
+          make clean
+          make -C regtest clean
+          ./configure.sh
+          make -j 4
+          make check-nogpu
+          make -C ../reactive-voronoi-cuda clean
+          # Voronoi uses shared cudart. Set an explicit architecture on the GPU-less runner.
+          LD_LIBRARY_PATH="$HOME/cuda-$v/lib:$HOME/cuda-$v/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}" \
+            make -C ../reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
+          echo "::endgroup::"
+        done

@@ -41,6 +41,8 @@
 #ifndef GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 #define GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 
+#include "config.h"
+
 #include <memory>
 #include <optional>
 #include <vector>
@@ -56,6 +58,28 @@ namespace gmx
 template<typename>
 class ArrayRef;
 struct PlumedOptions;
+// Owned separately by each simulation/rank, including thread-MPI ranks.
+// Registered buffers stay valid for GREX and lambda trials.
+struct PlumedContext
+{
+    //! Whether this MD step attempts replica exchange; controls saving GREX input snapshots.
+    bool exchangeStep = false;
+    //! Whether general Hamiltonian replica exchange was requested by -hrex.
+    bool hrex = false;
+    //! Suppress PLUMED force/energy/checkpoint callbacks during a foreign HREX evaluation.
+    bool hrexTrial = false;
+    //! Current or trial alchemical state index exposed as EXTRACV NAME=lambda.
+    real lambdaState = 0;
+    //! Force-output buffer registered for lambda; discrete-state MCMC uses bias energies instead.
+    real lambdaForce = 0;
+    //! Physical potential for an MCMC candidate, in GROMACS units: global on main rank, zero on workers.
+    real trialEnergy = 0;
+    //! Physical potential differences already included in native lambda acceptance, indexed by replica.
+    std::vector<real> nativePhysicalDeltas;
+    //! Whether this is the replica's main MPI rank; used to supply global ENERGY only once.
+    bool mainRank = true;
+};
+
 /*! \internal \brief
  * Implements IForceProvider for PLUMED.
  */
@@ -68,6 +92,12 @@ public:
      */
     PlumedForceProvider(const PlumedOptions& options);
     ~PlumedForceProvider();
+    //! Typed discovery through this simulation/rank's force-provider collection.
+    PlumedForceProvider* plumedForceProvider() override { return this; }
+    //! Mutable exchange/MCMC data, valid for this provider's lifetime.
+    PlumedContext& context() { return context_; }
+    //! Non-owning access to the provider-owned PLUMED object from the MD engine.
+    PLMD::Plumed* plumedHandle() const;
     /*! @brief Sets the global atom indices list
      * param[in] globalAtomIndices  the, optional, list of global atom indices
      */
@@ -107,14 +137,15 @@ public:
                                    tensor         virial) override;
 
 private:
-    //! Throws if PLUMED computed a bias while replica exchange is active
-    void checkReplicaExchangeBias();
     //! Whether the atoms that PLUMED used on this step include virtual sites
     bool usesVirtualSites();
 
+    PlumedContext context_;
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
     bool                          replex_;
+    //! Whether lambda is supplied for expanded-ensemble MCMC.
+    bool                          expanded_ = false;
     //! Whether each atom is a virtual site, empty if there are none
     std::vector<bool>             isVirtualSite_;
 
@@ -122,6 +153,8 @@ private:
     int                                plumedNeedsEnergy_ = 0;
     int                                plumedWantsToStop_ = 0;
     matrix                             plumedVir_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    //! PLUMED reuses this binding after the short-lived ForceProviderInput is destroyed.
+    matrix                             plumedBox_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
     //! Step for which prepareStep() already prepared the dependencies, if any
     std::optional<int64_t> preparedStep_;
     //! Whether prepareStep() is called, so that PLUMED is told about checkpoints before the calculation

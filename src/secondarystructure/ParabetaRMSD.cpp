@@ -57,9 +57,15 @@ $$
 where the sum runs over all possible segments of parallel beta sheet.  By default the
 NN, MM, D_0 and R_0 parameters are set equal to those used in the paper cited below, which are
 $n=8$, $m=12$, $d_0=0$ and $r_0=0.08$ nm. The value of R_0 is given in the length units of [UNITS](UNITS.md);
-the default is converted, so it is always 0.08 nm.
+the default is converted, so it is always 0.08 nm. As in the other actions that take R_0, NN, MM and D_0, the function above, $f(r)$,
+is stretched so that it goes to zero at $d_{max}=d_0+r_0\,10^{5/(m-n)}$, where $f(d_{max})=10^{-5}$ (1.42 nm with the default
+parameters): each segment contributes $\left(f(r_i)-f(d_{max})\right)/\left(1-f(d_{max})\right)$ if $r_i<d_{max}$ and zero otherwise.
+The value of $d_{max}$ is the D_MAX of the switching function in the expanded input. The segments with a distance from the
+reference larger than $d_{max}$, whose strands are far apart, are then not computed (see below).
+To use the function without stretching, use LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}.
 
-If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below.
+If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below,
+where D_MAX is given as for the default function, so that the pairs of strands that are too far apart can be skipped also with this function.
 In this case the label of the action is the vector of the distances between each segment and the ideal parallel beta sheet, and
 the number of segments that are similar to a parallel beta sheet is the `lessthan` component.
 
@@ -69,7 +75,7 @@ protein that are in a parallel beta sheet configuration.
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1
+pb: PARABETARMSD RESIDUES=all R_0=0.1
 PRINT ARG=pb FILE=colvar
 ```
 
@@ -78,18 +84,32 @@ Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), and wi
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12} STRANDS_CUTOFF=1
+hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12 D_MAX=1.78}
 PRINT ARG=hh.lessthan FILE=colvar
 ```
 
-__YOUR CALCULATION WILL BE MUCH FASTER IF YOU USE THE `STRANDS_CUTOFF` KEYWORD.__  As you can see from the
-expanded version of the inputs above this keyword reduces the computational cost of the calculation by
-avoiding calculations of the RMSD values for segments that have the two strands of the beta sheet further apart
-than a cutoff. The distance between the two strands is the distance between the CA atoms of their central residues,
-and the cutoff is in the length units of [UNITS](UNITS.md) (nm by default). The segments that are skipped contribute
-zero to the number of segments that are similar to a beta sheet. If you use LESS_THAN together with STRANDS_CUTOFF,
+## Strands cutoff
+
+The segments that have the two strands of the beta sheet further apart than `STRANDS_CUTOFF` are not computed, and they contribute
+zero to the number of segments that are similar to a beta sheet. The distance between the two strands is the distance between the
+CA atoms of their central residues. The default cutoff is 1 nm (the cutoff is in the length units of [UNITS](UNITS.md), the default
+is converted). This makes the calculation much faster, as the number of pairs of strands grows with the square of the number of residues.
+Use `STRANDS_CUTOFF=0` to compute all the pairs: the number of segments then also includes the small contributions of the many segments
+whose strands are far apart (with 18 peptides of 8 residues about 1 more segment). If you use LESS_THAN together with STRANDS_CUTOFF,
 notice that the distances of the skipped segments are zero in the vector that is the value of the action, so this vector
 should not be used to find the segment that is closest to a beta sheet.
+
+## How the number of segments is computed
+
+Without `USEGPU`, the number of segments that are similar to a sheet (the value of the action, or its `lessthan` component when
+LESS_THAN is used) is computed by a single action, PARABETARMSD_SCALAR, which loops over the pairs of strands, skips those that are further
+apart than `STRANDS_CUTOFF` and adds the derivatives of each segment directly to the atoms. When the switching function goes to zero at
+a finite distance (as the default one, or with D_MAX in LESS_THAN), it also skips the pairs of strands that are so far apart that the
+distance of the segment from the reference is certainly larger than that distance (this does not change the result, and makes
+STRANDS_CUTOFF=0 cheaper). The vectors that appear in the expanded input
+(the distances of the strands, the distances from the reference structure and their switching functions) are only computed when they are
+used elsewhere in the input, e.g. when the vector that is the value of the action with LESS_THAN is printed. The result is the same.
+With `USEGPU` and TYPE=DRMSD the same calculation is done on the GPU by PARABETARMSD_SCALAR_ACC, from the openaccPTM plugin: one GPU thread per pair of strands within `STRANDS_CUTOFF`. With `USEGPU` and the other types the number of segments is the sum of the vector of the switching functions.
 
 ## Chains and residues
 
@@ -111,7 +131,7 @@ You can turn off this treatment by using the NOPBC flag as shown below:
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-pb: PARABETARMSD RESIDUES=all STRANDS_CUTOFF=1 R_0=0.1 NOPBC
+pb: PARABETARMSD RESIDUES=all R_0=0.1 NOPBC
 PRINT ARG=pb FILE=colvar
 ```
 
@@ -140,8 +160,11 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ) {
            "only sheet-like configurations involving a single chain are counted");
   keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart than this distance (between the CA atoms of their central residues) "
            "the calculation of the distance from the reference is skipped, as the structure is very far from being beta-sheet like, and the segment does not "
-           "contribute to the number of segments that are similar to a beta sheet. This keyword speeds up the calculation enormously.");
+           "contribute to the number of segments that are similar to a beta sheet. The default is 1 nm (the value is in the length units of UNITS, "
+           "the default is converted). Use STRANDS_CUTOFF=0 to compute all the pairs of strands");
   keys.needsAction("LOWEST");
+  keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_SCALAR_ACC");
   keys.needsAction("DISTANCE");
   keys.needsAction("CUSTOM");
 }
@@ -157,110 +180,31 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   std::vector<std::string> all_atoms;
   SecondaryStructureInput::readBackboneAtoms( this, plumed, "protein", chains, all_atoms );
 
-  bool intra_chain(false), inter_chain(false);
   std::string style;
   parse("STYLE",style);
-  if( Tools::caseInSensStringCompare(style, "all") ) {
-    intra_chain=true;
-    inter_chain=true;
-  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
-    intra_chain=false;
-    inter_chain=true;
-  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
-    intra_chain=true;
-    inter_chain=false;
-  } else {
-    error( style + " is not a valid directive for the STYLE keyword");
-  }
+  // All the conceivable pairs of strands in the backbone of the chains
+  std::vector<std::pair<unsigned,unsigned> > pairs;
+  SecondaryStructureInput::getSheetPairs( this, chains, true, style, pairs );
 
-  double strands_cutoff=-1.0;
+  // 1 nm by default, in the length units of UNITS; zero or negative to use all the pairs of strands
+  double strands_cutoff=1.0/plumed.getUnits().getLength();
   parse("STRANDS_CUTOFF",strands_cutoff);
   std::string scutoff_action;
   if( strands_cutoff>0 ) {
     scutoff_action=getShortcutLabel() + "_cut_dists: DISTANCE ";
   }
-
-  // This constructs all conceivable sections of parallel beta sheet in the backbone of the chains
   std::string seglist;
-  unsigned segno=1;
-  if( intra_chain ) {
-    unsigned nprevious=0;
-    std::vector<unsigned> nlist(30);
-    for(unsigned i=0; i<chains.size(); ++i) {
-      if( chains[i]<40 ) {
-        error("segment of backbone is not long enough to form a parallel beta sheet. Each backbone fragment must contain a minimum of 8 residues");
-      }
-      // Loop over all the pairs of triples of residues separated by at least three residues
-      unsigned nres=chains[i]/5;
-      if( chains[i]%5!=0 ) {
-        error("backbone segment received does not contain a multiple of five residues");
-      }
-      for(unsigned ires=0; ires<nres-8; ires++) {
-        for(unsigned jres=ires+6; jres<nres-2; jres++) {
-          for(unsigned k=0; k<15; ++k) {
-            nlist[k]=nprevious + ires*5+k;
-            nlist[k+15]=nprevious + jres*5+k;
-          }
-          SecondaryStructureInput::addSegment( seglist, segno, nlist );
-          if( strands_cutoff>0 ) {
-            scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
-          }
-          ++segno;
-        }
-      }
-      nprevious+=chains[i];
+  std::vector<unsigned> nlist(30);
+  for(unsigned k=0; k<pairs.size(); ++k) {
+    for(unsigned kk=0; kk<15; ++kk) {
+      nlist[kk]=pairs[k].first+kk;
+      nlist[kk+15]=pairs[k].second+kk;
     }
-  }
-  // This constructs all conceivable sections of parallel beta sheet that form between chains
-  if( inter_chain ) {
-    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
-      error("there is only one chain defined so cannot use inter_chain option");
+    SecondaryStructureInput::addSegment( seglist, k+1, nlist );
+    if( strands_cutoff>0 ) {
+      // the central CA atoms of the two strands
+      scutoff_action += " ATOMS" + std::to_string(k+1) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
     }
-    std::vector<unsigned> nlist(30);
-    for(unsigned ichain=1; ichain<chains.size(); ++ichain) {
-      unsigned iprev=0;
-      for(unsigned i=0; i<ichain; ++i) {
-        iprev+=chains[i];
-      }
-      unsigned inres=chains[ichain]/5;
-      if( chains[ichain]%5!=0 ) {
-        error("backbone segment received does not contain a multiple of five residues");
-      }
-      if( inres<3 ) {
-        // A strand contains three residues. Without this the unsigned subtraction in the loop below wraps around
-        continue;
-      }
-      for(unsigned ires=0; ires<inres-2; ++ires) {
-        for(unsigned jchain=0; jchain<ichain; ++jchain) {
-          unsigned jprev=0;
-          for(unsigned i=0; i<jchain; ++i) {
-            jprev+=chains[i];
-          }
-          unsigned jnres=chains[jchain]/5;
-          if( chains[jchain]%5!=0 ) {
-            error("backbone segment received does not contain a multiple of five residues");
-          }
-          if( jnres<3 ) {
-            continue;
-          }
-          for(unsigned jres=0; jres<jnres-2; ++jres) {
-            for(unsigned k=0; k<15; ++k) {
-              nlist[k]=iprev + ires*5+k;
-              nlist[k+15]=jprev + jres*5+k;
-            }
-            SecondaryStructureInput::addSegment( seglist, segno, nlist );
-            if( strands_cutoff>0 ) {
-              scutoff_action += " ATOMS" + std::to_string(segno) + "=" + all_atoms[nlist[6]] + "," + all_atoms[nlist[21]];
-            }
-            ++segno;
-          }
-        }
-      }
-    }
-  }
-
-  if( seglist.empty() ) {
-    error("it is not possible to build any segment of backbone that could form a sheet with the residues and the STYLE that were given");
   }
 
   // Build the reference structure ( in angstroms )
@@ -330,8 +274,9 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   SecondaryStructureInput::addStructure( structure, 2, reference );
 
-  bool nopbc=false;
-  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, nopbc );
+  std::string type;
+  bool nopbc=false, usegpu=false;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, type, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_low";
   if( uselessthan ) {
     lab = getShortcutLabel();
@@ -370,7 +315,28 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
     // Create the less than object
     readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
   }
-  SecondaryStructureInput::addSum( this, uselessthan );
+  if( usegpu && type!="DRMSD" ) {
+    // there is no GPU version of the single action with the RMSD
+    SecondaryStructureInput::addSum( this, uselessthan );
+  } else {
+    // The number of segments that are similar to a sheet is computed by a single action: without the vectors above,
+    // which are only computed if they are used elsewhere in the input. With USEGPU this is its GPU version
+    std::string chainsizes=std::to_string(chains[0]);
+    for(unsigned i=1; i<chains.size(); ++i) {
+      chainsizes += "," + std::to_string(chains[i]);
+    }
+    std::string sumline = getShortcutLabel() + (uselessthan ? "_lessthan" : "") + ": PARABETARMSD_SCALAR" + (usegpu ? "_ACC " : " ") + atoms
+                          + " CHAIN_SIZES=" + chainsizes + " STYLE=" + style + " TYPE=" + type + " SWITCH={" + ltmap + "}" + structure;
+    if( strands_cutoff>0 ) {
+      std::string str_cut;
+      Tools::convert( strands_cutoff, str_cut );
+      sumline += " STRANDS_CUTOFF=" + str_cut;
+    }
+    if( nopbc ) {
+      sumline += " NOPBC";
+    }
+    readInputLine( sumline );
+  }
 }
 
 }

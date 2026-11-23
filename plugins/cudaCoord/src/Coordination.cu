@@ -1089,6 +1089,9 @@ public:
   virtual ~CudaCoordination();
   // active methods:
   static void registerKeywords (Keywords &keys);
+  /// Queues all the GPU work of the step (lists, kernels, transfers) without waiting for it
+  void launch() override;
+  void cancelLaunch() override;
   void calculate() override;
 };
 
@@ -1367,7 +1370,7 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
 }
 
 template <typename calculateFloat>
-void CudaCoordination<calculateFloat>::calculate() {
+void CudaCoordination<calculateFloat>::launch() {
   // all the GPU work of the step is done on the GPU of the action
   CUDAHELPERS::deviceGuard guard (gpu);
   if (needsListUpdate()) {
@@ -1375,8 +1378,6 @@ void CudaCoordination<calculateFloat>::calculate() {
     firstNLUpdate=false;
   }
 
-  Tensor virial;
-  double coordination=0.0;
   // on all the processes, so that the error for a box that is too small
   // is raised everywhere and not only on the process that owns the GPU
   if (pbc) {
@@ -1433,6 +1434,32 @@ void CudaCoordination<calculateFloat>::calculate() {
                             cudaMemcpyDeviceToHost,
                             stream),
                             "copying the results from the GPU");
+  }
+}
+
+template <typename calculateFloat>
+void CudaCoordination<calculateFloat>::cancelLaunch() {
+  // the neighbor lists may have been built with the atoms as they were before
+  // another action moved them: they are built again (on all the processes)
+  firstNLUpdate=true;
+  // the queued work reads the buffers that are about to be written again
+  if (mpiActive) {
+    CUDAHELPERS::deviceGuard guard (gpu);
+    CUDAHELPERS::cudaCheck (cudaStreamSynchronize (stream),
+                            "running the CUDACOORDINATION kernels");
+  }
+}
+
+template <typename calculateFloat>
+void CudaCoordination<calculateFloat>::calculate() {
+  // the work of the step is queued here, unless launch() did it already
+  if (!takeLaunch()) {
+    launch();
+  }
+  Tensor virial;
+  double coordination=0.0;
+  if(mpiActive) {
+    CUDAHELPERS::deviceGuard guard (gpu);
     // the only synchronization point: waits only for the work of this action,
     // not for the other work on the device (like GROMACS' kernels)
     CUDAHELPERS::cudaCheck (cudaStreamSynchronize (stream),
@@ -1582,16 +1609,8 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     //mpiActive is const
     mpiActive( comm.Get_rank()== 0),
     cells(comm) {
-  if (mpiActive) {
-    gpu = CUDAHELPERS::chooseGPU (plumed.getGpuDeviceId());
-    if (gpu < 0) {
-      error ("no GPU available");
-    }
-    log.printf ("  %s runs on GPU %d\n", getLabel().c_str(), gpu);
-  }
-  // all the GPU work of the constructor is done on the GPU of the action
-  CUDAHELPERS::deviceGuard guard (gpu);
-
+  // the work on the GPU is queued as soon as the atoms are available, see Action::launch()
+  setLaunchable();
   std::vector<AtomNumber> GroupA;
   parseAtomList ("GROUPA", GroupA);
   std::vector<AtomNumber> GroupB;
@@ -1725,35 +1744,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   } else {
     switchingParameters.invr0_2 = invr0;
   }
-  // the switching function is stretched so that it is 1 in 0 and 0 in dmax
-  if (mpiActive) {
-    std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
-
-    thrust::device_vector<calculateFloat> inputZeroMax = inputs;
-    thrust::device_vector<calculateFloat> dummydfunc (2);
-    thrust::device_vector<calculateFloat> resZeroMax (2);
-
-    PLMD::GPU::getpcuda_func<PLMD::GPU::Rational><<<1, 2>>> (
-      thrust::raw_pointer_cast (inputZeroMax.data()),
-      switchingParameters,
-      thrust::raw_pointer_cast (dummydfunc.data()),
-      thrust::raw_pointer_cast (resZeroMax.data()));
-
-    switchingParameters.stretch = 1.0 / (resZeroMax[0] - resZeroMax[1]);
-    switchingParameters.shift = -resZeroMax[1] * switchingParameters.stretch;
-  }
-  if (switchingParameters.calcSquared) {
-    switchingParameters.nn/=2;
-    switchingParameters.mm/=2;
-  }
-  comm.Bcast (switchingParameters.dmaxSQ,0);
-  comm.Bcast (switchingParameters.invr0_2,0);
-  comm.Bcast (switchingParameters.d0,0);
-  comm.Bcast (switchingParameters.stretch,0);
-  comm.Bcast (switchingParameters.shift,0);
-  comm.Bcast (switchingParameters.nn,0);
-  comm.Bcast (switchingParameters.mm,0);
-
   parse("NL_CUTOFF",NL.cutoff);
   parse("NL_STRIDE",NL.stride);
   if(NL.stride == 0) {
@@ -1787,6 +1777,46 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   }
 
   checkRead();
+
+  // the GPU is chosen only now, after the whole input has been read, so that
+  // input errors are reported (and can be tested) also on a machine without GPUs
+  if (mpiActive) {
+    gpu = CUDAHELPERS::chooseGPU (*this);
+    if (gpu < 0) {
+      error ("no GPU available");
+    }
+  }
+  // all the GPU work of the constructor is done on the GPU of the action
+  CUDAHELPERS::deviceGuard guard (gpu);
+
+  // the switching function is stretched so that it is 1 in 0 and 0 in dmax
+  if (mpiActive) {
+    std::vector<calculateFloat> inputs = {0.0, (dmax-switchingParameters.d0) * invr0};
+
+    thrust::device_vector<calculateFloat> inputZeroMax = inputs;
+    thrust::device_vector<calculateFloat> dummydfunc (2);
+    thrust::device_vector<calculateFloat> resZeroMax (2);
+
+    PLMD::GPU::getpcuda_func<PLMD::GPU::Rational><<<1, 2>>> (
+      thrust::raw_pointer_cast (inputZeroMax.data()),
+      switchingParameters,
+      thrust::raw_pointer_cast (dummydfunc.data()),
+      thrust::raw_pointer_cast (resZeroMax.data()));
+
+    switchingParameters.stretch = 1.0 / (resZeroMax[0] - resZeroMax[1]);
+    switchingParameters.shift = -resZeroMax[1] * switchingParameters.stretch;
+  }
+  if (switchingParameters.calcSquared) {
+    switchingParameters.nn/=2;
+    switchingParameters.mm/=2;
+  }
+  comm.Bcast (switchingParameters.dmaxSQ,0);
+  comm.Bcast (switchingParameters.invr0_2,0);
+  comm.Bcast (switchingParameters.d0,0);
+  comm.Bcast (switchingParameters.stretch,0);
+  comm.Bcast (switchingParameters.shift,0);
+  comm.Bcast (switchingParameters.nn,0);
+  comm.Bcast (switchingParameters.mm,0);
 
   runner = make_worker(pbc,switchingParameters);
   nat = getPositions().size();

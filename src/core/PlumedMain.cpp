@@ -515,7 +515,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "PlumedMainMap.inc"
   };
 
@@ -1035,6 +1035,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           if(nt==0) {
             nt=1;
           }
+          numThreadsFromEngine=nt;
           // while an initialized PLUMED instance exists the number of threads can only decrease
           if(!OpenMP::setNumThreads(nt)) {
             std::string msg="WARNING: setNumOMPthreads("+std::to_string(nt)+") ignored: the number of OpenMP threads cannot be increased "
@@ -1281,6 +1282,17 @@ void PlumedMain::init() {
   OpenMP::lockNumThreads();
   numThreadsLocked=true;
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+#ifdef _OPENMP
+  // PLUMED shares the OpenMP threads of the MD code: with the GNU OpenMP runtime, a region with a different
+  // number of threads (other than 1) replaces some of them at every step (see OpenMP.h).
+  // PLUMED_NUM_THREADS takes precedence over setNumOMPthreads.
+  if(numThreadsFromEngine>0 && OpenMP::getNumThreads()>1 && OpenMP::getNumThreads()!=numThreadsFromEngine) {
+    log<<"WARNING: PLUMED uses "<<OpenMP::getNumThreads()<<" OpenMP threads, but the MD code set "<<numThreadsFromEngine<<" (PLUMED_NUM_THREADS takes precedence).\n"
+       <<"  PLUMED uses the OpenMP threads of the MD code: with the GNU OpenMP runtime a different number of threads (other than 1)\n"
+       <<"  makes the runtime destroy and create threads at every step, and the new ones run on the core of the main thread\n"
+       <<"  (this can make the MD code much slower). Unset PLUMED_NUM_THREADS, or set it to 1 or "<<numThreadsFromEngine<<".\n";
+  }
+#endif
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
     plumed_assert(pp);
@@ -1487,7 +1499,11 @@ void PlumedMain::prepareDependencies() {
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
-    if(pilots[i]->onStep()) {
+    auto* value=exchangeStep ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
+    // Calculation-only exchange trials need the full potential even when an
+    // MTS bias does not apply forces on this MD step.
+    const bool exchangeBias=exchangeStep && value && value->exists(value->getLabel()+".bias");
+    if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
       active=true;
     }
@@ -1577,6 +1593,59 @@ void PlumedMain::waitData() {
   }
 }
 
+void PlumedMain::prepareLaunch() {
+  launchQueue.clear();
+  launchBarriers.clear();
+  for(std::size_t k=0; k<actionSet.size(); ++k) {
+    Action* a=actionSet[k].get();
+    if(!a->isActive()) {
+      continue;
+    }
+    const ActionAtomistic* aa=a->castToActionAtomistic();
+    if(aa && aa->modifiesGlobalAtoms) {
+      launchBarriers.push_back(k);
+    }
+    ActionWithValue* av=a->castToActionWithValue();
+    if(a->launchable && !a->checkNumericalDerivatives() && !(av && av->calculateOnUpdate())) {
+      launchQueue.push_back(k);
+    }
+  }
+}
+
+void PlumedMain::launchReady(const std::size_t done) {
+  // what comes after an action that moves the atoms is launched when that action has been calculated
+  const auto barrier=std::upper_bound(launchBarriers.begin(),launchBarriers.end(),done);
+  const std::size_t limit = barrier==launchBarriers.end() ? actionSet.size() : *barrier;
+  std::size_t kept=0;
+  for(std::size_t i=0; i<launchQueue.size(); ++i) {
+    const std::size_t k=launchQueue[i];
+    if(k<=done) {
+      // reached before being launched: calculated as usual
+      continue;
+    }
+    Action* a=actionSet[k].get();
+    bool ready=k<limit && !a->launched;
+    for(const Action* d : a->getDependencies()) {
+      // the inactive dependencies are constant (see Action::setupConstantValues())
+      if(!ready || (d->isActive() && d->forwardLoop!=forwardLoop)) {
+        ready=false;
+        break;
+      }
+    }
+    if(!ready) {
+      launchQueue[kept++]=k;
+      continue;
+    }
+    if(ActionAtomistic* aa=a->castToActionAtomistic()) {
+      aa->retrieveAtoms();
+    }
+    a->launch();
+    a->launched=true;
+    a->launchAtomsVersion=atomsVersion;
+  }
+  launchQueue.resize(kept);
+}
+
 void PlumedMain::justCalculate() {
   if(!active) {
     return;
@@ -1600,6 +1669,12 @@ void PlumedMain::justCalculate() {
     }
   }
 
+  forwardLoop++;
+  // the atoms are new: a launch that was not used (after an error) is not valid any more
+  atomsVersion++;
+  if(useLaunch) {
+    prepareLaunch();
+  }
   // the counter is incremented at the top of the loop so that the labels of the
   // detailed timers stay aligned also after the actions skipped with continue
   int iaction=-1;
@@ -1638,16 +1713,32 @@ void PlumedMain::justCalculate() {
             continue ;
           }
         }
-        {
-          if(aa)
-            if(aa->isActive()) {
-              aa->retrieveAtoms();
-            }
+        // the atoms of a launched action were retrieved before launch()
+        bool launched=false;
+        if(useLaunch) {
+          if(p->launched && p->launchAtomsVersion!=atomsVersion) {
+            // an action in between changed the atoms (or the box, which is changed only with them): the work is done again
+            p->cancelLaunch();
+            p->launched=false;
+          }
+          launched=p->launched;
+        }
+        if(aa && !launched) {
+          aa->retrieveAtoms();
         }
         if(p->checkNumericalDerivatives()) {
           p->calculateNumericalDerivatives();
         } else {
           p->calculate();
+        }
+        if(useLaunch) {
+          p->launched=false;
+          p->forwardLoop=forwardLoop;
+          if(aa && aa->modifiesGlobalAtoms) {
+            atomsVersion++;
+          }
+          // the actions that were waiting for this one are started
+          launchReady(iaction);
         }
         traceActionNonFinite(actionSet,*p,step,"forward",true,false,comm);
 
@@ -2155,6 +2246,10 @@ void PlumedMain::getKeywordsForAction( const std::string& action, Keywords& keys
 
 bool PlumedMain::checkAction(const std::string& action) const {
   return actionRegister().check(dlloader.getHandles(),action);
+}
+
+const std::vector<void*>& PlumedMain::getLoadedLibraryHandles() const {
+  return dlloader.getHandles();
 }
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

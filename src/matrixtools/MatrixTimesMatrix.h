@@ -78,7 +78,7 @@ public:
   using PTM = typename myPTM::template PTM<mytype>;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
-  constexpr static bool isDissimilarities=helpers::isDissimilarities<CV>;
+  static constexpr bool isDissimilarities=helpers::isDissimilarities<CV>;
 private:
   PTM taskmanager;
   void getBasicMatrixBookeeping( ArgumentsBookkeeping& argumentsMap ) const ;
