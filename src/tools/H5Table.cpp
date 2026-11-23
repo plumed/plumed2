@@ -30,10 +30,8 @@
 #include <ctime>
 #include <deque>
 #include <filesystem>
-#include <fstream>
 #include <limits>
 #include <mutex>
-#include <sstream>
 #include <utility>
 #ifdef _WIN32
 #include <io.h>
@@ -109,19 +107,19 @@ enum class Content {Unknown,HDF5,Archive};
 
 /// what an existing file contains, from its first bytes
 Content sniff(const std::string& path) {
-  std::ifstream in(pathFromUTF8(path),std::ios::binary);
+  // (opened with fopenUTF8, as all the files that PLUMED opens)
+  unique_FILE in(fopenUTF8(path,"rb"));
   if(!in) {
     return Content::Unknown;
   }
   char h[tarRecord]= {};
-  in.read(h,tarRecord);
-  const auto n=in.gcount();
+  const auto n=std::fread(h,1,tarRecord,in.get());
   static const char signature[8]= {'\x89','H','D','F','\r','\n','\x1a','\n'};
   if(n>=8 && std::memcmp(h,signature,8)==0) {
     return Content::HDF5;
   }
   unsigned long long size=0;
-  if(n==static_cast<long long>(tarRecord) && validTarHeader(h,size)) {
+  if(n==tarRecord && validTarHeader(h,size)) {
     return Content::Archive;
   }
   return Content::Unknown;
@@ -731,15 +729,47 @@ struct Scan {
   std::string damage;
 };
 
+void seekFile(std::FILE* f,unsigned long long offset,const std::string& path) {
+#ifdef _WIN32
+  check(_fseeki64(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
+#else
+  check(fseeko(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
+#endif
+}
+
+/// bytes read at given offsets from a file (opened with fopenUTF8, as all the files that
+/// PLUMED opens) or from memory
+class Bytes {
+  std::string path;
+  unique_FILE f;
+  const std::vector<char>* memory=nullptr;
+public:
+  explicit Bytes(const std::string& p):
+    path(p),
+    f(fopenUTF8(p,"rb")) {
+    check(f!=nullptr,path,"cannot open the file");
+  }
+  Bytes(const std::vector<char>& m,const std::string& p):
+    path(p),
+    memory(&m) {}
+  void read(unsigned long long offset,char* data,std::size_t n) {
+    if(memory) {
+      check(offset+n<=memory->size(),path,"cannot read the file");
+      std::memcpy(data,memory->data()+offset,n);
+      return;
+    }
+    seekFile(f.get(),offset,path);
+    check(std::fread(data,1,n,f.get())==n,path,"cannot read the file");
+  }
+};
+
 /// scan the headers of the size bytes of an archive (only the headers are read)
-Scan scanEntries(std::istream& in,unsigned long long size,const std::string& path) {
+Scan scanEntries(Bytes& in,unsigned long long size) {
   Scan s;
   s.size=size;
   std::vector<char> h(tarRecord);
   auto readHeader=[&](unsigned long long offset) {
-    in.seekg(offset);
-    in.read(h.data(),tarRecord);
-    check(static_cast<bool>(in),path,"cannot read the file");
+    in.read(offset,h.data(),tarRecord);
   };
   while(size-s.end>=tarRecord) {
     readHeader(s.end);
@@ -774,9 +804,7 @@ Scan scanEntries(std::istream& in,unsigned long long size,const std::string& pat
     if(h[156]=='x') {
       // a pax extended header: its size record replaces the size of the next entry
       std::string records(n,'\0');
-      in.seekg(s.end+tarRecord);
-      in.read(records.data(),n);
-      check(static_cast<bool>(in),path,"cannot read the file");
+      in.read(s.end+tarRecord,records.data(),n);
       const unsigned long long header=next;
       s.end=next;
       for(std::size_t p=0; p<records.size();) {
@@ -819,9 +847,8 @@ unsigned long long fileSize(const std::string& path) {
 }
 
 Scan scanArchive(const std::string& path) {
-  std::ifstream in(pathFromUTF8(path),std::ios::binary);
-  check(static_cast<bool>(in),path,"cannot open the file");
-  return scanEntries(in,fileSize(path),path);
+  Bytes in(path);
+  return scanEntries(in,fileSize(path));
 }
 
 void checkNotDamaged(const Scan& s,const std::string& path) {
@@ -835,14 +862,6 @@ void syncFile(std::FILE* f,const std::string& path) {
   check(_commit(_fileno(f))==0,path,"cannot write the file to disk");
 #else
   check(fsync(fileno(f))==0,path,"cannot write the file to disk");
-#endif
-}
-
-void seekFile(std::FILE* f,unsigned long long offset,const std::string& path) {
-#ifdef _WIN32
-  check(_fseeki64(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
-#else
-  check(fseeko(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
 #endif
 }
 
@@ -869,15 +888,13 @@ bool readTrimRecord(const std::string& path,unsigned long long& offset,std::vect
   if(!std::filesystem::exists(pathFromUTF8(record),ec)) {
     return false;
   }
-  std::ifstream in(pathFromUTF8(record),std::ios::binary);
-  std::vector<char> h(tarRecord);
-  in.read(h.data(),tarRecord);
-  check(static_cast<bool>(in),record,"cannot read the file");
+  Bytes in(record);
+  std::vector<char> h(tarRecord+1,'\0');
+  in.read(0,h.data(),tarRecord);
   unsigned long long n=0;
   check(std::sscanf(h.data(),"plumed-trim-record 1 %llu %llu",&offset,&n)==2 && fileSize(record)==tarRecord+n,record,"invalid trim record");
   entries.resize(n);
-  in.read(entries.data(),n);
-  check(static_cast<bool>(in),record,"cannot read the file");
+  in.read(tarRecord,entries.data(),n);
   return true;
 }
 
@@ -933,7 +950,7 @@ class Files {
   std::string path;
   bool archive;
   Scan scan;
-  std::ifstream in;
+  std::unique_ptr<Bytes> in;
   /// the members of a trim record not completed, that replace those after recordOffset
   std::vector<char> recordEntries;
   struct Source {
@@ -950,8 +967,7 @@ public:
     }
     scan=scanArchive(path);
     checkNotDamaged(scan,path);
-    in.open(pathFromUTF8(path),std::ios::binary);
-    check(static_cast<bool>(in),path,"cannot open the file");
+    in=std::make_unique<Bytes>(path);
     unsigned long long offset=scan.end;
     const bool record=readTrimRecord(path,offset,recordEntries);
     for(const auto & m : scan.members) {
@@ -960,8 +976,8 @@ public:
       }
     }
     if(record) {
-      std::istringstream rin(std::string(recordEntries.begin(),recordEntries.end()));
-      const Scan rs=scanEntries(rin,recordEntries.size(),trimRecord(path));
+      Bytes rin(recordEntries,trimRecord(path));
+      const Scan rs=scanEntries(rin,recordEntries.size());
       for(const auto & m : rs.members) {
         sources.push_back({true,m.data,m.size});
       }
@@ -983,9 +999,7 @@ public:
       return std::vector<char>(recordEntries.begin()+s.data,recordEntries.begin()+s.data+s.size);
     }
     std::vector<char> image(s.size);
-    in.seekg(s.data);
-    in.read(image.data(),image.size());
-    check(static_cast<bool>(in),path,"cannot read a member of the archive");
+    in->read(s.data,image.data(),image.size());
     return image;
   }
   Id open(std::size_t k) {
