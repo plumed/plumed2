@@ -40,21 +40,22 @@ Convert a PLUMED file between text and HDF5.
 
 The files that PLUMED writes field by field (e.g. with [PRINT](PRINT.md), the hills of
 [METAD](METAD.md), the kernels of [OPES_METAD](OPES_METAD.md)) are written as archives of HDF5
-tables when their name ends with `.h5.tar` (see [Files](Files.md)). This tool converts such a file
+tables when their name ends with `.hpa` (HDF PLUMED archive; `.h5.tar` is also supported,
+see [Files](Files.md)). This tool converts such a file
 to the equivalent text file, with the numbers written with all their digits, and a text file to an
 archive, so that the tools that read text files can be used on HDF5 tables and vice versa.
 The direction of the conversion is given by the extensions of the two files.
 
 ```plumed
-plumed h5convert --input COLVAR.h5.tar --output COLVAR
-plumed h5convert --input HILLS --output HILLS.h5.tar
+plumed h5convert --input COLVAR.hpa --output COLVAR
+plumed h5convert --input HILLS --output HILLS.hpa
 ```
 
 Use `-` as the text filename to read from standard input or write to standard output:
 
 ```plumed
-plumed h5convert --input - --output HILLS.h5.tar < HILLS
-plumed h5convert --input COLVAR.h5.tar --output - > COLVAR
+plumed h5convert --input - --output HILLS.hpa < HILLS
+plumed h5convert --input COLVAR.hpa --output - > COLVAR
 ```
 
 Standard input and output support text only. For quick inspection and concatenation of HDF5 tables,
@@ -66,8 +67,8 @@ archive and the other a single HDF5 file or an archive, the values are copied as
 the members of an archive written can be chosen:
 
 ```plumed
-plumed h5convert --input COLVAR.h5.tar --output COLVAR.h5
-plumed h5convert --input COLVAR.h5.tar --output COLVAR.big.h5.tar --batch-size 100000
+plumed h5convert --input COLVAR.hpa --output COLVAR.h5
+plumed h5convert --input COLVAR.hpa --output COLVAR.big.hpa --batch-size 100000
 ```
 
 The input is recognized by its content (so that a renamed table is read correctly), the output by its
@@ -103,8 +104,8 @@ PLUMED_REGISTER_CLTOOL(H5Convert,"h5convert")
 void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--input","the file to convert (- for text standard input)");
-  keys.add("compulsory","--output","the converted file (an archive of HDF5 tables if its extension is .h5.tar, a single HDF5 file if .h5, text otherwise; - for text standard output)");
-  keys.add("compulsory","--batch-size","4096","the maximum number of rows of a member, when the output is an archive (.h5.tar)");
+  keys.add("compulsory","--output","the converted file (an archive of HDF5 tables if its extension is .hpa or .h5.tar, a single HDF5 file if .h5, text otherwise; - for text standard output)");
+  keys.add("compulsory","--batch-size","4096","the maximum number of rows of a member, when the output is an archive (.hpa)");
 }
 
 H5Convert::H5Convert(const CLToolOptions& co ):
@@ -157,7 +158,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   const bool fromH5=input!="-" && h5table::isTable(input);
   const bool toH5=h5table::isH5(output);
   const bool fromArchive=fromH5 && h5table::isArchive(input);
-  const bool toArchive=output.size()>7 && output.compare(output.size()-7,7,".h5.tar")==0;
+  const bool toArchive=h5table::isArchiveName(output);
   if(fromH5 && toH5 && (fromArchive || toArchive)) {
     // an archive into a single HDF5 file, or vice versa, or into an archive with members of
     // a different size: the values are copied as they are
@@ -165,7 +166,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
     return 0;
   }
   if(fromH5==toH5) {
-    error("one of the two files must be an archive of HDF5 tables (extension .h5.tar), or one (and only one) a single HDF5 file (extension .h5)");
+    error("one of the two files must be an archive of HDF5 tables (extension .hpa), or one (and only one) a single HDF5 file (extension .h5)");
   }
   if(!toH5) {
     h5table::Reader reader(input);
@@ -233,14 +234,14 @@ text with full numerical precision, using the same representation as
 each file's field headers and constants. Rows are neither sorted nor deduplicated.
 
 ```plumed
-plumed h5cat COLVAR.h5.tar
-plumed h5cat COLVAR.0.h5.tar COLVAR.1.h5.tar > combined.txt
+plumed h5cat COLVAR.hpa
+plumed h5cat COLVAR.0.hpa COLVAR.1.hpa > combined.txt
 ```
 
 The output can also be piped to tools such as `less` or `awk`. Use `--` before a
 filename starting with `-`. Input must be named HDF5 tables written by PLUMED;
 standard input and arbitrary HDF5 containers are not supported. Filenames need
-not end in `.h5.tar` or `.h5`. An unreadable or invalid file stops the command with a nonzero
+not end in `.hpa` or `.h5`. An unreadable or invalid file stops the command with a nonzero
 exit status; text from preceding files may already have been written.
 
 */

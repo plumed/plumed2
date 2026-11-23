@@ -55,6 +55,30 @@ os.link(text, "text-alias.h5.tar")
 rejects_alias(text, Path("text-alias.h5.tar"))
 print("conversion rejects identical paths and aliases without changing input: OK")
 
+preferred = Path("preferred.hpa")
+run(
+    *command,
+    "h5convert",
+    "--input",
+    str(path),
+    "--output",
+    str(preferred),
+    "--batch-size",
+    "7",
+)
+expected = run(*command, "h5cat", str(path)).stdout
+assert run(*command, "h5cat", str(preferred)).stdout == expected
+rejects_alias(preferred, preferred)
+for output in ("alias.h5.tar", "exported.h5"):
+    run(*command, "h5convert", "--input", str(preferred), "--output", output)
+    assert run(*command, "h5cat", output).stdout == expected
+run(*command, "h5convert", "--input", "exported.h5", "--output", "from-hdf.hpa")
+assert run(*command, "h5cat", "from-hdf.hpa").stdout == expected
+native("resume", preferred)
+assert native("read", preferred) == b"31"
+native("suffix", preferred)
+print("preferred .hpa and .h5.tar alias conversion, append and replica suffixes: OK")
+
 native("iofailure", Path("limited.h5.tar"))
 print("failed writes stay failed until reopen (POSIX fault injection): OK")
 

@@ -491,12 +491,12 @@ class HDF5IO(unittest.TestCase):
 
         run_dir = self.path.with_name("native-restart")
         run_dir.mkdir()
-        table = run_dir / "COLVAR.h5.tar"
+        table = run_dir / "COLVAR.hpa"
         # Seed rows before, at, and after the restart step using only Python.
         initial = pd.DataFrame({"time": [0, 1, 2], "d": [10.0, 20.0, 30.0]})
         plumed.write_pandas(initial, table)
         (run_dir / "plumed.dat").write_text(
-            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.h5.tar\n"
+            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.hpa\n"
         )
         trajectory = run_dir / "traj.xyz"
         trajectory.write_text(
@@ -525,11 +525,21 @@ class HDF5IO(unittest.TestCase):
         self.assertEqual(result["time"].tolist(), [0, 1, 2])
         np.testing.assert_allclose(result["d"], [10.0, 1.0, 2.0])
 
+    def test_archive_extension_aliases(self):
+        for suffix in (".hpa", ".h5.tar"):
+            with self.subTest(suffix=suffix):
+                archive = self.path.with_name("alias" + suffix)
+                plumed.write_pandas(self.df, archive)
+                assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+                renamed = self.path.with_name("renamed-alias.data")
+                renamed.write_bytes(archive.read_bytes())
+                assert_frame_equal(self.read(renamed, enable_constants=False), self.df)
+
     def test_archive(self):
-        """Archives (.h5.tar): TAR files of tables, possibly ending with a member written in part."""
+        """Archives (.hpa): TAR files of tables, possibly ending with a member written in part."""
         import tarfile
 
-        archive = self.path.with_name("table.h5.tar")
+        archive = self.path.with_name("table.hpa")
         plumed.write_pandas(self.df, archive)
         assert_frame_equal(self.read(archive, enable_constants=False), self.df)
         with tarfile.open(archive) as tar:

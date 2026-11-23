@@ -41,9 +41,9 @@ function plumed_regtest_before() {
   # (and without the end-of-archive marker); the run is restarted from the first step that is missing
   mkdir interrupted ; cd interrupted ; cp ../plumed.dat .
   $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
-  cut_tail COLVAR.h5.tar 1100
-  cut_tail HILLS.h5.tar 1100
-  $plumed h5cat COLVAR.h5.tar > COLVAR.read.txt
+  cut_tail COLVAR.hpa 1100
+  cut_tail HILLS.hpa 1100
+  $plumed h5cat COLVAR.hpa > COLVAR.read.txt
   n=$(grep -vc '^#' COLVAR.read.txt)
   echo $n > rows_after_interruption
   tail -n +$((6*n+1)) ../traj.xyz > rest.xyz
@@ -53,20 +53,20 @@ function plumed_regtest_before() {
   # an invalid header at the end (written in part) or a member not published (data behind
   # a header of zeros) end the archive
   mkdir damaged ; cd damaged
-  cp ../restart/COLVAR.h5.tar .
-  printf 'X' | dd of=COLVAR.h5.tar bs=1 seek=10 conv=notrunc 2> /dev/null
-  $plumed h5cat COLVAR.h5.tar > out 2> err
-  cp ../restart/COLVAR.h5.tar torn.h5.tar
-  cut_tail torn.h5.tar 1024
-  head -c 512 torn.h5.tar | LC_ALL=C tr 'b' 'x' >> torn.h5.tar
-  cp ../restart/COLVAR.h5.tar unpublished.h5.tar
-  cut_tail unpublished.h5.tar 1024
-  head -c 512 /dev/zero >> unpublished.h5.tar
-  head -c 2048 ../traj.xyz >> unpublished.h5.tar
+  cp ../restart/COLVAR.hpa .
+  printf 'X' | dd of=COLVAR.hpa bs=1 seek=10 conv=notrunc 2> /dev/null
+  $plumed h5cat COLVAR.hpa > out 2> err
+  cp ../restart/COLVAR.hpa torn.hpa
+  cut_tail torn.hpa 1024
+  head -c 512 torn.hpa | LC_ALL=C tr 'b' 'x' >> torn.hpa
+  cp ../restart/COLVAR.hpa unpublished.hpa
+  cut_tail unpublished.hpa 1024
+  head -c 512 /dev/zero >> unpublished.hpa
+  head -c 2048 ../traj.xyz >> unpublished.hpa
   cd ..
   # F) a file written as free text cannot be an HDF5 table, and a single HDF5 file (.h5) is not written
   mkdir errors ; cd errors
-  echo "PRINT_NDX ATOMS=1-4 FILE=atoms.h5.tar" > freetext.dat
+  echo "PRINT_NDX ATOMS=1-4 FILE=atoms.hpa" > freetext.dat
   $plumed driver --plumed freetext.dat --ixyz ../part.xyz > out1 2> err1
   { echo "d1: DISTANCE ATOMS=1,2" ; echo "PRINT ARG=d1 FILE=COLVAR.h5" ; } > single.dat
   $plumed driver --plumed single.dat --ixyz ../part.xyz > out2 2> err2
@@ -83,35 +83,35 @@ function plumed_regtest_before() {
 function plumed_regtest_after() {
   {
     for f in COLVAR HILLS ; do
-      $plumed h5convert --input $f.h5.tar --output $f.h5.txt
-      echo "$f.h5.tar as text: $(compare $f $f.h5.txt)"
+      $plumed h5convert --input $f.hpa --output $f.h5.txt
+      echo "$f.hpa as text: $(compare $f $f.h5.txt)"
       for d in restart checkpoint interrupted signal ; do
-        $plumed h5convert --input $d/$f.h5.tar --output $d/$f.h5.txt
-        if cmp -s $f.h5.txt $d/$f.h5.txt ; then echo "$d/$f.h5.tar IDENTICAL" ; else echo "$d/$f.h5.tar DIFFERENT" ; fi
+        $plumed h5convert --input $d/$f.hpa --output $d/$f.h5.txt
+        if cmp -s $f.h5.txt $d/$f.h5.txt ; then echo "$d/$f.hpa IDENTICAL" ; else echo "$d/$f.hpa DIFFERENT" ; fi
       done
-      $plumed h5convert --input restart/bck.trimmed.0.$f.h5.tar --output restart/$f.removed.txt
-      echo "restart/bck.trimmed.0.$f.h5.tar rows: $(grep -vc '^#' restart/$f.removed.txt)"
+      $plumed h5convert --input restart/bck.trimmed.0.$f.hpa --output restart/$f.removed.txt
+      echo "restart/bck.trimmed.0.$f.hpa rows: $(grep -vc '^#' restart/$f.removed.txt)"
       # an archive into a single HDF5 file, and back
-      $plumed h5convert --input $f.h5.tar --output $f.copy.h5
-      $plumed h5convert --input $f.copy.h5 --output $f.copy.h5.tar
-      $plumed h5convert --input $f.copy.h5.tar --output $f.copy.txt
-      if cmp -s $f.h5.txt $f.copy.txt ; then echo "$f.h5.tar -> h5 -> h5.tar IDENTICAL" ; else echo "$f.h5.tar -> h5 -> h5.tar DIFFERENT" ; fi
+      $plumed h5convert --input $f.hpa --output $f.copy.h5
+      $plumed h5convert --input $f.copy.h5 --output $f.copy.hpa
+      $plumed h5convert --input $f.copy.hpa --output $f.copy.txt
+      if cmp -s $f.h5.txt $f.copy.txt ; then echo "$f.hpa -> h5 -> hpa IDENTICAL" ; else echo "$f.hpa -> h5 -> hpa DIFFERENT" ; fi
     done
     # text -> archive -> text gives the same values
-    $plumed h5convert --input COLVAR --output roundtrip.h5.tar
-    $plumed h5convert --input roundtrip.h5.tar --output roundtrip.txt
-    echo "COLVAR -> h5.tar -> text: $(compare COLVAR roundtrip.txt)"
+    $plumed h5convert --input COLVAR --output roundtrip.hpa
+    $plumed h5convert --input roundtrip.hpa --output roundtrip.txt
+    echo "COLVAR -> hpa -> text: $(compare COLVAR roundtrip.txt)"
     # the archive is a TAR file, whose members are tables (one every 7 steps: the flushes)
-    echo "members of COLVAR.h5.tar: $(tar tf COLVAR.h5.tar | wc -l | tr -d ' ')"
-    mkdir members ; ( cd members && tar xf ../COLVAR.h5.tar )
+    echo "members of COLVAR.hpa: $(tar tf COLVAR.hpa | wc -l | tr -d ' ')"
+    mkdir members ; ( cd members && tar xf ../COLVAR.hpa )
     $plumed h5cat members/batch_00000002.h5 | grep -v '^#' | awk '{print "member 2: time",$1}'
     # the members packed again by the tar of the system (the default format of GNU tar, or of bsdtar)
-    ( cd members && tar cf ../repacked.h5.tar batch_*.h5 )
-    $plumed h5convert --input repacked.h5.tar --output repacked.txt
+    ( cd members && tar cf ../repacked.hpa batch_*.h5 )
+    $plumed h5convert --input repacked.hpa --output repacked.txt
     echo "repacked with tar: $(compare COLVAR repacked.txt)"
     # a compressed archive is not read
-    gzip -c COLVAR.h5.tar > compressed.h5.tar
-    $plumed h5cat compressed.h5.tar 2>&1 | grep -o "not a TAR file.*" | head -n 1
+    gzip -c COLVAR.hpa > compressed.hpa
+    $plumed h5cat compressed.hpa 2>&1 | grep -o "not a TAR file.*" | head -n 1
     echo "interrupted: rows read after the interruption: $(cat interrupted/rows_after_interruption)"
     grep -h "restart step" restart/out2 interrupted/out2 signal/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
     grep -h "truncated from" checkpoint/out2 | sed 's/^PLUMED: *//' | sed 's/from [0-9]* to [0-9]* bytes/from N to M bytes/' | LC_ALL=C sort
@@ -119,15 +119,15 @@ function plumed_regtest_after() {
     grep -h "HDF5 tables" errors/err1 | head -n 1 | sed 's/^.*\(HDF5 tables\)/\1/'
     grep -h "PLUMED writes HDF5 tables" errors/err2 | head -n 1 | sed 's/^.*\(PLUMED writes HDF5 tables\)/\1/'
     for f in torn unpublished ; do
-      echo "damaged/$f.h5.tar rows: $($plumed h5cat damaged/$f.h5.tar | grep -vc '^#')"
+      echo "damaged/$f.hpa rows: $($plumed h5cat damaged/$f.hpa | grep -vc '^#')"
     done
     # an archive is recognized by its content, whatever its name
-    cp COLVAR.h5.tar renamed.h5 ; cp COLVAR.h5.tar renamed
+    cp COLVAR.hpa renamed.h5 ; cp COLVAR.hpa renamed
     echo "renamed.h5 rows: $($plumed h5cat renamed.h5 | grep -vc '^#')"
     echo "renamed rows: $($plumed h5convert --input renamed --output - | grep -vc '^#')"
     # members of at most 25 rows
-    $plumed h5convert --input COLVAR.h5.tar --output rebatched.h5.tar --batch-size 25
-    $plumed h5convert --input rebatched.h5.tar --output rebatched.txt
-    echo "rebatched: $(tar tf rebatched.h5.tar | wc -l | tr -d ' ') members, $(compare COLVAR rebatched.txt)"
+    $plumed h5convert --input COLVAR.hpa --output rebatched.hpa --batch-size 25
+    $plumed h5convert --input rebatched.hpa --output rebatched.txt
+    echo "rebatched: $(tar tf rebatched.hpa | wc -l | tr -d ' ') members, $(compare COLVAR rebatched.txt)"
   } > restart_check
 }

@@ -1,4 +1,5 @@
 #include "plumed/tools/H5Table.h"
+#include "plumed/tools/FileBase.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -150,6 +151,9 @@ int main(int argc,char** argv) {
     const std::string mode=argv[1],path=argv[2];
     if(mode=="create") {
       create(path,30);
+    } else if(mode=="suffix") {
+      require(PLMD::FileBase::appendSuffix("COLVAR.hpa",".2")=="COLVAR.2.hpa","wrong .hpa replica suffix");
+      require(PLMD::FileBase::appendSuffix("COLVAR.h5.tar",".2")=="COLVAR.2.h5.tar","wrong .h5.tar replica suffix");
     } else if(mode=="create25") {
       create(path,25);
     } else if(mode=="copy") {

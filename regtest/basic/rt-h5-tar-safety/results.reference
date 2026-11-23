@@ -1,4 +1,5 @@
 conversion rejects identical paths and aliases without changing input: OK
+preferred .hpa and .h5.tar alias conversion, append and replica suffixes: OK
 failed writes stay failed until reopen (POSIX fault injection): OK
 trim publication failure preserves archive and permits replay: OK
 interrupted boundary trim recovers and retired records are not replayed: OK

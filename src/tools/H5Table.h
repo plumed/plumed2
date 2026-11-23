@@ -35,7 +35,7 @@ namespace h5table {
 \ingroup TOOLBOX
 Tables of fields (the files written with OFile::printField) stored in HDF5 files.
 
-Simulations write them as archives of tables (`.h5.tar`, see below); a single HDF5 file (`.h5`)
+Simulations write them as archives of tables (`.hpa`, see below); a single HDF5 file (`.h5`)
 is read, and written only from scratch (by h5convert), never appended to: HDF5 updates it in place,
 so that an interrupted run could damage it. Requires libhdf5 (`./configure --enable-libhdf5`).
 Layout of a table, version 1:
@@ -53,7 +53,7 @@ Values are stored with full precision, whatever FMT says.
 The reader (Reader) presents the table as the lines of the equivalent text file, with the numbers
 written with all their digits, so that everything that reads text files (IFile) reads HDF5 files too.
 
-A file whose name ends with `.h5.tar` is an archive of tables: an uncompressed POSIX (ustar) TAR file
+A file whose name ends with `.hpa` (also `.h5.tar`) is an archive of tables: an uncompressed POSIX (ustar) TAR file
 whose members (`batch_00000001.h5`, ...) are complete tables with the layout above, and nothing else
 (no metadata in the TAR headers). Rows are buffered and every flush (or every 4096 rows, or a change of
 the fields) appends a new member at the end of the file: its data, synchronized to the disk behind a
@@ -70,14 +70,14 @@ HDF5 would read an archive as its first member).
 /// True if PLUMED was compiled with libhdf5
 bool available();
 
-/// True if the file is an HDF5 table (by its extension, .h5) or an archive of tables (.h5.tar):
+/// True if the file is an HDF5 table (by its extension, .h5) or an archive of tables (.hpa or .h5.tar):
 /// for the files that are written
 bool isH5(const std::string& path);
 
-/// True if the file is an archive of tables: by its content if it exists, otherwise by its extension (.h5.tar)
+/// True if the file is an archive of tables: by its content if it exists, otherwise by its extension (.hpa or .h5.tar)
 bool isArchive(const std::string& path);
 
-/// True if the name of the file ends with .h5.tar
+/// True if the name of the file ends with .hpa or .h5.tar
 bool isArchiveName(const std::string& path);
 
 /// True if the file is an HDF5 table or an archive, by its extension or by its content: for the files that are read

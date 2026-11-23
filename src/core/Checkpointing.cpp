@@ -260,7 +260,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   const double tcut=(engineRestartStep+(keepRestartStep?0.5:-0.5))*dt;
   if(h5table::isTable(fname)) {
     if(!h5table::isArchive(fname)) {
-      log<<"  WARNING: file "<<fname<<" is a single HDF5 file, not an archive (.h5.tar): it is not trimmed at the restart step\n";
+      log<<"  WARNING: file "<<fname<<" is a single HDF5 file, not an archive (.hpa): it is not trimmed at the restart step\n";
       return;
     }
     // an archive is read from its end: only the members after the cut are read and rewritten

@@ -106,7 +106,8 @@ bool validTarHeader(const char* h,unsigned long long& size) {
 }
 
 bool hasArchiveExtension(const std::string& path) {
-  return path.size()>7 && path.compare(path.size()-7,7,".h5.tar")==0;
+  return Tools::extension(path)=="hpa" ||
+         (path.size()>7 && path.compare(path.size()-7,7,".h5.tar")==0);
 }
 
 enum class Content {Unknown,HDF5,Archive};
@@ -197,7 +198,7 @@ bool available() {
 
 namespace {
 [[noreturn]] void noHDF5(const std::string& path) {
-  plumed_merror("file "+path+": PLUMED was compiled without libhdf5, files with extension .h5 or .h5.tar cannot be used (configure PLUMED with --enable-libhdf5)");
+  plumed_merror("file "+path+": PLUMED was compiled without libhdf5, files with extension .h5, .hpa or .h5.tar cannot be used (configure PLUMED with --enable-libhdf5)");
 }
 }
 
@@ -656,7 +657,7 @@ std::vector<char> tableImage(const Signature& s,std::vector<Column>& columns,con
   return fileImage(f,path);
 }
 
-// Archives (.h5.tar): uncompressed POSIX (ustar) TAR files whose members are complete tables.
+// Archives (.hpa, also .h5.tar): uncompressed POSIX (ustar) TAR files whose members are complete tables.
 // They are only appended to: a member, once written, is never modified, so that an interrupted
 // run cannot damage what was written before. A member is published in two steps: its data
 // behind a header of zeros (which ends the archive for the readers), then its header, each
@@ -1156,7 +1157,7 @@ Writer::Writer(const std::string& path,bool append,std::size_t batch):
     check(impl->tar!=nullptr,path,"cannot open the file");
   } else {
     // a single HDF5 file is only written from scratch (h5convert): it would be modified in place
-    check(!exists,path,"a single HDF5 file cannot be appended to: convert it into an archive (.h5.tar) with plumed h5convert");
+    check(!exists,path,"a single HDF5 file cannot be appended to: convert it into an archive (.hpa) with plumed h5convert");
     impl->file=Id(H5Fcreate(path.c_str(),H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT),H5Fclose);
     check(impl->file>=0,path,"cannot create the file");
     writeRoot(impl->file,path);

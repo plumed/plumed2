@@ -52,13 +52,16 @@ since your disk might fill up quickly with this setting.
 
 The files that PLUMED writes field by field, i.e. those with a `#! FIELDS` header such as the ones of
 [PRINT](PRINT.md), the hills of [METAD](METAD.md) or the kernels of [OPES_METAD](OPES_METAD.md), are written as
-archives of [HDF5](https://www.hdfgroup.org/solutions/hdf5/) tables when their name ends with `.h5.tar`:
+archives of [HDF5](https://www.hdfgroup.org/solutions/hdf5/) tables when their name ends with `.hpa`:
 
 ```plumed
 d: DISTANCE ATOMS=1,2
-PRINT ARG=d FILE=COLVAR.h5.tar
-METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.h5.tar
+PRINT ARG=d FILE=COLVAR.hpa
+METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.hpa
 ```
+
+The extension `.hpa` means HDF PLUMED archive. The longer `.h5.tar` extension is also supported,
+with the same format and behavior; existing archives do not need conversion.
 
 The values are stored with full precision (FMT is ignored), so that a restart from a file of hills or kernels gives
 the same bias as the run that wrote it.
@@ -74,14 +77,14 @@ TAR tool and read with any HDF5 tool, e.g. in Python:
 import tarfile
 import h5py
 
-with tarfile.open("COLVAR.h5.tar") as tar:
+with tarfile.open("COLVAR.hpa") as tar:
     for member in tar:
         with h5py.File(tar.extractfile(member)) as f:
             time = f["block_0/time"][:]
             d = f["block_0/d"][:]
 ```
 
-Simpler, the Python module of PLUMED reads (and writes) them: `plumed.read_as_pandas("COLVAR.h5.tar")`.
+Simpler, the Python module of PLUMED reads (and writes) them: `plumed.read_as_pandas("COLVAR.hpa")`.
 
 The rows are kept in memory and written as a new member at every flush (see [FLUSH](FLUSH.md); the files are also
 flushed when the MD code writes its checkpoint), every 4096 rows, and when the fields change. A member is written at
@@ -102,14 +105,14 @@ archive into one and back (e.g. for tools that need a single HDF5 file).
 PLUMED reads the HDF5 tables and archives wherever it reads text files (restarts, [READ](READ.md), ...), and
 [h5convert](h5convert.md) converts them to text files and back, so that every tool that reads text files can be used.
 The files that are read are recognized by their content, so that a renamed archive is still read as an archive.
-For quick inspection, `plumed h5cat COLVAR.h5.tar` writes the equivalent text to standard output. [h5cat](h5cat.md)
+For quick inspection, `plumed h5cat COLVAR.hpa` writes the equivalent text to standard output. [h5cat](h5cat.md)
 accepts multiple filenames and concatenates their text in argument order, preserving all headers and rows.
 [h5convert](h5convert.md) accepts `--input -` for text standard input and `--output -` for text standard output, and
 changes the size of the members of an archive (`--batch-size`).
 
 Restarts (appending, trimming at the restart step, [CHECKPOINT](CHECKPOINT.md)) work as with text files, with a cost
 that does not depend on the size of the archive: only the headers of the members are read, and the members after the
-restart step. The removed rows are moved to an archive `bck.trimmed.X.filename.h5.tar`. When the MD code sends its
+restart step. The removed rows are moved to an archive `bck.trimmed.X.filename.hpa`. When the MD code sends its
 checkpoint signal at a step, PLUMED flushes the files at the start of that step, so that a restart from that step only
 truncates the archive at the end of a member. When the restart step is inside a member, only that member is
 rewritten: the new member is first saved in a file `filename.plumed-trim`, which completes the operation if it is
