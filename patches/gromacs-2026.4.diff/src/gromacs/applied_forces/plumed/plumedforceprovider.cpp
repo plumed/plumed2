@@ -168,6 +168,12 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     context_.mainRank = options.mpiComm_->isMainRank();
     context_.hrex     = options.hrex_;
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
+    if (expanded_ && plumedAPIversion_ < 13)
+    {
+        GMX_THROW(InvalidInputError(
+                "PLUMED-biased expanded-ensemble lambda sampling requires API >= 13 "
+                "for the setExchangeStep command; ordinary MD can use older kernels."));
+    }
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
     if (plumedAPIversion_ >= 13)
     {
