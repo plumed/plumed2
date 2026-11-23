@@ -551,7 +551,7 @@ void Checkpointing::restartFrom(const std::string& fileName) {
     comm.Bcast(n,0);
     plumed_massert(n>=0,"checkpoint file too large");
     content.resize(n);
-    comm.Bcast(&content[0],static_cast<int>(n),0);
+    comm.Bcast(content.data(),n,0);
   }
   pending=std::make_unique<CheckpointReader>(content);
   restartStep=pending->get<long long int>("step");

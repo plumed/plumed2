@@ -70,6 +70,7 @@ struct PlumedOptions
     StartingBehavior      startingBehavior_{};
     bool                  active_{ false };
     bool                  replex_{ false };
+    bool                  hrex_{ false };
     //! The GPU used by this rank (as CUDA numbers it), -1 if none
     int gpuDeviceId_{ -1 };
     //! The input record, for the step from which a restarted simulation continues
@@ -102,6 +103,8 @@ public:
      * @param replex true when mdrun was started with -replex
      */
     void setReplex(bool replex);
+    //! Set the general Hamiltonian exchange option before creating the provider.
+    void setHrex(bool hrex);
     /*! @brief Sets the GPU used by this rank
      * @param gpuDeviceId the index of the GPU as CUDA numbers it, -1 if none
      */
