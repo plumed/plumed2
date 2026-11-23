@@ -54,9 +54,13 @@ including all four serial AmberTools/LAMMPS jobs. Both serial engines also
 passed local Apple Silicon builds and numerical validation, including LAMMPS
 with one and two OpenMP threads.
 
-The reusable `md-gromacs.yml`, `md-lammps.yml` and `md-amber.yml` are called by the parent after
-the PLUMED artifacts are ready. Further engines can have separate reusable
-workflows sharing those artifacts. LAMMPS and AmberTools injection/header
+The parent calls `md-platform.yml` independently for each OS with fail-fast
+disabled. Within each call, the serial PLUMED build unlocks that OS's reusable
+`md-gromacs.yml`, `md-lammps.yml` and `md-amber.yml` workflows. Ubuntu tests can
+start as soon as the Ubuntu artifact is ready, even while macOS is queued or
+has failed. Each engine workflow receives a required `os` input and tests its
+three backends on that OS only; the full matrix still contains 20 jobs.
+Further engines can have separate reusable workflows sharing those artifacts. LAMMPS and AmberTools injection/header
 edits stay local to these tests, rather than adding entries to the distributed
 `plumed patch` collection.
 
