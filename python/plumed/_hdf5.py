@@ -77,7 +77,7 @@ def is_hdf5(file, format, content=False):
         return True
     if content and _content(file) is not None:
         return True
-    return _name(file).lower().endswith((".h5", ".hdf5", ".h5.tar"))
+    return _name(file).lower().endswith((".h5", ".hdf5", ".hpa", ".h5.tar"))
 
 
 def _is_archive(file):
@@ -86,10 +86,10 @@ def _is_archive(file):
     kind = _content(file)
     if kind is not None:
         return kind == "archive"
-    return _name(file).lower().endswith(".h5.tar")
+    return _name(file).lower().endswith((".hpa", ".h5.tar"))
 
 
-# Archives of tables (.h5.tar): uncompressed POSIX TAR files whose members are
+# Archives of tables (.hpa, also .h5.tar): uncompressed POSIX TAR files whose members are
 # complete tables, only appended to by PLUMED. A last member not published, or
 # whose header was written in part (an interrupted run), is ignored, as PLUMED
 # does; a trim record left by an interrupted restart is applied.
@@ -684,7 +684,7 @@ def write(df, file):
         else:
             value = float(value)
         constants[name] = value
-    if _name(file).lower().endswith(".h5.tar"):
+    if _name(file).lower().endswith((".hpa", ".h5.tar")):
         # an archive with a single member
         import tarfile
 

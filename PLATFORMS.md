@@ -60,7 +60,7 @@ simulations; for production runs coupled to an MD code, use a standard build
 | Expressions compiled with asmjit | yes | yes | yes |
 | Parallelism | embedded thread-MPI (`--tmpi-threads N`); no MPI library, no OpenMP | same | same |
 | BLAS and LAPACK | internal | internal | internal |
-| HDF5 tables (`.h5.tar`, `.h5`), more trajectory formats with chemfiles (driver `--itraj`, GROMACS `.tpr` files) | yes | yes | yes |
+| HDF5 tables (`.hpa`, `.h5`), more trajectory formats with chemfiles (driver `--itraj`, GROMACS `.tpr` files) | yes | yes | yes |
 | Compressed files (zlib), FFTW | no | no | no |
 | Python interface (`Plumed`, `InputBuilder`, I/O helpers) | yes | yes | yes |
 | `plumed` command line tools written in C++ (`driver`, `sum_hills`, ...) | yes | yes | yes |

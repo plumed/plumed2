@@ -120,7 +120,7 @@ int OFile::printf(const char*fmt,...) {
     va_end(arg);
     for(const char* c=text.data(); *c; c++) {
       if(!std::isspace(static_cast<unsigned char>(*c))) {
-        plumed_merror("file "+getPath()+": HDF5 tables (.h5.tar) can only be written field by field (as PRINT does): this file is written as free text, use another extension");
+        plumed_merror("file "+getPath()+": HDF5 tables (.hpa) can only be written field by field (as PRINT does): this file is written as free text, use another extension");
       }
     }
     return text.size()-1;
@@ -511,7 +511,7 @@ OFile& OFile::open(const std::string&setpath) {
   // the same file from all of them is slow.
   if(h5table::isH5(path)) {
     if(!h5table::isArchiveName(path)) {
-      plumed_merror("file "+path+": PLUMED writes HDF5 tables as archives (.h5.tar), which survive an interrupted run and can be read while they are written: use the extension .h5.tar (a single .h5 file can be read, and written with plumed h5convert)");
+      plumed_merror("file "+path+": PLUMED writes HDF5 tables as archives (.hpa), which survive an interrupted run and can be read while they are written: use the extension .hpa (a single .h5 file can be read, and written with plumed h5convert)");
     }
     // HDF5 table: fp is the null device on all the processes, the table is written by h5writer
     // (opened with "r+": the null device exists, nothing is created)

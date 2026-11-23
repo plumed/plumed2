@@ -249,7 +249,7 @@ p.cmd("setNatoms", 2)
 p.cmd("setLogFile", "log")
 p.cmd("init")
 p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
-p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5.tar")
+p.cmd("readInputLine", "PRINT ARG=d FILE=other.hpa")
 # the arrays must stay alive until calc
 box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
 forces = array.array("d", [0] * 6)
@@ -281,7 +281,7 @@ p.finalize()
                 "--no-mpi",
                 "h5convert",
                 "--input",
-                "other.h5.tar",
+                "other.hpa",
                 "--output",
                 "other.txt",
             ],
@@ -315,7 +315,7 @@ def check_optional_libraries(bundled, executable):
         h5py = None
     with temporary_directory() as temporary:
         directory = Path(temporary)
-        table = directory / "colvar.h5.tar"
+        table = directory / "colvar.hpa"
         p = plumed.Plumed()
         p.cmd("setMDEngine", "python")
         p.cmd("setNatoms", 2)

@@ -24,6 +24,7 @@
 #include "FileTools.h"
 #include "Tools.h"
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -35,7 +36,12 @@
 #include <utility>
 #ifdef _WIN32
 #include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 #else
+#include <fcntl.h>
 #include <unistd.h>
 #endif
 
@@ -100,7 +106,8 @@ bool validTarHeader(const char* h,unsigned long long& size) {
 }
 
 bool hasArchiveExtension(const std::string& path) {
-  return path.size()>7 && path.compare(path.size()-7,7,".h5.tar")==0;
+  return Tools::extension(path)=="hpa" ||
+         (path.size()>7 && path.compare(path.size()-7,7,".h5.tar")==0);
 }
 
 enum class Content {Unknown,HDF5,Archive};
@@ -191,7 +198,7 @@ bool available() {
 
 namespace {
 [[noreturn]] void noHDF5(const std::string& path) {
-  plumed_merror("file "+path+": PLUMED was compiled without libhdf5, files with extension .h5 or .h5.tar cannot be used (configure PLUMED with --enable-libhdf5)");
+  plumed_merror("file "+path+": PLUMED was compiled without libhdf5, files with extension .h5, .hpa or .h5.tar cannot be used (configure PLUMED with --enable-libhdf5)");
 }
 }
 
@@ -650,7 +657,7 @@ std::vector<char> tableImage(const Signature& s,std::vector<Column>& columns,con
   return fileImage(f,path);
 }
 
-// Archives (.h5.tar): uncompressed POSIX (ustar) TAR files whose members are complete tables.
+// Archives (.hpa, also .h5.tar): uncompressed POSIX (ustar) TAR files whose members are complete tables.
 // They are only appended to: a member, once written, is never modified, so that an interrupted
 // run cannot damage what was written before. A member is published in two steps: its data
 // behind a header of zeros (which ends the archive for the readers), then its header, each
@@ -865,6 +872,36 @@ void syncFile(std::FILE* f,const std::string& path) {
 #endif
 }
 
+/// File synchronization does not publish a new name or a rename on POSIX.
+void syncDirectory(const std::string& path) {
+#ifndef _WIN32
+  auto parent=pathFromUTF8(path).parent_path();
+  if(parent.empty()) {
+    parent=".";
+  }
+  const int fd=::open(parent.c_str(),O_RDONLY);
+  check(fd>=0,path,"cannot open the parent directory");
+  const int status=fsync(fd);
+  const int error=errno;
+  ::close(fd);
+  check(status==0,path,"cannot synchronize the parent directory: "+std::string(std::strerror(error)));
+#else
+  (void)path; // Directory changes use write-through renames below on Windows.
+#endif
+}
+
+void renameSynced(const std::string& from,const std::string& to) {
+#ifdef _WIN32
+  check(MoveFileExW(pathFromUTF8(from).c_str(),pathFromUTF8(to).c_str(),
+                    MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0,to,"cannot durably rename the file");
+#else
+  std::error_code ec;
+  std::filesystem::rename(pathFromUTF8(from),pathFromUTF8(to),ec);
+  check(!ec,to,"cannot rename the file: "+ec.message());
+  syncDirectory(to);
+#endif
+}
+
 void writeAt(std::FILE* f,unsigned long long offset,const char* data,std::size_t n,const std::string& path) {
   seekFile(f,offset,path);
   check(std::fwrite(data,1,n,f)==n,path,"cannot write the file");
@@ -918,8 +955,16 @@ void completeTrim(const std::string& path) {
     writeAt(f.get(),offset,entries.data(),entries.size(),path);
     syncFile(f.get(),path);
   }
+#ifdef _WIN32
+  // A write-through rename retires the record durably. A leftover .tmp is
+  // ignored by readers and removed by the next writer, never replayed.
+  renameSynced(record,record+".tmp");
+  std::filesystem::remove(pathFromUTF8(record+".tmp"),ec);
+#else
   std::filesystem::remove(pathFromUTF8(record),ec);
+#endif
   check(!ec,record,"cannot remove the file: "+ec.message());
+  syncDirectory(record);
 }
 
 /// replace what follows offset with these entries
@@ -940,8 +985,8 @@ void replaceTail(const std::string& path,unsigned long long offset,const std::ve
     check(std::fwrite(h.data(),1,h.size(),f.get())==h.size() && std::fwrite(entries.data(),1,entries.size(),f.get())==entries.size(),record,"cannot write the file");
     syncFile(f.get(),record);
   }
-  std::filesystem::rename(pathFromUTF8(record+".tmp"),pathFromUTF8(record),ec);
-  check(!ec,record,"cannot rename the file: "+ec.message());
+  // The recovery name must be durable before truncation can discard its data.
+  renameSynced(record+".tmp",record);
   completeTrim(path);
 }
 
@@ -1031,15 +1076,25 @@ struct Writer::Impl {
   /// end of the last member, and number of members
   unsigned long long end=0;
   std::size_t members=0;
+  bool failed=false;
+  void checkWritable() const {
+    check(!failed,path,"a previous write failed; close and reopen the writer before continuing");
+  }
   void writeBuffer() {
-    if(archive) {
-      publish();
-      return;
+    checkWritable();
+    try {
+      if(archive) {
+        publish();
+        return;
+      }
+      for(auto & c : columns) {
+        appendRows(c,path);
+      }
+      buffered=0;
+    } catch(...) {
+      failed=true;
+      throw;
     }
-    for(auto & c : columns) {
-      appendRows(c,path);
-    }
-    buffered=0;
   }
   /// write the buffered rows of an archive as a new member
   void publish() {
@@ -1057,6 +1112,9 @@ struct Writer::Impl {
     // then the header, which publishes the member
     writeAt(tar.get(),end,header.data(),header.size(),path);
     syncFile(tar.get(),path);
+    if(members==0) {
+      syncDirectory(path);
+    }
     end+=data.size();
     members++;
   }
@@ -1099,7 +1157,7 @@ Writer::Writer(const std::string& path,bool append,std::size_t batch):
     check(impl->tar!=nullptr,path,"cannot open the file");
   } else {
     // a single HDF5 file is only written from scratch (h5convert): it would be modified in place
-    check(!exists,path,"a single HDF5 file cannot be appended to: convert it into an archive (.h5.tar) with plumed h5convert");
+    check(!exists,path,"a single HDF5 file cannot be appended to: convert it into an archive (.hpa) with plumed h5convert");
     impl->file=Id(H5Fcreate(path.c_str(),H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT),H5Fclose);
     check(impl->file>=0,path,"cannot create the file");
     writeRoot(impl->file,path);
@@ -1108,6 +1166,9 @@ Writer::Writer(const std::string& path,bool append,std::size_t batch):
 
 Writer::~Writer() {
   Lock lock(hdf5Mutex());
+  if(impl->failed) {
+    return;
+  }
   try {
     impl->writeBuffer();
     if(impl->archive) {
@@ -1121,6 +1182,7 @@ Writer::~Writer() {
 
 void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& constants) {
   Lock lock(hdf5Mutex());
+  impl->checkWritable();
   Signature s;
   for(const auto & f : fields) {
     s.names.push_back(f.name);
@@ -1140,9 +1202,14 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
 
 void Writer::flush() {
   Lock lock(hdf5Mutex());
-  impl->writeBuffer();
-  if(!impl->archive) {
-    H5Fflush(impl->file,H5F_SCOPE_GLOBAL);
+  try {
+    impl->writeBuffer();
+    if(!impl->archive) {
+      check(H5Fflush(impl->file,H5F_SCOPE_GLOBAL)>=0,impl->path,"cannot flush the file");
+    }
+  } catch(...) {
+    impl->failed=true;
+    throw;
   }
 }
 
@@ -1412,6 +1479,9 @@ unsigned long long trimArchive(const std::string& path,double tcut,const std::st
 
 void copy(const std::string& input,const std::string& output,std::size_t batch) {
   Lock lock(hdf5Mutex());
+  std::error_code ec;
+  check(!std::filesystem::equivalent(pathFromUTF8(input),pathFromUTF8(output),ec),input,
+        "input and output refer to the same file");
   Files files(input);
   Writer out(output,false,batch);
   forEachBlock(files,input,[&](std::size_t,const Signature& sig,std::vector<Column>& cols,unsigned long long n) {

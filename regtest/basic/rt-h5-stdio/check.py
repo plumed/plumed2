@@ -47,6 +47,11 @@ assert b"1.2345678901234567" in expected
 assert b"#! SET description a constant with spaces" in expected
 print("named conversion: OK")
 
+for archive in ("preferred.hpa", "legacy.h5.tar"):
+    success("h5convert", "--input", "input", "--output", archive)
+    assert success("h5cat", archive) == expected
+print("preferred and alias archive extensions: OK")
+
 assert success("h5convert", "--input", "first.h5", "--output", "-") == expected
 assert not Path("-").exists()
 print("text stdout: OK")

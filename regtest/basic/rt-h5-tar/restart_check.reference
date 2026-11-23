@@ -1,19 +1,19 @@
-COLVAR.h5.tar as text: IDENTICAL
-restart/COLVAR.h5.tar IDENTICAL
-checkpoint/COLVAR.h5.tar IDENTICAL
-interrupted/COLVAR.h5.tar IDENTICAL
-signal/COLVAR.h5.tar IDENTICAL
-restart/bck.trimmed.0.COLVAR.h5.tar rows: 15
-COLVAR.h5.tar -> h5 -> h5.tar IDENTICAL
-HILLS.h5.tar as text: IDENTICAL
-restart/HILLS.h5.tar IDENTICAL
-checkpoint/HILLS.h5.tar IDENTICAL
-interrupted/HILLS.h5.tar IDENTICAL
-signal/HILLS.h5.tar IDENTICAL
-restart/bck.trimmed.0.HILLS.h5.tar rows: 3
-HILLS.h5.tar -> h5 -> h5.tar IDENTICAL
-COLVAR -> h5.tar -> text: IDENTICAL
-members of COLVAR.h5.tar: 10
+COLVAR.hpa as text: IDENTICAL
+restart/COLVAR.hpa IDENTICAL
+checkpoint/COLVAR.hpa IDENTICAL
+interrupted/COLVAR.hpa IDENTICAL
+signal/COLVAR.hpa IDENTICAL
+restart/bck.trimmed.0.COLVAR.hpa rows: 15
+COLVAR.hpa -> h5 -> hpa IDENTICAL
+HILLS.hpa as text: IDENTICAL
+restart/HILLS.hpa IDENTICAL
+checkpoint/HILLS.hpa IDENTICAL
+interrupted/HILLS.hpa IDENTICAL
+signal/HILLS.hpa IDENTICAL
+restart/bck.trimmed.0.HILLS.hpa rows: 3
+HILLS.hpa -> h5 -> hpa IDENTICAL
+COLVAR -> hpa -> text: IDENTICAL
+members of COLVAR.hpa: 10
 member 2: time 1
 member 2: time 2
 member 2: time 3
@@ -24,25 +24,25 @@ member 2: time 7
 repacked with tar: IDENTICAL
 not a TAR file in a format that PLUMED reads (POSIX ustar or pax, GNU; not compressed)
 interrupted: rows read after the interruption: 29
-file COLVAR.h5.tar: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.h5.tar
-file COLVAR.h5.tar: 5 lines written at or after the restart step 30 moved to bck.trimmed.0.COLVAR.h5.tar
+file COLVAR.hpa: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR.hpa
+file COLVAR.hpa: 5 lines written at or after the restart step 30 moved to bck.trimmed.0.COLVAR.hpa
 file COLVAR: 15 lines written at or after the restart step 20 moved to bck.trimmed.0.COLVAR
 file COLVAR: 5 lines written at or after the restart step 30 moved to bck.trimmed.0.COLVAR
 file COLVAR: 6 lines written at or after the restart step 29 moved to bck.trimmed.0.COLVAR
-file HILLS.h5.tar: 1 lines written at or after the restart step 30 moved to bck.trimmed.0.HILLS.h5.tar
-file HILLS.h5.tar: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS.h5.tar
+file HILLS.hpa: 1 lines written at or after the restart step 30 moved to bck.trimmed.0.HILLS.hpa
+file HILLS.hpa: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS.hpa
 file HILLS: 1 lines written at or after the restart step 29 moved to bck.trimmed.0.HILLS
 file HILLS: 1 lines written at or after the restart step 30 moved to bck.trimmed.0.HILLS
 file HILLS: 3 lines written at or after the restart step 20 moved to bck.trimmed.0.HILLS
 file COLVAR truncated from N to M bytes
-file COLVAR.h5.tar truncated from N to M bytes
+file COLVAR.hpa truncated from N to M bytes
 file HILLS truncated from N to M bytes
-file HILLS.h5.tar truncated from N to M bytes
+file HILLS.hpa truncated from N to M bytes
 the archive is damaged: invalid TAR header at byte 0
-HDF5 tables (.h5.tar) can only be written field by field (as PRINT does): this file is written as free text, use another extension
-PLUMED writes HDF5 tables as archives (.h5.tar), which survive an interrupted run and can be read while they are written: use the extension .h5.tar (a single .h5 file can be read, and written with plumed h5convert)
-damaged/torn.h5.tar rows: 60
-damaged/unpublished.h5.tar rows: 60
+HDF5 tables (.hpa) can only be written field by field (as PRINT does): this file is written as free text, use another extension
+PLUMED writes HDF5 tables as archives (.hpa), which survive an interrupted run and can be read while they are written: use the extension .hpa (a single .h5 file can be read, and written with plumed h5convert)
+damaged/torn.hpa rows: 60
+damaged/unpublished.hpa rows: 60
 renamed.h5 rows: 60
 renamed rows: 60
 rebatched: 3 members, IDENTICAL

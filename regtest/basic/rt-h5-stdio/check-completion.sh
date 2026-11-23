@@ -27,9 +27,12 @@ h5_complete_case 'h5cat first file' 'plumed h5cat fir' first.h5 h5cat fir
 h5_complete_case 'h5cat second file' 'plumed h5cat first.h5 sec' second.h5 h5cat first.h5 sec
 h5_complete_case 'h5cat quoted filename' "plumed h5cat 'file with sp" 'file with spaces.h5' h5cat 'file with sp'
 h5_complete_case 'h5cat after delimiter' 'plumed h5cat -- -l' -leading.h5 h5cat -- -l
+h5_complete_case 'h5cat hpa filename' 'plumed h5cat pre' preferred.hpa h5cat pre
+h5_complete_case 'h5cat archive alias' 'plumed h5cat leg' legacy.h5.tar h5cat leg
 h5_complete_case 'h5convert input stream' 'plumed h5convert --input -' - h5convert --input -
 h5_complete_case 'h5convert output stream' 'plumed h5convert --input first.h5 --output -' - h5convert --input first.h5 --output -
 h5_complete_case 'h5convert input file' 'plumed h5convert --input fir' first.h5 h5convert --input fir
+h5_complete_case 'h5convert hpa filename' 'plumed h5convert --input pre' preferred.hpa h5convert --input pre
 h5_complete_case 'h5convert equals split' 'plumed h5convert --input=fir' first.h5 h5convert --input = fir
 h5_complete_case 'h5convert equals unsplit' 'plumed h5convert --input=fir' --input=first.h5 h5convert --input=fir
 h5_complete_case 'h5convert equals stream' 'plumed h5convert --output=-' - h5convert --output = -
