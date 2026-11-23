@@ -56,7 +56,7 @@ is described in the file `custom_cv.pt` from PLUMED.
 ```plumed
 metatomic_cv: METATOMIC ...
     MODEL=custom_cv.pt
-    PLUGIN_LIBRARY=path/to/metatomic-torch-plugin.so
+    PLUGIN_LIBRARY=path/to/metatomic-torch-legacy-plugin.so
 
     SPECIES1=1-26
     SPECIES2=27-62
@@ -99,7 +99,7 @@ Here is another example with all the possible keywords:
 ```plumed
 soap: METATOMIC ...
     MODEL=path/to/model.pt
-    PLUGIN_LIBRARY=path/to/metatomic-torch-plugin.so
+    PLUGIN_LIBRARY=path/to/metatomic-torch-legacy-plugin.so
     EXTENSIONS_DIRECTORY=path/to/extensions/
     DEVICE=cpu
     CHECK_CONSISTENCY

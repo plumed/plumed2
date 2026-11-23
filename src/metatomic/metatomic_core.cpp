@@ -219,7 +219,7 @@ std::vector<std::string> defaultPlugins() {
         return plugins;
     }
 
-    for (const auto* name: {"metatomic-torch-plugin.so", "metatomic-python-plugin.so"}) {
+    for (const auto* name: {"metatomic-torch-legacy-plugin.so", "metatomic-python-plugin.so"}) {
         auto plugin = prefix / "libexec" / "metatomic" / name;
         if (std::filesystem::exists(plugin)) {
             plugins.push_back(plugin.string());
