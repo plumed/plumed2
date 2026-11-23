@@ -49,13 +49,26 @@ Values are stored with full precision, whatever FMT says.
 
 The reader (Reader) presents the table as the lines of the equivalent text file, with the numbers
 written with all their digits, so that everything that reads text files (IFile) reads HDF5 files too.
+
+A file whose name ends with `.h5.tar` is an archive of tables: an uncompressed POSIX (ustar) TAR file
+whose members (`batch_00000001.h5`, ...) are complete tables with the layout above. Rows are buffered
+and every flush (or every 4096 rows, or a change of the fields) appends a new member with a single
+write at the end of the file; the members already written are never modified. An interrupted run can
+only leave the last member written in part: the readers ignore it and the writer removes it when it
+appends to the archive. The table is the concatenation of the members, where consecutive blocks with
+the same signature are the same block. Unlike a single HDF5 file (which HDF5 updates in place, and
+keeps locked while it is written), an archive can be read while it is written, and what has been
+flushed survives a crash of the program.
 */
 
 /// True if PLUMED was compiled with libhdf5
 bool available();
 
-/// True if the file is an HDF5 table (by its extension, .h5)
+/// True if the file is an HDF5 table (by its extension, .h5) or an archive of tables (.h5.tar)
 bool isH5(const std::string& path);
+
+/// True if the file is an archive of tables (by its extension, .h5.tar)
+bool isArchive(const std::string& path);
 
 /// A value of a field
 struct Value {
@@ -111,7 +124,11 @@ std::vector<unsigned long long> rows(const std::string& path);
 
 /// Keep the first keep[b] rows of block b (the blocks beyond keep.size() are removed).
 /// The rows removed are written, with the same structure, in the table backup (if not empty).
+/// An archive can only lose its last rows: the members before the first row removed are not modified.
 void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup);
+
+/// Copy a table (or archive) into a new table (or archive), with the values as they are
+void copy(const std::string& input,const std::string& output);
 
 }
 }

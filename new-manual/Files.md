@@ -98,6 +98,42 @@ the run that wrote them. When they are rewritten, the previous one is kept as `b
 For a COLVAR file with a few columns an HDF5 table is
 not smaller or faster than a text file: HDF5 is useful for large files and when the full precision is needed.
 
+### Archives of HDF5 tables (.h5.tar)
+
+HDF5 updates a `.h5` file in place, and keeps it locked while PLUMED writes it. Hence a `.h5` file cannot be read
+while the simulation is running, and if the simulation is killed while PLUMED is writing it (e.g. when the
+wall-time of the job ends, or the program crashes) the whole file can become unreadable, including the rows written
+long before. When this matters, use an archive of tables, a file whose name ends with `.h5.tar`:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=COLVAR.h5.tar
+METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.h5.tar
+```
+
+An archive is an uncompressed TAR file whose members (`batch_00000001.h5`, `batch_00000002.h5`, ...) are complete
+HDF5 tables, as described above. The rows are kept in memory and written as a new member at every flush (see
+[FLUSH](FLUSH.md); the files are also flushed when the MD code writes its checkpoint), every 4096 rows, and when the
+fields change. A member is written with a single write at the end of the file, and it is never modified afterwards.
+Thus:
+
+- the archive can be read while the simulation is running: the readers see the members written so far;
+- if the simulation is killed, all the members written before are intact; the only damage can be a last member
+  written in part, which the readers ignore and PLUMED removes when it appends to the archive (e.g. at a restart).
+
+As for text files, the archive is not synchronized to the disk at every flush: a crash of the whole machine can
+lose what the operating system had not written yet.
+
+PLUMED reads archives wherever it reads `.h5` files (restarts, [READ](READ.md), [h5cat](h5cat.md),
+[h5convert](h5convert.md), ...), and the table is the concatenation of the members. The members can be extracted
+with any TAR tool and read with any HDF5 tool (`tar xf COLVAR.h5.tar`), and [h5convert](h5convert.md) converts an
+archive into a single `.h5` file and back. The Python module reads and writes archives too
+(`plumed.read_as_pandas("COLVAR.h5.tar")`). Restarts (appending, trimming at the restart step,
+[CHECKPOINT](CHECKPOINT.md)) work as with the other files; only the members after the restart step are rewritten.
+
+Every member has a fixed overhead of a few kB (larger with more columns): flushing every few rows makes the archive
+much larger than the equivalent `.h5` file, while with members of hundreds or thousands of rows the overhead is small.
+
 # Replica-Suffix Replica suffix
 
 When running with multiple replicas (e.g., with GROMACS, -multi option) PLUMED adds the replica index as a suffix to

@@ -25,8 +25,10 @@
 h5py and numpy are imported only when an HDF5 operation is requested.
 """
 
+import io
 import operator
 import os
+import time
 from contextlib import ExitStack
 from numbers import Integral
 
@@ -45,7 +47,78 @@ def is_hdf5(file, format):
         if isinstance(file, (str, os.PathLike))
         else getattr(file, "name", "")
     )
-    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5"))
+    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5", ".h5.tar"))
+
+
+def _is_archive(file):
+    name = (
+        os.fspath(file)
+        if isinstance(file, (str, os.PathLike))
+        else getattr(file, "name", "")
+    )
+    return isinstance(name, str) and name.lower().endswith(".h5.tar")
+
+
+# Archives of tables (.h5.tar): uncompressed POSIX TAR files whose members are
+# complete tables, only appended to by PLUMED. A last member written in part
+# (an interrupted run) is ignored, as PLUMED does.
+
+
+def _archive_members(f):
+    """(offset, size) of the regular members of an archive."""
+    f.seek(0, os.SEEK_END)
+    file_size = f.tell()
+    members, end = [], 0
+    while file_size - end >= 512:
+        f.seek(end)
+        h = f.read(512)
+        if h == bytes(512):
+            break
+        try:
+            if h[257:262] != b"ustar":
+                raise ValueError
+            stored = int(h[148:156].replace(b"\0", b" ").strip() or b"x", 8)
+            size = int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
+        except ValueError:
+            raise FormatError(f"Invalid TAR header at byte {end}") from None
+        if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
+            raise FormatError(f"Invalid TAR header at byte {end}")
+        following = end + 512 + (size + 511) // 512 * 512
+        if following > file_size:
+            break  # written in part
+        if h[156:157] in (b"0", b"\0"):
+            members.append((end + 512, size))
+        end = following
+    return members
+
+
+class _Member(io.RawIOBase):
+    """A member of an archive, as a read-only file."""
+
+    def __init__(self, f, offset, size):
+        self.f, self.offset, self.size, self.pos = f, offset, size, 0
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, pos, whence=os.SEEK_SET):
+        base = {os.SEEK_SET: 0, os.SEEK_CUR: self.pos, os.SEEK_END: self.size}[whence]
+        self.pos = base + pos
+        return self.pos
+
+    def readinto(self, b):
+        n = max(0, min(len(b), self.size - self.pos))
+        self.f.seek(self.offset + self.pos)
+        data = self.f.read(n)
+        b[: len(data)] = data
+        self.pos += len(data)
+        return len(data)
 
 
 def _h5py():
@@ -177,8 +250,21 @@ class _Reader:
         self.stack = ExitStack()
         self._closed = False
         try:
-            self.file = _open(self.stack, file, "r")
-            self.blocks = _blocks(self.file)
+            if _is_archive(file):
+                h5py = _h5py()
+                handle = file
+                if not hasattr(file, "read"):
+                    # closed by the stack, with the reader
+                    handle = self.stack.enter_context(open(file, "rb"))  # noqa: SIM115
+                self.blocks = []
+                for offset, size in _archive_members(handle):
+                    member = self.stack.enter_context(
+                        h5py.File(_Member(handle, offset, size), "r")
+                    )
+                    self.blocks.extend(_blocks(member))
+            else:
+                self.file = _open(self.stack, file, "r")
+                self.blocks = _blocks(self.file)
             if usecols is not None and not callable(usecols):
                 usecols = list(usecols)
             self.selected = [_columns(names, usecols) for _, names, _, _ in self.blocks]
@@ -516,6 +602,31 @@ def write(df, file):
         else:
             value = float(value)
         constants[name] = value
+    if _is_archive(file):
+        # an archive with a single member
+        import tarfile
+
+        image = io.BytesIO()
+        _write(names, datasets, constants, image)
+        info = tarfile.TarInfo("batch_00000001.h5")
+        info.size, info.mode = len(image.getbuffer()), 0o644
+        info.mtime = time.time()
+        image.seek(0)
+        with tarfile.open(
+            fileobj=file if hasattr(file, "write") else None,
+            name=None if hasattr(file, "write") else file,
+            mode="w",
+            format=tarfile.USTAR_FORMAT,
+        ) as tar:
+            tar.addfile(info, image)
+        return
+    _write(names, datasets, constants, file)
+
+
+def _write(names, datasets, constants, file):
+    import numpy as np
+
+    h5py = _h5py()
     with ExitStack() as stack:
         handle = _open(stack, file, "w")
         if len(handle) or len(handle.attrs):

@@ -59,6 +59,14 @@ plumed h5convert --input COLVAR.h5 --output - > COLVAR
 Standard input and output support text only; the other filename must end in `.h5`.
 For quick inspection and concatenation of HDF5 tables, see [h5cat](h5cat.md).
 
+Archives of HDF5 tables (`.h5.tar`, see [Files](Files.md)) can be used wherever a `.h5` file can.
+When one file is an archive and the other a `.h5` file the values are copied as they are, e.g. to
+turn an archive into a single HDF5 file:
+
+```plumed
+plumed h5convert --input COLVAR.h5.tar --output COLVAR.h5
+```
+
 When a text file is converted, the values that are numbers are stored as double precision
 numbers (with the digits that are in the text file) and the others as strings.
 
@@ -129,8 +137,13 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--output",output);
   const bool fromH5=h5table::isH5(input);
   const bool toH5=h5table::isH5(output);
+  if(fromH5 && toH5 && h5table::isArchive(input)!=h5table::isArchive(output)) {
+    // an archive into a single HDF5 file, or vice versa: the values are copied as they are
+    h5table::copy(input,output);
+    return 0;
+  }
   if(fromH5==toH5) {
-    error("one of the two files (and only one) must be an HDF5 file (extension .h5)");
+    error("one of the two files (and only one) must be an HDF5 file (extension .h5), or one an HDF5 file and the other an archive (extension .h5.tar)");
   }
   if(!toH5) {
     h5table::Reader reader(input);

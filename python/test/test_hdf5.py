@@ -525,6 +525,35 @@ class HDF5IO(unittest.TestCase):
         self.assertEqual(result["time"].tolist(), [0, 1, 2])
         np.testing.assert_allclose(result["d"], [10.0, 1.0, 2.0])
 
+    def test_archive(self):
+        """Archives (.h5.tar): TAR files of tables, possibly ending with a member written in part."""
+        import tarfile
+
+        archive = self.path.with_name("table.h5.tar")
+        plumed.write_pandas(self.df, archive)
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        with tarfile.open(archive) as tar:
+            (member,) = tar.getmembers()
+            with h5py.File(tar.extractfile(member)) as handle:
+                self.assertEqual(handle.attrs["plumed_format"], "plumed-table")
+        # a second member: the table is the concatenation of the members
+        second = self.df.iloc[:2]
+        plumed.write_pandas(second, self.path)
+        with tarfile.open(archive, "a", format=tarfile.USTAR_FORMAT) as tar:
+            tar.add(self.path, arcname="batch_00000002.h5")
+        both = pd.concat([self.df, second], ignore_index=True)
+        assert_frame_equal(self.read(archive, enable_constants=False), both)
+        # interrupted while writing the second member: the first one is read
+        data = archive.read_bytes()
+        archive.write_bytes(data[: data.index(b"batch_00000002.h5") + 1000])
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        # a damaged header is an error
+        damaged = bytearray(data)
+        damaged[0] ^= 1
+        archive.write_bytes(bytes(damaged))
+        with self.assertRaisesRegex(plumed.FormatError, "TAR header"):
+            self.read(archive)
+
 
 if __name__ == "__main__":
     unittest.main()

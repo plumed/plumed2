@@ -471,8 +471,9 @@ void Checkpointing::write(long long int step,const std::string& outPath,const st
         }
       }
       w.write("path"+num,f);
-      if(h5table::isH5(f)) {
+      if(h5table::isH5(f) && !h5table::isArchive(f)) {
         // an HDF5 table: the rows of its blocks, its size in bytes is meaningless
+        // (an archive of tables is only appended to: its size is used, as for text files)
         std::vector<long long> rows;
         for(const auto & fb : plumed.getFiles()) {
           OFile* of=dynamic_cast<OFile*>(fb);
