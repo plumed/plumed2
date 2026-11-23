@@ -94,6 +94,11 @@ private:
   int N_Blocks;
   int total_PIV_length;
   int inited_step;
+  std::uint64_t evaluation_=0;
+  long long preparedStep_=-1;
+  std::uint64_t preparedEvaluation_=0;
+  bool preparedExchange_=false;
+  bool trialGeometry_=false;
   bool driver_mode;
   bool freeze_selection;
   std::vector<int> steps_since_update;
@@ -736,6 +741,33 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 }
 
 void PINES::prepare() {
+  if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
+      preparedExchange_==getExchangeStep()) {
+    return;
+  }
+  const bool newStep=preparedStep_!=getStep();
+  preparedStep_=getStep();
+  preparedEvaluation_=getEvaluationId();
+  preparedExchange_=getExchangeStep();
+  if(getExchangeStep() || trialGeometry_) {
+    // A trial can bring a previously discarded pair arbitrarily close. Request
+    // every candidate before sharing data, then choose the list in calculate().
+    listreducedall.clear();
+    for(const auto& block : listall) {
+      listreducedall.insert(block.begin(),block.end());
+    }
+    listreducedall_vec.assign(listreducedall.begin(),listreducedall.end());
+    atom_ind_hashmap.clear();
+    for(unsigned i=0; i<listreducedall_vec.size(); ++i) {
+      atom_ind_hashmap[listreducedall_vec[i].index()]=i;
+    }
+    requestAtoms(listreducedall_vec);
+    ann_deriv.resize(listreducedall_vec.size());
+    for(auto& derivative : ann_deriv) {
+      derivative.resize(total_PIV_length);
+    }
+    return;
+  }
   bool heap_refreshed = false;
   bool stale_refresh_prep = false;
   for (int n = 0; n < N_Blocks; n++) {
@@ -748,7 +780,9 @@ void PINES::prepare() {
       steps_since_update[n] = -1;
       stale_tolerance[n] = false;
     }
-    steps_since_update[n]+=1;
+    if(newStep) {
+      steps_since_update[n]+=1;
+    }
   }
   if (heap_refreshed || stale_refresh_prep) {
     // Collate all atoms from all lists
@@ -773,12 +807,27 @@ void PINES::prepare() {
 
 void PINES::calculate() {
   const long step = plumed.getStep();
+  const bool refreshGeometry=isCalculationOnly() || trialGeometry_;
+  if(refreshGeometry) {
+    for(const auto& block : listall) {
+      for(const auto& atom : block) {
+        if(atom_ind_hashmap.find(atom.index())==atom_ind_hashmap.end()) {
+          error("Auxiliary PINES evaluations need all candidate atoms: mark exchange evaluations before preparing dependencies");
+        }
+      }
+    }
+    for(int n=0; n<N_Blocks; ++n) {
+      buildMaxHeapVecBlock(n,mypdb,vecMaxHeapVecs[n]);
+    }
+  }
+  trialGeometry_=isCalculationOnly();
   if (inited_step == -1) {
     for (int n =0; n < N_Blocks; n++) {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
     }
   }
-  if (step != inited_step) {
+  if (evaluation_ != getEvaluationId()) {
+    evaluation_=getEvaluationId();
     if ((int)preupdated_block.size() != N_Blocks) {
       preupdated_block.assign(N_Blocks, 0);
     } else {
@@ -791,7 +840,7 @@ void PINES::calculate() {
     }
 
     // Optional: latch here (membership/order frozen for this step)
-    if (freeze_selection) {
+    if (freeze_selection && (step!=inited_step || refreshGeometry)) {
       latchFromCurrentHeaps();
     }
 

@@ -1589,9 +1589,10 @@ void EMMI::prepare() {
 // overlap calculator
 void EMMI::calculate_overlap() {
 
-  if(first_time_ || getExchangeStep() || getStep()%nl_stride_==0) {
+  if(first_time_ || isCalculationOnly() || getStep()%nl_stride_==0) {
     update_neighbor_list();
-    first_time_=false;
+    // Trial coordinates must not leave a list for the next local evaluation.
+    first_time_=isCalculationOnly();
   }
 
   // clean temporary std::vectors
@@ -1753,7 +1754,7 @@ void EMMI::get_weights(double &weight, double &norm, double &neff) {
     comm.Sum(&bias[0], nrep_);
 
     // accumulate weights
-    if(!first_time_w_) {
+    if(!first_time_w_ && !isCalculationOnly()) {
       for(unsigned i=0; i<nrep_; ++i) {
         const double delta=bias[i]-average_weights_[i];
         // FIXME: multiplying by fractional decay here causes problems with numerical derivatives,
@@ -1761,7 +1762,7 @@ void EMMI::get_weights(double &weight, double &norm, double &neff) {
         // of epsilons. Maybe we can work on a temporary copy of the action instead?
         average_weights_[i]+=decay_w_*delta;
       }
-    } else {
+    } else if(!isCalculationOnly()) {
       first_time_w_ = false;
       for(unsigned i=0; i<nrep_; ++i) {
         average_weights_[i] = bias[i];
@@ -1830,7 +1831,7 @@ void EMMI::calculate() {
 
   // do regression
   if(nregres_>0) {
-    if(step%nregres_==0 && !getExchangeStep()) {
+    if(step%nregres_==0 && !isCalculationOnly()) {
       scale_ = doRegression();
     }
     // set scale component
@@ -1838,7 +1839,7 @@ void EMMI::calculate() {
   }
 
   // write model overlap to file
-  if(ovstride_>0 && step%ovstride_==0) {
+  if(!isCalculationOnly() && ovstride_>0 && step%ovstride_==0) {
     write_model_overlap(step);
   }
 
@@ -1970,12 +1971,12 @@ void EMMI::calculate() {
   if(noise_!=2) {
 
     // do Montecarlo
-    if(dsigma_[0]>0 && step%MCstride_==0 && !getExchangeStep()) {
+    if(dsigma_[0]>0 && step%MCstride_==0 && !isCalculationOnly()) {
       doMonteCarlo();
     }
 
     // print status
-    if(step%statusstride_==0) {
+    if(!isCalculationOnly() && step%statusstride_==0) {
       print_status(step);
     }
 

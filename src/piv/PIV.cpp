@@ -208,6 +208,9 @@ private:
   /// shared across multiple PIV instances
   struct SharedData {
     int prev_stp=-1;
+    std::uint64_t evaluation=0;
+    bool trial=false;
+    bool forceRefresh=false;
     int init_stp=1;
     std:: vector<std:: vector<Vector> > prev_pos;
     std:: vector<std:: vector<double> > cPIV;
@@ -798,6 +801,10 @@ void PIV::calculate() {
   auto & cPIV(sharedData->cPIV);
   auto & Atom0(sharedData->Atom0);
   auto & Atom1(sharedData->Atom1);
+  if(sharedData->evaluation!=getEvaluationId()) {
+    sharedData->forceRefresh=isCalculationOnly() || sharedData->trial;
+    sharedData->trial=isCalculationOnly();
+  }
 
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
@@ -878,7 +885,9 @@ void PIV::calculate() {
     log << "\n";
   }
   // Do the sorting only once per timestep to avoid building the PIV N times for N rPIV PDB structures!
-  if ((getStep()>prev_stp&&getStep()%updatePIV==0)||CompDer) {
+  if ((sharedData->evaluation!=getEvaluationId() &&
+       (getStep()%updatePIV==0 || sharedData->forceRefresh)) || CompDer) {
+    sharedData->evaluation=getEvaluationId();
     if (CompDer) {
       log << " Step " << getStep() << "  Computing Derivatives NON-SORTED PIV \n";
     }
@@ -919,7 +928,7 @@ void PIV::calculate() {
       }
       // Decide whether to update lists based on atom displacement, every stride
       std:: vector<std:: vector<Vector> > tmp_pos(Nlist);
-      if (getStep() % nlall->getStride() ==0) {
+      if (getStep() % nlall->getStride() ==0 || sharedData->forceRefresh) {
         bool docom=com;
         for (unsigned j=0; j<Nlist; j++) {
           for (unsigned i=0; i<nl[j]->getFullAtomList().size(); i++) {
@@ -1161,7 +1170,7 @@ void PIV::calculate() {
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
-  if(getStep()%updatePIV==0) {
+  if(getStep()%updatePIV==0 || sharedData->forceRefresh) {
     // set to zero PIVdistance, derivatives and virial when they are calculated
     for(unsigned j=0; j<m_deriv.size(); j++) {
       for(unsigned k=0; k<3; k++) {

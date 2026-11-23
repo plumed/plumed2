@@ -1821,10 +1821,10 @@ void EMMIVOX::calculate() {
   getPntrToComponent("kbt")->set(kbt_);
 
   // neighbor list update
-  if(first_time_ || getExchangeStep() || step%nl_stride_==0) {
+  if(first_time_ || isCalculationOnly() || step%nl_stride_==0) {
     // check if time to update neighbor sphere
     bool update = false;
-    if(first_time_ || getExchangeStep()) {
+    if(first_time_ || isCalculationOnly()) {
       update = true;
     } else {
       update = do_neighbor_sphere();
@@ -1836,7 +1836,7 @@ void EMMIVOX::calculate() {
     // update neighbor list
     update_neighbor_list();
     // set flag
-    first_time_=false;
+    first_time_=isCalculationOnly();
   }
 
   // calculate forward model
@@ -1846,7 +1846,7 @@ void EMMIVOX::calculate() {
   if(dbfact_>0) {
     double acc = 0.0;
     // do Monte Carlo
-    if(step%MCBstride_==0 && !getExchangeStep() && step>0) {
+    if(step%MCBstride_==0 && !isCalculationOnly() && step>0) {
       doMonteCarloBfact();
     }
     // calculate acceptance ratio
@@ -1877,11 +1877,11 @@ void EMMIVOX::calculate() {
   }
   // PRINT other quantities to files
   // - status file
-  if(step%statusstride_==0) {
+  if(!isCalculationOnly() && step%statusstride_==0) {
     print_status(step);
   }
   // - density file
-  if(mapstride_>0 && step%mapstride_==0) {
+  if(!isCalculationOnly() && mapstride_>0 && step%mapstride_==0) {
     write_model_density(step);
   }
 }

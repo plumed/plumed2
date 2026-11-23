@@ -1,0 +1,20 @@
+mpiprocs=2
+type=driver
+plumed_needs="isdb-pytorch:libtorch"
+extra_files="../rt-emmivox-fixed/structure.pdb ../rt-emmivox-fixed/map.dat ../rt-emmivox-fixed/traj.pdb"
+arg="--plumed plumed.dat --ipdb traj.pdb --multi 2 --debug-grex 3 "
+function plumed_regtest_before() {
+  awk 'NR<=235{a[NR]=$0} END{for(f=0;f<8;f++)for(i=1;i<=235;i++)print a[i]}' traj.pdb > traj.0.pdb
+  awk 'substr($0,1,4)=="ATOM"{x=substr($0,31,8)+1.0;print substr($0,1,30) sprintf("%8.3f",x) substr($0,39);next}{print}' traj.0.pdb > traj.1.pdb
+  mkdir noexchange
+  (cd noexchange; cp ../plumed.dat ../structure.pdb ../map.dat ../traj.0.pdb ../traj.1.pdb .; $mpi $plumed driver --plumed plumed.dat --ipdb traj.pdb --multi 2  > out 2> err)
+}
+function plumed_regtest_after() {
+  {
+    for file in colvar emvstatus model.dat-0 model.dat-4; do
+      for r in 0 1; do
+        if cmp -s "$file.$r" "noexchange/$file.$r"; then echo "$file.$r IDENTICAL"; else echo "$file.$r DIFFERENT"; fi
+      done
+    done
+  } > comparison
+}

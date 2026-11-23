@@ -583,7 +583,7 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
     if(stride_==1) {
       invalidateList=true;
       firsttime=false;
-    } else if(firsttime || (aa->getStep()%stride_==0 )) {
+    } else if(firsttime || aa->getExchangeStep() || (aa->getStep()%stride_==0 )) {
       aa->requestAtoms(getFullAtomList());
       reducedRequested=false;
       invalidateList=true;
@@ -597,9 +597,6 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
         reducedRequested=true;
       }
       invalidateList=false;
-      if(aa->getExchangeStep()) {
-        aa->error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
-      }
     }
     if(aa->getExchangeStep()) {
       firsttime=true;
