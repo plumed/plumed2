@@ -1,0 +1,4 @@
+conversion rejects identical paths and aliases without changing input: OK
+failed writes stay failed until reopen (POSIX fault injection): OK
+trim publication failure preserves archive and permits replay: OK
+interrupted boundary trim recovers and retired records are not replayed: OK

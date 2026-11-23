@@ -27,6 +27,7 @@
 #include "tools/Tools.h"
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -142,6 +143,11 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   std::string input,output;
   parse("--input",input);
   parse("--output",output);
+  std::error_code pathError;
+  if(input!="-" && output!="-" &&
+      std::filesystem::equivalent(pathFromUTF8(input),pathFromUTF8(output),pathError)) {
+    error("input and output refer to the same file");
+  }
   unsigned batch=4096;
   parse("--batch-size",batch);
   if(batch==0) {
