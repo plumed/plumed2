@@ -93,6 +93,7 @@ private:
   double nl_buffer;
   unsigned nl_stride;
   unsigned nl_update;
+  bool trialGeometry_=false;
   std::vector<std::vector<unsigned> > nl;
   std::vector<std::vector<bool> > nlexpo;
   std::vector<std::vector<double> > parameter;
@@ -242,10 +243,10 @@ void EEFSolv::calculate() {
   if(pbc) {
     makeWhole();
   }
-  if(getExchangeStep()) {
-    nl_update = 0;
-  }
-  if(nl_update==0) {
+  const bool trial=isCalculationOnly();
+  const bool refreshGeometry=trial || trialGeometry_;
+  trialGeometry_=trial;
+  if(nl_update==0 || refreshGeometry) {
     update_neighb();
   }
 
@@ -379,9 +380,11 @@ void EEFSolv::calculate() {
   setValue(delta_g_ref - bias);
 
   // Keep track of the neighbourlist updates
-  nl_update++;
-  if (nl_update == nl_stride) {
-    nl_update = 0;
+  if(!trial) {
+    nl_update++;
+    if (nl_update == nl_stride) {
+      nl_update = 0;
+    }
   }
 }
 

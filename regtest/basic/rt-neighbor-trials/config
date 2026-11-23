@@ -1,0 +1,19 @@
+mpiprocs=2
+type=driver
+plumed_modules="bias colvar"
+extra_files="../rt77/peptide.pdb"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 2 --dump-forces forces --dump-forces-fmt=%.17g"
+function plumed_regtest_before() {
+  for r in 0 1; do
+    awk -v r=$r 'BEGIN{for(f=0;f<12;f++){print 25;print "200 200 200";for(i=1;i<=25;i++){x=0;if(i==2)x=1;if(i==3)x=(r?25:3.2);if(i==25)x=(r?35:5);print "X",x,0,0}}}' > traj.$r.xyz
+  done
+  mkdir noexchange
+  (cd noexchange; cp ../plumed.dat ../peptide.pdb ../traj.0.xyz ../traj.1.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 --dump-forces forces --dump-forces-fmt=%.17g > out 2> err)
+}
+function plumed_regtest_after() {
+  for file in COLVAR forces; do
+    for r in 0 1; do
+      if cmp -s "$file.$r" "noexchange/$file.$r"; then echo "$file.$r IDENTICAL"; else echo "$file.$r DIFFERENT"; fi
+    done
+  done > comparison
+}

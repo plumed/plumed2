@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <tuple>
+#include <cstdint>
 
 namespace PLMD {
 
@@ -45,6 +46,12 @@ private:
   bool reduced=false;
 /// Has the reduced list been requested to the action since the last update of the list
   bool reducedRequested=false;
+/// Dependency preparation may be repeated before any forward evaluation.
+  Colvar* preparedAction_=nullptr;
+  long long preparedStep_=-1;
+  std::uint64_t preparedEvaluation_=0;
+  bool preparedExchange_=false;
+  std::tuple<bool,bool> preparedStatus_{};
   bool listBuilded=false;
   bool serial_;
   bool do_pbc_;
