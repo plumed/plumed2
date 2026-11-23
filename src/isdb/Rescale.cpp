@@ -580,11 +580,11 @@ void Rescale::calculate() {
   getPntrToComponent("igamma")->set(igamma);
   // get time step
   long long int step = getStep();
-  if(MCfirst_==-1) {
+  if(MCfirst_==-1 && !isCalculationOnly()) {
     MCfirst_=step;
   }
   // calculate gamma acceptance
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  double MCtrials = std::floor(static_cast<double>(step-(MCfirst_==-1 ? step : MCfirst_)) / static_cast<double>(MCstride_))+1.0;
   double accgamma = static_cast<double>(MCaccgamma_) / static_cast<double>(MCsteps_) / MCtrials;
   getPntrToComponent("accgamma")->set(accgamma);
 
@@ -594,7 +594,7 @@ void Rescale::calculate() {
   }
 
   // add well-tempered like bias
-  if(step%Biaspace_==0) {
+  if(step%Biaspace_==0 && !isCalculationOnly()) {
     // get updated igamma
     const unsigned newigamma = getSelector();
     // add "Gaussian"
@@ -603,7 +603,7 @@ void Rescale::calculate() {
   }
 
   // print bias
-  if(step%Biasstride_==0) {
+  if(step%Biasstride_==0 && !isCalculationOnly()) {
     print_bias(step);
   }
 

@@ -1,0 +1,4 @@
+COLVAR.0 IDENTICAL
+self attempts: 8, nonzero delta bias: 0
+COLVAR.1 IDENTICAL
+self attempts: 8, nonzero delta bias: 0

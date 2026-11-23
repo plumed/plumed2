@@ -371,12 +371,12 @@ void Caliber::calculate() {
   std::vector<double> mean(narg,0);
   std::vector<double> dmean_x(narg,fact);
   replica_averaging(fact, mean);
-  if(optsigmamean_stride_>0) {
+  if(optsigmamean_stride_>0 && !isCalculationOnly()) {
     get_sigma_mean(fact, mean);
   }
 
   // in case of regression with zero intercept, calculate scale
-  if(doregres_zero_ && getStep()%nregres_zero_==0) {
+  if(doregres_zero_ && getStep()%nregres_zero_==0 && !isCalculationOnly()) {
     do_regression_zero(mean);
   }
 

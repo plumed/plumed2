@@ -1,0 +1,18 @@
+mpiprocs=2
+type=driver
+plumed_modules=isdb
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 2 --debug-grex-log grex"
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<40;f++) print f,"0.8"}' > target.dat
+  for r in 0 1 ; do
+    awk -v r=$r 'BEGIN{for(f=0;f<30;f++){print 2; print "10 10 10"; print "X 0 0 0"; printf "X %.15g 0 0\n", 1+(r?1:-1)*0.8/(f+1)}}' > traj.$r.xyz
+  done
+  mkdir noexchange
+  (cd noexchange; cp ../plumed.dat ../target.dat ../traj.*.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 > out 2> err)
+}
+function plumed_regtest_after() {
+  for r in 0 1 ; do
+    if cmp -s COLVAR.$r noexchange/COLVAR.$r ; then echo "COLVAR.$r IDENTICAL" ; else echo "COLVAR.$r DIFFERENT" ; fi
+    awk 'NR%2==1{if($1!=0||$2!=0) bad++; n++} END{printf "self attempts: %d, nonzero delta bias: %d\n",n,bad}' grex.$r
+  done > history_check
+}
