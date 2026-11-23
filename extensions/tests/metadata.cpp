@@ -23,6 +23,7 @@ public:
   static void registerKeywords(Keywords& keys) {
     CLTool::registerKeywords(keys);
     keys.addFlag("--probe",false,"metadata fixture flag");
+    keys.add("optional","--mode","metadata fixture value completion");
   }
   explicit MetadataTool(const CLToolOptions& options):CLTool(options) {
     inputdata=inputType::commandline;
@@ -30,6 +31,25 @@ public:
   int main(FILE*,FILE*,Communicator&) override {
     return 0;
   }
+  Completion complete(const std::vector<std::string>& arguments) const override {
+    auto result=CLTool::complete(arguments);
+    if(result.option=="--mode") {
+      result.files=false;
+      result.candidates= {"alpha","two words","$literal","key=value","scope:word","address@host"};
+    }
+    return result;
+  }
 };
 PLUMED_REGISTER_CLTOOL(MetadataTool,"metadata_tool")
+
+class MetadataHyphenTool:public MetadataTool {
+public:
+  static void registerKeywords(Keywords& keys) {
+    CLTool::registerKeywords(keys);
+    keys.addFlag("--hyphen",false,"distinct hyphenated-tool fixture flag");
+  }
+  explicit MetadataHyphenTool(const CLToolOptions& options):MetadataTool(options) {}
+};
+PLUMED_REGISTER_CLTOOL(MetadataHyphenTool,"metadata-tool")
+
 }

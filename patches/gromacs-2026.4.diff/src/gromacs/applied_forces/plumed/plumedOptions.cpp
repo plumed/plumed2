@@ -114,6 +114,11 @@ void PlumedOptionProvider::setReplex(bool replex)
     opts_.replex_ = replex;
 }
 
+void PlumedOptionProvider::setGpuDeviceId(int gpuDeviceId)
+{
+    opts_.gpuDeviceId_ = gpuDeviceId;
+}
+
 void PlumedOptionProvider::setInputrec(const t_inputrec* inputrec)
 {
     opts_.inputrec_ = inputrec;

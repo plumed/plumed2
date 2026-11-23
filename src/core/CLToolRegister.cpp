@@ -80,10 +80,6 @@ std::vector<std::string> CLToolRegister::getKeys(const std::string& cltool)const
   if ( check(cltool) ) {
     auto cl=get(cltool);
     auto k=cl.keys.getKeys();
-    std::cerr<<k.size()<<"\n";
-    for(unsigned i=0; i<k.size(); i++) {
-      std::cerr<<k[i]<<"\n";
-    }
     return k;
   } else {
     std::vector<std::string> empty;

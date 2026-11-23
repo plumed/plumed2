@@ -35,7 +35,20 @@ function plumed_regtest_after(){
   cltools_check "manual --vim" "ATOMS" $plumed_nompi manual --action DISTANCE --vim
   cltools_check "manual --spelling" "ATOMS" $plumed_nompi manual --action DISTANCE --spelling
   cltools_check "manual of a cltool" "plumed" $plumed_nompi manual --action driver
-  cltools_check "completion" "cmd_keys_driver" $plumed_nompi completion
+  cltools_check "completion" "complete -F" $plumed_nompi completion
+  cltools_check "completion options" "^--plumed$" $plumed_nompi completion --list options --command driver
+  cltools_check "completion tool context" "^--ixtc$" $plumed_nompi completion --list context --command driver -- --ix
+  cltools_check "completion tool argument" "^files" $plumed_nompi completion --list context --command driver -- --plumed -
+  cltools_check "completion script context" "^--pdb$" $plumed_nompi completion --list context --command selector -- --p
+  local completion_ok=yes tool
+  for tool in $($plumed_nompi completion --list commands); do
+    if ! $plumed_nompi completion --list context --command "$tool" -- -- > context.out 2> context.err ||
+       ! grep -q '^words' context.out || test -s context.err; then
+      completion_ok=no
+    fi
+  done
+  echo "completion all tools: $completion_ok" >> checks
+  rm -f context.out context.err
   cltools_check "gen_json" '"DISTANCE"' $plumed_nompi gen_json --actions actions.txt
 # the output of gen_json should be valid json
   $plumed_nompi gen_json --actions actions.txt > syntax.json 2> /dev/null

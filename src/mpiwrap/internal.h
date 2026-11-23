@@ -116,11 +116,12 @@ private:
 // rank threads. Provider-dependent use fixes its selection for the kernel.
 Registry &currentRegistry();
 // Return true when an explicit troubleshooting override has installed its
-// provider. Throws on invalid configuration or an attempted late replacement.
+// provider. Uses the initial environment snapshot and throws on invalid
+// configuration or forcing a provider after another one is installed.
 bool forceEnvironmentProvider();
 // Native communicator import is the only implicit compiler-discovery boundary.
 void ensureProviderForCommunicator();
-// Honors an explicit environment provider on provider-dependent use.
+// Honors a cached environment provider on ordinary provider-dependent use.
 // Embedded thread-MPI is installed only by its explicit launcher.
 void ensureProviderSelected();
 MPI_Comm importComm(Registry &registry, const void *native);

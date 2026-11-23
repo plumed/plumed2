@@ -78,6 +78,47 @@ static void mergeSortedVectors(const C* const* vecs, std::size_t size, std::vect
     }
   }
 
+  // A few vectors (e.g. the same large group requested by a few actions) are merged two at a time,
+  // which is much faster than the heap below. The cost grows with the number of vectors, so many
+  // vectors (e.g. many actions with a few atoms each) use the heap.
+  constexpr std::size_t maxPairwise=8;
+  if(size<=maxPairwise) {
+    using T=typename C::value_type;
+    // acc holds the elements merged so far, sorted and without repetitions
+    std::vector<T> acc,tmp;
+    for(std::size_t i=0; i<size; i++) {
+      tmp.clear();
+      tmp.reserve(acc.size()+vecs[i]->size());
+      auto a=acc.cbegin();
+      const auto aend=acc.cend();
+      auto b=vecs[i]->begin();
+      const auto bend=vecs[i]->end();
+      auto push=[&tmp](const T& val) {
+        if(tmp.empty() || val > tmp.back()) {
+          tmp.push_back(val);
+        }
+      };
+      while(a!=aend && b!=bend) {
+        if(*b < *a) {
+          push(*b);
+          ++b;
+        } else {
+          push(*a);
+          ++a;
+        }
+      }
+      for(; a!=aend; ++a) {
+        push(*a);
+      }
+      for(; b!=bend; ++b) {
+        push(*b);
+      }
+      acc.swap(tmp);
+    }
+    result.insert(result.end(),acc.begin(),acc.end());
+    return;
+  }
+
   // start
   // heap containing the ranges to be pushed
   // avoid allocations when it's small

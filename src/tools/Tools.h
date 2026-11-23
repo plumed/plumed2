@@ -158,6 +158,9 @@ public:
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
   template <typename T>
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
   static double pbc(T);
 /// Retrieve a key from a vector of options.
 /// It finds a key starting with "key=" or equal to "key" and copy the
@@ -528,7 +531,10 @@ bool Tools::parseVector(
 }
 template<typename T>
 void Tools::removeDuplicates(std::vector<T>& vec) {
-  std::sort(vec.begin(), vec.end());
+  // lists of atoms are often sorted already: checking is much cheaper than sorting
+  if(!std::is_sorted(vec.begin(), vec.end())) {
+    std::sort(vec.begin(), vec.end());
+  }
   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
@@ -546,6 +552,9 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 template <typename T>
+#ifdef __CUDACC__
+__host__ __device__
+#endif
 inline double Tools::pbc(T x) {
   if constexpr (std::is_same_v<T,float>) {
     // In single precision the offset used below costs accuracy: the spacing of floats

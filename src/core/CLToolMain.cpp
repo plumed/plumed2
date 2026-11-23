@@ -122,7 +122,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "CLToolMainMap.inc"
   };
 
@@ -204,6 +204,48 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
 This is the entry point to the command line tools
 included in the plumed library.
 */
+
+std::vector<std::string> CLToolMain::getGlobalOptions() {
+  return {"--help", "-h", "--has-mpi", "--has-real-mpi", "--has-thread-mpi",
+          "--mpi-ranks-are-threads", "--has-cregex", "--has-dlopen", "--has-molfile",
+          "--has-external-molfile", "--has-zlib", "--has-xdrfile", "--is-installed",
+          "--no-mpi", "--mpi", "--standalone-executable", "--load-module",
+          "--module-build-id", "--list-modules", "--load", "--tmpi-threads"};
+}
+
+std::vector<std::string> CLToolMain::getModuleOptions() {
+  return {"--module","--list","--has","--has-feature","-q","--quiet","-h","--help"};
+}
+
+CLTool::Completion CLToolMain::completeModules(const std::vector<std::string>& arguments) {
+  CLTool::Completion result;
+  DLLoader loader;
+  ModuleLoader::inheritContext(loader);
+  std::string module;
+  bool moduleValue=false,names=false,features=false;
+  for(std::size_t i=0; i+1<arguments.size(); ++i) {
+    const auto& word=arguments[i];
+    if(moduleValue) {
+      module=word;
+      moduleValue=false;
+    } else if(word=="--module") {
+      moduleValue=true;
+    } else if(word=="--has") {
+      names=true;
+      features=false;
+    } else if(word=="--has-feature") {
+      features=true;
+      names=false;
+    }
+  }
+  const std::string current=arguments.empty()?"":arguments.back();
+  if(moduleValue || ((names || features) && (current.empty() || current[0]!='-'))) {
+    result.candidates=features && !moduleValue?ModuleLoader::features(loader,module):ModuleLoader::modules(loader);
+  } else {
+    result.candidates=getModuleOptions();
+  }
+  return result;
+}
 
 int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   int i;

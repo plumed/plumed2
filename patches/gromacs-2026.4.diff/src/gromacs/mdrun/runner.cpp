@@ -89,6 +89,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/gpu_utils/nvshmem_manager.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/printhardware.h"
@@ -1525,6 +1526,20 @@ int Mdrunner::mdrunner()
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
+
+    /* PLUMED */
+    {
+        /* The PLUMED actions that run on a GPU (they are in PLUMED plugins) use the GPU of this
+           rank, unless the user chooses otherwise. PLUMED numbers the GPUs as CUDA does, so the
+           GPU is passed only when GROMACS uses CUDA. */
+        gmx::PlumedGpuDevice plumedGpuDevice;
+        if (GMX_GPU_CUDA && deviceInfo != nullptr)
+        {
+            plumedGpuDevice.id_ = deviceInfo->id;
+        }
+        setupNotifier.notify(plumedGpuDevice);
+    }
+    /* END PLUMED */
 
     // We will later get the pairlist type from the device information here, for now we hard code it.
     const auto pairlistType = PairlistType::Hierarchical8x8x8;

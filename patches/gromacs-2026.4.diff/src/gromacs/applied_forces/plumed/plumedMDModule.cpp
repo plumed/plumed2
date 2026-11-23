@@ -111,6 +111,10 @@ public:
                                 { this->options_.setMultisim(ms); });
                     }
                 });
+        // The GPU used by this rank, for the PLUMED actions that run on a GPU
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const PlumedGpuDevice& gpuDevice)
+                { this->options_.setGpuDeviceId(gpuDevice.id_); });
         // Access the temperature if it is constant during the simulation
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const EnsembleTemperature& ensembleT)

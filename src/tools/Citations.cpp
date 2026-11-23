@@ -26,7 +26,7 @@
 
 namespace PLMD {
 
-const static Tools::FastStringUnorderedMap<std::string> doi_map = {
+static const Tools::FastStringUnorderedMap<std::string> doi_map = {
 #include "CitationMap.inc"
 };
 

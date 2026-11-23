@@ -32,6 +32,27 @@ namespace PLMD {
 namespace mpiwrap {
 namespace {
 
+struct EnvironmentSelection {
+  std::string force;
+  std::string path;
+};
+
+EnvironmentSelection readEnvironmentSelection() {
+  EnvironmentSelection result;
+  const char *force = std::getenv("PLUMED_MPI_WRAPPER_FORCE");
+  result.force = force ? force : "";
+  const char *path = std::getenv("PLUMED_MPI_WRAPPER");
+  result.path = path ? path : "";
+  return result;
+}
+
+const EnvironmentSelection &initialEnvironmentSelection() {
+  // All selection paths reuse this snapshot, including absent settings.
+  // Own the strings so later environment changes cannot invalidate them.
+  static const EnvironmentSelection selection = readEnvironmentSelection();
+  return selection;
+}
+
 #if defined(__PLUMED_HAS_DLOPEN)
 // dyld can open an executable compiler launcher as though it were a library.
 // Inspect its file type before dlopen, including universal Mach-O containers.
@@ -282,38 +303,37 @@ void installEnvironmentProvider(Registry &registry, const char *path) {
 } // namespace
 
 bool forceEnvironmentProvider() {
-  const char *force = std::getenv("PLUMED_MPI_WRAPPER_FORCE");
-  if (!force || !force[0] || std::strcmp(force, "0") == 0) {
+  const auto &environment = initialEnvironmentSelection();
+  if (environment.force.empty() || environment.force == "0") {
     return false;
   }
-  if (std::strcmp(force, "1") != 0) {
+  if (environment.force != "1") {
     throw std::runtime_error("PLUMED_MPI_WRAPPER_FORCE must be 0 or 1");
   }
-  const char *path = std::getenv("PLUMED_MPI_WRAPPER");
-  if (!path || !path[0]) {
+  if (environment.path.empty()) {
     throw std::runtime_error("PLUMED_MPI_WRAPPER_FORCE=1 requires PLUMED_MPI_WRAPPER");
   }
   static std::mutex selection_mutex;
-  static std::string forced_path;
+  static bool forced_installed = false;
   std::lock_guard<std::mutex> lock(selection_mutex);
   Registry &registry = currentRegistry();
-  if (!forced_path.empty()) {
-    if (forced_path != path) {
-      throw std::runtime_error("cannot change PLUMED_MPI_WRAPPER after forced provider installation");
-    }
+  if (forced_installed) {
     return true;
   }
   if (registry.installed()) {
     throw std::runtime_error("PLUMED_MPI_WRAPPER_FORCE must be set before MPI provider installation");
   }
-  std::string selected_path(path);
-  installEnvironmentProvider(registry, path);
-  forced_path.swap(selected_path);
+  installEnvironmentProvider(registry, environment.path.c_str());
+  forced_installed = true;
   return true;
 }
 
 namespace {
 void selectProvider(bool build_default) {
+  Registry &registry = currentRegistry();
+  if (registry.installed()) {
+    return;
+  }
   if (forceEnvironmentProvider()) {
     return;
   }
@@ -322,12 +342,8 @@ void selectProvider(bool build_default) {
   static bool selecting = false;
   static std::thread::id selecting_thread;
 
-  Registry &registry = currentRegistry();
-  if (registry.installed()) {
-    return;
-  }
-  const char *selected = std::getenv("PLUMED_MPI_WRAPPER");
-  if ((!selected || !selected[0]) && !build_default) {
+  const auto &selected = initialEnvironmentSelection().path;
+  if (selected.empty() && !build_default) {
     return;
   }
   {
@@ -351,8 +367,8 @@ void selectProvider(bool build_default) {
   }
 
   try {
-    if (selected && selected[0]) {
-      installEnvironmentProvider(registry, selected);
+    if (!selected.empty()) {
+      installEnvironmentProvider(registry, selected.c_str());
     } else {
 #if defined(__PLUMED_HAS_DLOPEN)
       if (!installAdjacentProvider(registry)) {

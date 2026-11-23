@@ -79,6 +79,11 @@ the fields in order. PLUMED reads the HDF5 tables it writes wherever it reads te
 text files can be used. Restarts (appending, trimming at the restart step, [CHECKPOINT](CHECKPOINT.md)) work as with
 text files: the removed rows are moved to an HDF5 file `bck.trimmed.X.filename.h5`.
 
+For quick inspection, `plumed h5cat COLVAR.h5` writes the equivalent text to standard
+output. [h5cat](h5cat.md) accepts multiple filenames and concatenates their text in
+argument order, preserving all headers and rows. [h5convert](h5convert.md) accepts
+`--input -` for text standard input and `--output -` for text standard output.
+
 HDF5 tables require PLUMED to be compiled with libhdf5 (`./configure` uses it when it finds it, see
 `--enable-libhdf5`; the conda package of PLUMED uses the hdf5 package of conda). Only the files written field by
 field can be HDF5 tables: the files written as free text (e.g. those of [DUMPATOMS](DUMPATOMS.md) and
