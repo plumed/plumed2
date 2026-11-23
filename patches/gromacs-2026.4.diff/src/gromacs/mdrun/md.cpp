@@ -1118,7 +1118,15 @@ void gmx::LegacySimulator::do_md()
 #endif
         // Restore/write PLUMED checkpoint state before consuming the exchange
         // pattern RNG, including on the first step of a continuation.
-        checkpointHandler->decideIfCheckpointingThisStep(bNS || bHREX, bFirstStep, bLastStep);
+        // Accepted exchanges cause extra neighbor searches on only some replicas.
+        // Checkpointing on those local steps can deadlock the checkpoint barrier
+        // against PLUMED ensemble collectives on replicas that advance further.
+        // Use common exchange steps, independent of which swaps were accepted.
+        const bool checkpointEligibleStep = useReplicaExchange
+                ? do_per_step(step, replExParams_.exchangeInterval)
+                : bNS;
+        checkpointHandler->decideIfCheckpointingThisStep(checkpointEligibleStep || bHREX,
+                                                        bFirstStep, bLastStep);
         const bool plumedStepNeedsEnergy = fr_->forceProviders != nullptr
                 && fr_->forceProviders->prepareStep(step, checkpointHandler->isCheckpointingStep());
 

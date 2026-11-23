@@ -355,3 +355,15 @@ The actual-provider fixture checks retained box bindings and simultaneous
 provider/collection isolation with 200,000 concurrent lookups. Every numerical
 case retains its commands, inputs and results JSON. GPU execution requires
 separate validation on an appropriate host.
+
+The real-MPI exchange suite also runs a four-replica checkpoint regression with
+two neutral, noninteracting particles per replica. Swap 0/1 accepts at step 200,
+while swap 2/3 rejects. With `-cpt 0`, all replicas must checkpoint at steps 200
+and 400, independently of the extra neighbor searches caused by accepted swaps.
+Both an ordinary control and shared MAXENT with zero force weights are checked;
+the latter exposes a checkpoint-barrier/ensemble-broadcast deadlock in the old
+schedule. Runs have a bounded timeout that terminates the MPI process group.
+Ordinary exchange, two ranks per replica with domain decomposition, and HREX
+must all restart from the intermediate step-200 native/PLUMED checkpoint set
+with bitwise-identical full-precision traces and MAXENT multiplier files.
+This test uses native MAXENT without transfer or exchange-group extensions.
