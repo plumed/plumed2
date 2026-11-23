@@ -543,16 +543,37 @@ class HDF5IO(unittest.TestCase):
             tar.add(self.path, arcname="batch_00000002.h5")
         both = pd.concat([self.df, second], ignore_index=True)
         assert_frame_equal(self.read(archive, enable_constants=False), both)
-        # interrupted while writing the second member: the first one is read
         data = archive.read_bytes()
-        archive.write_bytes(data[: data.index(b"batch_00000002.h5") + 1000])
+        second_header = data.index(b"batch_00000002.h5")
+        # an archive is recognized by its content, whatever its name
+        renamed = self.path.with_name("renamed.h5")
+        renamed.write_bytes(data)
+        assert_frame_equal(self.read(renamed, enable_constants=False), both)
+        # interrupted while writing the second member: the first one is read
+        archive.write_bytes(data[: second_header + 1000])
         assert_frame_equal(self.read(archive, enable_constants=False), self.df)
-        # a damaged header is an error
+        # its header written in part
+        torn = bytearray(data[: second_header + 512])
+        torn[second_header] ^= 1
+        archive.write_bytes(bytes(torn))
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        # an invalid header followed by valid members: the archive is damaged
         damaged = bytearray(data)
         damaged[0] ^= 1
         archive.write_bytes(bytes(damaged))
-        with self.assertRaisesRegex(plumed.FormatError, "TAR header"):
+        with self.assertRaisesRegex(plumed.FormatError, "damaged"):
             self.read(archive)
+        # a trim interrupted by a crash: the trim record replaces the second member
+        archive.write_bytes(data[:second_header])
+        entries = data[second_header:]
+        record = archive.with_name(archive.name + ".plumed-trim")
+        record.write_bytes(
+            f"plumed-trim-record 1 {second_header} {len(entries)}\n".encode().ljust(
+                512, b"\0"
+            )
+            + entries
+        )
+        assert_frame_equal(self.read(archive, enable_constants=False), both)
 
 
 if __name__ == "__main__":

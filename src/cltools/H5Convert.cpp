@@ -60,12 +60,17 @@ Standard input and output support text only; the other filename must end in `.h5
 For quick inspection and concatenation of HDF5 tables, see [h5cat](h5cat.md).
 
 Archives of HDF5 tables (`.h5.tar`, see [Files](Files.md)) can be used wherever a `.h5` file can.
-When one file is an archive and the other a `.h5` file the values are copied as they are, e.g. to
-turn an archive into a single HDF5 file:
+When one of the two files is an archive and the other an HDF5 file or an archive, the values are copied
+as they are, e.g. to turn an archive into a single HDF5 file, or into an archive with larger members:
 
 ```plumed
 plumed h5convert --input COLVAR.h5.tar --output COLVAR.h5
+plumed h5convert --input COLVAR.h5.tar --output COLVAR.big.h5.tar --batch-size 100000
 ```
+
+The input is recognized by its content (so that a renamed table is read correctly), the output by its
+extension. The rows are converted a few at a time, so that the memory used does not depend on the size
+of the files.
 
 When a text file is converted, the values that are numbers are stored as double precision
 numbers (with the digits that are in the text file) and the others as strings.
@@ -97,6 +102,7 @@ void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--input","the file to convert (- for text standard input)");
   keys.add("compulsory","--output","the converted file (HDF5 if its extension is .h5, text otherwise; - for text standard output)");
+  keys.add("compulsory","--batch-size","4096","the maximum number of rows of a member, when the output is an archive (.h5.tar)");
 }
 
 H5Convert::H5Convert(const CLToolOptions& co ):
@@ -135,15 +141,24 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   std::string input,output;
   parse("--input",input);
   parse("--output",output);
-  const bool fromH5=h5table::isH5(input);
+  unsigned batch=4096;
+  parse("--batch-size",batch);
+  if(batch==0) {
+    error("--batch-size must be positive");
+  }
+  // the input is recognized by its content, the output by its name
+  const bool fromH5=input!="-" && h5table::isTable(input);
   const bool toH5=h5table::isH5(output);
-  if(fromH5 && toH5 && h5table::isArchive(input)!=h5table::isArchive(output)) {
-    // an archive into a single HDF5 file, or vice versa: the values are copied as they are
-    h5table::copy(input,output);
+  const bool fromArchive=fromH5 && h5table::isArchive(input);
+  const bool toArchive=output.size()>7 && output.compare(output.size()-7,7,".h5.tar")==0;
+  if(fromH5 && toH5 && (fromArchive || toArchive)) {
+    // an archive into a single HDF5 file, or vice versa, or into an archive with members of
+    // a different size: the values are copied as they are
+    h5table::copy(input,output,batch);
     return 0;
   }
   if(fromH5==toH5) {
-    error("one of the two files (and only one) must be an HDF5 file (extension .h5), or one an HDF5 file and the other an archive (extension .h5.tar)");
+    error("one of the two files (and only one) must be an HDF5 file (extension .h5), or one of them an archive (extension .h5.tar)");
   }
   if(!toH5) {
     h5table::Reader reader(input);
@@ -168,7 +183,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   }
   ifile.allowNoEOL();
   std::string line;
-  h5table::Writer writer(output,false);
+  h5table::Writer writer(output,false,batch);
   std::vector<std::string> names;
   std::vector<h5table::Field> constants;
   std::vector<h5table::Field> row;

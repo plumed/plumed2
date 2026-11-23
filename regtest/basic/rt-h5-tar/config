@@ -49,11 +49,27 @@ function plumed_regtest_before() {
   tail -n +$((6*n+1)) ../traj.xyz > rest.xyz
   $plumed driver --plumed plumed.dat --ixyz rest.xyz --restart --initial-step $n > out2 2> err2
   cd ..
-  # D) a damaged archive (not just interrupted) is an error
+  # D) a damaged archive (an invalid header followed by valid members) is an error, while
+  # an invalid header at the end (written in part) or a member not published (data behind
+  # a header of zeros) end the archive
   mkdir damaged ; cd damaged
   cp ../restart/COLVAR.h5.tar .
   printf 'X' | dd of=COLVAR.h5.tar bs=1 seek=10 conv=notrunc 2> /dev/null
   $plumed h5cat COLVAR.h5.tar > out 2> err
+  cp ../restart/COLVAR.h5.tar torn.h5.tar
+  cut_tail torn.h5.tar 1024
+  head -c 512 torn.h5.tar | LC_ALL=C tr 'b' 'x' >> torn.h5.tar
+  cp ../restart/COLVAR.h5.tar unpublished.h5.tar
+  cut_tail unpublished.h5.tar 1024
+  head -c 512 /dev/zero >> unpublished.h5.tar
+  head -c 2048 ../traj.xyz >> unpublished.h5.tar
+  cd ..
+  # E) the MD engine sends the checkpoint signal (every 10 steps): the files are flushed at the start
+  # of those steps, so that the restart from step 30 cuts the archive at the end of a member
+  mkdir signal ; cd signal ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  tail -n +181 ../traj.xyz > rest.xyz
+  $plumed driver --plumed plumed.dat --ixyz rest.xyz --restart --initial-step 30 > out2 2> err2
   cd ..
 }
 
@@ -62,7 +78,7 @@ function plumed_regtest_after() {
     for f in COLVAR HILLS ; do
       $plumed h5convert --input $f.h5.tar --output $f.h5.txt
       echo "$f.h5.tar as text: $(compare $f $f.h5.txt)"
-      for d in restart checkpoint interrupted ; do
+      for d in restart checkpoint interrupted signal ; do
         $plumed h5convert --input $d/$f.h5.tar --output $d/$f.h5.txt
         if cmp -s $f.h5.txt $d/$f.h5.txt ; then echo "$d/$f.h5.tar IDENTICAL" ; else echo "$d/$f.h5.tar DIFFERENT" ; fi
       done
@@ -83,8 +99,19 @@ function plumed_regtest_after() {
     mkdir members ; ( cd members && tar xf ../COLVAR.h5.tar )
     $plumed h5cat members/batch_00000002.h5 | grep -v '^#' | awk '{print "member 2: time",$1}'
     echo "interrupted: rows read after the interruption: $(cat interrupted/rows_after_interruption)"
-    grep -h "restart step" restart/out2 interrupted/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "restart step" restart/out2 interrupted/out2 signal/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
     grep -h "truncated from" checkpoint/out2 | sed 's/^PLUMED: *//' | sed 's/from [0-9]* to [0-9]* bytes/from N to M bytes/' | LC_ALL=C sort
     grep -h "damaged" damaged/err | head -n 1 | sed 's/^.*\(the archive is damaged\)/\1/'
+    for f in torn unpublished ; do
+      echo "damaged/$f.h5.tar rows: $($plumed h5cat damaged/$f.h5.tar | grep -vc '^#')"
+    done
+    # an archive is recognized by its content, whatever its name
+    cp COLVAR.h5.tar renamed.h5 ; cp COLVAR.h5.tar renamed
+    echo "renamed.h5 rows: $($plumed h5cat renamed.h5 | grep -vc '^#')"
+    echo "renamed rows: $($plumed h5convert --input renamed --output - | grep -vc '^#')"
+    # members of at most 25 rows
+    $plumed h5convert --input COLVAR.h5.tar --output rebatched.h5.tar --batch-size 25
+    $plumed h5convert --input rebatched.h5.tar --output rebatched.txt
+    echo "rebatched: $(tar tf rebatched.h5.tar | wc -l | tr -d ' ') members, $(compare COLVAR rebatched.txt)"
   } > restart_check
 }

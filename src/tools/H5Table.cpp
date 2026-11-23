@@ -31,7 +31,9 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <mutex>
+#include <sstream>
 #include <utility>
 #ifdef _WIN32
 #include <io.h>
@@ -46,12 +48,92 @@
 namespace PLMD {
 namespace h5table {
 
-bool isArchive(const std::string& path) {
+namespace {
+
+constexpr unsigned long long tarRecord=512;
+
+unsigned tarChecksum(const char* h) {
+  unsigned sum=0;
+  for(unsigned k=0; k<tarRecord; k++) {
+    sum+= (k>=148 && k<156) ? static_cast<unsigned>(' ') : static_cast<unsigned char>(h[k]);
+  }
+  return sum;
+}
+
+bool getOctal(const char* p,unsigned n,unsigned long long& v) {
+  v=0;
+  unsigned k=0;
+  while(k<n && p[k]==' ') {
+    k++;
+  }
+  const unsigned first=k;
+  for(; k<n && p[k]>='0' && p[k]<='7'; k++) {
+    v=v*8+(p[k]-'0');
+  }
+  if(k==first) {
+    return false;
+  }
+  for(; k<n; k++) {
+    if(p[k]!=' ' && p[k]!='\0') {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// a valid ustar header, and the size of its entry
+bool validTarHeader(const char* h,unsigned long long& size) {
+  unsigned long long sum=0;
+  return std::memcmp(h+257,"ustar",5)==0 && getOctal(h+148,8,sum) && sum==tarChecksum(h) && getOctal(h+124,12,size);
+}
+
+bool hasArchiveExtension(const std::string& path) {
   return path.size()>7 && path.compare(path.size()-7,7,".h5.tar")==0;
 }
 
+enum class Content {Unknown,HDF5,Archive};
+
+/// what an existing file contains, from its first bytes
+Content sniff(const std::string& path) {
+  std::ifstream in(pathFromUTF8(path),std::ios::binary);
+  if(!in) {
+    return Content::Unknown;
+  }
+  char h[tarRecord]= {};
+  in.read(h,tarRecord);
+  const auto n=in.gcount();
+  static const char signature[8]= {'\x89','H','D','F','\r','\n','\x1a','\n'};
+  if(n>=8 && std::memcmp(h,signature,8)==0) {
+    return Content::HDF5;
+  }
+  unsigned long long size=0;
+  if(n==static_cast<long long>(tarRecord) && validTarHeader(h,size)) {
+    return Content::Archive;
+  }
+  return Content::Unknown;
+}
+
+}
+
+bool isArchive(const std::string& path) {
+  // by content: HDF5 would read an archive as its first member (it looks for its
+  // signature also at byte 512), so an archive is recognized before an HDF5 file
+  switch(sniff(path)) {
+  case Content::Archive:
+    return true;
+  case Content::HDF5:
+    return false;
+  default:
+    return hasArchiveExtension(path);
+  }
+}
+
 bool isH5(const std::string& path) {
-  return Tools::extension(path)=="h5" || isArchive(path);
+  return Tools::extension(path)=="h5" || hasArchiveExtension(path);
+}
+
+bool isTable(const std::string& path) {
+  return isH5(path) || sniff(path)!=Content::Unknown;
 }
 
 std::string Value::text() const {
@@ -98,7 +180,7 @@ namespace {
 }
 
 struct Writer::Impl {};
-Writer::Writer(const std::string& path,bool) {
+Writer::Writer(const std::string& path,bool,std::size_t) {
   noHDF5(path);
 }
 Writer::~Writer()=default;
@@ -125,8 +207,12 @@ void truncate(const std::string& path,const std::vector<unsigned long long>&,con
   noHDF5(path);
 }
 
-void copy(const std::string& input,const std::string&) {
+void copy(const std::string& input,const std::string&,std::size_t) {
   noHDF5(input);
+}
+
+unsigned long long trimArchive(const std::string& path,double,const std::string&,bool&,bool&) {
+  noHDF5(path);
 }
 
 #else
@@ -561,10 +647,11 @@ std::vector<char> tableImage(const Signature& s,std::vector<Column>& columns,con
 
 // Archives (.h5.tar): uncompressed POSIX (ustar) TAR files whose members are complete tables.
 // They are only appended to: a member, once written, is never modified, so that an interrupted
-// run cannot damage what was written before. A member written in part (the run was interrupted
-// while writing it) is ignored by the readers, and removed when the archive is appended to.
-
-constexpr unsigned long long tarRecord=512;
+// run cannot damage what was written before. A member is published in two steps: its data
+// behind a header of zeros (which ends the archive for the readers), then its header, each
+// followed by a synchronization to the disk. An interruption can only leave a last member
+// that is not published, or whose header was written in part: the readers ignore it, and the
+// writer removes it when it appends to the archive.
 
 unsigned long long tarPadded(unsigned long long n) {
   return (n+tarRecord-1)/tarRecord*tarRecord;
@@ -580,51 +667,28 @@ bool putOctal(char* p,unsigned digits,unsigned long long v) {
   return v==0;
 }
 
-bool getOctal(const char* p,unsigned n,unsigned long long& v) {
-  v=0;
-  unsigned k=0;
-  while(k<n && p[k]==' ') {
-    k++;
-  }
-  const unsigned first=k;
-  for(; k<n && p[k]>='0' && p[k]<='7'; k++) {
-    v=v*8+(p[k]-'0');
-  }
-  if(k==first) {
-    return false;
-  }
-  for(; k<n; k++) {
-    if(p[k]!=' ' && p[k]!='\0') {
-      return false;
-    }
-  }
-  return true;
-}
-
-unsigned tarChecksum(const char* h) {
-  unsigned sum=0;
-  for(unsigned k=0; k<tarRecord; k++) {
-    sum+= (k>=148 && k<156) ? static_cast<unsigned>(' ') : static_cast<unsigned char>(h[k]);
-  }
-  return sum;
-}
-
-/// a member of an archive: header, data and padding
-std::vector<char> tarMember(const std::string& name,const std::vector<char>& data,const std::string& path) {
-  std::vector<char> m(tarRecord+tarPadded(data.size()),'\0');
-  char* h=m.data();
+/// the header of a member
+std::vector<char> tarHeader(const std::string& name,unsigned long long size,const std::string& path) {
+  std::vector<char> h(tarRecord,'\0');
   plumed_assert(name.size()<100);
-  std::memcpy(h,name.c_str(),name.size());
-  bool ok=putOctal(h+100,7,0644) && putOctal(h+108,7,0) && putOctal(h+116,7,0)
-          && putOctal(h+124,11,data.size()) && putOctal(h+136,11,static_cast<unsigned long long>(std::time(nullptr)));
+  std::memcpy(h.data(),name.c_str(),name.size());
+  const bool ok=putOctal(h.data()+100,7,0644) && putOctal(h.data()+108,7,0) && putOctal(h.data()+116,7,0)
+                && putOctal(h.data()+124,11,size) && putOctal(h.data()+136,11,static_cast<unsigned long long>(std::time(nullptr)));
   check(ok,path,"a member of the archive is too large (more than 8 GiB)");
   h[156]='0';
-  std::memcpy(h+257,"ustar",6);
+  std::memcpy(h.data()+257,"ustar",6);
   h[263]='0';
   h[264]='0';
-  putOctal(h+148,6,tarChecksum(h));
+  putOctal(h.data()+148,6,tarChecksum(h.data()));
   h[155]=' ';
-  std::memcpy(h+tarRecord,data.data(),data.size());
+  return h;
+}
+
+/// a member: header, data and padding
+std::vector<char> tarMember(const std::string& name,const std::vector<char>& data,const std::string& path) {
+  std::vector<char> m=tarHeader(name,data.size(),path);
+  m.insert(m.end(),data.begin(),data.end());
+  m.resize(tarRecord+tarPadded(data.size()),'\0');
   return m;
 }
 
@@ -634,70 +698,182 @@ std::string memberName(std::size_t k) {
   return buf;
 }
 
-/// what an archive contains
+/// the entries of an archive
 struct Scan {
   /// header and data offsets, and size, of the members that are tables (the regular files)
   struct Member {
     unsigned long long header=0,data=0,size=0;
   };
   std::vector<Member> members;
-  /// end of the last complete member (what follows is the end-of-archive marker, or a member written in part)
+  /// end of the last complete entry: what follows is the end-of-archive marker, or a member
+  /// not published (an interrupted run)
   unsigned long long end=0;
-  unsigned long long fileSize=0;
-  /// not empty if the archive is damaged (not just interrupted while writing its last member)
+  unsigned long long size=0;
+  /// not empty if the archive is damaged (valid entries follow an invalid header)
   std::string damage;
 };
 
-Scan scanArchive(const std::string& path) {
+/// scan the headers of the size bytes of an archive (only the headers are read)
+Scan scanEntries(std::istream& in,unsigned long long size,const std::string& path) {
   Scan s;
-  std::error_code ec;
-  s.fileSize=std::filesystem::file_size(pathFromUTF8(path),ec);
-  check(!ec,path,"cannot get the size of the file");
-  std::ifstream in(pathFromUTF8(path),std::ios::binary);
-  check(static_cast<bool>(in),path,"cannot open the file");
+  s.size=size;
   std::vector<char> h(tarRecord);
-  // the last record can be incomplete: the run was interrupted while writing it
-  while(s.fileSize-s.end>=tarRecord) {
-    in.seekg(s.end);
+  auto readHeader=[&](unsigned long long offset) {
+    in.seekg(offset);
     in.read(h.data(),tarRecord);
     check(static_cast<bool>(in),path,"cannot read the file");
+  };
+  while(size-s.end>=tarRecord) {
+    readHeader(s.end);
     if(std::all_of(h.begin(),h.end(),[](char c) {
     return c=='\0';
   })) {
-      // end-of-archive marker: only zeros can follow
-      std::vector<char> rest(1<<16);
-      while(in) {
-        in.read(rest.data(),rest.size());
-        if(!std::all_of(rest.begin(),rest.begin()+in.gcount(),[](char c) {
-        return c=='\0';
-      })) {
-          s.damage="data after the end-of-archive marker at byte "+std::to_string(s.end);
+      // end-of-archive marker, or a member whose header is not written yet
+      break;
+    }
+    unsigned long long n=0;
+    if(!validTarHeader(h.data(),n)) {
+      // the header of the last member, written in part by an interrupted run;
+      // if valid entries follow, the archive is damaged
+      for(unsigned long long o=s.end+tarRecord; size-o>=tarRecord; o+=tarRecord) {
+        readHeader(o);
+        unsigned long long m=0;
+        if(validTarHeader(h.data(),m)) {
+          s.damage="invalid TAR header at byte "+std::to_string(s.end);
           break;
         }
       }
       break;
     }
-    unsigned long long sum=0,size=0;
-    if(std::memcmp(h.data()+257,"ustar",5)!=0 || !getOctal(h.data()+148,8,sum) || sum!=tarChecksum(h.data()) || !getOctal(h.data()+124,12,size)) {
-      s.damage="invalid TAR header at byte "+std::to_string(s.end);
-      break;
-    }
-    const unsigned long long next=s.end+tarRecord+tarPadded(size);
-    if(next>s.fileSize) {
+    const unsigned long long next=s.end+tarRecord+tarPadded(n);
+    if(next>size) {
       // written in part
       break;
     }
     // the other entries (directories, extended headers, ...) are skipped
     if(h[156]=='0' || h[156]=='\0') {
-      s.members.push_back({s.end,s.end+tarRecord,size});
+      s.members.push_back({s.end,s.end+tarRecord,n});
     }
     s.end=next;
   }
   return s;
 }
 
+unsigned long long fileSize(const std::string& path) {
+  std::error_code ec;
+  const unsigned long long n=std::filesystem::file_size(pathFromUTF8(path),ec);
+  check(!ec,path,"cannot get the size of the file");
+  return n;
+}
+
+Scan scanArchive(const std::string& path) {
+  std::ifstream in(pathFromUTF8(path),std::ios::binary);
+  check(static_cast<bool>(in),path,"cannot open the file");
+  return scanEntries(in,fileSize(path),path);
+}
+
 void checkNotDamaged(const Scan& s,const std::string& path) {
   check(s.damage.empty(),path,"the archive is damaged: "+s.damage);
+}
+
+/// make what has been written to the file durable (it survives a crash of the machine)
+void syncFile(std::FILE* f,const std::string& path) {
+  check(std::fflush(f)==0,path,"cannot write the file");
+#ifdef _WIN32
+  check(_commit(_fileno(f))==0,path,"cannot write the file to disk");
+#else
+  check(fsync(fileno(f))==0,path,"cannot write the file to disk");
+#endif
+}
+
+void seekFile(std::FILE* f,unsigned long long offset,const std::string& path) {
+#ifdef _WIN32
+  check(_fseeki64(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
+#else
+  check(fseeko(f,offset,SEEK_SET)==0,path,"cannot seek in the file");
+#endif
+}
+
+void writeAt(std::FILE* f,unsigned long long offset,const char* data,std::size_t n,const std::string& path) {
+  seekFile(f,offset,path);
+  check(std::fwrite(data,1,n,f)==n,path,"cannot write the file");
+}
+
+// Rows removed from inside a member (trimming at a restart) are removed by replacing the
+// member with a new one with the rows that are kept. So that an interruption cannot lose
+// these rows, the members that replace the ones after offset are first saved in a trim
+// record (path.plumed-trim, renamed when complete): then the archive is truncated at
+// offset and the members appended. A trim record left by an interrupted run is applied by
+// the readers (without modifying the files) and by the writer (which completes the trim).
+
+std::string trimRecord(const std::string& path) {
+  return path+".plumed-trim";
+}
+
+/// the trim record of an archive, if any: offset, and the entries that replace what follows it
+bool readTrimRecord(const std::string& path,unsigned long long& offset,std::vector<char>& entries) {
+  const std::string record=trimRecord(path);
+  std::error_code ec;
+  if(!std::filesystem::exists(pathFromUTF8(record),ec)) {
+    return false;
+  }
+  std::ifstream in(pathFromUTF8(record),std::ios::binary);
+  std::vector<char> h(tarRecord);
+  in.read(h.data(),tarRecord);
+  check(static_cast<bool>(in),record,"cannot read the file");
+  unsigned long long n=0;
+  check(std::sscanf(h.data(),"plumed-trim-record 1 %llu %llu",&offset,&n)==2 && fileSize(record)==tarRecord+n,record,"invalid trim record");
+  entries.resize(n);
+  in.read(entries.data(),n);
+  check(static_cast<bool>(in),record,"cannot read the file");
+  return true;
+}
+
+/// complete an interrupted trim (only the writer)
+void completeTrim(const std::string& path) {
+  const std::string record=trimRecord(path);
+  std::error_code ec;
+  // a record not complete: the archive was not modified yet
+  std::filesystem::remove(pathFromUTF8(record+".tmp"),ec);
+  unsigned long long offset=0;
+  std::vector<char> entries;
+  if(!readTrimRecord(path,offset,entries)) {
+    return;
+  }
+  check(fileSize(path)>=offset,path,"the archive is shorter than its trim record says");
+  std::filesystem::resize_file(pathFromUTF8(path),offset,ec);
+  check(!ec,path,"cannot truncate the file: "+ec.message());
+  {
+    unique_FILE f(fopenUTF8(path,"r+b"));
+    check(f!=nullptr,path,"cannot open the file");
+    writeAt(f.get(),offset,entries.data(),entries.size(),path);
+    syncFile(f.get(),path);
+  }
+  std::filesystem::remove(pathFromUTF8(record),ec);
+  check(!ec,record,"cannot remove the file: "+ec.message());
+}
+
+/// replace what follows offset with these entries
+void replaceTail(const std::string& path,unsigned long long offset,const std::vector<char>& entries) {
+  std::error_code ec;
+  if(entries.empty()) {
+    // a single operation
+    std::filesystem::resize_file(pathFromUTF8(path),offset,ec);
+    check(!ec,path,"cannot truncate the file: "+ec.message());
+    return;
+  }
+  const std::string record=trimRecord(path);
+  {
+    unique_FILE f(fopenUTF8(record+".tmp","wb"));
+    check(f!=nullptr,record,"cannot open the file");
+    std::vector<char> h(tarRecord,'\0');
+    std::snprintf(h.data(),h.size(),"plumed-trim-record 1 %llu %llu\n",offset,static_cast<unsigned long long>(entries.size()));
+    check(std::fwrite(h.data(),1,h.size(),f.get())==h.size() && std::fwrite(entries.data(),1,entries.size(),f.get())==entries.size(),record,"cannot write the file");
+    syncFile(f.get(),record);
+  }
+  std::filesystem::rename(pathFromUTF8(record+".tmp"),pathFromUTF8(record),ec);
+  check(!ec,record,"cannot rename the file: "+ec.message());
+  completeTrim(path);
 }
 
 /// the HDF5 files of a table: the file itself or, for an archive, its members (opened in memory)
@@ -706,30 +882,56 @@ class Files {
   bool archive;
   Scan scan;
   std::ifstream in;
+  /// the members of a trim record not completed, that replace those after recordOffset
+  std::vector<char> recordEntries;
+  struct Source {
+    bool inRecord;
+    unsigned long long data,size;
+  };
+  std::vector<Source> sources;
 public:
   explicit Files(const std::string& p):
     path(p),
     archive(h5table::isArchive(p)) {
-    if(archive) {
-      scan=scanArchive(path);
-      checkNotDamaged(scan,path);
-      in.open(pathFromUTF8(path),std::ios::binary);
-      check(static_cast<bool>(in),path,"cannot open the file");
+    if(!archive) {
+      return;
+    }
+    scan=scanArchive(path);
+    checkNotDamaged(scan,path);
+    in.open(pathFromUTF8(path),std::ios::binary);
+    check(static_cast<bool>(in),path,"cannot open the file");
+    unsigned long long offset=scan.end;
+    const bool record=readTrimRecord(path,offset,recordEntries);
+    for(const auto & m : scan.members) {
+      if(m.header<offset) {
+        sources.push_back({false,m.data,m.size});
+      }
+    }
+    if(record) {
+      std::istringstream rin(std::string(recordEntries.begin(),recordEntries.end()));
+      const Scan rs=scanEntries(rin,recordEntries.size(),trimRecord(path));
+      for(const auto & m : rs.members) {
+        sources.push_back({true,m.data,m.size});
+      }
     }
   }
   std::size_t size() const {
-    return archive ? scan.members.size() : 1;
+    return archive ? sources.size() : 1;
   }
   bool isArchive() const {
     return archive;
   }
+  /// the entries of the archive (without the trim record, see trimArchive)
   const Scan& getScan() const {
     return scan;
   }
   std::vector<char> bytes(std::size_t k) {
-    const auto & m=scan.members[k];
-    std::vector<char> image(m.size);
-    in.seekg(m.data);
+    const auto & s=sources[k];
+    if(s.inRecord) {
+      return std::vector<char>(recordEntries.begin()+s.data,recordEntries.begin()+s.data+s.size);
+    }
+    std::vector<char> image(s.size);
+    in.seekg(s.data);
     in.read(image.data(),image.size());
     check(static_cast<bool>(in),path,"cannot read a member of the archive");
     return image;
@@ -743,15 +945,8 @@ public:
   }
 };
 
-/// make what has been written to the file durable (it survives a crash of the machine)
-void syncFile(std::FILE* f,const std::string& path) {
-  check(std::fflush(f)==0,path,"cannot write the file");
-#ifdef _WIN32
-  check(_commit(_fileno(f))==0,path,"cannot write the file to disk");
-#else
-  check(fsync(fileno(f))==0,path,"cannot write the file to disk");
-#endif
-}
+/// rows read at once, so that the memory used does not grow with the size of the table
+constexpr unsigned long long readWindow=65536;
 
 }
 
@@ -763,9 +958,12 @@ struct Writer::Impl {
   Signature sig;
   std::vector<Column> columns;
   std::size_t buffered=0;
+  std::size_t batch=4096;
   /// an archive: the buffered rows are written as new members
   bool archive=false;
   unique_FILE tar;
+  /// end of the last member, and number of members
+  unsigned long long end=0;
   std::size_t members=0;
   void writeBuffer() {
     if(archive) {
@@ -777,15 +975,24 @@ struct Writer::Impl {
     }
     buffered=0;
   }
-  /// write the buffered rows of an archive as a new member (with a single write, at the end of the file)
+  /// write the buffered rows of an archive as a new member
   void publish() {
     if(buffered==0) {
       return;
     }
-    const std::vector<char> m=tarMember(memberName(members+1),tableImage(sig,columns,path),path);
-    check(std::fwrite(m.data(),1,m.size(),tar.get())==m.size() && std::fflush(tar.get())==0,path,"cannot write the file");
-    members++;
+    const std::vector<char> image=tableImage(sig,columns,path);
     buffered=0;
+    const std::vector<char> header=tarHeader(memberName(members+1),image.size(),path);
+    // the data, behind a header of zeros: for the readers, the archive still ends at end
+    std::vector<char> data(tarRecord+tarPadded(image.size()),'\0');
+    std::memcpy(data.data()+tarRecord,image.data(),image.size());
+    writeAt(tar.get(),end,data.data(),data.size(),path);
+    syncFile(tar.get(),path);
+    // then the header, which publishes the member
+    writeAt(tar.get(),end,header.data(),header.size(),path);
+    syncFile(tar.get(),path);
+    end+=data.size();
+    members++;
   }
   void newBlock(const Signature& s) {
     writeBuffer();
@@ -799,28 +1006,32 @@ struct Writer::Impl {
   }
 };
 
-Writer::Writer(const std::string& path,bool append):
+Writer::Writer(const std::string& path,bool append,std::size_t batch):
   impl(std::make_unique<Impl>()) {
   Lock lock(hdf5Mutex());
   impl->path=path;
-  impl->archive=isArchive(path);
+  impl->batch=std::max<std::size_t>(batch,1);
   std::error_code ec;
-  const bool exists=std::filesystem::exists(pathFromUTF8(path),ec);
+  const bool exists=append && std::filesystem::exists(pathFromUTF8(path),ec);
+  // an existing file is appended to as what it is, a new one is what its name says
+  impl->archive= exists ? isArchive(path) : hasArchiveExtension(path);
   if(impl->archive) {
-    if(append && exists) {
-      // what follows the last complete member (the end-of-archive marker, or a member written
-      // in part by an interrupted run) is removed
+    if(exists) {
+      completeTrim(path);
+      // only the headers are read; what follows the last member (the end-of-archive marker,
+      // or a member not published by an interrupted run) is removed
       const Scan s=scanArchive(path);
       checkNotDamaged(s,path);
-      if(s.end<s.fileSize) {
+      if(s.end<s.size) {
         std::filesystem::resize_file(pathFromUTF8(path),s.end,ec);
         check(!ec,path,"cannot truncate the file: "+ec.message());
       }
       impl->members=s.members.size();
+      impl->end=s.end;
     }
-    impl->tar.reset(fopenUTF8(path,append ? "ab" : "wb"));
+    impl->tar.reset(fopenUTF8(path,exists ? "r+b" : "w+b"));
     check(impl->tar!=nullptr,path,"cannot open the file");
-  } else if(append && exists) {
+  } else if(exists) {
     impl->file=openFile(path,H5F_ACC_RDWR);
     const unsigned nb=countBlocks(impl->file);
     if(nb>0) {
@@ -843,7 +1054,7 @@ Writer::~Writer() {
     if(impl->archive) {
       // end-of-archive marker (removed when the archive is appended to)
       const std::vector<char> zeros(2*tarRecord,'\0');
-      std::fwrite(zeros.data(),1,zeros.size(),impl->tar.get());
+      writeAt(impl->tar.get(),impl->end,zeros.data(),zeros.size(),impl->path);
     }
   } catch(...) {
   }
@@ -863,7 +1074,7 @@ void Writer::addRow(const std::vector<Field>& fields,const std::vector<Field>& c
   for(unsigned k=0; k<fields.size(); k++) {
     impl->columns[k].push(fields[k].value);
   }
-  if(++impl->buffered>=4096) {
+  if(++impl->buffered>=impl->batch) {
     impl->writeBuffer();
   }
 }
@@ -902,12 +1113,22 @@ struct Reader::Impl {
   unsigned block=0;
   bool loaded=false;
   std::vector<Column> columns;
+  /// rows of the current block, rows read so far, and the rows in memory (from first)
   unsigned long long nrows=0;
+  unsigned long long first=0;
   unsigned long long row=0;
   std::deque<std::string> pending;
   /// the signature of the last block read: in an archive, consecutive blocks with the same
   /// signature are the same block of the table (as when the rows are written to a single file)
   Signature last;
+  /// the rows of the current block from row on (at most readWindow)
+  void window() {
+    first=row;
+    const unsigned long long count=std::min(readWindow,nrows-row);
+    for(auto & c : columns) {
+      readRows(c.dataset,c,first,count,path);
+    }
+  }
   bool load() {
     while(block>=nblocks) {
       if(next>=files->size()) {
@@ -921,12 +1142,11 @@ struct Reader::Impl {
     Id g(H5Gopen2(file,blockName(block).c_str(),H5P_DEFAULT),H5Gclose);
     check(g>=0,path,"cannot open group "+blockName(block));
     const Signature sig=readSignature(g,columns,path);
-    nrows=0;
-    for(auto & c : columns) {
-      readRows(c.dataset,c,0,0,path);
-      nrows=c.size();
-    }
+    nrows=blockRows(columns);
     row=0;
+    if(nrows>0) {
+      window();
+    }
     if(!(loaded && files->isArchive() && sig==last)) {
       pending.push_back("#! FIELDS "+join(sig.names));
       for(const auto & c : sig.constants) {
@@ -967,9 +1187,12 @@ bool Reader::getline(std::string& line) {
       return true;
     }
     if(impl->loaded && impl->row<impl->nrows) {
+      if(impl->row-impl->first>=impl->columns[0].size()) {
+        impl->window();
+      }
       line.clear();
       for(const auto & c : impl->columns) {
-        line+=(line.empty()?"":" ")+c.get(impl->row).text();
+        line+=(line.empty()?"":" ")+c.get(impl->row-impl->first).text();
       }
       impl->row++;
       return true;
@@ -981,10 +1204,10 @@ bool Reader::getline(std::string& line) {
 }
 
 namespace {
-/// call f(member,signature,columns,rows) for every block of every file of a table, with the columns open
+/// call f(file,signature,columns,rows) for every block of every file of a table, with the columns open
 template<class F>
-void forEachBlock(Files& files,const std::string& path,F f) {
-  for(std::size_t k=0; k<files.size(); k++) {
+void forEachBlock(Files& files,const std::string& path,F f,std::size_t from=0) {
+  for(std::size_t k=from; k<files.size(); k++) {
     Id file=files.open(k);
     const unsigned nb=countBlocks(file);
     for(unsigned b=0; b<nb; b++) {
@@ -997,57 +1220,48 @@ void forEachBlock(Files& files,const std::string& path,F f) {
   }
 }
 
-/// add rows [from,to) of a block to a writer
+/// add rows [from,to) of a block to a writer (readWindow rows at a time)
 void copyRows(Writer& out,const Signature& sig,std::vector<Column>& cols,unsigned long long from,unsigned long long to,const std::string& path) {
-  if(to<=from) {
-    return;
-  }
-  for(auto & c : cols) {
-    readRows(c.dataset,c,from,to-from,path);
-  }
   std::vector<Field> row(cols.size());
-  for(unsigned long long r=0; r<to-from; r++) {
-    for(unsigned j=0; j<cols.size(); j++) {
-      row[j].name=cols[j].name;
-      row[j].value=cols[j].get(r);
+  for(unsigned long long w=from; w<to; w+=readWindow) {
+    const unsigned long long count=std::min(readWindow,to-w);
+    for(auto & c : cols) {
+      readRows(c.dataset,c,w,count,path);
     }
-    out.addRow(row,sig.constants);
+    for(unsigned long long r=0; r<count; r++) {
+      for(unsigned j=0; j<cols.size(); j++) {
+        row[j].name=cols[j].name;
+        row[j].value=cols[j].get(r);
+      }
+      out.addRow(row,sig.constants);
+    }
   }
 }
 
-/// truncate an archive: only the members after the cut are rewritten, in a copy that replaces the archive
-void truncateArchive(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
-  // the rows to keep are the first ones of the table
-  const auto current=rows(path);
-  check(keep.size()<=current.size(),path,"the table has fewer blocks than expected");
-  unsigned long long total=0;
-  for(std::size_t b=0; b<keep.size(); b++) {
-    check(keep[b]<=current[b],path,"block "+std::to_string(b)+" has fewer rows than expected");
-    check(b+1==keep.size() || keep[b]==current[b],path,"only the last rows of an archive can be removed");
-    total+=keep[b];
-  }
-  Files files(path);
+/// Remove the rows of an archive from row r of member k on (rows counted over the blocks of the
+/// member, 0<r<rows of member k or r=0). Only the members from k on are read: the rows removed are
+/// written in the backup (if not empty), the rows of member k that are kept make new members.
+unsigned long long cutArchive(const std::string& path,Files& files,std::size_t k,unsigned long long r,const std::string& backup) {
   const Scan& scan=files.getScan();
   std::unique_ptr<Writer> out;
-  // the first member with rows to remove, and the new members with the rows of it that are kept
-  std::size_t cut=files.size();
-  std::vector<char> tail;
-  unsigned long long seen=0;
-  forEachBlock(files,path,[&](std::size_t k,const Signature& sig,std::vector<Column>& cols,unsigned long long n) {
-    const unsigned long long kept=std::min(n,total>seen ? total-seen : 0);
+  std::vector<char> entries;
+  unsigned long long removed=0,seen=0;
+  std::size_t current=files.size(),produced=0;
+  forEachBlock(files,path,[&](std::size_t m,const Signature& sig,std::vector<Column>& cols,unsigned long long n) {
+    if(m!=current) {
+      current=m;
+      seen=0;
+    }
+    const unsigned long long kept= m==k ? std::min(n,r>seen ? r-seen : 0) : 0;
     seen+=n;
-    if(kept==n && cut==files.size()) {
-      return;
-    }
-    if(cut==files.size()) {
-      cut=k;
-    }
-    // the rows removed are kept in the backup
-    if(backup.length()>0 && n>kept) {
-      if(!out) {
-        out=std::make_unique<Writer>(backup,false);
+    if(n>kept) {
+      if(backup.length()>0) {
+        if(!out) {
+          out=std::make_unique<Writer>(backup,false);
+        }
+        copyRows(*out,sig,cols,kept,n,path);
       }
-      copyRows(*out,sig,cols,kept,n,path);
+      removed+=n-kept;
     }
     if(kept>0) {
       for(auto & c : cols) {
@@ -1059,39 +1273,98 @@ void truncateArchive(const std::string& path,const std::vector<unsigned long lon
         std::swap(mine[j].i,cols[j].i);
         std::swap(mine[j].s,cols[j].s);
       }
-      const auto m=tarMember(memberName(cut+1+tail.size()),tableImage(sig,mine,path),path);
-      tail.insert(tail.end(),m.begin(),m.end());
+      const std::vector<char> m2=tarMember(memberName(k+1+produced++),tableImage(sig,mine,path),path);
+      entries.insert(entries.end(),m2.begin(),m2.end());
     }
-  });
+  },k);
   out.reset();
-  if(cut==files.size()) {
-    // nothing to remove (but what follows the last complete member)
-    return;
-  }
-  const unsigned long long offset=scan.members[cut].header;
-  std::error_code ec;
-  if(tail.empty()) {
-    // a single operation: the archive is either as before or truncated
-    std::filesystem::resize_file(pathFromUTF8(path),offset,ec);
-    check(!ec,path,"cannot truncate the file: "+ec.message());
-    return;
-  }
-  // the members before the cut are copied (the copy keeps the permissions of the file),
-  // then the copy replaces the archive: an interruption leaves the archive as it was
-  const std::string tmp=path+".plumed-tmp";
-  std::filesystem::copy_file(pathFromUTF8(path),pathFromUTF8(tmp),std::filesystem::copy_options::overwrite_existing,ec);
-  check(!ec,path,"cannot copy the file: "+ec.message());
-  std::filesystem::resize_file(pathFromUTF8(tmp),offset,ec);
-  check(!ec,tmp,"cannot truncate the file: "+ec.message());
-  {
-    unique_FILE f(fopenUTF8(tmp,"ab"));
-    check(f!=nullptr,tmp,"cannot open the file");
-    check(std::fwrite(tail.data(),1,tail.size(),f.get())==tail.size(),tmp,"cannot write the file");
-    syncFile(f.get(),tmp);
-  }
-  std::filesystem::rename(pathFromUTF8(tmp),pathFromUTF8(path),ec);
-  check(!ec,path,"cannot replace the file: "+ec.message());
+  replaceTail(path,scan.members[k].header,entries);
+  return removed;
 }
+
+/// the time column of a block as doubles (false if the block has none)
+bool timeColumn(const Signature& sig,std::vector<Column>& cols,unsigned long long n,std::vector<double>& t,const std::string& path) {
+  for(unsigned j=0; j<sig.names.size(); j++) {
+    if(sig.names[j]=="time" && sig.types[j]!=Value::String) {
+      readRows(cols[j].dataset,cols[j],0,n,path);
+      t.resize(n);
+      for(unsigned long long i=0; i<n; i++) {
+        t[i]= cols[j].type==Value::Double ? cols[j].d[i] : static_cast<double>(cols[j].i[i]);
+      }
+      cols[j].clear();
+      return true;
+    }
+  }
+  return false;
+}
+}
+
+unsigned long long trimArchive(const std::string& path,double tcut,const std::string& backup,bool& hasTime,bool& increasing) {
+  Lock lock(hdf5Mutex());
+  completeTrim(path);
+  Files files(path);
+  hasTime=false;
+  increasing=true;
+  // the members are read from the last one, until a row with time before tcut is found:
+  // the cost does not depend on the rows that are kept
+  const std::size_t n=files.size();
+  std::size_t k=0;
+  unsigned long long r=0;
+  bool found=false;
+  double following=std::numeric_limits<double>::infinity();
+  for(std::size_t m=n; m>0 && !found; m--) {
+    Id file=files.open(m-1);
+    const unsigned nb=countBlocks(file);
+    std::vector<unsigned long long> start(nb+1,0);
+    std::vector<std::vector<double>> times(nb);
+    std::vector<bool> withTime(nb,false);
+    for(unsigned b=0; b<nb; b++) {
+      Id g(H5Gopen2(file,blockName(b).c_str(),H5P_DEFAULT),H5Gclose);
+      check(g>=0,path,"cannot open group "+blockName(b));
+      std::vector<Column> cols;
+      const Signature sig=readSignature(g,cols,path);
+      const unsigned long long rows=blockRows(cols);
+      start[b+1]=start[b]+rows;
+      withTime[b]=timeColumn(sig,cols,rows,times[b],path);
+    }
+    for(unsigned b=nb; b>0 && !found; b--) {
+      if(!withTime[b-1]) {
+        continue;
+      }
+      hasTime=true;
+      const auto & t=times[b-1];
+      for(std::size_t i=t.size(); i>0; i--) {
+        if(t[i-1]<tcut) {
+          found=true;
+          k=m-1;
+          r=start[b-1]+i;
+          break;
+        }
+        if(t[i-1]>following) {
+          increasing=false;
+        }
+        following=t[i-1];
+      }
+    }
+    if(found && r==start[nb]) {
+      // the cut is at the end of the member
+      k++;
+      r=0;
+    }
+  }
+  if(!hasTime || !increasing) {
+    return 0;
+  }
+  if(!found) {
+    // all the rows are after tcut
+    k=0;
+    r=0;
+  }
+  if(k>=n) {
+    // nothing after tcut
+    return 0;
+  }
+  return cutArchive(path,files,k,r,backup);
 }
 
 std::vector<unsigned long long> rows(const std::string& path) {
@@ -1114,7 +1387,36 @@ std::vector<unsigned long long> rows(const std::string& path) {
 void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup) {
   Lock lock(hdf5Mutex());
   if(isArchive(path)) {
-    truncateArchive(path,keep,backup);
+    // the rows to keep are the first ones of the table: find the member with the first row removed
+    completeTrim(path);
+    const auto current=rows(path);
+    check(keep.size()<=current.size(),path,"the table has fewer blocks than expected");
+    unsigned long long total=0;
+    for(std::size_t b=0; b<keep.size(); b++) {
+      check(keep[b]<=current[b],path,"block "+std::to_string(b)+" has fewer rows than expected");
+      check(b+1==keep.size() || keep[b]==current[b],path,"only the last rows of an archive can be removed");
+      total+=keep[b];
+    }
+    Files files(path);
+    unsigned long long seen=0;
+    std::size_t k=files.size();
+    unsigned long long r=0;
+    // (all the members are read: this function is not used at restarts, see trimArchive)
+    std::vector<unsigned long long> perMember(files.size(),0);
+    forEachBlock(files,path,[&](std::size_t m,const Signature&,std::vector<Column>&,unsigned long long n) {
+      perMember[m]+=n;
+    });
+    for(std::size_t m=0; m<perMember.size(); m++) {
+      if(seen+perMember[m]>total) {
+        k=m;
+        r=total-seen;
+        break;
+      }
+      seen+=perMember[m];
+    }
+    if(k<files.size()) {
+      cutArchive(path,files,k,r,backup);
+    }
     return;
   }
   std::unique_ptr<Writer> out;
@@ -1157,10 +1459,10 @@ void truncate(const std::string& path,const std::vector<unsigned long long>& kee
   }
 }
 
-void copy(const std::string& input,const std::string& output) {
+void copy(const std::string& input,const std::string& output,std::size_t batch) {
   Lock lock(hdf5Mutex());
   Files files(input);
-  Writer out(output,false);
+  Writer out(output,false,batch);
   forEachBlock(files,input,[&](std::size_t,const Signature& sig,std::vector<Column>& cols,unsigned long long n) {
     copyRows(out,sig,cols,0,n,input);
   });

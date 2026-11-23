@@ -322,7 +322,7 @@ def read_as_pandas(
 
     from . import _hdf5
 
-    if _hdf5.is_hdf5(file_or_path, format):
+    if _hdf5.is_hdf5(file_or_path, format, content=True):
 
         def process_hdf(df, constants):
             constants = [

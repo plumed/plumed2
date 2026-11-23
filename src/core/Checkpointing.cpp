@@ -146,7 +146,7 @@ class TrimLineReader {
 #endif
 public:
   TrimLineReader(const std::string& fname,bool compressed) {
-    if(h5table::isH5(fname)) {
+    if(h5table::isTable(fname)) {
       h5reader=std::make_unique<h5table::Reader>(fname);
     } else if(compressed) {
 #ifdef __PLUMED_HAS_ZLIB
@@ -265,6 +265,20 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   // the lines of the restart step are removed too, since the step is computed again
   // (unless keepRestartStep); times are printed with a few digits, hence the half timestep
   const double tcut=(engineRestartStep+(keepRestartStep?0.5:-0.5))*dt;
+  if(h5table::isArchive(fname)) {
+    // an archive is read from its end: only the members after the cut are read and rewritten
+    const std::string backup=trimmedBackupName(fname);
+    bool hasTime=false,increasing=true;
+    const auto removed=h5table::trimArchive(fname,tcut,backup,hasTime,increasing);
+    if(!hasTime) {
+      log<<"  WARNING: file "<<fname<<" has no time field and is not trimmed at the restart step\n";
+    } else if(!increasing) {
+      log<<"  WARNING: in file "<<fname<<" the time of the lines after the restart step is not increasing: the file is not trimmed\n";
+    } else if(removed>0) {
+      log<<"  file "<<fname<<": "<<removed<<" lines written "<<(keepRestartStep?"after":"at or after")<<" the restart step "<<engineRestartStep<<" moved to "<<backup<<"\n";
+    }
+    return;
+  }
   // keepEnd: end of the last line with a time before tcut (the tail starts there,
   // including the comment lines that follow it); offsets in uncompressed bytes
   long long offset=0,keepEnd=0;
@@ -277,7 +291,7 @@ void Checkpointing::trimAtRestart(const std::string& fname,bool keepRestartStep)
   std::string header,keptHeader;
   // for HDF5 tables: the block (a FIELDS line starts one) and the row of the last line kept
   long long block=-1,row=0,keepBlock=-1,keepRow=0;
-  const bool table=h5table::isH5(fname);
+  const bool table=h5table::isTable(fname);
   {
     TrimLineReader reader(fname,compressed);
     std::string line;

@@ -114,22 +114,28 @@ METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.h5.tar
 An archive is an uncompressed TAR file whose members (`batch_00000001.h5`, `batch_00000002.h5`, ...) are complete
 HDF5 tables, as described above. The rows are kept in memory and written as a new member at every flush (see
 [FLUSH](FLUSH.md); the files are also flushed when the MD code writes its checkpoint), every 4096 rows, and when the
-fields change. A member is written with a single write at the end of the file, and it is never modified afterwards.
-Thus:
+fields change. A member is written at the end of the file in two steps, each followed by a synchronization to the
+disk: its data, behind a header of zeros, then its header. The members written are never modified afterwards. Thus:
 
 - the archive can be read while the simulation is running: the readers see the members written so far;
-- if the simulation is killed, all the members written before are intact; the only damage can be a last member
-  written in part, which the readers ignore and PLUMED removes when it appends to the archive (e.g. at a restart).
-
-As for text files, the archive is not synchronized to the disk at every flush: a crash of the whole machine can
-lose what the operating system had not written yet.
+- if the simulation, or the machine, stops abruptly, all the members written before are intact; the only damage can
+  be a last member not published, or with its header written in part, which the readers ignore and PLUMED removes
+  when it appends to the archive (e.g. at a restart). An invalid header followed by valid members is reported as a
+  damaged archive.
 
 PLUMED reads archives wherever it reads `.h5` files (restarts, [READ](READ.md), [h5cat](h5cat.md),
-[h5convert](h5convert.md), ...), and the table is the concatenation of the members. The members can be extracted
+[h5convert](h5convert.md), ...), and the table is the concatenation of the members. The files that are read are
+recognized by their content, so that a renamed archive is still read as an archive. The members can be extracted
 with any TAR tool and read with any HDF5 tool (`tar xf COLVAR.h5.tar`), and [h5convert](h5convert.md) converts an
-archive into a single `.h5` file and back. The Python module reads and writes archives too
-(`plumed.read_as_pandas("COLVAR.h5.tar")`). Restarts (appending, trimming at the restart step,
-[CHECKPOINT](CHECKPOINT.md)) work as with the other files; only the members after the restart step are rewritten.
+archive into a single `.h5` file and back, or into an archive with larger or smaller members (`--batch-size`).
+The Python module reads and writes archives too (`plumed.read_as_pandas("COLVAR.h5.tar")`).
+
+Restarts (appending, trimming at the restart step, [CHECKPOINT](CHECKPOINT.md)) work as with the other files, with a
+cost that does not depend on the size of the archive: only the headers of the members are read, and the members after
+the restart step. When the MD code sends its checkpoint signal at a step, PLUMED flushes the files at the start of
+that step, so that a restart from that step only truncates the archive at the end of a member. When the restart step
+is inside a member, only that member is rewritten: the new member is first saved in a file `filename.plumed-trim`,
+which completes the operation if it is interrupted (the readers use it too).
 
 Every member has a fixed overhead of a few kB (larger with more columns): flushing every few rows makes the archive
 much larger than the equivalent `.h5` file, while with members of hundreds or thousands of rows the overhead is small.

@@ -35,61 +35,126 @@ from numbers import Integral
 from ._errors import FormatError
 
 
-def is_hdf5(file, format):
+def _name(file):
+    name = (
+        os.fspath(file)
+        if isinstance(file, (str, os.PathLike))
+        else getattr(file, "name", "")
+    )
+    return name if isinstance(name, str) else ""
+
+
+def _content(file):
+    """'hdf5', 'archive' or None, from the first bytes of an existing file."""
+    try:
+        if hasattr(file, "read"):
+            if not (hasattr(file, "seekable") and file.seekable()):
+                return None
+            pos = file.tell()
+            h = file.read(512)
+            file.seek(pos)
+        else:
+            with open(file, "rb") as f:
+                h = f.read(512)
+    except (OSError, TypeError, ValueError):
+        return None
+    if not isinstance(h, bytes):
+        return None
+    if h[:8] == b"\x89HDF\r\n\x1a\n":
+        return "hdf5"
+    if len(h) == 512 and _tar_size(h) is not None:
+        return "archive"
+    return None
+
+
+def is_hdf5(file, format, content=False):
+    """With content, an existing file is recognized by its content (for reading)."""
     if format not in (None, "text", "hdf5"):
         raise ValueError("format must be None, 'text', or 'hdf5'")
     if format is not None:
         return format == "hdf5"
     if type(file).__module__.startswith("h5py."):
         return True
-    name = (
-        os.fspath(file)
-        if isinstance(file, (str, os.PathLike))
-        else getattr(file, "name", "")
-    )
-    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5", ".h5.tar"))
+    if content and _content(file) is not None:
+        return True
+    return _name(file).lower().endswith((".h5", ".hdf5", ".h5.tar"))
 
 
 def _is_archive(file):
-    name = (
-        os.fspath(file)
-        if isinstance(file, (str, os.PathLike))
-        else getattr(file, "name", "")
-    )
-    return isinstance(name, str) and name.lower().endswith(".h5.tar")
+    # by content: h5py would read an archive as its first member (HDF5 looks
+    # for its signature also at byte 512), so an archive is recognized first
+    kind = _content(file)
+    if kind is not None:
+        return kind == "archive"
+    return _name(file).lower().endswith(".h5.tar")
 
 
 # Archives of tables (.h5.tar): uncompressed POSIX TAR files whose members are
-# complete tables, only appended to by PLUMED. A last member written in part
-# (an interrupted run) is ignored, as PLUMED does.
+# complete tables, only appended to by PLUMED. A last member not published, or
+# whose header was written in part (an interrupted run), is ignored, as PLUMED
+# does; a trim record left by an interrupted restart is applied.
 
 
-def _archive_members(f):
-    """(offset, size) of the regular members of an archive."""
-    f.seek(0, os.SEEK_END)
-    file_size = f.tell()
+def _tar_size(h):
+    """The size of the entry of a valid ustar header, otherwise None."""
+    if h[257:262] != b"ustar":
+        return None
+    try:
+        stored = int(h[148:156].replace(b"\0", b" ").strip() or b"x", 8)
+        size = int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
+    except ValueError:
+        return None
+    if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
+        return None
+    return size
+
+
+def _scan(f, file_size):
+    """(header offset, data offset, size) of the regular members."""
     members, end = [], 0
     while file_size - end >= 512:
         f.seek(end)
         h = f.read(512)
         if h == bytes(512):
+            break  # end-of-archive marker, or a member not published
+        size = _tar_size(h)
+        if size is None:
+            # the header of the last member, written in part, unless valid entries follow
+            for o in range(end + 512, file_size - 511, 512):
+                f.seek(o)
+                if _tar_size(f.read(512)) is not None:
+                    raise FormatError(
+                        f"The archive is damaged: invalid TAR header at byte {end}"
+                    )
             break
-        try:
-            if h[257:262] != b"ustar":
-                raise ValueError
-            stored = int(h[148:156].replace(b"\0", b" ").strip() or b"x", 8)
-            size = int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
-        except ValueError:
-            raise FormatError(f"Invalid TAR header at byte {end}") from None
-        if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
-            raise FormatError(f"Invalid TAR header at byte {end}")
         following = end + 512 + (size + 511) // 512 * 512
         if following > file_size:
             break  # written in part
         if h[156:157] in (b"0", b"\0"):
-            members.append((end + 512, size))
+            members.append((end, end + 512, size))
         end = following
     return members
+
+
+def _archive_members(f, name=""):
+    """(file, data offset, size) of the members of an archive."""
+    f.seek(0, os.SEEK_END)
+    members = _scan(f, f.tell())
+    record = name + ".plumed-trim" if name else ""
+    if record and os.path.exists(record):
+        with open(record, "rb") as r:
+            data = r.read()
+        words = data[:512].split()
+        if len(words) < 4 or words[0] != b"plumed-trim-record" or words[1] != b"1":
+            raise FormatError("Invalid trim record " + record)
+        offset, size = int(words[2]), int(words[3])
+        if len(data) != 512 + size:
+            raise FormatError("Invalid trim record " + record)
+        tail = io.BytesIO(data[512:])
+        return [(f, d, n) for h, d, n in members if h < offset] + [
+            (tail, d, n) for h, d, n in _scan(tail, size)
+        ]
+    return [(f, d, n) for h, d, n in members]
 
 
 class _Member(io.RawIOBase):
@@ -257,9 +322,9 @@ class _Reader:
                     # closed by the stack, with the reader
                     handle = self.stack.enter_context(open(file, "rb"))  # noqa: SIM115
                 self.blocks = []
-                for offset, size in _archive_members(handle):
+                for source, offset, size in _archive_members(handle, _name(file)):
                     member = self.stack.enter_context(
-                        h5py.File(_Member(handle, offset, size), "r")
+                        h5py.File(_Member(source, offset, size), "r")
                     )
                     self.blocks.extend(_blocks(member))
             else:
@@ -602,7 +667,7 @@ def write(df, file):
         else:
             value = float(value)
         constants[name] = value
-    if _is_archive(file):
+    if _name(file).lower().endswith(".h5.tar"):
         # an archive with a single member
         import tarfile
 
