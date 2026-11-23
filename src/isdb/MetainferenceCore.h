@@ -48,6 +48,30 @@ class SigmaMeanHistory {
   unsigned first_=0;
   unsigned n_=0;
   double max_=0.;
+  // One committed insertion can overwrite at most one ring entry. Keep an
+  // O(1) undo record so same-step trials can read the start-of-step window.
+  bool replayBase_=false;
+  unsigned baseFirst_=0,baseSize_=0,baseIndex_=0;
+  double baseMax_=0.,baseValue_=0.;
+  double baseGet(unsigned k) const {
+    const unsigned i=(baseFirst_+k)%buf_.size();
+    return i==baseIndex_ ? baseValue_ : buf_[i];
+  }
+  void saveReplayBase(unsigned index) {
+    if(!replayBase_) {
+      baseFirst_=first_;
+      baseSize_=n_;
+      baseMax_=max_;
+      baseIndex_=index;
+      baseValue_=buf_[index];
+      replayBase_=true;
+    } else {
+      buf_[baseIndex_]=baseValue_;
+      first_=baseFirst_;
+      n_=baseSize_;
+      max_=baseMax_;
+    }
+  }
   void recomputeMax() {
     max_=get(0);
     for(unsigned k=1; k<n_; ++k) {
@@ -72,6 +96,7 @@ public:
   void clear() {
     first_=0;
     n_=0;
+    replayBase_=false;
   }
   /// add a value, removing the oldest one if the history is full
   void push(const double v) {
@@ -96,6 +121,62 @@ public:
   void setFirst(const double v) {
     buf_[first_]=v;
     recomputeMax();
+  }
+  /// the maximum that push(v) would give, without changing the history
+  double maxAfterPush(const double v) const {
+    const unsigned size=replayBase_ ? baseSize_ : n_;
+    const double maximum=replayBase_ ? baseMax_ : max_;
+    auto at=[&](unsigned k) {
+      return replayBase_ ? baseGet(k) : get(k);
+    };
+    if(size<buf_.size()) {
+      return (size==0||maximum<v) ? v : maximum;
+    }
+    if(maximum<v) {
+      return v;
+    }
+    // maximum is one of the stored entries; a smaller oldest entry cannot evict it.
+    if(at(0)<maximum) {
+      return maximum;
+    }
+    // the oldest value, which would be removed, is the maximum
+    double m=v;
+    for(unsigned k=1; k<size; ++k) {
+      if(m<at(k)) {
+        m=at(k);
+      }
+    }
+    return m;
+  }
+  /// the maximum that setFirst(v) would give if v is larger than the oldest value, without changing the history
+  double maxAfterRaiseFirst(const double v) const {
+    const unsigned size=replayBase_ ? baseSize_ : n_;
+    auto at=[&](unsigned k) {
+      return replayBase_ ? baseGet(k) : get(k);
+    };
+    if(!(v>at(0))) {
+      return replayBase_ ? baseMax_ : max_;
+    }
+    double m=v;
+    for(unsigned k=1; k<size; ++k) {
+      if(m<at(k)) {
+        m=at(k);
+      }
+    }
+    return m;
+  }
+  void beginStep() {
+    replayBase_=false;
+  }
+  void commitPush(double value) {
+    saveReplayBase(n_==buf_.size() ? first_ : (first_+n_)%buf_.size());
+    push(value);
+  }
+  void commitRaiseFirst(double value) {
+    saveReplayBase(first_);
+    if(value>get(0)) {
+      setFirst(value);
+    }
   }
   /// the stored values, from the oldest
   std::vector<double> values() const {
@@ -248,6 +329,53 @@ private:
   double decay_w_;
   std::vector< std::vector <double> >  average_weights_;
 
+  /// The state that the Monte Carlo and the averages change at every evaluation.
+  /// Every evaluation of a step starts from the state at the beginning of the step,
+  /// and update() keeps the state of the last evaluation before it: evaluations that
+  /// are not followed by update() (replica-exchange trials, numerical derivatives,
+  /// the further force calculations of a step with shells) change nothing.
+  /// The sigma mean histories, which can be long, are not in it: the evaluation
+  /// computes their maxima as if the new value were added, and update() adds it.
+  struct State {
+    double scale=0.;
+    double offset=0.;
+    std::vector<double> sigma;
+    std::vector<double> sigma_min;
+    std::vector<double> sigma_max;
+    std::vector<double> Dsigma;
+    std::vector<double> ftilde;
+    std::vector<double> sigma_max_est;
+    std::vector<Random> random;
+    long long unsigned MCaccept=0;
+    long long unsigned MCacceptScale=0;
+    long long unsigned MCacceptFT=0;
+    long long unsigned MCtrial=0;
+    unsigned optimized_step=0;
+    bool sigmamax_opt_done=false;
+    bool firstTime=true;
+    std::vector<bool> firstTimeW;
+    std::vector< std::vector<double> > average_weights;
+  };
+  void saveState(State& s) const;
+  void loadState(const State& s);
+  /// the state at the beginning of step baseStep_
+  State base_;
+  long long int baseStep_=-1;
+  /// the state kept by update(), when an evaluation of the same step followed it
+  State committed_;
+  bool committedSaved_=false;
+  /// what the members of the state hold: the state kept by the last update(),
+  /// base_, or the result of an evaluation that update() has not kept yet
+  enum class Working { committed, base, evaluated } working_=Working::committed;
+  /// prepare the state for an evaluation of the current step
+  void beginEvaluation();
+  /// make the members hold the state kept by the last update()
+  void restoreCommitted();
+  /// the values to add to the sigma mean histories at update()
+  std::vector<double> pendingSigmaMean2_;
+  unsigned pendingSelector_=0;
+  bool historyPending_=false;
+
   // derivative of the energy with respect to the bias used for reweighting
   double biasDer_;
   // value of the bias used for reweighting at this step
@@ -321,11 +449,11 @@ public:
   unsigned getNarg() const {
     return narg;
   }
-  /// write the status file if this is a step at which it should be written
+  /// keep the state of the last evaluation and write the status file if this is a step at which it should be written
   void update();
   void writeStatus();
   /// store the state of the Monte Carlo and of the averages in the checkpoint (nothing if not active)
-  void writeCheckpoint(CheckpointWriter& w) const;
+  void writeCheckpoint(CheckpointWriter& w);
   /// restore the state stored by writeCheckpoint()
   void readCheckpoint(CheckpointReader& r);
 };
