@@ -549,6 +549,18 @@ The kernel propagates context to same-kernel nested PLUMED actions. Explicitly
 loaded old guests lacking the required existing commands and KEnRef's stateful
 coupled driver cannot safely provide arbitrary auxiliary evaluations and are
 rejected. Reduced path neighbor lists must be disabled for auxiliary path
-calculations. Python/custom callbacks must ensure their own calculate functions
+calculations. PINES auxiliary evaluations with reduced candidate lists require
+PL_REFRESH=1; accepting a swap cannot safely reuse the old selected pairs. Python/custom callbacks must ensure their own calculate functions
 are free of persistent side effects: the kernel cannot roll back arbitrary
 external globals or file writes, and no new Python callback API is introduced.
+
+
+Loaded guest compatibility checks guard command availability only:
+`performCalcNoUpdate` requires API >= 4, `performCalcNoForces` requires API >= 9
+(first released in PLUMED 2.8), and `setExchangeStep` requires API >= 13.
+No API increment identifies the action state fixes: backports to 2.9/2.10 retain
+their API numbers. An explicitly loaded guest must contain the relevant fixes;
+a sufficient command API does not establish that its actions are trial-safe.
+Same-kernel guests receive the internal context directly. Propagate the current
+exchange flag before both preparation and calculation: lambda trial preparation
+can enable dependencies and clear the foreign-coordinate flag before evaluation.
