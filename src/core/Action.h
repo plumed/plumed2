@@ -436,6 +436,8 @@ public:
 /// True for auxiliary forward evaluations, including GREX and no-force trials.
 /// This is an internal action contract, not a new MD command.
   bool isCalculationOnly()const;
+/// Identity of the current geometry evaluation, including same-step transforms.
+  std::uint64_t getEvaluationId()const;
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);

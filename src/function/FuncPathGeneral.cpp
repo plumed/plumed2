@@ -84,6 +84,10 @@ NEIGH_STRIDE=20
 //+ENDPLUMEDOC
 
 class FuncPathGeneral : public Function {
+  long long preparedStep_=-1;
+  std::uint64_t preparedEvaluation_=0;
+  bool preparedExchange_=false;
+  bool trialGeometry_=false;
   double lambda;
   int neigh_size;
   double neigh_stride;
@@ -258,6 +262,17 @@ FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
 
 // Calculator
 void FuncPathGeneral::calculate() {
+  if(isCalculationOnly() && neigh_size>0 &&
+      static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
+    error("Auxiliary path evaluations require the full frame list; disable NEIGH_SIZE");
+  }
+  if(isCalculationOnly() || trialGeometry_) {
+    neighpair.resize(path_cv_values.size());
+    for(unsigned i=0; i<neighpair.size(); ++i) {
+      neighpair[i].first=i;
+    }
+  }
+  trialGeometry_=isCalculationOnly();
   double s_path = 0.;
   double partition = 0.;
   double tmp, value, diff, expdist, s_der, z_der;
@@ -342,6 +357,24 @@ void FuncPathGeneral::calculate() {
 
 // Prepare the required arguments
 void FuncPathGeneral::prepare() {
+  if(getExchangeStep() && neigh_size>0 &&
+      static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
+    error("Replica exchange with a reduced path frame list is unsupported; disable NEIGH_SIZE");
+  }
+  if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
+      preparedExchange_==getExchangeStep()) {
+    return;
+  }
+  preparedStep_=getStep();
+  preparedEvaluation_=getEvaluationId();
+  preparedExchange_=getExchangeStep();
+  if(getExchangeStep() || trialGeometry_) {
+    neighpair.resize(path_cv_values.size());
+    for(unsigned i=0; i<neighpair.size(); ++i) {
+      neighpair[i].first=i;
+    }
+    return;
+  }
   // Neighbour list: rank and activate the chain for the next step
 
   // Neighbour list: if neigh_size < 0 never sort and keep the full vector

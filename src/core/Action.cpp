@@ -441,6 +441,10 @@ bool Action::isCalculationOnly()const {
   return plumed.isCalculationOnly();
 }
 
+std::uint64_t Action::getEvaluationId()const {
+  return plumed.atomsVersion;
+}
+
 std::string Action::cite(const std::string&s) {
   return plumed.cite(s);
 }
