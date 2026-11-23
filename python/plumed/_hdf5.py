@@ -65,6 +65,7 @@ def is_hdf5(file, format, *, writing=False):
                 if stream.read(10).startswith(b"#! FIELDS"):
                     return False
         except FileNotFoundError:
+            # A missing input can still be identified by its filename suffix.
             pass
     return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5", ".h5.tar"))
 
@@ -204,7 +205,9 @@ class _Reader:
             if self.archive:
                 self.file = None
                 self.blocks = []
-                self.archive_blocks = _archive.blocks(file)
+                self.archive_blocks = _archive.blocks(
+                    file, h5py=_h5py(), describe=_blocks
+                )
                 self.stack.callback(self.archive_blocks.close)
             else:
                 self.file = _open(self.stack, file, "r")
@@ -513,7 +516,7 @@ def write(df, file):
     ):
         from . import _archive
 
-        return _archive.write(df, file)
+        return _archive.write(df, file, write_hdf5=write)
     import numpy as np
     import pandas as pd
 

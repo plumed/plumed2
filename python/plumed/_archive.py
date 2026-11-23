@@ -69,6 +69,7 @@ def members(path):
             try:
                 recovery = open(os.fspath(path) + ".plumed-trim", "rb")
             except FileNotFoundError:
+                # No interrupted trim: read the archive without a recovery overlay.
                 pass
             length = os.fstat(stream.fileno()).st_size
             replacement = None
@@ -157,15 +158,14 @@ def members(path):
                 recovery.close()
 
 
-def blocks(path):
-    from ._hdf5 import _blocks, _h5py
-
+def blocks(path, *, h5py, describe):
+    # The HDF5 layer supplies its codec so archive framing never imports it back.
     previous = None
     previous_block = None
     with members(path) as images:
         for image, block, rows in images:
-            with _h5py().File(io.BytesIO(image), "r") as handle:
-                descriptions = _blocks(handle)
+            with h5py.File(io.BytesIO(image), "r") as handle:
+                descriptions = describe(handle)
                 if len(descriptions) != 1 or descriptions[0][3] != rows:
                     raise FormatError("HDF5 batch disagrees with its TAR header")
                 group, names, constants, _ = descriptions[0]
@@ -186,7 +186,7 @@ def blocks(path):
 
 @contextmanager
 def _writer_lock(path):
-    descriptor = os.open(path + ".plumed-lock", os.O_CREAT | os.O_RDWR, 0o666)
+    descriptor = os.open(path + ".plumed-lock", os.O_CREAT | os.O_RDWR, 0o600)
     try:
         if os.name == "nt":
             import msvcrt
@@ -201,12 +201,10 @@ def _writer_lock(path):
         os.close(descriptor)
 
 
-def write(df, path):
+def write(df, path, *, write_hdf5):
     """Atomically export a dataframe as ordinary HDF5 batches in a USTAR file."""
     import stat
     import tempfile
-
-    from . import _hdf5
 
     destination = os.path.realpath(os.fspath(path))
     parent = os.path.dirname(os.path.abspath(destination))
@@ -224,7 +222,7 @@ def write(df, path):
                     if hasattr(df, "plumed_constants"):
                         frame.plumed_constants = df.plumed_constants
                     image = io.BytesIO()
-                    _hdf5.write(frame, image)
+                    write_hdf5(frame, image)
                     data = image.getvalue()
                     size = (len(data) + 512 + 4095) // 4096 * 4096 - 512
                     member = tarfile.TarInfo("batch_" + str(first // 4096 + 1) + ".h5")
@@ -236,6 +234,7 @@ def write(df, path):
             try:
                 os.chmod(temporary, stat.S_IMODE(os.stat(destination).st_mode))
             except FileNotFoundError:
+                # A new destination has no existing permissions to preserve.
                 pass
             os.fsync(stream.fileno())
             if os.sys.platform == "darwin":

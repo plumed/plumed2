@@ -1,7 +1,9 @@
 """The native TAR profile remains readable without extracting its members."""
 
 import io
+import os
 from pathlib import Path
+import stat
 import tarfile
 import tempfile
 import shutil
@@ -59,6 +61,26 @@ class ArchiveIO(unittest.TestCase):
         renamed = self.path.with_name("renamed.data")
         self.path.rename(renamed)
         assert_frame_equal(self.read(renamed), self.df)
+
+    @unittest.skipIf(os.name == "nt", "POSIX file modes and flock semantics")
+    def test_writer_lock_permissions_and_exclusion(self):
+        from plumed._archive import _writer_lock
+
+        previous_umask = os.umask(0)
+        try:
+            with _writer_lock(str(self.path)):
+                mode = stat.S_IMODE(
+                    Path(str(self.path) + ".plumed-lock").stat().st_mode
+                )
+                self.assertEqual(mode, 0o600)
+                with self.assertRaises(OSError):
+                    with _writer_lock(str(self.path)):
+                        self.fail("a second writer acquired the archive lock")
+            # Closing the first owner releases the lease without deleting the sidecar.
+            with _writer_lock(str(self.path)):
+                pass
+        finally:
+            os.umask(previous_umask)
 
     def test_ordinary_hdf5_and_text_with_archive_suffix(self):
         ordinary = self.path.with_name("ordinary.h5")

@@ -389,7 +389,13 @@ void Archive::add(const std::vector<char>& image,std::uint64_t block,std::uint64
     std::snprintf(header.data()+100,8,"%07o",0644);
     std::snprintf(header.data()+108,8,"%07o",0);
     std::snprintf(header.data()+116,8,"%07o",0);
-    std::snprintf(header.data()+124,12,"%011llo",static_cast<unsigned long long>(size));
+    // The validated USTAR size occupies exactly eleven octal digits plus NUL.
+    // Encode it directly: GCC cannot infer require()'s upper bound for snprintf.
+    auto encodedSize=size;
+    for(unsigned i=0; i<11; ++i) {
+      header[134-i]=static_cast<char>('0'+(encodedSize&7U));
+      encodedSize>>=3;
+    }
     std::snprintf(header.data()+136,12,"%011o",0);
     header[156]='0';
     std::memcpy(header.data()+257,"ustar",5);
