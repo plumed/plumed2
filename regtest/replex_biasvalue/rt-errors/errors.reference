@@ -1,0 +1,16 @@
+bad_shape_product: rejected
+bad_shape_zero: rejected
+bad_pace: rejected
+bad_nex: rejected
+bad_coef_count: rejected
+bad_coef_parse: rejected
+bad_seed: rejected
+bad_temp: rejected
+bad_no_temp: rejected
+bad_restart_rfile: rejected
+bad_restart_empty: rejected
+bad_rfile_missing: rejected
+bad_restart_5rep: rejected
+bad_restart_notperm: rejected
+bad_restart_notime: rejected
+bad_grex: rejected

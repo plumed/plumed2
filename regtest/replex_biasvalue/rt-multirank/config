@@ -1,0 +1,17 @@
+mpiprocs=6
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# Same input and references as rt-matrix, with 2 MPI ranks per replica; the
+# forces of every rank (ff.*) check that the ranks of a replica agree
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 3 --dump-forces ff --dump-forces-fmt %10.4f --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 3 40
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 > log_summary
+}

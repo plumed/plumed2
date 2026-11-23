@@ -1,0 +1,66 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+export PLUMED_STACK_TRACE=no
+# A valid run, then each bad_NAME input (plumed.dat with the bias line changed)
+# must stop all the replicas with an error message containing the given text
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --log-file log"
+NREP=4
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 10
+}
+
+# bad NAME SETTINGS: directory bad_NAME with the bias line using SETTINGS
+function bad() {
+  mkdir "bad_$1"
+  sed "s/PACE=2 SEED=7/$2/" plumed.dat > "bad_$1/plumed.dat"
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  local header="#! FIELDS time replica-0 replica-1 replica-2 replica-3"
+  bad shape_product "PACE=2 SEED=7 SHAPE=3,2"
+  bad shape_zero "PACE=2 SEED=7 SHAPE=4,0"
+  bad pace "PACE=0 SEED=7"
+  bad nex "PACE=2 SEED=7 NEX=0"
+  bad coef_count "PACE=2 SEED=7 COEFFICIENTS={{1 2} {1 2} {1 2} {1 2}}"
+  bad coef_parse "PACE=2 SEED=7 COEFFICIENTS=1,x,1,1"
+  bad seed "PACE=2 SEED=@replicas:7,7,8,7"
+  bad temp "PACE=2 SEED=7 TEMP=@replicas:300,300,310,300"
+  bad no_temp "PACE=2 SEED=7"
+  bad restart_rfile "PACE=2 SEED=7 RESTART=YES BIASINDEX_RFILE=other.xvg"
+  bad restart_empty "PACE=2 SEED=7"
+  bad rfile_missing "PACE=2 SEED=7 BIASINDEX_RFILE=missing.xvg"
+  bad restart_5rep "PACE=2 SEED=7"
+  printf "%s replica-4\n 0.000000 0 1 2 3 4\n" "$header" > bad_restart_5rep/bias_index.xvg
+  bad restart_notperm "PACE=2 SEED=7"
+  printf "%s\n 4.000000 0 0 2 3\n" "$header" > bad_restart_notperm/bias_index.xvg
+  bad restart_notime "PACE=2 SEED=7"
+  printf "%s\n 0.000000 0 1 2 3\n" "$header" > bad_restart_notime/bias_index.xvg
+  bad grex "PACE=2 SEED=7"
+
+  local traj="--ixyz ../traj.xyz" restart="--restart --initial-step 6"
+  {
+    expect_error bad_shape_product "multidimensional grid shape incompatible with number of replicas: 6 != 4" $traj --kt 2.49
+    expect_error bad_shape_zero "shape elements should be strictly positive, not 0" $traj --kt 2.49
+    expect_error bad_pace "frequency for exchanges should be strictly positive" $traj --kt 2.49
+    expect_error bad_nex "number of exchanges attempts should be strictly positive" $traj --kt 2.49
+    expect_error bad_coef_count "COEFFICIENTS for bias 0 has 2 numbers" $traj --kt 2.49
+    expect_error bad_coef_parse "cannot parse coefficient: x" $traj --kt 2.49
+    expect_error bad_seed "differ between replicas" $traj --kt 2.49
+    expect_error bad_temp "differ between replicas" $traj
+    expect_error bad_no_temp "the temperature is not known" $traj
+    expect_error bad_restart_rfile "FILE and BIASINDEX_RFILE should be identical" $traj --kt 2.49
+    # without a file, FILE is created (empty) by the action itself before it is read
+    expect_error bad_restart_empty "no state compatible with time" $traj --kt 2.49 $restart
+    expect_error bad_rfile_missing "cannot find file missing.xvg" $traj --kt 2.49
+    expect_error bad_restart_5rep "cannot read the state from file bias_index.xvg" $traj --kt 2.49 $restart
+    expect_error bad_restart_notperm "are not a permutation of 4 replicas" $traj --kt 2.49 $restart
+    expect_error bad_restart_notime "no state compatible with time" $traj --kt 2.49 $restart
+    # exchanges also done by the MD code (fake GROMACS-like exchanges of the driver)
+    expect_error bad_grex "replica exchange of the MD code" $traj --kt 2.49 --debug-grex 2
+  } > errors
+}

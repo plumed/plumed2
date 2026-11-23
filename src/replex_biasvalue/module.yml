@@ -1,0 +1,4 @@
+name: replex_biasvalue
+authors: Olivier Languin-Cattoën
+description: replica exchange of biases (Hamiltonian replica exchange driven by PLUMED) on 1D or multidimensional ladders
+dois: ["10.48550/arXiv.2607.07186"]
