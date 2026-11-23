@@ -21,7 +21,7 @@
 #ifndef __PLUMED_cuda_helpers_cuh
 #define __PLUMED_cuda_helpers_cuh
 
-#include "cuda_to_hip.h"
+#include "cuda_to_hip.cuh"
 #include "plumed/core/GpuDevice.h"
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Vector.h"

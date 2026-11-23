@@ -18,8 +18,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_cuda_to_hip_h
-#define __PLUMED_cuda_to_hip_h
+#ifndef __PLUMED_cuda_to_hip_cuh
+#define __PLUMED_cuda_to_hip_cuh
 
 // The CUDA runtime names used by the plugin (and by ../openaccPTM/gpucheck),
 // mapped to HIP when the plugin is compiled for AMD GPUs (USE_HIP=1 in the
@@ -96,4 +96,4 @@ __device__ __forceinline__ auto warpMask() {
 }
 } // namespace CUDAHELPERS
 
-#endif //__PLUMED_cuda_to_hip_h
+#endif //__PLUMED_cuda_to_hip_cuh

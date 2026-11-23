@@ -13,7 +13,7 @@ endif
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 ifdef USE_HIP
-#AMD GPUs (make USE_HIP=1): hipcc compiles the .cu files as HIP, see src/cuda_to_hip.h
+#AMD GPUs (make USE_HIP=1): hipcc compiles the .cu files as HIP, see src/cuda_to_hip.cuh
 #HIP_ARCHITECTURES lists the GPU targets, e.g. "gfx90a gfx942 gfx1100",
 #by default the GPUs of the machine that compiles
 HIPCC ?= hipcc

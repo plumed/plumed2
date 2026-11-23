@@ -19,7 +19,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "cuda_to_hip.h"
+#include "cuda_to_hip.cuh"
 #ifndef __HIP__
 #include "device_launch_parameters.h"
 #endif
