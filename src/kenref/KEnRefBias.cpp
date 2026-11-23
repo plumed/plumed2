@@ -334,6 +334,9 @@ void KEnRefBias::scatterModelDerivatives(const std::vector<CoordsMatrixType<KEnR
 //  calculate()
 // ============================================================
 void KEnRefBias::calculate() {
+  if(isCalculationOnly()) {
+    error("KENREF maintains coupled ensemble state and does not support auxiliary replica-exchange or Monte Carlo evaluations");
+  }
   const auto begin = std::chrono::high_resolution_clock::now();
   const long step = getStep();
 

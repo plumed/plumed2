@@ -2054,12 +2054,12 @@ void MetaD::calculate() {
   }
   // calculate the acceleration factor
   // (only once per STRIDE steps: the action can be calculated more often when other actions need it)
-  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!getExchangeStep()&&getStep()%getStride()==0) {
+  if(acceleration_&&!schedule_.isRunFirstStep(getStep())&&!isCalculationOnly()&&getStep()%getStride()==0) {
     acc_ += static_cast<double>(getStride()) * std::exp(ene/(kbt_));
     const double mean_acc = acc_/static_cast<double>(getStep());
     getPntrToComponent("acc")->set(mean_acc);
   } else if (acceleration_ && schedule_.isRunFirstStep(getStep()) && acc_restart_mean_ > 0.0) {
-    if(getStep()>acc_restart_step_ && !getExchangeStep() && getStep()%getStride()==0) {
+    if(getStep()>acc_restart_step_ && !isCalculationOnly() && getStep()%getStride()==0) {
       // the previous run did not compute this step (the steps in between, if any, are assumed to have the mean value)
       acc_ = acc_restart_mean_ * static_cast<double>(getStep()-getStride()) + static_cast<double>(getStride()) * std::exp(ene/(kbt_));
       getPntrToComponent("acc")->set(acc_/static_cast<double>(getStep()));

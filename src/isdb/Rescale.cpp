@@ -589,7 +589,7 @@ void Rescale::calculate() {
   getPntrToComponent("accgamma")->set(accgamma);
 
   // do MC at the right time step
-  if(step%MCstride_==0&&!getExchangeStep()) {
+  if(step%MCstride_==0&&!isCalculationOnly()) {
     doMonteCarlo(igamma, ene, args, bargs);
   }
 
