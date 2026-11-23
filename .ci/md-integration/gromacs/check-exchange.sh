@@ -30,6 +30,10 @@ else
   fi
   # Local sandbox validation can specify explicit localhost slots.
   launcher=${MD_EXCHANGE_LAUNCHER:-$launcher}
+  python "$suite/validate_checkpoint.py" --gmx "$gmx" --kernel "$kernel" \
+    --output "$results/checkpoint" --launcher "$launcher"
+  python "$suite/validate_rlist.py" --gmx "$gmx" --kernel "$kernel" \
+    --output "$results/hrex-rlist" --launcher "$launcher"
   python "$suite/../check-provider-input.py" "$(dirname "$(dirname "$gmx")")" "$results/provider-input" "$kernel"
   python "$suite/validate.py" --gmx "$gmx" --output "$results/exchange" \
     --launcher "$launcher" --hrex --filter n2-r1-t0- \
