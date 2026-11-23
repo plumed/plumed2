@@ -1,0 +1,18 @@
+mpiprocs=2
+type=driver
+plumed_modules="logmfd"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 2 --dump-forces forces --dump-forces-fmt=%.17g"
+function plumed_regtest_before() {
+  for r in 0 1; do
+    awk -v r=$r 'BEGIN{for(f=0;f<12;f++){print 2;print "200 200 200";print "X 0 0 0";print "X",20-r*10+0.003*f,0,0}}' > traj.$r.xyz
+  done
+  mkdir noexchange
+  (cd noexchange; cp ../plumed.dat ../traj.0.xyz ../traj.1.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 --dump-forces forces --dump-forces-fmt=%.17g > out 2> err)
+}
+function plumed_regtest_after() {
+  for file in COLVAR forces; do
+    for r in 0 1; do
+      if cmp -s "$file.$r" "noexchange/$file.$r"; then echo "$file.$r IDENTICAL"; else echo "$file.$r DIFFERENT"; fi
+    done
+  done > comparison
+}
