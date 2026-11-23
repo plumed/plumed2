@@ -523,3 +523,32 @@ replicated across the PLUMED communicator and must not be summed again.
 The host must preserve the normal forces, virial and state during its temporary
 foreign evaluation. This path replaces GREX save/prepare/calculate calls for that
 exchange; it must not be combined with their bias correction.
+
+
+\subsection auxiliary-action-state Action state during auxiliary evaluations
+
+The existing `performCalcNoForces` command evaluates without force propagation
+or `update()`. Internally, actions can query `isCalculationOnly()`; it is also
+true during flagged exchange evaluations. Persistent model changes, sampling,
+RNG advancement, output and stop requests must occur only for an intended normal
+evaluation. An action that needs the step's prospective state for derivatives
+should stage that state and commit it in `update()`, replaying the same base for
+repeated evaluations, as METAINFERENCE does. A foreign-coordinate exchange flag
+is more specific than calculation-only context: lambda trials can change the
+Hamiltonian while coordinates remain unchanged.
+
+Geometry caches must be rebuilt for the actual evaluation and invalidated when
+returning from trial coordinates. `getEvaluationId()` exposes the internal atom
+version, which changes on forward evaluations and coordinate transformations;
+it is not a new MD command. Preparation can be repeated before calculation and
+must not advance MD counters merely because it was called twice. Equal position
+pointers or equal coordinates alone do not establish equivalent preparation:
+energy, lambda, atom selection and evaluation context can differ.
+
+The kernel propagates context to same-kernel nested PLUMED actions. Explicitly
+loaded old guests lacking the required existing commands and KEnRef's stateful
+coupled driver cannot safely provide arbitrary auxiliary evaluations and are
+rejected. Reduced path neighbor lists must be disabled for auxiliary path
+calculations. Python/custom callbacks must ensure their own calculate functions
+are free of persistent side effects: the kernel cannot roll back arbitrary
+external globals or file writes, and no new Python callback API is introduced.

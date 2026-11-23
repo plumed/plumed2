@@ -200,6 +200,24 @@ def main():
         json.dumps(results, indent=2) + "\n"
     )
     print(case["name"], "pass", flush=True)
+    # Preserve native startup validation when the PLUMED provider is inactive.
+    case = dict(name="identical-native-replicas-rejected", n=2, ranks=1, bias="none")
+    root = native.analytic.Suite.setup(suite, case)
+    code = suite.run(
+        common + ["-deffnm", "run"], root, "rejected.log", check=False
+    )
+    diagnostic = " ".join((root / "rejected.log").read_text().split()).lower()
+    if not code or not any(
+        text in diagnostic for text in ("nothing to exchange", "identical")
+    ):
+        raise AssertionError("Identical native replicas were accepted without PLUMED")
+    results.append(
+        dict(case=case, status="pass", expected_failure=True, exit_code=code)
+    )
+    (Path(args.output) / "results.json").write_text(
+        json.dumps(results, indent=2) + "\n"
+    )
+    print(case["name"], "pass", flush=True)
     return 0
 
 
