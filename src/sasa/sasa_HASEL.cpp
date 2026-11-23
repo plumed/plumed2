@@ -138,6 +138,7 @@ private:
   int approach;
   unsigned stride;
   unsigned nl_update;
+  bool trialGeometry_=false;
   int firstStepFlag;
   double Ti;
   // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
@@ -827,14 +828,14 @@ void SASA_HASEL::calculate() {
     makeWhole();
   }
 
-  if(getExchangeStep()) {
-    nl_update = 0;
-  }
+  const bool trial=isCalculationOnly();
+  const bool refreshGeometry=trial || trialGeometry_;
+  trialGeometry_=trial;
   if (firstStepFlag ==0) {
     readPDB();
     readSASAparam();
   }
-  if (nl_update == 0) {
+  if (nl_update == 0 || refreshGeometry) {
     calcNlist();
   }
 
@@ -1045,9 +1046,11 @@ void SASA_HASEL::calculate() {
   setBoxDerivatives(virial);
   setValue(sasa);
   firstStepFlag = 1;
-  ++nl_update;
-  if (nl_update == stride) {
-    nl_update = 0;
+  if(!trial) {
+    ++nl_update;
+    if (nl_update == stride) {
+      nl_update = 0;
+    }
   }
 }
 
