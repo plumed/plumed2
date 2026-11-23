@@ -19,7 +19,7 @@ NVCCLDFLAGS = -shared -dlto --gpu-architecture=sm_75
 ```
 If you are using a T1000
 
-For AMD GPUs, with ROCm (`hipcc`, rocThrust and hipCUB) installed:
+For AMD GPUs, with ROCm 6.2 or later (`hipcc`, rocThrust and hipCUB) installed:
   - `USE_HIP=1 ./configure.sh`
   - `make USE_HIP=1`
 
