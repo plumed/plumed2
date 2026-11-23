@@ -315,7 +315,7 @@ def check_optional_libraries(bundled, executable):
         h5py = None
     with temporary_directory() as temporary:
         directory = Path(temporary)
-        table = directory / "colvar.h5"
+        table = directory / "colvar.h5.tar"
         p = plumed.Plumed()
         p.cmd("setMDEngine", "python")
         p.cmd("setNatoms", 2)
@@ -337,8 +337,15 @@ def check_optional_libraries(bundled, executable):
             p.cmd("calc")
         p.finalize()
         if h5py is not None:
-            with h5py.File(table, "r") as f:
-                assert list(f["block_0"]["d"][:]) == [1.0, 2.0, 3.0]
+            # an archive of HDF5 tables: its members are read by h5py
+            import tarfile
+
+            values = []
+            with tarfile.open(table) as tar:
+                for member in tar:
+                    with h5py.File(tar.extractfile(member), "r") as f:
+                        values.extend(f["block_0"]["d"][:])
+            assert values == [1.0, 2.0, 3.0], values
         text = directory / "colvar.txt"
         subprocess.run(
             [
