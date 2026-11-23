@@ -6,6 +6,7 @@ bad_coef_count: rejected
 bad_coef_parse: rejected
 bad_seed: rejected
 bad_temp: rejected
+bad_args: rejected
 bad_no_temp: rejected
 bad_restart_rfile: rejected
 bad_restart_empty: rejected
@@ -14,3 +15,4 @@ bad_restart_5rep: rejected
 bad_restart_notperm: rejected
 bad_restart_notime: rejected
 bad_grex: rejected
+bad_multiple: rejected

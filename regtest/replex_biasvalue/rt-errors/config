@@ -30,6 +30,9 @@ function plumed_regtest_after() {
   bad coef_parse "PACE=2 SEED=7 COEFFICIENTS=1,x,1,1"
   bad seed "PACE=2 SEED=@replicas:7,7,8,7"
   bad temp "PACE=2 SEED=7 TEMP=@replicas:300,300,310,300"
+  bad args "PACE=2 SEED=7 COEFFICIENTS=0,1,2,3"
+  sed 's/ARG=b0,b1,b2,b3/ARG=@replicas:b0,b0,b1,b0/' bad_args/plumed.dat > bad_args/input
+  mv bad_args/input bad_args/plumed.dat
   bad no_temp "PACE=2 SEED=7"
   bad restart_rfile "PACE=2 SEED=7 RESTART=YES BIASINDEX_RFILE=other.xvg"
   bad restart_empty "PACE=2 SEED=7"
@@ -41,6 +44,8 @@ function plumed_regtest_after() {
   bad restart_notime "PACE=2 SEED=7"
   printf "%s\n 0.000000 0 1 2 3\n" "$header" > bad_restart_notime/bias_index.xvg
   bad grex "PACE=2 SEED=7"
+  bad multiple "PACE=2 SEED=7"
+  printf "\nbias2: REPLEX_BIASVALUE ARG=b0,b1,b2,b3 PACE=2 SEED=8 FILE=other.xvg\n" >> bad_multiple/plumed.dat
 
   local traj="--ixyz ../traj.xyz" restart="--restart --initial-step 6"
   {
@@ -52,6 +57,7 @@ function plumed_regtest_after() {
     expect_error bad_coef_parse "cannot parse coefficient: x" $traj --kt 2.49
     expect_error bad_seed "differ between replicas" $traj --kt 2.49
     expect_error bad_temp "differ between replicas" $traj
+    expect_error bad_args "differ between replicas" $traj --kt 2.49
     expect_error bad_no_temp "the temperature is not known" $traj
     expect_error bad_restart_rfile "FILE and BIASINDEX_RFILE should be identical" $traj --kt 2.49
     # without a file, FILE is created (empty) by the action itself before it is read
@@ -62,5 +68,6 @@ function plumed_regtest_after() {
     expect_error bad_restart_notime "no state compatible with time" $traj --kt 2.49 $restart
     # exchanges also done by the MD code (fake GROMACS-like exchanges of the driver)
     expect_error bad_grex "replica exchange of the MD code" $traj --kt 2.49 --debug-grex 2
+    expect_error bad_multiple "only one REPLEX_BIASVALUE action is allowed" $traj --kt 2.49
   } > errors
 }

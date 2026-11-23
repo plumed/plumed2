@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/IFile.h"
 #include "tools/Threefry.h"
@@ -85,6 +87,10 @@ order starting from the last one.
     acceptance. Keywords ARG, COEFFICIENTS, SHAPE, PACE, NEX, SEED, and TEMP
     must be identical in all replicas and will be checked. We recommend using a
     single common PLUMED input file and avoiding the `@replicas:` syntax.
+
+!!! note
+    Only one REPLEX_BIASVALUE action is allowed in each PLUMED input. Combine
+    all the bias terms in its ARG list and COEFFICIENTS matrix.
 
 !!! note
     This action cannot be combined with replica exchange provided by the MD
@@ -396,6 +402,9 @@ void ReplexBiasValue::registerKeywords(Keywords &keys) {
 
 ReplexBiasValue::ReplexBiasValue(const ActionOptions &ao)
   : PLUMED_BIAS_INIT(ao) {
+  if (!plumed.getActionSet().select<ReplexBiasValue*>().empty()) {
+    error("only one REPLEX_BIASVALUE action is allowed; combine its arguments in a single action");
+  }
   nrep = getNumberOfReplicas();
   narg = getNumberOfArguments();
   repid = getReplicaIndex();
@@ -477,6 +486,21 @@ ReplexBiasValue::ReplexBiasValue(const ActionOptions &ao)
       multi_sim_comm.Bcast(ref, 0);
       mismatch = (ref != settings);
       multi_sim_comm.Sum(mismatch);
+      if (!mismatch) {
+        // Include separators so that different ordered ARG lists cannot alias.
+        std::string arguments;
+        for (int j = 0; j < narg; j++) {
+          arguments += getPntrToArgument(j)->getName();
+          arguments += '\0';
+        }
+        unsigned length = arguments.size();
+        multi_sim_comm.Bcast(length, 0);
+        std::string reference = arguments;
+        reference.resize(length);
+        multi_sim_comm.Bcast(reference, 0);
+        mismatch = (reference != arguments);
+        multi_sim_comm.Sum(mismatch);
+      }
     }
   }
   comm.Bcast(mismatch, 0);
