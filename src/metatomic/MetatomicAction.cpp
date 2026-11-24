@@ -170,10 +170,11 @@ cv: METATOMIC ...
 ...
 ```
 
-Pair lists are given to such Python models as metatensor C++ arrays, and the
-model script should register them with
+Python models need metatensor-core 0.2.7 or later. PLUMED gives them the pair
+lists as metatensor C++ arrays, which metatensor-core reads through DLPack since
+0.2.7. Older versions can only read these arrays after the model calls
 `metatensor.register_external_data_wrapper("metatensor::SimpleDataArray",
-metatensor.ExternalCpuArray)` before reading `system.pairs(...)`.
+metatensor.ExternalCpuArray)`.
 
 [TorchScript]: https://pytorch.org/docs/stable/jit.html [metatomic]:
 https://docs.metatensor.org/metatomic/ [mta_tutorials]:

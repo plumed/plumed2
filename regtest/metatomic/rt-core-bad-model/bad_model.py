@@ -5,7 +5,6 @@
 # components of a gradient block, not the values of its samples, so the
 # `sample` and `atom` columns below reach PLUMED unchecked even with
 # CHECK_CONSISTENCY enabled.
-import metatensor
 import numpy as np
 from metatensor import Labels, TensorBlock, TensorMap
 
@@ -18,10 +17,6 @@ from metatomic import (
 )
 
 CUTOFF = 4.0
-
-metatensor.register_external_data_wrapper(
-    "metatensor::SimpleDataArray", metatensor.ExternalCpuArray
-)
 
 
 class BrokenDistance(NumpyModel):

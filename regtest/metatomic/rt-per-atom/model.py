@@ -6,7 +6,6 @@ symmetric. The values are returned in the reverse order of the requested atoms,
 to check that PLUMED follows the samples of the output.
 """
 
-import metatensor
 import numpy as np
 from metatensor import Labels, TensorBlock, TensorMap
 
@@ -20,11 +19,6 @@ from metatomic import (
 
 
 CUTOFF = 3.2
-
-# PLUMED gives pair lists as metatensor's C++ SimpleDataArray
-metatensor.register_external_data_wrapper(
-    "metatensor::SimpleDataArray", metatensor.ExternalCpuArray
-)
 
 
 class PerAtomDistances(NumpyModel):

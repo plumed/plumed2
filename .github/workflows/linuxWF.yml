@@ -99,10 +99,12 @@ jobs:
       # flags below are computed from the installed torch: installing it afterwards replaces torch
       # and leaves those flags pointing at a directory that no longer exists.
       # featomic computes the CVs of rt-soap and rt-perovskite.
+      # With metatensor-core 0.2.7 (see .ci/install.metatomic), metatensor-torch 0.10.8 fails to load
+      # some TorchScript models through the metatomic-torch plugin, and 0.10.9 works.
       if: ${{ contains( matrix.variant, '-doc-' ) || contains( matrix.variant, '-coverage-' ) }}
       run: |
         pip install --user --extra-index-url https://download.pytorch.org/whl/cpu \
-          "metatensor-torch>=0.10.0,<0.11" "featomic>=0.6.6,<0.7"
+          "metatensor-torch>=0.10.9,<0.11" "featomic>=0.6.6,<0.7"
     - name: Configure libtorch
       # the libraries on PyPI are not compiled with GLIBCXX_DEBUG.
       # -nvhpc- only builds PLUMED and the openacc plugin (multicore). The plugin is built with PLUMED's flags,

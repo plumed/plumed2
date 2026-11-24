@@ -2,7 +2,6 @@
 # the sum of the distances in a half pair list (i.e. the distance between the
 # two atoms, including periodic images within the cutoff), with explicit
 # gradients with respect to positions and strain.
-import metatensor
 import numpy as np
 from metatensor import Labels, TensorBlock, TensorMap
 
@@ -16,13 +15,6 @@ from metatomic import (
 
 
 CUTOFF = 4.0
-
-# PLUMED stores pair lists in metatensor's C++ SimpleDataArray, which the Python
-# metatensor package can only read once this origin is registered. This can be
-# removed once metatensor registers it by default (registering twice is fine).
-metatensor.register_external_data_wrapper(
-    "metatensor::SimpleDataArray", metatensor.ExternalCpuArray
-)
 
 
 class TwoAtomDistance(NumpyModel):
