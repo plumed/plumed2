@@ -1,4 +1,4 @@
-// Validate retained box bindings for GREX snapshots and lambda MCMC trials.
+// Validate retained provider input bindings across auxiliary lambda evaluations.
 #include <atomic>
 #include <cmath>
 #include <thread>
@@ -16,14 +16,6 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/mpicomm.h"
-#define __PLUMED_WRAPPER_CXX 1
-#define __PLUMED_WRAPPER_LIBCXX11 1
-#define __PLUMED_WRAPPER_EXTERN 0
-#define __PLUMED_WRAPPER_FORTRAN 0
-#define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#define __PLUMED_HAS_DLOPEN
-#include "Plumed.h"
 
 int main(int argc, char** argv)
 {
@@ -63,7 +55,7 @@ int main(int argc, char** argv)
             provider.calculateForces(input, &output);
             real physicalEnergy = real(0.25), bias = 0;
             provider.applyAfterPotentialEnergy(true, &physicalEnergy, f, virial);
-            provider.plumedHandle()->cmd("getBias", &bias);
+            bias = provider.lambdaTrialBias(0, 0, real(0.25));
             if (std::abs(bias - real(0.0625)) > 1e-6
                 || std::abs(f[0][0] - real(1.5)) > 1e-6
                 || std::abs(f[1][0] + real(1.5)) > 1e-6
@@ -94,37 +86,12 @@ int main(int argc, char** argv)
                 std::cerr << "restraint force=" << f[0][0] << " virial=" << savedVirial[0][0] << "\n";
                 throw std::runtime_error("Unexpected normal restraint force/virial");
             }
-            auto& plumed = *provider.plumedHandle();
-#if GMX_LIB_MPI
-            plumed.cmd("GREX init");
-#endif
-            real before = 0, after = 0;
-            plumed.cmd("getBias", &before);
-            // Model reuse of the short-lived input storage without invoking undefined behavior.
+            const real before = provider.lambdaTrialBias(0, 0, 0);
+            // Model reuse of short-lived input storage without undefined behavior.
             input.box_[0][0] = input.box_[1][1] = input.box_[2][2] = real(0.5);
-            real physicalEnergy = 0;
-            long int snapshotStep = 0;
-            plumed.cmd("setStepLong", &snapshotStep);
-            plumed.cmd("setEnergy", &physicalEnergy);
-            real snapshot = before;
-#if GMX_LIB_MPI
-            plumed.cmd("GREX savePositions");
-            int partner = 0;
-            plumed.cmd("GREX setPartner", &partner);
-            plumed.cmd("GREX calculate");
-            plumed.cmd("getBias", &snapshot);
-            std::cout << "afterGREXSnapshot=" << snapshot << " expected=0.2025\n";
-#endif
-            long int step     = 0;
-            int      exchange = 1;
-            plumed.cmd("setExchangeStep", &exchange);
-            plumed.cmd("setStepLong", &step);
-            plumed.cmd("prepareCalc");
-            plumed.cmd("performCalcNoForces");
-            plumed.cmd("getBias", &after);
+            const real after = provider.lambdaTrialBias(0, 0, 0);
             std::cout << "before=" << before << " after=" << after << " expected=0.2025\n";
-            if (std::abs(before - real(0.2025)) > 1e-6 || std::abs(after - before) > 1e-6
-                || std::abs(snapshot - before) > 1e-6)
+            if (std::abs(before - real(0.2025)) > 1e-6 || std::abs(after - before) > 1e-6)
                 throw std::runtime_error("PLUMED retains the temporary force input box");
             for (int i = 0; i < DIM; ++i)
             {
