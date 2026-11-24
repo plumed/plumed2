@@ -356,9 +356,6 @@ CoreBackend::CoreBackend(
         } else if (dtype == mta::ModelCapabilities::DType::Float32) {
             float64_ = false;
         } else {
-            // the released torch-based module errors here rather than guessing;
-            // treating an unknown dtype as float32 would run the model silently
-            // at the wrong precision
             action.error("this model requested a dtype which is not supported by PLUMED, only float32 and float64 can be used");
         }
         log.printf("  running model on cpu device with %s data\n", float64_ ? "float64" : "float32");
