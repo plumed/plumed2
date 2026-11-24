@@ -5,6 +5,7 @@ with explicit gradients with respect to positions and strain.
 
 import featomic
 import numpy as np
+import torch
 from metatensor import Labels, TensorBlock, TensorMap
 
 from metatomic import ModelCapabilities, ModelMetadata, NumpyModel, Quantity
@@ -62,7 +63,10 @@ class SoapProjection(NumpyModel):
             ["neighbor_1_type", "neighbor_2_type"],
             np.array([[a, b] for a in SPECIES for b in SPECIES if a <= b]),
         )
-        self.projection = np.random.default_rng(230623).random((2520, 3))
+        # the projection of the TorchScript model this test used in PLUMED 2.10,
+        # so that the references are unchanged
+        torch.manual_seed(-230623)
+        self.projection = torch.rand(2520, 3, dtype=torch.float64).numpy()
 
     def capabilities(self):
         return ModelCapabilities(
