@@ -7,6 +7,43 @@
 
 int main() {
   using PLMD::isdb::SigmaMeanHistory;
+  // Compare arbitrary replacements against a materialized history, including
+  // decreases of a unique/duplicate maximum and rotated, partially filled rings.
+  for(unsigned capacity : {
+        1U,2U,3U,9U
+      }) {
+    for(unsigned size=1; size<=capacity; ++size) {
+      SigmaMeanHistory replaced(capacity);
+      std::vector<double> samples;
+      for(unsigned i=0; i<size; ++i) {
+        const double sample=i%2==0 ? 9. : 4.;
+        replaced.push(sample);
+        samples.push_back(sample);
+      }
+      for(unsigned step=0; step<40; ++step) {
+        for(double candidate : {
+              0.,4.,9.,16.,2.
+            }) {
+          replaced.setFirst(candidate);
+          samples.front()=candidate;
+          if(replaced.values()!=samples ||
+              replaced.max()!=*std::max_element(samples.begin(),samples.end())) {
+            throw std::runtime_error("replacement maximum disagrees with stored history");
+          }
+        }
+        const double sample=step%3==0 ? 9. : 4.;
+        replaced.push(sample);
+        if(samples.size()==capacity) {
+          samples.erase(samples.begin());
+        }
+        samples.push_back(sample);
+        if(replaced.values()!=samples ||
+            replaced.max()!=*std::max_element(samples.begin(),samples.end())) {
+          throw std::runtime_error("rotation changed replacement history or its maximum");
+        }
+      }
+    }
+  }
   for(unsigned capacity : {
         1U,2U,3U,9U
       }) {
