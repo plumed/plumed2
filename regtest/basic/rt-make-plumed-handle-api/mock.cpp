@@ -3,6 +3,7 @@
 namespace {
 struct State {
   int api=1;
+  int apiQueries=0;
   int counts[4] {};
 };
 void* create() {
@@ -14,11 +15,14 @@ void finalize(void* ptr) {
 void command(void* ptr,const char* key,const void* value) {
   auto& state=*static_cast<State*>(ptr);
   if(std::strcmp(key,"getApiVersion")==0) {
+    ++state.apiQueries;
     *static_cast<int*>(const_cast<void*>(value))=state.api;
   } else if(std::strcmp(key,"setMockApi")==0) {
     state.api=*static_cast<const int*>(value);
   } else if(std::strcmp(key,"getMockCounts")==0) {
     std::memcpy(const_cast<void*>(value),state.counts,sizeof(state.counts));
+  } else if(std::strcmp(key,"getMockApiQueries")==0) {
+    *static_cast<int*>(const_cast<void*>(value))=state.apiQueries;
   } else if(std::strcmp(key,"performCalcNoUpdate")==0 && state.api>=4) {
     ++state.counts[0];
   } else if(std::strcmp(key,"performCalcNoForces")==0 && state.api>=9) {

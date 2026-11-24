@@ -76,6 +76,9 @@ class PlumedHandle :
   std::unique_ptr<PlumedMain> local;
 /// Pointer to loaded Plumed object;
   void* loaded=nullptr;
+/// Cached command API for the lifetime of a loaded guest (-1 means unknown).
+  int loadedApiVersion_=-1;
+  int loadedApiVersion();
 /// Constructor using the path to a kernel.
 /// I keep it private to avoid confusion wrt the
 /// similar constructor of PLMD::Plumed that accepts a string (conversion from FORTRAN).
