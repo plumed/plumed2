@@ -94,8 +94,16 @@ public:
   }
   /// replace the oldest value
   void setFirst(const double v) {
+    // the maximum is updated from the values, without reading back the one just stored:
+    // icpx -O3 (2026.2, its loop optimizer) reordered that read before the store when
+    // setFirst() is called in a loop, as in MetainferenceCore::update()
+    const double old=buf_[first_];
     buf_[first_]=v;
-    recomputeMax();
+    if(n_<=1||max_<v) {
+      max_=v;
+    } else if(old==max_) {
+      recomputeMax();
+    }
   }
   /// the maximum that push(v) would give, without changing the history
   double maxAfterPush(const double v) const {
