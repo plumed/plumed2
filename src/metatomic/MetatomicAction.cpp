@@ -80,11 +80,13 @@ output with respect to `positions` and `strain` explicitly, see below.
 `METATOMIC` action also accepts the following options:
 
 - `OPTIONS` are given to the plugin that loads the model, as space-separated
-  `key=value` pairs, for example `OPTIONS={extensions_directory=extensions}`.
+  `key=value` pairs, for example `OPTIONS={device=cuda extensions_directory=extensions}`.
   A value containing spaces is wrapped in braces, as in
   `OPTIONS={extensions_directory={my extensions}}`.
-  Keys and values are strings, and each plugin defines the options it accepts:
-  the Python plugin passes them to the model's `set_options` method;
+  Keys and values are strings, and each plugin defines the options it accepts
+  and rejects the others: the plugin of `metatomic-torch` accepts
+  `extensions_directory` and `device`, and the Python plugin passes the options
+  to the model's `set_options` method;
 - `EXTENSIONS_DIRECTORY` should be the path to a directory containing
   TorchScript extensions (as shared libraries) that are required to load and
   execute the model. This matches the `collect_extensions` argument to
