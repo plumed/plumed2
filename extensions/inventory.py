@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 from conda_policy import read_policy, validate_backend
-from metadata import check_obsolete, read_metadata
+from metadata import check_obsolete, header_field, read_metadata
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -129,13 +129,23 @@ def generate_catalog(write=True):
         modules[directory.name] = {
             "type": metadata["type"],
             "source_use": metadata["use"],
+            "toolchain": header_field(metadata, "toolchain"),
+            "placement": header_field(metadata, "placement"),
             "feature_guards": feature_guards(directory),
             "conda": conda_requirements(directory, metadata),
             "about": module_license(directory),
         }
         validate_backend(
             modules[directory.name]["conda"],
-            "native" if modules[directory.name]["type"] == "default-off" else "kernel",
+            (
+                "cuda"
+                if modules[directory.name]["toolchain"] == "cuda"
+                else (
+                    "native"
+                    if modules[directory.name]["type"] == "default-off"
+                    else "kernel"
+                )
+            ),
             directory,
         )
     plugins = {}
