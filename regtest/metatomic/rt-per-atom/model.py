@@ -1,7 +1,9 @@
 """
-Per-atom weighted sum of squared pair distances, with explicit gradients with
-respect to positions and strain. The values are returned in the reverse order of
-the requested atoms, to check that PLUMED follows the samples of the output.
+Per-atom weighted sums over pairs of the squared distance and of the x component
+of the pair vector, with explicit gradients with respect to positions and strain.
+The x component is not rotationally invariant, so its strain gradient is not
+symmetric. The values are returned in the reverse order of the requested atoms,
+to check that PLUMED follows the samples of the output.
 """
 
 import metatensor
@@ -60,9 +62,9 @@ class PerAtomDistances(NumpyModel):
             atoms = np.asarray(selected_atoms.values)[:, 1]
         atoms = atoms[::-1]
 
-        values = np.zeros((len(atoms), 1))
-        positions = np.zeros((len(atoms), len(system), 3, 1))
-        strain = np.zeros((len(atoms), 3, 3, 1))
+        values = np.zeros((len(atoms), 2))
+        positions = np.zeros((len(atoms), len(system), 3, 2))
+        strain = np.zeros((len(atoms), 3, 3, 2))
         for row, center in enumerate(atoms):
             weight = float(center + 1)
             for a, b, vector in zip(first, second, vectors):
@@ -73,7 +75,12 @@ class PerAtomDistances(NumpyModel):
                 positions[row, b, :, 0] += 2 * weight * vector
                 strain[row, :, :, 0] += 2 * weight * np.outer(vector, vector)
 
-        properties = Labels.range("feature", 1)
+                values[row, 1] += weight * vector[0]
+                positions[row, a, 0, 1] -= weight
+                positions[row, b, 0, 1] += weight
+                strain[row, :, 0, 1] += weight * vector
+
+        properties = Labels.range("feature", 2)
         block = TensorBlock(
             values,
             Labels(
@@ -92,7 +99,7 @@ class PerAtomDistances(NumpyModel):
             block.add_gradient(
                 "positions",
                 TensorBlock(
-                    positions.reshape(-1, 3, 1),
+                    positions.reshape(-1, 3, 2),
                     Labels(["sample", "system", "atom"], np.array(samples, dtype=np.int32)),
                     [Labels.range("xyz", 3)],
                     properties,

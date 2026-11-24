@@ -737,18 +737,6 @@ void CoreBackend::apply() {
         }
     }
 
-    // A model which is not exactly rotationally equivariant returns a slightly
-    // non-symmetric strain gradient, and metatomic passes it through untouched.
-    // The antisymmetric part is not a virial: keep the symmetric part, as i-PI's
-    // metatomic drivers do.
-    for (size_t a=0; a<3; a++) {
-        for (size_t b=a+1; b<3; b++) {
-            auto mean = 0.5 * (virial[3 * a + b] + virial[3 * b + a]);
-            virial[3 * a + b] = mean;
-            virial[3 * b + a] = mean;
-        }
-    }
-
     unsigned index = 0;
     action_.setForcesOnAtoms(derivatives, index);
 }
