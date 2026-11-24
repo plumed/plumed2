@@ -1,4 +1,9 @@
 plumed_modules=metatomic
-plumed_needs="metatomic:libmetatomic metatomic:libtorch"
+plumed_needs="metatomic:libmetatomic"
 type=driver
 arg="--plumed plumed.dat --ixyz crystal_structure.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.num"
+
+# soap_cv.py runs in the Python plugin, and computes its features with featomic
+function plumed_custom_skip(){
+  ! python -c "import featomic" 2>/dev/null
+}
