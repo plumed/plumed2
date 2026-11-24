@@ -49,7 +49,8 @@ else
    ls ./*/*.{h,cpp}
    # the CUDA sources of the modules with toolchain cuda
    ls ./*/*.{cu,cuh} 2>/dev/null
-   ls ../plugins/*/src/*.{h,cpp,cu,cuh}
+   # not every kind of file is in every plugin (e.g. no .cuh since cudaCoord became a module)
+   ls ../plugins/*/src/*.{h,cpp,cu,cuh} 2>/dev/null
   )"
 fi
 
