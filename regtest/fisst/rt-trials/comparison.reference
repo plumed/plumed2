@@ -4,3 +4,5 @@ restart.0 IDENTICAL
 restart.1 IDENTICAL
 observable.0 IDENTICAL
 observable.1 IDENTICAL
+grex self-pairs ZERO
+grex self-pairs ZERO

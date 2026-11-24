@@ -1,6 +1,4 @@
-# SAXS and SANS ONEBEAD with the solvation correction: the residue exposure
-# (LCPO SASA) is computed at every step. The structure drifts by about 0.35 A
-# per frame, so the neighbour list of LCPO is both rebuilt and reused.
+# Distinct stationary conformations exercise foreign solvation form factors.
 MOLINFO STRUCTURE=protein.pdb
 
 SAXS ...
@@ -31,4 +29,6 @@ QVALUE1=0.02 QVALUE2=0.06 QVALUE3=0.10 QVALUE4=0.15 QVALUE5=0.20 QVALUE6=0.25
 PRINT ARG=(saxs\.q-.*) FILE=saxs FMT=%8.6e
 PRINT ARG=(sans\.q-.*) FILE=sans FMT=%8.6e
 
-b: BIASVALUE ARG=saxs.q-0,sans.q-0
+# Only SAXS contributes to the trial-energy oracle. SANS observables separately
+# check that trials preserve the local stochastic deuteration history.
+b: BIASVALUE ARG=saxs.q-0

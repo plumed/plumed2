@@ -2,3 +2,7 @@ saxs.0 IDENTICAL
 saxs.1 IDENTICAL
 sans.0 IDENTICAL
 sans.1 IDENTICAL
+grex.0: 2 self attempts, 0 nonzero
+grex.0: 1 foreign attempts, 0 incorrect
+grex.1: 2 self attempts, 0 nonzero
+grex.1: 1 foreign attempts, 0 incorrect

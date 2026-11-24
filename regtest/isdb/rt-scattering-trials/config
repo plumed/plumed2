@@ -2,12 +2,21 @@ mpiprocs=2
 type=driver
 plumed_modules=isdb
 extra_files="../rt-saxs-onebead-lcpo/protein.pdb ../rt-saxs-onebead-lcpo/traj.xyz"
-arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 3 --length-units A"
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 3 --debug-grex-log grex --length-units A"
 function plumed_regtest_before() {
-  awk 'NR==1{n=$1} NR<=n+2{a[NR]=$0} END{for(f=0;f<8;f++)for(i=1;i<=n+2;i++)print a[i]}' traj.xyz > traj.0.xyz
-  cp traj.0.xyz traj.1.xyz
+  # Distinct stationary conformations change residue exposure, unlike a rigid
+  # translation. SAXS foreign trial energies have an independent fresh oracle.
+  for r in 0 1; do
+    awk -v r=$r 'NR==1{n=$1} NR<=n+2{a[NR]=$0;
+      if(NR>2 && r)a[NR]=sprintf("X %.6f %.6f %.6f",0.85*$2,$3,$4)}
+      END{for(f=0;f<8;f++)for(i=1;i<=n+2;i++)print a[i]}' traj.xyz > traj.$r.xyz
+  done
   mkdir noexchange
-  (cd noexchange; cp ../plumed.dat ../protein.pdb ../traj.0.xyz ../traj.1.xyz .; $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 --length-units A > out 2> err)
+  if ! (cd noexchange; cp ../plumed.dat ../protein.pdb ../traj.0.xyz ../traj.1.xyz .;
+    $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 --length-units A > out 2> err); then
+    echo "FAILURE: scattering control did not finish"
+    return 1
+  fi
 }
 function plumed_regtest_after() {
   {
@@ -15,6 +24,17 @@ function plumed_regtest_after() {
       for r in 0 1; do
         if cmp -s "$file.$r" "noexchange/$file.$r"; then echo "$file.$r IDENTICAL"; else echo "$file.$r DIFFERENT"; fi
       done
+    done
+    for r in 0 1; do
+      own=$(awk '!/^#/{print $2;exit}' noexchange/saxs.$r)
+      other=$(awk '!/^#/{print $2;exit}' noexchange/saxs.$((1-r)))
+      awk -v r=$r -v own="$own" -v other="$other" '
+        NR%2==1{self++;if($1!=0||$2!=0)badself++}
+        NR%2==0{foreign++;d=$(r+1)-(other-own);if(d<0)d=-d;
+          scale=other-own;if(scale<0)scale=-scale;if(d>1e-6+2e-6*scale)badforeign++}
+        END{printf "grex.%d: %d self attempts, %d nonzero\n",r,self,badself;
+            printf "grex.%d: %d foreign attempts, %d incorrect\n",r,foreign,badforeign;
+            if(own==other)print "FAILURE: conformations did not change SAXS solvation"}' grex.$r
     done
   } > comparison
 }

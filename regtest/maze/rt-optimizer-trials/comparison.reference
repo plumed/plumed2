@@ -1,2 +1,4 @@
 colvar.0 IDENTICAL
 colvar.1 IDENTICAL
+grex self-pairs ZERO
+grex self-pairs ZERO

@@ -2,3 +2,5 @@ COLVAR.0 IDENTICAL
 COLVAR.1 IDENTICAL
 forces.0 IDENTICAL
 forces.1 IDENTICAL
+grex self-pairs ZERO
+grex self-pairs ZERO

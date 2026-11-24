@@ -2,12 +2,15 @@ type=driver
 mpiprocs=2
 plumed_modules=maze
 extra_files="../traj/trajectory.gro"
-arg="--plumed plumed.dat --timestep 1 --igro traj.gro --multi 2 --debug-grex 2"
+arg="--plumed plumed.dat --timestep 1 --igro traj.gro --multi 2 --debug-grex 2 --debug-grex-log grex"
 function plumed_regtest_before() {
   cp trajectory.gro traj.0.gro
   cp trajectory.gro traj.1.gro
   mkdir noexchange
-  (cd noexchange; cp ../plumed.dat ../traj.0.gro ../traj.1.gro .; $mpi $plumed driver --plumed plumed.dat --timestep 1 --igro traj.gro --multi 2 > out 2> err)
+  if ! (cd noexchange; cp ../plumed.dat ../traj.0.gro ../traj.1.gro .; $mpi $plumed driver --plumed plumed.dat --timestep 1 --igro traj.gro --multi 2 > out 2> err); then
+    echo "FAILURE: no-exchange control did not finish"
+    return 1
+  fi
 }
 function plumed_regtest_after() {
   {
@@ -15,4 +18,13 @@ function plumed_regtest_after() {
       if cmp -s colvar.$r noexchange/colvar.$r; then echo "colvar.$r IDENTICAL"; else echo "colvar.$r DIFFERENT"; fi
     done
   } > comparison
+  plumed_regtest_check_self_pairs
+}
+
+function plumed_regtest_check_self_pairs() {
+  for r in 0 1; do
+    awk 'NR%2==1{n++;if($1!=0||$2!=0)bad++}
+      END{if(n && !bad)print "grex self-pairs ZERO";
+          else print "FAILURE: missing or nonzero GREX self-pair deltas"}' grex.$r
+  done >> comparison
 }
