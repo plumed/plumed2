@@ -1,4 +1,6 @@
 OPTIONS={device=cpu}: exit code 0
+OPTIONS={device=cpu unknown=1}: exit code 1
+unknown option for metatomic-torch models: 'unknown'
 DEVICE=not-a-device: exit code 1
 invalid device string: not-a-device
 DEVICE=cpu OPTIONS={device=cpu}: exit code 1
