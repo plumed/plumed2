@@ -359,7 +359,7 @@ void FuncPathGeneral::calculate() {
 void FuncPathGeneral::prepare() {
   if(getExchangeStep() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
-    error("Replica exchange with a reduced path frame list is unsupported; disable NEIGH_SIZE");
+    error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
   }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
       preparedExchange_==getExchangeStep()) {
