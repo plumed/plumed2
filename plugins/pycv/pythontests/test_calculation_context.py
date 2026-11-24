@@ -12,11 +12,15 @@ class TestCalculationContext(unittest.TestCase):
         with cd(THIS_DIR):
             os.environ["PLUMED_MAXBACKUP"] = "0"
             calculation_context.counts.clear()
-            traj, _, natoms, box, virial, masses, forces, charges = setUpTraj("traj.xyz")
+            traj, _, natoms, box, virial, masses, forces, charges = setUpTraj(
+                "traj.xyz"
+            )
             p = preparePlumed(natoms)
             cv = create_plumed_var(p, "cv", "PYCVINTERFACE IMPORT=calculation_context")
             fun = create_plumed_var(
-                p, "fun", "PYFUNCTION ARG=cv IMPORT=calculation_context INIT=functionInit"
+                p,
+                "fun",
+                "PYFUNCTION ARG=cv IMPORT=calculation_context INIT=functionInit",
             )
             p.cmd("readInputLine", "PRINT ARG=cv,fun FILE=context.out")
             for step, exchange, auxiliary, expected in (
