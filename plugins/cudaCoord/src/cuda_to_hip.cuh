@@ -27,8 +27,8 @@
 
 #ifdef __HIP__
 
-// the __shfl_*_sync functions are disabled by default in ROCm 6.2 (always
-// enabled from ROCm 6.3)
+// the __shfl_*_sync functions are disabled by default from ROCm 6.2 to 6.4
+// (always enabled from ROCm 7.0)
 #ifndef HIP_ENABLE_WARP_SYNC_BUILTINS
 #define HIP_ENABLE_WARP_SYNC_BUILTINS
 #endif

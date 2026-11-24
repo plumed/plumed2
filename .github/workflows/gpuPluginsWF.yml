@@ -99,8 +99,9 @@ jobs:
         rocm: ["6.2.4", "7.2.4"]
     env:
       PLUMED_CCACHE_SIZE: 100M
-      # no GPU on the runner: the code is compiled for MI250 and MI300
-      HIP_ARCHITECTURES: "gfx90a gfx942"
+      # no GPU on the runner: the code is compiled for MI250 and MI300 (64-wide wavefronts)
+      # and for Radeon RX 7900 (32-wide wavefronts)
+      HIP_ARCHITECTURES: "gfx90a gfx942 gfx1100"
     steps:
     - uses: actions/checkout@v6
     - name: Identify runner image
