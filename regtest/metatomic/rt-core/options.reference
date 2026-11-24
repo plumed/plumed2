@@ -6,3 +6,7 @@ DEVICE=cpu: exit code 0
 This is the two-atom distance model
 DEVICE=cuda: exit code 1
 unknown options: device
+EXTENSIONS_DIRECTORY=extensions: exit code 1
+unknown options: extensions_directory
+EXTENSIONS_DIRECTORY=extensions OPTIONS={extensions_directory=extensions}: exit code 1
+give either EXTENSIONS_DIRECTORY or OPTIONS={extensions_directory=...}, not both

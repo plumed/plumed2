@@ -17,10 +17,12 @@ function plumed_regtest_after(){
   # A value containing spaces is wrapped in braces. distance.py takes its name
   # from the `name` option, and PLUMED logs it with the model metadata.
   # distance.py has no `device` option: DEVICE=cpu stays in PLUMED and runs,
-  # while any other device reaches the model, which rejects it.
-  local found="This is the [a-z -]* model\|OPTIONS should contain key=value pairs, got '[^']*'\|unknown options: [a-z_]*"
+  # while any other device reaches the model, which rejects it, as it rejects
+  # the `extensions_directory` option that EXTENSIONS_DIRECTORY gives.
+  local found="This is the [a-z -]* model\|OPTIONS should contain key=value pairs, got '[^']*'\|unknown options: [a-z_]*\|give either [A-Z_]* or OPTIONS={[a-z_]*=...}, not both"
   rm -f options
-  for keywords in "OPTIONS={name={a long distance}}" "OPTIONS={name=a long distance}" "DEVICE=cpu" "DEVICE=cuda" ; do
+  for keywords in "OPTIONS={name={a long distance}}" "OPTIONS={name=a long distance}" "DEVICE=cpu" "DEVICE=cuda" \
+                  "EXTENSIONS_DIRECTORY=extensions" "EXTENSIONS_DIRECTORY=extensions OPTIONS={extensions_directory=extensions}" ; do
     run options "PLUGIN=python MODEL=distance.py" "$keywords" "$found"
   done
 
