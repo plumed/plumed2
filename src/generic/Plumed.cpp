@@ -445,6 +445,9 @@ void Plumed::calculate() {
   if(root)
     p.cmd("setBox",&box[0][0], {3,3});
 
+  // Loaded guests use performCalcNoForces for auxiliary evaluations. These
+  // buffers start at zero and their force/virial values are unused by the
+  // enclosing no-force evaluation; do not treat them as trial derivatives.
   virial.zero();
   std::fill(forces.begin(),forces.end(),0.0);
   std::copy(getMasses().begin(),

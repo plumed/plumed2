@@ -537,6 +537,12 @@ repeated evaluations, as METAINFERENCE does. A foreign-coordinate exchange flag
 is more specific than calculation-only context: lambda trials can change the
 Hamiltonian while coordinates remain unchanged.
 
+For common neighbor lists, the caller must flag foreign coordinates with
+`setExchangeStep` before dependency preparation, so that preparation requests
+all candidate atoms. An unflagged `performCalcNoForces` establishes its context
+only at calculation time and is currently suitable for unchanged coordinates,
+such as lambda trials; it does not promise general foreign-coordinate support.
+
 Geometry caches must be rebuilt for the actual evaluation and invalidated when
 returning from trial coordinates. `getEvaluationId()` exposes the internal atom
 version, which changes on forward evaluations and coordinate transformations;
@@ -555,7 +561,17 @@ auxiliary evaluations similarly require UPDATEPIV=1 rather than held values.
 READ reuses its ordinary record from the current step during post-update trials;
 an auxiliary evaluation without such a current ordinary record is rejected. Python/custom callbacks must ensure their own calculate functions
 are free of persistent side effects: the kernel cannot roll back arbitrary
-external globals or file writes, and no new Python callback API is introduced.
+external globals or file writes. The pycv CV and function interfaces expose
+`isCalculationOnly()` in calculate callbacks for this purpose.
+
+Auxiliary model statistics have action-specific definitions. EMMI and CALIBER
+evaluate with committed weights/history; METAINFERENCE replays prospective
+statistics from the beginning of the current step. Both must preserve the
+ordinary trajectory state, but their foreign-configuration potentials differ.
+An own-coordinate auxiliary potential need not equal the earlier ordinary
+potential if update() changed the model in between (for example a METAD hill
+deposition). Validate against the current model; self-paired GREX deltas must
+still be zero.
 
 
 Loaded guest compatibility checks guard command availability only:
@@ -567,3 +583,11 @@ a sufficient command API does not establish that its actions are trial-safe.
 Same-kernel guests receive the internal context directly. Propagate the current
 exchange flag before both preparation and calculation: lambda trial preparation
 can enable dependencies and clear the foreign-coordinate flag before evaluation.
+
+Backport scope must be checked action by action. The affected EEFSOLV, SASA,
+CS2BACKBONE, RESCALE, CALIBER, MAZE, READ, LOGMFD and PIV held-value patterns
+also exist in PLUMED 2.9/2.10; SHADOW exists in 2.10 but not 2.9. PINES,
+HBONDS and the Voronoi actions are new in 2.11. These are source-applicability
+observations, not a claim that older releases contain the fixes or that their
+backports have been tested. A backport must update that release's changelog
+and retain the same public command API number for these action-state fixes.
