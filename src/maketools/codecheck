@@ -150,9 +150,18 @@ fi
     # list for plumedcheck. Included headers remain visible to cppcheck.
     cppfiles=$(grep -E -v '/(lapack|blas|lepton|asmjit|xdrfile|small_vector|thread_mpi)/' <<< "$files" || true)
     srcfiles=$(grep -E -v -s '/plugins/' <<< "$cppfiles" || true)
+    # The CUDA sources of the modules with toolchain cuda are not compiled by the usual builds
+    # (e.g. --enable-modules=all), so their module may have no links to the headers of the
+    # other modules: they are checked on their own, finding those headers in src.
+    cudafiles=$(grep -E '\.cuh?$' <<< "$srcfiles" || true)
+    srcfiles=$(grep -E -v '\.cuh?$' <<< "$srcfiles" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
       docheck "${builddir_src[@]}" $srcfiles
+    fi
+    if [[ -n $cudafiles ]];then
+     # shellcheck disable=SC2086
+      docheck "${builddir_src[@]}" -I "${basedir}/src" $cudafiles
     fi
     pluginfiles=$(grep -E '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $pluginfiles ]];then
