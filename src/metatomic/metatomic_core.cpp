@@ -291,11 +291,20 @@ mta::ExternalModel loadModel(
         auto plugin_name = plugin.empty() ? std::nullopt : std::optional<std::string>(plugin);
         return mta::load_model(model, options, plugin_name);
     } catch (const std::exception& e) {
-        action.error(
-            "failed to load model '" + model + "' with metatomic: " + e.what() +
-            "\nTorchScript (.pt) models need the plugin from metatomic-torch, give its path with "
-            "PLUGIN_LIBRARY (`python -c 'import metatomic_torch; print(metatomic_torch.utils.legacy_plugin_path)'`)"
-        );
+        auto message = "failed to load model '" + model + "' with metatomic: " + e.what();
+        // the plugin of metatomic-torch is not installed with metatomic-core, so the
+        // default plugins can not load a TorchScript file. These are the messages of
+        // metatomic-core when no plugin takes the model.
+        auto error = std::string(e.what());
+        auto no_plugin = error.find("none could load the model") != std::string::npos ||
+                         error.find("no plugin is registered") != std::string::npos;
+        auto torchscript = model.size() > 3 && model.compare(model.size() - 3, 3, ".pt") == 0;
+        if (no_plugin && torchscript) {
+            message +=
+                "\nTorchScript (.pt) models need the plugin from metatomic-torch, give its path with "
+                "PLUGIN_LIBRARY (`python -c 'import metatomic_torch; print(metatomic_torch.utils.legacy_plugin_path)'`)";
+        }
+        action.error(message);
     }
 }
 
