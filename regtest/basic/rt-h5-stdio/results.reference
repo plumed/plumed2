@@ -1,4 +1,5 @@
 named conversion: OK
+preferred and alias archive extensions: OK
 text stdout: OK
 text pipe with and without final newline: OK
 redirected text stdin: OK

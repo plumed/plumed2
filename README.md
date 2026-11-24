@@ -126,7 +126,7 @@ and enabled if available):
 * An external MPI library for distributed-memory parallel simulations, matching the MPI implementation used by your MD code. Serial builds can instead use embedded thread-MPI for local ranks; see [MPI runtime selection](src/mpiwrap/README.md).
 * Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
 * [Zlib library](https://zlib.net/) to use compressed data files.
-* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
+* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (archives `.hpa` or `.h5.tar`, and single `.h5` files).
 * [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
 * [Chemfiles library](https://chemfiles.org/) to read more file formats in `plumed driver` and in the MOLINFO action (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).

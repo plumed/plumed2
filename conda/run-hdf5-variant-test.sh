@@ -14,7 +14,7 @@ cmp "$kernel" "$task/kernel-before"
 "$prefix/bin/plumed" config has libhdf5 -q
 cat > "$task/input.dat" <<'INPUT'
 d: DISTANCE ATOMS=1,2 NOPBC
-PRINT ARG=d FILE=table.h5
+PRINT ARG=d FILE=table.hpa
 INPUT
 cat > "$task/positions.xyz" <<'XYZ'
 2
@@ -27,7 +27,7 @@ H 0 0 0
 H 2 0 0
 XYZ
 (cd "$task"; "$prefix/bin/plumed" driver --ixyz positions.xyz --length-units nm --plumed input.dat)
-"$prefix/bin/plumed" h5convert --input "$task/table.h5" --output "$task/table.txt"
+"$prefix/bin/plumed" h5convert --input "$task/table.hpa" --output "$task/table.txt"
 python - "$task/table.txt" <<'PY'
 from pathlib import Path
 import sys

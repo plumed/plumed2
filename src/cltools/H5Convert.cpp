@@ -27,6 +27,7 @@
 #include "tools/Tools.h"
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -38,26 +39,41 @@ namespace cltools {
 Convert a PLUMED file between text and HDF5.
 
 The files that PLUMED writes field by field (e.g. with [PRINT](PRINT.md), the hills of
-[METAD](METAD.md), the kernels of [OPES_METAD](OPES_METAD.md)) are written in HDF5 format
-when their name ends with `.h5` (see [Files](Files.md)). This tool converts such a file
-to the equivalent text file, with the numbers written with all their digits, and a text
-file to HDF5, so that the tools that read text files can be used on HDF5 files and vice versa.
+[METAD](METAD.md), the kernels of [OPES_METAD](OPES_METAD.md)) are written as archives of HDF5
+tables when their name ends with `.hpa` (HDF PLUMED archive; `.h5.tar` is also supported,
+see [Files](Files.md)). This tool converts such a file
+to the equivalent text file, with the numbers written with all their digits, and a text file to an
+archive, so that the tools that read text files can be used on HDF5 tables and vice versa.
 The direction of the conversion is given by the extensions of the two files.
 
 ```plumed
-plumed h5convert --input COLVAR.h5 --output COLVAR
-plumed h5convert --input HILLS --output HILLS.h5
+plumed h5convert --input COLVAR.hpa --output COLVAR
+plumed h5convert --input HILLS --output HILLS.hpa
 ```
 
 Use `-` as the text filename to read from standard input or write to standard output:
 
 ```plumed
-plumed h5convert --input - --output HILLS.h5 < HILLS
-plumed h5convert --input COLVAR.h5 --output - > COLVAR
+plumed h5convert --input - --output HILLS.hpa < HILLS
+plumed h5convert --input COLVAR.hpa --output - > COLVAR
 ```
 
-Standard input and output support text only; the other filename must end in `.h5`.
-For quick inspection and concatenation of HDF5 tables, see [h5cat](h5cat.md).
+Standard input and output support text only. For quick inspection and concatenation of HDF5 tables,
+see [h5cat](h5cat.md).
+
+It also writes single HDF5 files (`.h5`), which PLUMED reads but does not write during a simulation,
+for the tools that need one, and converts them back into archives. When one of the two files is an
+archive and the other a single HDF5 file or an archive, the values are copied as they are; the size of
+the members of an archive written can be chosen:
+
+```plumed
+plumed h5convert --input COLVAR.hpa --output COLVAR.h5
+plumed h5convert --input COLVAR.hpa --output COLVAR.big.hpa --batch-size 100000
+```
+
+The input is recognized by its content (so that a renamed table is read correctly), the output by its
+extension. The rows are converted a few at a time, so that the memory used does not depend on the size
+of the files.
 
 When a text file is converted, the values that are numbers are stored as double precision
 numbers (with the digits that are in the text file) and the others as strings.
@@ -88,7 +104,8 @@ PLUMED_REGISTER_CLTOOL(H5Convert,"h5convert")
 void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--input","the file to convert (- for text standard input)");
-  keys.add("compulsory","--output","the converted file (HDF5 if its extension is .h5, text otherwise; - for text standard output)");
+  keys.add("compulsory","--output","the converted file (an archive of HDF5 tables if its extension is .hpa or .h5.tar, a single HDF5 file if .h5, text otherwise; - for text standard output)");
+  keys.add("compulsory","--batch-size","4096","the maximum number of rows of a member, when the output is an archive (.hpa)");
 }
 
 H5Convert::H5Convert(const CLToolOptions& co ):
@@ -127,10 +144,29 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   std::string input,output;
   parse("--input",input);
   parse("--output",output);
-  const bool fromH5=h5table::isH5(input);
+  std::error_code pathError;
+  if(input!="-" && output!="-" &&
+      std::filesystem::equivalent(pathFromUTF8(input),pathFromUTF8(output),pathError)) {
+    error("input and output refer to the same file");
+  }
+  unsigned batch=4096;
+  parse("--batch-size",batch);
+  if(batch==0) {
+    error("--batch-size must be positive");
+  }
+  // the input is recognized by its content, the output by its name
+  const bool fromH5=input!="-" && h5table::isTable(input);
   const bool toH5=h5table::isH5(output);
+  const bool fromArchive=fromH5 && h5table::isArchive(input);
+  const bool toArchive=h5table::isArchiveName(output);
+  if(fromH5 && toH5 && (fromArchive || toArchive)) {
+    // an archive into a single HDF5 file, or vice versa, or into an archive with members of
+    // a different size: the values are copied as they are
+    h5table::copy(input,output,batch);
+    return 0;
+  }
   if(fromH5==toH5) {
-    error("one of the two files (and only one) must be an HDF5 file (extension .h5)");
+    error("one of the two files must be an archive of HDF5 tables (extension .hpa), or one (and only one) a single HDF5 file (extension .h5)");
   }
   if(!toH5) {
     h5table::Reader reader(input);
@@ -155,7 +191,7 @@ int H5Convert::main(FILE* in, FILE*out,Communicator& pc) {
   }
   ifile.allowNoEOL();
   std::string line;
-  h5table::Writer writer(output,false);
+  h5table::Writer writer(output,false,batch);
   std::vector<std::string> names;
   std::vector<h5table::Field> constants;
   std::vector<h5table::Field> row;
@@ -198,14 +234,14 @@ text with full numerical precision, using the same representation as
 each file's field headers and constants. Rows are neither sorted nor deduplicated.
 
 ```plumed
-plumed h5cat COLVAR.h5
-plumed h5cat COLVAR.0.h5 COLVAR.1.h5 > combined.txt
+plumed h5cat COLVAR.hpa
+plumed h5cat COLVAR.0.hpa COLVAR.1.hpa > combined.txt
 ```
 
 The output can also be piped to tools such as `less` or `awk`. Use `--` before a
 filename starting with `-`. Input must be named HDF5 tables written by PLUMED;
 standard input and arbitrary HDF5 containers are not supported. Filenames need
-not end in `.h5`. An unreadable or invalid file stops the command with a nonzero
+not end in `.hpa` or `.h5`. An unreadable or invalid file stops the command with a nonzero
 exit status; text from preceding files may already have been written.
 
 */

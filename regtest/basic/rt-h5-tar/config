@@ -1,0 +1,133 @@
+type=driver
+plumed_needs="tools:libhdf5"
+plumed_modules=bias
+# Reference run: the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+# comparison of two text files: same number of values in every line, numbers equal
+# within 1e-12 (relative), the rest equal: prints IDENTICAL or DIFFERENT
+compare() {
+  awk 'function num(v){ return v ~ /^[-+]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?$/ }
+       FNR==NR{a[FNR]=$0;n=FNR;next}
+       {m=FNR; k=split(a[FNR],x); if(NF!=k) bad=1;
+        for(i=1;i<=NF;i++){ if($i==x[i]) continue; if(!num($i) || !num(x[i])){ bad=1; continue }
+          d=$i-x[i]; if(d<0) d=-d; s=(x[i]<0?-x[i]:x[i]); if(s<1) s=1; if(d>1e-12*s) bad=1 } }
+       END{ if(m!=n) bad=1; print (bad?"DIFFERENT":"IDENTICAL") }' "$1" "$2"
+}
+
+# remove the last n bytes of a file
+cut_tail() {
+  local size
+  size=$(wc -c < "$1")
+  head -c $((size-$2)) "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  # A) restart at step 20 (as from a checkpoint of the MD engine): the archives are trimmed and appended to
+  mkdir restart ; cd restart ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+  # B) exact restart with CHECKPOINT (the archives are truncated to their sizes at the checkpoint)
+  mkdir checkpoint ; cd checkpoint
+  { echo "CHECKPOINT FILE=plumed.cpt" ; cat ../plumed.dat ; } > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # C) a run interrupted while writing the last members: the archives end in the middle of a member
+  # (and without the end-of-archive marker); the run is restarted from the first step that is missing
+  mkdir interrupted ; cd interrupted ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  cut_tail COLVAR.hpa 1100
+  cut_tail HILLS.hpa 1100
+  $plumed h5cat COLVAR.hpa > COLVAR.read.txt
+  n=$(grep -vc '^#' COLVAR.read.txt)
+  echo $n > rows_after_interruption
+  tail -n +$((6*n+1)) ../traj.xyz > rest.xyz
+  $plumed driver --plumed plumed.dat --ixyz rest.xyz --restart --initial-step $n > out2 2> err2
+  cd ..
+  # D) a damaged archive (an invalid header followed by valid members) is an error, while
+  # an invalid header at the end (written in part) or a member not published (data behind
+  # a header of zeros) end the archive
+  mkdir damaged ; cd damaged
+  cp ../restart/COLVAR.hpa .
+  printf 'X' | dd of=COLVAR.hpa bs=1 seek=10 conv=notrunc 2> /dev/null
+  $plumed h5cat COLVAR.hpa > out 2> err
+  cp ../restart/COLVAR.hpa torn.hpa
+  cut_tail torn.hpa 1024
+  head -c 512 torn.hpa | LC_ALL=C tr 'b' 'x' >> torn.hpa
+  cp ../restart/COLVAR.hpa unpublished.hpa
+  cut_tail unpublished.hpa 1024
+  head -c 512 /dev/zero >> unpublished.hpa
+  head -c 2048 ../traj.xyz >> unpublished.hpa
+  cd ..
+  # F) a file written as free text cannot be an HDF5 table, and a single HDF5 file (.h5) is not written
+  mkdir errors ; cd errors
+  echo "PRINT_NDX ATOMS=1-4 FILE=atoms.hpa" > freetext.dat
+  $plumed driver --plumed freetext.dat --ixyz ../part.xyz > out1 2> err1
+  { echo "d1: DISTANCE ATOMS=1,2" ; echo "PRINT ARG=d1 FILE=COLVAR.h5" ; } > single.dat
+  $plumed driver --plumed single.dat --ixyz ../part.xyz > out2 2> err2
+  cd ..
+  # E) the MD engine sends the checkpoint signal (every 10 steps): the files are flushed at the start
+  # of those steps, so that the restart from step 30 cuts the archive at the end of a member
+  mkdir signal ; cd signal ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  tail -n +181 ../traj.xyz > rest.xyz
+  $plumed driver --plumed plumed.dat --ixyz rest.xyz --restart --initial-step 30 > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for f in COLVAR HILLS ; do
+      $plumed h5convert --input $f.hpa --output $f.h5.txt
+      echo "$f.hpa as text: $(compare $f $f.h5.txt)"
+      for d in restart checkpoint interrupted signal ; do
+        $plumed h5convert --input $d/$f.hpa --output $d/$f.h5.txt
+        if cmp -s $f.h5.txt $d/$f.h5.txt ; then echo "$d/$f.hpa IDENTICAL" ; else echo "$d/$f.hpa DIFFERENT" ; fi
+      done
+      $plumed h5convert --input restart/bck.trimmed.0.$f.hpa --output restart/$f.removed.txt
+      echo "restart/bck.trimmed.0.$f.hpa rows: $(grep -vc '^#' restart/$f.removed.txt)"
+      # an archive into a single HDF5 file, and back
+      $plumed h5convert --input $f.hpa --output $f.copy.h5
+      $plumed h5convert --input $f.copy.h5 --output $f.copy.hpa
+      $plumed h5convert --input $f.copy.hpa --output $f.copy.txt
+      if cmp -s $f.h5.txt $f.copy.txt ; then echo "$f.hpa -> h5 -> hpa IDENTICAL" ; else echo "$f.hpa -> h5 -> hpa DIFFERENT" ; fi
+    done
+    # text -> archive -> text gives the same values
+    $plumed h5convert --input COLVAR --output roundtrip.hpa
+    $plumed h5convert --input roundtrip.hpa --output roundtrip.txt
+    echo "COLVAR -> hpa -> text: $(compare COLVAR roundtrip.txt)"
+    # the archive is a TAR file, whose members are tables (one every 7 steps: the flushes)
+    echo "members of COLVAR.hpa: $(tar tf COLVAR.hpa | wc -l | tr -d ' ')"
+    mkdir members ; ( cd members && tar xf ../COLVAR.hpa )
+    $plumed h5cat members/batch_00000002.h5 | grep -v '^#' | awk '{print "member 2: time",$1}'
+    # the members packed again by the tar of the system (the default format of GNU tar, or of bsdtar)
+    ( cd members && tar cf ../repacked.hpa batch_*.h5 )
+    $plumed h5convert --input repacked.hpa --output repacked.txt
+    echo "repacked with tar: $(compare COLVAR repacked.txt)"
+    # a compressed archive is not read
+    gzip -c COLVAR.hpa > compressed.hpa
+    $plumed h5cat compressed.hpa 2>&1 | grep -o "not a TAR file.*" | head -n 1
+    echo "interrupted: rows read after the interruption: $(cat interrupted/rows_after_interruption)"
+    grep -h "restart step" restart/out2 interrupted/out2 signal/out2 | sed 's/^PLUMED: *//' | LC_ALL=C sort
+    grep -h "truncated from" checkpoint/out2 | sed 's/^PLUMED: *//' | sed 's/from [0-9]* to [0-9]* bytes/from N to M bytes/' | LC_ALL=C sort
+    grep -h "damaged" damaged/err | head -n 1 | sed 's/^.*\(the archive is damaged\)/\1/'
+    grep -h "HDF5 tables" errors/err1 | head -n 1 | sed 's/^.*\(HDF5 tables\)/\1/'
+    grep -h "PLUMED writes HDF5 tables" errors/err2 | head -n 1 | sed 's/^.*\(PLUMED writes HDF5 tables\)/\1/'
+    for f in torn unpublished ; do
+      echo "damaged/$f.hpa rows: $($plumed h5cat damaged/$f.hpa | grep -vc '^#')"
+    done
+    # an archive is recognized by its content, whatever its name
+    cp COLVAR.hpa renamed.h5 ; cp COLVAR.hpa renamed
+    echo "renamed.h5 rows: $($plumed h5cat renamed.h5 | grep -vc '^#')"
+    echo "renamed rows: $($plumed h5convert --input renamed --output - | grep -vc '^#')"
+    # members of at most 25 rows
+    $plumed h5convert --input COLVAR.hpa --output rebatched.hpa --batch-size 25
+    $plumed h5convert --input rebatched.hpa --output rebatched.txt
+    echo "rebatched: $(tar tf rebatched.hpa | wc -l | tr -d ' ') members, $(compare COLVAR rebatched.txt)"
+  } > restart_check
+}
