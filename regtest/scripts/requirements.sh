@@ -38,3 +38,12 @@ plumed_check_feature() {
     $plumed_nompi config has "$requirement" -q
   fi
 }
+
+# A device available at runtime, unlike the features above, that are compiled in:
+# "plumed <device>-devices -q" (e.g. cuda-devices, provided by the gpu_cuda_hip
+# module) returns 0 when it sees a device. The query runs in its own process, so
+# it leaves the devices of the test alone; a missing tool means no device.
+plumed_check_device() {
+  [[ $1 =~ ^[a-z][a-z0-9_]*$ ]] || return 1
+  $plumed_nompi "$1-devices" -q >/dev/null 2>&1
+}

@@ -1,7 +1,9 @@
 type=driver
+plumed_modules=gpu_cuda_hip
+plumed_needs_device=cuda
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
-extra_files="../../trajectories/traj-nopbc.xyz"
+extra_files="../trajectories/traj-nopbc.xyz"
 
 plumed_regtest_after() {
   {

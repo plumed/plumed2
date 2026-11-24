@@ -1,12 +1,16 @@
-name: GPU plugins
+name: GPU modules and plugins
 
-# The GPU plugins on runners without a GPU: the plugins are compiled and linked against an
-# installed PLUMED, and the tests that do not need a GPU are run (loading the plugin, input
-# errors, the error when there is no GPU). The kernels themselves need a real GPU.
+# The GPU code on runners without a GPU: it is compiled, and the tests that do not need a GPU
+# are run (loading, input errors, the error when there is no GPU). The kernels themselves need
+# a real GPU.
 #
-# Both plugins are compiled with more than one version of the CUDA toolkit, taken from conda-forge
-# (no driver is needed to compile). cudaCoord is also compiled with HIP (AMD GPUs), with the
-# oldest and the newest supported ROCm versions, taken from the apt repository of AMD.
+# The gpu_cuda_hip module (toolchain: cuda) is compiled with more than one version of the CUDA
+# toolkit, taken from conda-forge (no driver is needed to compile), in two ways: built into the
+# kernel (./configure --enable-modules=+gpu_cuda_hip), and as an extension built against an
+# installed kernel without CUDA (./configure --with-extension-base, the conda route). It is also
+# compiled into the kernel with HIP (AMD GPUs), with the oldest and the newest supported ROCm
+# versions, taken from the apt repository of AMD. The reactive Voronoi CUDA plugin is compiled
+# against the installed kernel.
 
 on:
   workflow_call:
@@ -20,11 +24,11 @@ env:
   CXX: g++
 
 jobs:
-  cudaCoord:
+  gpu_cuda_hip:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
-      PLUMED_CCACHE_SIZE: 100M
+      PLUMED_CCACHE_SIZE: 200M
       # the oldest and the newest CUDA versions that are tested (conda-forge cuda-version)
       CUDA_VERSIONS: "12.9 13.5"
       MICROMAMBA_VERSION: 2.0.5
@@ -42,13 +46,13 @@ jobs:
       uses: ./.github/actions/linux-setup
       with:
         ccache: true
-        # PLUMED with MPI, as on the clusters: the plugin is compiled with nvcc -ccbin mpic++,
-        # and the headers of PLUMED it includes then include mpi.h
+        # PLUMED with MPI, as on the clusters: the .cu files are compiled with nvcc -ccbin mpic++,
+        # and the headers of PLUMED they include then include mpi.h
         mpi: true
 
-    - name: Build and install PLUMED
-      # CXX="ccache mpic++" also checks that the configure.sh of the plugin removes ccache
-      # from the compiler it passes to nvcc -ccbin
+    - name: Build and install PLUMED without CUDA
+      # the base of the extensions: the kernel has no CUDA
+      # CXX="ccache mpic++" also checks that cuda-flags removes ccache from nvcc -ccbin
       run: |
         ccache -s -M "$PLUMED_CCACHE_SIZE"
         ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch --prefix="$HOME/opt"
@@ -68,34 +72,90 @@ jobs:
             cuda-version=$v cuda-nvcc-impl cuda-cudart-dev cuda-cccl
           "$HOME/cuda-$v/bin/nvcc" --version
         done
+        python3 -m pip install -r extensions/requirements.txt
 
-    - name: Build and test CUDA plugins
+    - name: Build gpu_cuda_hip as an extension and run the tests that do not need a GPU
       run: |
+        export PATH="$HOME/opt/bin:$PATH"
+        export LD_LIBRARY_PATH="$HOME/opt/lib:${LD_LIBRARY_PATH:-}"
+        git worktree add "$HOME/ext-src" HEAD
+        path0="$PATH"
+        ld0="$LD_LIBRARY_PATH"
+        for v in $CUDA_VERSIONS ; do
+          echo "::group::CUDA $v, extension"
+          export PATH="$HOME/cuda-$v/bin:$path0"
+          # the shared CUDA runtime of the toolkit, as in the conda packages
+          export LD_LIBRARY_PATH="$HOME/cuda-$v/lib:$HOME/cuda-$v/targets/x86_64-linux/lib:$ld0"
+          (
+            cd "$HOME/ext-src"
+            rm -rf _extensions "$HOME/ext-$v"
+            # no GPU on the runner: an explicit architecture
+            NVCCFLAGS=-arch=sm_80 ./configure --with-extension-base="$HOME/opt" \
+              --enable-extension-modules=gpu_cuda_hip --prefix="$HOME/ext-$v"
+            make
+            make install
+          )
+          library="$HOME/ext-$v/lib/libplumed-ext-gpu_cuda_hip.so"
+          readelf -d "$library" | grep -E 'NEEDED|FLAGS'
+          readelf -d "$library" | grep -q 'NEEDED.*libcudart\.so'
+          readelf -d "$library" | grep -q 'NODELETE'
+          grep -qx "variant cuda$v" "$HOME/ext-$v/lib/plumed/plugins/gpu_cuda_hip.plumed"
+          export PLUMED_PLUGIN_PATH="$HOME/ext-$v/lib/plumed/plugins"
+          plumed modules -q --has gpu_cuda_hip
+          plumed modules --module gpu_cuda_hip --has-feature cuda -q
+          make -C regtest testclean
+          make -C regtest/gpu_cuda_hip
+          .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+          unset PLUMED_PLUGIN_PATH
+          echo "::endgroup::"
+        done
+
+    - name: Build PLUMED with gpu_cuda_hip in the kernel and run the tests that do not need a GPU
+      run: |
+        path0="$PATH"
+        for v in $CUDA_VERSIONS ; do
+          echo "::group::CUDA $v, in the kernel"
+          export PATH="$HOME/cuda-$v/bin:$path0"
+          ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
+            --enable-modules=+gpu_cuda_hip NVCCFLAGS=-arch=sm_80
+          make -j 4
+          # static CUDA runtime: the kernel does not need the CUDA libraries, and is never unloaded
+          readelf -d src/lib/libplumedKernel.so | grep -E 'NEEDED|FLAGS'
+          ! readelf -d src/lib/libplumedKernel.so | grep -q 'NEEDED.*libcudart'
+          readelf -d src/lib/libplumedKernel.so | grep -q 'NODELETE'
+          (
+            source sourceme.sh
+            make -C regtest testclean
+            make -C regtest/gpu_cuda_hip
+            .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+          )
+          echo "::endgroup::"
+        done
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+
+    - name: Build and test the reactive Voronoi CUDA plugin
+      run: |
+        export PATH="$HOME/opt/bin:$PATH"
+        export LD_LIBRARY_PATH="$HOME/opt/lib:${LD_LIBRARY_PATH:-}"
         export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
-        cd plugins/cudaCoord
         path0="$PATH"
         for v in $CUDA_VERSIONS ; do
           echo "::group::CUDA $v"
           export PATH="$HOME/cuda-$v/bin:$path0"
-          make clean
-          make -C regtest clean
-          ./configure.sh
-          make -j 4
-          make check-nogpu
-          make -C ../reactive-voronoi-cuda clean
+          make -C plugins/reactive-voronoi-cuda clean
           # Voronoi uses shared cudart. Set an explicit architecture on the GPU-less runner.
           LD_LIBRARY_PATH="$HOME/cuda-$v/lib:$HOME/cuda-$v/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}" \
-            make -C ../reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
+            make -C plugins/reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
           echo "::endgroup::"
         done
 
-  cudaCoord-hip:
+  gpu_cuda_hip-hip:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        # the oldest (see the README of the plugin) and the newest ROCm versions that are tested
+        # the oldest (see the page of the module) and the newest ROCm versions that are tested
         rocm: ["6.2.4", "7.2.4"]
     env:
       PLUMED_CCACHE_SIZE: 100M
@@ -118,17 +178,9 @@ jobs:
       uses: ./.github/actions/linux-setup
       with:
         ccache: true
-        # PLUMED with MPI, as in the CUDA job: hipcc does not use mpic++, so configure.sh
+        # PLUMED with MPI, as in the CUDA job: hipcc does not use mpic++, so configure
         # asks mpic++ where mpi.h is
         mpi: true
-
-    - name: Build and install PLUMED
-      run: |
-        ccache -s -M "$PLUMED_CCACHE_SIZE"
-        ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch --prefix="$HOME/opt"
-        make -j 4
-        make install
-        ccache -s -M "$PLUMED_CCACHE_SIZE"
 
     - name: Install ROCm ${{ matrix.rocm }}
       # only the HIP compiler and runtime, rocThrust, rocPRIM and hipCUB
@@ -142,14 +194,20 @@ jobs:
         sudo apt-get install -y -q --no-install-recommends rocm-hip-runtime-dev rocthrust-dev rocprim-dev hipcub-dev
         /opt/rocm/bin/hipcc --version
 
-    - name: Build and test cudaCoord with HIP
+    - name: Build PLUMED with gpu_cuda_hip (HIP) in the kernel and run the tests that do not need a GPU
       run: |
-        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
         export PATH="/opt/rocm/bin:$PATH"
         export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
-        cd plugins/cudaCoord
-        USE_HIP=1 ./configure.sh
-        make USE_HIP=1 -j 4
-        make USE_HIP=1 check-nogpu
-        # the program of "make check-gpu" is only compiled: running it needs GPUs
-        make -C ../openaccPTM/gpucheck USE_HIP=1 device_check
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
+          --enable-modules=+gpu_cuda_hip --enable-hip --prefix="$HOME/opt"
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        readelf -d src/lib/libplumedKernel.so | grep -E 'NEEDED|FLAGS'
+        readelf -d src/lib/libplumedKernel.so | grep -q 'NEEDED.*libamdhip64'
+        export PATH="$HOME/opt/bin:$PATH"
+        make -C regtest/gpu_cuda_hip
+        .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+        # the program of the GPU checks (plugins/openaccPTM/gpucheck) is only compiled: running it needs GPUs
+        make -C plugins/openaccPTM/gpucheck USE_HIP=1 device_check

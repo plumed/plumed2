@@ -47,6 +47,8 @@ plumed_thread_mpi=auto
 
 plumed_needs=
 plumed_modules=
+# devices that must be available at runtime (e.g. cuda: a GPU seen by the gpu_cuda_hip module)
+plumed_needs_device=
 plumed_long=
 # Optional filename:absolute-tolerance entries. Other files use exact diffs.
 plumed_tolerance=()
@@ -239,6 +241,24 @@ do
       fi
     else
       echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
+    fi
+    exit 0;
+  fi
+done
+
+for device in $plumed_needs_device
+do
+  echo "Checking for a $device device"
+  if ! plumed_check_device "$device"
+  then
+    if [ "$GITHUB_ACTIONS" = true ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+        echo "NOT_APPLICABLE (NO $device DEVICE AVAILABLE)"
+      else
+        echo "SKIP_ON_TRAVIS found!"
+      fi
+    else
+      echo "NOT_APPLICABLE (NO $device DEVICE AVAILABLE)"
     fi
     exit 0;
   fi

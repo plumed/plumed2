@@ -22,11 +22,11 @@
 #define __PLUMED_cuda_helpers_cuh
 
 #include "cuda_to_hip.cuh"
-#include "plumed/core/GpuDevice.h"
-#include "plumed/tools/Tensor.h"
-#include "plumed/tools/Vector.h"
-#include "plumed/tools/View.h"
-#include "plumed/tools/Exception.h"
+#include "core/GpuDevice.h"
+#include "tools/Tensor.h"
+#include "tools/Vector.h"
+#include "tools/View.h"
+#include "tools/Exception.h"
 #ifndef __HIP__
 #include <cub/block/block_reduce.cuh>
 #endif

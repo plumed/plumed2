@@ -39,10 +39,10 @@ conda-build -c local -c conda-forge plumed-mpi
 echo "#Building Python collective-variable plugins"
 conda-build -c local -c conda-forge plumed-pycv
 if [[ $(uname) == Linux ]]; then
-  echo "#Building CUDA coordination variants"
+  echo "#Building the CUDA variants of the gpu_cuda_hip module"
   # CI has no GPU: override driver metadata for compilation/loading tests only.
   CONDA_OVERRIDE_CUDA=${CONDA_OVERRIDE_CUDA:-$(python gpu-plan.py --max-cuda)} \
-    conda-build -c local -c conda-forge plumed-cuda-coordination
+    conda-build -c local -c conda-forge plumed-gpu-cuda-hip
 fi
 
 if [[ $(uname) == Linux && $(uname -m) == x86_64 && -n ${NVHPC_HOME:-} ]]; then

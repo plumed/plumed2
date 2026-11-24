@@ -150,7 +150,6 @@ def generate_catalog(write=True):
         )
     plugins = {}
     for name, path in {
-        "cuda_coordination": "plugins/cudaCoord",
         "openacc_ptm": "plugins/openaccPTM",
         "pycv": "plugins/pycv",
     }.items():

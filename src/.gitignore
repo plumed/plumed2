@@ -21,6 +21,7 @@
 !/envsim
 !/fourier
 !/gemmi
+!/gpu_cuda_hip
 !/function
 !/generic
 !/gridtools

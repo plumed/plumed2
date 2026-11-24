@@ -1,4 +1,5 @@
 type=driver
+plumed_modules=gpu_cuda_hip
 arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
 export PLUMED_STACK_TRACE=no
 # Wrong inputs must be errors with a message. They are all detected before the GPU
@@ -8,7 +9,7 @@ export PLUMED_STACK_TRACE=no
 plumed_regtest_after() {
   rm -f errors
   while IFS='|' read -r name action text keywords ; do
-    printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: %s %s\n' "$action" "$keywords" > bad_$name.dat
+    printf 'gpu: %s %s\n' "$action" "$keywords" > bad_$name.dat
     rc=0
     $plumed driver --plumed bad_$name.dat --ixyz traj-nopbc.xyz > bad_$name.out 2> bad_$name.err || rc=$?
     if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
@@ -34,4 +35,4 @@ float_nn_eq_mm|CUDACOORDINATIONFLOAT|NN and MM should be different|GROUPA=1-108 
 float_unknown_keyword|CUDACOORDINATIONFLOAT|cannot understand the following words|GROUPA=1-108 NOPBC R_0=1.1 NOTAKEYWORD=1
 EOT
 }
-extra_files="../../trajectories/traj-nopbc.xyz"
+extra_files="../trajectories/traj-nopbc.xyz"

@@ -35,6 +35,7 @@
 #include <hip/hip_runtime.h>
 #include <hipcub/hipcub.hpp>
 
+#define cudaDeviceProp                   hipDeviceProp_t
 #define cudaError_t                      hipError_t
 #define cudaEvent_t                      hipEvent_t
 #define cudaFuncAttributes               hipFuncAttributes
@@ -55,6 +56,7 @@
 #define cudaFreeHost                     hipHostFree
 #define cudaGetDevice                    hipGetDevice
 #define cudaGetDeviceCount               hipGetDeviceCount
+#define cudaGetDeviceProperties          hipGetDeviceProperties
 #define cudaGetErrorString               hipGetErrorString
 #define cudaGetLastError                 hipGetLastError
 #define cudaMalloc                       hipMalloc

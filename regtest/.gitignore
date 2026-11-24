@@ -34,6 +34,7 @@
 !/kenref
 !/ves
 !/funnel
+!/gpu_cuda_hip
 !/opes
 !/tools
 !/sasa

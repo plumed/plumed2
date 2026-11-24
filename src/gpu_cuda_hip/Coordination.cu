@@ -19,12 +19,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "plumed/core/ActionRegister.h"
-#include "plumed/core/Colvar.h"
-#include "plumed/core/PlumedMain.h"
-#include "plumed/tools/Communicator.h"
-#include "plumed/tools/SwitchingFunction.h"
-#include "plumed/tools/LinkCells.h"
+#include "core/ActionRegister.h"
+#include "core/Colvar.h"
+#include "core/PlumedMain.h"
+#include "tools/Communicator.h"
+#include "tools/SwitchingFunction.h"
+#include "tools/LinkCells.h"
 
 
 #include "cudaHelpers.cuh"

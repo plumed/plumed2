@@ -37,10 +37,10 @@ conda create -y -p "$prefix" --override-channels -c local -c conda-forge "plumed
 cp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
 for cuda_version in $(python conda/gpu-plan.py --cuda-versions); do
   conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
-    "plumed-ext-cuda-coordination=$VERSION" "cuda-version=$cuda_version" "plumed-ext-openacc-ptm=$VERSION"
+    "plumed-ext-gpu-cuda-hip=$VERSION" "cuda-version=$cuda_version" "plumed-ext-openacc-ptm=$VERSION"
   cmp "$prefix/lib/libplumedKernel.so" "$task/kernel-before"
-  "$prefix/bin/plumed" modules -q --has cuda_coordination openacc_ptm
-  "$prefix/bin/plumed" modules --module cuda_coordination --has-feature cuda -q
+  "$prefix/bin/plumed" modules -q --has gpu_cuda_hip openacc_ptm
+  "$prefix/bin/plumed" modules --module gpu_cuda_hip --has-feature cuda -q
   "$prefix/bin/plumed" modules --module openacc_ptm --has-feature openacc -q
 done
 echo 'GPU packages co-install and load against one unchanged kernel; GPU numerics untested'

@@ -1,4 +1,6 @@
 type=driver
+plumed_modules=gpu_cuda_hip
+plumed_needs_device=cuda
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj-ortho.xyz"
 
@@ -9,4 +11,4 @@ plumed_regtest_after() {
     awk 'function abs(v) {return v < 0 ? -v : v} NR>1{print $1, $2, (abs($4-$3) < 0.0001)  ? 0 : $4-$3 } ' <deriv
   } >deriv_delta
 }
-extra_files="../../trajectories/traj-ortho.xyz"
+extra_files="../trajectories/traj-ortho.xyz"

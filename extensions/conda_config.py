@@ -221,7 +221,6 @@ def run_build(catalog, module, command, environment=None):
                 variable = key.upper()
                 if key == "ldflags":
                     variable = {
-                        "cuda_coordination": "NVCCLDFLAGS",
                         "openacc_ptm": "NVLDSHARED",
                     }.get(module, variable)
                 addition = shlex.join(values)

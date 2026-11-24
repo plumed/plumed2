@@ -20,17 +20,19 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /*
-Checks that the GPU plugins (openaccPTM, cudaCoord) choose their GPU with the
-common rule and leave the GPU of the MD code alone (see src/ACCDevice.h here and
-src/cudaHelpers.cuh in cudaCoord). It needs a node with GPUs and is run by hand
-with "make check-gpu" in either plugin (not by the CI).
+Checks that the actions that run on a GPU (openaccPTM plugin, gpu_cuda_hip module)
+choose their GPU with the common rule and leave the GPU of the MD code alone (see
+src/ACCDevice.h here and src/gpu_cuda_hip/cudaHelpers.cuh). It needs a node with GPUs
+and is run by hand (not by the CI): "make check-gpu" in openaccPTM, or
+"make -C plugins/openaccPTM/gpucheck PLUGINS=gpu_cuda_hip" with the kernel in PLUMED_KERNEL.
 
 The program plays the MD code: it selects a GPU with the CUDA runtime and keeps a
 buffer on it, as GROMACS does, then runs PLUMED with the actions of the plugins it
 is given, biased so that the forces are computed too:
-- openaccPTM (plumedOpenACC.*): a DISTANCE (task manager, runAllTasks and
-  applyForces) and a SAXS with CHI2 (backend compute and contract), with USEGPU;
-- cudaCoord (CudaCoordination.*): a CUDACOORDINATION.
+- openaccPTM (plumedOpenACC.*, loaded with LOAD FILE): a DISTANCE (task manager,
+  runAllTasks and applyForces) and a SAXS with CHI2 (backend compute and contract), with USEGPU;
+- gpu_cuda_hip (the module, in the kernel or installed as an extension, loaded with
+  LOAD MODULE): a CUDACOORDINATION.
 After every call to PLUMED, and after PLUMED is destroyed, the GPU of the caller
 must still be the current one and its buffer must still be usable.
 
@@ -122,7 +124,12 @@ int main(int argc, char** argv) {
     p.cmd("init");
     checkCaller(callerGpu, buffer, bytes, "after init");
     for(const auto & plugin : plugins) {
-      p.cmd("readInputLine", ("LOAD FILE=" + plugin).c_str());
+      if(plugin=="gpu_cuda_hip") {
+        // a module: built into the kernel, or an extension found by its registration
+        p.cmd("readInputLine", "LOAD MODULE=gpu_cuda_hip");
+      } else {
+        p.cmd("readInputLine", ("LOAD FILE=" + plugin).c_str());
+      }
       if(plugin.find("plumedOpenACC")!=std::string::npos) {
         // a vector of distances: a single DISTANCE is computed on the CPU also with USEGPU
         p.cmd("readInputLine", "d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 USEGPU");
@@ -135,7 +142,7 @@ int main(int argc, char** argv) {
         p.cmd("readInputLine", "RESTRAINT ARG=s.chi2 AT=0 KAPPA=1");
         labels.push_back("d");
         labels.push_back("s");
-      } else if(plugin.find("CudaCoordination")!=std::string::npos) {
+      } else if(plugin=="gpu_cuda_hip") {
         p.cmd("readInputLine", "c: CUDACOORDINATION GROUPA=1-4 R_0=0.3 D_MAX=1.0 NOPBC");
         p.cmd("readInputLine", "RESTRAINT ARG=c AT=0 KAPPA=1");
         labels.push_back("c");

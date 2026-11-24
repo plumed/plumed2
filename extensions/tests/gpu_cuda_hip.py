@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check installed CUDA module loading; GPU numerical tests are explicit."""
+"""Check the installed gpu_cuda_hip module (CUDA): loading, registration variant;
+GPU numerical tests are explicit."""
 
 import argparse
 import os
@@ -25,15 +26,15 @@ environment = dict(
     PLUMED_NUM_THREADS="2",
     OMP_NUM_THREADS="2",
 )
-registration = (prefix / "lib/plumed/plugins/cuda_coordination.plumed").read_text()
+registration = (prefix / "lib/plumed/plugins/gpu_cuda_hip.plumed").read_text()
 assert "variant cuda" + args.cuda_version + "\n" in registration
 for mode in ("autoload", "explicit"):
     env = dict(environment, PLUMED_AUTOLOAD="1" if mode == "autoload" else "0")
     command = [program] + (
-        [] if mode == "autoload" else ["--load-module=cuda_coordination"]
+        [] if mode == "autoload" else ["--load-module=gpu_cuda_hip"]
     )
     subprocess.run(
-        [*command, "modules", "-q", "--has", "cuda_coordination"],
+        [*command, "modules", "-q", "--has", "gpu_cuda_hip"],
         env=env,
         check=True,
         timeout=30,
@@ -56,7 +57,7 @@ for mode in ("autoload", "explicit"):
         assert "GROUPA" in result.stdout and "R_0" in result.stdout, action
 assert (
     subprocess.run(
-        [program, "modules", "-q", "--has", "cuda_coordination"],
+        [program, "modules", "-q", "--has", "gpu_cuda_hip"],
         env=dict(environment, PLUMED_AUTOLOAD="0"),
         check=False,
         timeout=30,
@@ -80,22 +81,19 @@ with tempfile.TemporaryDirectory(prefix="plumed-cuda-regressions-") as scratch:
     (regtest / "scripts").symlink_to(
         source / "regtest/scripts", target_is_directory=True
     )
-    (regtest / "trajectories").symlink_to(
-        source / "plugins/cudaCoord/regtest/trajectories", target_is_directory=True
-    )
     for mode in ("autoload", "explicit"):
+        (regtest / mode).mkdir()
+        (regtest / mode / "trajectories").symlink_to(
+            source / "regtest/gpu_cuda_hip/trajectories", target_is_directory=True
+        )
         for name in ("rt-double-nopbc", "rt-float-nopbc"):
             fixture = regtest / mode / name
-            shutil.copytree(
-                source / "plugins/cudaCoord/regtest/cudatest" / name, fixture
-            )
-            input_path = fixture / "plumed.dat"
-            input_path.write_text(
-                input_path.read_text().replace(
-                    "LOAD FILE=../../../../CudaCoordination.so",
-                    "LOAD MODULE=cuda_coordination" if mode == "explicit" else "",
+            shutil.copytree(source / "regtest/gpu_cuda_hip" / name, fixture)
+            if mode == "explicit":
+                input_path = fixture / "plumed.dat"
+                input_path.write_text(
+                    "LOAD MODULE=gpu_cuda_hip\n" + input_path.read_text()
                 )
-            )
             result = subprocess.run(
                 ["bash", str(source / "regtest/scripts/run")],
                 cwd=fixture,
@@ -103,6 +101,8 @@ with tempfile.TemporaryDirectory(prefix="plumed-cuda-regressions-") as scratch:
                     environment,
                     PLUMED_AUTOLOAD="0" if mode == "explicit" else "1",
                     PLUMED_PROGRAM_NAME=program,
+                    # the GPU and the module are required (--gpu): run, never skip
+                    PLUMED_REGTEST_FORCE_REQUIREMENTS="yes",
                 ),
                 capture_output=True,
                 text=True,

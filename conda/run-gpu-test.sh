@@ -14,7 +14,7 @@ kernel_spec=${GPU_KERNEL_SPEC:-plumed=$VERSION}
 while IFS='|' read -r variant build_variant cuda_version; do
   prefix="$GPU_TEST_ROOT/$variant"
   if [[ $variant == cuda* ]]; then
-    package=plumed-ext-cuda-coordination
+    package=plumed-ext-gpu-cuda-hip
   else
     package=plumed-ext-openacc-ptm
   fi
@@ -35,7 +35,7 @@ print("plumed=" + record["version"] + "=" + record["build"])
 PY
 )
   if [[ $variant == cuda* ]]; then
-    command=("$prefix/bin/python" extensions/tests/cuda_coordination.py --prefix "$prefix" --cuda-version "$cuda_version" --gpu)
+    command=("$prefix/bin/python" extensions/tests/gpu_cuda_hip.py --prefix "$prefix" --cuda-version "$cuda_version" --gpu)
   else
     command=("$prefix/bin/python" extensions/tests/openacc.py --prefix "$prefix" --device nvidia)
   fi

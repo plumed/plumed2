@@ -105,7 +105,7 @@ try:
         for action, module in (
             ("DRR", "drr"),
             ("EMMIVOX", "isdb-pytorch"),
-            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("CUDACOORDINATION", "gpu_cuda_hip"),
             ("PYCVINTERFACE", "plugins/pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
         ):

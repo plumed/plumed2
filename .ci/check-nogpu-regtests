@@ -1,0 +1,29 @@
+#! /usr/bin/env bash
+# Usage: .ci/check-nogpu-regtests regtest/<module>
+# After "make -C regtest/<module>" on a machine without a GPU: the tests that do not need a GPU
+# (rt-nogpu-*) must have run and passed, and the others must have been skipped because there is
+# no GPU, not because the module is missing (that would make every test "pass").
+set -euo pipefail
+dir=$1
+fail=
+for report in "$dir"/rt-nogpu-*/report.txt; do
+  if ! test -f "$report" || grep -q -e FAILURE -e NOT_APPLICABLE "$report"; then
+    echo "+ ERROR in $report"
+    cat "$report" 2>/dev/null || true
+    fail=1
+  fi
+done
+for report in "$dir"/rt-*/report.txt; do
+  case $report in
+  ("$dir"/rt-nogpu-*) ;;
+  (*)
+    if grep -q FAILURE "$report" ||
+      { grep -q NOT_APPLICABLE "$report" && ! grep -q "NOT_APPLICABLE (NO .* DEVICE AVAILABLE)" "$report"; }; then
+      echo "+ ERROR in $report"
+      cat "$report"
+      fail=1
+    fi
+    ;;
+  esac
+done
+test -z "$fail" && echo "+ the tests that do not need a GPU passed, the others were skipped (no GPU)"

@@ -110,6 +110,25 @@ implementation. See conda/module-options.md for the declaration format and optio
 Conda packaging settings. Native configure and Make do not require Python to read
 these build fields.
 
+A module whose code runs on NVIDIA or AMD GPUs with CUDA/HIP (`.cu` files) adds `toolchain: cuda`:
+
+\verbatim
+name: gpu_cuda_hip
+type: default-off
+use: [core, tools, cltools]
+toolchain: cuda
+\endverbatim
+
+Its `.cu` files are compiled by nvcc (hipcc with `--enable-hip`) with the flags of the C++
+compiler, translated by src/maketools/cuda-flags; the kernel is still linked by the C++
+compiler, with the GPU runtime and `-z nodelete`. Such modules are enabled only by name
+(`--enable-modules=+gpu_cuda_hip`, not by `all`), and configure looks for nvcc only then.
+`.cuh` headers are installed with the other headers. `placement: extension` declares a
+module that can only be built as an extension, against an installed base. The CUDA/HIP code
+shared by these modules (portability header, GPU choice, device guard, reductions) is in
+src/gpu_cuda_hip. Tests that need a GPU add `plumed_needs_device=cuda` to their config
+(see \ref regtests).
+
 The Makefile contains the executable build rules, usually just:
 
 \verbatim

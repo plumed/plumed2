@@ -1,5 +1,4 @@
 #this test is needed to test if the inner loop runs correcly with bigger cells
-LOAD FILE=../../../../CudaCoordination.so
 ga: GROUP ATOMS=1-40000:2
 gb: GROUP ATOMS=2-40000:2
 gpu:    CUDACOORDINATION GROUPA=ga GROUPB=gb R_0=1.1 D_MAX=8.5 NOPBC THREADS=1024

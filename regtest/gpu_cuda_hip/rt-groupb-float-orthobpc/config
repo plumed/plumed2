@@ -1,4 +1,6 @@
 type=driver
+plumed_modules=gpu_cuda_hip
+plumed_needs_device=cuda
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj-ortho.xyz"
 
@@ -10,4 +12,4 @@ plumed_regtest_after() {
 
   } >deriv_delta
 }
-extra_files="../../trajectories/traj-ortho.xyz"
+extra_files="../trajectories/traj-ortho.xyz"

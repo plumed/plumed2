@@ -1,4 +1,3 @@
-LOAD FILE=../../../../CudaCoordination.so
 # In every frame of the trajectory the whole system is rigidly rotated (and
 # wrapped in the box). FIT_TO_TEMPLATE brings the frames back to the frame of
 # the template and rotates the box accordingly: the actions below receive a box

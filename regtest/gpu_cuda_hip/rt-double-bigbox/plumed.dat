@@ -1,5 +1,4 @@
 #this test is needed to test if the inner loop runs correcly with bigger cells
-LOAD FILE=../../../../CudaCoordination.so
 gpu:    CUDACOORDINATION GROUPA=@mdatoms R_0=1.1 D_MAX=7.5 NOPBC #THREADS=1024
 cpu:        COORDINATION GROUPA=@mdatoms ...
                      SWITCH={RATIONAL R_0=1.1 D_MAX=7.5} NOPBC

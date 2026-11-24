@@ -1,4 +1,6 @@
 type=driver
+plumed_modules=gpu_cuda_hip
+plumed_needs_device=cuda
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz trajbig.xyz"
 
@@ -8,7 +10,7 @@ plumed_regtest_after() {
     awk 'function abs(x){return(x<0.0)?-x:x} NR>1{if(abs($4-$3)){print $1, $2, $4-$3}} ' <deriv
   } >deriv_delta
 }
-#extra_files="../../trajectories/trajbig.xyz"
+#extra_files="../trajectories/trajbig.xyz"
 plumed_regtest_before() {
   plumed --no-mpi benchmark --natoms=40000 --nsteps=2 \
     --atom-distribution=sc --dump-trajectory=trajbig.xyz
