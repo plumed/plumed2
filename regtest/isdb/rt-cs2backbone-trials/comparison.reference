@@ -1,0 +1,6 @@
+COLVAR.0 IDENTICAL
+grex.0: 3 self attempts, 0 nonzero
+grex.0: 3 foreign attempts, 0 incorrect
+COLVAR.1 IDENTICAL
+grex.1: 3 self attempts, 0 nonzero
+grex.1: 3 foreign attempts, 0 incorrect

@@ -531,6 +531,7 @@ class CS2Backbone : public MetainferenceBase {
   unsigned         cs_end_;
   unsigned         box_nupdate;
   unsigned         box_count;
+  bool             trialGeometry_=false;
   bool             camshift;
   bool             pbc;
   bool             serial;
@@ -1180,12 +1181,11 @@ void CS2Backbone::calculate() {
   if(pbc) {
     makeWhole();
   }
-  if(getExchangeStep()) {
-    box_count=0;
-  }
-  if(box_count==0) {
+  const bool trial=isCalculationOnly();
+  if(trial || trialGeometry_ || box_count==0) {
     update_neighb();
   }
+  trialGeometry_=trial;
   compute_ring_parameters();
 
   std::vector<double> camshift_sigma2(6);
@@ -1489,9 +1489,11 @@ void CS2Backbone::calculate() {
     }
   }
 
-  ++box_count;
-  if(box_count == box_nupdate) {
-    box_count = 0;
+  if(!trial) {
+    ++box_count;
+    if(box_count == box_nupdate) {
+      box_count = 0;
+    }
   }
 
   // every rank owns a contiguous block of chemical shifts: gather the blocks

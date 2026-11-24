@@ -1,0 +1,36 @@
+mpiprocs=2
+type=driver
+plumed_modules=isdb
+extra_files="../rt-cs2backbone-chains/data_same/template.pdb ../rt-cs2backbone-chains/data_same/*shifts.dat ../rt-cs2backbone-chains/data_same/camshift.db"
+arg="--plumed plumed.dat --ixyz traj.xyz --length-units A --multi 2 --debug-grex 2 --debug-grex-log grex"
+function plumed_regtest_before() {
+  # Fixed but distinct conformations: remove inter-chain contacts in replica1.
+  # No physical trajectory approximation is needed to detect a foreign list leak.
+  for r in 0 1; do
+    awk -v r=$r '/^ATOM/{x=substr($0,31,8)+0; if(r && substr($0,22,1)=="B")x+=60;
+      a[++n]=sprintf("X %.6f %.6f %.6f",x,substr($0,39,8)+0,substr($0,47,8)+0)}
+      END{for(f=0;f<12;f++){print n;print "200 200 200";for(i=1;i<=n;i++)print a[i]}}' template.pdb > traj.$r.xyz
+  done
+  mkdir noexchange
+  if ! (cd noexchange; cp ../plumed.dat ../template.pdb ../*shifts.dat ../camshift.db ../traj.*.xyz .;
+    $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --length-units A --multi 2 > out 2> err); then
+    echo "FAILURE: CS2BACKBONE control did not finish"
+    return 1
+  fi
+}
+function plumed_regtest_after() {
+  {
+    for r in 0 1; do
+      if cmp -s COLVAR.$r noexchange/COLVAR.$r; then echo "COLVAR.$r IDENTICAL"; else echo "COLVAR.$r DIFFERENT"; fi
+      own=$(awk '!/^#/{print $2;exit}' noexchange/COLVAR.$r)
+      other=$(awk '!/^#/{print $2;exit}' noexchange/COLVAR.$((1-r)))
+      # GREX logs have six decimals; compare the foreign delta with the fresh
+      # replica control, not merely with another possibly incorrect trial.
+      awk -v r=$r -v own="$own" -v other="$other" '
+        NR%2==1{self++;if($1!=0||$2!=0)badself++}
+        NR%2==0{foreign++;d=$(r+1)-(other-own);if(d<0)d=-d;if(d>1e-6)badforeign++}
+        END{printf "grex.%d: %d self attempts, %d nonzero\n",r,self,badself;
+            printf "grex.%d: %d foreign attempts, %d incorrect\n",r,foreign,badforeign}' grex.$r
+    done
+  } > comparison
+}
