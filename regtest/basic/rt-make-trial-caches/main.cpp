@@ -1,10 +1,12 @@
 #include "probe.inc"
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 struct Result {
   std::vector<std::array<double,3>> normal;
   double trial=0.;
+  double trialForce=0.;
 };
 
 Result evaluate(std::string action,int mode) {
@@ -34,7 +36,7 @@ Result evaluate(std::string action,int mode) {
       values>>bias>>force;
       result.normal.push_back({double(step),bias,force});
     } else if(kind=="trial") {
-      values>>result.trial;
+      values>>result.trial>>result.trialForce;
     }
   }
   if(result.normal.size()!=5) {
@@ -48,6 +50,17 @@ int main() {
         "coordination","piv","pines","emmi","funcpath-full"
       }) {
     const auto control=evaluate(action,0),trial=evaluate(action,1),foreign=evaluate(action,2),duplicate=evaluate(action,3);
+    for(int mode : {
+          4,5
+        }) {
+      const auto early=evaluate(action,mode);
+      if(early.normal!=control.normal || !std::isfinite(early.trial) ||
+          std::abs(early.trial-foreign.normal[2][1])>1.e-12 ||
+          !std::isfinite(early.trialForce) ||
+          std::abs(early.trialForce-(mode==4 ? foreign.normal[2][2] : 0.))>1.e-12) {
+        throw std::runtime_error(action+": early auxiliary context lost geometry, forces or normal state");
+      }
+    }
     if(control.normal!=trial.normal || control.normal!=duplicate.normal ||
         std::abs(trial.trial-foreign.normal[2][1])>1.e-12) {
       throw std::runtime_error(action+": trial geometry or normal-state restoration failed");

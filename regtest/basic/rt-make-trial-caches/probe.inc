@@ -1,5 +1,6 @@
 // Mode 0 local control, 1 same-step foreign trial, 2 fresh foreign control,
-// 3 extra prepareDependencies before the ordinary prepareCalc.
+// 3 extra prepareDependencies before the ordinary prepareCalc,
+// 4 early auxiliary force mode, 5 early full auxiliary potential mode.
 #define __PLUMED_WRAPPER_LIBCXX11 1
 #define __PLUMED_WRAPPER_LIBCXX17 1
 #include "plumed/wrapper/Plumed.h"
@@ -86,14 +87,22 @@ int runProbe(int argc,char**argv) {
     double bias=0;
     p.cmd("getBias",&bias);
     std::cout<<"normal "<<step<<" "<<bias<<" "<<f[3]<<"\n";
-    if((mode==1 || mode==6) && step==2) {
+    if((mode==1 || mode==4 || mode==5 || mode==6) && step==2) {
       bind(step,true);
-      p.cmd("setExchangeStep",1);
+      if(mode==4 || mode==5) {
+        p.cmd("setEvaluationMode",mode==4 ? 1 : 2);
+      } else {
+        p.cmd("setExchangeStep",1);
+      }
       p.cmd("prepareCalc");
-      p.cmd("performCalcNoForces");
+      p.cmd(mode==4 ? "performCalcNoUpdate" : "performCalcNoForces");
       p.cmd("getBias",&bias);
-      std::cout<<"trial "<<step<<" "<<bias<<"\n";
-      p.cmd("setExchangeStep",0);
+      std::cout<<"trial "<<step<<" "<<bias<<" "<<f[3]<<"\n";
+      if(mode==4 || mode==5) {
+        p.cmd("setEvaluationMode",0);
+      } else {
+        p.cmd("setExchangeStep",0);
+      }
     }
   }
   return 0;
