@@ -172,8 +172,8 @@ private:
   long long int step=0;
 
 /// Step at which update() was last called.
-/// Used to warn when update() is called more than once within the same step,
-/// which most likely leads to incorrect results (see issue #512).
+/// Used to raise an error when update() is called more than once within the
+/// same step, which most likely leads to incorrect results (see issue #512).
   long long int lastUpdateStep=-1;
 
 /// Condition for plumed to be active.

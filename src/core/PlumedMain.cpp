@@ -1579,10 +1579,11 @@ void PlumedMain::update() {
     return;
   }
 
-// Warn if update() is called more than once within the same step: this most
+// Error if update() is called more than once within the same step: this most
 // likely leads to incorrect results (see issue #512)
   if(lastUpdateStep==step) {
-    log<<"WARNING: update() has been called more than once at step "<<step<<", this most likely leads to incorrect results\n";
+    std::string message="update() called more than once at step "+std::to_string(step)+", this most likely leads to incorrect results";
+    plumed_merror(message);
   }
   lastUpdateStep=step;
 
