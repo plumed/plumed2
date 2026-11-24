@@ -157,7 +157,9 @@ void PathProjectionCalculator::computeVectorBetweenFrames( const unsigned& ifrom
   getReferenceConfiguration( ifrom, valdata1 );
   metric.cmd("setValue arg1", &valdata1[0] );
   metric.cmd("setValue arg2", &valdata2[0] );
-  metric.cmd("calc");
+  // Reference-frame distances can be evaluated repeatedly at the same step.
+  metric.cmd("prepareCalc");
+  metric.cmd("performCalcNoUpdate");
 }
 
 void PathProjectionCalculator::getDisplaceVector( const unsigned& ifrom, const unsigned& ito, std::vector<double>& displace ) {
