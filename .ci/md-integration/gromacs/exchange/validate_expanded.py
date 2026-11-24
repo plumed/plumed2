@@ -266,6 +266,10 @@ def main():
                     directory,
                     "first.log",
                 )
+                # GROMACS starts a fresh debug file on restart. Retain the first
+                # segment explicitly so the energy oracle checks the full run.
+                for path in directory.glob("*.debug"):
+                    path.rename(path.with_name("initial-" + path.name))
                 suite.run(
                     command + ["-cpi", "run.cpt", "-append"], directory, "continued.log"
                 )
@@ -361,7 +365,21 @@ def main():
 
             checks = []
             # GROMACS owns debug-file naming (including rank suffixes).
-            log = "".join(path.read_text() for path in sorted(directory.glob("*.debug")))
+            # Restart replays the checkpoint step, just as PLUMED truncates its
+            # ordinary output there. Keep raw debug files but exclude that
+            # discarded first-segment tail from the combined trial oracle.
+            debug_segments = []
+            for path in sorted(directory.glob("*.debug")):
+                lines = path.read_text().splitlines()
+                if path.name.startswith("initial-"):
+                    lines = [
+                        line
+                        for line in lines
+                        if not (match := re.match(r"PLUMED_LAMBDA.* step=(\d+)", line))
+                        or int(match.group(1)) < case["restartAt"]
+                    ]
+                debug_segments.append("\n".join(lines))
+            log = "\n".join(debug_segments)
             for match in re.finditer(
                 r"PLUMED_LAMBDA step=(\d+) current=(\d+) state=(\d+) potential=(\S+) bias=(\S+) reduced=(\S+)",
                 log,
@@ -402,6 +420,25 @@ def main():
                 )
             if len(checks) < 4 * (nsteps // (1 if case.get("population") else 5)):
                 raise AssertionError("Missing MCMC trial evaluations")
+            trials_by_step = {}
+            for match in re.finditer(
+                r"PLUMED_LAMBDA_EVALUATION step=(\d+) current=(\d+) state=(\d+)", log
+            ):
+                step, current, state = map(int, match.group(1, 2, 3))
+                trials_by_step.setdefault(step, []).append((current, state))
+            if trials_by_step.keys() != {check["step"] for check in checks}:
+                raise AssertionError("Missing MCMC evaluation-order diagnostics")
+            for evaluations in trials_by_step.values():
+                if sorted(state for _, state in evaluations) != list(
+                    range(len(model["lambdas"]))
+                ):
+                    raise AssertionError(
+                        "MCMC must evaluate each lambda state exactly once"
+                    )
+                if evaluations[-1][1] != evaluations[-1][0]:
+                    raise AssertionError(
+                        "MCMC must restore current-state PLUMED caches last"
+                    )
             for match in re.finditer(
                 r"PLUMED_LAMBDA_MOVE step=(\d+) old=(\d+) new=(\d+)", log
             ):

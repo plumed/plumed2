@@ -1450,6 +1450,12 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
         std::vector<real> biases(nlim);
         auto              evaluate = [&](int lambdaState)
         {
+            if (debug && plumedForceProvider->context().mainRank)
+                fprintf(debug,
+                        "PLUMED_LAMBDA_EVALUATION step=%" PRId64 " current=%d state=%d\n",
+                        step,
+                        fep_state,
+                        lambdaState);
             const real energy =
                     plumedForceProvider->context().mainRank
                             ? enerd->term[InteractionFunction::PotentialEnergy]
@@ -1457,9 +1463,13 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
                             : 0;
             return plumedForceProvider->lambdaTrialBias(step, lambdaState, energy);
         };
+        // Finish with the current state so the provider's input bindings and
+        // PLUMED geometry/model caches are restored without an extra evaluation.
         for (i = 0; i < nlim; ++i)
-            biases[i] = evaluate(i);
-        evaluate(fep_state);
+        {
+            const int state = (fep_state + 1 + i) % nlim;
+            biases[state] = evaluate(state);
+        }
         const real referenceBeta =
                 1 / ((ir->bSimTemp ? simtemp->temperatures[fep_state] : expand->mc_temp) * gmx::c_boltz);
         for (i = 0; i < nlim; ++i)
