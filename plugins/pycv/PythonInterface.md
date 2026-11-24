@@ -38,7 +38,14 @@ And the following functions:
  - `getTime()` Return the present time
  - `getTimeStep()` Return the timestep
  - `isExchangeStep()` Check if we are on an exchange step
+ - `isCalculationOnly()` In a calculate callback, check whether this is an auxiliary evaluation that must not change persistent state
  - `isRestart()` Return true if we are doing a restart
+
+Python callbacks must guard their own persistent state, including random-number
+generation, with `isCalculationOnly()`. This also covers auxiliary evaluations
+that are not replica exchanges; `isExchangeStep()` alone is insufficient.
+The calculation-only context is established for calculation callbacks; it is not
+a promise that an earlier prepare callback already knows about an unflagged trial.
 
 ### PYFUNCTION: arguments
 
