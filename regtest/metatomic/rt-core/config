@@ -7,9 +7,11 @@ arg="--plumed plumed.dat --ixyz structure.xyz --length-units A --dump-forces for
 function plumed_regtest_after(){
   # A value containing spaces is wrapped in braces. distance.py takes its name
   # from the `name` option, and PLUMED logs it with the model metadata.
+  # distance.py has no `device` option: DEVICE=cpu stays in PLUMED and runs,
+  # while any other device reaches the model, which rejects it.
   local cv="d: METATOMIC PLUGIN=python MODEL=distance.py SPECIES1=1 SPECIES2=2 SPECIES_TO_TYPES=8,1"
   rm -f options
-  for keywords in "OPTIONS={name={a long distance}}" "OPTIONS={name=a long distance}" ; do
+  for keywords in "OPTIONS={name={a long distance}}" "OPTIONS={name=a long distance}" "DEVICE=cpu" "DEVICE=cuda" ; do
     printf "%s %s\nPRINT ARG=d FILE=options.colvar\n" "$cv" "$keywords" > options.dat
     $plumed_nompi driver --plumed options.dat --ixyz structure.xyz --length-units A > options.out 2>&1
     echo "$keywords: exit code $?" >> options

@@ -90,7 +90,14 @@ output with respect to `positions` and `strain` explicitly, see below.
   execute the model. This matches the `collect_extensions` argument to
   `AtomisticModel.export` in Python, and is the same as
   `OPTIONS={extensions_directory=...}`.
-- `DEVICE` can only be `cpu`, other devices are not supported yet;
+- `DEVICE` is the device the model runs on, such as `cpu`, `cuda` or `mps`.
+  PLUMED keeps its data on CPU, where plugins run the model by default.
+  `DEVICE=cpu` is therefore not passed to the plugin, and works with every
+  model. Any other device is the same as `OPTIONS={device=...}`: the plugin
+  moves the data to this device and runs the model there. This only works with
+  plugins that have a `device` option, such as the one of `metatomic-torch`.
+  The Python plugin passes it to the model's `set_options`, which rejects it
+  unless the model handles it;
 - `CHECK_CONSISTENCY` can be used to enable internal consistency checks;
 - `SELECTED_ATOMS` can be used to signal the metatomic models that it should
   only run its calculation for the selected subset of atoms. The model still
@@ -449,7 +456,7 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
     keys.add("compulsory", "MODEL", "path to the exported TorchScript model, or model passed to the metatomic plugin");
     keys.add("optional", "OPTIONS", "options given to the metatomic plugin that loads the model, as space-separated key=value pairs. Wrap a value containing spaces in braces, as in OPTIONS={key={a value}}");
     keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load, same as OPTIONS={extensions_directory=...}");
-    keys.add("optional", "DEVICE", "device to use for the calculations, only 'cpu' is supported");
+    keys.add("optional", "DEVICE", "device the model runs on. cpu, where PLUMED keeps its data, works with every model; any other device is the same as OPTIONS={device=...}");
 
     keys.add("numbered", "PLUGIN_LIBRARY", "shared library containing a metatomic-core plugin to register before loading the model");
     keys.add("optional", "PLUGIN", "name of the metatomic-core plugin used to load the model");

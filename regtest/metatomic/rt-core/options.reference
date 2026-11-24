@@ -2,3 +2,7 @@ OPTIONS={name={a long distance}}: exit code 0
 This is the a long distance model
 OPTIONS={name=a long distance}: exit code 1
 OPTIONS should contain key=value pairs, got 'long'
+DEVICE=cpu: exit code 0
+This is the two-atom distance model
+DEVICE=cuda: exit code 1
+unknown options: device

@@ -236,12 +236,6 @@ mta::ExternalModel loadModel(
     const std::string& plugin,
     const std::string& model
 ) {
-    std::string device;
-    action.parse("DEVICE", device);
-    if (!device.empty() && device != "cpu") {
-        action.error("metatomic models only run on CPU in PLUMED, DEVICE=" + device + " is not supported");
-    }
-
     // OPTIONS={key=value ...} is passed to the plugin, which checks the keys
     std::string options_text;
     action.parse("OPTIONS", options_text);
@@ -266,8 +260,18 @@ mta::ExternalModel loadModel(
         if (!value.empty() && !options_map.emplace(name, value).second) {
             action.error("give either " + keyword + " or OPTIONS={" + name + "=...}, not both");
         }
+        return value;
     };
     shortcut("EXTENSIONS_DIRECTORY", "extensions_directory");
+    // PLUMED's data stays on CPU, and the plugin moves it to another device.
+    // Plugins run the model where the data is by default, so DEVICE=cpu is not
+    // passed on, and also works with plugins without a `device` option.
+    if (shortcut("DEVICE", "device") == "cpu") {
+        options_map.erase("device");
+    }
+    if (options_map.count("device") != 0) {
+        action.log.printf("  asking the plugin to run the model on device '%s'\n", options_map["device"].c_str());
+    }
 
     auto options = std::optional<std::string>();
     if (!options_map.empty()) {
@@ -373,7 +377,10 @@ CoreBackend::CoreBackend(
 
         const auto& devices = capabilities.supported_devices();
         if (std::find(devices.begin(), devices.end(), mta::ModelCapabilities::Device::CPU) == devices.end()) {
-            action.error("this model does not support running on CPU, which is required for metatomic-core models in PLUMED");
+            action.error(
+                "this model does not accept data on CPU, where PLUMED stores it. If the plugin "
+                "supports it, DEVICE can run the model on another device with the data on CPU"
+            );
         }
         auto dtype = capabilities.dtype();
         if (dtype == mta::ModelCapabilities::DType::Float64) {
@@ -383,7 +390,7 @@ CoreBackend::CoreBackend(
         } else {
             action.error("this model requested a dtype which is not supported by PLUMED, only float32 and float64 can be used");
         }
-        log.printf("  running model on cpu device with %s data\n", float64_ ? "float64" : "float32");
+        log.printf("  giving %s data on cpu to the model\n", float64_ ? "float64" : "float32");
 
         this->atomic_types_ = action.parseAtomicTypes();
 

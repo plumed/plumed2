@@ -1,0 +1,5 @@
+OPTIONS={device=cpu}: exit code 0
+DEVICE=not-a-device: exit code 1
+invalid device string: not-a-device
+DEVICE=cpu OPTIONS={device=cpu}: exit code 1
+give either DEVICE or OPTIONS={device=...}, not both

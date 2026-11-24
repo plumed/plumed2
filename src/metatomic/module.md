@@ -66,7 +66,9 @@ Once you installed all dependencies, you can now configure PLUMED:
 
 ## Running models
 
-Models run on CPU only (`DEVICE=cpu`).
+PLUMED gives the data to models on CPU. With `DEVICE=cuda` (or another
+device), plugins with a `device` option, such as the one of `metatomic-torch`,
+move it to that device and run the model there.
 
 To bias a model output, the model must compute its gradients with respect to
 `positions` and `strain` explicitly, since metatomic only computes gradients of
