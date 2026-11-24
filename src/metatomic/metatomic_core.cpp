@@ -336,7 +336,7 @@ CoreBackend::CoreBackend(
 
     try {
         auto metadata = model_.metadata();
-        log.printf("\n%s\n", mta::format_metadata(nlohmann::json(metadata).dump()).c_str());
+        log.printf("\n%s\n", metadata.print().c_str());
         const auto& references = metadata.references();
         for (const auto* refs: {&references.model(), &references.architecture(), &references.implementation()}) {
             for (const auto& ref: *refs) {
