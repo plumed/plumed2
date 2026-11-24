@@ -1,5 +1,7 @@
 #include "probe.inc"
 int main() {
+  // Discover statically linked modules before entering per-probe directories.
+  PLMD::Plumed bootstrap;
   for(const std::string action : {
         "rescale","caliber","shadow"
       }) {

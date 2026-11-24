@@ -1,5 +1,7 @@
 #include "probe.inc"
 int main() {
+  // Discover statically linked modules before entering per-probe directories.
+  PLMD::Plumed bootstrap;
   const auto control=evaluate("read",0);
   for(int mode : {
         1,2,3,6

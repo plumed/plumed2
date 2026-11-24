@@ -835,8 +835,8 @@ void PINES::calculate() {
                           preupdated_block,isFirstBuild,steps_since_update,
                           inited_step,evaluation_);
   auto snapshot=[&]() {
-    return std::apply([](const auto&... values) {
-      return std::make_tuple(values...);
+    return std::apply([](const auto&... entries) {
+      return std::make_tuple(entries...);
     },selection);
   };
   using Selection=decltype(snapshot());
