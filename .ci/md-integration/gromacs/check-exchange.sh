@@ -9,6 +9,8 @@ suite=$(cd "$(dirname "$0")/exchange" && pwd)
 export PLUMED_KERNEL="$kernel"
 unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
 if [[ "$BACKEND" == tmpi ]]; then
+  python "$suite/validate_shells.py" --gmx "$gmx" --kernel "$kernel" \
+    --backend tmpi --output "$results/shells"
   python "$suite/validate_mpi_modes.py" --gmx "$gmx" --kernel "$kernel" --output "$results/tmpi"
   python "$suite/../check-provider-input.py" "$(dirname "$(dirname "$gmx")")" "$results/provider-input" "$kernel"
   for simulator in modular legacy; do
@@ -30,6 +32,8 @@ else
   fi
   # Local sandbox validation can specify explicit localhost slots.
   launcher=${MD_EXCHANGE_LAUNCHER:-$launcher}
+  python "$suite/validate_shells.py" --gmx "$gmx" --kernel "$kernel" \
+    --output "$results/shells" --launcher "$launcher"
   python "$suite/validate_checkpoint.py" --gmx "$gmx" --kernel "$kernel" \
     --output "$results/checkpoint" --launcher "$launcher"
   python "$suite/validate_rlist.py" --gmx "$gmx" --kernel "$kernel" \

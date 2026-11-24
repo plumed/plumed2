@@ -98,7 +98,7 @@ private:
   std::uint64_t evaluation_=0;
   long long preparedStep_=-1;
   std::uint64_t preparedEvaluation_=0;
-  bool preparedExchange_=false;
+  bool preparedAuxiliary_=false;
   bool driver_mode;
   bool freeze_selection;
   std::vector<int> steps_since_update;
@@ -741,7 +741,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 }
 
 void PINES::prepare() {
-  if(getExchangeStep()) {
+  if(isCalculationOnly()) {
     for(int n=0; n<N_Blocks; ++n) {
       if(nstride[n]>1 && !all_g1g2_pairs[n]) {
         error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
@@ -749,14 +749,14 @@ void PINES::prepare() {
     }
   }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
-      preparedExchange_==getExchangeStep()) {
+      preparedAuxiliary_==isCalculationOnly()) {
     return;
   }
   const bool newStep=preparedStep_!=getStep();
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
-  preparedExchange_=getExchangeStep();
-  if(getExchangeStep()) {
+  preparedAuxiliary_=isCalculationOnly();
+  if(isCalculationOnly()) {
     // A trial can bring a previously discarded pair arbitrarily close. Request
     // every candidate before sharing data, then choose the list in calculate().
     listreducedall.clear();

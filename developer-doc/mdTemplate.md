@@ -540,8 +540,9 @@ Hamiltonian while coordinates remain unchanged.
 For common neighbor lists, the caller must flag foreign coordinates with
 `setExchangeStep` before dependency preparation, so that preparation requests
 all candidate atoms. An unflagged `performCalcNoForces` establishes its context
-only at calculation time and is currently suitable for unchanged coordinates,
-such as lambda trials; it does not promise general foreign-coordinate support.
+only at calculation time. It does not promise general foreign-coordinate support
+or early preparation context even when coordinates are unchanged. Lambda trials in the
+2026 GROMACS patch use the early context below instead.
 
 Geometry caches must be rebuilt for the actual evaluation and invalidated when
 returning from trial coordinates. `getEvaluationId()` exposes the internal atom
@@ -550,6 +551,16 @@ it is not a new MD command. Preparation can be repeated before calculation and
 must not advance MD counters merely because it was called twice. Equal position
 pointers or equal coordinates alone do not establish equivalent preparation:
 energy, lambda, atom selection and evaluation context can differ.
+
+Command API 14 adds `setEvaluationMode` for context before preparation. Mode 1
+freezes state while retaining ordinary force STRIDE activation/scaling; use
+`performCalcNoUpdate`. Mode 2 freezes state and activates the full bias potential,
+even off stride; use `performCalcNoForces`. Set the integer mode before
+`prepareCalc` or `prepareDependencies` and restore mode 0 after the evaluation,
+including on errors. Nonzero modes forbid `performCalc` and `update`. Mode 0
+retains existing semantics, including repeated full calls at the same step.
+The calculation-only predicate describes state freezing, independently of
+whether forces are requested. See [explicit auxiliary context](explicit-auxiliary-context.md).
 
 The kernel propagates context to same-kernel nested PLUMED actions. Explicitly
 loaded old guests lacking the required existing commands and KEnRef's stateful
@@ -581,8 +592,9 @@ No API increment identifies the action state fixes: backports to 2.9/2.10 retain
 their API numbers. An explicitly loaded guest must contain the relevant fixes;
 a sufficient command API does not establish that its actions are trial-safe.
 Same-kernel guests receive the internal context directly. Propagate the current
-exchange flag before both preparation and calculation: lambda trial preparation
-can enable dependencies and clear the foreign-coordinate flag before evaluation.
+exchange flag and evaluation mode before both preparation and calculation.
+Loaded guests used for early auxiliary context or auxiliary forces require API 14.
+This is a new command requirement, separate from the action-state fixes.
 
 Backport scope must be checked action by action. The affected EEFSOLV, SASA,
 CS2BACKBONE, RESCALE, CALIBER, MAZE, READ, LOGMFD and PIV held-value patterns

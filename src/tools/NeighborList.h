@@ -50,7 +50,7 @@ private:
   Colvar* preparedAction_=nullptr;
   long long preparedStep_=-1;
   std::uint64_t preparedEvaluation_=0;
-  bool preparedExchange_=false;
+  bool preparedAuxiliary_=false;
   std::tuple<bool,bool> preparedStatus_{};
   bool listBuilded=false;
   bool serial_;

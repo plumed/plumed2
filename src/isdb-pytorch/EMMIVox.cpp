@@ -1661,7 +1661,7 @@ void EMMIVOX::update_gpu() {
 }
 
 void EMMIVOX::prepare() {
-  if(getExchangeStep()) {
+  if(isCalculationOnly()) {
     first_time_=true;
   }
 }

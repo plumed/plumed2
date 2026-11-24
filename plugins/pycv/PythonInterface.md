@@ -44,6 +44,8 @@ And the following functions:
 Python callbacks must guard their own persistent state, including random-number
 generation, with `isCalculationOnly()`. This also covers auxiliary evaluations
 that are not replica exchanges; `isExchangeStep()` alone is insufficient.
+Calculation-only callbacks must still provide values and derivatives required
+by their interface: auxiliary shell evaluations require forces.
 The calculation-only context is established for calculation callbacks; it is not
 a promise that an earlier prepare callback already knows about an unflagged trial.
 

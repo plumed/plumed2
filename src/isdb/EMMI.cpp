@@ -1581,7 +1581,7 @@ void EMMI::update_neighbor_list() {
 }
 
 void EMMI::prepare() {
-  if(getExchangeStep()) {
+  if(isCalculationOnly()) {
     first_time_=true;
   }
 }

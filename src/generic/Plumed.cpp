@@ -369,6 +369,7 @@ void Plumed::prepare() {
   }
   if(root) {
     p.setExchangeStep(getExchangeStep());
+    p.setEvaluationMode(plumed.getEvaluationMode());
     p.cmd("prepareDependencies");
   }
   int ene=0;
@@ -439,15 +440,16 @@ void Plumed::calculate() {
     // A lambda trial can enable exchange dependencies during prepare(), then
     // clear the foreign-coordinate flag before calculation. Forward that change.
     p.setExchangeStep(getExchangeStep());
+    p.setEvaluationMode(plumed.getEvaluationMode());
     p.cmd("setStopFlag",&stop);
   }
   Tensor box=getPbc().getBox();
   if(root)
     p.cmd("setBox",&box[0][0], {3,3});
 
-  // Loaded guests use performCalcNoForces for auxiliary evaluations. These
-  // buffers start at zero and their force/virial values are unused by the
-  // enclosing no-force evaluation; do not treat them as trial derivatives.
+  // No-force auxiliary passes leave these zeroed buffers unused. Force-bearing
+  // auxiliary passes (shell iterations) must still obtain the guest's forces,
+  // independently of the state-freezing context.
   virial.zero();
   std::fill(forces.begin(),forces.end(),0.0);
   std::copy(getMasses().begin(),
@@ -481,7 +483,7 @@ void Plumed::calculate() {
     p.cmd("shareData");
   }
   if(root) {
-    p.performCalcNoUpdate(isCalculationOnly());
+    p.performCalcNoUpdate(isCalculationOnly(),plumed.areForcesRequested());
   }
 
   int s=forces.size();

@@ -117,20 +117,54 @@ void PlumedHandle::setExchangeStep(bool exchange) {
   }
 }
 
-void PlumedHandle::performCalcNoUpdate(bool calculationOnly) {
+void PlumedHandle::setEvaluationMode(int mode) {
+  plumed_massert(mode>=0 && mode<=2,"invalid evaluation mode");
   if(local) {
-    local->performCalcNoUpdate(calculationOnly);
+    local->setEvaluationMode(mode);
+  } else {
+    const int api=loadedApiVersion();
+    if(api<14) {
+      if(mode!=0) {
+        plumed_error()<<"This loaded guest kernel cannot receive early auxiliary evaluation context (requires API >= 14)";
+      }
+      return;
+    }
+    cmd("setEvaluationMode",&mode);
+  }
+}
+
+void PlumedHandle::performCalcNoUpdate(bool calculationOnly, bool forcesRequested) {
+  if(local) {
+    if(calculationOnly && !forcesRequested) {
+      local->performCalcNoForces();
+    } else {
+      local->performCalcNoUpdate(calculationOnly);
+    }
   } else {
     const int api=loadedApiVersion();
     if(api<4) {
       plumed_error()<<"This loaded guest kernel does not support performCalcNoUpdate (requires API >= 4)";
     }
-    if(calculationOnly && api<9) {
+    if(calculationOnly && !forcesRequested && api<9) {
       plumed_error()<<"This loaded guest kernel does not support performCalcNoForces (requires API >= 9)";
     }
     // API versions describe command availability, not the action state fixes.
     // A backported guest retains its API version and must contain those fixes.
-    cmd(calculationOnly ? "performCalcNoForces" : "performCalcNoUpdate");
+    if(calculationOnly && forcesRequested) {
+      if(api<14) {
+        plumed_error()<<"This loaded guest kernel cannot evaluate auxiliary forces (requires API >= 14 for setEvaluationMode)";
+      }
+      setEvaluationMode(1);
+      try {
+        cmd("performCalcNoUpdate");
+      } catch(...) {
+        setEvaluationMode(0);
+        throw;
+      }
+      setEvaluationMode(0);
+    } else {
+      cmd(calculationOnly ? "performCalcNoForces" : "performCalcNoUpdate");
+    }
   }
 }
 

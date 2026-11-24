@@ -137,7 +137,7 @@ PRINT ARG=c1,c2,p1.s,p1.z,res.bias STRIDE=500  FILE=colvar FMT=%15.6f
 class FuncPathMSD : public Function {
   long long preparedStep_=-1;
   std::uint64_t preparedEvaluation_=0;
-  bool preparedExchange_=false;
+  bool preparedAuxiliary_=false;
   bool trialGeometry_=false;
   double lambda;
   int neigh_size;
@@ -328,17 +328,17 @@ void FuncPathMSD::calculate() {
 /// this function updates the needed argument list
 ///
 void FuncPathMSD::prepare() {
-  if(getExchangeStep() && neigh_size>0 &&
+  if(isCalculationOnly() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<allArguments.size()) {
     error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
   }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
-      preparedExchange_==getExchangeStep()) {
+      preparedAuxiliary_==isCalculationOnly()) {
     return;
   }
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
-  preparedExchange_=getExchangeStep();
+  preparedAuxiliary_=isCalculationOnly();
 
   // neighbor list: rank and activate the chain for the next step
 
@@ -348,7 +348,7 @@ void FuncPathMSD::prepare() {
   //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies
 
   // here just resize the neighpair. The real resizing of reinit will be done by the prepare stage that will modify the  list of arguments
-  if (neigh_size>0 && !getExchangeStep() && !trialGeometry_) {
+  if (neigh_size>0 && !isCalculationOnly() && !trialGeometry_) {
     if(neighpair.size()==allArguments.size()) { // I just did the complete round: need to sort, shorten and give it a go
       // sort the values
       std::sort(neighpair.begin(),neighpair.end(),pairordering());
@@ -370,7 +370,7 @@ void FuncPathMSD::prepare() {
       }
     }
   } else {
-    if( int(getStep())==0 || getExchangeStep() || trialGeometry_) {
+    if( int(getStep())==0 || isCalculationOnly() || trialGeometry_) {
       neighpair.resize(allArguments.size());
       for(unsigned i=0; i<allArguments.size(); i++) {
         neighpair[i].first=allArguments[i];

@@ -86,7 +86,7 @@ NEIGH_STRIDE=20
 class FuncPathGeneral : public Function {
   long long preparedStep_=-1;
   std::uint64_t preparedEvaluation_=0;
-  bool preparedExchange_=false;
+  bool preparedAuxiliary_=false;
   bool trialGeometry_=false;
   double lambda;
   int neigh_size;
@@ -357,18 +357,18 @@ void FuncPathGeneral::calculate() {
 
 // Prepare the required arguments
 void FuncPathGeneral::prepare() {
-  if(getExchangeStep() && neigh_size>0 &&
+  if(isCalculationOnly() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
     error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
   }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
-      preparedExchange_==getExchangeStep()) {
+      preparedAuxiliary_==isCalculationOnly()) {
     return;
   }
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
-  preparedExchange_=getExchangeStep();
-  if(getExchangeStep() || trialGeometry_) {
+  preparedAuxiliary_=isCalculationOnly();
+  if(isCalculationOnly() || trialGeometry_) {
     neighpair.resize(path_cv_values.size());
     for(unsigned i=0; i<neighpair.size(); ++i) {
       neighpair[i].first=i;

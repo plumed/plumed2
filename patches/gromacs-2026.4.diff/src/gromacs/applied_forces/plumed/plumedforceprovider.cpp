@@ -123,6 +123,24 @@ void PlumedForceProvider::prepareExchange()
     plumed_->cmd("GREX prepare");
 }
 
+void PlumedForceProvider::setEvaluationMode(int mode)
+{
+    if (plumedAPIversion_ < 14)
+    {
+        if (mode != 0)
+            GMX_THROW(InvalidInputError(
+                    "Auxiliary PLUMED force evaluations (shell relaxation) require API >= 14 "
+                    "for early auxiliary evaluation context; ordinary MD and replica exchange "
+                    "can use older kernels."));
+        return;
+    }
+    if (mode != evaluationMode_)
+    {
+        plumed_->cmd("setEvaluationMode", &mode);
+        evaluationMode_ = mode;
+    }
+}
+
 real PlumedForceProvider::lambdaTrialBias(int64_t step, int state, real physicalEnergy)
 {
     long int plumedStep  = step;
@@ -131,23 +149,18 @@ real PlumedForceProvider::lambdaTrialBias(int64_t step, int state, real physical
     plumed_->cmd("setStepLong", &plumedStep);
     plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
     plumed_->cmd("setEnergy", &context_.trialEnergy);
-    int exchange = 1;
-    plumed_->cmd("setExchangeStep", &exchange);
+    setEvaluationMode(2);
     try
     {
         plumed_->cmd("prepareCalc");
-        // The flag activates off-stride biases; lambda trials do not change
-        // coordinates and must not be reported as foreign-coordinate exchanges.
-        exchange = 0;
-        plumed_->cmd("setExchangeStep", &exchange);
         plumed_->cmd("performCalcNoForces");
     }
     catch (...)
     {
-        exchange = 0;
-        plumed_->cmd("setExchangeStep", &exchange);
+        setEvaluationMode(0);
         throw;
     }
+    setEvaluationMode(0);
     real bias = 0;
     plumed_->cmd("getBias", &bias);
     return bias;
@@ -168,11 +181,12 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     context_.mainRank = options.mpiComm_->isMainRank();
     context_.hrex     = options.hrex_;
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
-    if (expanded_ && plumedAPIversion_ < 13)
+    if (expanded_ && plumedAPIversion_ < 14)
     {
         GMX_THROW(InvalidInputError(
-                "PLUMED-biased expanded-ensemble lambda sampling requires API >= 13 "
-                "for the setExchangeStep command; ordinary MD can use older kernels."));
+                "PLUMED-biased expanded-ensemble lambda sampling requires API >= 14 "
+                "for early auxiliary evaluation context; ordinary MD and replica exchange "
+                "can use older kernels."));
     }
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
     if (plumedAPIversion_ >= 13)
@@ -339,6 +353,8 @@ try
     // "Again" means since the last prepareStep(), which MD and reruns call before each step
     repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
     calculatedStep_ = lstep;
+    // Repeated force queries freeze histories but retain normal force STRIDE.
+    setEvaluationMode(repeatedCall_ ? 1 : 0);
     // prepareStep() already opened this input epoch. Repeating setStep would
     // clear older kernels' prepared energy requirements before sharing data.
     if (preparedStep_ != lstep)
@@ -418,17 +434,20 @@ try
 
     // Do the work
     plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
+    setEvaluationMode(0);
 
     msmul(plumedVir_, 0.5, plumedVir_);
     forceProviderOutput->forceWithVirial_.addVirialContribution(plumedVir_);
 }
 catch (const GromacsException&)
 {
+    setEvaluationMode(0);
     // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
     throw;
 }
 catch (const std::exception& ex)
 {
+    setEvaluationMode(0);
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }
@@ -464,6 +483,7 @@ try
        prepareCalc(); calculateForces() runs the second half (shareData()) once the
        positions are available. */
     long int lstep = step;
+    setEvaluationMode(0);
     plumed_->cmd("setStepLong", &lstep);
     if (expanded_)
     {
@@ -561,6 +581,7 @@ try
     msmul(virial, 2.0, plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
     plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
+    setEvaluationMode(0);
     saveExchangeInputs();
 
 
@@ -569,11 +590,13 @@ try
 }
 catch (const GromacsException&)
 {
+    setEvaluationMode(0);
     // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
     throw;
 }
 catch (const std::exception& ex)
 {
+    setEvaluationMode(0);
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }

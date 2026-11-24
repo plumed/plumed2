@@ -147,6 +147,8 @@ public:
 private:
     //! Whether the atoms that PLUMED used on this step include virtual sites
     bool usesVirtualSites();
+    //! Early auxiliary context is optional for normal evaluations, required for trials.
+    void setEvaluationMode(int mode);
 
     PlumedContext context_;
     std::unique_ptr<PLMD::Plumed> plumed_;
@@ -177,6 +179,8 @@ private:
     std::optional<int64_t> calculatedStep_;
     //! Whether PLUMED already calculated this MD step (shell relaxation): it is then not updated again
     bool repeatedCall_ = false;
+    //! Last mode sent to the kernel; normal mode needs no additional commands.
+    int evaluationMode_ = 0;
 };
 
 } // namespace gmx

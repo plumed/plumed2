@@ -4,6 +4,7 @@ namespace {
 struct State {
   int api=1;
   int apiQueries=0;
+  int modeCalls=0;
   int counts[4] {};
 };
 void* create() {
@@ -23,6 +24,10 @@ void command(void* ptr,const char* key,const void* value) {
     std::memcpy(const_cast<void*>(value),state.counts,sizeof(state.counts));
   } else if(std::strcmp(key,"getMockApiQueries")==0) {
     *static_cast<int*>(const_cast<void*>(value))=state.apiQueries;
+  } else if(std::strcmp(key,"getMockModeCalls")==0) {
+    *static_cast<int*>(const_cast<void*>(value))=state.modeCalls;
+  } else if(std::strcmp(key,"setEvaluationMode")==0 && state.api>=14) {
+    ++state.modeCalls;
   } else if(std::strcmp(key,"performCalcNoUpdate")==0 && state.api>=4) {
     ++state.counts[0];
   } else if(std::strcmp(key,"performCalcNoForces")==0 && state.api>=9) {

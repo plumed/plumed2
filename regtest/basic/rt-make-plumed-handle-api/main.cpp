@@ -6,7 +6,7 @@
 
 int main() {
   for(const int api : {
-        1,3,4,8,9,10,13
+        1,3,4,8,9,10,13,14
       }) {
     auto p=PLMD::PlumedHandle::dlopen("./mock." __PLUMED_SOEXT);
     p.cmd("setMockApi",&api);
@@ -35,9 +35,21 @@ int main() {
     expect([&]() {
       p.performCalcNoUpdate(true);
     },api>=9);
+    expect([&]() {
+      p.performCalcNoUpdate(true,true);
+    },api>=14);
+    expect([&]() {
+      p.setEvaluationMode(2);
+    },api>=14);
+    p.setEvaluationMode(0);
+    int modeCalls=0;
+    p.cmd("getMockModeCalls",&modeCalls);
+    if(modeCalls!=(api>=14 ? 4 : 0)) {
+      throw std::runtime_error("early mode guard or force context restore failed");
+    }
     std::array<int,4> counts{};
     p.cmd("getMockCounts",counts.data());
-    if(counts!=std::array<int,4> {{api>=4,api>=9,api>=13 ? 2 : 0,0}}) {
+    if(counts!=std::array<int,4> {{(api>=4)+(api>=14),api>=9,api>=13 ? 2 : 0,0}}) {
       throw std::runtime_error("unsupported or missing guest command");
     }
     int queries=0;
@@ -64,5 +76,5 @@ int main() {
       throw std::runtime_error("moving the handle lost or mixed guest API capabilities");
     }
   }
-  std::ofstream("output")<<"Loaded guests: API 1/3/4/8/9/10/13 guards and dispatch OK\n";
+  std::ofstream("output")<<"Loaded guests: API 1/3/4/8/9/10/13/14 guards and dispatch OK\n";
 }

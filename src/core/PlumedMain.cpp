@@ -607,6 +607,12 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTNULL(val,word);
         setExchangeStep(val.get<int>()!=0);
         break;
+      /* ADDED WITH API=14 */
+      case cmd_setEvaluationMode:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        setEvaluationMode(val.get<int>());
+        break;
       case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
         prepareDependencies();
@@ -805,6 +811,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_clear: {
         CHECK_INIT(initialized,word);
+        evaluationMode_=0;
         std::vector<int> natoms;
         for(const auto & pp : inputs ) {
           plumed_assert(pp);
@@ -831,7 +838,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(13));
+        val.set(int(14));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -1467,6 +1474,11 @@ void PlumedMain::calc() {
   performCalc();
 }
 
+void PlumedMain::setEvaluationMode(int mode) {
+  plumed_massert(mode>=0 && mode<=2,"setEvaluationMode accepts 0 (normal), 1 (auxiliary forces), or 2 (full auxiliary potential)");
+  evaluationMode_=mode;
+}
+
 void PlumedMain::prepareCalc() {
   prepareDependencies();
   shareData();
@@ -1499,10 +1511,11 @@ void PlumedMain::prepareDependencies() {
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
-    auto* value=exchangeStep ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
+    const bool fullPotential=exchangeStep || evaluationMode_==2;
+    auto* value=fullPotential ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
     // Calculation-only exchange trials need the full potential even when an
     // MTS bias does not apply forces on this MD step.
-    const bool exchangeBias=exchangeStep && value && value->exists(value->getLabel()+".bias");
+    const bool exchangeBias=fullPotential && value && value->exists(value->getLabel()+".bias");
     if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
       active=true;
@@ -1553,6 +1566,7 @@ void PlumedMain::shareData() {
 }
 
 void PlumedMain::performCalcNoUpdate(bool calculationOnly) {
+  plumed_massert(evaluationMode_!=2,"full auxiliary potential mode requires performCalcNoForces");
   waitData();
   justCalculate(calculationOnly);
   backwardPropagate();
@@ -1560,11 +1574,13 @@ void PlumedMain::performCalcNoUpdate(bool calculationOnly) {
 }
 
 void PlumedMain::performCalcNoForces() {
+  plumed_massert(evaluationMode_!=1,"auxiliary force mode requires performCalcNoUpdate");
   waitData();
-  justCalculate(true);
+  justCalculate(true,false);
 }
 
 void PlumedMain::performCalc() {
+  plumed_massert(evaluationMode_==0,"auxiliary evaluation mode does not permit update; restore normal mode before performCalc");
 // In case the checkpointing signal arrived after prepareCalc() (2024 GROMACS patch);
 // does nothing if the checkpoint of this step was already written
   checkpointing.atStepStart(doCheckPoint);
@@ -1646,7 +1662,7 @@ void PlumedMain::launchReady(const std::size_t done) {
   launchQueue.resize(kept);
 }
 
-void PlumedMain::justCalculate(bool calculationOnly) {
+void PlumedMain::justCalculate(bool calculationOnly, bool forcesRequested) {
   if(!active) {
     return;
   }
@@ -1654,11 +1670,15 @@ void PlumedMain::justCalculate(bool calculationOnly) {
   struct RestoreContext {
     bool& flag;
     bool previous;
+    bool& forceFlag;
+    bool previousForceFlag;
     ~RestoreContext() {
       flag=previous;
+      forceFlag=previousForceFlag;
     }
-  } restore {calculationOnly_,calculationOnly_};
+  } restore {calculationOnly_,calculationOnly_,forcesRequested_,forcesRequested_};
   calculationOnly_=calculationOnly || exchangeStep;
+  forcesRequested_=forcesRequested;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;
@@ -1814,6 +1834,7 @@ void PlumedMain::backwardPropagate() {
 }
 
 void PlumedMain::update() {
+  plumed_massert(evaluationMode_==0,"auxiliary evaluation mode does not permit update");
   if(!active) {
     checkpointing.atStepEnd();
     return;

@@ -364,7 +364,7 @@ void HBonds::pairHydrogens() {
 void HBonds::prepare() {
   if(nlStride>0) {
     // the list is also updated on exchange steps, where the coordinates are swapped
-    invalidateList=firsttime || getStep()%nlStride==0 || getExchangeStep();
+    invalidateList=firsttime || getStep()%nlStride==0 || isCalculationOnly();
   }
 }
 
