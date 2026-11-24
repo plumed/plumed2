@@ -307,10 +307,6 @@ void PlumedForceProvider::setGlobalAtomIndices(const std::optional<ArrayRef<cons
 void PlumedForceProvider::writeCheckpointData()
 try
 {
-#if GMX_LIB_MPI
-    if (context_.hrexTrial)
-        return;
-#endif
     if (!prepareStepIsCalled_ || checkpointViaCallback_)
     {
         checkpointRequested_ = 1;

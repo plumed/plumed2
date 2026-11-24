@@ -1145,16 +1145,13 @@ void gmx::LegacySimulator::do_md()
             }
             else
             {
-                copy_state_serial(state_, stateGlobal_);
+                // Without domain decomposition the local state aliases the global state.
+                GMX_RELEASE_ASSERT(state_ == stateGlobal_, "HREX serial state must alias global state");
             }
 
             if (isMainRank)
                 exchange_state(ms_, partner, stateGlobal_);
 
-            if (!haveDDAtomOrdering(*cr_))
-            {
-                copy_state_serial(stateGlobal_, state_);
-            }
             if (haveDDAtomOrdering(*cr_))
             {
                 dd_partition_system(fpLog_,
@@ -1244,18 +1241,10 @@ void gmx::LegacySimulator::do_md()
             {
                 dd_collect_state(cr_->dd, state_, stateGlobal_);
             }
-            else
-            {
-                copy_state_serial(state_, stateGlobal_);
-            }
 
             if (isMainRank)
                 exchange_state(ms_, partner, stateGlobal_);
 
-            if (!haveDDAtomOrdering(*cr_))
-            {
-                copy_state_serial(stateGlobal_, state_);
-            }
             if (haveDDAtomOrdering(*cr_))
             {
                 dd_partition_system(fpLog_,

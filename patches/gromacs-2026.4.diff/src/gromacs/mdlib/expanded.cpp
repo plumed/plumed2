@@ -1468,8 +1468,8 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
                     1 / ((ir->bSimTemp ? simtemp->temperatures[i] : expand->mc_temp) * gmx::c_boltz);
             const real correction = beta * biases[i] - referenceBeta * biases[fep_state];
             scaled_lamee[i] += correction;
-            if (log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
-                fprintf(log,
+            if (debug)
+                fprintf(debug,
                         "PLUMED_LAMBDA step=%" PRId64
                         " current=%d state=%d potential=%.17g bias=%.17g reduced=%.17g\n",
                         step,
@@ -1528,8 +1528,8 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 
     lamnew = ChooseNewLambda(
             nlim, expand, dfhist, fep_state, weighted_lamee, p_k, ir->expandedvals->lmc_seed, step);
-    if (plumedForceProvider && log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
-        fprintf(log, "PLUMED_LAMBDA_MOVE step=%" PRId64 " old=%d new=%d\n", step, fep_state, lamnew);
+    if (plumedForceProvider && debug)
+        fprintf(debug, "PLUMED_LAMBDA_MOVE step=%" PRId64 " old=%d new=%d\n", step, fep_state, lamnew);
 
     /* now check on the Wang-Landau updating critera */
 

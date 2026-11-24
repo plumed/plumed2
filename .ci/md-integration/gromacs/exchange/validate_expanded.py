@@ -119,7 +119,6 @@ def main():
     parser.add_argument("--timeout", type=int, default=180)
     options = parser.parse_args()
     os.environ["PLUMED_KERNEL"] = str(Path(options.kernel).resolve())
-    os.environ["PLUMED_EXCHANGE_DEBUG"] = "1"
     if options.legacy:
         os.environ["GMX_DISABLE_MODULAR_SIMULATOR"] = "1"
     else:
@@ -257,6 +256,7 @@ def main():
                     "-pin",
                     "off",
                     "-notunepme",
+                    "-debug",
                 ]
                 + shlex.split(args.mdrun_args)
             )
@@ -360,7 +360,8 @@ def main():
                 return result
 
             checks = []
-            log = (directory / "run.log").read_text()
+            # GROMACS owns debug-file naming (including rank suffixes).
+            log = "".join(path.read_text() for path in sorted(directory.glob("*.debug")))
             for match in re.finditer(
                 r"PLUMED_LAMBDA step=(\d+) current=(\d+) state=(\d+) potential=(\S+) bias=(\S+) reduced=(\S+)",
                 log,
