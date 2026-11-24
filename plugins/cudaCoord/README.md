@@ -19,6 +19,13 @@ NVCCLDFLAGS = -shared -dlto --gpu-architecture=sm_75
 ```
 If you are using a T1000
 
+For AMD GPUs, with ROCm 6.2 or later (`hipcc`, rocThrust and hipCUB) installed:
+  - `USE_HIP=1 ./configure.sh`
+  - `make USE_HIP=1`
+
+the code is compiled for the GPUs of the machine that compiles; other targets can be chosen with, for example, `make USE_HIP=1 HIP_ARCHITECTURES="gfx90a gfx1100"`.
+The tests are run in the same way, with `make USE_HIP=1 check` and `make USE_HIP=1 check-gpu`.
+
 
 ### How to tests
 
@@ -26,7 +33,7 @@ From the plugin directory of a plumed source directory (`regtest/scripts` links 
  - `make check` runs all the tests (it needs a GPU)
  - `make check-nogpu` runs only the tests that do not need a GPU (in `regtest/nogpu`: loading the plugin, input errors, the error when there is no GPU)
 
-The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits and runs `make check-nogpu`.
+The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits, and with HIP with the oldest and the newest tested ROCm versions, and runs `make check-nogpu`.
 
 ## Limitations
 
@@ -46,7 +53,10 @@ its node modulo the number of GPUs, otherwise the current one of the CUDA runtim
 `CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
 (e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
 Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
-`make check-gpu` (on a node with GPUs) checks this, see `../openaccPTM/gpucheck`.
+With HIP (AMD GPUs) the plugin shares the runtime with the MD code, and the GPU the MD code is using is the current one of
+the HIP runtime: the rank is not used, and without an MD code (`plumed driver`) every process uses the first GPU, unless
+`HIP_VISIBLE_DEVICES` gives each rank its own GPU.
+`make check-gpu` (on a node with GPUs; `make USE_HIP=1 check-gpu` for AMD GPUs) checks this, see `../openaccPTM/gpucheck`.
 
 ## Performance notes
 

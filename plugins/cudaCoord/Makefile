@@ -12,12 +12,25 @@ endif
 #this assumes gcc
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+ifdef USE_HIP
+#AMD GPUs (make USE_HIP=1): hipcc compiles the .cu files as HIP, see src/cuda_to_hip.cuh
+#HIP_ARCHITECTURES lists the GPU targets, e.g. "gfx90a gfx942 gfx1100",
+#by default the GPUs of the machine that compiles
+HIPCC ?= hipcc
+HIP_ARCHITECTURES ?= native
+NVCC = $(HIPCC)
+NVCCCFLAGS = -x hip $(addprefix --offload-arch=,$(HIP_ARCHITECTURES))
+NVCCLDFLAGS = -shared
+HOST_COMPILER =
+else
 NVCC = nvcc
 #tested with nvcc with :"Build cuda_11.7.r11.7/compiler.31442593_0"
 #-dc adds relocatable device code
 #-dlto Perform link-time optimization of device code.
 NVCCCFLAGS = -dc -dlto
 NVCCLDFLAGS = -shared -dlto
+HOST_COMPILER = -ccbin $(CXX)
+endif
 OBJS = Coordination.o cudaHelpers.o $(EXTRA_OBJS)
 
 ADDCPPFLAGS=$(PLUMED_INCLUDE) -D__PLUMED_HAS_CUDA=1
@@ -27,6 +40,10 @@ ifeq ($(SOEXT),dylib)
   SONAME_OPTION:=-Xlinker -install_name
 else
   SONAME_OPTION:=-Xlinker -soname
+ifdef USE_HIP
+# unlike nvcc, hipcc gives "-soname,name" to the linker as a single argument
+  SONAME_OPTION:=-Wl,-soname
+endif
 # nvcc links the CUDA runtime statically by default, so the plugin carries its
 # own copy, which is finalized when the plugin is unloaded. PLUMED unloads the
 # libraries of LOAD with dlclose when it is destroyed, and an MD code destroys
@@ -48,7 +65,7 @@ all: CudaCoordination.$(SOEXT)
 
 %.o: %.cu $(DEPDIR)/%.d | $(DEPDIR)
 	@echo Compiling object $@
-	@$(NVCC) $(NVCCCFLAGS) -ccbin $(CXX) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
+	@$(NVCC) $(NVCCCFLAGS) $(HOST_COMPILER) -c $(DEPFLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $< -o $@
 
 $(DEPDIR): ; @mkdir -p $@
 
@@ -61,7 +78,7 @@ CudaCoordination.$(SOEXT): $(OBJS)
 # -ccbin takes only the compiler: LDSHARED can carry extra flags that nvcc does not
 # understand (e.g. "-Wl,--enable-new-dtags -Wl,-R ..." added by configure when
 # LIBRARY_PATH is set, as on clusters with modules); -shared is in NVCCLDFLAGS
-	@$(NVCC) $(NVCCLDFLAGS) -ccbin $(CXX) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
+	@$(NVCC) $(NVCCLDFLAGS) $(HOST_COMPILER) $(ADDCLDFLAGS) $(SONAME_OPTION),"$(notdir $@)" $(DYNAMIC_LIBS) $(PLUMED_KERNEL) -o $@ $^
 
 #clean should work even if Makefile.conf is not here
 clean:
