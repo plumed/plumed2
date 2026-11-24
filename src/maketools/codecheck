@@ -47,10 +47,10 @@ elif [ $do_local == true ]; then
 else
   files="$(
    ls ./*/*.{h,cpp}
-   # the CUDA sources of the modules with toolchain cuda
-   ls ./*/*.{cu,cuh} 2>/dev/null
-   # not every kind of file is in every plugin (e.g. no .cuh since cudaCoord became a module)
-   ls ../plugins/*/src/*.{h,cpp,cu,cuh} 2>/dev/null
+   # the CUDA sources of the modules with toolchain cuda, and the sources of the plugins:
+   # find, since not every kind of file is present (ls would fail, and stop the script with set -e)
+   find ./*/ -maxdepth 1 \( -name '*.cu' -o -name '*.cuh' \) | sort
+   find ../plugins/*/src -maxdepth 1 \( -name '*.h' -o -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' \) | sort
   )"
 fi
 
