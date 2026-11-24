@@ -1,0 +1,33 @@
+type=driver
+# three chains with the same residue numbers: A and C are copies of the ala12 helix of rt32 and B has a single
+# residue (residue 3). B is too short to be a strand so only the sheets between A and C exist.
+# Chain C is taken from a different frame of the trajectory and is shifted by 0.6 nm along x, B is shifted by 0.3 nm.
+extra_files="../rt32/helix.pdb ../rt32/ala12_trajectory.xyz"
+arg="--plumed plumed.dat --ixyz three_chains.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+
+function plumed_regtest_before() {
+  {
+    awk '/^ATOM/{print substr($0,1,21) "A" substr($0,23)}' helix.pdb
+    echo TER
+    awk '/^ATOM/{r=substr($0,23,4)+0; if(r==3){n++; printf("%s%5d%sB%s\n",substr($0,1,6),132+n,substr($0,12,10),substr($0,23))}}' helix.pdb
+    echo TER
+    awk '/^ATOM/{n++; printf("%s%5d%sC%s\n",substr($0,1,6),142+n,substr($0,12,10),substr($0,23))}' helix.pdb
+    echo TER
+    echo END
+  } > three_chains.pdb
+  # frame i contains frame i (chain A), residue 3 of frame i shifted by 0.3 nm (chain B) and frame (i+6)%12 shifted by 0.6 nm (chain C)
+  awk 'FNR==NR{ if($1=="ATOM"){n++; r=substr($0,23,4)+0; if(r==3) sel[n]=1}; next }
+    FNR%134==1{f=int((FNR-1)/134); nfr=f+1; next}
+    FNR%134==2{box[f]=$0; next}
+    {line[f,(FNR-1)%134-2]=$0}
+    END{
+      for(i=0;i<nfr;i++){
+        j=(i+6)%nfr
+        nb=0; for(k=1;k<=132;k++) if(sel[k]) nb++
+        print 132+nb+132; print box[i]
+        for(k=0;k<132;k++) print line[i,k]
+        for(k=0;k<132;k++) if(sel[k+1]){split(line[i,k],a," "); printf("%s %.4f %s %s\n",a[1],a[2]+0.3,a[3],a[4])}
+        for(k=0;k<132;k++){split(line[j,k],a," "); printf("%s %.4f %s %s\n",a[1],a[2]+0.6,a[3],a[4])}
+      }
+    }' helix.pdb ala12_trajectory.xyz > three_chains.xyz
+}

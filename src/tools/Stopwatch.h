@@ -169,7 +169,7 @@ class Log;
 /// Inline static so that it can store a static variable (for quicker access)
 /// without adding a unique global symbol to a library including this header file.
 inline static const std::string & StopwatchEmptyString() noexcept {
-  const static std::string s;
+  static const std::string s;
   return s;
 }
 

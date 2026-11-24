@@ -1,0 +1,13 @@
+# The frames are collected without CLEAR and the landmarks are output at the first step,
+# when no frame has been collected yet: the actions that are calculated on update
+# (DISSIMILARITIES and the landmark selection) are not calculated while their input is empty.
+# On v2.11 before this fix DISSIMILARITIES crashed (segmentation fault) at the first step.
+cc: COLLECT_FRAMES ATOMS=1,2,3,4,5,6,7,8,9,10 ALIGN=OPTIMAL STRIDE=1
+cc_dataT: TRANSPOSE ARG=cc_data
+dd: DISSIMILARITIES ARG=cc_data,cc_dataT
+ll: LANDMARK_SELECT_FPS ARG=cc DISSIMILARITIES=dd NLANDMARKS=4
+lw: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=4 NOVORONOI
+# at the first step only (no frame yet) and at the end of the run
+DUMPVECTOR ARG=ll_weights,lw_data FILE=landmarks_first FMT=%8.4f STRIDE=100000
+DUMPVECTOR ARG=ll_weights FILE=weights FMT=%8.4f STRIDE=0
+DUMPVECTOR ARG=lw_data FILE=landmarks FMT=%8.4f STRIDE=0

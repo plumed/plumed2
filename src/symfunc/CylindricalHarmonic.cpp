@@ -45,7 +45,7 @@ one if only two arguments are provided in input.  At present, the arguments for 
 These arguments must all have the same shape as the two output components will also be matrices that are
 calculated by applying the function above to each of the elements of the input matrix in turn.
 
-The following intput provides an example that demonstrates how this function is used:
+The following input provides an example that demonstrates how this function is used:
 
 ```plumed
 d: DISTANCE_MATRIX GROUP=1-10 COMPONENTS
@@ -75,10 +75,13 @@ PRINT ARG=c.im FILE=imaginary_part
 
 class CylindricalHarmonic {
 public:
-  int tmom;
+  int tmom=0;
   static void registerKeywords( Keywords& keys );
   static void read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options );
   static void calc( const CylindricalHarmonic& func, bool noderiv, const View<const double,helpers::dynamic_extent>& args, function::FunctionOutput& funcout );
+  // the assignment is customized (see below): copy construction is the default one
+  CylindricalHarmonic() = default;
+  CylindricalHarmonic(const CylindricalHarmonic&) = default;
   CylindricalHarmonic& operator=(const CylindricalHarmonic& m) {
     tmom=m.tmom;
     return *this;
@@ -98,6 +101,9 @@ void CylindricalHarmonic::registerKeywords( Keywords& keys ) {
 
 void CylindricalHarmonic::read( CylindricalHarmonic& func, ActionWithArguments* action, function::FunctionOptions& options ) {
   action->parse("DEGREE",func.tmom);
+  if( action->getNumberOfArguments()<2 ) {
+    action->error("the x and y components of the vectors (and optionally a weight) should be given with ARG");
+  }
   action->log.printf("  calculating %dth order cylindrical harmonic with %s and %s as input \n", func.tmom, action->getPntrToArgument(0)->getName().c_str(), action->getPntrToArgument(1)->getName().c_str() );
   if( action->getNumberOfArguments()==3 ) {
     action->log.printf("  multiplying cylindrical harmonic by weight from %s \n", action->getPntrToArgument(2)->getName().c_str() );

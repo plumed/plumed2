@@ -31,7 +31,7 @@
 /*
 Path collective variables with a more flexible framework for the distance metric being used.
 
-The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below alow one
+The Path Collective Variables developed by Branduardi and that are described in the first paper that is cited below allow one
 to compute the progress along a high-dimensional path and the distance from the high-dimensional
 path.  The progress along the path (s) is computed using:
 
@@ -168,7 +168,7 @@ X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))}
 $$
 
 In these expressions the value of the property $X$ is given at the position of $N$ high-dimensional frames ($X_i$). The distances, $D_i$, between
-these frames and our instaneous position are then used to compute the value of the property at the instaneous position in the high dimensional space.
+these frames and our instantaneous position are then used to compute the value of the property at the instantaneous position in the high dimensional space.
 As illustrated in the examples below, this implementation of the property map allows you to calculate these distances in various different ways.
 This is as opposed to the alternative implementation [PROPERTYMAP](PROPERTYMAP.md) which is a bit faster but which only allows one to use the RMSD distance.
 
@@ -272,7 +272,7 @@ void Path::registerKeywords( Keywords& keys ) {
   if( keys.getDisplayName()=="GPROPERTYMAP" ) {
     keys.add("optional","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
   }
-  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed. It is required unless the spath and zpath are not calculated (NOSPATH and NOZPATH)");
   keys.addFlag("NOZPATH",false,"do not calculate the zpath CV");
   keys.add("optional","COEFFICIENTS","the coefficients of the displacements along each argument that should be used when calculating the euclidean distance");
   if( keys.getDisplayName()=="PATH" ) {
@@ -290,8 +290,7 @@ void Path::registerKeywords( Keywords& keys ) {
 void Path::registerInputFileKeywords( Keywords& keys ) {
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
-           "metrics that are available in PLUMED can be found in the section of the manual on "
-           "\\ref dists");
+           "metrics that are available in PLUMED can be found in the documentation for RMSD");
   keys.addInputKeyword("optional","ARG","scalar","the list of arguments you would like to use in your definition of the path");
   keys.needsAction("DRMSD");
   keys.needsAction("RMSD");
@@ -310,8 +309,6 @@ Path::Path( const ActionOptions& ao ):
   Action(ao),
   ActionShortcut(ao) {
   // Now create all other parts of the calculation
-  std::string lambda;
-  parse("LAMBDA",lambda);
   std::string reference;
   parse("REFERENCE",reference);
   bool nospath=false, nozpath=false, gpath=false;
@@ -320,11 +317,23 @@ Path::Path( const ActionOptions& ao ):
     parseFlag("GPATH",gpath);
   }
   parseFlag("NOZPATH",nozpath);
+  // LAMBDA is only used by spath and zpath: it is not needed with e.g. GPATH NOSPATH NOZPATH
+  std::string lambda;
+  parse("LAMBDA",lambda);
+  if( lambda.length()==0 && !(nospath && nozpath) ) {
+    error("LAMBDA is required to calculate the spath and zpath (use NOSPATH and NOZPATH if you do not need them)");
+  }
   if( gpath ) {
     readInputLine( getShortcutLabel() + "_gpath: GPATH REFERENCE=" + reference );
     readInputLine( getShortcutLabel() + "_gspath: COMBINE ARG=" + getShortcutLabel() + "_gpath.s PERIODIC=NO");
     readInputLine( getShortcutLabel() + "_gzpath: COMBINE ARG=" + getShortcutLabel() + "_gpath.z PERIODIC=NO");
   }
+  // the reference frames are read with these keywords (even if only the geometric path is calculated,
+  // so that they are not reported as unknown keywords)
+  std::string type, reference_data;
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  parse("TYPE",type);
   if( nospath && nozpath ) {
     return;
   }
@@ -336,10 +345,6 @@ Path::Path( const ActionOptions& ao ):
     parseVector("PROPERTY",pnames);
     properties.resize( pnames.size() );
   }
-  std::string type, reference_data;
-  std::vector<std::string> argnames;
-  parseVector("ARG",argnames);
-  parse("TYPE",type);
   if( type.find("DRMSD")!=std::string::npos ) {
     readInputLine( getShortcutLabel() + "_data: DRMSD SQUARED TYPE=" + type + " REFERENCE=" + reference );
   } else {
@@ -411,6 +416,9 @@ void Path::readInputFrames( const std::string& reference, const std::string& typ
     for(unsigned i=0; i<argnames.size(); ++i) {
       argnames[i] = pdb.getArgumentNames()[i];
     }
+  }
+  if( pdb.getPositions().size()==0 && argnames.size()==0 ) {
+    action->error("reference file " + reference + " contains neither atoms nor arguments: use the ARG keyword or a REMARK ARG= line in the pdb file");
   }
   std::vector<Value*> theargs;
   if( argnames.size()>0 ) {

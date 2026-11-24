@@ -102,10 +102,11 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("atoms","GROUP","the atoms that are being used to calculate the RDF");
   keys.addDeprecatedKeyword("ATOMS","GROUP");
   keys.add("atoms-2","GROUPA","the atoms that you would like to compute the RDF about.  Must be used with GROUPB.");
-  keys.add("atoms-2","GROUPB","the atoms that you would like to to use when computing the RDF around the atoms that were specified with GROUPA");
+  keys.add("atoms-2","GROUPB","the atoms that you would like to use when computing the RDF around the atoms that were specified with GROUPA");
   keys.add("compulsory","GRID_BIN","the number of bins to use when computing the RDF");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the type of kernel to use for computing the histograms for the RDF");
-  keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN D_MAX=" + strcut,"the type of kernel to use for computing the histograms for the RDF");
   keys.add("compulsory","MAXR","the maximum distance to use for the rdf");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   if( keys.getDisplayName()=="RDF") {
@@ -115,6 +116,7 @@ void RDF::registerKeywords( Keywords& keys ) {
   keys.add("optional","DENSITY","the reference density to use when normalizing the RDF");
   keys.addFlag("NO_AVERAGE",false,"output a two-dimensional grid with separate RDF functions for each of the central atoms");
   keys.add("hidden","REFERENCE","this is the label of the reference objects");
+  keys.add("hidden","CUTOFF","removed in PLUMED 2.11: use D_MAX in KERNEL instead");
   keys.setValueDescription("grid","the radial distribution function");
   keys.needsAction("REFERENCE_GRID");
   keys.needsAction("VOLUME");
@@ -130,6 +132,14 @@ void RDF::registerKeywords( Keywords& keys ) {
 RDF::RDF(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
+  // CUTOFF was removed with the new syntax for the kernels: say what to write instead
+  double oldcut=-1;
+  parse("CUTOFF",oldcut);
+  if( oldcut>=0 ) {
+    std::string dmax;
+    Tools::convert( std::sqrt(2*oldcut), dmax );
+    error("CUTOFF was removed in PLUMED 2.11: the kernels are now truncated with KERNEL, use KERNEL={GAUSSIAN D_MAX=" + dmax + "} (D_MAX=sqrt(2*CUTOFF), in units of BANDWIDTH)");
+  }
   bool noaverage;
   parseFlag("NO_AVERAGE",noaverage);
   // Read in grid extent and number of bins
@@ -137,6 +147,10 @@ RDF::RDF(const ActionOptions&ao):
   parse("MAXR",maxr);
   parse("GRID_BIN",nbins);
   parse("DENSITY",dens);
+  double dval;
+  if( dens.length()>0 && Tools::convertNoexcept( dens, dval ) && dval<=0 ) {
+    error("DENSITY should be positive");
+  }
   // Read input to histogram
   std::string cutoff, kernel, bandwidth, kernel_data;
   parse("KERNEL",kernel);
@@ -151,20 +165,21 @@ RDF::RDF(const ActionOptions&ao):
     if( noaverage ) {
       bandwidth += ",0";
     }
-    double rcut;
-    parse("CUTOFF",rcut);
-    kernel_data="KERNEL=" + kernel + " BANDWIDTH=" + bandwidth;
+    kernel_data="KERNEL={" + kernel + "} BANDWIDTH=" + bandwidth;
     double fcut;
     Tools::convert( maxr, fcut );
-    Tools::convert( fcut + sqrt(2.0*rcut)*bw, cutoff );
+    double rcut = 0;
+    std::vector<std::string> kwords( Tools::getWords(kernel) );
+    Tools::parse( kwords, "D_MAX", rcut );
+    if( rcut==0 ) {
+      rcut = sqrt(2.0*dp2cutoff);
+    }
+    Tools::convert( fcut + rcut*bw, cutoff );
   }
 
   // Create contact matrix
   std::string atom_str, group_str, groupa_str, groupb_str;
   parse("GROUP",group_str);
-  if( group_str.size()==0 ) {
-    parse("ATOMS",group_str);
-  }
   if( group_str.length()>0 ) {
     atom_str="GROUP=" + group_str;
   } else {

@@ -49,7 +49,7 @@ d: DISTANCE ATOMS=1,2
 g: GATHER_REPLICAS ARG=d
 # Now average the two distances on the two replicas
 s: COMBINE ARG=g.rep-1,g.rep-2 COEFFICIENTS=0.5,0.5 PERIODIC=NO
-# And print the instaneous average for the distance on the two replicas
+# And print the instantaneous average for the distance on the two replicas
 PRINT ARG=s FILE=colvar
 ```
 
@@ -130,12 +130,13 @@ GatherReplicas::GatherReplicas( const ActionOptions& ao ):
 }
 
 unsigned GatherReplicas::getNumberOfDerivatives() {
-  return getPntrToArgument(0)->getNumberOfDerivatives();
+  const Value* arg = getPntrToArgument(0);
+  return arg->hasDerivatives() ? arg->getNumberOfDerivatives() : 0;
 }
 
 void GatherReplicas::calculate() {
   Value* myarg = getPntrToArgument(0);
-  std::size_t nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfDerivatives();
+  std::size_t nvals = myarg->getNumberOfValues(), nder = getNumberOfDerivatives();
   std::vector<double> dval( nvals*(1+nder) ), datap(nreplicas*nvals*(1+nder) );
   for(unsigned i=0; i<nvals; ++i) {
     dval[i*(1+nder)] = myarg->get(i);
@@ -150,7 +151,7 @@ void GatherReplicas::calculate() {
     }
   }
   if(comm.Get_rank()==0) {
-    multi_sim_comm.Allgather(dval,datap);
+    multi_sim_comm.Allgather(dval.data(),dval.size(),datap.data(),dval.size());
   }
   // Only rank 0 of each replica takes part in the gather; share the result with
   // the other ranks of the replica, which would otherwise keep a zero-filled datap.
@@ -158,8 +159,8 @@ void GatherReplicas::calculate() {
 
   for(unsigned k=0; k<nreplicas; k++) {
     Value* myout = getPntrToComponent(k);
-    if( myout->getNumberOfDerivatives()!=myarg->getNumberOfDerivatives() ) {
-      myout->resizeDerivatives( myarg->getNumberOfDerivatives() );
+    if( myout->hasDerivatives() && myout->getNumberOfDerivatives()!=nder ) {
+      myout->resizeDerivatives( nder );
     }
     unsigned sstart=k*nvals*(1+nder);
     for(unsigned i=0; i<nvals; ++i) {
@@ -169,8 +170,9 @@ void GatherReplicas::calculate() {
           myout->setDerivative( j, dval[i*(1+nder)+1+j] );
         }
       } else if( myarg->hasDerivatives() ) {
+        // the derivatives of a grid are part of the data gathered from replica k
         for(unsigned j=0; j<nder; ++j) {
-          myout->addGridDerivatives( i, j, dval[i*(1+nder)+1+j] );
+          myout->addGridDerivatives( i, j, datap[sstart+i*(1+nder)+1+j] );
         }
       }
     }

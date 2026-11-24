@@ -145,8 +145,9 @@ decode_pure(
   int value = 0;
   unsigned i = 0;
   for(; i<s_size; i++) {
-    si = s[i];
-    if (si < 0 || si > 127) {
+    // go through unsigned char: plain char is signed on some platforms and unsigned on others
+    si = static_cast<unsigned char>(s[i]);
+    if (si > 127) {
       *result = 0;
       return invalid_number_literal();
     }
@@ -275,8 +276,8 @@ hy36decode(unsigned width, const char* s, unsigned s_size, int* result) {
   static const std::vector<int> digits_values_upper_vector([]() {
     std::vector<int> ret(128U,-1);
     for(unsigned i=0; i<36U; i++) {
-      int di = digits_upper()[i];
-      if (di < 0 || di > 127) {
+      int di = static_cast<unsigned char>(digits_upper()[i]);
+      if (di > 127) {
         plumed_error()<<"internal error hy36decode: integer value out of range";
       }
       ret[di] = i;
@@ -288,8 +289,8 @@ hy36decode(unsigned width, const char* s, unsigned s_size, int* result) {
   static const std::vector<int> digits_values_lower_vector([]() {
     std::vector<int> ret(128U,-1);
     for(unsigned i=0; i<36U; i++) {
-      int di = digits_lower()[i];
-      if (di < 0 || di > 127) {
+      int di = static_cast<unsigned char>(digits_lower()[i]);
+      if (di > 127) {
         plumed_error()<<"internal error hy36decode: integer value out of range";
       }
       ret[di] = i;
@@ -301,8 +302,8 @@ hy36decode(unsigned width, const char* s, unsigned s_size, int* result) {
   int di;
   const char* errmsg;
   if (s_size == width) {
-    di = s[0];
-    if (di >= 0 && di <= 127) {
+    di = static_cast<unsigned char>(s[0]);
+    if (di <= 127) {
       if (digits_values_upper[di] >= 10) {
         errmsg = decode_pure(digits_values_upper, 36U, s, s_size, result);
         if (errmsg == 0) {

@@ -1,0 +1,6 @@
+type=driver
+plumed_modules=contour
+# Without ARG every atom is active: the atoms close to the line from ORIGIN to ATOM were added
+# twice to the list of active atoms, which overflowed (heap corruption) and counted their kernels twice
+arg="--plumed plumed.dat --ixyz gas-many.xyz --length-units A"
+extra_files="../rt-spherical-contour/gas-many.xyz"

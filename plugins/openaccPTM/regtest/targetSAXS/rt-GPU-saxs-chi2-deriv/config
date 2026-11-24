@@ -1,0 +1,4 @@
+type=driver
+arg="--plumed plumed.dat --mf_pdb twoatom.pdb"
+# input files and CPU references are those of regtest/isdb/rt-saxs-chi2-deriv
+extra_files="../../../../../regtest/isdb/rt-saxs-chi2-deriv/chi2.dat.reference ../../../../../regtest/isdb/rt-saxs-chi2-deriv/derivatives.reference ../../../../../regtest/isdb/rt-saxs-chi2-deriv/twoatom.pdb"

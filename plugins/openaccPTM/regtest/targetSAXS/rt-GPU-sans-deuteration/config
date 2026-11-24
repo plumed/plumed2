@@ -1,0 +1,5 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --mf_xtc traj.xtc"
+# input files and CPU references are those of regtest/isdb/rt-sans-deuteration
+extra_files="../../../../../regtest/isdb/rt-sans-deuteration/protein.pdb ../../../../../regtest/isdb/rt-sans-deuteration/sans.reference ../../../../../regtest/isdb/rt-sans-deuteration/traj.xtc"

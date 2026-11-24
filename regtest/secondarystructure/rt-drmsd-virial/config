@@ -1,0 +1,11 @@
+type=driver
+# forces and virial of the DRMSD path (shortcuts and SECONDARY_STRUCTURE_DRMSD with two
+# structures and an atom that is not in any pair) in a small periodic box. TYPE is not case
+# sensitive in the shortcuts. The references were computed with uppercase TYPE before the
+# derivatives of the DRMSD were accumulated per atom
+extra_files="../rt33/amyloid.pdb ../rt33/amyloid.xyz"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz amyloid.xyz --dump-forces dforces --dump-forces-fmt=%10.6f"
+# keep the first two lines of each frame (number of atoms and virial) and the forces on one atom every 20
+function plumed_regtest_after(){
+  awk 'NR==1{natoms=$1} {i=(NR-1)%(natoms+2); if(i<2 || (i-2)%20==0) print}' dforces > dforces.tmp && mv dforces.tmp dforces
+}

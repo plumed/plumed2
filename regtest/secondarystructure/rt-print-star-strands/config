@@ -1,0 +1,12 @@
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz amyloid.xyz"
+extra_files="../rt33/amyloid.pdb ../rt33/amyloid.xyz"
+
+function plumed_regtest_after(){
+# the file written with ARG=* is large: check that it contains p and the left out values are reported in the log
+  {
+    head -1 all | tr ' ' '\n' | grep -c "^p$"
+    grep -o "values selected with \* are not used.*" out
+  } > check
+  rm -f all
+}

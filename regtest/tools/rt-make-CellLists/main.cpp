@@ -7,7 +7,7 @@
 #include "testUtils.h"
 //#define USE_MPI
 #ifdef USE_MPI
-#include "mpi.h"
+#include "mpi-test.h"
 #endif //USE_MPI
 
 #include <array>
@@ -29,28 +29,33 @@ void testRequiredCellsNotOrtho(PLMD::Communicator &comm);
 void testWithEmptyCells (PLMD::Communicator &comm);
 void bench (PLMD::Communicator &comm);
 
-int main(int argc,char**argv) {
-#ifdef USE_MPI
-  MPI_Init(&argc,&argv);
-#endif //USE_MPI
-  {
-    PLMD::Communicator comm;
-#ifdef USE_MPI
-    MPI_Comm c;
-    MPI_Comm_dup(MPI_COMM_WORLD,&c);
-    comm.Set_comm(&c);
-#endif //USE_MPI
-    test(comm);
-    testIndexes(comm);
-    testWithEmptyCells(comm);
-    testRequiredCells(comm);
-    testRequiredCellsNotOrtho(comm);
-    //bench(comm);
-  }
-#ifdef USE_MPI
-  MPI_Finalize();
-#endif //USE_MPI
+namespace PLMD {
+int runTests(Communicator& comm) {
+  test(comm);
+  testIndexes(comm);
+  testWithEmptyCells(comm);
+  testRequiredCells(comm);
+  testRequiredCellsNotOrtho(comm);
+  //bench(comm);
+  return 0;
 }
+#ifdef USE_MPI
+int runRank(MPI_Comm c, int, char**) {
+  Communicator comm;
+  comm.Set_comm(&c);
+  return runTests(comm);
+}
+}
+int main(int argc,char**argv) {
+  return PLMD::mpi_test::run(argc,argv,3,PLMD::runRank);
+}
+#else
+}
+int main() {
+  PLMD::Communicator comm;
+  return PLMD::runTests(comm);
+}
+#endif
 
 void testIndexes (PLMD::Communicator &comm) {
   std::string rank="";

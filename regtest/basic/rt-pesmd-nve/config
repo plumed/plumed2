@@ -1,0 +1,3 @@
+type=plumed
+# no thermostat: the particle starts at rest and the energy is conserved
+arg="pesmd input.dat"

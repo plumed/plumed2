@@ -199,6 +199,9 @@ DumpPDB::DumpPDB(const ActionOptions&ao):
     }
   }
   log.printf("  printing configurations to PDB file to file named %s \n", file.c_str() );
+  if( getNumberOfArguments()==0 ) {
+    error("nothing to print: use ARG and/or ATOMS");
+  }
   parseVector("ARG_NAMES",argnames);
   if( argnames.size()==0 ) {
     buildArgnames();
@@ -244,9 +247,6 @@ void DumpPDB::buildArgnames() {
   if( pdb_atom_indices.size()>0 ) {
     nargs = nargs - 1;
   }
-  if( nargs<0 ) {
-    return;
-  }
 
   argnames.resize(0);
   unsigned nvals = getPntrToArgument(0)->getShape()[0];
@@ -274,12 +274,21 @@ void DumpPDB::update() {
   plumed_assert( psign!=std::string::npos );
   std::string descr2="%s=%-" + fmt.substr(psign+1) + " ";
 
+  // the positions of the atoms (if any) are the last argument
+  unsigned nargs = getNumberOfArguments(), atomarg=0;
+  if( pdb_atom_indices.size()>0 ) {
+    atomarg = nargs - 1;
+    nargs = nargs - 1;
+  }
   unsigned totargs = 0;
   unsigned nvals = getPntrToArgument(0)->getShape()[0];
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     if( getPntrToArgument(i)->getShape()[0]!=nvals ) {
       error("all arguments should have same number of values");
     }
+  }
+  // the names of the arguments (but not of the positions) are rebuilt if the shapes changed
+  for(unsigned i=0; i<nargs; ++i) {
     if( getPntrToArgument(i)->getRank()==1 ) {
       totargs += 1;
     } else if( getPntrToArgument(i)->getRank()==2 ) {
@@ -292,15 +301,6 @@ void DumpPDB::update() {
 
   if( description.length()>0 ) {
     opdbf.printf("# %s AT STEP %lld TIME %f \n", description.c_str(), getStep(), getTime() );
-  }
-  unsigned nargs = getNumberOfArguments(), atomarg=0;
-  if( pdb_atom_indices.size()>0 ) {
-    if( nargs>1 ) {
-      atomarg = nargs - 1;
-      nargs = nargs-1;
-    } else {
-      nargs = 0;
-    }
   }
   for(unsigned i=0; i<nvals; ++i) {
     unsigned n=0;

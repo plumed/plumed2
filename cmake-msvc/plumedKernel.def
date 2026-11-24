@@ -1,0 +1,13 @@
+; C entry points exported by plumedKernel.dll (CMake build with PLUMED_SHARED_KERNEL, MSVC).
+; Nothing else is exported: the C++ symbols stay internal to the kernel.
+;  - plumed_symbol_table: found with GetProcAddress by the wrapper (Plumed.h), when the
+;    kernel is loaded with PLUMED_KERNEL or plumed_create_dlopen (e.g. by the python interface)
+;  - plumed_plumedmain_*: the same functions, searched by wrappers of PLUMED < 2.5
+;  - plumed_symbol_table_reexport: called by the plumed executable (cmake-msvc/PlumedLinked.cpp),
+;    since a data symbol such as plumed_symbol_table cannot be imported without dllimport
+EXPORTS
+    plumed_symbol_table DATA
+    plumed_symbol_table_reexport
+    plumed_plumedmain_create
+    plumed_plumedmain_cmd
+    plumed_plumedmain_finalize

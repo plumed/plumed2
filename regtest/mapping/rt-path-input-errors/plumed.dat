@@ -1,0 +1,3 @@
+# the inputs that are tested are written by the config file
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=colvar

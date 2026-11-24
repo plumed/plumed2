@@ -1,0 +1,13 @@
+# trimming of the files at a restart from a step given by the MD engine (driver --restart --initial-step): see config
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+PRINT ARG=d1,d2 FILE=COLVAR FMT=%.10f
+# hills at fixed height on a trajectory given by the driver: the restarted run deposits the same hills
+m: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.5 PACE=5 FILE=HILLS FMT=%14.10f
+PRINT ARG=m.bias FILE=BIAS FMT=%.6f
+# a file with earlier runs whose time restarted from zero (see config): only the last tail is removed
+PRINT ARG=d2 FILE=COLVAR_RUNS FMT=%.10f RESTART=YES
+# a file without time: not trimmed
+DUMPATOMS ATOMS=1-4 FILE=dump.xyz STRIDE=10
+# this file is appended as it is
+PRINT ARG=d1 FILE=COLVAR_NOTRIM FMT=%.10f NO_TRIM

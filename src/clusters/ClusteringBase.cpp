@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ClusteringBase.h"
+#include <algorithm>
 #include "core/PlumedMain.h"
 
 namespace PLMD {
@@ -59,27 +60,50 @@ void ClusteringBase::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matr
   std::vector<double> vals;
   unsigned nedge;
   getPntrToArgument(0)->retrieveEdgeList( nedge, pairs, vals );
+  // Count the entries that each node can have in its list. An edge that is stored in both
+  // rows of the matrix (every edge, when the matrix is not flagged as symmetric) is counted twice
+  for(unsigned i=0; i<nneigh.size(); ++i) {
+    nneigh[i]=0;
+  }
+  unsigned maxneigh=0;
+  for(unsigned i=0; i<nedge; ++i) {
+    const unsigned j=pairs[i].first, k=pairs[i].second;
+    if( j==k ) {
+      continue;
+    }
+    maxneigh=std::max( maxneigh, std::max( ++nneigh[j], ++nneigh[k] ) );
+  }
+  // Resize the adjacency list if it is needed. The number of columns of the matrix is not
+  // enough: with the edges stored twice a node had up to twice as many entries as the
+  // columns, and they were written in the list of the next node (or after the end)
+  const unsigned nrows = getPntrToArgument(0)->getShape()[0];
+  const unsigned ncols = std::max<unsigned>( maxneigh, getPntrToArgument(0)->getNumberOfColumns() );
+  if( adj_list.nrows()!=nrows || adj_list.ncols()<ncols ) {
+    adj_list.resize( nrows, ncols );
+  }
   // Currently everything has zero neighbors
   for(unsigned i=0; i<nneigh.size(); ++i) {
     nneigh[i]=0;
   }
-  // Resize the adjacency list if it is needed
-  if( adj_list.ncols()!=getPntrToArgument(0)->getNumberOfColumns() ) {
-    unsigned nrows = getPntrToArgument(0)->getShape()[0];
-    adj_list.resize( nrows, getPntrToArgument(0)->getNumberOfColumns() );
-  }
 
-  // And set up the adjacency list
-  for(unsigned i=0; i<nedge; ++i) {
-    // Store if atoms are connected
-    unsigned j=pairs[i].first, k=pairs[i].second;
-    if( j==k ) {
-      continue;
+  // And set up the adjacency list, with each neighbor only once
+  auto connect=[&](const unsigned j, const unsigned k) {
+    for(unsigned n=0; n<nneigh[j]; ++n) {
+      if( adj_list(j,n)==k ) {
+        return;
+      }
     }
     adj_list(j,nneigh[j])=k;
     nneigh[j]++;
-    adj_list(k,nneigh[k])=j;
-    nneigh[k]++;
+  };
+  for(unsigned i=0; i<nedge; ++i) {
+    // Store if atoms are connected
+    const unsigned j=pairs[i].first, k=pairs[i].second;
+    if( j==k ) {
+      continue;
+    }
+    connect(j,k);
+    connect(k,j);
   }
 }
 

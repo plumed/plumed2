@@ -1,0 +1,18 @@
+xtc_natoms_small: rejected
+xtc_natoms: rejected
+xtc_datalen: rejected
+xtc_sizeint: rejected
+xtc_smallidx: rejected
+xtc_smallidx_neg: rejected
+xtc_run: rejected
+xtc_natoms_neg: rejected
+xtc_grow: rejected
+trr_title: rejected
+trr_natoms: rejected
+trr_magic: rejected
+trr_grow: rejected
+xtc_truncated: one frame and a warning
+trr_truncated: one frame and a warning
+ok20.xtc: read back
+ok20.trr: read back
+xtc with magic 2023: same frame

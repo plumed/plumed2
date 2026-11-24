@@ -28,6 +28,9 @@
 #include "tools/OpenMP.h"
 #include "tools/LeptonCall.h"
 
+#include <cmath>
+#include <set>
+
 namespace PLMD {
 namespace function {
 
@@ -90,7 +93,7 @@ PRINT ARG=theta
 The previous examples demonstrates how CUSTOM can be used to evaluate mathematical expressions that involve taking powers (^), adding (+),
 multiplying (*), dividing (/) and subtracting (-) variables and can control the order in which operations are performed by using parenthesis.
 In addition to these basic binary operations you can also use a range of mathematical functions in your expressions.  The following table lists all the mathematical functions
-that you can use in in the input to the `FUNC` keyword for CUSTOM.
+that you can use in the input to the `FUNC` keyword for CUSTOM.
 
 | Function | Description |
 |:--------:|:------------|
@@ -136,6 +139,10 @@ that you can use in in the input to the `FUNC` keyword for CUSTOM.
 | acoth(x)      | The inverse hyperbolic tangent of $x$ is calculated as $\frac{1}{2}\ln\left( \frac{x+1}{x-1} \right)$ |
 | asech(x)      | The inverse hyperbolic secant of $x$ is calculated as $\log\left( \sqrt{\frac{1}{x}-1}\sqrt{\frac{1}{x}+1} + \frac{1}{x}\right)$ |
 | acsch(x)      | The inverse hyperbolic cosecant of $x$ is calculated as $\log\left(\frac{1}{x}+\sqrt{\frac{1}{x^2}+1}\right)$ |
+
+The derivatives of `step(x)` and `delta(x)` are taken to be zero everywhere, including at $x=0$, following Lepton's convention.
+This convention ignores singular impulses at discontinuities and avoids infinities or NaNs in derivatives of expressions such as `x^2*step(x)` at zero.
+The explicit function values remain as listed above: `delta(0)` is infinite and `nandelta(0)` is NaN.
 
 Notice, that you can also incorporate the following constants in the expressions that are used in the input to FUNC:
 
@@ -280,7 +287,7 @@ $$
 Notice that the value called `onaxis` in the above input is thus $o=x\cos(\theta) + \frac{z}{2}$.  Adding the factor of $\frac{z}{2}$ ensures that the origin
 is at the center of the bond connecting atom 1 to atom 2.
 
-The value `fromaxis` measures the square of the distance from the the line.  It is calculated using pythagoras theorem as follows:
+The value `fromaxis` measures the square of the distance from the line.  It is calculated using pythagoras theorem as follows:
 
 $$
 f^2 = y^2 - x^2\cos^2(\theta)
@@ -446,7 +453,7 @@ are matrices:
 d_mat: DISTANCE_MATRIX GROUP=1-64 LINKCELL_CUTOFF=4.5 COMPONENTS
 # Find the six nearest atom to each of the coordinates
 nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
-# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+# Evaluate the lengths of the bonds connecting each atom to its nearest neighbors
 r: CUSTOM ...
    ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn
    FUNC=sqrt(x*x+y*y+z*z)
@@ -472,11 +479,11 @@ PRINT ARG=d_mean FILE=colv
 
 Using the MASK here ensures that we only calculate the CUSTOM functions for the six nearest neighbors of each of the input atoms. However, it is important to note that
 this input is rather unsual.  In general you rarely need to use the MASK keyword for CUSTOM actions that take matrices in input.  For example, if we use the following
-(more conventional version) of the above CV the MASK is unecessary as the sparsity pattern of the input matrices are all identical.
+(more conventional version) of the above CV the MASK is unnecessary as the sparsity pattern of the input matrices are all identical.
 
 ```plumed
 cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={RATIONAL R_0=1.0 D_MAX=4.5} COMPONENTS
-# Evalulate the lengths of the bonds connecting each atom to its nearest neighbors
+# Evaluate the lengths of the bonds connecting each atom to its nearest neighbors
 r: CUSTOM ...
    ARG=cmat.x,cmat.y,cmat.z
    FUNC=sqrt(x*x+y*y+z*z)
@@ -527,7 +534,7 @@ ones: ONES SIZE=5184
 dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 HEIGHTS=ones BANDWIDTH=1.0,1.0,1.0
 # Now calculate the average value of the order parameter at each point in the box
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
-DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f
+DUMPCUBE ARG=dens FILE=dens.cube FMT=%8.4f STRIDE=1
 ```
 
 ## Making lepton library faster
@@ -537,7 +544,9 @@ These commands use the lepton library that is included in PLUMED.
 This library replaces libmatheval since PLUMED 2.5, and by itself it is significantly faster than libmatheval.
 However, you can make it even faster using a [just-in-time compiler](https://github.com/asmjit/asmjit.git).
 As of PLUMED 2.6, the correct version of ASMJIT is embedded in PLUMED.
-As of PLUMED 2.8, ASMJIT is enabled by default on supported architectures (X86/X64).
+As of PLUMED 2.8, ASMJIT is enabled by default on X86/X64.
+Since PLUMED 2.11, it is also enabled by default on AArch64, including Apple Silicon.
+It can be disabled at build time with `./configure --disable-asmjit`.
 You can disable it at runtime setting the environment variable `PLUMED_USE_ASMJIT`:
 
 ```bash
@@ -617,6 +626,39 @@ void Custom::registerKeywords(Keywords& keys) {
   keys.addDOI("10.1093/nar/gkv872");
 }
 
+/// Collect the names of the variables v such that the expression is of the form v*g(...),
+/// i.e. it is zero whenever v is zero (as long as g is finite)
+static void findMultiplicativeFactors( const lepton::ExpressionTreeNode& node, std::set<std::string>& factors ) {
+  const lepton::Operation& op = node.getOperation();
+  switch( op.getId() ) {
+  case lepton::Operation::VARIABLE:
+    factors.insert( op.getName() );
+    break;
+  case lepton::Operation::MULTIPLY:
+    findMultiplicativeFactors( node.getChildren()[0], factors );
+    findMultiplicativeFactors( node.getChildren()[1], factors );
+    break;
+  case lepton::Operation::DIVIDE:
+  case lepton::Operation::NEGATE:
+  case lepton::Operation::SQUARE:
+  case lepton::Operation::CUBE:
+    findMultiplicativeFactors( node.getChildren()[0], factors );
+    break;
+  case lepton::Operation::MULTIPLY_CONSTANT:
+    if( std::isfinite( dynamic_cast<const lepton::Operation::MultiplyConstant&>(op).getValue() ) ) {
+      findMultiplicativeFactors( node.getChildren()[0], factors );
+    }
+    break;
+  case lepton::Operation::POWER_CONSTANT:
+    if( dynamic_cast<const lepton::Operation::PowerConstant&>(op).getValue()>0 ) {
+      findMultiplicativeFactors( node.getChildren()[0], factors );
+    }
+    break;
+  default:
+    break;
+  }
+}
+
 void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& options ) {
   // Read in the variables
   unsigned nargs = action->getNumberOfArguments();
@@ -644,58 +686,6 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   if(f.var.size()!=nargs) {
     action->error("Size of VAR array should be the same as number of arguments");
   }
-  // Check for operations that are not multiplication (this can probably be done much more cleverly)
-  bool onlymultiplication = f.func.find("*")!=std::string::npos;
-  // Find first bracket in expression
-  if( f.func.find("(")!=std::string::npos ) {
-    std::size_t br = f.func.find_first_of("(");
-    std::string subexpr=f.func.substr(0,br);
-    onlymultiplication = f.func.find("*")!=std::string::npos;
-    if( subexpr.find("/")!=std::string::npos ) {
-      std::size_t sl = f.func.find_first_of("/");
-      std::string aa = subexpr.substr(0,sl);
-      subexpr=aa;
-    }
-    if( subexpr.find("+")!=std::string::npos || subexpr.find("-")!=std::string::npos ) {
-      onlymultiplication=false;
-    }
-    // Now work out which vars are in multiplication
-    if( onlymultiplication ) {
-      for(unsigned i=0; i<f.var.size(); ++i) {
-        if( subexpr.find(f.var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-          f.check_multiplication_vars.push_back(i);
-        }
-      }
-    }
-  } else if( f.func.find("/")!=std::string::npos ) {
-    onlymultiplication=true;
-    if( f.func.find("+")!=std::string::npos || f.func.find("-")!=std::string::npos ) {
-      onlymultiplication=false;
-    }
-    if( onlymultiplication ) {
-      std::size_t br = f.func.find_first_of("/");
-      std::string subexpr=f.func.substr(0,br);
-      for(unsigned i=0; i<f.var.size(); ++i) {
-        if( subexpr.find(f.var[i])!=std::string::npos &&
-            action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-          f.check_multiplication_vars.push_back(i);
-        }
-      }
-    }
-  } else if( f.func.find("+")!=std::string::npos || f.func.find("-")!=std::string::npos ) {
-    onlymultiplication=false;
-  } else {
-    for(unsigned i=0; i<f.var.size(); ++i) {
-      if( action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
-        f.check_multiplication_vars.push_back(i);
-      }
-    }
-  }
-  if( f.check_multiplication_vars.size()>0 ) {
-    action->log.printf("  optimizing implementation as function only involves multiplication \n");
-  }
-
   action->log.printf("  with function : %s\n",f.func.c_str());
   action->log.printf("  with variables :");
   for(unsigned i=0; i<f.var.size(); i++) {
@@ -708,9 +698,37 @@ void Custom::read( Custom& f, ActionWithArguments* action, FunctionOptions& opti
   }
   action->log.printf("\n");
   f.function.set( f.func, f.var, action );
+  // Find the arguments that multiply the whole expression.  If one of these
+  // arguments is zero the function is zero.  If, in addition, the derivative of
+  // that argument is zero whenever its value is zero (e.g. a switching function
+  // beyond its cutoff) all the derivatives of the function are also zero, so the
+  // evaluation can be skipped. This is decided on the lepton parse tree: the
+  // previous string based check got wrong expressions such as x*cos(y)+1 or exp(x)*y.
+  std::set<std::string> factors;
+  findMultiplicativeFactors( lepton::Parser::parse(f.func).optimize(lepton::Constants()).getRootNode(), factors );
+  for(unsigned i=0; i<f.var.size(); ++i) {
+    if( factors.count(f.var[i])>0 && action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      f.check_multiplication_vars.push_back(i);
+    }
+  }
+  if( f.check_multiplication_vars.size()>0 ) {
+    action->log.printf("  optimizing implementation as function only involves multiplication \n");
+  }
+
+  // If the function is zero when all the arguments are zero and all the arguments have zero
+  // derivatives when they are zero, value and derivatives are zero and need not be computed.
+  // If some argument has a non-zero derivative when it is zero the derivatives of the function
+  // must be computed (e.g. FUNC=x+y), so this shortcut is not used.
+  bool allderivzero=true;
+  for(unsigned i=0; i<nargs; ++i) {
+    if( !action->getPntrToArgument(i)->isDerivativeZeroWhenValueIsZero() ) {
+      allderivzero=false;
+      break;
+    }
+  }
   std::vector<double> zeros( nargs, 0 );
   double fval = fabs(f.function.evaluate(zeros));
-  f.zerowhenallzero=(fval<epsilon );
+  f.zerowhenallzero=(allderivzero && fval<epsilon );
   if( f.zerowhenallzero ) {
     action->log.printf("  not calculating when all arguments are zero \n");
   }

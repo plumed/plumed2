@@ -1,0 +1,11 @@
+serial/COLVAR IDENTICAL
+serial/eed.dat SAME WITHIN 1e-9
+dd-dd/COLVAR IDENTICAL
+dd-dd/eed.dat SAME WITHIN 1e-9
+PLUMED: Checkpoint state restored at step 20
+dd-serial/COLVAR IDENTICAL
+dd-serial/eed.dat SAME WITHIN 1e-9
+PLUMED: Checkpoint state restored at step 21
+serial-dd/COLVAR IDENTICAL
+serial-dd/eed.dat SAME WITHIN 1e-9
+PLUMED: Checkpoint state restored at step 20

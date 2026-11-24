@@ -1,0 +1,10 @@
+type=driver
+plumed_modules="adjmat"
+# MATRIX_VECTOR_PRODUCT skips the forces of the elements that are zero. When the forces were applied,
+# the value of each element was added to those of the elements computed before it by the same thread,
+# and the forces were skipped when this running sum was zero: here, those of the third element
+# (1.75+0-1.75), whose value is -1.75 (the forces were all zero with one thread)
+arg="--plumed plumed.dat --ixyz three.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+function plumed_regtest_before(){
+  printf '3\n10 10 10\nX 1 1 1\nX 2 1 1\nX 3 1 1\n' > three.xyz
+}

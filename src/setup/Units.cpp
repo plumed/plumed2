@@ -202,9 +202,9 @@ Units::Units(const ActionOptions&ao):
   } else {
     log.printf("  using physical units\n");
   }
-  log.printf("  inside PLUMED, Boltzmann constant is %g\n",getKBoltzmann());
-
   plumed.setUnits(natural,u);
+  // printed after setting the units, so that it is in the new units
+  log.printf("  inside PLUMED, Boltzmann constant is %g\n",getKBoltzmann());
 }
 
 }

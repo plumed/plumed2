@@ -25,6 +25,8 @@
 #include "core/ActionWithValue.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
+#include "tools/Checkpoint.h"
+#include "core/Checkpointing.h"
 
 // The original implementation of this method was contributed
 // by Andrea Cesari (andreacesari90@gmail.com).
@@ -53,7 +55,7 @@ $$
 Lagrangian multipliers $\lambda_{i}$ are updated, every PACE steps, according to the following update rule:
 
 $$
-\lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{exp,i}+\xi_{i}\lambda_{i}-f_{i}(\boldsymbol{x})\right)
+\lambda_{i}=\lambda_{i}+\frac{k_{i}}{1+\frac{t}{\tau_{i}}}\left(f_{i}(\boldsymbol{x})+\xi_{i}(\lambda_{i})-f_{exp,i}\right)
 $$
 
 The variable $k$ in the above expression sets the initial value of the learning rate and its units are $[observable]^{-2}ps^{-1}$. This variable can be set with the keyword KAPPA.
@@ -115,6 +117,22 @@ PRINT ARG=restraint.bias
 
 (See also [DISTANCE](DISTANCE.md) and [PRINT](PRINT.md)).
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the Lagrangian multipliers, their averages and works are stored in the checkpoint, the LAGMULT file is trimmed and not read, and the restart is exact.
+
+A run with [RESTART](RESTART.md) and no CHECKPOINT is __not exact__ in general: it reads the multipliers from the LAGMULT file and rebuilds their average between TSTART and TEND,
+but the file does not hold the whole state of the action.
+- The file is written before the multipliers are updated, so the multipliers obtained at the last update of the previous run are only in the file
+  if the MD code repeats the step at which it restarts (as GROMACS does when it restarts from a checkpoint). Otherwise that update is lost.
+- The average is rebuilt exactly only if the file has the multipliers of every update (PRINT_STRIDE equal to PACE, the default).
+- The multipliers are read back with the precision of the file (set it with FMT).
+- The works are not in the file, so they restart from zero.
+
+Use CHECKPOINT when an exact restart is needed.
+
+The works are in energy units: each update of the multipliers adds $k_B T \Delta\lambda_i s_i$ to the work of argument $i$.
+
 */
 //+ENDPLUMEDOC
 
@@ -128,7 +146,6 @@ class MaxEnt : public Bias {
   std::vector<double> tau;
   std::vector<double> avglambda;
   std::vector<double> avglambda_restart;
-  std::vector<double> expected_eps;
   std::vector<double> apply_weights;
   double sigma;
   double tstart;
@@ -147,6 +164,9 @@ class MaxEnt : public Bias {
   int learn_replica;
   Value* valueForce2;
   Value* valueWork;
+  std::vector<Value*> valueError;
+  std::vector<Value*> valueArgWork;
+  std::vector<Value*> valueCoupling;
   OFile lagmultOfile_;
   IFile ifile;
   std::string lagmultfname;
@@ -164,6 +184,11 @@ public:
   void update() override;
   void update_lambda();
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   void ReadLagrangians(IFile &ifile);
   void WriteLagrangians(std::vector<double> &lagmult,OFile &file);
   double compute_error(const std::string &err_type,double l);
@@ -207,8 +232,25 @@ void MaxEnt::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
   keys.addDOI("10.1021/acs.jctc.6b00944");
 }
+/// Build and configure the MAXENT bias action.
+///
+/// This constructor performs all one-time setup required before the MD loop:
+/// - allocate and initialize per-argument vectors (targets, couplings, averages);
+/// - set default control parameters (PACE/STRIDE, averaging counters, flags);
+/// - read user keywords and validate sizes/ranges against the number of arguments;
+/// - configure restart/read-write of Lagrangian multipliers and output components.
+///
+/// The constructor intentionally centralizes initialization so that subsequent
+/// `calculate()`, `update()`, and `update_lambda()` calls can assume consistent
+/// dimensions, defaults, and I/O state.
+// Constructor layout:
+//   1) member defaults (initializer list),
+//   2) keyword parsing and consistency checks,
+//   3) restart/readback handling for multipliers,
+//   4) output component and file configuration.
 MaxEnt::MaxEnt(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
+  // Per-argument state vectors are sized once from ARG and reused during the run.
   at(getNumberOfArguments()),
   kappa(getNumberOfArguments(),0.0),
   lambda(getNumberOfArguments(),0.0),
@@ -217,7 +259,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   tau(getNumberOfArguments(),getTimeStep()),
   avglambda(getNumberOfArguments(),0.0),
   avglambda_restart(getNumberOfArguments(),0.0),
-  expected_eps(getNumberOfArguments(),0.0),
+  // Global control defaults; user keywords may override these values.
   sigma(0.0),
   pace_(100),
   stride_(100),
@@ -231,11 +273,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   nrep=getNumberOfReplicas();
   myrep=getReplicaIndex();
   parseFlag("NO_BROADCAST",no_broadcast);
-  //if(no_broadcast){
-  //for(int irep=0;irep<nrep;irep++){
-  //  if(irep!=myrep)
-  //    apply_weights[irep]=0.0;}
-  //}
   avgstep=1.0;
   tstart=-1.0;
   tend=-1.0;
@@ -247,12 +284,22 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(apply_weights.size()==0) {
     apply_weights.resize(nrep,1.0);
   }
+  // with --parse-only the input of a run with several replicas is read by a single replica
+  if(apply_weights.size()!=static_cast<std::size_t>(nrep) && !plumed.parseOnlyMode()) {
+    error("APPLY_WEIGHTS should have one value per replica");
+  }
   parseVector("KAPPA",kappa);
   parseVector("AT",at);
   parseVector("TAU",tau);
   parse("TYPE",type);
+  if(type!="EQUAL" && type!="INEQUAL<" && type!="INEQUAL>") {
+    error("TYPE should be EQUAL, INEQUAL< or INEQUAL>, found " + type);
+  }
   error_type="GAUSSIAN";
   parse("ERROR_TYPE",error_type);
+  if(error_type!="GAUSSIAN" && error_type!="LAPLACE") {
+    error("ERROR_TYPE should be GAUSSIAN or LAPLACE, found " + error_type);
+  }
   parse("ALPHA",alpha);
   parse("SIGMA",sigma);
   parse("TSTART",tstart);
@@ -261,7 +308,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   }
   parse("TEND",tend);
   if(tend<0 && tend != -1.0) {
-    error("TSTART should be a positive number");
+    error("TEND should be a positive number");
   }
   if(tend<tstart) {
     error("TEND should be >= TSTART");
@@ -313,10 +360,6 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(no_broadcast) {
     log.printf("Using NO_BROADCAST options. Lagrangian multipliers will not be comunicated to other replicas.\n");
   }
-  //for(int irep=0;irep<nrep;irep++){
-  //  if(apply_weights[irep]!=0)
-  //    log.printf("%d",irep);
-  //  }
   addComponent("force2");
   componentIsNotPeriodic("force2");
   addComponent("work");
@@ -329,20 +372,29 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
     comp=getPntrToArgument(i)->getName()+"_coupling";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueCoupling.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_work";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueArgWork.push_back(getPntrToComponent(comp));
     work.push_back(0.); // initialize the work value
     comp=getPntrToArgument(i)->getName()+"_error";
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueError.push_back(getPntrToComponent(comp));
   }
   std::string fname;
   fname=lagmultfname;
   ifile.link(*this);
+  if(getRestart()) {
+    // at a restart from a step given by the MD engine the lines from that step on are removed first (see RESTART)
+    plumed.checkpointing.trimOutputFileAtRestart(*this,fname);
+  }
   if(ifile.FileExist(fname)) {
     ifile.open(fname);
-    if(getRestart()) {
+    if(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {
+      log.printf("  Restarting from the checkpoint: %s is not read\n",fname.c_str());
+    } else if(getRestart()) {
       log.printf("  Restarting from: %s\n",fname.c_str());
       ReadLagrangians(ifile);
       printFirstStep=false;
@@ -358,24 +410,102 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   }
 }
 ////MEMBER FUNCTIONS
+// The multipliers, their running averages and works, the counters and the flags of
+// the first step; the components are written by Bias. With a checkpoint the
+// LAGMULT file is trimmed and not read.
+void MaxEnt::writeCheckpoint(CheckpointWriter& w) {
+  w.write("lambda",lambda);
+  w.write("oldlambda",oldlambda);
+  w.write("avglambda",avglambda);
+  w.write("work",work);
+  std::vector<long long> done;
+  for(unsigned i=0; i<done_average.size(); ++i) {
+    done.push_back(done_average[i]);
+  }
+  w.write("done_average",done);
+  w.write("avg_counter",avg_counter);
+  w.write("totalWork",totalWork);
+  w.write("BetaReweightBias",BetaReweightBias);
+  w.write("isFirstStep",(long long) isFirstStep);
+  w.write("printFirstStep",(long long) printFirstStep);
+  writeComponentValues(w);
+}
+
+void MaxEnt::readCheckpoint(CheckpointReader& r) {
+  const unsigned n=getNumberOfArguments();
+  std::vector<double> l,ol,al,wk;
+  std::vector<long long> done;
+  r.read("lambda",l);
+  r.read("oldlambda",ol);
+  r.read("avglambda",al);
+  r.read("work",wk);
+  r.read("done_average",done);
+  if(l.size()!=n || ol.size()!=n || al.size()!=n || wk.size()!=n || done.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  lambda=l;
+  oldlambda=ol;
+  avglambda=al;
+  work=wk;
+  for(unsigned i=0; i<n; ++i) {
+    done_average[i]=done[i]!=0;
+  }
+  r.read("avg_counter",avg_counter);
+  r.read("totalWork",totalWork);
+  r.read("BetaReweightBias",BetaReweightBias);
+  long long b;
+  r.read("isFirstStep",b);
+  isFirstStep=b!=0;
+  r.read("printFirstStep",b);
+  printFirstStep=b!=0;
+  readComponentValues(r);
+}
+
 void MaxEnt::ReadLagrangians(IFile &inputFile) {
-  double dummy;
-  while(inputFile.scanField("time",dummy)) {
+  // The multipliers written at step s are the ones obtained by the last update before s
+  // (the file is written before the multipliers are updated). The average between TSTART
+  // and TEND is rebuilt in the same way as update_lambda() builds it, one term per update.
+  double t;
+  long long int lastupdate=-pace_;
+  bool missing=false;
+  while(inputFile.scanField("time",t)) {
     for(unsigned j=0; j<getNumberOfArguments(); ++j) {
       inputFile.scanField(getPntrToArgument(j)->getName()+"_coupling",lambda[j]);
-      if(dummy>=tstart && dummy <=tend) {
-        avglambda[j]+=lambda[j];
-      }
-      if(dummy>=tend) {
+    }
+    inputFile.scanField();
+    const long long int s=std::llround(t/getTimeStep());
+    if(s<=0) {
+      continue;
+    }
+    const long long int u=((s-1)/pace_)*pace_;
+    if(u==lastupdate) {
+      continue;
+    }
+    if(u!=lastupdate+pace_) {
+      missing=true;
+    }
+    lastupdate=u;
+    const double utime=u*getTimeStep();
+    if(tend>=0 && utime>=tend) {
+      // from TEND on the multipliers are the average
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
         avglambda[j]=lambda[j];
         done_average[j]=true;
       }
-    }
-    if(dummy>=tstart && dummy <=tend) {
+    } else if(utime>=tstart && utime<=tend) {
       avg_counter++;
+      for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+        avglambda[j]+=convert_lambda(type,lambda[j]);
+      }
     }
-    inputFile.scanField();
   }
+  for(unsigned j=0; j<getNumberOfArguments(); ++j) {
+    oldlambda[j]=convert_lambda(type,lambda[j]);
+  }
+  if(missing && tend>=0) {
+    log.printf("  WARNING: the file does not have the multipliers of every update (PRINT_STRIDE larger than PACE?): the average between TSTART and TEND is approximate\n");
+  }
+  log.printf("  the works restart from zero\n");
 }
 void MaxEnt::WriteLagrangians(std::vector<double> &lagmult,OFile &file) {
   if(printFirstStep) {
@@ -434,7 +564,7 @@ double MaxEnt::convert_lambda(const std::string &typeName,const double lold) {
 }
 void MaxEnt::check_lambda_boundaries(const std::string &err_type,double &l) {
   if(err_type=="LAPLACE" && sigma !=0 ) {
-    double l2=convert_lambda(err_type,l);
+    double l2=convert_lambda(type,l);
     if(l2 <-(std::sqrt(alpha+1)/sigma-0.01)) {
       l=-(std::sqrt(alpha+1)/sigma-0.01);
       log.printf("Lambda exceeded the allowed range\n");
@@ -459,6 +589,11 @@ void MaxEnt::update_lambda() {
     BetaReweightBias=0.0;
   }
 
+  // the multipliers obtained at this update are part of the average if time is in [TSTART,TEND]:
+  // count them before the average is computed (at time==TEND the sum had one more term than the counter)
+  if(time>=tstart && time <=tend) {
+    avg_counter++;
+  }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double k=kappa[i];
     double cv=(getArgument(i)+compute_error(error_type,lambda[i])-at[i]);
@@ -481,13 +616,10 @@ void MaxEnt::update_lambda() {
         lambda[i]=avglambda[i];  //keep Lagrangian multipliers fixed to the previously computed average.
       }
     }
-    work[i]+=(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda
+    work[i]+=KbT*(convert_lambda(type,lambda[i])-oldlambda[i])*getArgument(i); //compute the work performed in updating lambda (in energy units, as the bias)
     totalWork_+=work[i];
     totalWork=totalWork_;
     oldlambda[i]=convert_lambda(type,lambda[i]);
-  };
-  if(time>=tstart && time <=tend) {
-    avg_counter++;
   }
 }
 
@@ -495,11 +627,12 @@ void MaxEnt::calculate() {
   double totf2=0.0;
   double ene=0.0;
   double KbT=simtemp;
+  valueWork->set(totalWork);
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_error")->set(expected_eps[i]);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]);
-    valueWork->set(totalWork);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_coupling")->set(lambda[i]);
+    // xi(lambda) of the current multiplier (it was never computed and always printed as zero)
+    valueError[i]->set(compute_error(error_type,lambda[i]));
+    valueArgWork[i]->set(work[i]);
+    valueCoupling[i]->set(lambda[i]);
     const double f=-KbT*convert_lambda(type,lambda[i])*apply_weights[myrep];
     totf2+=f*f;
     ene+=KbT*convert_lambda(type,lambda[i])*getArgument(i)*apply_weights[myrep];

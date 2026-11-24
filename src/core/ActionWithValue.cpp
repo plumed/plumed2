@@ -25,7 +25,6 @@
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
 #include "tools/Communicator.h"
-#include "blas/blas.h"
 
 namespace PLMD {
 
@@ -58,10 +57,11 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   firststep(true),
   noderiv(true),
   numericalDerivatives(false) {
-  if( keywords.exists("NUMERICAL_DERIVATIVES") ) {
+  const Keywords& keys=getKeywords();
+  if( keys.exists("NUMERICAL_DERIVATIVES") ) {
     parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   }
-  if(!keywords.exists("NO_ACTION_LOG") && numericalDerivatives) {
+  if(!keys.exists("NO_ACTION_LOG") && numericalDerivatives) {
     log.printf("  using numerical derivatives\n");
   }
 }
@@ -77,16 +77,31 @@ void ActionWithValue::clearInputForces( const bool& force ) {
 }
 
 void ActionWithValue::clearDerivatives( const bool& force ) {
+  // This is called for every active action at every step: threads only when there is
+  // enough to clear (see OpenMP.h)
 #ifdef _OPENMP
-  //nt is unused if openmp is not declared
-  const unsigned nt=OpenMP::getNumThreads();
-#endif //_OPENMP
-  #pragma omp parallel num_threads(nt)
-  {
-    #pragma omp for
+  std::size_t tot=0;
+  for(const auto & v : values) {
+    tot+=v->data.size();
+  }
+  const unsigned nt=OpenMP::getGoodNumThreads<double>(nullptr,tot);
+  if( nt>1 && values.size()>=nt ) {
+    #pragma omp parallel for num_threads(nt)
     for(unsigned i=0; i<values.size(); i++) {
       values[i]->clearDerivatives();
     }
+    return;
+  }
+  if( nt>1 ) {
+    // a few values with many derivatives (e.g. a colvar of many atoms): the threads share each value
+    for(const auto & v : values) {
+      v->clearDerivatives(false,OpenMP::getGoodNumThreads(v->data));
+    }
+    return;
+  }
+#endif //_OPENMP
+  for(unsigned i=0; i<values.size(); i++) {
+    values[i]->clearDerivatives();
   }
 }
 
@@ -132,7 +147,7 @@ void ActionWithValue::addValue( const std::vector<std::size_t>& shape ) {
   if( !keywords.outputComponentExists(".#!value") ) {
     warning("documentation for the value calculated by this action has not been included");
   } else {
-    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),false), "documentation for type of value is incorrect");
+    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),false), "documentation for type of value of " + getName() + " is missing or incorrect");
   }
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
@@ -142,7 +157,7 @@ void ActionWithValue::addValueWithDerivatives( const std::vector<std::size_t>& s
   if( !keywords.outputComponentExists(".#!value") ) {
     warning("documentation for the value calculated by this action has not been included");
   } else {
-    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),true), "documentation for type of value is incorrect");
+    plumed_massert( keywords.componentHasCorrectType(".#!value",shape.size(),true), "documentation for type of value of " + getName() + " is missing or incorrect");
   }
   plumed_massert(values.empty(),"You have already added the default value for this action");
   values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
@@ -169,7 +184,7 @@ void ActionWithValue::addComponent( const std::string& valname, const std::vecto
     plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
-  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),false), "documentation for type of component " + valname + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),false), "documentation for type of component " + valname + " of " + getName() + " is missing or incorrect");
   std::string thename;
   thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -187,7 +202,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& valname, c
     plumed_merror("a description of component " + valname + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
-  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),true), "documentation for type of component " + valname + " is incorrect");
+  plumed_massert( keywords.componentHasCorrectType(valname,shape.size(),true), "documentation for type of component " + valname + " of " + getName() + " is missing or incorrect");
   std::string thename;
   thename=getLabel() + "." + valname;
   for(unsigned i=0; i<values.size(); ++i) {
@@ -353,15 +368,16 @@ bool ActionWithValue::checkForForces() {
     return false;
   }
 
-  // Make sure forces to apply is empty of forces
   if( forcesForApply.size()!=nder ) {
     forcesForApply.resize( nder );
   }
-  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
 
+  // many values are split over the ranks (asked only if there are more than 4 values,
+  // Get_size is not free in some builds)
+  const bool splitOverRanks=ncp>4 && ncp>static_cast<unsigned>(4*comm.Get_size());
   unsigned stride=1;
   unsigned rank=0;
-  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+  if(splitOverRanks) {
     stride=comm.Get_size();
     rank=comm.Get_rank();
   }
@@ -371,43 +387,77 @@ bool ActionWithValue::checkForForces() {
     nt=1;
   }
 
-  #pragma omp parallel num_threads(nt)
-  {
-    std::vector<double> omp_f;
-    if( nt>1 ) {
-      omp_f.resize(nder,0);
+  // A few values with many derivatives (e.g. a colvar of many atoms): the threads share the derivatives.
+  // Each element is computed as in the serial loop below, so the result does not change.
+  constexpr unsigned chunk=4096;
+  const unsigned nchunks=(nder+chunk-1)/chunk;
+  // all the threads or one, see OpenMP.h
+  const unsigned ntder=nt==1 ? OpenMP::getGoodNumThreads(forcesForApply) : 1;
+  if( ntder>1 ) {
+    double* const dest=forcesForApply.data();
+    #pragma omp parallel for num_threads(ntder)
+    for(unsigned c=0; c<nchunks; ++c) {
+      const unsigned j0=c*chunk;
+      const unsigned j1=std::min(nder,j0+chunk);
+      for(unsigned j=j0; j<j1; ++j) {
+        dest[j]=0.0;
+      }
+      for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+        const double ff=values[valsToForce[i]]->inputForce[0];
+        const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+        for(unsigned j=j0; j<j1; ++j) {
+          dest[j]+=ff*thisderiv[j];
+        }
+      }
     }
-    #pragma omp for
+    if(splitOverRanks) {
+      comm.Sum(&forcesForApply[0],nder);
+    }
+    return true;
+  }
+
+  // Make sure forces to apply is empty of forces
+  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
+
+  // Note: plain loops are used here on purpose instead of BLAS daxpy.
+  // An external multithreaded BLAS (e.g. OpenBLAS, MKL) would spawn its own
+  // threads for long vectors (nder>~10000), ignoring the number of threads
+  // set by the MD engine and oversubscribing the cores (see issue #1121).
+  if( nt==1 ) {
+    // serial path: opening an OpenMP region would cost more than the loop for small actions
+    double* const dest=forcesForApply.data();
     for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
-      double ff=values[valsToForce[i]]->inputForce[0];
-      std::vector<double> & thisderiv( values[valsToForce[i]]->data );
-      int nn=nder;
-      int one1=1;
-      int one2=1;
-      if( nt>1 ) {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,omp_f.data(),&one2);
-      } else {
-        plumed_blas_daxpy(&nn,&ff,thisderiv.data()+1,&one1,forcesForApply.data(),&one2);
+      // a plain loop is vectorized by the compiler and is as fast as an external
+      // blas daxpy, without the risk of calling a threaded blas within an OpenMP region
+      const double ff=values[valsToForce[i]]->inputForce[0];
+      const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+      for(unsigned j=0; j<nder; ++j) {
+        dest[j]+=ff*thisderiv[j];
       }
-      // if( nt>1 ) for(unsigned j=0; j<nder; ++j) omp_f[j] += ff*thisderiv[1+j];
-      //else for(unsigned j=0; j<nder; ++j) forcesForApply[j] += ff*thisderiv[1+j];
     }
-    #pragma omp critical
+  } else {
+    #pragma omp parallel num_threads(nt)
     {
-      if( nt>1 ) {
-        int nn=forcesForApply.size();
-        double one0=1.0;
-        int one1=1;
-        int one2=1;
-        plumed_blas_daxpy(&nn,&one0,omp_f.data(),&one1,forcesForApply.data(),&one2);
+      std::vector<double> omp_f(nder,0);
+      double* const dest=omp_f.data();
+      #pragma omp for
+      for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+        const double ff=values[valsToForce[i]]->inputForce[0];
+        const double* thisderiv=values[valsToForce[i]]->data.data()+1;
+        for(unsigned j=0; j<nder; ++j) {
+          dest[j]+=ff*thisderiv[j];
+        }
       }
-      // for(unsigned j=0; j<forcesForApply.size(); ++j) {
-      // forcesForApply[j]+=omp_f[j];
-      // }
+      #pragma omp critical
+      {
+        for(unsigned j=0; j<nder; ++j) {
+          forcesForApply[j]+=omp_f[j];
+        }
+      }
     }
   }
 
-  if(ncp>static_cast<unsigned>(4*comm.Get_size())) {
+  if(splitOverRanks) {
     comm.Sum(&forcesForApply[0],nder);
   }
   return true;

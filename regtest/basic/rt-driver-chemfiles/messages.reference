@@ -1,0 +1,22 @@
+xtc: exit code 0
+trr: exit code 0
+dcd: exit code 0
+pdb: exit code 0
+lammpstrj: exit code 0
+xyz.gz: exit code 0
+pdb.gz: exit code 0
+lammps (--traj-format): exit code 0
+xtc: same frames as --ixtc
+trr: same frames as --itrr
+dcd: same frames as --idcd
+pdb: same frames as --ipdb
+nc: same frames as --itrr
+lammpstrj: same frames as --itrr
+xyz.gz: same frames as --itrr
+pdb.gz: same frames as --itrr
+lammps: same frames as --itrr
+trr: same steps as xtc
+lammpstrj: same steps as xtc
+tng: exit code 0
+tpr: exit code 0
+lammps data: exit code 0

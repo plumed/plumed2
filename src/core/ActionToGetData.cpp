@@ -121,22 +121,42 @@ ActionToGetData::ActionToGetData(const ActionOptions&ao):
   data.resize( getPntrToArgument(0)->getNumberOfValues() );
 }
 
-void ActionToGetData::get_rank( const TypesafePtr & dims ) {
-  if( getPntrToArgument(0)->getRank()==0 ) {
-    dims.set(long(1));
+/// Rank and shape are written as long. On Windows long is 32 bit, whereas the
+/// default integers of numpy (passed by the python interface) are 64 bit:
+/// there, write long long if the caller passes a 64 bit integer.
+static bool passesLongLong( const TypesafePtr & dims ) {
+  return sizeof(long)!=sizeof(long long) && (dims.getFlags()&0xffff)==sizeof(long long);
+}
+
+template<typename T>
+static void setRankOrShape( const TypesafePtr & dims, const Value* arg, bool shape ) {
+  if( arg->getRank()==0 ) {
+    dims.set(T(1));
     return;
   }
-  dims.set(long(getPntrToArgument(0)->getRank()));
+  if( !shape ) {
+    dims.set(T(arg->getRank()));
+    return;
+  }
+  auto dims_=dims.get<T*>( { arg->getRank() } );
+  for(unsigned j=0; j<arg->getRank(); ++j) {
+    dims_[j] = arg->getShape()[j];
+  }
+}
+
+void ActionToGetData::get_rank( const TypesafePtr & dims ) {
+  if( passesLongLong(dims) ) {
+    setRankOrShape<long long>(dims,getPntrToArgument(0),false);
+  } else {
+    setRankOrShape<long>(dims,getPntrToArgument(0),false);
+  }
 }
 
 void ActionToGetData::get_shape( const TypesafePtr & dims ) {
-  if( getPntrToArgument(0)->getRank()==0 ) {
-    dims.set(long(1));
-    return;
-  }
-  auto dims_=dims.get<long*>( { getPntrToArgument(0)->getRank() } );
-  for(unsigned j=0; j<getPntrToArgument(0)->getRank(); ++j) {
-    dims_[j] = getPntrToArgument(0)->getShape()[j];
+  if( passesLongLong(dims) ) {
+    setRankOrShape<long long>(dims,getPntrToArgument(0),true);
+  } else {
+    setRankOrShape<long>(dims,getPntrToArgument(0),true);
   }
 }
 

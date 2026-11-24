@@ -27,15 +27,80 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "tools/DLLoader.h"
+#include "ModuleLoader.h"
 #include "tools/Subprocess.h"
+#include "../mpiwrap/mpiwrap.h"
 #include <string>
+#include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <climits>
+#include <cerrno>
 #include <iostream>
 #include <algorithm>
 #include <memory>
 
 namespace PLMD {
+
+namespace {
+
+#if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
+struct ThreadMPICommand {
+  std::vector<std::string> arguments;
+  FILE *input;
+  FILE *output;
+};
+
+int runThreadMPICommand(int, const void *native_world, std::size_t native_size,
+                        void *opaque) {
+  if(!native_world || native_size==0) {
+    throw ExceptionError("internal launcher did not supply the native world communicator");
+  }
+  const ThreadMPICommand &context=*static_cast<ThreadMPICommand *>(opaque);
+  // The outer CLToolMain is only the dispatcher. Construct a fresh rank-local
+  // command object after tMPI initialization so it gets the real rank communicator.
+  CLToolMain command;
+  command.cmd("setMPIComm",TypesafePtr::unchecked(native_world));
+  int argc=static_cast<int>(context.arguments.size());
+  command.cmd("setArgc",&argc);
+  command.cmd("setIn",context.input);
+  command.cmd("setOut",context.output);
+  std::size_t bytes=0;
+  for(const auto &arg:context.arguments) {
+    bytes+=arg.size()+1;
+  }
+  std::vector<char> storage(bytes);
+  std::vector<char *> argv(argc);
+  char *cursor=storage.data();
+  for(int i=0; i<argc; ++i) {
+    argv[i]=cursor;
+    const std::string &arg=context.arguments[static_cast<std::size_t>(i)];
+    std::copy(arg.begin(),arg.end(),cursor);
+    cursor+=arg.size();
+    *cursor++='\0';
+  }
+  command.cmd("setArgv",argv.data());
+  int result=0;
+  command.cmd("run",&result);
+  return result;
+}
+#endif
+
+bool parseThreadMPIRanks(const char *text,int &ranks) {
+  if(!text || !text[0]) {
+    return false;
+  }
+  errno=0;
+  char *end=nullptr;
+  const long value=std::strtol(text,&end,10);
+  if(errno || end==text || *end!='\0' || value<1 || value>INT_MAX) {
+    return false;
+  }
+  ranks=static_cast<int>(value);
+  return true;
+}
+
+} // namespace
 
 CLToolMain::CLToolMain():
   argc(0),
@@ -57,7 +122,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "CLToolMainMap.inc"
   };
 
@@ -115,7 +180,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
         }
         std::vector<char> args(n);
         std::vector<char*> vvv(argc);
-        char* ptr=&args[0];
+        char* ptr=args.data();
         for(int i=0; i<argc; ++i) {
           vvv[i]=ptr;
           for(unsigned c=0; c<argv[i].length(); ++c) {
@@ -125,7 +190,7 @@ void CLToolMain::cmd(std::string_view word,const TypesafePtr & val) {
           *ptr=0;
           ptr++;
         }
-        val.set(int(run(argc,&vvv[0],in,out,comm)));
+        val.set(int(run(argc,vvv.data(),in,out,comm)));
       }
       break;
     default:
@@ -140,11 +205,114 @@ This is the entry point to the command line tools
 included in the plumed library.
 */
 
+std::vector<std::string> CLToolMain::getGlobalOptions() {
+  return {"--help", "-h", "--has-mpi", "--has-real-mpi", "--has-thread-mpi",
+          "--mpi-ranks-are-threads", "--has-cregex", "--has-dlopen", "--has-molfile",
+          "--has-external-molfile", "--has-zlib", "--has-xdrfile", "--is-installed",
+          "--no-mpi", "--mpi", "--standalone-executable", "--load-module",
+          "--module-build-id", "--list-modules", "--load", "--tmpi-threads"};
+}
+
+std::vector<std::string> CLToolMain::getModuleOptions() {
+  return {"--module","--list","--has","--has-feature","-q","--quiet","-h","--help"};
+}
+
+CLTool::Completion CLToolMain::completeModules(const std::vector<std::string>& arguments) {
+  CLTool::Completion result;
+  DLLoader loader;
+  ModuleLoader::inheritContext(loader);
+  std::string module;
+  bool moduleValue=false,names=false,features=false;
+  for(std::size_t i=0; i+1<arguments.size(); ++i) {
+    const auto& word=arguments[i];
+    if(moduleValue) {
+      module=word;
+      moduleValue=false;
+    } else if(word=="--module") {
+      moduleValue=true;
+    } else if(word=="--has") {
+      names=true;
+      features=false;
+    } else if(word=="--has-feature") {
+      features=true;
+      names=false;
+    }
+  }
+  const std::string current=arguments.empty()?"":arguments.back();
+  if(moduleValue || ((names || features) && (current.empty() || current[0]!='-'))) {
+    result.candidates=features && !moduleValue?ModuleLoader::features(loader,module):ModuleLoader::modules(loader);
+  } else {
+    result.candidates=getModuleOptions();
+  }
+  return result;
+}
+
 int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
   int i;
   bool printhelp=false;
 
+  int thread_mpi_ranks=0;
+  bool thread_mpi_requested=false;
+  bool invalid_thread_mpi_option=false;
+  bool explicit_mpi=false;
+  bool explicit_no_mpi=false;
+  std::vector<std::string> filtered_arguments;
+  if(argc>0) {
+    filtered_arguments.emplace_back(argv[0]);
+  }
+  i=1;
+  while(i<argc) {
+    if(std::strcmp(argv[i],"--tmpi-threads")==0) {
+      int parsed=0;
+      if(thread_mpi_requested || i+1>=argc ||
+          !parseThreadMPIRanks(i+1<argc ? argv[i+1] : nullptr,parsed)) {
+        invalid_thread_mpi_option=true;
+      } else {
+        thread_mpi_requested=true;
+        thread_mpi_ranks=parsed;
+      }
+      if(i+1<argc) {
+        ++i;
+      }
+    } else if(std::strncmp(argv[i],"--tmpi-threads=",15)==0) {
+      int parsed=0;
+      if(thread_mpi_requested || !parseThreadMPIRanks(argv[i]+15,parsed)) {
+        invalid_thread_mpi_option=true;
+      } else {
+        thread_mpi_requested=true;
+        thread_mpi_ranks=parsed;
+      }
+    } else {
+      explicit_mpi=explicit_mpi || std::strcmp(argv[i],"--mpi")==0;
+      explicit_no_mpi=explicit_no_mpi || std::strcmp(argv[i],"--no-mpi")==0;
+      filtered_arguments.emplace_back(argv[i]);
+    }
+    ++i;
+  }
+  if(invalid_thread_mpi_option) {
+    std::fprintf(stderr,"ERROR: --tmpi-threads requires one positive rank count and may be used once\n");
+    return 1;
+  }
+  if(thread_mpi_requested) {
+    if(explicit_mpi || explicit_no_mpi) {
+      std::fprintf(stderr,"ERROR: --tmpi-threads cannot be combined with --mpi or --no-mpi\n");
+      return 1;
+    }
+#if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
+    ThreadMPICommand context {filtered_arguments,in,out};
+    int result=0;
+    mpiwrap::launchRanks(thread_mpi_ranks,
+                         &runThreadMPICommand,&context,&result,
+                         mpiwrap::MPILifecyclePolicy::internal_thread_mpi);
+    return result;
+#else
+    std::fprintf(stderr,"ERROR: --tmpi-threads requires an embedded thread-MPI build (requested %d ranks)\n",thread_mpi_ranks);
+    return 1;
+#endif
+  }
+
   DLLoader dlloader;
+  ModuleLoader::autoload(dlloader);
 
   std::string root=config::getPlumedRoot();
 
@@ -158,15 +326,29 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     if(a.length()==0) {
       continue;
     }
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+    // Explicit CLI inquiries honor injection or an environment-selected provider
+    // without initializing MPI. Embedded thread-MPI needs an explicit launch.
+    if(a=="--has-mpi" || a=="--has-real-mpi" ||
+        a=="--has-thread-mpi" || a=="--mpi-ranks-are-threads") {
+      mpiwrap::ensure_provider_selected();
+    }
+#endif
     if(a=="help" || a=="-h" || a=="--help") {
       printhelp=true;
       break;
     } else if(a=="--has-mpi") {
-      if(Communicator::initialized()) {
-        return 0;
-      } else {
-        return 1;
-      }
+      return Communicator::plumedHasMPI()?0:1;
+    } else if(a=="--has-real-mpi") {
+      return mpiwrap::provider_installed() && !mpiwrap::provider_ranks_are_threads()?0:1;
+    } else if(a=="--has-thread-mpi") {
+#if defined(__PLUMED_HAS_THREAD_MPI)
+      return 0;
+#else
+      return mpiwrap::provider_ranks_are_threads()?0:1;
+#endif
+    } else if(a=="--mpi-ranks-are-threads") {
+      return mpiwrap::provider_ranks_are_threads()?0:1;
     } else if(a=="--has-cregex") {
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen") {
@@ -189,6 +371,19 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       continue;
     } else if(a=="--standalone-executable") {
       standalone_executable=true;
+    } else if(Tools::startWith(a,"--load-module=")) {
+      ModuleLoader::load(a.substr(a.find('=')+1),dlloader);
+      prefix="";
+    } else if(a=="--load-module") {
+      prefix="--load-module=";
+    } else if(a=="--module-build-id") {
+      std::fprintf(out,"%s\n",config::getModuleBuildID().c_str());
+      return 0;
+    } else if(a=="--list-modules") {
+      for(const auto& name:ModuleLoader::modules(dlloader)) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
     } else if(Tools::startWith(a,"--load=")) {
       a.erase(0,a.find("=")+1);
       prefix="";
@@ -204,6 +399,13 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     }
   }
 
+  if(!prefix.empty()) {
+    std::fprintf(stderr,"ERROR: missing argument for %s\n",prefix.c_str());
+    return 1;
+  }
+
+  ModuleLoader::Context moduleContext(dlloader);
+
 // Check if plumedRoot/patches/ directory exists (as a further check)
   if(!standalone_executable) {
     std::vector<std::string> files=Tools::ls(root);
@@ -216,6 +418,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // Build list of available C++ tools:
   std::vector<std::string> availableCxx=cltoolRegister().list();
+  for(auto image:dlloader.getHandles()) {
+    const auto extra=cltoolRegister().getKeysWithDLHandle(image);
+    availableCxx.insert(availableCxx.end(),extra.begin(),extra.end());
+  }
+  std::sort(availableCxx.begin(),availableCxx.end());
+  availableCxx.erase(std::unique(availableCxx.begin(),availableCxx.end()),availableCxx.end());
 // Build list of available shell tools:
   std::vector<std::string> availableShell;
   if(!standalone_executable) {
@@ -242,11 +450,16 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
       "Options:\n"
       "  [help|-h|--help]          : to print this help\n"
       "  [--is-installed]          : fails if plumed is not installed\n"
-      "  [--has-mpi]               : fails if plumed is running without MPI\n"
+      "  [--has-mpi]               : fails if neither real nor internal thread MPI is available\n"
+      "  [--has-real-mpi]          : fails if no real MPI provider is available\n"
+      "  [--has-thread-mpi]        : fails if no thread MPI capability is available\n"
+      "  [--mpi-ranks-are-threads] : succeeds if the selected MPI provider uses threads\n"
       "  [--has-dlopen]            : fails if plumed is compiled without dlopen\n"
+      "  [--load-module MODULE]   : loads an installed module and its hard dependencies\n"
       "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
       "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
-      "Commands:\n";
+      "Commands:\n"
+      "  plumed modules : list or check runtime module and native feature availability\n";
     std::fprintf(out,"%s",msg.c_str());
     for(unsigned j=0; j<availableCxx.size(); ++j) {
       auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(availableCxx[j]));
@@ -277,15 +490,102 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 
 // this is the command to be executed:
   std::string command(argv[i]);
+  // Configuration remains build-time provenance. Runtime availability has its
+  // own command and follows this invocation's automatic/explicit load context.
+  if(command=="mklib" && std::find(availableShell.begin(),availableShell.end(),command)==availableShell.end()) {
+    std::fprintf(stderr,"ERROR: runtime C++ compilation tools are not installed; for conda install plumed-mklib\n");
+    return 1;
+  }
+  if(command=="modules") {
+    bool query=false,featureQuery=false,list=false,quiet=false;
+    std::vector<std::string> names;
+    std::string module;
+    int j=i+1;
+    while(j<argc) {
+      const std::string option=argv[j++];
+      if(option=="--help" || option=="-h") {
+        std::fprintf(out,"Usage: plumed modules [--module NAME] [--list | --has NAME... | --has-feature NAME...] [-q]\n"
+                     "List visible runtime modules (default), or check that all requested modules/features are available.\n"
+                     "Without --module, features include the kernel and visible extensions; --module selects one build.\n"
+                     "Presence checks return 0 when all names are available, otherwise 1. -q suppresses output.\n");
+        return 0;
+      } else if(option=="--module" && module.empty() && j<argc) {
+        module=argv[j++];
+      } else if(option=="-q" || option=="--quiet") {
+        quiet=true;
+      } else if(option=="--list" && !query && !list) {
+        list=true;
+      } else if((option=="--has" || option=="--has-feature") && !query && !list) {
+        query=true;
+        featureQuery=option=="--has-feature";
+      } else if(query && !option.empty() && option[0]!='-') {
+        names.push_back(option);
+      } else {
+        std::fprintf(stderr,"ERROR: invalid modules option %s; use plumed modules --help\n",option.c_str());
+        return 1;
+      }
+    }
+    if(query && names.empty()) {
+      std::fprintf(stderr,"ERROR: modules presence checks require at least one name\n");
+      return 1;
+    }
+    if(!module.empty() && query && !featureQuery) {
+      std::fprintf(stderr,"ERROR: --module selects features, use --has-feature\n");
+      return 1;
+    }
+    if(!module.empty() && !ModuleLoader::available(module,dlloader)) {
+      if(!quiet) {
+        std::fprintf(out,"%s not available\n",module.c_str());
+      }
+      return 1;
+    }
+    const auto available=(featureQuery || !module.empty())?ModuleLoader::features(dlloader,module):ModuleLoader::modules(dlloader);
+    if(!query) {
+      if(quiet) {
+        std::fprintf(stderr,"ERROR: modules -q requires a presence check\n");
+        return 1;
+      }
+      for(const auto& name:available) {
+        std::fprintf(out,"%s\n",name.c_str());
+      }
+      return 0;
+    }
+    int result=0;
+    for(const auto& name:names) {
+      const bool present=std::find(available.begin(),available.end(),name)!=available.end();
+      if(!quiet) {
+        std::fprintf(out,"%s %s\n",name.c_str(),present?"on":"off");
+      }
+      if(!present) {
+        result=1;
+      }
+    }
+    return result;
+  }
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()) {
     auto cl=cltoolRegister().create(dlloader.getHandles(),CLToolOptions(command));
     plumed_assert(cl);
-    // Read the command line options (returns false if we are just printing help)
-    if( !cl->readInput( argc-i,&argv[i],in,out ) ) {
-      return 0;
+    cl->setDLHandles(dlloader.getHandles());
+    int ret=0;
+    // NOTE: catch PLUMED exceptions from CLTool readInput() and main() so that user-input
+    // errors terminate cleanly with a message and nonzero exit status
+    // instead of an uncaught-exception abort (0xc0000409 on Windows).
+    try {
+      // Read the command line options (returns false if we are just printing help)
+      if( !cl->readInput( argc-i,&argv[i],in,out ) ) {
+        return 0;
+      }
+      ret=cl->main(in,out,pc);
+    } catch(const PLMD::Exception& e) {
+      std::fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",command.c_str(),e.what());
+      std::fflush(stderr);
+      return 1;
+    } catch(const std::exception& e) {
+      std::fprintf(stderr,"ERROR : in command line tool %s : %s\n",command.c_str(),e.what());
+      std::fflush(stderr);
+      return 1;
     }
-    int ret=cl->main(in,out,pc);
     return ret;
   }
 
@@ -294,7 +594,9 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     plumed_massert(out==stdout,"shell tools can only work on stdin");
     std::string cmd=config::getEnvCommand()+" \""+root+"/scripts/"+command+".sh\"";
     for(int j=i+1; j<argc; j++) {
-      cmd+=std::string(" ")+argv[j];
+      // mklib accepts literal paths, including spaces and shell metacharacters.
+      // Preserve the legacy argument handling of the other shell tools here.
+      cmd+=" "+(command=="mklib" ? Tools::quoteForShell(argv[j]) : std::string(argv[j]));
     }
     int r=std::system(cmd.c_str());
 // this is necessary since system seems to return numbers which are multiple

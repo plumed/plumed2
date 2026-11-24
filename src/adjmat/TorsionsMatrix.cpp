@@ -90,8 +90,8 @@ avt: CUSTOM ARG=tc,c FUNC=x/y PERIODIC=NO
 ```
 
 If you have a large number of molecules the most expensive part of this calculation will be the evalulation of the TORSIONS_MATRIX as you need to evaluate one torsion anlge for every pair of molecules.
-Furthermore, this computation is unecessary as most pairs of molecules will __not__ be neighbors.  In other words, for the majority of the molecular pairs element the corresponding element of the
-[CONTACT_MATRIX](CONTACT_MATRIX.md) will be zero.  Consequently, when you compute the the corresponding element `tc` by multiplying the torsion $i,j$ by the crresponding $i,j$ element of the
+Furthermore, this computation is unnecessary as most pairs of molecules will __not__ be neighbors.  In other words, for the majority of the molecular pairs element the corresponding element of the
+[CONTACT_MATRIX](CONTACT_MATRIX.md) will be zero.  Consequently, when you compute the corresponding element `tc` by multiplying the torsion $i,j$ by the crresponding $i,j$ element of the
 [CONTACT_MATRIX](CONTACT_MATRIX.md) you will get zero.
 
 Thankfully PLUMED allows you to exploit this fact through the MASK keyword as illustrated below:
@@ -131,6 +131,8 @@ namespace adjmat {
 
 class TorsionsMatrixInput {
 public:
+  bool no_thread_gather;
+  bool gatherForceOnColumns;
   RequiredMatrixElements outmat;
 };
 
@@ -149,8 +151,10 @@ public:
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const TorsionsMatrixInput& actiondata,
                            ParallelActionsInput& input,
@@ -180,6 +184,7 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
   Action(ao),
   ActionWithMatrix(ao),
   taskmanager(this) {
+  checkThreadGatherWithMPI( taskmanager.runInSerial() );
   int nm=getNumberOfMasks();
   if( nm<0 ) {
     nm = 0;
@@ -243,7 +248,10 @@ TorsionsMatrix::TorsionsMatrix(const ActionOptions&ao):
       error("argument passed to MASK keyword has the wrong shape");
     }
   }
-  taskmanager.setActionInput( TorsionsMatrixInput() );
+  TorsionsMatrixInput torinput;
+  torinput.gatherForceOnColumns = false;
+  torinput.no_thread_gather = no_thread_gather;
+  taskmanager.setActionInput( torinput );
 }
 
 unsigned TorsionsMatrix::getNumberOfDerivatives() {
@@ -269,13 +277,17 @@ void TorsionsMatrix::prepare() {
 
 void TorsionsMatrix::calculate() {
   updateBookeepingArrays( taskmanager.getActionInput().outmat );
-  taskmanager.setupParallelTaskManager( 21,
-                                        getNumberOfDerivatives()
-                                        - getPntrToArgument(0)->getNumberOfStoredValues() );
+  if( no_thread_gather ) {
+    taskmanager.setupParallelTaskManager( 15, 9 );
+  } else {
+    taskmanager.setupParallelTaskManager( 21,
+                                          getNumberOfDerivatives()
+                                          - getPntrToArgument(0)->getNumberOfStoredValues() );
+  }
   taskmanager.runAllTasks();
 }
 
-void TorsionsMatrix::getInputData( std::vector<double>& inputdata ) const {
+void TorsionsMatrix::getAtomicInputData( std::vector<double>& inputdata ) const {
   std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues()
                            + getPntrToArgument(1)->getNumberOfStoredValues()
                            + 3*getNumberOfAtoms();
@@ -284,7 +296,37 @@ void TorsionsMatrix::getInputData( std::vector<double>& inputdata ) const {
     inputdata.resize( total_data );
   }
 
-  total_data = 0;
+  total_data = total_data - 3*getNumberOfAtoms();
+  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+    Vector pos( getPosition(j) );
+    inputdata[total_data+0] = pos[0];
+    inputdata[total_data+1] = pos[1];
+    inputdata[total_data+2] = pos[2];
+    total_data += 3;
+  }
+}
+
+void TorsionsMatrix::getAtomicInputData( std::vector<float>& inputdata ) const {
+  std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues()
+                           + getPntrToArgument(1)->getNumberOfStoredValues()
+                           + 3*getNumberOfAtoms();
+
+  if( inputdata.size()!=total_data ) {
+    inputdata.resize( total_data );
+  }
+
+  total_data = total_data - 3*getNumberOfAtoms();
+  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
+    Vector pos( getPosition(j) );
+    inputdata[total_data+0] = pos[0];
+    inputdata[total_data+1] = pos[1];
+    inputdata[total_data+2] = pos[2];
+    total_data += 3;
+  }
+}
+
+void TorsionsMatrix::getArgumentInputData( std::vector<double>& inputdata ) const {
+  unsigned total_data = 0;
   Value* myarg = getPntrToArgument(0);
   for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
     inputdata[total_data] = myarg->get(j,false);
@@ -295,26 +337,10 @@ void TorsionsMatrix::getInputData( std::vector<double>& inputdata ) const {
     inputdata[total_data] = myarg->get(j,false);
     total_data++;
   }
-  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    Vector pos( getPosition(j) );
-    inputdata[total_data+0] = pos[0];
-    inputdata[total_data+1] = pos[1];
-    inputdata[total_data+2] = pos[2];
-    total_data += 3;
-  }
-
 }
 
-void TorsionsMatrix::getInputData( std::vector<float>& inputdata ) const {
-  std::size_t total_data = getPntrToArgument(0)->getNumberOfStoredValues()
-                           + getPntrToArgument(1)->getNumberOfStoredValues()
-                           + 3*getNumberOfAtoms();
-
-  if( inputdata.size()!=total_data ) {
-    inputdata.resize( total_data );
-  }
-
-  total_data = 0;
+void TorsionsMatrix::getArgumentInputData( std::vector<float>& inputdata ) const {
+  unsigned total_data = 0;
   Value* myarg = getPntrToArgument(0);
   for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
     inputdata[total_data] = myarg->get(j,false);
@@ -325,80 +351,132 @@ void TorsionsMatrix::getInputData( std::vector<float>& inputdata ) const {
     inputdata[total_data] = myarg->get(j,false);
     total_data++;
   }
-  for(unsigned j=0; j<getNumberOfAtoms(); ++j) {
-    Vector pos( getPosition(j) );
-    inputdata[total_data+0] = pos[0];
-    inputdata[total_data+1] = pos[1];
-    inputdata[total_data+2] = pos[2];
-    total_data += 3;
-  }
-
 }
 
+// Perform one parallel task for TORSIONS_MATRIX.
+// The task index identifies a compact row in `outmat` that stores:
+// - the number of active matrix elements for this task (at offset fstart)
+// - then the column indices of those elements.
+// For each active element, this routine reads orientation vectors from ARG0/ARG1,
+// reads the corresponding atomic positions, computes the torsion, and writes
+// values/forces into the task-local output buffers.
+//
+// Data layout notes:
+// - `arg0` and `arg1` describe where the two argument matrices are stored in `input`.
+// - `nargdata` marks the end of argument data and the start of packed atomic coordinates.
+// - `gatherForceOnColumns` controls whether force contributions are accumulated by
+//   iterating primarily over columns (true) or rows (false).
 void TorsionsMatrix::performTask( std::size_t task_index,
                                   const TorsionsMatrixInput& actiondata,
                                   ParallelActionsInput& input,
                                   ParallelActionsOutput& output ) {
+  // Locate the list of matrix elements assigned to this task.
   std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
   std::size_t nelements = actiondata.outmat[fstart];
+
+  // Build bookkeeping descriptors for the two input argument matrices.
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
+
+  // Offset of packed atomic position data in the task input buffer.
   std::size_t nargdata = arg1.start + arg1.shape[0]*arg1.ncols;
 
-  // Get the position and orientation for the first molecule
-  std::size_t atbase = nargdata + 3*task_index;
-  Vector atom1( input.inputdata[atbase],
-                input.inputdata[atbase+1],
-                input.inputdata[atbase+2] );
-  std::size_t agbase = arg0.ncols*task_index;
-  Vector v1( input.inputdata[agbase],
-             input.inputdata[agbase+1],
-             input.inputdata[agbase+2] );
-
-  // Get the distances to all the molecules in the coordination sphere
+  Vector v1, v2;
   std::vector<Vector> atom2( nelements );
-  for(unsigned i=0; i<nelements; ++i) {
-    std::size_t at2base = nargdata
-                          + 3*arg0.shape[0]
-                          + 3*actiondata.outmat[fstart+1+i];
-    atom2[i] = Vector( input.inputdata[at2base],
-                       input.inputdata[at2base+1],
-                       input.inputdata[at2base+2] ) - atom1;
+  // Two execution modes: gather force contributions on columns or on rows.
+  if( actiondata.gatherForceOnColumns ) {
+    std::size_t at2base = nargdata + 3*arg0.shape[0] + 3*task_index;
+    Vector atom1( input.inputdata[at2base],
+                  input.inputdata[at2base+1],
+                  input.inputdata[at2base+2] );
+    std::size_t ag2base = arg1.start + task_index;
+    v2 = Vector( input.inputdata[ag2base],
+                 input.inputdata[ag2base+arg1.ncols],
+                 input.inputdata[ag2base+2*arg1.ncols] );
+    for(unsigned i=0; i<nelements; ++i) {
+      std::size_t atbase = nargdata + 3*actiondata.outmat[fstart+1+i];
+      atom2[i] = atom1 - Vector( input.inputdata[atbase],
+                                 input.inputdata[atbase+1],
+                                 input.inputdata[atbase+2] );
+    }
+  } else {
+    std::size_t atbase = nargdata + 3*task_index;
+    Vector atom1( input.inputdata[atbase],
+                  input.inputdata[atbase+1],
+                  input.inputdata[atbase+2] );
+    std::size_t agbase = arg0.ncols*task_index;
+    v1 = Vector( input.inputdata[agbase],
+                 input.inputdata[agbase+1],
+                 input.inputdata[agbase+2] );
+
+    for(unsigned i=0; i<nelements; ++i) {
+      std::size_t at2base = nargdata
+                            + 3*arg0.shape[0]
+                            + 3*actiondata.outmat[fstart+1+i];
+      atom2[i] = Vector( input.inputdata[at2base],
+                         input.inputdata[at2base+1],
+                         input.inputdata[at2base+2] ) - atom1;
+    }
   }
   input.pbc->apply( atom2, nelements );
 
   // Now compute all the torsions
   Torsion t;
   Vector dv1, dconn, dv2 ;
+  unsigned nderper = 21;
+  if( actiondata.no_thread_gather ) {
+    nderper = 15;
+  }
   for(unsigned i=0; i<nelements; ++i) {
     if( atom2[i].modulo2()<epsilon ) {
       if( !input.noderiv ) {
-        output.derivatives.subview_n<21>( 21*i ).zero();
+        output.derivatives.subview( static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i), nderper ).zero();
       }
       continue ;
     }
 
-    std::size_t ag2base = arg1.start + actiondata.outmat[fstart+1+i];
-    Vector v2(input.inputdata[ag2base],
-              input.inputdata[ag2base+arg1.ncols],
-              input.inputdata[ag2base+2*arg1.ncols] );
+    if( actiondata.gatherForceOnColumns ) {
+      std::size_t ag1base = arg0.ncols*actiondata.outmat[fstart+1+i];
+      v1 = Vector( input.inputdata[ag1base],
+                   input.inputdata[ag1base+1],
+                   input.inputdata[ag1base+2] );
+    } else {
+      std::size_t ag2base = arg1.start + actiondata.outmat[fstart+1+i];
+      v2 = Vector( input.inputdata[ag2base],
+                   input.inputdata[ag2base+arg1.ncols],
+                   input.inputdata[ag2base+2*arg1.ncols] );
+    }
     output.values[i] = t.compute( v1, atom2[i], v2, dv1, dconn, dv2 );
 
     if( input.noderiv ) {
       continue ;
     }
 
-    std::size_t base = + 21*i;
-    output.derivatives.subview_n<3>(base) = dv1;
-    output.derivatives.subview_n<3>(base+3) = dv2;
-    output.derivatives.subview_n<3>(base+6) = -dconn;
-    output.derivatives.subview_n<3>(base+9) = dconn;
-
-    Tensor vir( -extProduct( atom2[i], dconn ) );
-    View2D<double,3,3> virial( output.derivatives.data() + base + 12 );
-    for(unsigned j=0; j<3; ++j) {
-      for(unsigned k=0; k<3; ++k) {
-        virial[j][k] = vir[j][k];
+    std::size_t base = static_cast<std::size_t>(nderper) * static_cast<std::size_t>(i);
+    if( !actiondata.no_thread_gather ) {
+      output.derivatives.subview_n<3>(base) = dv1;
+      output.derivatives.subview_n<3>(base+3) = -dconn;
+      output.derivatives.subview_n<3>(base+6) = dv2;
+      output.derivatives.subview_n<3>(base+9) = dconn;
+      Tensor vir( -extProduct( atom2[i], dconn ) );
+      View2D<double,3,3> virial( output.derivatives.data() + base + 12 );
+      for(unsigned j=0; j<3; ++j) {
+        for(unsigned k=0; k<3; ++k) {
+          virial[j][k] = vir[j][k];
+        }
+      }
+    } else if( actiondata.gatherForceOnColumns ) {
+      output.derivatives.subview_n<3>(base) = dv2;
+      output.derivatives.subview_n<3>(base+3) = dconn;
+    } else {
+      output.derivatives.subview_n<3>(base) = dv1;
+      output.derivatives.subview_n<3>(base+3) = -dconn;
+      Tensor vir( -extProduct( atom2[i], dconn ) );
+      View2D<double,3,3> virial( output.derivatives.data() + base + 6 );
+      for(unsigned j=0; j<3; ++j) {
+        for(unsigned k=0; k<3; ++k) {
+          virial[j][k] = vir[j][k];
+        }
       }
     }
   }
@@ -407,6 +485,14 @@ void TorsionsMatrix::performTask( std::size_t task_index,
 
 void TorsionsMatrix::applyNonZeroRankForces( std::vector<double>& outforces ) {
   taskmanager.applyForces( outforces );
+  if( no_thread_gather ) {
+    getColumnBookeepingArrays( taskmanager.getActionInput().outmat );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = true;
+    taskmanager.setNForceScalars( getNumberOfComponents()*maxcolsize );
+    taskmanager.applyForces( outforces, false );
+    taskmanager.setNForceScalars( getNumberOfComponents()*getPntrToComponent(0)->getNumberOfColumns() );
+    taskmanager.getActionInput().gatherForceOnColumns = gatherForceOnColumns = false;
+  }
 }
 
 int TorsionsMatrix::getNumberOfValuesPerTask( std::size_t task_index,
@@ -423,37 +509,70 @@ void TorsionsMatrix::getForceIndices( std::size_t task_index,
                                       ForceIndexHolder force_indices ) {
   auto arg0=ArgumentBookeepingHolder::create( 0, input );
   auto arg1=ArgumentBookeepingHolder::create( 1, input );
-  std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
-  std::size_t arg1start = task_index*arg0.ncols;
-  force_indices.indices[0][0] = arg1start;
-  force_indices.indices[0][1] = arg1start + 1;
-  force_indices.indices[0][2] = arg1start + 2;
-  force_indices.threadsafe_derivatives_end[0] = 3;
-  force_indices.indices[0][3] = arg1.start
-                                + actiondata.outmat[fstart+1+colno];
-  force_indices.indices[0][4] = arg1.start
-                                + actiondata.outmat[fstart+1+colno]
-                                + arg1.ncols;
-  force_indices.indices[0][5] = arg1.start
-                                + actiondata.outmat[fstart+1+colno]
-                                + 2*arg1.ncols;
-  std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
-  std::size_t atom1start = atomstart + 3*task_index;
-  force_indices.indices[0][6] = atom1start;
-  force_indices.indices[0][7] = atom1start + 1;
-  force_indices.indices[0][8] = atom1start + 2;
-  std::size_t atom2start = atomstart
-                           + 3*arg0.shape[0]
-                           + 3*actiondata.outmat[fstart+1+colno];
-  force_indices.indices[0][9] = atom2start;
-  force_indices.indices[0][10] = atom2start + 1;
-  force_indices.indices[0][11] = atom2start + 2;
-  std::size_t n=12;
-  for(unsigned j=ntotal_force-9; j<ntotal_force; ++j) {
-    force_indices.indices[0][n] = j;
-    ++n;
+  if( !actiondata.no_thread_gather ) {
+    std::size_t fstart = task_index*(1+actiondata.outmat.ncols);
+    std::size_t arg1start = task_index*arg0.ncols;
+    force_indices.indices[0][0] = arg1start;
+    force_indices.indices[0][1] = arg1start + 1;
+    force_indices.indices[0][2] = arg1start + 2;
+    std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
+    std::size_t atom1start = atomstart + 3*task_index;
+    force_indices.indices[0][3] = atom1start;
+    force_indices.indices[0][4] = atom1start + 1;
+    force_indices.indices[0][5] = atom1start + 2;
+    force_indices.threadsafe_derivatives_end[0] = 6;
+    force_indices.indices[0][6] = arg1.start
+                                  + actiondata.outmat[fstart+1+colno];
+    force_indices.indices[0][7] = arg1.start
+                                  + actiondata.outmat[fstart+1+colno]
+                                  + arg1.ncols;
+    force_indices.indices[0][8] = arg1.start
+                                  + actiondata.outmat[fstart+1+colno]
+                                  + 2*arg1.ncols;
+    std::size_t atom2start = atomstart
+                             + 3*arg0.shape[0]
+                             + 3*actiondata.outmat[fstart+1+colno];
+    force_indices.indices[0][9] = atom2start;
+    force_indices.indices[0][10] = atom2start + 1;
+    force_indices.indices[0][11] = atom2start + 2;
+    std::size_t n=12;
+    for(unsigned j=ntotal_force-9; j<ntotal_force; ++j) {
+      force_indices.indices[0][n] = j;
+      ++n;
+    }
+    force_indices.tot_indices[0] = 21;
+  } else if( actiondata.gatherForceOnColumns ) {
+    // here task_index is the column: all the elements of the task share its vector and atom
+    force_indices.indices[0][0] = arg1.start + task_index;
+    force_indices.indices[0][1] = arg1.start + task_index + arg1.ncols;
+    force_indices.indices[0][2] = arg1.start + task_index + 2*arg1.ncols;
+    std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
+    std::size_t atom2start = atomstart
+                             + 3*arg0.shape[0]
+                             + 3*task_index;
+    force_indices.indices[0][3] = atom2start;
+    force_indices.indices[0][4] = atom2start + 1;
+    force_indices.indices[0][5] = atom2start + 2;
+    force_indices.threadsafe_derivatives_end[0] = 6;
+    force_indices.tot_indices[0] = 6;
+  } else {
+    std::size_t arg1start = task_index*arg0.ncols;
+    force_indices.indices[0][0] = arg1start;
+    force_indices.indices[0][1] = arg1start + 1;
+    force_indices.indices[0][2] = arg1start + 2;
+    std::size_t atomstart = arg1.start + arg1.shape[0]*arg1.ncols;
+    std::size_t atom1start = atomstart + 3*task_index;
+    force_indices.indices[0][3] = atom1start;
+    force_indices.indices[0][4] = atom1start + 1;
+    force_indices.indices[0][5] = atom1start + 2;
+    force_indices.threadsafe_derivatives_end[0] = 6;
+    std::size_t n=6;
+    for(unsigned j=ntotal_force-9; j<ntotal_force; ++j) {
+      force_indices.indices[0][n] = j;
+      ++n;
+    }
+    force_indices.tot_indices[0] = 15;
   }
-  force_indices.tot_indices[0] = 21;
 }
 
 }

@@ -1,0 +1,4 @@
+type=driver
+# PBMETAD continuation at step 300: from the grids and from the hills
+arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz --timestep 0.002 --initial-step 300"
+extra_files="../../trajectories/diala_traj_nm.xyz"

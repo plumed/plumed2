@@ -1,0 +1,23 @@
+plumed_modules=logmfd
+type=driver
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --ixyz trajectory.xyz --kt 2.5"
+extra_files="../../trajectories/trajectory.xyz"
+driver_args="--ixyz trajectory.xyz --kt 2.5"
+
+# inputs found by .ci/audit-inputs.py: they crashed (segmentation fault or floating point exception)
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail; the message is recorded
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver $driver_args --plumed bad.dat > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -e "^PLUMED: ERROR in input" -e "maze>" bad.out | sed -e "s/^PLUMED: //" -e "s/with label [^ ]* //" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "LOGMFD with INTERVAL=0" "d: DISTANCE ATOMS=1,2
+LOGMFD ARG=d KAPPA=50000 DELTA_T=0.5 INTERVAL=0 TEMP=300.0 FLOG=10.0 FICT=1.5 MFICT=1000 VFICT=0.001 ALPHA=4.0 THERMOSTAT=NVE FICT_MIN=0.0 FICT_MAX=10.0"
+}

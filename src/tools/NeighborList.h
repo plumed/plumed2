@@ -43,15 +43,21 @@ public:
 private:
   enum class NNStyle {Pair,TwoList,SingleList};
   bool reduced=false;
+/// Has the reduced list been requested to the action since the last update of the list
+  bool reducedRequested=false;
   bool listBuilded=false;
   bool serial_;
   bool do_pbc_;
   bool useCellList_=false;
+/// With two lists, the cells are used only if both have more atoms than this
+  static constexpr std::size_t cellsMinimumGroup=8;
   NNStyle style_;
   const PLMD::Pbc* pbc_;
   Communicator& comm;
   std::vector<PLMD::AtomNumber> fullatomlist_{};
   std::vector<PLMD::AtomNumber> requestlist_{};
+/// Position in requestlist_ of each element of fullatomlist_ (only for the atoms in the list of pairs)
+  std::vector<unsigned> fullToRequest_{};
   //The size of this vectior is nallpairs_ if stride==0 (aka the NL is deactivated) or if the size is relatively small
   //In case neighbors_.size() != nallpairs_,
   std::vector<pairIDs > neighbors_{};
@@ -101,6 +107,8 @@ public:
 /// Update the neighbor list and prepare the new
 /// list of atoms that will be requested to the main code
   void update(const std::vector<PLMD::Vector>& positions);
+/// Rebuild with the PBC of the action requesting this update.
+  void update(const std::vector<PLMD::Vector>& positions, const PLMD::Pbc& pbc);
 /// Get the update stride of the neighbor list
   unsigned getStride() const;
 /// Get the last step in which the neighbor list was updated

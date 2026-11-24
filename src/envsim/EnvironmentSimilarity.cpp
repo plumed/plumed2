@@ -98,7 +98,7 @@ One value has to be specified for SC, BCC, FCC, and DIAMOND and two values have 
 
 If the CUSTOM option is used then the reference environments have to be specified by the user.
 The reference environments are specified in pdb files containing the distance vectors from the central atom to the neighbors.
-Make sure your PDB file is correctly formatted as explained in the documenation for [MOLINFO](MOLINFO.md)
+Make sure your PDB file is correctly formatted as explained in the documentation for [MOLINFO](MOLINFO.md)
 If only one reference environment is specified then the filename should be given as argument of the keyword REFERENCE.
 If instead several reference environments are given, then they have to be provided in separate pdb files and given as arguments for the
 keywords REFERENCE_1, REFERENCE_2, etc.
@@ -244,6 +244,9 @@ void EnvironmentSimilarity::registerKeywords( Keywords& keys ) {
 EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
+  // Optional PDB containing atom names for species-aware comparisons.
+  // If provided, it is used both to classify reference atoms and to filter
+  // neighbors by chemical type when computing the similarity kernel.
   std::string atomNamesFile;
   parse("ATOM_NAMES_FILE",atomNamesFile);
   PDB atomnamepdb;
@@ -251,12 +254,20 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
     error("missing input file " + atomNamesFile);
   }
 
+  // maxdist stores the largest reference-neighbor distance encountered while
+  // building reference environments; it is later used to define neighbor-search
+  // ranges for the on-the-fly environment evaluation.
   double maxdist=0;
+  // allspec contains the list of atom-name species present in the atom-names PDB.
+  // This list is passed to getReferenceEnvironment so each reference vector can
+  // be tagged with the corresponding species index.
   std::vector<std::string> allspec(1);
   std::string crystal_structure;
   parse("CRYSTAL_STRUCTURE", crystal_structure);
   std::vector<std::vector<std::pair<unsigned,Vector> > > environments;
   if( crystal_structure=="CUSTOM" ) {
+    // CUSTOM mode: read one or more user-provided reference environments from PDB.
+    // When atom names are available, first build the unique list of species labels.
     if( !atomNamesFile.empty()  ) {
       allspec[0]=atomnamepdb.getAtomName(atomnamepdb.getAtomNumbers()[0]);
       unsigned natoms=atomnamepdb.getPositions().size();
@@ -274,12 +285,14 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
       }
     }
     std::string reffile;
+    // Accept either a single REFERENCE file or a numbered list
+    // (REFERENCE_1, REFERENCE_2, ...) for multi-template matching.
     parse("REFERENCE",reffile);
     if( reffile.length()>0 ) {
       PDB pdb;
       pdb.read(reffile,plumed.usingNaturalUnits(),0.1/plumed.getUnits().getLength());
       environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
-      log.printf("  reading %d reference vectors from %s \n", environments[0].size(), reffile.c_str() );
+      log.printf("  reading %zu reference vectors from %s \n", environments[0].size(), reffile.c_str() );
     } else {
       for(unsigned int i=1;; i++) {
         PDB pdb;
@@ -290,7 +303,10 @@ EnvironmentSimilarity::EnvironmentSimilarity(const ActionOptions&ao):
           error("missing input file " + reffile );
         }
         environments.push_back( getReferenceEnvironment( pdb, allspec, maxdist ) );
-        log.printf("  Reference environment %d : reading %d reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
+        log.printf("  Reference environment %d : reading %zu reference vectors from %s \n", i, environments[i-1].size(), reffile.c_str() );
+      }
+      if( environments.empty() ) {
+        error("with CRYSTAL_STRUCTURE=CUSTOM the reference environments should be given with REFERENCE or REFERENCE_1, REFERENCE_2, ...");
       }
     }
   } else {

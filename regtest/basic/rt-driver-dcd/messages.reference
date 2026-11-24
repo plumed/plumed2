@@ -1,0 +1,20 @@
+charmm_be: exit code 0
+charmm_i8: exit code 0
+charmm_i8_be: exit code 0
+charmm_ortho: exit code 0
+charmm_matrix: exit code 0
+namd25_degrees: exit code 0
+nocell: exit code 0
+xplor: exit code 0
+xplor_be: exit code 0
+fixed_le: exit code 0
+fixed_be: exit code 0
+fixed_i8: exit code 0
+fourdims: exit code 0
+truncated: exit code 0
+WARNING: the last frame of the dcd file truncated.dcd is incomplete, it is ignored
+truncated_fixed: exit code 0
+WARNING: the last frame of the dcd file truncated_fixed.dcd is incomplete, it is ignored
+alias: exit code 0
+WARNING: --mf_dcd is deprecated (the molfile plugins were removed in v2.11) and will be removed in a future version: use --idcd
+alias: same frames as --idcd

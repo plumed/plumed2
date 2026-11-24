@@ -80,7 +80,11 @@ PLUMED_REGISTER_ACTION(MatrixTimesVector,"MATRIX_VECTOR_PRODUCT")
 
 void MatrixTimesVector::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords(keys);
-  MatrixTimesVectorBase<Vector>::registerLocalKeywords( keys );
+  // registerLocalKeywords() does not depend on the CV type. Instantiate the
+  // template with a concrete CV that provides performTask()/getAdditionalIndices()
+  // so that the class is well-formed: MSVC instantiates the member bodies
+  // eagerly and would otherwise require those members from PLMD::Vector.
+  MatrixTimesVectorBase<MatrixTimesVectorRowSums<double>>::registerLocalKeywords( keys );
   keys.addActionNameSuffix("_ROWSUMS");
   keys.addActionNameSuffix("_ROWSUMSACC");
   keys.addActionNameSuffix("_PROPER");

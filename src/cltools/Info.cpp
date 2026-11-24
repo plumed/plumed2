@@ -50,7 +50,7 @@ public:
   explicit Info(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc) override;
   std::string description()const override {
-    return "provide informations about plumed";
+    return "provide information about plumed";
   }
 };
 
@@ -61,7 +61,7 @@ void Info::registerKeywords( Keywords& keys ) {
   keys.addFlag("--configuration",false,"prints the configuration file");
   keys.addFlag("--root",false,"print the location of the root directory for the plumed source");
   keys.addFlag("--user-doc",false,"print the location of user manual (html)");
-  keys.addFlag("--developer-doc",false,"print the location of user manual (html)");
+  keys.addFlag("--developer-doc",false,"print the location of developer manual (html)");
   keys.addFlag("--version",false,"print the version number");
   keys.addFlag("--long-version",false,"print the version number (long version)");
   keys.addFlag("--git-version",false,"print the version number (git version, if available)");
@@ -104,13 +104,16 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
     std::fprintf(out,"%s\n",config::getPlumedIncludedir().c_str());
   }
   if(printuserdoc) {
-    std::string userdoc=config::getPlumedHtmldir()+"/user-doc/html/index.html";
+    // when PLUMED is not installed, the manual built by "make doc" is in new-manual/site
+    std::string userdoc=config::isInstalled() ?
+                        config::getPlumedHtmldir()+"/user-doc/html/index.html" :
+                        config::getPlumedRoot()+"/new-manual/site/index.html";
     FILE *ff=std::fopen(userdoc.c_str(),"r");
     // no exception here
     if(ff) {
       std::fclose(ff);
     } else {
-      userdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
+      userdoc="https://www.plumed.org/doc-v" + config::getVersion() + "/user-doc/html/index.html";
     }
     std::fprintf(out,"%s\n",userdoc.c_str());
   }
@@ -121,7 +124,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc) {
     if(ff) {
       std::fclose(ff);
     } else {
-      developerdoc="http://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
+      developerdoc="https://www.plumed.org/doc-v" + config::getVersion() + "/developer-doc/html/index.html";
     }
     std::fprintf(out,"%s\n",developerdoc.c_str());
   }

@@ -1,0 +1,4 @@
+PLUMED:   pdb file named topol.tpr contains 3 chains 
+PLUMED:   chain named A contains residues 1 to 14 and atoms 1 to 132 
+PLUMED:   chain named B contains residues -1 to 10 and atoms 133 to 264 
+PLUMED:   chain named   contains residues 15 to 18 and atoms 265 to 274 

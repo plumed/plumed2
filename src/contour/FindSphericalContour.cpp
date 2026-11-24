@@ -98,7 +98,7 @@ c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
 cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
 # Build a contact matrix
 c1_mat2: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
-dp_mat: OUTER_PRODUCT ARG=cf,cf
+dp_mat: OUTER_PRODUCT ARG=cf,cf MASK=c1_mat2
 # Build the final matrix
 mat: CUSTOM ARG=c1_mat2,dp_mat FUNC=x*y PERIODIC=NO
 # Find largest cluster
@@ -163,7 +163,7 @@ public:
   std::vector<std::string> getGridCoordinateNames() const override ;
   const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
-  void getInputData( std::vector<double>& inputdata ) const override;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
                            const FindSphericalContourObject& actiondata,
                            ParallelActionsInput& input,
@@ -231,7 +231,7 @@ void FindSphericalContour::calculate() {
   taskmanager.runAllTasks();
 }
 
-void FindSphericalContour::getInputData( std::vector<double>& inputdata ) const {
+void FindSphericalContour::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t ndata = gridcoords.getNumberOfPoints();
   if( inputdata.size()!=6*ndata ) {
     inputdata.resize( 6*ndata );

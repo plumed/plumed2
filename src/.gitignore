@@ -20,11 +20,13 @@
 !/eds
 !/envsim
 !/fourier
+!/gemmi
 !/function
 !/generic
 !/gridtools
 !/imd
 !/isdb
+!/isdb-pytorch
 !/kenref
 !/landmarks
 !/lapack
@@ -38,7 +40,7 @@
 !/manyrestraints
 !/matrixtools
 !/maze
-!/molfile
+!/mpiwrap
 !/multicolvar
 !/opes
 !/python
@@ -51,6 +53,7 @@
 !/sprint
 !/symfunc
 !/small_vector
+!/thread_mpi
 !/tools
 !/valtools
 !/vatom
@@ -80,3 +83,4 @@
 /*.off
 
 !/pathbias
+!/replex_biasvalue

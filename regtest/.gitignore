@@ -30,6 +30,7 @@
 !/molfile_plugin
 !/pamm
 !/isdb
+!/isdb-pytorch
 !/kenref
 !/ves
 !/funnel
@@ -49,9 +50,12 @@
 !/pines
 !/ttsketch
 !/xsprint
+!/fisst
+!/piv
 
 # These files we just want to ignore completely
 tmp
 report.txt
 
 !/pathbias
+!/replex_biasvalue

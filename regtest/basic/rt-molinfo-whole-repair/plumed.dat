@@ -1,0 +1,4 @@
+# whole reference with a CRYST1 record: it is checked, and it passes
+MOLINFO STRUCTURE=whole.pdb WHOLE
+WHOLEMOLECULES ENTITY0=1-304
+DUMPATOMS ATOMS=1-304 FILE=whole.xyz PRECISION=3

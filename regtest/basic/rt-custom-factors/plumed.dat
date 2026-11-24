@@ -1,0 +1,18 @@
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10 ATOMS6=11,12
+# lt is exactly zero for most elements
+lt: LESS_THAN ARG=d SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}
+c1: CUSTOM ARG=lt,d FUNC=exp(x)*y PERIODIC=NO
+c2: CUSTOM ARG=lt,d FUNC=x*cos(y)+1 PERIODIC=NO
+c3: CUSTOM ARG=lt,d FUNC=x*y PERIODIC=NO
+c4: CUSTOM ARG=lt,d FUNC=x/y PERIODIC=NO
+# functions that are not zero when their arguments are zero: the elements where lt is zero must be computed
+c5: CUSTOM ARG=lt FUNC=x+1 PERIODIC=NO
+cb: COMBINE ARG=lt PARAMETERS=0.5 PERIODIC=NO
+bt: BETWEEN ARG=lt LOWER=-0.1 UPPER=0.1 SMEAR=0.5
+ltl: LESS_THAN ARG=lt SWITCH={RATIONAL R_0=0.5}
+s1: SUM ARG=c1 PERIODIC=NO
+s2: SUM ARG=c2 PERIODIC=NO
+s3: SUM ARG=c3 PERIODIC=NO
+s5: SUM ARG=ltl PERIODIC=NO
+PRINT ARG=lt,d,c1,c2,c3,c4,c5,cb,bt,ltl FILE=colvar FMT=%10.6f
+RESTRAINT ARG=s1,s2,s3,s5 AT=0,0,0,0 KAPPA=1,1,1,1

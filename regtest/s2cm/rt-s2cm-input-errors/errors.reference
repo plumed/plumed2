@@ -1,0 +1,2 @@
+S2CM with N_I=0: exit code 1
+ERROR in input to action S2CM : N_I must be positive 

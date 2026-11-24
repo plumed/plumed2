@@ -1,0 +1,54 @@
+type=driver
+plumed_modules="symfunc adjmat clusters xsprint maze"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# inputs found by .ci/audit-inputs.py: each bad_NAME.dat crashed (segmentation fault or
+# floating point exception) and must now be rejected with an error message containing the text below
+function plumed_regtest_before(){
+  {
+    echo 5 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 0 ; echo X 0 1 0 ; echo X 0 0 1 ; echo X 1 1 1
+  } > traj.xyz
+  echo "d: DISTANCE ATOMS=1,2" > plumed.dat
+  echo "PRINT ARG=d FILE=colvar" >> plumed.dat
+  d="d: DISTANCE ATOMS=1,2"
+  dv="d: DISTANCE ATOMS1=1,2 ATOMS2=1,3 COMPONENTS"
+  printf "$d\nh: HISTOGRAM ARG=d GRID_MIN=0 GRID_MAX=2 GRID_BIN=10\n" > bad_histogram_bandwidth.dat
+  printf "lc: LOCAL_CRYSTALINITY SPECIES=1-5 D_0=3.0 R_0=1.5 GVECTOR2=1,0.5,0.5 GVECTOR3=0.5,1.0,1.0 SUM\n" > bad_local_crystalinity_gvector.dat
+  printf "cm: CONTACT_MATRIX GROUP=1-5 SWITCH={CUBIC D_0=0.45 D_MAX=0.55}\nc1: CLUSTER_DIAMETER ATOMS=1-5\n" > bad_cluster_diameter_arg.dat
+  printf "com: CENTER ATOMS=1-5\nd: DISTANCES ATOMS=1-5 ORIGIN=com COMPONENTS\nones: ONES SIZE=5\nc: COVARIANCE_MATRIX WEIGHTS=ones\n" > bad_covariance_arg.dat
+  printf "d: DISTANCE_MATRIX GROUP=1-5 COMPONENTS\nc: SPHERICAL_HARMONIC L=1 ARG=d.x\n" > bad_spherical_harmonic_arg.dat
+  printf "d: DISTANCE_MATRIX GROUP=1-5 COMPONENTS\nc: CYLINDRICAL_HARMONIC DEGREE=6 ARG=d.x\n" > bad_cylindrical_harmonic_arg.dat
+  printf "$dv\ns: SELECT_COMPONENTS ARG=d.x COMPONENTS=0\n" > bad_select_components_zero.dat
+  printf "$dv\ns: SELECT_COMPONENTS ARG=d.x COMPONENTS=3\n" > bad_select_components_large.dat
+  printf "m: DISTANCE_MATRIX GROUP=1-5\ns: SELECT_COMPONENTS ARG=m COMPONENTS=1.6\n" > bad_select_components_matrix.dat
+  printf "xs: XSPRINT GROUP=1-5 SWITCH={RATIONAL R_0=0.1} R0=0.1 NSHELLS=0\n" > bad_xsprint_nshells.dat
+  printf "p: POSITION ATOM=1 NOPBC\nMAZE_OPTIMIZER_BIAS ARG=p.x,p.y,p.z BIASING_RATE=0.02 ALPHA=3.6 OPTIMIZER=opt\n" > bad_maze_optimizer_label.dat
+  printf "WRAPAROUND ATOMS=1-4 AROUND=5 GROUPBY=0\n" > bad_wraparound_groupby.dat
+  printf "$d\na: ACCUMULATE ARG=d STRIDE=0 CLEAR=1\n" > bad_accumulate_stride.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+histogram_bandwidth BANDWIDTH is required
+local_crystalinity_gvector no GVECTOR was specified
+cluster_diameter_arg should be an even number of arguments
+covariance_arg no arguments were specified with ARG
+spherical_harmonic_arg the x, y and z components
+cylindrical_harmonic_arg the x and y components
+select_components_zero component 0 is not between 1 and
+select_components_large component 3 is not between 1 and
+select_components_matrix element 1.6 is not in the matrix
+xsprint_nshells NSHELLS should be at least 1
+maze_optimizer_label cannot find an action of the right type with label opt
+wraparound_groupby GROUPBY should be at least 1
+accumulate_stride STRIDE should be a positive number
+EOT
+}

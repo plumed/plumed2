@@ -1,0 +1,11 @@
+#! FIELDS time phi psi sigma_phi sigma_psi height biasf
+#! SET multivariate false
+#! SET kerneltype stretched-gaussian
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+   0.02000  -1.38149   1.36023   0.30000   0.30000   1.00000  -1.00000
+   0.04000  -1.50266   1.25643   0.30000   0.30000   1.00000  -1.00000
+   0.06000  -1.29742   1.03822   0.30000   0.30000   1.00000  -1.00000
+   0.08000  -1.48744   1.02976   0.30000   0.30000   1.00000

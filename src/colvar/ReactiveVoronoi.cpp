@@ -20,7 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
+#include "ReactiveVoronoiBackend.h"
 #include "core/ActionRegister.h"
+#include "core/ActionSet.h"
+#include "core/PlumedMain.h"
 #include "tools/Communicator.h"
 #include "tools/NeighborList.h"
 #include "tools/OpenMP.h"
@@ -31,9 +34,12 @@
 #include <iomanip>
 #include <limits>
 #include <memory>
+#include <numeric>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -174,7 +180,67 @@ protected:
   struct Assignment {
     std::vector<PairData> pairs;
     std::vector<double> occupancy;
+    std::shared_ptr<ReactiveVoronoiBackend> cuda;
+    // the backend was asked for the occupancy, and finishAssignment() has not waited for it yet
+    bool pending=false;
   };
+
+  struct CudaNeighbors {
+    // The offsets index centers grouped by assigned atom.
+    std::vector<int> offsets;
+    std::vector<int> centers;
+    unsigned long version=0;
+  };
+
+  struct SharedEvaluation {
+    unsigned consumers=1;
+    double firstKappa=0;
+    bool mixedKappa=false;
+    bool valid=false;
+    long long step=0;
+    std::vector<Vector> positions;
+    Tensor box;
+    std::vector<PairData> geometry;
+    std::map<double,Assignment> assignments;
+    std::map<double,std::shared_ptr<ReactiveVoronoiBackend>> cuda;
+    CudaNeighbors cudaNeighbors;
+    bool haveNeighborReference=false;
+    std::vector<Vector> neighborReferencePositions;
+    Tensor neighborReferenceBox;
+  };
+  std::shared_ptr<SharedEvaluation> shared_;
+  bool noShare_=false;
+  unsigned long evaluations_=0, hits_=0, geometryHits_=0;
+  Assignment independent_;
+  std::shared_ptr<ReactiveVoronoiBackend> independentCuda_;
+  CudaNeighbors independentCudaNeighbors_;
+  std::string backend_="CPU";
+  std::string autoCudaFailure_;
+  std::string lastBackendMessage_;
+  void logBackend(const std::string&, const std::string&);
+  std::shared_ptr<ReactiveVoronoiBackend> cudaContext();
+  bool sharedCoordinatesMatch() const;
+  void resetSharedEvaluation();
+  // with wait false only the work of the backend is started (nothing on the CPU)
+  Assignment computeAssignment(bool wait=true);
+  void finishAssignment(Assignment&);
+  // calls the backend, with the error messages of the action
+  template<typename Call> void callBackend(Call call) {
+    // Calculation failures propagate for both CUDA and AUTO. Invalid geometry
+    // must remain an error after a backend has been successfully initialized.
+    try {
+      call();
+    } catch(const ReactiveVoronoiBackend::InvalidPair& failure) {
+      std::ostringstream message;
+      message << failure.what() << " step=" << getStep()
+              << " center_atom=" << centers_.at(failure.center).serial()
+              << " assigned_atom=" << assigned_.at(failure.assigned).serial();
+      error(message.str());
+    } catch(const std::exception& failure) {
+      error(std::string(failure.what())+" step="+std::to_string(getStep()));
+    }
+  }
+  void packCudaNeighbors(CudaNeighbors&);
 
   bool pbc_;
   bool serial_;
@@ -186,7 +252,7 @@ protected:
   double kappa_;
   double neighborCutoff_;
   double neighborSkin_;
-  std::unique_ptr<NeighborList> neighborList_;
+  std::shared_ptr<NeighborList> neighborList_;
   std::vector<AtomNumber> centers_;
   std::vector<AtomNumber> assigned_;
   std::vector<double> reference_;
@@ -205,7 +271,7 @@ protected:
                                      const std::string&, bool) const;
   bool neighborListNeedsUpdate();
   void saveNeighborListReference();
-  Assignment calculateAssignment();
+  const Assignment& calculateAssignment();
   std::vector<double> defects(const Assignment&) const;
   void addAssignmentDerivatives(const Assignment&, const std::vector<double>&,
                                 std::vector<Vector>&, Tensor&);
@@ -216,6 +282,10 @@ protected:
 public:
   explicit SoftVoronoiBase(const ActionOptions&);
   void prepare() override;
+  // the assignment on the GPU is started here, see Action::launch()
+  void launch() override;
+  void cancelLaunch() override;
+  ~SoftVoronoiBase() override;
 };
 
 void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
@@ -224,6 +294,8 @@ void SoftVoronoiBase::registerCommonKeywords(Keywords& keys) {
   keys.add("compulsory","KAPPA","Positive soft-assignment sharpness in inverse PLUMED length units");
   keys.add("compulsory","REFERENCE",
            "One intended occupancy broadcast to all CENTERS, or one value per CENTER in CENTERS order");
+  keys.add("compulsory","BACKEND","CPU","Assignment backend: CPU, CUDA, or opt-in AUTO detection");
+  keys.addFlag("NO_SHARE",false,"Disable instance-local reuse of compatible assignment calculations");
   keys.addFlag("SERIAL",false,"Perform the calculation redundantly on each rank for debugging");
   keys.addFlag("NLIST",false,"Use an approximate neighbor-list truncation of the assignment candidates");
   keys.add("optional","NL_CUTOFF","Candidate cutoff in PLUMED length units; every ASSIGNED atom must retain at least one CENTER");
@@ -388,6 +460,15 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   neighborCutoff_(0.0),
   neighborSkin_(0.0) {
 
+  // Constructor responsibilities:
+  // 1) Parse all user-provided keywords and atom lists.
+  // 2) Normalize/validate options and numerical parameters.
+  // 3) Initialize data structures used during per-step evaluation.
+  // Defaults in the initializer list are conservative and are tightened
+  // below once all user input has been read and checked.
+
+  // Parse the two atom groups defining Voronoi centers and assigned atoms.
+  // Validation of compatibility/cardinality is handled in subsequent checks.
   parseAtomList("CENTERS",centers_);
   parseAtomList("ASSIGNED",assigned_);
   if(centers_.empty()) {
@@ -420,6 +501,18 @@ SoftVoronoiBase::SoftVoronoiBase(const ActionOptions& ao):
   parseVector("REFERENCE",reference_);
   broadcastOrCheck(reference_,centers_.size(),"REFERENCE");
 
+  parse("BACKEND",backend_);
+  std::transform(backend_.begin(),backend_.end(),backend_.begin(),
+  [](const char value) {
+    return static_cast<char>(std::toupper(static_cast<unsigned char>(value)));
+  });
+  if(backend_!="CPU" && backend_!="CUDA" && backend_!="AUTO") {
+    error("BACKEND must be CPU, CUDA or AUTO");
+  }
+  if(backend_=="CUDA" && comm.Get_size()!=1) {
+    error("CUDA prototype requires a single MPI rank");
+  }
+  parseFlag("NO_SHARE",noShare_);
   parseFlag("SERIAL",serial_);
   bool noPbc=false;
   parseFlag("NOPBC",noPbc);
@@ -505,8 +598,40 @@ std::vector<unsigned> SoftVoronoiBase::mapSelection(
 
 void SoftVoronoiBase::finishSetup(const std::string& displayName) {
   checkRead();
+  // Compatible actions share the candidate-list history as well as each evaluation.
+  // The cutoff and skin are exact cache keys: even a small change can select a different pair.
+  if(!noShare_) {
+    for(auto* other: plumed.getActionSet().select<SoftVoronoiBase*>()) {
+      if(other->shared_ && other->centers_==centers_ &&
+          other->assigned_==assigned_ && other->pbc_==pbc_ &&
+          other->serial_==serial_ && other->backend_==backend_ &&
+          std::tie(other->neighborCutoff_,other->neighborSkin_)==
+          std::tie(neighborCutoff_,neighborSkin_) &&
+          other->neighborList_->getStride()==neighborList_->getStride() &&
+          other->useCellList_==useCellList_) {
+        shared_=other->shared_;
+        ++shared_->consumers;
+        // Use the same ordering as the assignment cache for exact KAPPA keys.
+        const auto less=shared_->assignments.key_comp();
+        shared_->mixedKappa=shared_->mixedKappa ||
+                            less(shared_->firstKappa,kappa_) ||
+                            less(kappa_,shared_->firstKappa);
+        neighborList_=other->neighborList_;
+        log.printf("  sharing reactive Voronoi geometry with %s\n",other->getLabel().c_str());
+        break;
+      }
+    }
+    if(!shared_) {
+      shared_=std::make_shared<SharedEvaluation>();
+      shared_->firstKappa=kappa_;
+    }
+  }
   addValueWithDerivatives();
   setNotPeriodic();
+  if(backend_!="CPU") {
+    // the assignment on the GPU is started as soon as the atoms are available
+    setLaunchable();
+  }
   // PLUMED 2.8 needs the full atom list to preserve absolute-index mapping.
   requestAtoms(neighborList_->getFullAtomList());
   log.printf("  %s assigns %u atoms over %u centers with kappa %g\n",
@@ -539,18 +664,21 @@ void SoftVoronoiBase::prepare() {
 }
 
 bool SoftVoronoiBase::neighborListNeedsUpdate() {
-  if(neighborSkin_<=0.0 || !haveNeighborReference_) {
+  const bool haveReference=shared_ ? shared_->haveNeighborReference : haveNeighborReference_;
+  const auto& referencePositions=shared_ ? shared_->neighborReferencePositions : neighborReferencePositions_;
+  const Tensor& referenceBox=shared_ ? shared_->neighborReferenceBox : neighborReferenceBox_;
+  if(neighborSkin_<=0.0 || !haveReference) {
     return false;
   }
   const std::vector<Vector>& positions=getPositions();
-  if(positions.size()!=neighborReferencePositions_.size()) {
+  if(positions.size()!=referencePositions.size()) {
     return true;
   }
   if(pbc_) {
     const Tensor box=getPbc().getBox();
     for(unsigned i=0; i<3; ++i) {
       for(unsigned j=0; j<3; ++j) {
-        if(box(i,j)!=neighborReferenceBox_(i,j)) {
+        if(box(i,j)!=referenceBox(i,j)) {
           return true;
         }
       }
@@ -559,9 +687,9 @@ bool SoftVoronoiBase::neighborListNeedsUpdate() {
   const double thresholdSquared=0.25*neighborSkin_*neighborSkin_;
   for(unsigned i=0; i<positions.size(); ++i) {
     const Vector displacement=pbc_ ?
-                              pbcDistance(neighborReferencePositions_[i],
+                              pbcDistance(referencePositions[i],
                                           positions[i]) :
-                              delta(neighborReferencePositions_[i],
+                              delta(referencePositions[i],
                                     positions[i]);
     if(displacement.modulo2()>thresholdSquared) {
       return true;
@@ -574,23 +702,266 @@ void SoftVoronoiBase::saveNeighborListReference() {
   if(neighborSkin_<=0.0) {
     return;
   }
-  neighborReferencePositions_=getPositions();
-  if(pbc_) {
-    neighborReferenceBox_=getPbc().getBox();
+  if(shared_) {
+    shared_->neighborReferencePositions=getPositions();
+    if(pbc_) {
+      shared_->neighborReferenceBox=getPbc().getBox();
+    }
+    shared_->haveNeighborReference=true;
+  } else {
+    neighborReferencePositions_=getPositions();
+    if(pbc_) {
+      neighborReferenceBox_=getPbc().getBox();
+    }
+    haveNeighborReference_=true;
   }
-  haveNeighborReference_=true;
 }
 
-SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
-  // Refresh the buffered candidate list on schedule or after a safe-skin exit.
-  if(neighborList_->getStride()>0) {
-    const bool updateList=invalidateList_ || neighborListNeedsUpdate();
-    if(updateList) {
-      neighborList_->update(getPositions());
-      saveNeighborListReference();
+SoftVoronoiBase::~SoftVoronoiBase() {
+  log.printf("  reactive Voronoi %s: assignments=%lu cache_hits=%lu geometry_hits=%lu\n",
+             getLabel().c_str(),evaluations_,hits_,geometryHits_);
+}
+
+bool SoftVoronoiBase::sharedCoordinatesMatch() const {
+  if(!shared_->valid || shared_->step!=getStep() ||
+      shared_->positions.size()!=getPositions().size()) {
+    return false;
+  }
+  const auto& positions=getPositions();
+  for(unsigned i=0; i<positions.size(); ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      if(positions[i][k]!=shared_->positions[i][k]) {
+        return false;
+      }
     }
   }
+  const Tensor& box=getPbc().getBox();
+  for(unsigned i=0; i<3; ++i) {
+    for(unsigned j=0; j<3; ++j) {
+      if(box(i,j)!=shared_->box(i,j)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
+void SoftVoronoiBase::finishAssignment(Assignment& assignment) {
+  if(assignment.pending) {
+    assignment.pending=false;
+    callBackend([&]() {
+      assignment.cuda->finishForward(assignment.occupancy.data());
+    });
+  }
+}
+
+// The cache of the shared evaluation is emptied when the positions or the box change
+void SoftVoronoiBase::resetSharedEvaluation() {
+  shared_->valid=false;
+  shared_->geometry.clear();
+  shared_->assignments.clear();
+  shared_->positions=getPositions();
+  shared_->box=getPbc().getBox();
+  shared_->step=getStep();
+}
+
+void SoftVoronoiBase::launch() {
+  // only the assignment is started: its derivatives need the value of the action
+  if(!shared_ || shared_->consumers==1) {
+    independent_=computeAssignment(false);
+    evaluations_+=independent_.pending ? 1 : 0;
+    return;
+  }
+  if(!sharedCoordinatesMatch()) {
+    resetSharedEvaluation();
+  } else if(shared_->assignments.count(kappa_)) {
+    // started (or computed) by another action
+    return;
+  }
+  Assignment result=computeAssignment(false);
+  if(result.pending) {
+    ++evaluations_;
+    shared_->assignments.emplace(kappa_,std::move(result));
+    shared_->valid=true;
+  }
+}
+
+void SoftVoronoiBase::cancelLaunch() {
+  // the atoms have been moved after launch(): the assignment is computed again (the work queued
+  // by launch() comes first on the same stream). A shared one is discarded when the positions differ
+  if(!shared_ || shared_->consumers==1) {
+    independent_.pending=false;
+  }
+}
+
+const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
+  if(!shared_ || shared_->consumers==1) {
+    // launch() started it, if it is pending
+    if(!independent_.pending) {
+      ++evaluations_;
+      independent_=computeAssignment();
+    }
+    finishAssignment(independent_);
+    return independent_;
+  }
+  if(!sharedCoordinatesMatch()) {
+    resetSharedEvaluation();
+  } else {
+    const auto found=shared_->assignments.find(kappa_);
+    if(found!=shared_->assignments.end()) {
+      if(found->second.pending) {
+        finishAssignment(found->second);
+      } else {
+        ++hits_;
+      }
+      return found->second;
+    }
+  }
+  ++evaluations_;
+  Assignment result=computeAssignment();
+  auto inserted=shared_->assignments.emplace(kappa_,std::move(result));
+  shared_->valid=true;
+  return inserted.first->second;
+}
+
+void SoftVoronoiBase::logBackend(const std::string& selected,
+                                 const std::string& reason) {
+  const std::string message=selected+" ("+reason+")";
+  if(message!=lastBackendMessage_) {
+    log.printf("  reactive Voronoi %s requested %s; selected %s\n",
+               getLabel().c_str(),backend_.c_str(),message.c_str());
+    lastBackendMessage_=message;
+  }
+}
+
+std::shared_ptr<ReactiveVoronoiBackend> SoftVoronoiBase::cudaContext() {
+  if(backend_=="CPU") {
+    logBackend("CPU","shared evaluation enabled unless NO_SHARE is set");
+    return nullptr;
+  }
+  std::string unsupported;
+  if(comm.Get_size()!=1) {
+    unsupported="multiple MPI ranks";
+  } else if(pbc_) {
+    const Tensor& box=getPbc().getBox();
+    const double determinant=box.determinant();
+    if(!getPbc().isSet() || !std::isfinite(determinant) || std::fabs(determinant)<=1.0e-14) {
+      error("non-finite or degenerate periodic box at step="+std::to_string(getStep()));
+    }
+    for(unsigned i=0; i<3; ++i) {
+      if(!std::isfinite(box(i,i)) || box(i,i)<=0) {
+        unsupported="PBC requires a finite positive orthorhombic box";
+      }
+      for(unsigned j=0; j<3; ++j) {
+        if(i!=j && box(i,j)!=0) {
+          unsupported="triclinic PBC requires the CPU backend";
+        }
+      }
+    }
+  }
+  if(!unsupported.empty()) {
+    if(backend_=="CUDA") {
+      error("CUDA backend does not support "+unsupported);
+    }
+    logBackend("CPU",unsupported);
+    return nullptr;
+  }
+  if(!autoCudaFailure_.empty()) {
+    logBackend("CPU",autoCudaFailure_);
+    return nullptr;
+  }
+  auto& context=shared_ ? shared_->cuda[kappa_] : independentCuda_;
+  if(!context) {
+    try {
+      const auto& images=plumed.getLoadedLibraryHandles();
+      const auto& registry=reactiveVoronoiBackendRegister();
+      if(!registry.check(images,"CUDA")) {
+        throw std::runtime_error("No CUDA Voronoi backend is available. Build the reactive-voronoi-cuda plugin and LOAD it before the action.");
+      }
+      const auto create=registry.get(images,"CUDA");
+      context=create(centers_.size(),assigned_.size(),plumed.getGpuDeviceId());
+    } catch(const std::exception& failure) {
+      if(backend_=="CUDA") {
+        error(std::string("CUDA initialization failed: ")+failure.what());
+      }
+      autoCudaFailure_=std::string("AUTO initialization fallback: ")+failure.what();
+      logBackend("CPU",autoCudaFailure_);
+      return nullptr;
+    }
+  }
+  const std::string device="device "+std::to_string(context->device());
+  logBackend("CUDA",device+(neighborCutoff_>0 ? "; NLIST assignment and assignment derivatives" :
+                            "; assignment and assignment derivatives"));
+  return context;
+}
+
+void SoftVoronoiBase::packCudaNeighbors(CudaNeighbors& neighbors) {
+  const auto count=neighborList_->size();
+  if(count>static_cast<unsigned>(std::numeric_limits<int>::max())) {
+    error("CUDA NLIST exceeds the supported number of candidate pairs");
+  }
+  neighbors.offsets.assign(assigned_.size()+1,0);
+  for(unsigned p=0; p<count; ++p) {
+    const auto pair=neighborList_->getClosePair(p);
+    if(pair.first>=centers_.size() || pair.second<centers_.size() ||
+        pair.second-centers_.size()>=assigned_.size()) {
+      error("internal CUDA NLIST pair mapping is invalid");
+    }
+    ++neighbors.offsets[pair.second-centers_.size()+1];
+  }
+  std::partial_sum(neighbors.offsets.begin(),neighbors.offsets.end(),neighbors.offsets.begin());
+  auto cursor=neighbors.offsets;
+  neighbors.centers.resize(count);
+  for(unsigned p=0; p<count; ++p) {
+    const auto pair=neighborList_->getClosePair(p);
+    neighbors.centers[cursor[pair.second-centers_.size()]++]=pair.first;
+  }
+}
+
+SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment(const bool wait) {
+  const auto context=cudaContext();
+  if(!context && !wait) {
+    return Assignment();
+  }
+  auto& neighbors=shared_ ? shared_->cudaNeighbors : independentCudaNeighbors_;
+  // CPU and CUDA use the same rebuild and safe-skin criteria.
+  if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
+      (invalidateList_ || neighborListNeedsUpdate())) {
+    // The action that first created the list may be inactive on this step.
+    neighborList_->update(getPositions(),getPbc());
+    saveNeighborListReference();
+    ++neighbors.version;
+    neighbors.offsets.clear();
+  }
+  if(context) {
+    Assignment result;
+    result.cuda=context;
+    result.occupancy.resize(centers_.size());
+    std::vector<double> positions(3*getPositions().size());
+    for(unsigned atom=0; atom<getPositions().size(); ++atom) {
+      for(unsigned axis=0; axis<3; ++axis) {
+        positions[3*atom+axis]=getPosition(atom)[axis];
+      }
+    }
+    if(neighborCutoff_>0 && neighbors.offsets.empty()) {
+      packCudaNeighbors(neighbors);
+    }
+    callBackend([&]() {
+      if(neighborCutoff_>0) {
+        const double cutoff=filterCandidatePairs_ ? neighborCutoff_ :
+                            std::numeric_limits<double>::infinity();
+        context->forwardNeighbors(positions.data(),getPbc(),pbc_,kappa_,
+                                  cutoff,neighbors.offsets,neighbors.centers,neighbors.version);
+      } else {
+        context->forward(positions.data(),getPbc(),pbc_,kappa_);
+      }
+    });
+    result.pending=true;
+    if(wait) {
+      finishAssignment(result);
+    }
+    return result;
+  }
   // Split candidate pairs into contiguous MPI-owned ranges.
   const unsigned numberOfPairs=neighborList_->size();
   const unsigned stride=serial_ ? 1 : comm.Get_size();
@@ -603,6 +974,11 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
   const double negativeInfinity=-std::numeric_limits<double>::infinity();
 
   Assignment result;
+  const bool reuseGeometry=shared_ && shared_->valid &&
+                           shared_->geometry.size()==localPairCount;
+  if(reuseGeometry) {
+    ++geometryHits_;
+  }
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(
@@ -690,15 +1066,16 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       recordFailure(boxFailure);
       return;
     }
-    pair.distance=pbc_ ?
-                  pbcDistance(centerPosition,assignedPosition) :
-                  delta(centerPosition,assignedPosition);
+    pair.distance=reuseGeometry ? shared_->geometry[pairIndex-start].distance :
+                  (pbc_ ? pbcDistance(centerPosition,assignedPosition) :
+                   delta(centerPosition,assignedPosition));
     displacementAvailable=true;
     if(!finiteVector(pair.distance)) {
       recordFailure(InvalidDisplacement);
       return;
     }
-    pair.length=pair.distance.modulo();
+    pair.length=reuseGeometry ? shared_->geometry[pairIndex-start].length :
+                pair.distance.modulo();
     lengthAvailable=true;
     if(!std::isfinite(pair.length)) {
       recordFailure(InvalidLength);
@@ -709,7 +1086,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
       return;
     }
     if(filterCandidatePairs_ && pair.length>neighborCutoff_) {
-      pair.length=-1.0;
+      pair.score=std::numeric_limits<double>::quiet_NaN();
       return;
     }
     pair.score=-kappa_*pair.length;
@@ -840,11 +1217,14 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::calculateAssignment() {
     error(invalidPairMessage(selectedFailure));
   }
 
+  if(shared_ && shared_->mixedKappa && !reuseGeometry) {
+    shared_->geometry=result.pairs;
+  }
   if(filterCandidatePairs_) {
     result.pairs.erase(
       std::remove_if(result.pairs.begin(),result.pairs.end(),
     [](const PairData& pair) {
-      return pair.length<0.0;
+      return std::isnan(pair.score);
     }),result.pairs.end());
   }
   for(unsigned j=0; j<assigned_.size(); ++j) {
@@ -938,6 +1318,24 @@ void SoftVoronoiBase::addAssignmentDerivatives(
     error("internal defect derivative has the wrong size");
   }
 
+  if(assignment.cuda) {
+    std::vector<double> gradient(3*derivatives.size());
+    double boxGradient[9];
+    try {
+      assignment.cuda->backward(derivativeByDefect.data(),gradient.data(),boxGradient);
+    } catch(const std::exception& failure) {
+      error(std::string(failure.what())+" step="+std::to_string(getStep()));
+    }
+    for(unsigned i=0; i<derivatives.size(); ++i)
+      for(unsigned k=0; k<3; ++k) {
+        derivatives[i][k]+=gradient[3*i+k];
+      }
+    for(unsigned i=0; i<3; ++i)
+      for(unsigned j=0; j<3; ++j) {
+        virial(i,j)+=boxGradient[3*i+j];
+      }
+    return;
+  }
   unsigned numberOfThreads=1;
 #ifdef _OPENMP
   numberOfThreads=OpenMP::getGoodNumThreads(assignment.pairs);
@@ -1063,11 +1461,10 @@ the amount, separation, and location of coordination defects without
 hard-coding water, glycine, a catalyst, or an atom-list position.
 
 The construction follows the descriptors introduced for acid-base equilibria
-\cite Grifoni2019AcidBase and condensed-phase tautomerism
-\cite Grifoni2020Tautomeric.  Applications to solvated glycine, interfacial
+and condensed-phase tautomerism in the first two papers cited below.
+Applications to solvated glycine (third paper cited below), interfacial
 water ions, electric-field effects, and electrocatalytic nitrogen reduction
-are discussed in \cite Zhang2024Glycine, \cite Zhang2025Interfaces,
-\cite Zhang2025ElectricField, and \cite Zhang2026NRR.
+are discussed in Zhang et al. (2024, 2025, 2026).
 
 An illustrated bilingual guide with downloadable teaching structures,
 application examples, performance data, and additional references is
@@ -1083,20 +1480,20 @@ line or optional module is required.  Bias examples using
 
 ## Soft assignment and coordination defects
 
-For a center \f$i\f$ and an assigned atom \f$j\f$, let \f$d_{ij}\f$ be their
+For a center $i$ and an assigned atom $j$, let $d_{ij}$ be their
 minimum-image distance.  The assignment weight is
 
-\f[
+$$
  w_{ij}=\frac{\exp(-\kappa d_{ij})}
  {\sum_k\exp(-\kappa d_{kj})}.
-\f]
+$$
 
-By default, \f$d_{ij}\f$ is evaluated with the minimum-image convention.
+By default, $d_{ij}$ is evaluated with the minimum-image convention.
 NOPBC instead uses the direct coordinate difference, so the input coordinates
 must already follow a consistent unwrapped image convention.
 
 The denominator contains all CENTERS for the same assigned atom, so
-\f$\sum_i w_{ij}=1\f$.  KAPPA is positive and has inverse units of the current
+$\sum_i w_{ij}=1$.  KAPPA is positive and has inverse units of the current
 PLUMED length unit.  Increasing KAPPA sharpens the assignment toward the
 nearest center; reducing it spreads an assigned atom over more centers.  The
 implementation uses a shifted softmax, which improves numerical stability
@@ -1111,13 +1508,13 @@ reactant, transition, product, and host-switching frames before applying a
 bias.  Values such as 5 for smoother sampling or 100 for sharper diagnosis are
 application examples, not transferable defaults.
 
-The smooth occupancy and coordination defect of center \f$i\f$ are
+The smooth occupancy and coordination defect of center $i$ are
 
-\f[
+$$
  n_i=\sum_j w_{ij}, \qquad q_i=n_i-\nu_i .
-\f]
+$$
 
-REFERENCE supplies \f$\nu_i\f$.  A single value is broadcast to all CENTERS;
+REFERENCE supplies $\nu_i$.  A single value is broadcast to all CENTERS;
 otherwise provide exactly one value per center in the same order as CENTERS.
 For example, `REFERENCE=2` with two water O centers is the vector `(2,2)`, not
 a one-center calculation.  Fractional entries are valid when the model
@@ -1125,10 +1522,10 @@ deliberately shares one reference occupancy over symmetry-related centers;
 they should not be introduced by averaging chemically nonequivalent sites.
 The identities
 
-\f[
+$$
  \sum_i n_i=N_{\mathrm{assigned}}, \qquad
  \sum_i q_i=N_{\mathrm{assigned}}-\sum_i\nu_i
-\f]
+$$
 
 provide useful checks on a new chemical mapping.  The Action does not infer
 elements, molecules, water, or a special reactive site from atom order.
@@ -1136,24 +1533,24 @@ CENTERS and ASSIGNED must be nonempty, internally unique, and disjoint.
 
 VORONOI_COORDINATION returns
 
-\f[
+$$
  Q_p=\sum_{i\in S} a_i q_i^p ,
-\f]
+$$
 
-where SELECT defines \f$S\f$ and COEFFICIENTS supplies \f$a_i\f$.  SELECT
+where SELECT defines $S$ and COEFFICIENTS supplies $a_i$.  SELECT
 defaults to all CENTERS and COEFFICIENTS defaults to one.  SIGN restricts the
-sum to \f$q_i>0\f$ or \f$q_i<0\f$ when POSITIVE or NEGATIVE is selected.
+sum to $q_i>0$ or $q_i<0$ when POSITIVE or NEGATIVE is selected.
 
 - POWER=1 preserves the signed defect.  With sign filtering it is
-  non-differentiable exactly at \f$q_i=0\f$.
+  non-differentiable exactly at $q_i=0$.
 - POWER=2 measures defect activity without cancellation.  With sign
-  filtering its value and first derivative are continuous at \f$q_i=0\f$,
+  filtering its value and first derivative are continuous at $q_i=0$,
   but its second derivative has a cusp there.
 - COEFFICIENTS can distinguish chemically different selected centers or
   reproduce a published scalar.  Coefficients do not change the assignment.
 
 Analytical coordinate and box derivatives are provided.  The derivative with
-respect to a defect is \f$a_i\f$ for POWER=1 and \f$2a_iq_i\f$ for POWER=2
+respect to a defect is $a_i$ for POWER=1 and $2a_iq_i$ for POWER=2
 inside the selected sign branch, and zero outside it.  These derivatives are
 propagated through every assignment weight.  A CV intended for biasing should
 avoid a POWER=1 sign boundary, a neighbor-list membership change, or another
@@ -1197,13 +1594,13 @@ error.
 
 Omitting NLIST therefore has no hidden cutoff.  When NLIST is enabled,
 NL_CUTOFF is an absolute CENTER-ASSIGNED distance in the active PLUMED length
-units, not a bond cutoff or a water-specific constant.  If \f$d_{\min}\f$ is
-the nearest-center distance and \f$R\f$ is a trial cutoff, the screening
+units, not a bond cutoff or a water-specific constant.  If $d_{\min}$ is
+the nearest-center distance and $R$ is a trial cutoff, the screening
 relation
 
-\f[
+$$
  \exp[-\kappa(R-d_{\min})] \le \epsilon
-\f]
+$$
 
 can provide an initial estimate for making a single omitted score small.
 Smaller KAPPA generally requires a larger cutoff.  This estimate does not
@@ -1244,11 +1641,33 @@ renormalized.  Prefer exact mode for derivative validation and for small or
 moderate systems.  Use NLIST only after a value-and-force convergence scan
 demonstrates a useful speed/accuracy tradeoff for the target system.
 
+## Shared and CUDA assignment backends
+
+BACKEND=CPU is the default. Compatible actions in one PLUMED instance share
+geometry and, for equal KAPPA, weights and occupancies. NO_SHARE selects an
+independent CPU reference. Consumer-specific selections and reductions retain
+their own meanings.
+
+Load the optional CUDA plugin with [LOAD](LOAD.md) before the CV.
+BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the loaded
+backend supports the calculation and otherwise uses CPU. The log shows the
+selected backend. CUDA supports a single MPI rank with axis-aligned
+orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
+applies the same cutoff at each evaluation. OPES, scalar reductions and direct
+distance/position terms execute on CPU. Floating-point CUDA reductions may
+differ in the last digits between runs. With CUDA or AUTO the assignment on the
+GPU is started in advance, so that it can overlap with the work of other actions
+(see PLUMED\_LAUNCH in [the page on actions](actions.md)); its derivatives are
+computed when the action is reached.
+
+The plugin README describes compilation, device selection and examples.
+Choose a backend using matched numerical checks and workload timings.
+
 ## CPU parallelism and practical scaling
 
-The exact calculation evaluates \f$N_{\mathrm{centers}}
-N_{\mathrm{assigned}}\f$ pairs per step.  For water with every O in CENTERS
-and every H in ASSIGNED, this is \f$2N_{\mathrm{water}}^2\f$.  Exact mode
+The exact calculation evaluates $N_{\mathrm{centers}}
+N_{\mathrm{assigned}}$ pairs per step.  For water with every O in CENTERS
+and every H in ASSIGNED, this is $2N_{\mathrm{water}}^2$.  Exact mode
 therefore remains quadratic even when it is parallel: additional CPU workers
 reduce elapsed time but do not change the asymptotic cost.
 
@@ -1409,6 +1828,9 @@ PLUMED_REGISTER_ACTION(VoronoiCoordination,"VORONOI_COORDINATION")
 
 void VoronoiCoordination::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.addDOI("10.1073/pnas.1819771116");
+  keys.addDOI("10.1021/acs.jctc.0c00519");
+  keys.addDOI("10.1021/acs.jcim.4c00273");
   registerCommonKeywords(keys);
   keys.add("atoms","SELECT","Subset of CENTERS included in the scalar reduction; the default is all centers");
   keys.add("optional","COEFFICIENTS","One coefficient, or one value per atom in SELECT");
@@ -1446,7 +1868,7 @@ VoronoiCoordination::VoronoiCoordination(const ActionOptions& ao):
 }
 
 void VoronoiCoordination::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
   std::vector<double> derivativeByDefect(centers_.size(),0.0);
   double value=0.0;
@@ -1488,27 +1910,27 @@ sites are.
 
 ## Definition and group semantics
 
-Let \f$q_i\f$ be the smooth coordination defect of center \f$i\f$.  When both
+Let $q_i$ be the smooth coordination defect of center $i$.  When both
 GROUP1 and GROUP2 are supplied, the Action returns
 
-\f[
+$$
  D(G_1,G_2)=-\sum_{i\in G_1}\sum_{k\in G_2}d_{ik}q_iq_k .
-\f]
+$$
 
 GROUP1 and GROUP2 are explicit, nonempty, disjoint subsets of CENTERS.  When
 GROUP2 is omitted, unique pairs within GROUP1 are used:
 
-\f[
+$$
  D(G_1)=-\sum_{\substack{i,k\in G_1\\i<k}}d_{ik}q_iq_k .
-\f]
+$$
 
-The center-center distance \f$d_{ik}\f$ uses the minimum image unless NOPBC
+The center-center distance $d_{ik}$ uses the minimum image unless NOPBC
 is specified.  CENTERS, ASSIGNED, KAPPA, REFERENCE, NOPBC, and NLIST have the
 same meaning as on the VORONOI_COORDINATION page.  NLIST truncates only the
 CENTER-ASSIGNED candidates used to construct the defects; it never removes
 GROUP1/GROUP2 center-center reduction pairs.
 
-The product \f$q_iq_k\f$ emphasizes pairs of centers carrying correlated or
+The product $q_iq_k$ emphasizes pairs of centers carrying correlated or
 complementary defects without assigning a permanent ion identity.  For one
 positive and one negative defect, the overall minus sign makes the leading
 term positive and approximately equal to their separation when the defects
@@ -1519,7 +1941,7 @@ ion-ion distance.
 ## Derivatives, periodicity, and bias suitability
 
 Both contributions to the derivative are included: the direct derivative of
-\f$d_{ik}\f$ and the chain-rule derivative of every \f$q_i\f$ through the
+$d_{ik}$ and the chain-rule derivative of every $q_i$ through the
 soft assignment.  Analytical box derivatives are also provided using the
 same minimum-image vectors.  The Action stops if a requested center-center
 distance is zero or non-finite because its radial derivative is then
@@ -1594,7 +2016,7 @@ matching REFERENCE entry.  No C++ change is required.
 
 ## Worked example 3: solvated glycine
 
-The glycine distance used in \cite Zhang2024Glycine contains a water-glycine
+The glycine distance used in the paper cited below contains a water-glycine
 cross term and an internal N-O term.  Writing them separately removes the
 legacy `NRX` and last-three-atoms convention.  The numbered fixture below
 contains zwitterionic [Z] glycine, one complete water near its ammonium group,
@@ -1627,22 +2049,20 @@ vector `(2,2,2,0.5,0.5)` declares the neutral [N] chemical origin even though
 the fixture is [Z].  An ideal [Z] frame therefore has defects near
 `(0,0,+1,-0.5,-0.5)`, and the seven references sum to the seven atoms in AllH.
 The complete full-pair fixture gives `sp=0.0073`, `sd_water=0.0354`
-\f$\mathrm{\AA}\f$, `sd_internal=2.9789` \f$\mathrm{\AA}\f$, and
-`sd=3.0143` \f$\mathrm{\AA}\f$.
+$\mathrm{\AA}$, `sd_internal=2.9789` $\mathrm{\AA}$, and
+`sd=3.0143` $\mathrm{\AA}$.
 
 An alternative reference partition can accidentally give the same linear
 `sp` scalar when coefficients and total references cancel.  That does not
 make it equivalent for VORONOI_DISTANCE, POWER=2, or sign filtering.  Use one
 physically declared reference vector consistently across the coupled Actions.
-The coordinate files, runnable inputs, commands, and expected outputs are in
-`user-doc/tutorials/others/reactive-voronoi`.
 The complete application is available in the
 [GlycineTautomerism repository](https://github.com/Zhang-pchao/GlycineTautomerism/tree/main/Enhanced_Sampling).
 
 ## Worked example 4: nitrogen-reduction proton transfer
 
 The published Ru single-atom nitrogen-reduction input in
-\cite Zhang2026NRR uses water oxygen atoms and one reactive nitrogen as the
+Zhang et al. (2026) uses water oxygen atoms and one reactive nitrogen as the
 active Voronoi centers.  Catalyst and other adsorbate groups may appear in the
 full simulation input, but they are not automatically active in these Actions.
 
@@ -1695,6 +2115,7 @@ PLUMED_REGISTER_ACTION(VoronoiDistance,"VORONOI_DISTANCE")
 
 void VoronoiDistance::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.addDOI("10.1021/acs.jcim.4c00273");
   registerCommonKeywords(keys);
   keys.add("atoms","GROUP1","First explicit subset of CENTERS");
   keys.add("atoms","GROUP2","Optional disjoint second subset of CENTERS; if omitted, unique pairs within GROUP1 are used");
@@ -1744,7 +2165,7 @@ VoronoiDistance::VoronoiDistance(const ActionOptions& ao):
 }
 
 void VoronoiDistance::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
   std::vector<double> derivativeByDefect(centers_.size(),0.0);
   std::vector<Vector> derivatives(getNumberOfAtoms());
@@ -1794,7 +2215,7 @@ possible host centers by the smooth defects defined in
 moments with a physical Cartesian coordinate and provides analytical
 coordinate and box derivatives.
 
-Legacy index-weighted observables such as \f$\sum_i i q_i^2\f$ depend on the
+Legacy index-weighted observables such as $\sum_i i q_i^2$ depend on the
 order in which centers are listed: reordering chemically identical input can
 change the value even when the configuration is unchanged.  Such an index is
 useful at most as an internal diagnostic and is a poor general bias coordinate.
@@ -1803,29 +2224,29 @@ VORONOI_POSITION coordinate when the spatial location of a defect is needed.
 
 ## Definition
 
-For selected centers \f$S\f$, Cartesian axis \f$\alpha\f$, and fixed origin
-\f$x_0\f$, define the displacement
+For selected centers $S$, Cartesian axis $\alpha$, and fixed origin
+$x_0$, define the displacement
 
-\f[
+$$
  u_i=\operatorname{minimage}(x_{i,\alpha}-x_0)
-\f]
+$$
 
 when periodic boundaries are active.  NOPBC replaces it by the direct
 Cartesian difference.  The unnormalized Action is
 
-\f[
+$$
  P=\sum_{i\in S}g(q_i)f(u_i),
-\f]
+$$
 
-where \f$g(q_i)=q_i^2\f$ for defects retained by SIGN and zero for excluded
-defects.  The spatial function is \f$f(u)=u\f$ by default and
-\f$f(u)=|u|\f$ with ABSOLUTE.  SELECT defaults to all CENTERS.
+where $g(q_i)=q_i^2$ for defects retained by SIGN and zero for excluded
+defects.  The spatial function is $f(u)=u$ by default and
+$f(u)=|u|$ with ABSOLUTE.  SELECT defaults to all CENTERS.
 
 With NORMALIZE, the returned value is
 
-\f[
+$$
  \bar P=\frac{\sum_i g(q_i)f(u_i)}{\sum_i g(q_i)}.
-\f]
+$$
 
 The unnormalized form naturally approaches zero in a neutral configuration
 and measures position multiplied by defect activity.  The normalized form is
@@ -1846,8 +2267,8 @@ instead of returning a NaN or an arbitrarily amplified coordinate.
   a reactive molecular site in CENTERS for the shared assignment.
 
 The sign-gated squared weight has a continuous first derivative at
-\f$q_i=0\f$ but a discontinuous second derivative.  ABSOLUTE is
-non-differentiable at \f$u_i=0\f$.  Without ABSOLUTE, the direct Cartesian
+$q_i=0$ but a discontinuous second derivative.  ABSOLUTE is
+non-differentiable at $u_i=0$.  Without ABSOLUTE, the direct Cartesian
 derivative is smooth away from the periodic branch cut.
 
 ## Derivatives and bias suitability
@@ -1889,7 +2310,7 @@ the CV and its derivatives against full-pair mode.
 
 ## Worked example 1: water self-ions at an interface
 
-For a slab normal to \f$z\f$, positive and negative defects can be monitored
+For a slab normal to $z$, positive and negative defects can be monitored
 relative to a fixed reference plane.  The unnormalized form below remains
 defined in neutral configurations.
 
@@ -1946,7 +2367,7 @@ PRINT ARG=water_positive_z FILE=COLVAR
 
 The air-water and oil-water applications are available in the
 [OilWaterInterface repository](https://github.com/Zhang-pchao/OilWaterInterface/tree/main)
-and are described in \cite Zhang2025Interfaces.  Historical NL_CUTOFF,
+and are described in Zhang et al. (2025).  Historical NL_CUTOFF,
 NL_STRIDE, and ORIGIN values are system-specific and should not be copied
 without new full-pair and reference-frame validation.
 
@@ -2050,9 +2471,9 @@ VoronoiPosition::VoronoiPosition(const ActionOptions& ao):
 }
 
 void VoronoiPosition::calculate() {
-  const Assignment assignment=calculateAssignment();
+  const Assignment& assignment=calculateAssignment();
   const std::vector<double> defect=defects(assignment);
-  std::vector<double> displacement(selected_.size(),0.0);
+  std::vector<Vector> imagePositions(selected_.size());
   std::vector<double> function(selected_.size(),0.0);
   std::vector<double> weight(selected_.size(),0.0);
   std::vector<double> weightDerivative(selected_.size(),0.0);
@@ -2067,15 +2488,16 @@ void VoronoiPosition::calculate() {
     const Vector relative=pbc_ ?
                           pbcDistance(reference,getPosition(i)) :
                           delta(reference,getPosition(i));
-    displacement[s]=relative[axis_];
-    if(!std::isfinite(displacement[s])) {
+    const double displacement=relative[axis_];
+    imagePositions[s]=pbc_ ? reference+relative : getPosition(i);
+    if(!std::isfinite(displacement)) {
       error("VORONOI_POSITION displacement is non-finite");
     }
     function[s]=absolute_ ?
-                std::fabs(displacement[s]) : displacement[s];
+                std::fabs(displacement) : displacement;
     functionDerivative[s]=absolute_ ?
-                          (displacement[s]>0.0 ? 1.0 :
-                           (displacement[s]<0.0 ? -1.0 : 0.0)) : 1.0;
+                          (displacement>0.0 ? 1.0 :
+                           (displacement<0.0 ? -1.0 : 0.0)) : 1.0;
 
     const bool included=
       sign_=="ALL" ||
@@ -2115,11 +2537,8 @@ void VoronoiPosition::calculate() {
       Vector directDerivative;
       directDerivative[axis_]=directScalar;
       derivatives[i]+=directDerivative;
-      Vector imagePosition=getPosition(i);
-      if(pbc_) {
-        imagePosition[axis_]=origin_+displacement[s];
-      }
-      virial-=Tensor(imagePosition,directDerivative);
+      // A triclinic lattice translation can change every Cartesian component.
+      virial-=Tensor(imagePositions[s],directDerivative);
     }
   }
 

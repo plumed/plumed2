@@ -5,6 +5,10 @@ WHOLEMOLECULES ENTITY0=1-111
 JCOUPLING ...
     NOPBC
     TYPE=CUSTOM
+    # the parameters of TYPE=HAHN, so that mij and jmi must agree
+    A=7.09 B=-1.42 C=1.55 SHIFT=-1.0471975511965976
+    # the parameters of TYPE=HAHN, so that mij and jmi must agree
+    A=7.09 B=-1.42 C=1.55 SHIFT=-1.0471975511965976
     ATOMS1=@psi-2
     ATOMS2=@psi-3
     ATOMS3=@psi-4

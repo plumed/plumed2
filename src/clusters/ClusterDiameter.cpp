@@ -34,7 +34,7 @@ analysing the connected components of a [CONTACT_MATRIX](CONTACT_MATRIX.md) usin
 cm: CONTACT_MATRIX GROUP=1-100 SWITCH={CUBIC D_0=0.45  D_MAX=0.55}
 # Find the connected components from the contact matrix
 dfs: DFSCLUSTERING ARG=cm
-# Returns a 100-dimensional vector that is 1 if the correpsonding atom index is in the largest cluster and is zero otherwise
+# Returns a 100-dimensional vector that is 1 if the corresponding atom index is in the largest cluster and is zero otherwise
 clust: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
 # And determine the size of the largest cluster that was identified
 c1: CLUSTER_DIAMETER ARG=clust ATOMS=1-100

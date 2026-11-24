@@ -1,0 +1,7 @@
+t: TORSION ATOMS1=1,2,3,4 ATOMS2=5,6,7,8 ATOMS3=9,10,11,12 ATOMS4=13,14,15,16 ATOMS5=17,18,19,20
+m: MOMENTS ARG=t POWERS=2,3
+# the same angles shifted by pi, so that they straddle the boundary of the domain
+ts: COMBINE ARG=t PARAMETERS=pi PERIODIC=-pi,pi
+ms: MOMENTS ARG=ts POWERS=2,3
+PRINT ARG=m.*,ms.* FILE=colvar FMT=%12.8f
+RESTRAINT ARG=m.moment-2,ms.moment-3 AT=0,0 KAPPA=10,10

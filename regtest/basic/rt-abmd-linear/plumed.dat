@@ -1,0 +1,7 @@
+# the ratchet applied to the distance from the target (LINEAR): the target is crossed at frames 6-8, where the ratchet follows the distance on the other side
+d: DISTANCE ATOMS=1,2 NOPBC
+abmd: ABMD ARG=d TO=1.0 KAPPA=10.0 LINEAR
+# MIN is given (a distance) and the force constant is different
+d2: DISTANCE ATOMS=1,2 NOPBC
+abmd2: ABMD ARG=d2 TO=1.0 KAPPA=4.0 MIN=0.6 LINEAR
+PRINT ARG=d,abmd.bias,abmd.force2,abmd.d_min,abmd2.bias,abmd2.force2,abmd2.d2_min FILE=colvar STRIDE=1

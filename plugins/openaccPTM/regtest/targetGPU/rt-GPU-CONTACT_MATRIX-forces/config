@@ -1,0 +1,7 @@
+type=driver
+# forces are on all the atoms of the matrices: this tests the atomic accumulation of
+# the thread-unsafe forces in AccParallelTaskManager::applyForces
+arg="--plumed plumed.dat --ixyz isomers.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/isomers.xyz"
+
+#export NVCOMPILER_ACC_NOTIFY=31

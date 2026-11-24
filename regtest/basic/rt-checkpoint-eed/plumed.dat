@@ -1,0 +1,7 @@
+# exact restart of EFFECTIVE_ENERGY_DRIFT (drift, positions and forces of the previous step) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+r: RESTRAINT ARG=d1,d2 AT=1.0,0.5 KAPPA=10.0,20.0
+EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=1 FILE=eed.dat FMT=%.17g
+PRINT ARG=r.bias FILE=COLVAR STRIDE=1 FMT=%.17g

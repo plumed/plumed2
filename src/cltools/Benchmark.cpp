@@ -40,7 +40,6 @@
 #include <atomic>
 #include <csignal>
 #include <cstdio>
-#include <random>
 #include <algorithm>
 #include <chrono>
 #include <string_view>
@@ -178,9 +177,6 @@ are calculated using bootstrapping and the warm-up phase is discarded in the ana
 // declared in other parts of the code
 namespace {
 
-//this is a sugar for changing idea faster about the rng
-using generator = std::mt19937;
-
 std::atomic<bool> signalReceived(false);
 
 class SignalHandlerGuard {
@@ -307,35 +303,41 @@ public:
           trajectoryFile=tmp;
         }
       }
-      bool use_molfile=false;
-#ifdef __PLUMED_HAS_MOLFILE_PLUGINS
-      {
-        auto plugins_names=TrajectoryParser::getMolfilePluginsnames() ;
-        for(unsigned i=0; i<plugins_names.size(); i++) {
-          std::string molfile_key="--mf_"+plugins_names[i];
-          std::string traj_molfile;
-          parse(molfile_key,traj_molfile);
-          if(traj_molfile.length()>0) {
-            ++nn;
-            log << "Using --mf_"<<plugins_names[i]<<"=" << traj_molfile << "\n";
-            trajectoryFile=traj_molfile;
-            trajectory_fmt=plugins_names[i];
-            use_molfile=true;
-          }
+      for (const auto & opt : TrajectoryParser::deprecatedOptions()) {
+        std::string tmp;
+        parse(opt.first, tmp);
+        if (tmp.length()>0) {
+          log << "Using "<<opt.first<<"=" << tmp << " (deprecated: use --i"<<opt.second<<")\n";
+          std::fprintf(stderr,"WARNING: %s is deprecated (the molfile plugins were removed in v2.11) and will be removed in a future version: use --i%s\n",opt.first.c_str(),opt.second.c_str());
+          trajectory_fmt=opt.second;
+          ++nn;
+          trajectoryFile=tmp;
         }
       }
-#endif
+      for (const auto & opt : TrajectoryParser::removedOptions()) {
+        std::string tmp;
+        parse(opt, tmp);
+        if (tmp.length()>0) {
+          std::fprintf(stderr,"ERROR: %s\n",TrajectoryParser::removedOptionMessage(opt).c_str());
+          return std::nullopt;
+        }
+      }
       if(nn>1) {
         std::fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
         //let the "main"
+        return std::nullopt;
+      }
+      std::string trajFormat;
+      parse("--traj-format",trajFormat);
+      if(trajFormat.length()>0 && trajectory_fmt!="traj") {
+        std::fprintf(stderr,"ERROR: --traj-format can only be used with --itraj\n");
         return std::nullopt;
       }
       if (nn==1) {
         return std::make_unique<fileTraj>(
                  trajectory_fmt,
                  trajectoryFile,
-                 use_molfile,
-                 -1
+                 trajFormat
                );
       }
     }
@@ -396,7 +398,7 @@ Benchmark::Benchmark(const CLToolOptions& co ):
 
 int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
   // deterministic initializations to avoid issues with MPI
-  generator rng;
+  Random rng;
   PLMD::Random atomicGenerator;
 
   struct FileDeleter {
@@ -407,7 +409,8 @@ int Benchmark::main(FILE* in, FILE*out,Communicator& pc) {
     }
   };
 
-  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen("/dev/null","w")};
+  // "r+": the null device exists, nothing is created
+  std::unique_ptr<FILE,FileDeleter> log_dev_null{std::fopen(FileBase::nullDevice,"r+")};
 
   Log log;
   if(pc.Get_rank()==0) {
@@ -463,7 +466,7 @@ same syntax of --atom-distribution
     if(f->empty()) {
       return;
     }
-    generator bootstrapRng;
+    Random bootstrapRng;
 
     const auto size=f->back().timings.size();
     //B are the bootstrap iterations
@@ -472,7 +475,9 @@ same syntax of --atom-distribution
     // for some reasons, blocked bootstrap underestimates error
     // For now I keep it off. If I remove it, the code below could be simplified
     // if(numblocks>20) numblocks=20;
-    const auto blocksize=size/numblocks;
+    // size is zero if no timings were recorded (e.g. when only dumping the trajectory):
+    // do not divide by zero (it is a SIGFPE in builds without optimization)
+    const auto blocksize=numblocks>0 ? size/numblocks : 0;
 
     if(f->size()<2) {
       log<<"Single run, skipping comparative analysis\n";
@@ -484,7 +489,6 @@ same syntax of --atom-distribution
         log<<"Running comparative analysis, "<<numblocks<<" blocks with size "<<blocksize<<"\n";
 
         std::vector<std::size_t> choice(size);
-        std::uniform_int_distribution<> distrib(0, numblocks-1);
         std::vector<std::vector<long long int>> blocks(f->size());
 
         {
@@ -511,7 +515,7 @@ same syntax of --atom-distribution
         //B are the bootstrap iterations
         for(unsigned b=0; b<B; b++) {
           for(auto & c : choice) {
-            c=distrib(bootstrapRng);
+            c=bootstrapRng.RandUInt64(numblocks);
           }
           long long int reference=0;
           for(const auto & c : choice) {
@@ -520,7 +524,7 @@ same syntax of --atom-distribution
           for(auto i=0ULL; i<blocks.size(); i++) {
             long long int estimate=0;
             // this would lead to separate bootstrap samples for each estimate:
-            // for(auto & c : choice){c=distrib(bootstrapRng);}
+            // for(auto & c : choice){c=bootstrapRng.RandUInt64(numblocks);}
             for(const auto & c : choice) {
               estimate+=blocks[i][c];
             }
@@ -693,7 +697,8 @@ same syntax of --atom-distribution
   for(auto & k : kernels) {
     auto & p(k.handle);
     auto sw=k.stopwatch.startStop("A Initialization");
-    if(Communicator::plumedHasMPI() && domain_decomposition) {
+    // MPI should also be initialized (it is not with plumed --no-mpi)
+    if(Communicator::initialized() && domain_decomposition) {
       p.cmd("setMPIComm",&pc.Get_comm());
     }
     p.cmd("setRealPrecision",(int)sizeof(double));
@@ -710,6 +715,8 @@ same syntax of --atom-distribution
 
   std::vector<double> cell( 9 ), virial( 9 );
   std::vector<Vector> pos( natoms ), forces( natoms );
+  // positions in the shuffled order, used with --shuffled
+  std::vector<Vector> pos_shuffled;
   std::vector<double> masses( natoms, 1 ), charges( natoms, 0 );
 
   if(shuffled) {
@@ -717,7 +724,8 @@ same syntax of --atom-distribution
     for(unsigned i=0; i<natoms; i++) {
       shuffled_indexes[i]=i;
     }
-    std::shuffle(shuffled_indexes.begin(),shuffled_indexes.end(),rng);
+    rng.Shuffle(shuffled_indexes);
+    pos_shuffled.resize(natoms);
   }
 
   // non owning pointers, used for shuffling the execution order
@@ -737,8 +745,17 @@ same syntax of --atom-distribution
   SignalHandlerGuard sigTermGuard(SIGTERM, signalHandler);
 
   for(int step=0; nf<0 || step<nf; ++step) {
-    std::shuffle(kernels_ptr.begin(),kernels_ptr.end(),rng);
+    rng.Shuffle(kernels_ptr);
     distribution->frame(pos,cell,step,atomicGenerator);
+    if(shuffled) {
+      // atom shuffled_indexes[k] is passed in place k, so its position is copied there:
+      // the structure seen by PLUMED does not depend on the permutation
+      // (which is not portable, since std::shuffle is implementation defined)
+      for(unsigned k=0; k<natoms; k++) {
+        pos_shuffled[k]=pos[shuffled_indexes[k]];
+      }
+    }
+    auto & pos_passed(shuffled?pos_shuffled:pos);
 
     double* pos_ptr;
     double* for_ptr;
@@ -764,13 +781,13 @@ same syntax of --atom-distribution
           shift+=1;
         }
       }
-      pos_ptr=&pos[shift][0];
+      pos_ptr=&pos_passed[shift][0];
       for_ptr=&forces[shift][0];
       charges_ptr=&charges[shift];
       masses_ptr=&masses[shift];
       indexes_ptr=shuffled_indexes.data()+shift;
     } else {
-      pos_ptr=&pos[0][0];
+      pos_ptr=&pos_passed[0][0];
       for_ptr=&forces[0][0];
       charges_ptr=&charges[0];
       masses_ptr=&masses[0];

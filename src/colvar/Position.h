@@ -49,7 +49,7 @@ template <typename T>
 void Position<T>::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.setDisplayName("POSITION");
-  keys.add("atoms","ATOM","the atom number");
+  keys.add("atoms","ATOM","the atom whose position is computed");
   keys.add("atoms","ATOMS","the atom numbers that you would like to use the positions of");
   keys.addFlag("WHOLEMOLECULES",false,"if this is a vector of positions do you want to make the positions into a whole before");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the position separately and store them as label.a, label.b and label.c");
@@ -168,12 +168,18 @@ void Position<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvou
     cvout.values[0]=Tools::pbc(d[0]);
     cvout.values[1]=Tools::pbc(d[1]);
     cvout.values[2]=Tools::pbc(d[2]);
+    if( cvin.noderiv ) {
+      return;
+    }
     cvout.derivs[0][0]=matmul(cvin.pbc.getInvBox(),Versors::xp<T>);
     cvout.derivs[1][0]=matmul(cvin.pbc.getInvBox(),Versors::yp<T>);
     cvout.derivs[2][0]=matmul(cvin.pbc.getInvBox(),Versors::zp<T>);
   } else {
     for(unsigned i=0; i<3; ++i) {
       cvout.values[i]=cvin.pos[0][i];
+    }
+    if( cvin.noderiv ) {
+      return;
     }
     cvout.derivs[0][0]=Versors::xp<T>;
     cvout.derivs[1][0]=Versors::yp<T>;

@@ -1,0 +1,8 @@
+# two_chains.pdb contains two chains (A and B) that use the same residue numbers (1 to 14):
+# the backbone of each chain must be taken from its own atoms
+MOLINFO STRUCTURE=two_chains.pdb
+a: ALPHARMSD RESIDUES=all TYPE=DRMSD R_0=0.08 NN=8 MM=12
+b: ANTIBETARMSD RESIDUES=all TYPE=DRMSD STRANDS_CUTOFF=1.0 R_0=0.08 NN=8 MM=12
+p: PARABETARMSD RESIDUES=all TYPE=DRMSD STRANDS_CUTOFF=1.0 R_0=0.08 NN=8 MM=12
+PRINT ARG=a,b,p FILE=colvar FMT=%8.4f
+RESTRAINT ARG=a,b,p AT=1,2,3 KAPPA=1,2,3

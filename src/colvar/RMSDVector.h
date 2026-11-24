@@ -51,7 +51,13 @@ private:
   std::vector<double> force_stash;
   std::vector<double> input_buffer;
   PTM taskmanager;
+/// The threads of the loop over the tasks in applyNonZeroRankForces (see OpenMP.h)
+  OpenMP::TimedLoop forcesLoop;
   static void getPositionsFromInputData( const ParallelActionsInput& input, std::vector<Vector>& pos );
+/// When computing displacements with a non-simple alignment for many reference configurations
+/// the derivatives of the distance are not computed in performTask (the backward loop recomputes
+/// the alignment in gatherForces, where they are available), so gatherForces must apply them
+  static bool derivativesComputedInGatherForces( const RMSDVectorData& actiondata );
 public:
   static void registerKeywords(Keywords& keys);
   explicit RMSDVector(const ActionOptions&);

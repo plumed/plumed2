@@ -291,8 +291,7 @@ void DistanceFromContour::evaluateDerivatives( const Vector& root1, const double
     /* double newval = */evaluateKernel( getPosition(active_list[i]), root1, ddd );
     Vector distance = pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(active_list[i]) );
 
-    if( getNumberOfArguments()==1 ) {
-    } else {
+    if( getNumberOfArguments()!=1 ) {
       sumd += ddd[dir];
       for(unsigned j=0; j<3; ++j) {
         atom_deriv[i][j] = -ddd[j];

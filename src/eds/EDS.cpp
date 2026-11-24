@@ -19,6 +19,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "core/ActionAtomistic.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
+#include "tools/Checkpoint.h"
 #include "tools/File.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"
@@ -77,7 +79,7 @@ The bias forces modify the virial and this can change your simulation density if
 One way to avoid changing the virial contribution from the bias is to add the keyword VIRIAL=1.0, which changes how the bias
 is computed to minimize its contribution to the virial. This can also lead to smaller magnitude biases that are more robust if
 transferred to other systems.  VIRIAL=1.0 can be a reasonable starting point and increasing the value changes the balance between matching
-the set-points and minimizing the virial. See \cite Amirkulova2019Recent for details on the equations. Since the coupling constants
+the set-points and minimizing the virial. See the third paper cited below for details on the equations. Since the coupling constants
 are unique with a single CV, VIRIAL is not applicable with a single CV. When used with multiple CVs, the CVs should be correlated
 which is almost always the case.
 
@@ -221,6 +223,8 @@ private:
   bool b_lm_;
   bool b_virial_;
   bool b_weights_;
+  // restarting from a CHECKPOINT: the state is restored by readCheckpoint, IN_RESTART is not read
+  bool from_checkpoint_=false;
   int seed_;
   int update_period_;
   int avg_coupling_count_;
@@ -253,10 +257,16 @@ private:
 
 public:
   explicit EDS(const ActionOptions &);
-  void calculate();
-  void update();
-  void turnOnDerivatives();
+  void calculate() override;
+  void update() override;
+  void turnOnDerivatives() override;
   static void registerKeywords(Keywords &keys);
+/// The couplings, the running statistics and the random number generator are stored in the checkpoint
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   ~EDS();
 };
 
@@ -287,7 +297,7 @@ void EDS::registerKeywords(Keywords &keys) {
   keys.add("optional", "OUT_RESTART", "Output file for all information needed to continue EDS simulation. "
            "If you have the RESTART directive set (global or for EDS), this file will be appended to. "
            "Note that the header will be printed again if appending.");
-  keys.add("optional", "IN_RESTART", "Read this file to continue an EDS simulation. "
+  keys.add("optional", "IN_RESTART", "Read this file to continue an EDS simulation (it is not read when restarting from a CHECKPOINT, which stores the full state). "
            "If same as OUT_RESTART and you have not set the RESTART directive, the file will be backed-up and overwritten with new output. "
            "If you do have the RESTART flag set and it is the same name as OUT_RESTART, this file will be appended.");
 
@@ -479,7 +489,7 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
       }
       // cppcheck-suppress nullPointerRedundantCheck
       if (!(a->getPbc().isOrthorombic())) {
-        log.printf("  WARNING: EDS Virial should have a orthorombic cell\n");
+        log.printf("  WARNING: EDS Virial should have a orthorhombic cell\n");
       }
     }
     log.printf("done.\n");
@@ -492,16 +502,20 @@ EDS::EDS(const ActionOptions &ao) : PLUMED_BIAS_INIT(ao),
     error("EDS keyword MEAN can only be used along with keyword FREEZE");
   }
 
-  if (in_restart_name_ != "") {
+  from_checkpoint_ = getRestart() && plumed.checkpointing.isRestartingFromCheckpoint();
+  if (from_checkpoint_ && in_restart_name_ != "") {
+    log.printf("  restarting from the checkpoint: IN_RESTART %s is not read\n", in_restart_name_.c_str());
+  }
+  if (in_restart_name_ != "" && !from_checkpoint_) {
     b_restart_ = true;
     log.printf("  reading simulation information from file: %s\n", in_restart_name_.c_str());
     readInRestart(b_mean);
   } else {
 
     // in driver, this results in kbt of 0
-    if (kbt_ == 0) {
+    if (kbt_ == 0 && !from_checkpoint_) {
       error("  Unable to determine valid kBT. "
-            "Could be because you are runnning from driver or MD didn't give temperature.\n"
+            "Could be because you are running from driver or MD didn't give temperature.\n"
             "Consider setting temperature manually with the TEMP keyword.");
       kbt_ = 1;
     }
@@ -760,6 +774,83 @@ void EDS::writeOutRestart() {
   out_restart_.printField();
 }
 
+void EDS::writeCheckpoint(CheckpointWriter& w) {
+  w.write("coupling", current_coupling_);
+  w.write("set_coupling", set_coupling_);
+  w.write("target_coupling", target_coupling_);
+  w.write("max_coupling_range", max_coupling_range_);
+  w.write("max_coupling_grad", max_coupling_grad_);
+  w.write("coupling_rate", coupling_rate_);
+  w.write("coupling_accum", coupling_accum_);
+  w.write("means", means_);
+  w.write("step_size", step_size_);
+  w.write("pseudo_virial", pseudo_virial_);
+  w.write("ssds", ssds_);
+  std::vector<double> covar;
+  if (b_covar_ || b_lm_) {
+    for (unsigned int i = 0; i < ncvs_; ++i) {
+      for (unsigned int j = 0; j < ncvs_; ++j) {
+        covar.push_back(covar_(i, j));
+      }
+    }
+  }
+  w.write("covar", covar);
+  w.write("pseudo_virial_sum", pseudo_virial_sum_);
+  w.write("max_logweight", max_logweight_);
+  w.write("wsum", wsum_);
+  w.write("kbt", kbt_);
+  w.write("update_period", update_period_);
+  w.write("avg_coupling_count", avg_coupling_count_);
+  w.write("update_calls", update_calls_);
+  w.write("adaptive", b_adaptive_ ? 1 : 0);
+  w.write("equil", b_equil_ ? 1 : 0);
+  w.write("random", rand_.stateToString());
+  writeComponentValues(w);
+}
+
+void EDS::readCheckpoint(CheckpointReader& r) {
+  auto readVector = [&](const std::string &name, std::vector<double> &v) {
+    std::vector<double> tmp;
+    r.read(name, tmp);
+    if (tmp.size() != v.size()) {
+      error("the checkpoint was written with a different size of " + name + ": different number of CVs or EDS options");
+    }
+    v = tmp;
+  };
+  readVector("coupling", current_coupling_);
+  readVector("set_coupling", set_coupling_);
+  readVector("target_coupling", target_coupling_);
+  readVector("max_coupling_range", max_coupling_range_);
+  readVector("max_coupling_grad", max_coupling_grad_);
+  readVector("coupling_rate", coupling_rate_);
+  readVector("coupling_accum", coupling_accum_);
+  readVector("means", means_);
+  readVector("step_size", step_size_);
+  readVector("pseudo_virial", pseudo_virial_);
+  readVector("ssds", ssds_);
+  std::vector<double> covar;
+  r.read("covar", covar);
+  if (covar.size() != ((b_covar_ || b_lm_) ? ncvs_ * ncvs_ : 0)) {
+    error("the checkpoint was written with different EDS options (COVAR or LM)");
+  }
+  for (unsigned int i = 0; i < covar.size() / (ncvs_ > 0 ? ncvs_ : 1); ++i) {
+    for (unsigned int j = 0; j < ncvs_; ++j) {
+      covar_(i, j) = covar[i * ncvs_ + j];
+    }
+  }
+  r.read("pseudo_virial_sum", pseudo_virial_sum_);
+  r.read("max_logweight", max_logweight_);
+  r.read("wsum", wsum_);
+  r.read("kbt", kbt_);
+  r.read("update_period", update_period_);
+  r.read("avg_coupling_count", avg_coupling_count_);
+  r.read("update_calls", update_calls_);
+  b_adaptive_ = r.get<int>("adaptive") != 0;
+  b_equil_ = r.get<int>("equil") != 0;
+  rand_.stateFromString(r.get<std::string>("random"));
+  readComponentValues(r);
+}
+
 void EDS::calculate() {
 
   // get center values from action if necessary
@@ -892,7 +983,13 @@ void EDS::calc_covar_step_size() {
 void EDS::calc_ssd_step_size() {
   double tmp;
   for (unsigned int i = 0; i < ncvs_; ++i) {
-    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / fmax(1, update_calls_ - 1);
+    // with a single sample the variance is not defined: ssds_ is zero up to
+    // rounding, which with LOGWEIGHTS could otherwise give a full-size step
+    if (update_calls_ < 2) {
+      step_size_[i] = 0;
+      continue;
+    }
+    tmp = 2. * difference(i, center_[i], means_[i]) * ssds_[i] / (update_calls_ - 1);
     step_size_[i] = tmp / kbt_ / scale_[i];
   }
 }
@@ -905,6 +1002,7 @@ void EDS::update_pseudo_virial() {
   for (unsigned int i = 0; i < ncvs_; ++i) {
     // checked in setup to ensure this cast is valid.
     ActionAtomistic *cv = dynamic_cast<ActionAtomistic *>(getPntrToArgument(i)->getPntrToAction());
+    plumed_assert( cv );
     Tensor v(cv->getVirial());
     Tensor box(cv->getBox());
     const unsigned int natoms = cv->getNumberOfAtoms();
@@ -918,7 +1016,7 @@ void EDS::update_pseudo_virial() {
     // dCV/dV = sum dCV/dvij * vij / V
     // where vij is box element
     // add diagonal of virial tensor to get net pressure
-    // TODO: replace this with adjugate (Jacobi's Formula)   for non-orthorombic case(?)
+    // TODO: replace this with adjugate (Jacobi's Formula)   for non-orthorhombic case(?)
     p = v(0, 0) * box(0, 0) + v(1, 1) * box(1, 1) + v(2, 2) * box(2, 2);
     p /= volume;
 
@@ -1005,7 +1103,7 @@ void EDS::update() {
   // The + 2 is so we have an extra line showing that the bias isn't changing (for my sanity and yours)
   if (b_write_restart_) {
     if (getStep() == 0 ||
-        ((update_period_ < 0 && !b_freeze_ && update_calls_ <= fabs(update_period_) + 2) ||
+        ((update_period_ < 0 && !b_freeze_ && update_calls_ <= std::abs(update_period_) + 2) ||
          (update_period_ > 0 && update_calls_ % update_period_ == 0))) {
       writeOutRestart();
     }
@@ -1016,9 +1114,9 @@ void EDS::update() {
   // assume forces already applied and saved
   // are we ramping to a constant value and not done equilibrating?
   if (update_period_ < 0) {
-    if (update_calls_ <= fabs(update_period_) && !b_freeze_) {
+    if (update_calls_ <= std::abs(update_period_) && !b_freeze_) {
       for (unsigned int i = 0; i < ncvs_; ++i) {
-        current_coupling_[i] += (target_coupling_[i] - set_coupling_[i]) / fabs(update_period_);
+        current_coupling_[i] += (target_coupling_[i] - set_coupling_[i]) / std::abs(update_period_);
       }
     }
     // make sure we don't reset update calls

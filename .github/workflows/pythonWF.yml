@@ -14,7 +14,7 @@ env:
 
 jobs:
   linux-build-plumed:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v6
     - uses: actions/cache@v5
@@ -51,14 +51,19 @@ jobs:
   linux-test-python:
     needs:
     - linux-build-plumed
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        pyversion: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
+        pyversion: [ "3.11", "3.12", "3.13", "3.14", "3.15" ]
     steps:
       #still checking out to install the plumed package and pycv
     - uses: actions/checkout@v6
+    # h5py may need a source build for the newest Python version.
+    - name: Install HDF5 development libraries
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y libhdf5-dev
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -69,6 +74,8 @@ jobs:
       uses: ./.github/actions/linux-setup
       with:
         export-kernel: true
+        # this job only unpacks the plumed built by linux-build-plumed, it does not need the extra space
+        free-space: false
 
     - name: Download artifacts
       uses: actions/download-artifact@v7

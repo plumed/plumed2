@@ -4,7 +4,7 @@ import json
 import shutil
 import requests
 import subprocess
-import yaml
+import sys
 import glob
 import numpy as np
 from pathlib import Path
@@ -15,6 +15,9 @@ from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript,
 import networkx as nx
 from multiprocessing import Pool, cpu_count
 import functools
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "extensions"))
+from metadata import read_header, read_metadata
 
 PLUMED = "plumed"
 
@@ -440,12 +443,56 @@ There are also some shortcuts available:
 
 The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
    
-The table below lists all the available modules and tells you whether they are always compiled, on by default or off by default.  An alternative, graphical
-view of this information is available [here](modulegraph.md).
+## Module dependencies
+
+The table below lists the direct native dependencies declared in each module's `use:` field in `module.yml`. The same list appears on each module page.
+Always-compiled components, such as `core` and `tools`, are supplied by the PLUMED kernel. Components without their own action documentation are shown without a link.
+
+A shortcut can also invoke actions from other modules at runtime. These action requirements are included in the [dependency graph](modulegraph.md), but they are
+separate from the native dependencies in the table. They do not create package dependencies: install and load any additional modules needed by the shortcuts you use.
+
+## Separately installed modules
+
+Optional modules can also be built as separate libraries against an installed PLUMED base. Use the same PLUMED source version and a compatible compiler:
+
+```bash
+./configure --with-extension-base=/path/to/base --enable-extension-modules=ves:pamm --prefix=/path/to/extensions
+make
+make install
+```
+
+This builds VES, PAMM and any native dependencies that are missing from the base, including adjmat. It does not rebuild the kernel.
+The libraries must match the exact base version and build. Distributions can provide them as packages such as `plumed-ext-ves`.
+Their package dependencies include the native module dependencies from `use:`, but not shortcut requirements.
+
+Installed modules are loaded automatically from `lib/plumed/plugins` beside the loaded kernel. Set `PLUMED_PLUGIN_PATH` to a colon-separated list of additional
+registration directories when libraries are installed in separate prefixes, as with HPC environment modules. Include the directories of their native dependencies too.
+
+Set `PLUMED_AUTOLOAD=0` before starting PLUMED to disable automatic loading. A module can still be loaded explicitly with [LOAD](LOAD.md):
+
+````
+LOAD MODULE=ves
+````
+
+or for a command-line invocation:
+
+```bash
+PLUMED_AUTOLOAD=0 plumed --load-module=ves driver --plumed plumed.dat --noatoms
+```
+
+Explicit loading makes the requested module and its native dependencies available to that PLUMED object or command-line invocation. Other objects keep their own module selection.
+Use `plumed modules --list` to list runtime modules and `plumed modules --has ves` to check their presence (exit status 0 when available, 1 otherwise).
+`plumed modules --has-feature libtorch` checks native features provided by the base and loaded extensions. Both `plumed config` and the standalone `plumed-config` script describe the static base build; the latter can be used when cross compiling.
+
+The table below lists the modules, their default build setting and their direct native dependencies. The [graph](modulegraph.md) also includes action requirements.
 
 """
     mf.write(content)
-    printDataTable(mf, ["Name", "Description", "Authors", "Type"], tabledata)
+    printDataTable(
+        mf,
+        ["Name", "Description", "Authors", "Type", "Direct native dependencies"],
+        tabledata,
+    )
 
 
 def printPluginListPage(mf, version, tabledata):
@@ -492,10 +539,8 @@ def addSpecialGroupsToPage(file, groups):
 
 
 def getModuleType(module):
-    if not Path("../../src/" + module + "/module.type").is_file():
-        return "always"
-    with open("../../src/" + module + "/module.type") as f:
-        return f.read().strip()
+    declaration = Path("../../src") / module / "module.yml"
+    return read_header(declaration)["type"] if declaration.is_file() else "always"
 
 
 def drawModuleNode(index, key, of):
@@ -510,12 +555,24 @@ def drawModuleNode(index, key, of):
         raise Exception("don't know how to draw node of type " + getModuleType(key))
 
 
-def getModuleRequirementsFromMakefile(thismodule):
-    with open("../src/" + thismodule + "/Makefile") as f:
-        for line in f.readlines():
-            if "USE=" in line:
-                return line.replace("USE=", "").split()
-    return []
+def getModuleRequirements(thismodule):
+    declaration = (
+        Path(__file__).resolve().parent.parent / "src" / thismodule / "module.yml"
+    )
+    return read_header(declaration)["use"]
+
+
+def formatModuleRequirements(thismodule, documented_modules):
+    dependencies = getModuleRequirements(thismodule)
+    return (
+        ", ".join(
+            '<a href="../module_' + name + '">' + name + "</a>"
+            if name in documented_modules
+            else "<code>" + name + "</code>"
+            for name in dependencies
+        )
+        or "None"
+    )
 
 
 def createModuleGraph(version, plumed_syntax):
@@ -531,9 +588,9 @@ def createModuleGraph(version, plumed_syntax):
             for req in value["needs"]:
                 if plumed_syntax[req]["module"] != thismodule:
                     requires[thismodule].add(plumed_syntax[req]["module"])
-    # Get dependencies from Makefiles
+    # Get direct native dependencies from module declarations
     for thismodule in requires.keys():
-        for conn in getModuleRequirementsFromMakefile(thismodule):
+        for conn in getModuleRequirements(thismodule):
             if conn in requires.keys():
                 requires[thismodule].add(conn)
 
@@ -555,7 +612,9 @@ PLUMED to include it during the configure stage by using:
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).
 
-You can view the information about the modules in the graph above in a table by following [the following link](modules.md). 
+This graph combines native `use:` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
+The complete direct native dependency lists are given in the [module table](modules.md#module-dependencies) and on each module page.
+Only the native `use:` dependencies determine separately installed module packages.
 
 <pre class=\"mermaid\">
 """
@@ -661,8 +720,7 @@ You can view the information about the modules in the graph above in a table by 
 
 def getModuleDictionary(modname):
     if os.path.exists("../../src/" + modname + "/module.yml"):
-        with open("../../src/" + module + "/module.yml") as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata("../../src/" + modname + "/module.yml")
         return moddict
     return {
         "name": modname,
@@ -674,8 +732,7 @@ def getModuleDictionary(modname):
 
 def getPluginDictionary(plugname):
     if os.path.exists("../../plugins/" + plugname + "/plugin.yml"):
-        with open("../../plugins/" + plugname + "/plugin.yml") as f:
-            plugdict = yaml.load(f, Loader=yaml.BaseLoader)
+        plugdict = read_metadata("../../plugins/" + plugname + "/plugin.yml")
         return plugdict
     return {
         "name": plugname,
@@ -695,6 +752,7 @@ def createModulePage(
     plumedtags,
     tagdictionary,
     broken_inputs,
+    documented_modules,
 ):
     with open("module_" + modname + ".md", "w") as f:
         f.write("# [Module](modules.md): " + modname + "\n\n")
@@ -740,6 +798,11 @@ def createModulePage(
                 + " eggs](https://img.shields.io/badge/nest-0-red.svg)"
             )
         f.write("|\n\n")
+        f.write(
+            "**Direct native dependencies:** "
+            + formatModuleRequirements(modname, documented_modules)
+            + "\n\nSee [module dependencies](modules.md#module-dependencies) for the distinction between native dependencies and shortcut requirements.\n\n"
+        )
         f.write("## Details \n")
         if os.path.exists("../../src/" + modname + "/module.md"):
             with open("../../src/" + modname + "/module.md") as iff:
@@ -907,7 +970,7 @@ def createPluginPage(
                 + " eggs](https://img.shields.io/badge/nest-"
                 + str(neggs)
                 + "-green.svg)](https://www.plumed-nest.org/browse.html?module="
-                + modname
+                + plugname
                 + ")"
             )
         else:
@@ -988,16 +1051,19 @@ def createCLToolPage(
         if tool in plumeddocs.keys():
             if os.path.isfile("../src/" + value["module"] + "/module.yml"):
                 actions = set()
-                ninp, nf = processMarkdownString(
-                    plumeddocs[tool],
-                    "docs/" + tool + ".md",
-                    (PLUMED,),
-                    (version,),
-                    actions,
-                    f,
-                    ghmarkdown=False,
-                    test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
-                )
+                # as for the action pages, the inputs are processed from docs, so that
+                # the files listed in INPUTFILES (e.g. regtest/...) are found
+                with cd("docs"):
+                    ninp, nf = processMarkdownString(
+                        plumeddocs[tool],
+                        tool + ".md",
+                        (PLUMED,),
+                        (version,),
+                        actions,
+                        f,
+                        ghmarkdown=False,
+                        test_plumed_kwargs={"header": MKDOCS_IGNORE_SEARCH},
+                    )
                 if nf[0] > 0:
                     broken_inputs.append(
                         ['<a href="../' + tool + '">' + tool + "</a>", str(nf[0])]
@@ -1539,7 +1605,6 @@ if (
     broken_inputs = []
 
     # Create the general pages
-    actions = set()
     pages = glob.glob("*.md")
     run_action_page = functools.partial(
         generateGeneralPages, plumed=PLUMED, version=version
@@ -1612,8 +1677,7 @@ if (
     # Read in all the module pages
     tagdictionary = {}
     for file in glob.glob("../src/*/module.yml"):
-        with open(file) as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata(file)
         if "tags" in moddict:
             for key, value in moddict["tags"].items():
                 if key in tagdictionary.keys():
@@ -1684,6 +1748,7 @@ if (
                     mod_dict["description"],
                     mod_dict["authors"],
                     getModuleType(module),
+                    formatModuleRequirements(module, modules),
                 ]
             )
             createModulePage(
@@ -1696,6 +1761,7 @@ if (
                 plumedtags,
                 tagdictionary,
                 broken_inputs,
+                modules,
             )
         if not os.path.exists("../src/" + module + "/module.md") or not os.path.exists(
             "../src/" + module + "/module.yml"
@@ -1755,3 +1821,9 @@ if (
     createSummaryPage(
         broken_inputs, nodocs, undocumented_keywords, noexamples, unexempled_keywords
     )
+    # Pages with failing examples, one "page number_of_failures" per line, read by check_examples.py
+    with open("broken-examples.txt", "w") as f:
+        for link, nbroken in sorted(broken_inputs, key=lambda x: x[0]):
+            f.write(
+                BeautifulSoup(link, "html.parser").get_text() + " " + nbroken + "\n"
+            )

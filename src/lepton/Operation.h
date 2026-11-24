@@ -1,45 +1,11 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * -------------------------------------------------------------------------- *
- *                                   Lepton                                   *
- * -------------------------------------------------------------------------- *
- * This is part of the Lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
- *                                                                            *
- * Portions copyright (c) 2013-2016 Stanford University and the Authors.      *
- * Authors: Peter Eastman                                                     *
- * Contributors:                                                              *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS, CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,    *
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR      *
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
- * -------------------------------------------------------------------------- *
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_lepton_Operation_h
 #define __PLUMED_lepton_Operation_h
 
 /* -------------------------------------------------------------------------- *
  *                                   lepton                                   *
  * -------------------------------------------------------------------------- *
- * This is part of the lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
+ * This is part of the lepton expression parser.                              *
+ * See https://openmm.org/development.                                        *
  *                                                                            *
  * Portions copyright (c) 2009-2019 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
@@ -905,7 +871,7 @@ public:
         return new Delta();
     }
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
-        return (args[0] == 0.0 ? 1.0/0.0 : 0.0);
+        return (args[0] == 0.0 ? std::numeric_limits<double>::infinity() : 0.0);
     }
     ExpressionTreeNode differentiate(const std::vector<ExpressionTreeNode>& children, const std::vector<ExpressionTreeNode>& childDerivs, const std::string& variable) const;
 };
@@ -1087,7 +1053,7 @@ public:
     double evaluate(double* args, const std::map<std::string, double>& variables) const {
         if (isIntPower) {
             // Integer powers can be computed much more quickly by repeated multiplication.
-            
+
             int exponent = intValue;
             double base = args[0];
             if (exponent < 0) {
@@ -1299,4 +1265,5 @@ LEPTON_CLASS_OPERATION(Acsch,acsch,ACSCH,1,std::log(1.0/args[0]+std::sqrt(1.0/(a
 } // namespace lepton
 } // namespace PLMD
 
-#endif /*LEPTON_OPERATION_H_*/
+
+#endif // __PLUMED_lepton_Operation_h

@@ -40,7 +40,7 @@ class MatrixTimesVectorData {
 public:
   std::size_t fshift;
   Matrix<std::size_t> pairs;
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1],fshift)
     pairs.toACCDevice();
@@ -49,7 +49,7 @@ public:
     pairs.removeFromACCDevice();
 #pragma acc exit data delete(fshift,this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 class MatrixForceIndexInput {
@@ -138,6 +138,12 @@ public:
   void prepare() override ;
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// Task i only uses row i of the input matrices
+  bool readsOnlyOwnRowOfArgument( unsigned iarg ) const override {
+    return std::is_same_v<myPTM,defaultPTM> && !taskmanager.runInSerial() && getNumberOfMasks()<=0
+           && getPntrToArgument(iarg)->getRank()==2
+           && getPntrToArgument(iarg)->getShape()[0]==getConstPntrToComponent(0)->getShape()[0];
+  }
   int checkTaskIsActive( const unsigned& itask ) const override ;
   /// Override this so we write the graph properly
   std::string writeInGraph() const override {
@@ -300,21 +306,38 @@ void MatrixTimesVectorBase<CV, myPTM>::calculate() {
   } else {
     nvectors = getNumberOfArguments()-1;
   }
+  // Each product has a derivative for every element of the matrix row and for
+  // the vector element it multiplies: the number of columns of the sparse
+  // matrix bounds the length of a row. Sizing this with the length of the
+  // vector instead made the per-task derivative buffer of the GPU task manager
+  // quadratic in the number of atoms
+  std::size_t maxcols = 0;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( getPntrToArgument(i)->getRank()==2 && getPntrToArgument(i)->getNumberOfColumns()>maxcols ) {
+      maxcols = getPntrToArgument(i)->getNumberOfColumns();
+    }
+  }
   if constexpr ( helpers::isRowSum<CV>) { //getName()=="MATRIX_VECTOR_PRODUCT_ROWSUMS" ) {
-    taskmanager.setupParallelTaskManager( nder, 0 );
+    taskmanager.setupParallelTaskManager( maxcols, 0 );
   } else {
-    taskmanager.setupParallelTaskManager( 2*nder, nvectors*nder );
+    taskmanager.setupParallelTaskManager( 2*maxcols, nvectors*nder );
   }
   taskmanager.runAllTasks();
 }
 
 template <class CV, typename myPTM>
 int MatrixTimesVectorBase<CV, myPTM>::checkTaskIsActive( const unsigned& itask ) const {
+  const auto & rd = getRowDistribution();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     Value* myarg = getPntrToArgument(i);
     if( myarg->getRank()==1 && !myarg->hasDerivatives() ) {
       return 0;
     } else if( myarg->getRank()==2 && !myarg->hasDerivatives() ) {
+      // the rows of this argument owned by the other MPI processes are not known here: the task
+      // is kept, the process that owns it decides, and its result arrives with the MPI sum
+      if( rd.byRow && rd.localArgument[i] && static_cast<int>(itask%comm.Get_size())!=comm.Get_rank() ) {
+        return 1;
+      }
       if (myarg->checkValueIsActiveForMMul(itask)) {
         return 1;
       }

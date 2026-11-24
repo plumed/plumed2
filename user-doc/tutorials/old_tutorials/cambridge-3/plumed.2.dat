@@ -1,6 +1,0 @@
-INCLUDE FILE=plumed-common.dat
-
-#this is the metadynamics on the third cv
-be: METAD ARG=ab.lessthan SIGMA=0.02 HEIGHT=0.05 PACE=200 TEMP=277 BIASFACTOR=8 GRID_MIN=0 GRID_MAX=2
-
-ENDPLUMED

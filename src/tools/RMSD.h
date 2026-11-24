@@ -131,10 +131,8 @@ public:
   void setAlign(const std::vector<double>& alignTo,
                 bool normalize_weights=true,
                 bool remove_center=true);
-  std::vector<double> getAlign();
 /// set align
   void setDisplace(const std::vector<double>& displaceFrom, bool normalize_weights=true);
-  std::vector<double> getDisplace();
 ///
   std::string getMethod() const ;
 /// workhorses
@@ -189,15 +187,6 @@ public:
                                     std::vector<Vector>& DDistDPos,
                                     std::vector<Vector>&  DDistDRef,
                                     bool squared=false) const;
-
-  template <bool safe,bool alEqDis>
-  double optimalAlignment_SOMA(const std::vector<double>& alignTo,
-                               const std::vector<double>& displaceFrom,
-                               const View<Vector> positions,
-                               const std::vector<Vector>& ref,
-                               std::vector<Vector>& DDistDPos,
-                               std::vector<Vector>&  DDistDRef,
-                               bool squared=false) const;
 
   template <bool safe,bool alEqDis>
   double optimalAlignment_DDistDRef_Rot_DRotDPos(const std::vector<double>& alignTo,
@@ -258,11 +247,6 @@ public:
 /// Other convenience methods:
 /// calculate the derivative of distance respect to position(DDistDPos) and reference (DDistDPos)
   double calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef, const bool squared=false   );
-/// calculate the derivative for SOMA (i.e. derivative respect to reference frame without the matrix derivative)
-  double calc_SOMA( const std::vector<Vector>& positions,
-                    std::vector<Vector>&DDistDPos,
-                    std::vector<Vector>& DDistDRef,
-                    const bool squared=false);
 ///
   double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions,
                                       std::vector<Vector>&DDistDPos,
@@ -340,7 +324,6 @@ private:
   Vector cpositions;
   bool cpositions_is_calculated;
   bool cpositions_is_removed;
-  bool retrieve_only_rotation;
 
   // use reference assignment to speed up instead of copying
   const View<Vector> positions;
@@ -376,7 +359,6 @@ public:
       cpositions(cp),
       cpositions_is_calculated(true),
       cpositions_is_removed(true),
-      retrieve_only_rotation(false),
       positions(p),
       reference(r),
       align(a),
@@ -393,7 +375,6 @@ public:
       cpositions(0.0,0.0,0.0),
       cpositions_is_calculated(false),
       cpositions_is_removed(false),
-      retrieve_only_rotation(false),
       positions(p),
       reference(r),
       align(a),
@@ -444,8 +425,7 @@ public:
     return creference_is_removed;
   }
   //  does the core calc : first thing to call after the constructor:
-  // only_rotation=true does not retrieve the derivatives, just retrieve the optimal rotation (the same calc cannot be exploit further)
-  void doCoreCalc(bool setSafe,bool setAlEqDis, bool only_rotation=false);
+  void doCoreCalc(bool setSafe,bool setAlEqDis);
   // do calculation with close structure data structures
   void doCoreCalcWithCloseStructure(bool setSafe,
                                     bool setAlEqDis,
@@ -458,10 +438,6 @@ public:
   std::vector<Vector> getDDistanceDPositions();
   // retrieve the derivative of the distance respect to the reference
   std::vector<Vector> getDDistanceDReference();
-  // specific version for SOMA calculation (i.e. does not need derivative respect to rotation matrix)
-  std::vector<Vector> getDDistanceDReferenceSOMA();
-  // get aligned reference onto position
-  std::vector<Vector> getAlignedReferenceToPositions();
   // get aligned position onto reference
   std::vector<Vector> getAlignedPositionsToReference();
   // get centered positions

@@ -1,0 +1,20 @@
+# Fixed atom IDs and zero initial velocities make rank comparisons reproducible.
+units metal
+atom_style atomic
+boundary p p p
+read_data argon.data
+pair_style lj/cut 8.5
+pair_coeff * * 0.0103 3.4
+neighbor 0.3 bin
+neigh_modify every 1 delay 0 check yes
+timestep 0.0005
+fix integrate all nve
+if "${with_plumed}" then "fix plumed all plumed plumedfile plumed.dat outfile PLUMED.OUT"
+# Keep native potential energy independent of the bias for the ENERGY check.
+if "${with_plumed}" then "fix_modify plumed energy no"
+thermo 1
+thermo_style custom step time pe
+thermo_modify format float %.15g
+dump trajectory all custom 1 atoms.dump id xu yu zu fx fy fz
+dump_modify trajectory sort id format float %.15g
+run 20

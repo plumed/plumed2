@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Value.h"
+#include <cstring>
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "tools/Exception.h"
@@ -55,6 +56,21 @@ Value::Value(ActionWithValue* av,
     }
   }
   setShape( ss );
+}
+
+void Value::clearDerivatives( const bool force, [[maybe_unused]] const unsigned nt ) {
+  if( !force && (valtype==constant || valtype==average) ) {
+    return;
+  }
+  value_set=false;
+  // as clearDerivatives(force): the value is kept, unless this is a vector or a matrix
+  const std::size_t first=shape.size()>0 ? 0 : 1;
+  const std::size_t n=data.size();
+  double* const d=data.data();
+  #pragma omp parallel for num_threads(nt)
+  for(std::size_t i=first; i<n; ++i) {
+    d[i]=0.0;
+  }
 }
 
 void Value::setValType( const std::string& vtype ) {
@@ -218,7 +234,7 @@ void Value::push_back( const double& v ) {
     shape[0]++;
   } else if( shape.size()==2 ) {
     data.push_back(v);
-    shape[0] = std::ceil( data.size() / shape[1] );
+    shape[0] = ( data.size() + shape[1] - 1 ) / shape[1];
   }
 }
 
@@ -256,11 +272,10 @@ double Value::get(const std::size_t ival, const bool trueind) const {
   if( hasDeriv ) {
     return data[ival*(1+ngrid_der)];
   }
-#ifdef DNDEBUG
+  // plumed_dbg_massert is only evaluated in debug builds (NDEBUG not defined)
   if( action ) {
     plumed_dbg_massert( ival<getNumberOfValues(), "could not get value from " + name );
   }
-#endif
   if( shape.size()==2 && ncols<shape[1] && trueind ) {
     const unsigned irow = std::floor( ival / shape[1] );
     const unsigned jcol = ival%shape[1];
@@ -303,21 +318,36 @@ size_t Value::assignValues(View<double> target) {
   return nvals;
 }
 
-void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
-  hasForce=true;
-  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
-    unsigned irow = std::floor( iforce / shape[0] ), jcol = iforce%shape[0];
-    for(unsigned i=0; i<getRowLength(irow); ++i) {
-      if( getRowIndex(irow,i)==jcol ) {
-        inputForce[irow*ncols+i]+=f;
-        return;
-      }
+size_t Value::assignValues(View<float> target) {
+  const auto nvals=getNumberOfStoredValues ();
+  if( hasDeriv ) {
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j*(1+ngrid_der)];
     }
-    plumed_assert( fabs(f)<epsilon );
-    return;
+  } else {
+    plumed_massert( data.size()>=nvals, "cannot get value from " + name );
+    for(std::size_t j=0; j<nvals; ++j) {
+      target[j] = data[j];
+    }
   }
-  plumed_massert( iforce<inputForce.size(), "can't add force to " + name );
-  inputForce[iforce]+=f;
+  return nvals;
+}
+
+void Value::addForceOutOfRange( const std::size_t& iforce ) const {
+  plumed_merror( "can't add force to " + name );
+}
+
+void Value::addForceToSparseMatrix(const std::size_t& iforce, double f) {
+  unsigned irow = iforce / shape[1], jcol = iforce%shape[1];
+  for(unsigned i=0; i<getRowLength(irow); ++i) {
+    if( getRowIndex(irow,i)==jcol ) {
+      inputForce[irow*ncols+i]+=f;
+      return;
+    }
+  }
+  // elements that are not stored are zero; when their derivatives are zero too
+  // (e.g. switching functions beyond the cutoff) the force on them has no effect
+  plumed_massert( derivativeIsZeroWhenValueIsZero || fabs(f)<epsilon, "force on an element that is not stored in sparse matrix " + name );
 }
 
 size_t Value::addForces(View<const double> const forces) {
@@ -326,15 +356,6 @@ size_t Value::addForces(View<const double> const forces) {
   plumed_massert( inputForce.size()>=nvals, "can't add force to " + name );
   //I need at least nvals elements in forces
   plumed_massert( forces.size()>=nvals, "can't add force to " + name );
-  /*
-    {//this gives a very little speedup (+1 step in the 60s dragrace)
-      auto f = forces.begin();
-      const auto end=inputForce.begin()+nvals;
-      for(auto iptf=inputForce.begin()  ; iptf<end; ++iptf, ++f) {
-        *iptf+=*f;
-      }
-    }
-  */
   //is this daxpy?
   for(auto i=0u; i<nvals; ++i) {
     inputForce[i]+=forces[i];
@@ -348,7 +369,13 @@ void Value::reshapeMatrixStore( const unsigned& n ) {
   if( shape[1]>0 && ncols>shape[1] ) {
     ncols=shape[1];
   }
+  // ncols==0 is the flag of the lower-triangular storage (see get): a sparse
+  // matrix whose rows are all empty keeps one column of storage
+  if( shape[1]>0 && ncols==0 ) {
+    ncols=1;
+  }
   unsigned size=shape[0]*ncols;
+  bookeeping_root=nullptr;
   if( matrix_bookeeping.size()!=(size+shape[0]) ) {
     data.resize( size, 0 );
     inputForce.resize( size, 0 );
@@ -368,9 +395,10 @@ void Value::copyBookeepingArrayFromArgument( Value* myarg ) {
   plumed_dbg_assert( shape.size()==2 && !hasDeriv );
   ncols = myarg->getNumberOfColumns();
   matrix_bookeeping.resize( myarg->matrix_bookeeping.size() );
-  for(unsigned i=0; i<matrix_bookeeping.size(); ++i) {
-    matrix_bookeeping[i] = myarg->matrix_bookeeping[i];
+  if( !matrix_bookeeping.empty() ) {
+    std::memcpy( matrix_bookeeping.data(), myarg->matrix_bookeeping.data(), matrix_bookeeping.size()*sizeof(matrix_bookeeping[0]) );
   }
+  bookeeping_root = myarg->getBookeepingRoot();
   data.resize( shape[0]*ncols );
   inputForce.resize( shape[0]*ncols );
 }
@@ -535,6 +563,26 @@ bool Value::allElementsEqual() const {
     }
   }
   return true;
+}
+
+std::size_t Value::getLengthOfLongestColumn() const {
+  plumed_dbg_assert( shape.size()==2 && !hasDeriv );
+  std::vector<unsigned> column_lengths( shape[1], 0 );
+  for(unsigned i=0; i<shape[0]; ++i) {
+    unsigned nr = getRowLength(i);
+    for(unsigned j=0; j<nr; ++j) {
+      unsigned ind = getRowIndex( i, j );
+      column_lengths[ind]++;
+    }
+  }
+  // Find the longest column
+  std::size_t maxcol = column_lengths[0];
+  for(unsigned i=1; i<column_lengths.size(); ++i) {
+    if( column_lengths[i]>maxcol ) {
+      maxcol = column_lengths[i];
+    }
+  }
+  return maxcol;
 }
 
 }

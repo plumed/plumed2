@@ -1,0 +1,4 @@
+type=driver
+# POSITION with ATOMS= (a list of atoms) and USEGPU must use the GPU version
+arg="--plumed plumed.dat --ixyz isomers.xyz"
+extra_files="../../trajectories/isomers.xyz"

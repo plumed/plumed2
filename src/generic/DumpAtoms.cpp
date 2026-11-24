@@ -27,6 +27,7 @@
 #include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "tools/Units.h"
+#include "tools/Communicator.h"
 #include "tools/CheckInRange.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
@@ -274,13 +275,13 @@ class DumpAtoms:
   int iprecision;
   CheckInRange bounds;
   std::vector<std::string> names;
-  std::vector<unsigned>    residueNumbers;
+  std::vector<int>         residueNumbers;
   std::vector<std::string> residueNames;
   std::string type;
   std::string fmt_gro_pos;
   std::string fmt_gro_box;
   std::string fmt_xyz;
-  xdrfile::XDRFILE* xd;
+  xdrfile::XDRFILE* xd=nullptr;
 public:
   explicit DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
@@ -393,12 +394,19 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   std::string path=of.getPath();
   log<<"  Writing on file "<<path<<"\n";
   std::string mode=of.getMode();
-  if(type=="xtc") {
+  if(type=="xtc" || type=="trr") {
     of.close();
-    xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
-  } else if(type=="trr") {
-    of.close();
-    xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
+    // only the first process of each replica writes: the positions are the same
+    // on all of them, and several processes writing on the same file corrupt it
+    int ok=1;
+    if(comm.Get_rank()==0) {
+      xd=xdrfile::xdrfile_open(path.c_str(),mode.c_str());
+      ok=(xd!=nullptr);
+    }
+    comm.Bcast(ok,0);
+    if(!ok) {
+      error("cannot open file " + path);
+    }
   }
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0; i<atoms.size(); ++i) {
@@ -519,7 +527,7 @@ void DumpAtoms::update() {
       of.printf("\n");
     }
   } else if(type=="gro") {
-    const std::string posFormatString="%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n";
+    const std::string posFormatString="%5d%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n";
     std::string extraFormatString=" "+fmt_xyz;
     const Tensor & t(getPbc().getBox());
     of.printf("Made with PLUMED t=%f\n",getTime()/getUnits().getTime());
@@ -527,7 +535,7 @@ void DumpAtoms::update() {
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
       const char* defname="X";
       const char* atomName=defname;
-      unsigned residueNumber=0;
+      int residueNumber=0;
       if(names.size()>0)
         if(names[i].length()>0) {
           atomName=names[i].c_str();
@@ -548,6 +556,9 @@ void DumpAtoms::update() {
               lenunit*t(0,1),lenunit*t(0,2),lenunit*t(1,0),
               lenunit*t(1,2),lenunit*t(2,0),lenunit*t(2,1));
   } else if(type=="xtc" || type=="trr") {
+    if(!xd) {
+      return;
+    }
     xdrfile::matrix box;
     const Tensor & t(getPbc().getBox());
     int natoms=getNumberOfAtoms();
@@ -576,9 +587,7 @@ void DumpAtoms::update() {
 }
 
 DumpAtoms::~DumpAtoms() {
-  if(type=="xtc") {
-    xdrfile_close(xd);
-  } else if(type=="trr") {
+  if(xd) {
     xdrfile_close(xd);
   }
 }

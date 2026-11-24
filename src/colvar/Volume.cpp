@@ -27,7 +27,11 @@ namespace colvar {
 
 //+PLUMEDOC COLVAR VOLUME
 /*
-Calculate the volume the simulation box.
+Calculate the volume of the simulation box.
+
+The volume is computed from the box vectors and is given in PLUMED volume units (nm$^3$ by default, see [UNITS](UNITS.md)).
+VOLUME has derivatives with respect to the box, so a bias acting on it gives a contribution to the virial and can be used, for example, in
+constant-pressure simulations to enhance the fluctuations of the density of the system.
 
 The following input tells plumed to calculate and print the volume of the system
 

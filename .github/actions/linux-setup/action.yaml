@@ -2,12 +2,12 @@ name: 'Prepare linux environment'
 description: 'Set up the linux environment for plumed'
 inputs:
   pytest-make:
-    descriptions: 'set to yes for exporting PYTHONPATH to be used in the tests'
+    description: 'set to yes for exporting PYTHONPATH to be used in the tests'
     required: false
     default: false
     type: boolean
   export-kernel:
-    descriptions: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
+    description: 'set to yes for exporting PLUMED_KERNEL to be used in the tests'
     required: false
     default: false
     type: boolean
@@ -26,11 +26,17 @@ inputs:
     required: false
     default: false
     type: boolean
+  free-space:
+    description: 'remove large unused packages from the runner (needed by the jobs that build and test plumed, it takes 1-2 minutes)'
+    required: false
+    default: true
+    type: boolean
 runs:
   using: "composite"
   steps:
     # the boolean are evaluated to string... -> the various "=='true'"
     - name: Remove unused stuff
+      if: ${{ inputs.free-space == 'true' }}
       run: |
         echo "Making some space"
         df -h
@@ -46,8 +52,6 @@ runs:
         sudo apt-get update -qq
         sudo apt-get install -y libatlas-base-dev
         sudo apt-get install -y libfftw3-dev
-        sudo apt-get install -y gsl-bin
-        sudo apt-get install -y libgsl0-dev
       shell: bash
 
     - name: Install boost

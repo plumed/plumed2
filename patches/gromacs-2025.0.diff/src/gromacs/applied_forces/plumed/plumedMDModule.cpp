@@ -95,6 +95,7 @@ public:
                 {
                     this->options_.setPlumedFile(plumedFilename.plumedFilename_);
                     this->options_.setReplex(plumedFilename.replex_);
+                    this->options_.setInputrec(plumedFilename.inputrec_);
                     /* Subscribing to the multi-simulation record is not side-effect free:
                        do_md() infers that the simulations share state -- and so must checkpoint
                        and stop in lockstep -- from whether ANY module subscribed to a
@@ -113,6 +114,10 @@ public:
                                 { this->options_.setMultisim(ms); });
                     }
                 });
+        // The GPU used by this rank, for the PLUMED actions that run on a GPU
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const PlumedGpuDevice& gpuDevice)
+                { this->options_.setGpuDeviceId(gpuDevice.id_); });
         // Access the temperature if it is constant during the simulation
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const EnsembleTemperature& ensembleT)

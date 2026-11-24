@@ -11,6 +11,7 @@ MAZE_RANDOM_WALK ...
 
   LOSS=l
   OPTIMIZER_STRIDE=10
+  SEED=2026
   
   LIGAND=2635-2646
   PROTEIN=1-2634
@@ -21,7 +22,7 @@ MAZE_RANDOM_WALK ...
 ... MAZE_RANDOM_WALK
 
 PRINT ...
-  ARG=opt.sr
+  ARG=opt.sr,opt.x,opt.y,opt.z,opt.loss
   FILE=colvar 
   FMT=%15.8f 
 ... PRINT

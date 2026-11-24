@@ -31,6 +31,9 @@ namespace generic {
 /*
 retrieve the time of the simulation to be used elsewhere
 
+The time is given in PLUMED time units (ps by default, see [UNITS](UNITS.md)). It can be used as an argument of other actions,
+for example to define a time-dependent bias with [CUSTOM](CUSTOM.md).
+
 To retrieve and print the time you can use an input similar to the one shown below:
 
 ```plumed

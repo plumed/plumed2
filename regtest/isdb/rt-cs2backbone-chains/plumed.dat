@@ -1,0 +1,17 @@
+# Two copies of the same fragment, close to each other: residue i of chain A
+# is in contact with residue i of chain B.
+# data_same: both chains are numbered 1-11; data_renum: chain B is numbered 101-111.
+# The non-bonded term excludes only the residues adjacent in the same chain,
+# so the two inputs must give the same chemical shifts.
+same:  CS2BACKBONE ATOMS=1-292 DATADIR=../data_same/  TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC
+renum: CS2BACKBONE ATOMS=1-292 DATADIR=../data_renum/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC
+camsame:  CS2BACKBONE ATOMS=1-292 DATADIR=../data_same/  TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC CAMSHIFT
+camrenum: CS2BACKBONE ATOMS=1-292 DATADIR=../data_renum/ TEMPLATE=template.pdb NEIGH_FREQ=1 NOPBC CAMSHIFT
+
+PRINT ARG=camsame,camrenum FILE=camshift FMT=%10.4f
+PRINT ARG=(same\.ca.*),(same\.hn.*),(same\.nh.*) FILE=same FMT=%10.4f
+PRINT ARG=(renum\.ca.*),(renum\.hn.*),(renum\.nh.*) FILE=renum FMT=%10.4f
+DUMPDERIVATIVES ARG=camsame,camrenum FILE=deriv FMT=%10.4f
+
+BIASVALUE ARG=camsame
+ENDPLUMED

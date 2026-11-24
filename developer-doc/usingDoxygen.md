@@ -83,7 +83,7 @@ the keywords for your new method.  These keywords will have one of 5 attributes:
 </tr> <tr>
 <td> <b> flag </b> </td> <td> This is used to declare keywords such as NOPBC that tell plumed to turn on/off some feature of the calculation </td>
 </tr> <tr>
-<td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword. You can easily specify if there are multiple ways of defining the atoms involved in the action in the manual.  To register the keywords for this first method of specifying the atoms using atoms-1. Then register the keywords for the second way of specifying the atoms using atoms-2 and so on.  A manual that states that these keywords can be used in an either or fashion, much that for <a href="../../user-doc/html/_t_o_r_s_i_o_n.html"> TORSION </a>, will then be generated.  </td>
+<td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword. You can easily specify if there are multiple ways of defining the atoms involved in the action in the manual.  To register the keywords for this first method of specifying the atoms using atoms-1. Then register the keywords for the second way of specifying the atoms using atoms-2 and so on.  A manual that states that these keywords can be used in an either or fashion, much that for <a href="../../user-doc/html/TORSION/index.html"> TORSION </a>, will then be generated.  </td>
 </tr> <tr>
 <td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option.  These keywords will be assumed to be optional.  However, you can set them to be atoms or whatever by using reset_style(keyword,newstyle).  </td>
 </table>
@@ -370,6 +370,8 @@ The <i> module.yml </i> file is a Yaml file with the following structure:
 
 \verbatim
 name: name of module
+type: default-off
+use: [core, tools]
 authors: authors of module
 description: description of module
 dois: ["doi1", "doi2", "doi2"]
@@ -377,6 +379,10 @@ tags:
   TAG1: description of TAG1
   TAG2: description of TAG2
 \endverbatim
+
+This file also owns the module build settings (`type` and `use`) and optional
+`conda` packaging policy; see conda/module-options.md. Infrastructure modules may
+omit documentation fields and do not acquire manual pages simply by having a declaration.
 
 As you can see you use this file to provide information on the name, authors and description of the module.  You can also include a list of DOIs for papers that should be cited on the 
 module's documentation page.
@@ -388,18 +394,18 @@ the line that includes the string PLUMEDOC.  These tags provide a community-sour
 
 \section updating-web-manuals Updating web manuals
 
-Precompiled versions of PLUMED manuals can be found on github at an address such as http://www.plumed.org/doc-v2.1/user-doc/html/index.html
+Precompiled versions of PLUMED manuals can be found on github at an address such as https://www.plumed.org/doc-v2.1/user-doc/html/index.html
 (replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
-is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
+is shown as a webpage. In this example, the repository is located at https://github.com/plumed/doc-v2.1 .
 Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done
-from Travis CI automatically whenever a commit containing in its log the tag [makedoc] is pushed into the plumed2 github repository.
-Since version 2.3.3, manual is always updated, and tag [makedoc] is ignored.
-Notice that Travis CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
+automatically by the continuous integration (Travis CI at the time, GitHub Actions now) whenever commits are pushed into the plumed2 github repository.
+Notice that the CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
 this should work for all the future release branches as long as an appropriate repository is created on the github.com/plumed
 organization.
 We could even easily create repositories to host the documentation of temporary branches.
 Also notice that these repositories (plumed/doc-xxx) need to give write access to a dummy github account (PlumedBot). A token
-for that user enabling html access is stored in the environment variable GIT_TOKEN which is saved (not visible) on travis-ci.org.
+for that user enabling html access is stored in the GitHub Actions secret GIT_TOKEN_PLUMEDBOT, which the workflow passes to the
+.ci/push script as the environment variable GIT_TOKEN.
 In this way, any commit made in the plumed repository by one of the developers will have access to the variable and will trigger
 manual build and push. Conversely, pull requests by external users should not be able to
 access the token and won't update manual changes.
@@ -408,7 +414,7 @@ covered by the regtests. As of PLUMED 2.5, the coverage scan ends up on a separa
 http://github.com/plumed/coverage-NAMEOFTHEBRANCH.
 
 Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) as of PLUMED 2.3.2 the script that
-pushes the documentation to travis-ci adds special information to remove from search engine results pages from
+pushes the documentation adds special information to remove from search engine results pages from
 unofficial or unsupported branch (see .ci/push script).
 
 Bottom line: manual will always be updated after a commit that can pass the tests.
@@ -417,15 +423,12 @@ and to revert the commit if there are errors!
 
 It is possible to generate PLUMED manuals for your own personal forks 
 using a similar procedure as described above. 
-For this to work you need to enable Travis CI for your forked repository 
-and define appropriately the environment variables on Travis CI. 
-The github account used to automatically push the generated manuals 
-should be defined using the `GIT_BOT` variable, 
-preferably this should be a dummy account. A github token
-enabling html access for that account should be defined using the `GIT_TOKEN` variable. 
-Furthermore, you need to define an email address associated to the account using the `GIT_BOT_EMAIL` variable. 
-It is better to make all these environment variable hidden such that they are 
-not shown in the public logs on travis-ci.org. 
+For this to work you need to enable GitHub Actions for your forked repository.
+A github token enabling html access for the account used to push the generated manuals
+should be stored in the `GIT_TOKEN_PLUMEDBOT` secret of your fork, so that it is not shown in the public logs.
+That account is by default `plumedbot`: to use a different one (preferably a dummy account),
+set the `GIT_BOT` and `GIT_BOT_EMAIL` environment variables in the "Coverage" and "Push doc" steps
+of `.github/workflows/linuxWF.yml`.
 To generate a manual for a specific branch you need to create a repository 
 `USERNAME/doc-NAMEOFTHEBRANCH` and give write access to the account given in 
 `GIT_BOT`. The generated manuals will be accessible on 

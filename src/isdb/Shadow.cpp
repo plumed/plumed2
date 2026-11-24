@@ -126,6 +126,9 @@ Shadow::Shadow(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   // update stride
   parse("UPDATE",nupdate_);
+  if(nupdate_==0) {
+    error("UPDATE must be greater than zero");
+  }
 
   // is this the reference replica
   parseFlag("REFERENCE",isreference_);
@@ -142,6 +145,18 @@ Shadow::Shadow(const ActionOptions&ao):
   // get number of (MPI) replicas
   int nrep = getNumberOfReplicas();
   int replica = getReplicaIndex();
+
+  // exactly one replica must provide the reference coordinates
+  unsigned nref = 0;
+  if(rank_==0) {
+    nref = isreference_ ? 1 : 0;
+    multi_sim_comm.Sum(nref);
+  }
+  comm.Sum(nref);
+  // with --parse-only the inputs of the replicas are read one at a time
+  if(nref!=1 && !plumed.parseOnlyMode()) {
+    error("exactly one replica must use the REFERENCE flag");
+  }
   // check number of replicas
   //if(nrep<2) error("SHADOW must be used with at least two replicas");
 

@@ -1,0 +1,2 @@
+g: GYRATION ATOMS=1-64
+PRINT ARG=g FILE=colvar2 FMT=%8.4f

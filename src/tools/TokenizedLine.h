@@ -80,6 +80,8 @@ public:
                                       int rep=-1);
 ///return true if the flag is present and removes it from the tokens
   bool readAndRemoveFlag(std::string_view key);
+/// If key is present and newkey is not, the value of key is moved to newkey; returns true if this happened
+  bool renameKey(std::string_view key, std::string_view newkey);
 };
 
 

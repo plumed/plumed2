@@ -1,0 +1,4 @@
+type=driver
+# COMBINE with the CIRCULAR flag (issue #164)
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+extra_files="../../trajectories/trajectory.xyz"

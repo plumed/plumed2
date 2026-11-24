@@ -1,0 +1,13 @@
+# b: BIASFACTOR=1, two families with grids: no bias is applied (b.bias and the forces are zero), the hills files
+#    and the grids contain -F, the heights are TAU-based and scaled by exp(-F_i/kT)/N; the grids are appended (STORE_GRIDS)
+# r: BIASFACTOR=1, continuation of the hills in HR0,HR1 (the heights depend on the -F read from them)
+# p: ADAPTIVE=DIFF with PRECAL_DIFF and UPDATE_FROM: the statistics are accumulated from the first step, so
+#    the first hill has the width of the fluctuations over 25 steps
+# q: same without PRECAL_DIFF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+b: PBMETAD ARG=phi,psi PF0=phi PF1=psi SIGMA=0.3,0.3 TAU=0.5 PACE=5 TEMP=300 BIASFACTOR=1 FILE=HB0,HB1 FMT=%10.5f GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=40,40 GRID_WSTRIDE=40 GRID_WFILES=GB0,GB1 STORE_GRIDS
+r: PBMETAD ARG=phi,psi PF0=phi PF1=psi SIGMA=0.3,0.3 HEIGHT=0.5 PACE=5 TEMP=300 BIASFACTOR=1 FILE=HR0,HR1 FMT=%10.5f RESTART=YES
+p: PBMETAD ARG=phi,psi PF0=phi PF1=psi SIGMA=20 ADAPTIVE=DIFF PRECAL_DIFF HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=4 FILE=HP0,HP1 FMT=%10.5f UPDATE_FROM=0.05
+q: PBMETAD ARG=phi,psi PF0=phi PF1=psi SIGMA=20 ADAPTIVE=DIFF HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=4 FILE=HQ0,HQ1 FMT=%10.5f UPDATE_FROM=0.05
+PRINT ARG=phi,psi,b.bias,r.bias,p.bias,q.bias STRIDE=5 FILE=colvar FMT=%10.5f

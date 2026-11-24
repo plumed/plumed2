@@ -1,0 +1,3 @@
+replica 0 colvar: same
+replica 1 colvar: same
+logmfd.out: same

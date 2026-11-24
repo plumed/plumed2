@@ -1,3 +1,20 @@
 plumed_modules=ves
 type=driver
 arg="--plumed plumed.dat --trajectory-stride 500 --timestep 0.002 --igro traj.gro --dump-forces forces --dump-forces-fmt=%10.6f "
+
+# the FES is written with 9 decimals (~11 significant digits) and its last digit depends on
+# rounding (e.g. fused multiply-adds on arm64): if all the numbers are within 1e-8 of the
+# reference, use the reference, otherwise the diff shows the differences
+function plumed_regtest_after(){
+  f=fes.ves1.iter-10.data
+  test $(wc -l < $f) -eq $(wc -l < $f.reference) || return 0
+  if paste -d'|' $f.reference $f | awk -F'|' '{
+      n=split($1,a," "); if(split($2,b," ")!=n) exit 1
+      for(i=1;i<=n;i++) if(a[i]!=b[i]) {
+        if(a[i] !~ /^[-+]?[0-9.]+$/ || b[i] !~ /^[-+]?[0-9.]+$/) exit 1
+        d=a[i]-b[i]; if(d<0) d=-d; if(d>1e-8) exit 1
+      }
+    }' ; then
+    cp $f.reference $f
+  fi
+}

@@ -25,10 +25,14 @@
 #include "Action.h"
 #include "ActionShortcut.h"
 #include <memory>
+#include <type_traits>
+#include <unordered_map>
 
 namespace PLMD {
 
 class PlumedMain;
+class GenericMolInfo;
+class Value;
 
 /// std::vector containing the sequence of Action to be done.
 /// It is a vector of Action*, and as such it has the entire
@@ -40,6 +44,28 @@ class PlumedMain;
 class ActionSet:
   public std::vector<std::unique_ptr<Action>> {
   PlumedMain& plumed;
+/// Index of the actions, used to avoid scanning the whole set (with a dynamic_cast
+/// per action) every time a new action looks for labels, MOLINFO or atom values.
+/// Actions are only appended to the set, so the index is extended lazily with the
+/// actions added since the last lookup. It is rebuilt if the set has been cleared.
+  struct Index {
+    std::size_t nindexed=0;
+    const Action* last=nullptr;
+    std::unordered_map<std::string,std::vector<Action*>> labels;
+    std::unordered_map<std::string,ActionShortcut*> shortcuts;
+    std::unordered_map<const Action*,std::size_t> positions;
+    std::vector<std::pair<std::size_t,GenericMolInfo*>> molinfos;
+    std::size_t nforinterface=0;
+/// atom values, see ActionAtomistic::getAtomValuesFromPlumedObject
+    bool foundpdb=false;
+    std::vector<Value*> xpos, ypos, zpos;
+    std::vector<Value*> pdbmass, pdbcharge;
+    std::vector<Value*> mass, charge;
+    std::vector<Value*> vatommass, vatomcharge;
+  };
+  mutable Index index;
+  void updateIndex() const;
+  GenericMolInfo* selectLatestMolInfo(const Action*action) const;
 public:
   explicit ActionSet(PlumedMain&p);
   ~ActionSet();
@@ -77,6 +103,11 @@ public:
   T selectLatest(const Action*action)const;
 /// Get any shortcuts with this shortcut label
   ActionShortcut* getShortcutActionWithLabel( const std::string& s ) const ;
+/// Number of actions that are ActionForInterface
+  std::size_t getNumberOfActionsForInterface() const ;
+/// Get the values that hold positions, masses and charges of all the atoms
+/// (the MD atoms and the virtual atoms), appending them to the vectors
+  void getAtomValues( std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) const ;
 };
 
 /////
@@ -96,12 +127,19 @@ std::vector<T> ActionSet::select()const {
 
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const {
-  for(const auto & p : (*this)) {
-    T t=dynamic_cast<T>(p.get());
-    if(t && t->getLabel()==s) {
+  updateIndex();
+  auto found=index.labels.find(s);
+  if(found==index.labels.end()) {
+    return NULL;
+  }
+  // several actions can have the same label (a shortcut and the action it creates):
+  // the first one of the requested type is returned, as when scanning the set
+  for(const auto & p : found->second) {
+    T t=dynamic_cast<T>(p);
+    if(t) {
       return t;
     }
-  };
+  }
   return NULL;
 }
 
@@ -142,17 +180,22 @@ std::vector<std::string> ActionSet::getLabelVector() const {
 
 template <class T>
 T ActionSet::selectLatest(const Action*action) const {
-  T t=nullptr;
-  for(const auto & p : (*this)) {
-    if(p.get()==action) {
-      return t;
+  if constexpr (std::is_same_v<T,GenericMolInfo*>) {
+    // indexed, as this is looked up by every ActionAtomistic
+    return selectLatestMolInfo(action);
+  } else {
+    T t=nullptr;
+    for(const auto & p : (*this)) {
+      if(p.get()==action) {
+        return t;
+      }
+      T r=dynamic_cast<T>(p.get());
+      if(r) {
+        t=r;
+      }
     }
-    T r=dynamic_cast<T>(p.get());
-    if(r) {
-      t=r;
-    }
+    return t;
   }
-  return t;
 }
 
 

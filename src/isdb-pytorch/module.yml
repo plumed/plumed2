@@ -1,0 +1,17 @@
+name: isdb-pytorch
+type: default-off
+use: [colvar, core, tools]
+authors: Max Bonomi and Carlo Camilloni
+description: PyTorch-dependent tools for integrative structural and dynamical biology
+dois: ["10.1093/bioinformatics/btx529"]
+tags:
+  ISDB_PYTORCH_COLVAR: PyTorch-dependent collective variables for integrative structural and dynamical biology
+
+# Packaging options: see conda/module-options.md.
+# EMMIVOX uses LibTorch directly; it does not link the PLUMED pytorch module.
+conda:
+  requirements:
+    host: [libtorch * cpu_generic*]
+    run: [libtorch * cpu_generic*]
+  tests:
+    regtests: [isdb-pytorch/rt-emmivox-fixed, isdb-pytorch/rt-checkpoint-emmivox]

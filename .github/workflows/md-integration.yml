@@ -1,0 +1,28 @@
+name: MD integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+# Each invocation owns its build -> engine-test dependencies, so an unavailable
+# macOS runner cannot block Ubuntu tests or suppress them after a macOS failure.
+jobs:
+  platform:
+    name: MD (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    uses: ./.github/workflows/md-platform.yml
+    with:
+      os: ${{ matrix.os }}

@@ -1,0 +1,12 @@
+REMARK two models
+MODEL        1
+ATOM  A0FFK  N   ALA A   1       0.000   0.000   0.000  1.00  0.00           N
+ATOM      7  CA  ALA A   1       1.000   0.000   0.000  1.00  0.00           C
+HETATM    3  O   HOH A   2       2.000   0.000   0.000  1.00  0.00           O
+ENDMDL
+MODEL        2
+ATOM  A0FFK  N   ALA A   1       0.100   0.000   0.000  1.00  0.00           N
+ATOM      7  CA  ALA A   1       1.100   0.000   0.000  1.00  0.00           C
+HETATM    3  O   HOH A   2       2.100   0.000   0.000  1.00  0.00           O
+ENDMDL
+END

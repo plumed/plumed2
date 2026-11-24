@@ -1,0 +1,32 @@
+# SAXS and SANS ONEBEAD with the solvation correction: the residue exposure
+# (LCPO SASA) is computed at every step. The structure drifts by about 0.35 A
+# per frame, so the neighbour list of LCPO is both rebuilt and reused.
+MOLINFO STRUCTURE=protein.pdb
+
+SAXS ...
+LABEL=saxs
+NOPBC
+ATOMS=1-792
+ONEBEAD
+TEMPLATE=protein.pdb
+SOLVATION_CORRECTION=0.1
+SOLVATION_STRIDE=1
+SASA_CUTOFF=1.5
+QVALUE1=0.02 QVALUE2=0.06 QVALUE3=0.10 QVALUE4=0.15 QVALUE5=0.20 QVALUE6=0.25
+... SAXS
+
+SANS ...
+LABEL=sans
+NOPBC
+ATOMS=1-792
+ONEBEAD
+TEMPLATE=protein.pdb
+SOLVATION_CORRECTION=0.1
+DEUTER_CONC=0.5
+SOLVATION_STRIDE=1
+SASA_CUTOFF=1.5
+QVALUE1=0.02 QVALUE2=0.06 QVALUE3=0.10 QVALUE4=0.15 QVALUE5=0.20 QVALUE6=0.25
+... SANS
+
+PRINT ARG=(saxs\.q-.*) FILE=saxs.dat FMT=%8.6e
+PRINT ARG=(sans\.q-.*) FILE=sans.dat FMT=%8.6e

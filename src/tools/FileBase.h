@@ -78,6 +78,20 @@ protected:
 /// Set to true if you want flush to be heavy (close/reopen)
   bool heavyFlush;
 public:
+/// The null device of the operating system ("NUL" on Windows). PLUMED uses
+/// "/dev/null" as a file name on all platforms: it is mapped to this when the
+/// file is opened.
+#ifdef _WIN32
+  static constexpr const char* nullDevice="NUL";
+#else
+  static constexpr const char* nullDevice="/dev/null";
+#endif
+
+/// True if path is the null device written with its Windows name ("NUL", any
+/// case, e.g. os.devnull in python), which is then handled as "/dev/null".
+/// Always false on other platforms.
+  static bool isWindowsNullDevice(const std::string&path);
+
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
 /// it conserves some suffix (e.g. gz/xtc/trr).
@@ -105,8 +119,12 @@ public:
 /// Flushes the file to disk
   virtual FileBase& flush();
 /// Closes the file
-/// Should be used only for explicitely opened files.
+/// Should be used only for explicitly opened files.
   void        close();
+protected:
+/// Called by close(), to close what a derived class opened besides fp (e.g. an HDF5 table)
+  virtual void closeBackend() {}
+public:
 /// Virtual destructor (allows inheritance)
   virtual ~FileBase();
 /// Check for error/eof.
@@ -122,8 +140,11 @@ public:
 /// Check if a file is open
   bool isOpen();
 /// Retrieve the path
+  // Preserve these established by-value accessor contracts.
+  // cppcheck-suppress returnByReference
   std::string getPath()const;
 /// Retrieve the mode
+  // cppcheck-suppress returnByReference
   std::string getMode()const;
 /// Get the file suffix
   std::string getSuffix()const;

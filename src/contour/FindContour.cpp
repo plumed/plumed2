@@ -63,7 +63,7 @@ where $(x_i, y_i, z_i)$ is the position of atom $i$ relative to the position of 
 
 The virtual atom that is computed using [CENTER](CENTER.md) is located in the center of the region where the atoms are solid like and the positions of the atoms
 $(x_i, y_i, z_i)$ are given relative to this position when computing the phase field in the expression above.  This phase field provides a continuous function that
-gives a measure of the average degree of solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a a set of points
+gives a measure of the average degree of solidness at each point in the simulation cell.  The Willard-Chandler dividing surface is calculated by finding a set of points
 at which the value of this phase field is equal to 0.5.  This set of points is output to file called `mycontour.dat`.  A new contour
 is found on every single step for each frame that is read in.
 
@@ -77,7 +77,7 @@ fcc: FCCUBIC ...
 ...
 
 # Transform the symmetry functions with a switching function
-tfcc: LESS_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+tfcc: LESS_THAN ARG=fcc_n SWITCH={SMAP R_0=0.5 A=8 B=8}
 
 # Now compute the center of the solid like region
 center: CENTER ATOMS=1-96000 WEIGHTS=tfcc
@@ -137,6 +137,9 @@ FindContour::FindContour(const ActionOptions&ao):
   }
 
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  if( !ag ) {
+    error("input action should be a grid");
+  }
   std::vector<std::string> argn( ag->getGridCoordinateNames() );
 
   std::vector<std::size_t> shape(1);
@@ -222,7 +225,7 @@ int FindContour::checkTaskIsActive( const unsigned& taskno ) const {
   return -1;
 }
 
-void FindContour::getInputData( std::vector<double>& inputdata ) const {
+void FindContour::getArgumentInputData( std::vector<double>& inputdata ) const {
   std::size_t rank = getPntrToArgument(0)->getRank();
   std::size_t ndata = getInputGridObject().getNumberOfPoints()*rank;
   if( inputdata.size()!=2*rank*ndata ) {

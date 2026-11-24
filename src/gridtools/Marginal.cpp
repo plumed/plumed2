@@ -62,13 +62,16 @@ namespace gridtools {
 class MarginalInput {
 public:
 /// This is the direction we are calculating the marginal along
-  int dir;
+  int dir=0;
 /// This is the function whose marginal we are calculating
   Value* function=NULL;
 /// This is the action that calculates the function we need
   ActionWithGrid* gridact=NULL;
   static void registerKeywords( Keywords& keys );
   static void read( MarginalInput& func, ActionWithArguments* action );
+  // the assignment is customized (see below): copy construction is the default one
+  MarginalInput() = default;
+  MarginalInput(const MarginalInput&) = default;
   MarginalInput& operator=( const MarginalInput& m ) {
     dir = m.dir;
     function = m.function;

@@ -1,0 +1,5 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --mf_pdb protein_rna.pdb"
+# input files and CPU references are those of regtest/isdb/rt-saxs-3
+extra_files="../../../../../regtest/isdb/rt-saxs-3/forces.reference ../../../../../regtest/isdb/rt-saxs-3/forces_sans.reference ../../../../../regtest/isdb/rt-saxs-3/protein_rna.pdb ../../../../../regtest/isdb/rt-saxs-3/psans_onebead_surf.dat.reference ../../../../../regtest/isdb/rt-saxs-3/psaxs.dat.reference ../../../../../regtest/isdb/rt-saxs-3/psaxs_onebead.dat.reference ../../../../../regtest/isdb/rt-saxs-3/psaxs_onebead_surf.dat.reference ../../../../../regtest/isdb/rt-saxs-3/sans.dat.reference ../../../../../regtest/isdb/rt-saxs-3/saxs.dat.reference ../../../../../regtest/isdb/rt-saxs-3/template.pdb"

@@ -27,6 +27,8 @@
 #include <string>
 #include <cstdio>
 #include <memory>
+#include <vector>
+#include <map>
 
 namespace PLMD {
 
@@ -57,17 +59,16 @@ sp.stop();
 \endverbatim
 
 \warning
-Currently `stop` and `cont` are giving problems with some MPI implementation,
-In addition, notice that the stop signal is only sent to the child process and
-not to the subsequently spawn processes, so it might not work as intended.
-This feature is left here but is probably no a good idea to use it.
+Currently `stop` and `cont` are giving problems with some MPI implementation.
+The signals are sent to the whole process group of the subprocess, so that they
+also reach the processes spawned by the shell used to launch the command.
+This feature is left here but is probably not a good idea to use it.
 It can be enabled with `export PLUMED_ENABLE_SIGNALS=1`.
 
 */
 class Subprocess {
   /// Process ID.
   /// We store this rather than pid_t to avoid including <unistd.h> in this header file.
-  /// This remains nullptr in the child process.
   std::unique_ptr<SubprocessPid> pid;
   /// File descriptor, parent to child
   int fpc=0;
@@ -105,6 +106,14 @@ public:
     /// Move assignment.
     Handler & operator=(Handler && handler) noexcept;
   };
+/// Run an executable synchronously with literal arguments (excluding argv[0]).
+/// Inherit stdin/stdout/stderr and the environment, applying overrides only in
+/// the child. No shell is added. Return the raw wait status, or -1 on launch/wait
+/// failure (errno is set). Supported on POSIX builds with subprocess or dlopen
+/// support, independently of the interactive pipe interface's available().
+  static int run(const std::string& executable,
+                 const std::vector<std::string>& arguments = {},
+                 const std::map<std::string,std::string>& environment = {});
 /// Constructor with a command line.
   explicit Subprocess(const std::string & cmd);
 /// Destructor

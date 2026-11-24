@@ -1,0 +1,4 @@
+type=driver
+extra_files="../rt77/peptide.pdb ../rt77/index.ndx ../rt77/trajectory.xtc"
+# kT=3.2 kJ/mol is about 385 K
+arg="--plumed plumed.dat --timestep 0.002 --mf_xtc trajectory.xtc --kt 3.2"

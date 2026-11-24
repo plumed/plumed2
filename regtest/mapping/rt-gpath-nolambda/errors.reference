@@ -1,0 +1,4 @@
+PATH without LAMBDA computing spath and zpath: exit code 1
+ERROR in input to action PATH : LAMBDA is required to calculate the spath and zpath (use NOSPATH and NOZPATH if you do not need them) 
+PATH without LAMBDA computing zpath: exit code 1
+ERROR in input to action PATH : LAMBDA is required to calculate the spath and zpath (use NOSPATH and NOZPATH if you do not need them) 

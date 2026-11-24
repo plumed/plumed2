@@ -243,7 +243,7 @@ PLUMED_REGISTER_ACTION(VectorHighest,"HIGHEST_VECTOR")
 PLUMED_REGISTER_ACTION(VectorHighest,"LOWEST_VECTOR")
 
 void Highest::registerKeywords( Keywords& keys ) {
-  if( keys.getDisplayName().find("LOWEST") ) {
+  if( keys.getDisplayName().find("LOWEST")!=std::string::npos ) {
     keys.setValueDescription("scalar","the lowest of the input values");
   } else {
     keys.setValueDescription("scalar","the highest of the input values");
@@ -264,6 +264,11 @@ void Highest::read( Highest& func, ActionWithArguments* action, FunctionOptions&
 }
 
 void Highest::calc( const Highest& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout ) {
+  // the vector is empty if the data is still being collected
+  if( args.size()==0 ) {
+    funcout.values[0] = 0;
+    return;
+  }
   if( !noderiv ) {
     for(unsigned i=0; i<args.size(); ++i) {
       funcout.derivs[0][i] = 0;

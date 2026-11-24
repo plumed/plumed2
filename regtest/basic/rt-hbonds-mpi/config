@@ -1,0 +1,6 @@
+mpiprocs=2
+type=driver
+# HBONDS with two MPI ranks (the pairs, and the neighbor-list search, are split among the ranks):
+# the same values and forces as with one rank
+extra_files="../rt-hbonds/ref.pdb ../rt-hbonds/traj.gro"
+arg="--plumed plumed.dat --igro traj.gro --dump-forces forces --dump-forces-fmt %10.5f"

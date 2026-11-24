@@ -1,6 +1,0 @@
-INCLUDE FILE=plumed-common.dat
-
-#this is the metadynamics on the fourth cv
-be: METAD ARG=rg SIGMA=0.007 HEIGHT=0.05 PACE=200 TEMP=277 BIASFACTOR=8 GRID_MIN=0.3 GRID_MAX=1.1
-
-ENDPLUMED

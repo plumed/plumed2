@@ -9,7 +9,7 @@ the conventions discussed below.
 Whenever the [RESTART](RESTART.md) option is used, all the files written by PLUMED are appended.
 This makes it easy to analyze results of simulations performed as a chain of several sub-runs.
 Notice that most of the PLUMED textual files have a header. The header is repeated at every
-restart. Additionally, several files have time in the first column. PLUMED just takes the value
+restart, unless the file was trimmed (see below) and ends with the same header. Additionally, several files have time in the first column. PLUMED just takes the value
 of the physical time from the MD engine. As such, you could have that time starts again from zero
 upon restart or not.
 
@@ -17,6 +17,27 @@ An exception from this behavior is given by files which are not growing as the s
 For example, grids written with [METAD](METAD.md) with `GRID_WFILE` are overwritten by default during the simulation.
 As such, when restarting, there is no point in appending the file. Internally, PLUMED opens the file in append
 mode but then rewinds it every time a new grid is dumped.
+
+## Trimming the files at the restart step
+
+When the MD engine tells PLUMED the step from which it restarts (the GROMACS patches do it after `mdrun -cpi`),
+PLUMED removes from the files it appends to the lines written at or after that step by the interrupted run,
+so that the files continue exactly where the restarted simulation starts, without steps written twice. The
+removed lines are moved to `bck.trimmed.X.filename`. Only the last lines with a time not earlier than the one
+of the restart step are removed, so the earlier sub-runs whose time restarted from zero are kept. Files
+without a time field are appended as they are. The trimming can be switched off with `RESTART NO_TRIM`, or
+for the files of a single action with the `NO_TRIM` flag. See [RESTART](RESTART.md) for the details.
+
+## Exact restart with a checkpoint
+
+Appending (also after trimming) leaves in the files the lines that the interrupted run wrote after the checkpoint
+of the MD engine, so that after the restart the files contain the same steps twice, and
+the actions that keep an internal state (e.g. the hills of [METAD](METAD.md)) are not
+restarted exactly. With the [CHECKPOINT](CHECKPOINT.md) directive PLUMED writes its own
+checkpoint file whenever the MD engine writes its own: at restart every file is truncated
+to the size it had at the checkpoint, the state of the actions is restored and the checkpointing
+step is computed again, so that the restarted run continues the interrupted one bitwise,
+without repeating the header of the files.
 
 ## Backup
 
@@ -26,6 +47,92 @@ Notice that by default PLUMED only allows a maximum of 100 backup copies for a f
 This behavior can be changed by setting the environment variable `PLUMED_MAXBACKUP` to the desired number
 of copies. E.g. export `PLUMED_MAXBACKUP=10` will fail after 10 copies. `PLUMED_MAXBACKUP=-1` will never fail - be careful
 since your disk might fill up quickly with this setting.
+
+## HDF5 tables
+
+The files that PLUMED writes field by field, i.e. those with a `#! FIELDS` header such as the ones of
+[PRINT](PRINT.md), the hills of [METAD](METAD.md) or the kernels of [OPES_METAD](OPES_METAD.md), are written as
+archives of [HDF5](https://www.hdfgroup.org/solutions/hdf5/) tables when their name ends with `.hpa`:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=COLVAR.hpa
+METAD ARG=d SIGMA=0.1 HEIGHT=0.1 PACE=100 FILE=HILLS.hpa
+```
+
+The extension `.hpa` means HDF PLUMED archive. The longer `.h5.tar` extension is also supported,
+with the same format and behavior; existing archives do not need conversion.
+
+The values are stored with full precision (FMT is ignored), so that a restart from a file of hills or kernels gives
+the same bias as the run that wrote it.
+
+An archive is an uncompressed TAR file whose members (`batch_00000001.h5`, `batch_00000002.h5`, ...) are HDF5 tables,
+and the table is the concatenation of the members. In an HDF5 table every field is a dataset of the group `block_0`.
+A new group (`block_1`, ...) starts when the fields change (where a text file would have a new `#! FIELDS` line), e.g.
+at a restart with a different input; the constant fields (`#! SET` in text files) are attributes of the group, and the
+attributes `plumed_columns` and `plumed_constants` list the fields in order. The members can be extracted with any
+TAR tool and read with any HDF5 tool, e.g. in Python:
+
+```python
+import tarfile
+import h5py
+
+with tarfile.open("COLVAR.hpa") as tar:
+    for member in tar:
+        with h5py.File(tar.extractfile(member)) as f:
+            time = f["block_0/time"][:]
+            d = f["block_0/d"][:]
+```
+
+Simpler, the Python module of PLUMED reads (and writes) them: `plumed.read_as_pandas("COLVAR.hpa")`.
+
+The rows are kept in memory and written as a new member at every flush (see [FLUSH](FLUSH.md); the files are also
+flushed when the MD code writes its checkpoint), every 4096 rows, and when the fields change. A member is written at
+the end of the file in two steps, each followed by a synchronization to the disk: its data, behind a header of zeros,
+then its header. The members written are never modified afterwards. Thus:
+
+- the archive can be read while the simulation is running: the readers see the members written so far;
+- if the simulation, or the machine, stops abruptly (e.g. when the wall-time of the job ends), all the members written
+  before are intact; the only damage can be a last member not published, or with its header written in part, which
+  the readers ignore and PLUMED removes when it appends to the archive (e.g. at a restart). An invalid header followed
+  by valid members is reported as a damaged archive.
+
+This is why PLUMED does not write single HDF5 files (`.h5`): HDF5 updates them in place and keeps them locked while
+they are written, so that they cannot be read during the run, and a run killed while writing one can make the whole
+file unreadable. A single HDF5 file is still read wherever an archive is, and [h5convert](h5convert.md) converts an
+archive into one and back (e.g. for tools that need a single HDF5 file).
+
+PLUMED reads the HDF5 tables and archives wherever it reads text files (restarts, [READ](READ.md), ...), and
+[h5convert](h5convert.md) converts them to text files and back, so that every tool that reads text files can be used.
+The files that are read are recognized by their content, so that a renamed archive is still read as an archive.
+For quick inspection, `plumed h5cat COLVAR.hpa` writes the equivalent text to standard output. [h5cat](h5cat.md)
+accepts multiple filenames and concatenates their text in argument order, preserving all headers and rows.
+[h5convert](h5convert.md) accepts `--input -` for text standard input and `--output -` for text standard output, and
+changes the size of the members of an archive (`--batch-size`).
+
+Restarts (appending, trimming at the restart step, [CHECKPOINT](CHECKPOINT.md)) work as with text files, with a cost
+that does not depend on the size of the archive: only the headers of the members are read, and the members after the
+restart step. The removed rows are moved to an archive `bck.trimmed.X.filename.hpa`. When the MD code sends its
+checkpoint signal at a step, PLUMED flushes the files at the start of that step, so that a restart from that step only
+truncates the archive at the end of a member. When the restart step is inside a member, only that member is
+rewritten: the new member is first saved in a file `filename.plumed-trim`, which completes the operation if it is
+interrupted (the readers use it too).
+
+HDF5 tables require PLUMED to be compiled with libhdf5 (`./configure` uses it when it finds it, see
+`--enable-libhdf5`; the conda package of PLUMED uses the hdf5 package of conda). Only the files written field by
+field can be HDF5 tables: the files written as free text (e.g. those of [DUMPATOMS](DUMPATOMS.md) and
+[PRINT_NDX](PRINT_NDX.md)) keep their text formats. The hills files of multiple walkers that share files
+(WALKERS_N of [METAD](METAD.md)) are text files too (with WALKERS_MPI the hills can be an HDF5 table).
+
+Grids (e.g. GRID_WFILE of [METAD](METAD.md), [DUMPGRID](DUMPGRID.md)) and state files (STATE_WFILE of
+[OPES_METAD](OPES_METAD.md)) can be HDF5 tables too, with a row for every point of the grid as in the text files.
+With their full precision, a restart from a grid (GRID_RFILE) or from a state (STATE_RFILE) gives the same bias as
+the run that wrote them. When they are rewritten, the previous one is kept as `bck.last.filename`, as for text files.
+
+Every member has a fixed overhead of a few kB (larger with more columns): with members of hundreds or thousands of
+rows the overhead is small, while flushing every few rows makes the archive much larger. For a COLVAR file with a few
+columns an HDF5 table is not smaller or faster than a text file: HDF5 is useful for large files and when the full
+precision is needed.
 
 # Replica-Suffix Replica suffix
 

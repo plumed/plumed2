@@ -1,0 +1,14 @@
+mpiprocs=2
+type=driver
+# s1 and s2 queue their Debye sums on the GPU in Action::launch(): s2 comes after FIT_TO_TEMPLATE,
+# so at the first step its launch is cancelled (Action::cancelLaunch()) and it is computed again with the
+# moved atoms; in the next steps it is launched after FIT_TO_TEMPLATE. s2 draws random numbers (DEUTER_CONC):
+# the draw of the cancelled launch is undone. The references were computed on the CPU (the same input without USEGPU)
+arg="--plumed plumed.dat --mf_xtc traj.xtc --dump-forces forces --dump-forces-fmt=%10.5f"
+extra_files="../../../../../regtest/isdb/rt-sans-deuteration/protein.pdb ../../../../../regtest/isdb/rt-sans-deuteration/traj.xtc"
+# keep the first two lines of each frame (number of atoms and virial) and the forces on one atom every 50
+# (with thread-MPI each rank writes its own file, forces.0 is the one of the first)
+function plumed_regtest_after(){
+  test -f forces.0 && mv forces.0 forces && rm -f forces.?
+  awk 'NR==1{natoms=$1} {i=(NR-1)%(natoms+2); if(i<2 || (i-2)%50==0) print}' forces > forces.tmp && mv forces.tmp forces
+}

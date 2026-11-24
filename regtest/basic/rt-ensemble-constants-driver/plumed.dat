@@ -1,0 +1,8 @@
+c: CONSTANT VALUE=3
+energy: CONSTANT VALUE=1
+e: ENSEMBLE ARG=c
+raw: ENSEMBLE ARG=c MOMENT=2
+central: ENSEMBLE ARG=c MOMENT=2 CENTRAL
+power: ENSEMBLE ARG=c MOMENT=2 POWER=2
+weighted: ENSEMBLE ARG=c,energy REWEIGHT TEMP=300 MOMENT=2
+PRINT ARG=e.c,raw.c,raw.c_m,central.c,central.c_m,power.c,power.c_m,weighted.c,weighted.c_m FILE=COLVAR FMT=%8.3f

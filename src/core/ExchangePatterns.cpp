@@ -47,6 +47,14 @@ void ExchangePatterns::setSeed(const int seed) {
   random.setSeed(seed);
 }
 
+std::string ExchangePatterns::getRandomState() const {
+  return random.stateToString();
+}
+
+void ExchangePatterns::setRandomState(const std::string& state) {
+  random.stateFromString(state);
+}
+
 void ExchangePatterns::getList(const TypesafePtr & ind) {
   auto iind=ind.get<int*>({NumberOfReplicas});
   switch(PatternFlag) {

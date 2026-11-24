@@ -16,11 +16,11 @@ The work described in the papers cited below demonstrates that the process of ca
 methods. The development of the techniques described in those papers thus informed the development of this module.
 In particular, we recognised that it is useful to have an implementation of kernel density estimation that can:
 
-* take in multiple identical indisinguishable instances of a quantity that might be monitored and compute an instaneous distribution.
+* take in multiple identical indisinguishable instances of a quantity that might be monitored and compute an instantaneous distribution.
 * take in a vector of weights to be used for the heights of these indisinguishable instances of the quantity of interest.
 
 With these modifcations we can then use the same functionality that we use for constructing the histogram for constructing an estimate 
-for an instaneous phase field that provides a continuous representation of the value of an order parameter as a function of position.
+for an instantaneous phase field that provides a continuous representation of the value of an order parameter as a function of position.
 In other words, even if you intially find the combinations of [KDE](KDE.md) and [ACCUMULATE](ACCUMULATE.md) actions that are used in 
 the shortcut for [HISTOGRAM](HISTOGRAM.md) confusing, we hope that they will begin to make sense once you read the papers cited below
 and start exploring some of the more complicated functionalities thare are provided within this module. 

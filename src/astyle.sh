@@ -13,10 +13,10 @@ for dir in $DIRS; do
 
   test "$dir" = lapack && continue
   test "$dir" = blas && continue
-  test "$dir" = molfile && continue
   test "$dir" = lepton && continue
   test "$dir" = asmjit && continue
   test "$dir" = xdrfile && continue
+  test "$dir" = gemmi && continue
 
   cd "$dir" || {
     echo "Problem with 'cd $dir'"

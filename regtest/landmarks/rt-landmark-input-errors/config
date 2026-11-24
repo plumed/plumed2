@@ -1,0 +1,29 @@
+type=driver
+plumed_modules="landmarks"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# wrong inputs that crashed (segmentation fault) on master and must be rejected with an error message containing the text below
+function plumed_regtest_before(){
+  {
+    echo 5 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 0 ; echo X 0 1 0 ; echo X 0 0 1 ; echo X 1 1 1
+  } > traj.xyz
+  echo "d: DISTANCE ATOMS=1,2" > plumed.dat
+  echo "PRINT ARG=d FILE=colvar" >> plumed.dat
+  printf "cc: COLLECT_FRAMES ATOMS=1,2,3 STRIDE=1\nll: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=2 DISSIMILARITIES=nolabel\n" > bad_fps_dissimilarities.dat
+  printf "cc: COLLECT_FRAMES ATOMS=1,2,3 STRIDE=1\nll: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=2 SEED=1 DISSIMILARITIES=nolabel\n" > bad_random_dissimilarities.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+fps_dissimilarities found no action with label nolabel to use for DISSIMILARITIES
+random_dissimilarities found no action with label nolabel to use for DISSIMILARITIES
+EOT
+}

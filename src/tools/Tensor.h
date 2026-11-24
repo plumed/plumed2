@@ -28,6 +28,8 @@
 #include "Exception.h"
 
 #include <array>
+#include <cmath>
+#include <limits>
 #include <type_traits>
 
 namespace PLMD {
@@ -60,7 +62,7 @@ This class implements a matrix of doubles with size fixed at
 compile time. It is useful for small fixed size objects (e.g.
 3x3 tensors) as it does not waste space to store the vector size.
 Moreover, as the compiler knows the size, it can be completely
-opimized inline.
+optimized inline.
 Most of the loops are explicitly unrolled using PLMD::LoopUnroller class
 Matrix elements are initialized to zero by default. Notice that
 this means that constructor is a bit slow. This point might change
@@ -118,6 +120,14 @@ void diagMatSym(const TensorTyped<T,n,n>&,VectorTyped<T,m>&evals,TensorTyped<T,m
 /// The interface should then be likely the same as diagMatSym
 template<typename T, unsigned n>
 T lowestEigenpairSym(const TensorTyped<T,n, n>& K, VectorTyped<T,n>& eigenvector, unsigned niter=24);
+/// Compute the lowest eigenvalue and eigenvector of a symmetric 4x4 matrix (e.g. the quaternion matrix of
+/// an optimal alignment). Much faster than lowestEigenpairSym, but it has branches, so it is meant for the CPU.
+/// The eigenvalue is found with Newton iterations on the characteristic polynomial, which converge monotonically
+/// from the Gershgorin lower bound. The eigenvector is the largest column of the adjugate of K-lambda*I, refined once.
+/// The returned eigenvalue is the Rayleigh quotient of the eigenvector.
+/// If the lowest eigenvalue is degenerate (the adjugate vanishes) lowestEigenpairSym is used instead.
+template<typename T>
+T lowestEigenpairSym4(const TensorTyped<T,4,4>& K, VectorTyped<T,4>& eigenvector);
 
 template<typename T, unsigned n, unsigned m>
 class TensorTyped:
@@ -708,13 +718,135 @@ T lowestEigenpairSym(const TensorTyped<T,n,n>& K, VectorTyped<T,n>& eigenvector,
     v = use * row + (1.0 - use) * v;
   }
 
-  v /= modulo(v);
+  // if K is proportional to the identity the projector is zero, and any vector is an eigenvector
+  const T vnorm = modulo(v);
+  v = vnorm > 0.0 ? v / vnorm : VectorTyped<T,n>();
+  v[0] = vnorm > 0.0 ? v[0] : T(1.0);
 
   eigenvector = v;
 
   return  matmul(eigenvector, K, eigenvector);
 }
 
+/// Adjugate (transpose of the cofactor matrix) of a 4x4 matrix, from its 2x2 minors. Returns the determinant
+template<typename T>
+T adjugate4x4(const TensorTyped<T,4,4>& a, TensorTyped<T,4,4>& adj) {
+  const T s0=a(0,0)*a(1,1)-a(1,0)*a(0,1);
+  const T s1=a(0,0)*a(1,2)-a(1,0)*a(0,2);
+  const T s2=a(0,0)*a(1,3)-a(1,0)*a(0,3);
+  const T s3=a(0,1)*a(1,2)-a(1,1)*a(0,2);
+  const T s4=a(0,1)*a(1,3)-a(1,1)*a(0,3);
+  const T s5=a(0,2)*a(1,3)-a(1,2)*a(0,3);
+  const T c5=a(2,2)*a(3,3)-a(3,2)*a(2,3);
+  const T c4=a(2,1)*a(3,3)-a(3,1)*a(2,3);
+  const T c3=a(2,1)*a(3,2)-a(3,1)*a(2,2);
+  const T c2=a(2,0)*a(3,3)-a(3,0)*a(2,3);
+  const T c1=a(2,0)*a(3,2)-a(3,0)*a(2,2);
+  const T c0=a(2,0)*a(3,1)-a(3,0)*a(2,1);
+  adj(0,0)= a(1,1)*c5-a(1,2)*c4+a(1,3)*c3;
+  adj(0,1)=-a(0,1)*c5+a(0,2)*c4-a(0,3)*c3;
+  adj(0,2)= a(3,1)*s5-a(3,2)*s4+a(3,3)*s3;
+  adj(0,3)=-a(2,1)*s5+a(2,2)*s4-a(2,3)*s3;
+  adj(1,0)=-a(1,0)*c5+a(1,2)*c2-a(1,3)*c1;
+  adj(1,1)= a(0,0)*c5-a(0,2)*c2+a(0,3)*c1;
+  adj(1,2)=-a(3,0)*s5+a(3,2)*s2-a(3,3)*s1;
+  adj(1,3)= a(2,0)*s5-a(2,2)*s2+a(2,3)*s1;
+  adj(2,0)= a(1,0)*c4-a(1,1)*c2+a(1,3)*c0;
+  adj(2,1)=-a(0,0)*c4+a(0,1)*c2-a(0,3)*c0;
+  adj(2,2)= a(3,0)*s4-a(3,1)*s2+a(3,3)*s0;
+  adj(2,3)=-a(2,0)*s4+a(2,1)*s2-a(2,3)*s0;
+  adj(3,0)=-a(1,0)*c3+a(1,1)*c1-a(1,2)*c0;
+  adj(3,1)= a(0,0)*c3-a(0,1)*c1+a(0,2)*c0;
+  adj(3,2)=-a(3,0)*s3+a(3,1)*s1-a(3,2)*s0;
+  adj(3,3)= a(2,0)*s3-a(2,1)*s1+a(2,2)*s0;
+  return s0*c5-s1*c4+s2*c3+s3*c2-s4*c1+s5*c0;
+}
+
+template<typename T>
+T lowestEigenpairSym4(const TensorTyped<T,4,4>& K, VectorTyped<T,4>& eigenvector) {
+  // Gershgorin: lower bound of the eigenvalues and scale of the matrix
+  T lower=std::numeric_limits<T>::max();
+  T scale=0.0;
+  for(unsigned i=0; i<4; ++i) {
+    T off=0.0;
+    for(unsigned j=0; j<4; ++j) {
+      if(j!=i) {
+        off+=std::fabs(K(i,j));
+      }
+    }
+    lower=std::fmin(lower,K(i,i)-off);
+    scale=std::fmax(scale,std::fabs(K(i,i))+off);
+  }
+  if(!(scale>0.0)) {
+    // zero matrix (or nan): any vector is an eigenvector
+    eigenvector=VectorTyped<T,4>(1.0,0.0,0.0,0.0);
+    return K(0,0);
+  }
+
+  // characteristic polynomial det(K-x*I) = x^4 - c3 x^3 + c2 x^2 - c1 x + c0
+  const T c3=K(0,0)+K(1,1)+K(2,2)+K(3,3);
+  T c2=0.0;
+  for(unsigned i=0; i<4; ++i) {
+    for(unsigned j=i+1; j<4; ++j) {
+      c2+=K(i,i)*K(j,j)-K(i,j)*K(i,j);
+    }
+  }
+  T c1=0.0;
+  for(unsigned l=0; l<4; ++l) {
+    // principal 3x3 minor without row and column l
+    const unsigned i=(l==0?1:0), j=(l<=1?2:1), k=(l<=2?3:2);
+    c1+=K(i,i)*K(j,j)*K(k,k)+2.0*K(i,j)*K(j,k)*K(i,k)
+        -K(i,i)*K(j,k)*K(j,k)-K(j,j)*K(i,k)*K(i,k)-K(k,k)*K(i,j)*K(i,j);
+  }
+  TensorTyped<T,4,4> adj;
+  const T c0=adjugate4x4(K,adj);
+
+  // Newton iterations: below the lowest root the polynomial is positive, decreasing and convex,
+  // so the iterations increase monotonically towards it. They stop when the step is negligible or
+  // when, because of rounding, it is not positive any more
+  T x=lower;
+  const T tol=8*std::numeric_limits<T>::epsilon()*scale;
+  for(unsigned it=0; it<100; ++it) {
+    const T p=(((x-c3)*x+c2)*x-c1)*x+c0;
+    const T dp=((4.0*x-3.0*c3)*x+2.0*c2)*x-c1;
+    if(!(dp<0.0)) {
+      break;
+    }
+    const T dx=-p/dp;
+    if(!(dx>0.0)) {
+      break;
+    }
+    x+=dx;
+    if(dx<=tol) {
+      break;
+    }
+  }
+
+  // adjugate of B=K-x*I: if x is the lowest eigenvalue and it is not degenerate, adj(B) is proportional to v v^T,
+  // with a positive factor (the product of the other eigenvalues of B)
+  TensorTyped<T,4,4> B(K);
+  for(unsigned i=0; i<4; ++i) {
+    B(i,i)-=x;
+  }
+  adjugate4x4(B,adj);
+  unsigned jmax=0;
+  for(unsigned j=1; j<4; ++j) {
+    if(adj(j,j)>adj(jmax,jmax)) {
+      jmax=j;
+    }
+  }
+  // the rounding error of the entries of the adjugate is of order epsilon*scale^3
+  if(!(adj(jmax,jmax)>1000*std::numeric_limits<T>::epsilon()*scale*scale*scale)) {
+    return lowestEigenpairSym(K,eigenvector);
+  }
+  VectorTyped<T,4> v=adj.getRow(jmax);
+  v/=modulo(v);
+  // refine with one step of power iteration on adj(B), whose dominant eigenvector is v
+  v=matmul(adj,v);
+  v/=modulo(v);
+  eigenvector=v;
+  return matmul(eigenvector,K,eigenvector);
+}
 
 static_assert(sizeof(Tensor)==9*sizeof(double), "code cannot work if this is not satisfied");
 static_assert(sizeof(TensorT<float>)==9*sizeof(float), "code cannot work if this is not satisfied");

@@ -20,9 +20,10 @@ ACCEL=""                       # empty => auto-detect this machine's SIMD (like 
 JOBS="$(command -v nproc >/dev/null 2>&1 && nproc || echo 4)"
 KENREF_SRC=""                  # local KEnRef repo; else located/cloned
 KENREF_GIT_URL="${KENREF_GIT_URL:-https://github.com/Smith-Group/KEnRef.git}"
-# KEnRef's development trunk. Pinned explicitly rather than left to the repository default, so the
-# delegated build tracks a named branch instead of whatever the remote's HEAD happens to point at.
-KENREF_GIT_TAG="${KENREF_GIT_TAG:-master}"
+# KEnRef's latest verified release (KENREF_GIT_TAG=master gives its development trunk). Named
+# explicitly rather than left to the repository default, so the delegated build tracks a named branch
+# instead of whatever the remote's HEAD happens to point at.
+KENREF_GIT_TAG="${KENREF_GIT_TAG:-stable}"
 # ---- install prefixes: EACH PRODUCT AT ITS OWN UPSTREAM DEFAULT --------------
 # These used to point inside the PLUMED checkout (${PLUMED_ROOT}/install/...), which made the two documented
 # routes disagree: this script installed into the clone while the raw `./configure && make install` route in
@@ -203,7 +204,7 @@ kn_plumed_clean_if_settings_changed() {   # $1 = signature of this build's setti
 
 # ---- STEP 2: build PLUMED (+kenref) with PLUMED's OWN autotools --------------
 build_plumed() {
-    [ -f "${MODULE_DIR}/module.type" ] || die "no kenref module here (${MODULE_DIR}) — wrong PLUMED tree/branch."
+    [ -f "${MODULE_DIR}/module.yml" ] || die "no kenref module here (${MODULE_DIR}) — wrong PLUMED tree/branch."
     say "building PLUMED (+kenref) with PLUMED's autotools -> ${PLUMED_PREFIX}"
     local kn_libs kn_libdir
     if pkg-config --exists kenref_core; then

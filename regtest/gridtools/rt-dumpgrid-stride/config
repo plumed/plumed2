@@ -1,0 +1,22 @@
+type=driver
+plumed_modules="adjmat gridtools"
+# stack traces (PLUMED_STACK_TRACE=yes in the CI) would end up in the error messages that are compared
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz traj.xyz > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/with label [^ ]* //' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "DUMPGRID at the end of the run of an instantaneous RDF" "r: RDF GROUP=1-60 MAXR=1.2 GRID_BIN=20 BANDWIDTH=0.05
+DUMPGRID ARG=r FILE=rdf_bad.dat"
+  rm -f bad.dat bad.out rdf_bad.dat
+}

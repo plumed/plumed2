@@ -51,7 +51,7 @@ void SortWithSingleArgument::registerKeywords(Keywords& keys) {
   keys.addInputKeyword("compulsory","ARG","vector","the vector whose elements we are sorting");
   keys.setValueDescription("vector","sorted");
   keys.setComponentsIntroduction("The names of the components in this action will be customized in accordance with the contents of the input file. "
-                                 "The largest value is called label.1th, the second largest label.2th, the third label.3th and so on");
+                                 "The smallest value is called label.1, the second smallest label.2, the third smallest label.3 and so on");
 }
 
 SortWithSingleArgument::SortWithSingleArgument(const ActionOptions&ao):
@@ -84,7 +84,7 @@ SortWithSingleArgument::SortWithSingleArgument(const ActionOptions&ao):
 }
 
 std::string SortWithSingleArgument::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
-  return "the " + cname + "th largest element in the input vector";
+  return "the " + cname + "th smallest element in the input vector";
 }
 
 unsigned SortWithSingleArgument::getNumberOfDerivatives() {
@@ -110,7 +110,15 @@ void SortWithSingleArgument::calculate() {
 }
 
 void SortWithSingleArgument::apply() {
-  if( !getPntrToComponent(0)->forcesWereAdded() ) {
+  // Forces may have been added to any of the components (e.g. only to label.4)
+  bool hasforces=false;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getPntrToComponent(i)->forcesWereAdded() ) {
+      hasforces=true;
+      break;
+    }
+  }
+  if( !hasforces ) {
     return ;
   }
   std::vector<std::pair<double,int> > data( getPntrToArgument(0)->getShape()[0] );

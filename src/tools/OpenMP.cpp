@@ -23,19 +23,59 @@
 #include "OpenMP.h"
 #include "Tools.h"
 #include <cstdlib>
+#include <cstring>
+#include <mutex>
 #if defined(_OPENMP)
 #include <omp.h>
+#endif
+#if defined(__linux__) && defined(_OPENMP) && defined(__PLUMED_HAS_DLOPEN) && defined(__PLUMED_HAS_DLADDR)
+#include <dlfcn.h>
 #endif
 
 namespace PLMD {
 
 namespace OpenMP {
+
+void retainRuntime() {
+#if defined(__linux__) && defined(_OPENMP) && defined(__PLUMED_HAS_DLOPEN) && defined(__PLUMED_HAS_DLADDR) && defined(RTLD_NODELETE)
+  const char* retain=std::getenv("PLUMED_OPENMP_RETAIN_RUNTIME");
+  if(retain && std::strcmp(retain, "no")==0) {
+    return;
+  }
+  // A kernel can be unloaded while idle OpenMP workers are still executing in
+  // the runtime. Retain that runtime, rather than the kernel or its other
+  // dependencies. The function-local static also serializes concurrent callers.
+  static const bool retained=[] {
+    Dl_info runtime{}, kernel{};
+    plumed_massert(dladdr(reinterpret_cast<void*>(&omp_get_thread_num), &runtime),
+                   "Cannot locate the OpenMP runtime");
+    plumed_massert(dladdr(reinterpret_cast<void*>(&retainRuntime), &kernel),
+                   "Cannot locate the PLUMED kernel");
+    // With a statically linked OpenMP runtime, retaining this object would also
+    // retain the whole kernel (or executable). Leave that case unchanged.
+    if(runtime.dli_fbase==kernel.dli_fbase) {
+      return true;
+    }
+    void* handle=dlopen(runtime.dli_fname, RTLD_NOW | RTLD_LOCAL | RTLD_NODELETE);
+    plumed_massert(handle, "Cannot retain the OpenMP runtime");
+    // NODELETE persists after closing this extra reference. No per-load handle
+    // is leaked, and normal dlclose() of individual kernels remains possible.
+    dlclose(handle);
+    return true;
+  }();
+  (void)retained;
+#endif
+}
+
 ///singleton struct to treat the openMP setting as a global variables, but with a layer of encapsulation
 struct OpenMPVars {
-  unsigned cacheline_size=512;
+  unsigned cacheline_size=4096;
   bool cache_set=false;
   unsigned num_threads=1;
   bool nt_env_set=false;
+/// number of initialized PLUMED instances: while it is not zero the number of threads cannot grow
+  unsigned nlocks=0;
+  std::mutex locks_mutex;
   static OpenMPVars & get() {
     static OpenMPVars vars;
     return vars;
@@ -46,8 +86,29 @@ private:
   OpenMPVars& operator=(OpenMPVars&&)=delete;
 };
 
-void setNumThreads(const unsigned nt) {
-  OpenMPVars::get().num_threads=nt;
+bool setNumThreads(const unsigned nt) {
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  if(vars.nlocks>0 && nt>vars.num_threads) {
+    return false;
+  }
+  vars.num_threads=nt;
+  return true;
+}
+
+void lockNumThreads() {
+  // read PLUMED_NUM_THREADS now, if not done yet, so that it cannot change the number of threads later
+  getNumThreads();
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  vars.nlocks++;
+}
+
+void unlockNumThreads() {
+  auto & vars=OpenMPVars::get();
+  std::lock_guard<std::mutex> lock(vars.locks_mutex);
+  plumed_assert(vars.nlocks>0);
+  vars.nlocks--;
 }
 
 unsigned getCachelineSize() {

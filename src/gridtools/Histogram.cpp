@@ -210,6 +210,7 @@ hB: HISTOGRAM ...
   GRID_BIN=100
   BANDWIDTH=0.1
   LOGWEIGHTS=bias
+  NORMALIZATION=true
 ...
 
 DUMPGRID ARG=hB FILE=histoB STRIDE=1
@@ -239,13 +240,15 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","GRID_MIN","auto","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","auto","the upper bounds for the grid");
   keys.add("optional","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
+  std::string strcut;
+  Tools::convert( sqrt(2*dp2cutoff), strcut );
+  keys.add("compulsory","KERNEL","GAUSSIAN CUTOFF=" + strcut,"the switching function which is used to transform the distance from the kernel center");
+  keys.linkActionInDocs("KERNEL","LESS_THAN");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
-  keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear the data that is being averaged");
   keys.setValueDescription("grid","the estimate of the histogram as a function of the argument that was obtained");
   keys.needsAction("COMBINE");
   keys.needsAction("CUSTOM");
@@ -276,9 +279,6 @@ Histogram::Histogram( const ActionOptions& ao ):
 
   std::vector<std::string> arglist;
   parseVector("ARG",arglist);
-  if( arglist.size()==0 ) {
-    parseVector("DATA",arglist);
-  }
   if( arglist.size()==0 ) {
     error("arguments have not been specified use ARG");
   }

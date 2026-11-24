@@ -1,0 +1,21 @@
+# The METAD actions below add the same hills (phi is periodic, d is not):
+# b: large grid, never extended
+# s: initial grid that does not contain the hills, extended along d (the log reports each extension)
+# n: no initial range (GRID_SPACING only): the grid is placed around the first hill, then extended
+# p: as s, with a sparse grid
+# The biases are the same (up to round-off). The same for the actions on d only (b1, s1, n1);
+# GS1 and GN1 are the extended grids at step 500.
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+
+b: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HB GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005
+s: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HS GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005
+n: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HN GRID_SPACING=0.05,0.005
+p: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HP GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005 GRID_SPARSE
+
+b1: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HB1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.005
+s1: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HS1 GRID_MIN=0.40 GRID_MAX=0.41 GRID_SPACING=0.005 GRID_WFILE=GS1 GRID_WSTRIDE=500
+n1: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HN1 GRID_SPACING=0.005 GRID_WFILE=GN1 GRID_WSTRIDE=500
+
+PRINT ARG=phi,d,b.bias,s.bias,n.bias,p.bias,b1.bias,s1.bias,n1.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,d STRIDE=5 FILE=forces FMT=%10.4f

@@ -1,0 +1,7 @@
+#include <vector>
+#include <array>
+#include "plumed/wrapper/Plumed.h"
+void test(PLMD::Plumed& p) {
+  struct Buffer { int size() { return 2; } int data() { return 0; } } v;
+  p.cmd("test",v);
+}

@@ -33,7 +33,6 @@
 
 namespace PLMD {
 
-// class Grid;
 class Action;
 
 namespace ves {
@@ -161,7 +160,6 @@ void TD_LinearCombination::registerKeywords(Keywords& keys) {
   keys.add("compulsory","DISTRIBUTIONS","The labels of the target distribution actions to be used in the linear combination.");
   keys.add("optional","WEIGHTS","The weights of target distributions. Have to be as many as the number of target distribution labels given in DISTRIBUTIONS. If no weights are given the distributions are weighted equally. The weights are automatically normalized to 1.");
   keys.use("WELLTEMPERED_FACTOR");
-  //keys.use("SHIFT_TO_ZERO");
   keys.use("NORMALIZE");
 }
 

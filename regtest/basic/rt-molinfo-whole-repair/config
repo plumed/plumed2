@@ -1,0 +1,3 @@
+type=driver
+# torn frames in several cell shapes; the reference is whole
+arg="--igro traj.gro"

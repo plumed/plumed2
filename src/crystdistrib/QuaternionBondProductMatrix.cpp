@@ -19,9 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-// #ifdef __PLUMED_HAS_OPENACC
-// #define __PLUMED_USE_OPENACC 1
-// #endif //__PLUMED_HAS_OPENACC
 #include "core/ActionWithVector.h"
 #include "core/ParallelTaskManager.h"
 #include "core/ActionRegister.h"
@@ -80,7 +77,6 @@ public:
 private:
   PTM taskmanager;
   std::vector<unsigned> active_tasks;
-//  const Vector4d& rightMultiply(Tensor4d&, Vector4d&);
 public:
   static void registerKeywords( Keywords& keys );
   explicit QuaternionBondProductMatrix(const ActionOptions&);
@@ -89,7 +85,7 @@ public:
   void calculate() override ;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
+  std::vector<unsigned>& getListOfActiveTasks() override ;
   static void performTask( std::size_t task_index,
                            const QuatBondProdMatInput& actiondata,
                            const ParallelActionsInput& input,
@@ -101,18 +97,6 @@ public:
 PLUMED_REGISTER_ACTION(QuaternionBondProductMatrix,"QUATERNION_BOND_PRODUCT_MATRIX")
 
 
-//const Vector4d& QuaternionBondMatrix::rightMultiply(Tensor4d& pref, Vector4d& quat) {
-//  Vector4d temp;
-//  int sumTemp;
-//  for (int i=0; i<4; i++){ //rows
-//    sumTemp=0;
-//    for (int j=0; j<4; j++){ //cols
-//      sumTemp+=pref(i,j)*quat[j];
-//    }
-//    temp[i]=sumTemp;
-//  }
-//  return temp;
-//}
 
 
 
@@ -225,7 +209,7 @@ void QuaternionBondProductMatrix::getNumberOfTasks( unsigned& ntasks ) {
   ntasks=getPntrToComponent(0)->getNumberOfStoredValues();
 }
 
-std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& QuaternionBondProductMatrix::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }

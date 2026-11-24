@@ -47,7 +47,7 @@ fcc: FCCUBIC ...
 ...
 
 # Transform the symmetry functions with a switching function
-tfcc: LESS_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+tfcc: LESS_THAN ARG=fcc_n SWITCH={SMAP R_0=0.5 A=8 B=8}
 
 # Now compute the center of the solid like region
 center: CENTER ATOMS=1-96000 WEIGHTS=tfcc

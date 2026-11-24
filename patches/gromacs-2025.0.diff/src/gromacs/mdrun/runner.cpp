@@ -89,6 +89,7 @@
 #include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/printhardware.h"
@@ -1164,6 +1165,7 @@ int Mdrunner::mdrunner()
         if (opt2bSet(plumedOptionName, filenames.size(), filenames.data()))
         {
             plumedFilename.replex_ = replExParams.exchangeInterval > 0;
+            plumedFilename.inputrec_ = inputrec.get();
             plumedFilename.plumedFilename_ =
                     std::string(opt2fn(plumedOptionName, filenames.size(), filenames.data()));
         }
@@ -1558,6 +1560,20 @@ int Mdrunner::mdrunner()
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
+
+    /* PLUMED */
+    {
+        /* The PLUMED actions that run on a GPU (they are in PLUMED plugins) use the GPU of this
+           rank, unless the user chooses otherwise. PLUMED numbers the GPUs as CUDA and HIP do, so the
+           GPU is passed only when GROMACS uses CUDA or HIP. */
+        gmx::PlumedGpuDevice plumedGpuDevice;
+        if ((GMX_GPU_CUDA || GMX_GPU_HIP) && deviceInfo != nullptr)
+        {
+            plumedGpuDevice.id_ = deviceInfo->id;
+        }
+        setupNotifier.notify(plumedGpuDevice);
+    }
+    /* END PLUMED */
 
     // We will later get the pairlist type from the device information here, for now we hard code it.
     const auto pairlistType = PairlistType::Hierarchical8x8x8;
@@ -2478,7 +2494,11 @@ int Mdrunner::mdrunner()
         const bool haveDetectedOrForcedCudaAwareMpi =
                 (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
                  || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-        if (!haveDetectedOrForcedCudaAwareMpi)
+        // PLUMED: the GPU is not released when PLUMED is used. Like torch, the GPU runtimes of
+        // PLUMED plugins (e.g. the statically linked OpenACC runtime of plugins/openaccPTM) keep
+        // device allocations that are only freed at process exit: resetting the device first
+        // makes them fail with CUDA_ERROR_CONTEXT_IS_DESTROYED.
+        if (!haveDetectedOrForcedCudaAwareMpi && !opt2bSet("-plumed", filenames.size(), filenames.data()))
         {
             // Don't reset GPU in case of GPU-AWARE MPI
             // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()

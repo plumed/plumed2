@@ -1,0 +1,14 @@
+# PBMETAD with two MPI walkers (WALKERS_MPI) with two processes each: the hills of both walkers are added to the
+# grids, which are extended in the same way by all the processes.
+# b: large grids; s: small initial grids; n: no initial range. Same bias (up to round-off).
+# h: no grid (the hills are split among the processes of a walker). Same bias up to the interpolation error.
+# f: walkers that share the hills through files (WALKERS_N): the files of the other walker are read by the first
+# process and broadcast. The result depends on when the files are read, so it is not checked.
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+b: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HB0,HB1 WALKERS_MPI GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005
+s: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HS0,HS1 WALKERS_MPI GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005
+n: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HN0,HN1 WALKERS_MPI GRID_SPACING=0.05,0.005
+h: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HH0,HH1 WALKERS_MPI
+f: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=2 FMT=%14.6f FILE=HF0,HF1 WALKERS_N=2 WALKERS_ID=@replicas:0,1 WALKERS_RSTRIDE=4 GRID_SPACING=0.05,0.005
+PRINT ARG=phi,d,b.bias,s.bias,n.bias,h.bias FILE=colvar FMT=%10.5f

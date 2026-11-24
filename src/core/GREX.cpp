@@ -22,6 +22,9 @@
 #include "GREX.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "ActionPilot.h"
+#include "ActionWithValue.h"
+#include "ActionToPutData.h"
 #include "DomainDecomposition.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
@@ -56,7 +59,7 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "GREXMap.inc"
   };
 
@@ -78,21 +81,21 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
       break;
     case cmd_setMPIIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_comm(val.get<const void*>());
+      intracomm.Set_comm(val);
       break;
     case cmd_setMPIIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_comm(val.get<const void*>());
-      plumedMain.multi_sim_comm.Set_comm(val.get<const void*>());
+      intercomm.Set_comm(val);
+      plumedMain.multi_sim_comm.Set_comm(val);
       break;
     case cmd_setMPIFIntracomm:
       CHECK_NOTINIT(initialized,key);
-      intracomm.Set_fcomm(val.get<const void*>());
+      intracomm.Set_fcomm(val);
       break;
     case cmd_setMPIFIntercomm:
       CHECK_NOTINIT(initialized,key);
-      intercomm.Set_fcomm(val.get<const void*>());
-      plumedMain.multi_sim_comm.Set_fcomm(val.get<const void*>());
+      intercomm.Set_fcomm(val);
+      plumedMain.multi_sim_comm.Set_fcomm(val);
       break;
     case cmd_init:
       CHECK_NOTINIT(initialized,key);
@@ -146,6 +149,8 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
       break;
     case cmd_cacheLocalUSwap:
       CHECK_INIT(initialized,key);
+      // Maintenance kernels reject ENERGY here; calculate() supports it below.
+      physicalEnergiesProvided=true;
       CHECK_NOTNULL(val,key);
       {
         localUSwap=plumedMain.MDQuantityToPLUMED("energy",val);
@@ -187,6 +192,24 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 }
 
 void GREX::savePositions() {
+  // The normal local calculation must contain every bias used for acceptance.
+  // Check actual attempt steps and cadence, without extending the MD cmd API.
+  // After a restart the first attempt may mask an incompatible cadence; the
+  // following attempt still rejects it before any off-stride acceptance is used.
+  const auto step=plumedMain.getStep();
+  for(auto* pilot : plumedMain.getActionSet().select<ActionPilot*>()) {
+    auto* value=dynamic_cast<ActionWithValue*>(pilot);
+    if(value && value->exists(value->getLabel()+".bias")) {
+      const auto stride=pilot->getStride();
+      if(stride==0 || step%stride!=0 || (previousExchangeStep>=0 && (step-previousExchangeStep)%stride!=0)) {
+        plumed_error()<<"Replica exchange requires bias force STRIDE to divide the exchange interval: "
+                      <<pilot->getLabel()<<" has STRIDE="<<stride<<" at exchange step "<<step;
+      }
+    }
+  }
+  previousExchangeStep=step;
+  const bool wasExchangeStep=plumedMain.getExchangeStep();
+  plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
   plumedMain.shareAll();
@@ -202,11 +225,32 @@ void GREX::savePositions() {
   std::ostringstream o;
   plumedMain.writeBinary(o);
   buffer=o.str();
+  plumedMain.setExchangeStep(wasExchangeStep);
 }
 
 void GREX::calculate() {
   unsigned nn=buffer.size();
+  // the buffers of the two replicas must have the same size, otherwise the partner
+  // state would be read from a truncated or partially filled buffer
+  unsigned partner_nn=nn;
+  if(intracomm.Get_rank()==0) {
+    Communicator::Request req=intercomm.Isend(nn,partner,1065);
+    intercomm.Recv(partner_nn,partner,1065);
+    req.wait();
+  }
+  intracomm.Bcast(partner_nn,0);
+  if(partner_nn!=nn) {
+    plumed_error()<<"GREX: the state of replica "<<partner<<" has a different size ("<<partner_nn<<" bytes instead of "<<nn
+                  <<"): replicas must use PLUMED inputs that define the same values";
+  }
   std::vector<char> rbuf(nn);
+  // performCalc() may have updated a time-dependent potential after caching
+  // its bias. Evaluate both configurations with that same current potential.
+  std::istringstream own(buffer);
+  plumedMain.readBinary(own);
+  plumedMain.setExchangeStep(true);
+  plumedMain.prepareDependencies();
+  plumedMain.justCalculate();
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -214,20 +258,33 @@ void GREX::calculate() {
     req.wait();
   }
   intracomm.Bcast(rbuf,0);
-  std::istringstream i(std::string(&rbuf[0],rbuf.size()));
+  std::istringstream i(std::string(rbuf.data(),rbuf.size()));
   plumedMain.readBinary(i);
+  if(physicalEnergiesProvided) {
+    // The partner's serialized ENERGY is U_partner(x_partner). General HREX
+    // needs U_local(x_partner), already summed over local domains by caching.
+    // Replace the value after deserialization; do not sum it a second time.
+    for(auto* input : plumedMain.getActionSet().select<ActionToPutData*>()) {
+      if(input->getName()=="ENERGY") {
+        input->copyOutput(0)->set(localUSwap);
+      }
+    }
+  }
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
-  localDeltaBias+=localUSwap-localUNow;
+  if(physicalEnergiesProvided) {
+    localDeltaBias+=localUSwap-localUNow;
+  }
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
     intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();
   }
   intracomm.Bcast(foreignDeltaBias,0);
+  physicalEnergiesProvided=false;
 }
 
 }

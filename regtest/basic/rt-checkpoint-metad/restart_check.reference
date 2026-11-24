@@ -1,0 +1,30 @@
+restart/COLVAR IDENTICAL
+restart/HILLS_G IDENTICAL
+restart/HILLS_H IDENTICAL
+restart/HILLS_S IDENTICAL
+restart/HILLS_N IDENTICAL
+restart/HB1 IDENTICAL
+restart/HB2 IDENTICAL
+restart/HD1 IDENTICAL
+restart/HD2 IDENTICAL
+restart/GRID_G IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/HILLS_G IDENTICAL
+restart-stride/HILLS_H IDENTICAL
+restart-stride/HILLS_S IDENTICAL
+restart-stride/HILLS_N IDENTICAL
+restart-stride/HB1 IDENTICAL
+restart-stride/HB2 IDENTICAL
+restart-stride/HD1 IDENTICAL
+restart-stride/HD2 IDENTICAL
+restart-stride/GRID_G IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21
+walkers/HW.0 IDENTICAL
+walkers/COLVAR_W0 IDENTICAL
+PLUMED:   Skipping the 19 hills of HW.1 that are in the checkpoint
+PLUMED: Checkpoint state restored at step 20

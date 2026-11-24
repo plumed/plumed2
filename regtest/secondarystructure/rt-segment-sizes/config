@@ -1,0 +1,5 @@
+type=driver
+# SECONDARY_STRUCTURE_RMSD and SECONDARY_STRUCTURE_DRMSD with segments that do not have 30 atoms,
+# same trajectory as rt32
+extra_files="../rt32/ala12_trajectory.xyz"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"

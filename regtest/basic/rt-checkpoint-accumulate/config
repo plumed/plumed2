@@ -1,0 +1,37 @@
+type=driver
+plumed_modules="generic gridtools"
+# Reference run: the whole trajectory, with the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  # a trajectory of 60 frames of 4 atoms (analytic positions)
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the first 25 frames: the interrupted run
+  head -n 150 traj.xyz > part.xyz
+  # A) checkpoints requested by the "MD engine" at steps 0, 10 and 20, restart from step 20
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoints every 7 steps (STRIDE), restart from step 21
+  mkdir restart-stride
+  cd restart-stride
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise (COLVAR holds no wall-clock data)
+  for d in restart restart-stride ; do
+    for f in COLVAR hist.grid histn.grid col.dat colc.dat colm.dat colmc.dat ; do
+      if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
+    done
+    # no warning about unported state must be left
+    if grep -q "not stored in the checkpoint" $d/out2 $d/err2 ; then echo "$d: unported state warning" ; fi
+    grep -h "Restarting from checkpoint\|Checkpoint state restored" $d/out2 | sed 's/by PLUMED.*//'
+  done > restart_check
+}

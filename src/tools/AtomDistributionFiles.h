@@ -54,10 +54,10 @@ public:
              unsigned /*step*/,
              Random& /*rng*/) override;
 
+  /// format: for fmt "traj", the format of the file as named by chemfiles (see TrajectoryParser::init())
   fileTraj(std::string_view fmt,
            std::string_view fname,
-           bool useMolfile,
-           int command_line_natoms);
+           std::string_view format="");
   bool overrideNat(unsigned& natoms) override;
 };
 } //namespace PLMD

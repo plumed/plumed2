@@ -250,6 +250,9 @@ public:
                          const OutputProductFunc& actdata,
                          View<const double> vals,
                          MatrixElementOutput& output );
+  // the assignment is customized (see below): copy construction is the default one
+  OutputProductFunc() = default;
+  OutputProductFunc(const OutputProductFunc&) = default;
   OutputProductFunc& operator=( const OutputProductFunc& m ) {
     inputf = m.inputf;
     std::vector<std::string> var(2);

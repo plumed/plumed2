@@ -52,11 +52,23 @@ protected:
   void setOutputForce(int i,double force);
 /// set the value of the bias
   void setBias(double bias);
+/// Store the values of the components in a checkpoint (see CHECKPOINT), and restore them: the components that are
+/// set at some steps only (e.g. in update) keep at the restarted step the value they had in the original run
+  void writeComponentValues(CheckpointWriter& w) const;
+  void readComponentValues(CheckpointReader& r);
 public:
   static void registerKeywords(Keywords&);
   explicit Bias(const ActionOptions&ao);
   void apply() override;
+/// Also resets the forces on the arguments, so that a bias that does not call
+/// setOutputForce for an argument at this step applies no force to it
+  void clearDerivatives(const bool& force=false) override;
   unsigned getNumberOfDerivatives() override;
+/// Biases may depend on time/history even when all arguments are constant.
+/// Evaluate them during the simulation, after derived-class construction.
+  bool calculateConstantValues(const bool&) override {
+    return false;
+  }
 };
 
 inline

@@ -71,7 +71,7 @@ public:
   void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;
   bool checkForAtom(AtomNumber a)const;
-  unsigned getResidueNumber(AtomNumber a)const;
+  int getResidueNumber(AtomNumber a)const;
   std::string getChainID(AtomNumber a)const;
   Vector getPosition(AtomNumber a)const;
   bool isWhole() const;

@@ -111,7 +111,6 @@ BasisFunctions::BasisFunctions(const ActionOptions&ao):
   if(keywords.exists("NGRID_POINTS")) {
     parse("NGRID_POINTS",nbins_);
   }
-  // log.printf(" %s \n",getKeywordString().c_str());
 
 }
 
@@ -161,7 +160,6 @@ void BasisFunctions::setInterval(const std::string& interval_min_str_in, const s
 
 
 void BasisFunctions::setupInterval() {
-  // if(!intervalBounded()){plumed_merror("setupInterval() only works for bounded interval");}
   interval_intrinsic_range_ = interval_intrinsic_max_-interval_intrinsic_min_;
   interval_intrinsic_mean_  = 0.5*(interval_intrinsic_max_+interval_intrinsic_min_);
   interval_range_ = interval_max_-interval_min_;
@@ -225,7 +223,6 @@ void BasisFunctions::printInfo() const {
   }
   log.printf("   Order of basis set: %u\n",norder_);
   log.printf("   Number of basis functions: %u\n",nbasis_);
-  // log.printf("   Interval of basis set: %f to %f\n",interval_min_,interval_max_);
   log.printf("   Interval of basis set: %s to %s\n",interval_min_str_.c_str(),interval_max_str_.c_str());
   log.printf("   Description of basis functions:\n");
   for(unsigned int i=0; i < nbasis_; i++) {
@@ -234,10 +231,8 @@ void BasisFunctions::printInfo() const {
   //
   if(print_debug_info_) {
     log.printf("  Debug information:\n");
-    // log.printf("   Default interval of basis set: [%f,%f]\n",interval_intrinsic_min_,interval_intrinsic_max_);
     log.printf("   Intrinsic interval of basis set: [%s,%s]\n",interval_intrinsic_min_str_.c_str(),interval_intrinsic_max_str_.c_str());
     log.printf("   Intrinsic interval of basis set: range=%f,  mean=%f\n",interval_intrinsic_range_,interval_intrinsic_mean_);
-    // log.printf("   Defined interval of basis set: [%f,%f]\n",interval_min_,interval_max_);
     log.printf("   Defined interval of basis set: [%s,%s]\n",interval_min_str_.c_str(),interval_max_str_.c_str());
     log.printf("   Defined interval of basis set: range=%f,  mean=%f\n",interval_range_,interval_mean_);
     log.printf("   Derivative factor due to interval translation: %f\n",argT_derivf_);

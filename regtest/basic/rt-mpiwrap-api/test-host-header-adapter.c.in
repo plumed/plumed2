@@ -1,0 +1,26 @@
+/* Compile with __PLUMED_WRAPPER_MPI_HOST_ADAPTER and wrapper implementation enabled. */
+#if defined(PLUMED_MPIW_TEST_THREAD_MPI)
+#include <thread_mpi/mpi_bindings.h>
+#endif
+// Keep this probe on the C-compatible host boundary in both language modes.
+#define __PLUMED_WRAPPER_CXX 0
+/* A declaration-only include must leave the implementation available later. */
+#undef __PLUMED_WRAPPER_IMPLEMENTATION
+#define __PLUMED_WRAPPER_IMPLEMENTATION 0
+#include "../../../src/wrapper/Plumed.h"
+#undef __PLUMED_WRAPPER_IMPLEMENTATION
+#define __PLUMED_WRAPPER_IMPLEMENTATION 1
+#include "../../../src/wrapper/Plumed.h"
+#include "../../../src/wrapper/Plumed.h"
+
+int main(void) {
+#ifdef __cplusplus
+  const PLMD::mpiwrap::plumed_mpi_provider *(*implementation)(void) = plumed_mpi_implementation;
+#else
+  const plumed_mpi_provider *(*implementation)(void) = plumed_mpi_implementation;
+#endif
+  plumed (*create)(void) = plumed_create;
+  (void)implementation;
+  (void)create;
+  return 0;
+}

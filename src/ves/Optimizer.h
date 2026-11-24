@@ -39,7 +39,7 @@ namespace PLMD {
 
 /**
 \ingroup INHERIT
-Abstract base class for implenting new optimization methods
+Abstract base class for implementing new optimization methods
 */
 
 class OFile;
@@ -131,9 +131,6 @@ protected:
   void turnOnHessian();
   void turnOffHessian();
   std::vector<CoeffsMatrix*> enableHessian(VesBias*, const bool diagonal_hessian=false);
-  // CoeffsMatrix* switchToDiagonalHessian(VesBias*);
-  // CoeffsMatrix* switchToFullHessian(VesBias*);
-  //
   CoeffsVector& Coeffs(const unsigned int coeffs_id = 0) const;
   CoeffsVector& AuxCoeffs(const unsigned int coeffs_id = 0) const;
   CoeffsVector& Gradient(const unsigned int coeffs_id = 0) const;
@@ -156,6 +153,10 @@ protected:
   void addCoeffsSetIDsToFilenames(std::vector<std::string>&, std::string&);
   void setupOFiles(std::vector<std::string>&, std::vector<std::unique_ptr<OFile>>&, const bool multi_sim_single_files=false);
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords(Keywords&);
   static void useMultipleWalkersKeywords(Keywords&);
   static void useHessianKeywords(Keywords&);

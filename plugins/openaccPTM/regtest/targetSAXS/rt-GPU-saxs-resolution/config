@@ -1,0 +1,5 @@
+mpiprocs=2
+type=driver
+arg="--plumed plumed.dat --timestep 0.005 --mf_xtc traj.xtc"
+# input files and CPU references are those of regtest/isdb/rt-saxs-resolution
+extra_files="../../../../../regtest/isdb/rt-saxs-resolution/colvar.reference ../../../../../regtest/isdb/rt-saxs-resolution/deriv.reference ../../../../../regtest/isdb/rt-saxs-resolution/score.reference ../../../../../regtest/isdb/rt-saxs-resolution/template.pdb ../../../../../regtest/isdb/rt-saxs-resolution/traj.xtc"

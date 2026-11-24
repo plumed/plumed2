@@ -1,9 +1,11 @@
 LOAD FILE=../../../../plumedOpenACC.so
-trs_cpu: TORSION ATOMS1=1,2,3,4 ATOMS2=3,4,5,6 ATOMS3=2,3,4,5  ATOMS4=1,2,5,6
-trs: TORSION ATOMS1=1,2,3,4 ATOMS2=3,4,5,6 ATOMS3=2,3,4,5  ATOMS4=1,2,5,6 USEGPU
+trs_cpu: TORSION ATOMS1=1,2,3,4 ATOMS2=2,3,4,6 ATOMS3=2,3,4,5  ATOMS4=1,2,5,6
+trs: TORSION ATOMS1=1,2,3,4 ATOMS2=2,3,4,6 ATOMS3=2,3,4,5  ATOMS4=1,2,5,6 USEGPU
 
 diff: CUSTOM ARG=trs,trs_cpu FUNC=y-x PERIODIC=-pi,pi
 PRINT ARG=diff FILE=diff FMT=%8.4f
+#ATOMS2 avoids the dihedral 3,4,5,6: in frame 11 of isomers.xyz it is almost degenerate (|d0 x d1|=0.04, derivatives ~34),
+#so TORSION in float precision differs from the double one by ~1e-4 in the forces, which depends on the compiler (fma etc.)
 #note that if TORSION is compiled in floating precision the test will give some periodicity errors (namely -pi instead of pi and vice versa)
 s: SUM ARG=diff PERIODIC=-pi,pi
 PRINT ARG=diff FILE=tors FMT=%8.4f 

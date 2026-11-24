@@ -60,7 +60,6 @@ void FunctionShortcut<T>::registerKeywords(Keywords& keys ) {
   keys.addActionNameSuffix("_MATRIX");
   keys.addActionNameSuffix("_MATRIXACC");
   keys.addActionNameSuffix("_GRID");
-  //keys.addActionNameSuffix("_GRIDACC");
   keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
   T::registerKeywords( keys );
@@ -82,6 +81,9 @@ FunctionShortcut<T>::FunctionShortcut(const ActionOptions&ao):
   ActionShortcut(ao) {
   std::vector<std::string> args;
   parseVector("ARG",args);
+  if( args.empty() ) {
+    error("no arguments were specified with ARG");
+  }
   std::string allargs=args[0];
   for(unsigned i=1; i<args.size(); ++i) {
     allargs += "," + args[i];

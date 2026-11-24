@@ -5,7 +5,7 @@ To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and met
 
 **plumed.dat**
 ```
-LOAD GLOBAL FILE=path/to/PythonCVInterface.so
+LOAD FILE=path/to/PythonCVInterface.so
 PYFUNCTION IMPORT=pycv
 ```
 
@@ -14,10 +14,12 @@ PYFUNCTION IMPORT=pycv
 import plumedCommunications
 import pydoc
 
+
 def plumedInit(_):
     pydoc.writedoc(plumedCommunications)
     pydoc.writedoc(plumedCommunications.defaults)
-    return {"Value":plumedCommunications.defaults.COMPONENT_NODEV}
+    return {"Value": plumedCommunications.defaults.COMPONENT_NODEV}
+
 
 def plumedCalculate(_):
     return 0.0

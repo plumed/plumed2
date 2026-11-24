@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/Checkpoint.h"
 
 //+PLUMEDOC ANALYSIS COLLECT
 /*
@@ -75,6 +76,20 @@ In this input the COLLECT action only starts collecting the data on step 100 so 
 The COLLECT action then stops collecting data on step 200. These 200 stored distances are then output at the end of the simulation
 even if the trajectory contains more than 200 frames.
 
+## Analysing the remaining data in the trajectory
+
+Suppose that you use the first input in the previous section to analyse a 3500-frame trajectory. Three files will be output that contain
+the distances between atom 1 and 2 for the first, second and third 1000-frame blocks of the trajectory. However, the distances between the atoms in the
+final 500 frames are not output anywhere.  If you want to output these last 500 distances as well you can use an input similar to the one shown below:
+
+```plumed
+d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=1 CLEAR=1000 ANALYZED_AT_END
+DUMPVECTOR ARG=c FILE=timeseries STRIDE=1000 DO_AFTER_FINAL_STEP
+```
+
+Now four files will be output from that 3500-frame trajectory. However, the last of these files only contains 500 distances.
+
 ## Collecting vectors
 
 You can use the collect command even if the input value has a rank that is greater than zero.  For example, the following
@@ -91,7 +106,7 @@ the output Value is a vector or matrix.  In the above input we are storing a vec
 a list of 400 distances - 4 distances for each frame.  The assumption in the input above is that the four distances that have
 been computed by the DISTANCES command are indistinguishable.
 
-By using the following input we can ensure the the four distances are treated as distinguishable when we do any analysis:
+By using the following input we can ensure the four distances are treated as distinguishable when we do any analysis:
 
 ```plumed
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8
@@ -127,6 +142,10 @@ A $100 \times 6$ matrix is stored.  Each row of this matrix contains a vectorize
 There is currently no way to store the collected data in a way that recognises that each of the input PLUMED Value
 was a matrix. You also cannot use this action to store functions evaluated on a grid.
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the collected data is stored in the checkpoint, so that the time series continues exactly after a restart.
+
 */
 //+ENDPLUMEDOC
 
@@ -139,9 +158,16 @@ class Collect :
   public ActionPilot {
 private:
   bool usefirstconf;
+  bool analysedAtEnd;
+  bool clearnextstep;
   unsigned clearstride;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   Collect( const ActionOptions& );
   unsigned getNumberOfDerivatives() override;
   bool calculateOnUpdate() override {
@@ -170,6 +196,7 @@ void Collect::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
   keys.add("compulsory","TYPE","auto","required if you are collecting an object with rank>0. Should be vector/matrix and determines how data is stored.  If rank==0 then data has to be stored as a vector");
+  keys.addFlag("ANALYZED_AT_END",false,"ensure this data is stored so that it can be analysed the trajectory even when the number of steps in the trajectory is not a multiple of stride");
   keys.setValueDescription("vector/matrix","the time series for the input quantity");
 }
 
@@ -178,7 +205,9 @@ Collect::Collect( const ActionOptions& ao ):
   ActionWithValue(ao),
   ActionWithArguments(ao),
   ActionPilot(ao),
-  usefirstconf(false) {
+  usefirstconf(false),
+  analysedAtEnd(false),
+  clearnextstep(false) {
   if( getNumberOfArguments()!=1 ) {
     error("there should only be one argument to this action");
   }
@@ -199,22 +228,30 @@ Collect::Collect( const ActionOptions& ao ):
   }
 
   if( type=="vector" ) {
-    log.printf("  adding %ld elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  adding %zu elements to stored vector each time we collect\n", getPntrToArgument(0)->getNumberOfValues() );
   } else {
-    log.printf("  constructing matrix with rows of length %ld from input data\n", getPntrToArgument(0)->getNumberOfValues() );
+    log.printf("  constructing matrix with rows of length %zu from input data\n", getPntrToArgument(0)->getNumberOfValues() );
   }
 
   parse("CLEAR",clearstride);
+  parseFlag("ANALYZED_AT_END",analysedAtEnd);
   std::size_t nvals=0;
   if( clearstride==getStride() ) {
     nvals=1;
     usefirstconf=(getStride()==0);
   } else if( clearstride>0 ) {
+    if( getStride()==0 ) {
+      error("CLEAR cannot be used with STRIDE=0");
+    }
     if( clearstride%getStride()!=0 ) {
       error("CLEAR parameter must be a multiple of STRIDE");
     }
     log.printf("  clearing collected data every %u steps \n",clearstride);
-    nvals=(clearstride/getStride());
+    if( !analysedAtEnd ) {
+      nvals=(clearstride/getStride());
+    } else {
+      clearnextstep=true;
+    }
   }
 
   std::vector<std::size_t> shape(1);
@@ -243,11 +280,71 @@ unsigned Collect::getNumberOfDerivatives() {
   return 0;
 }
 
+// The collected data (value of type "average"), with its shape because it grows
+// when CLEAR is not used, and the flag of the first configuration
+void Collect::writeCheckpoint(CheckpointWriter& w) {
+  w.write("usefirstconf",(long long) usefirstconf);
+  w.write("clearnextstep",(long long) clearnextstep);
+  if( clearnextstep ) {
+    return;
+  }
+  const Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  for(const auto& d : myout->getShape()) {
+    shape.push_back(d);
+  }
+  w.write("shape",shape);
+  std::vector<double> data;
+  const std::size_t nvals = myout->getNumberOfValues();
+  for(std::size_t i=0; i<nvals; ++i) {
+    data.push_back( myout->get(i) );
+  }
+  w.write("data",data);
+}
+
+void Collect::readCheckpoint(CheckpointReader& r) {
+  long long uf;
+  r.read("usefirstconf",uf);
+  usefirstconf = uf!=0;
+  long long cl;
+  r.read("clearnextstep",cl);
+  clearnextstep = cl!=0;
+  if( clearnextstep ) {
+    return;
+  }
+  Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  r.read("shape",shape);
+  std::vector<std::size_t> ss(shape.begin(),shape.end());
+  if( ss.size()!=myout->getRank() ) {
+    error("the checkpoint was written with a different type of output");
+  }
+  std::vector<double> data;
+  r.read("data",data);
+  if( myout->getShape()!=ss ) {
+    myout->setShape(ss);
+    if( ss.size()==2 ) {
+      myout->reshapeMatrixStore( ss[1] );
+    }
+  }
+  if( data.size()!=myout->getNumberOfValues() ) {
+    error("the checkpoint was written with a different number of values");
+  }
+  for(std::size_t i=0; i<data.size(); ++i) {
+    myout->set( i, data[i] );
+  }
+}
+
 void Collect::update() {
   if( getStep()==0 || (!onStep() && !usefirstconf) ) {
     return ;
   }
   usefirstconf=false;
+  if( clearnextstep ) {
+    std::vector<std::size_t> ss( getPntrToComponent(0)->getRank(), 0 );
+    getPntrToComponent(0)->setShape( ss );
+    clearnextstep = false;
+  }
 
   Value* myin=getPntrToArgument(0);
   Value* myout=getPntrToComponent(0);
@@ -257,13 +354,25 @@ void Collect::update() {
       myout->set( i, myin->get(i) );
     }
   } else if( clearstride>0 ) {
-    unsigned step = getStep() - clearstride*std::floor( getStep() / clearstride );
-    if( getStep()%clearstride==0 ) {
-      step = step + clearstride;
-    }
-    unsigned base = (step/getStride()-1)*nargs;
-    for(unsigned i=0; i<nargs; ++i) {
-      myout->set( base+i, myin->get(i) );
+    if( analysedAtEnd ) {
+      for(unsigned i=0; i<nargs; ++i) {
+        myout->push_back( myin->get(i) );
+      }
+      if( myout->getRank()==2 ) {
+        myout->reshapeMatrixStore( nargs );
+      }
+      if( getStep()%clearstride==0 ) {
+        clearnextstep=true;
+      }
+    } else {
+      unsigned step = getStep() - clearstride*std::floor( getStep() / clearstride );
+      if( getStep()%clearstride==0 ) {
+        step = step + clearstride;
+      }
+      unsigned base = (step/getStride()-1)*nargs;
+      for(unsigned i=0; i<nargs; ++i) {
+        myout->set( base+i, myin->get(i) );
+      }
     }
   } else {
     for(unsigned i=0; i<nargs; ++i) {

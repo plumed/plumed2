@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
+#include "tools/Tools.h"
 #include <cstdio>
 #include <iostream>
 #include <string>
@@ -53,7 +54,7 @@ Different properties can be calculated and selected using the TYPE keyword:
 
 When the TRANSFER keyword is used, a file with the free energy of transfer values for the sidechains and backbone atoms should be provided (using the keyword DELTAGFILE). Such file should have the following format:
 
-\verbatim
+````
 ----------------Sample DeltaG.dat file---------------------
 ALA	0.711019999999962
 ARG	-2.24832799999996
@@ -77,7 +78,7 @@ TYR	0.775547999999958
 VAL	2.12779200000011
 BACKBONE	1.00066920000002
 -----------------------------------------------------------
-\endverbatim
+````
 
 where the second column is the free energy of transfer for each sidechain/backbone, in kJ/mol.
 
@@ -139,6 +140,8 @@ private:
   unsigned nl_update;
   int firstStepFlag;
   double Ti;
+  // kBT of the MD engine, read in the constructor: getkBT() cannot be used after it
+  double kbt;
   // cppcheck-suppress duplInheritedMember
   std::vector<AtomNumber> atoms;
   vector < vector < std::string > > AtomResidueName;
@@ -190,6 +193,7 @@ SASA_LCPO::SASA_LCPO(const ActionOptions&ao):
   rs = 0.14;
   parse("DELTAGFILE",DeltaGValues);
   parse("APPROACH", approach);
+  kbt=getkBT();
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) {
     error("no atoms specified");
@@ -477,7 +481,7 @@ void SASA_LCPO::readLCPOparam() {
   for(unsigned i=0; i<natoms; i++) {
     if (LCPOparam[i].size()==0 ) {
       if ((AtomResidueName[0][i][0]=='O') || (AtomResidueName[0][i][0]=='N') || (AtomResidueName[0][i][0]=='C') || (AtomResidueName[0][i][0]=='S')) {
-        cout << "Could not find LCPO paramaters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
+        cout << "Could not find LCPO parameters for atom " << AtomResidueName[0][i] << " of residue " << AtomResidueName[1][i] << endl;
         error ("missing LCPO parameters\n");
       }
     }
@@ -587,18 +591,29 @@ void SASA_LCPO::readDeltaG() {
 
 }
 
-//computes free energy values for the sidechains and for the backbone, and assigns values to each atom. Only used if sasa_type = TRANSFER, and if no DELTAGFILE is provided. In this case, the free energy values are those describing the effect of temperature, and the program must know if approach 2 or 3 (as described in Arsiccio and Shea, Protein Cold Denaturation in Implicit Solvent Simulations: A Transfer Free Energy Approach, JPCB, 2021) needs to be used to compute them.
-
+// Computes transfer free-energy parameters (DeltaG) when no DELTAGFILE is provided.
+// This routine is used only for TYPE=TRANSFER and evaluates temperature-dependent
+// parameters according to approach 2 or 3 from:
+// Arsiccio and Shea, JPCB (2021).
+//
+// Data layout notes:
+// - DeltaG[i] for i in [0, natoms-1] stores residue-specific sidechain values.
+// - DeltaG[natoms] stores the single BACKBONE value used globally.
+// - Values are cached and recomputed only when temperature changes.
 void SASA_LCPO::computeDeltaG() {
 
-  for(unsigned i=0; i<natoms; i++) {
-    DeltaG[i].clear();
-  }
-
+  // Convert kBT to absolute temperature (K) using Boltzmann constant from PLUMED utilities.
   double T;
-  T = getkBT()/getKBoltzmann();
+  T = kbt/getKBoltzmann();
 
-  if (T != Ti) {
+  // Recompute only when temperature changes.
+  // This prevents using stale values and avoids repeatedly appending backbone entries.
+  if (std::fabs(T - Ti) > 1e-12) {
+    // Clear all per-atom entries plus the extra backbone slot at index natoms.
+    for(unsigned i=0; i<=natoms; i++) {
+      DeltaG[i].clear();
+    }
+    // Populate per-atom DeltaG according to the selected approach and residue identity.
     for(unsigned i=0; i<natoms; i++) {
       if (approach==2) {
         if (AtomResidueName[1][i].compare("ALA")==0) {
@@ -801,6 +816,13 @@ void SASA_LCPO::calculate() {
   vector <double> dSASA_2_neigh_dc(3);
   vector <double> ddij_di(3);
   vector <double> ddik_di(3);
+  // the term of an atom is clipped at zero in the value: its derivatives
+  // (also those with respect to its neighbors) are added only if it is positive
+  vector<double> term(natoms,0.0);
+  vector<vector<Vector>> neighd(natoms);
+  for(unsigned i = 0; i < natoms; i++) {
+    neighd[i].assign(Nlist[i].size(),Vector(0.0,0.0,0.0));
+  }
 
   if( sasa_type==TOTAL ) {
     for(unsigned i = 0; i < natoms; i++) {
@@ -813,7 +835,7 @@ void SASA_LCPO::calculate() {
           Aijk = 0.0;
           Ajk = 0.0;
           double ri = LCPOparam[i][0];
-          S1 = 4*M_PI*ri*ri;
+          S1 = 4*pi*ri*ri;
           vector <double> dAijdc_2(3, 0);
           vector <double> dAijdc_4(3, 0);
 
@@ -823,10 +845,10 @@ void SASA_LCPO::calculate() {
             double d_ij = d_ij_vec.modulo()*10;
 
             double rj = LCPOparam[Nlist[i][j]][0];
-            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+            Aijt = (2*pi*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*pi*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
 
-            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
@@ -844,7 +866,7 @@ void SASA_LCPO::calculate() {
             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
-            dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
 
             dAijdc_2t[0] = dAdd * ddij_di[0];
@@ -860,11 +882,11 @@ void SASA_LCPO::calculate() {
                 double d_ik = d_ik_vec.modulo()*10;
 
                 double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                double sjk =  (2*pi*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
                 Ajkt += sjk;
-                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                Aikt += (2*pi*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
                 ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
@@ -875,7 +897,7 @@ void SASA_LCPO::calculate() {
                 dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
                 dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
                 dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
@@ -900,9 +922,9 @@ void SASA_LCPO::calculate() {
             dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
 
-            derivatives[i][0] += (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
-            derivatives[i][1] += (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
-            derivatives[i][2] += (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][0] = (dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][1] = (dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/10;
+            neighd[i][j][2] = (dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/10;
 
 
             Aijk += (Aijt * Ajkt);
@@ -921,15 +943,15 @@ void SASA_LCPO::calculate() {
 
           }
           double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+          term[i] = sasai;
           if (sasai > 0 ) {
             sasa += sasai/100;
+            derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
+            derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
+            derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;
           }
-          derivatives[i][0] += (dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/10;
-          derivatives[i][1] += (dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/10;
-          derivatives[i][2] += (dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/10;
         }
       }
-      virial -= Tensor(getPosition(i),derivatives[i]);
     }
   }
 
@@ -964,7 +986,7 @@ void SASA_LCPO::calculate() {
           Aijk = 0.0;
           Ajk = 0.0;
           double ri = LCPOparam[i][0];
-          S1 = 4*M_PI*ri*ri;
+          S1 = 4*pi*ri*ri;
           vector <double> dAijdc_2(3, 0);
           vector <double> dAijdc_4(3, 0);
 
@@ -974,10 +996,10 @@ void SASA_LCPO::calculate() {
             double d_ij = d_ij_vec.modulo()*10;
 
             double rj = LCPOparam[Nlist[i][j]][0];
-            Aijt = (2*M_PI*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
-            double sji = (2*M_PI*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
+            Aijt = (2*pi*ri*(ri-d_ij/2-((ri*ri-rj*rj)/(2*d_ij))));
+            double sji = (2*pi*rj*(rj-d_ij/2+((ri*ri-rj*rj)/(2*d_ij))));
 
-            dAdd = M_PI*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*rj*(-(ri*ri-rj*rj)/(d_ij*d_ij)-1);
             ddij_di[0] = -10*(getPosition(Nlist[i][j])[0]-getPosition(i)[0])/d_ij;
             ddij_di[1] = -10*(getPosition(Nlist[i][j])[1]-getPosition(i)[1])/d_ij;
             ddij_di[2] = -10*(getPosition(Nlist[i][j])[2]-getPosition(i)[2])/d_ij;
@@ -994,7 +1016,7 @@ void SASA_LCPO::calculate() {
             dSASA_2_neigh_dc[1] = dAdd * ddij_di[1];
             dSASA_2_neigh_dc[2] = dAdd * ddij_di[2];
 
-            dAdd = M_PI*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
+            dAdd = pi*ri*((ri*ri-rj*rj)/(d_ij*d_ij)-1);
 
             dAijdc_2t[0] = dAdd * ddij_di[0];
             dAijdc_2t[1] = dAdd * ddij_di[1];
@@ -1009,11 +1031,11 @@ void SASA_LCPO::calculate() {
                 double d_ik = d_ik_vec.modulo()*10;
 
                 double rk = LCPOparam[Nlist[Nlist[i][j]][k]][0];
-                double sjk =  (2*M_PI*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
+                double sjk =  (2*pi*rj*(rj-d_jk/2-((rj*rj-rk*rk)/(2*d_jk))));
                 Ajkt += sjk;
-                Aikt += (2*M_PI*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
+                Aikt += (2*pi*ri*(ri-d_ik/2-((ri*ri-rk*rk)/(2*d_ik))));
 
-                dAdd = M_PI*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*ri*((ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 ddik_di[0] = -10*(getPosition(Nlist[Nlist[i][j]][k])[0]-getPosition(i)[0])/d_ik;
                 ddik_di[1] = -10*(getPosition(Nlist[Nlist[i][j]][k])[1]-getPosition(i)[1])/d_ik;
@@ -1024,7 +1046,7 @@ void SASA_LCPO::calculate() {
                 dSASA_3_neigh_dc[1] += dAdd*ddik_di[1];
                 dSASA_3_neigh_dc[2] += dAdd*ddik_di[2];
 
-                dAdd = M_PI*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
+                dAdd = pi*rk*(-(ri*ri-rk*rk)/(d_ik*d_ik)-1);
 
                 dSASA_3_neigh_dc2[0] += dAdd*ddik_di[0];
                 dSASA_3_neigh_dc2[1] += dAdd*ddik_di[1];
@@ -1049,15 +1071,15 @@ void SASA_LCPO::calculate() {
             dSASA_4_neigh_dc[2] += dSASA_2_neigh_dc[2] * Aikt;
 
             if (AtomResidueName[0][Nlist[i][j]] == "N" || AtomResidueName[0][Nlist[i][j]] == "CA"  || AtomResidueName[0][Nlist[i][j]] == "C" || AtomResidueName[0][Nlist[i][j]] == "O") {
-              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
-              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][0] = ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][1] = ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
+              neighd[i][j][2] = ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][0]*DeltaG[natoms][0])*10;
             }
 
             if (AtomResidueName[0][Nlist[i][j]] != "N" && AtomResidueName[0][Nlist[i][j]] != "CA"  && AtomResidueName[0][Nlist[i][j]] != "C" && AtomResidueName[0][Nlist[i][j]] != "O") {
-              derivatives[i][0] += ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-              derivatives[i][1] += ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
-              derivatives[i][2] += ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][0] = ((dSASA_2_neigh_dc[0]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[0]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[0]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][1] = ((dSASA_2_neigh_dc[1]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[1]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[1]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
+              neighd[i][j][2] = ((dSASA_2_neigh_dc[2]*LCPOparam[Nlist[i][j]][2] + dSASA_3_neigh_dc[2]*LCPOparam[Nlist[i][j]][3]+dSASA_4_neigh_dc[2]*LCPOparam[Nlist[i][j]][4])/MaxSurf[Nlist[i][j]][1]*DeltaG[Nlist[i][j]][0])*10;
             }
 
             Aijk += (Aijt * Ajkt);
@@ -1074,32 +1096,38 @@ void SASA_LCPO::calculate() {
 
           }
           double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
+          term[i] = sasai;
 
           if (AtomResidueName[0][i] == "N" || AtomResidueName[0][i] == "CA"  || AtomResidueName[0][i] == "C" || AtomResidueName[0][i] == "O") {
-            if (sasai > 0 ) {
+            if (sasai > 0) {
               sasa += (sasai/MaxSurf[i][0]*DeltaG[natoms][0]);
+              derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+              derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
+              derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
             }
-            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
-            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][0]*DeltaG[natoms][0])*10;
           }
 
           if (AtomResidueName[0][i] != "N" && AtomResidueName[0][i] != "CA"  && AtomResidueName[0][i] != "C" && AtomResidueName[0][i] != "O") {
-            if (sasai > 0. ) {
+            if (sasai > 0) {
               sasa += (sasai/MaxSurf[i][1]*DeltaG[i][0]);
+              derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+              derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
+              derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
             }
-            derivatives[i][0] += ((dAijdc_2[0]*LCPOparam[i][2]+dAijdc_4[0]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-            derivatives[i][1] += ((dAijdc_2[1]*LCPOparam[i][2]+dAijdc_4[1]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
-            derivatives[i][2] += ((dAijdc_2[2]*LCPOparam[i][2]+dAijdc_4[2]*LCPOparam[i][4])/MaxSurf[i][1]*DeltaG[i][0])*10;
           }
         }
       }
-      virial -= Tensor(getPosition(i),derivatives[i]);
     }
   }
 
 
   for(unsigned i=0; i<natoms; i++) {
+    for (unsigned j = 0; j < Nlist[i].size(); j++) {
+      if (term[Nlist[i][j]] > 0) {
+        derivatives[i] += neighd[i][j];
+      }
+    }
+    virial -= Tensor(getPosition(i),derivatives[i]);
     setAtomsDerivatives(i,derivatives[i]);
   }
   setBoxDerivatives(virial);
@@ -1109,7 +1137,6 @@ void SASA_LCPO::calculate() {
   if (nl_update == stride) {
     nl_update = 0;
   }
-// setBoxDerivativesNoPbc();
 }
 
 }//namespace sasa

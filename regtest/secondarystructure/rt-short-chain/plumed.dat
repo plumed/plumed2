@@ -1,0 +1,6 @@
+# three_chains.pdb contains three chains (A, B and C): B has a single residue and cannot form a strand
+MOLINFO STRUCTURE=three_chains.pdb
+b: ANTIBETARMSD RESIDUES=all STYLE=inter TYPE=DRMSD STRANDS_CUTOFF=1.0 R_0=0.08 NN=8 MM=12
+p: PARABETARMSD RESIDUES=all STYLE=inter TYPE=OPTIMAL STRANDS_CUTOFF=1.0 R_0=0.08 NN=8 MM=12
+PRINT ARG=b,p FILE=colvar FMT=%8.4f
+RESTRAINT ARG=b,p AT=1,2 KAPPA=1,2

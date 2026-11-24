@@ -13,7 +13,7 @@ See [this link](http://maze-code.github.io) for further information.
 
 Documentation
 --------------------------------------------------------------------------------
-Run `make doc`; the documentation should be in `user-doc/html/_m_a_z_e.html`.
+Run `make doc`; the documentation should be in `new-manual/site/module_maze/index.html`.
 
 Author
 --------------------------------------------------------------------------------

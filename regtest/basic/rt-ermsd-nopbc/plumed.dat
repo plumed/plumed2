@@ -1,0 +1,5 @@
+# the second residue is in another periodic image: the molecule is broken
+# with PBC (default) it is made whole before computing the ERMSD, with NOPBC the positions are used as they are
+e: ERMSD ATOMS=1-6 REFERENCE=ref.pdb
+enopbc: ERMSD ATOMS=1-6 REFERENCE=ref.pdb NOPBC
+PRINT ARG=e,enopbc FILE=colvar FMT=%10.6f

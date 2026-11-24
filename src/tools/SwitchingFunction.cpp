@@ -420,7 +420,7 @@ struct fastgaussianSwitch: public baseSwitch<fastgaussianSwitch> {
         dfunc = -result;
         //I have to multiply and then divide dfunc by sqrt(distance2)
         //by omitting that I get a funny wrong value of the derivative in 0
-        //by not omitting that I get a funny nan becasue I divide by 0
+        //by not omitting that I get a funny nan because I divide by 0
         //hence the extra if
         // stretch:
         result=result*data.stretch+data.shift;
@@ -462,7 +462,6 @@ struct cubicSwitch: public baseSwitch<cubicSwitch> {
   static inline ValueDerivative function(const double rdist) {
     const double tmp1 = rdist - 1.0;
     const double tmp2 = 1.0+2.0*rdist;
-    //double result = tmp1*tmp1*tmp2;
     double dfunc = 2*tmp1*tmp2 + 2*tmp1*tmp1;
     return {tmp1*tmp1*tmp2,dfunc};
   }
@@ -478,9 +477,7 @@ struct tanhSwitch: public baseSwitch<tanhSwitch> {
   }
   static inline ValueDerivative function(const double rdist) {
     const double tmp1 = std::tanh(rdist);
-    //was dfunc=-(1-tmp1*tmp1);
     double dfunc = tmp1 * tmp1 - 1.0;
-    //return result;
     return {1.0 - tmp1,dfunc };
   }
 };
@@ -587,7 +584,7 @@ class leptonSwitch {
       lepton::ParsedExpression ped=lepton::Parser::parse(func).differentiate(arg).optimize(lepton::Constants());
       deriv=ped.createCompiledExpression();
       {
-        auto vars=expression.getVariables();
+        auto vars=deriv.getVariables();
         if (vars.size()==0) {
           varDevRef=nullptr;
         } else {
@@ -617,7 +614,7 @@ class leptonSwitch {
       }
 
       {
-        auto vars=expression.getVariables();
+        auto vars=deriv.getVariables();
         if (vars.size()==0) {
           varDevRef=nullptr;
         } else {
@@ -648,7 +645,7 @@ class leptonSwitch {
         }
 
         {
-          auto vars=expression.getVariables();
+          auto vars=deriv.getVariables();
           if (vars.size()==0) {
             varDevRef=nullptr;
           } else {
@@ -706,6 +703,9 @@ public:
     auto vars=expressions[0].getVariables();
     leptonx2=std::find(vars.begin(),vars.end(),"x2")!=vars.end();
   }
+
+  // the implicit assignment is what is needed (the copy constructor above only rebuilds the expressions)
+  leptonSwitch& operator=(const leptonSwitch& other) = default;
 
   inline double calculate(const double distance,double&dfunc) const  {
     double res = 0.0;
@@ -943,6 +943,7 @@ public:
     function(D0,DMAX,R0,func) {}
   SwitchInterface_lepton(const SwitchInterface_lepton& other):
     function(other.function) {}
+  SwitchInterface_lepton& operator=(const SwitchInterface_lepton& other) = default;
   double calculate(double distance, double& dfunc) const override {
     return function.calculate(distance,dfunc);
   }
@@ -1057,10 +1058,10 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   std::vector<std::string> data=Tools::getWords(definition);
 #define CHECKandPARSE(datastring,keyword,variable,errormsg) \
   if(Tools::findKeyword(datastring,keyword) && !Tools::parse(datastring,keyword,variable))\
-    errormsg="could not parse " keyword; //adiacent strings are automagically concatenated
+    errormsg="could not parse " keyword; //adjacent strings are automagically concatenated
 #define REQUIREDPARSE(datastring,keyword,variable,errormsg) \
   if(!Tools::parse(datastring,keyword,variable))\
-    errormsg=keyword " is required for " + name ; //adiacent strings are automagically concatenated
+    errormsg=keyword " is required for " + name ; //adjacent strings are automagically concatenated
 
   if( data.size()<1 ) {
     errormsg="missing all input for switching function";
@@ -1211,10 +1212,10 @@ void SwitchingFunctionAccelerable::set(const std::string & definition,std::strin
   std::vector<std::string> data=Tools::getWords(definition);
 #define CHECKandPARSE(datastring,keyword,variable,errormsg) \
   if(Tools::findKeyword(datastring,keyword) && !Tools::parse(datastring,keyword,variable))\
-    errormsg="could not parse " keyword; //adiacent strings are automagically concatenated
+    errormsg="could not parse " keyword; //adjacent strings are automagically concatenated
 #define REQUIREDPARSE(datastring,keyword,variable,errormsg) \
   if(!Tools::parse(datastring,keyword,variable))\
-    errormsg=keyword " is required for " + name ; //adiacent strings are automagically concatenated
+    errormsg=keyword " is required for " + name ; //adjacent strings are automagically concatenated
 
   if( data.size()<1 ) {
     errormsg="missing all input for switching function";

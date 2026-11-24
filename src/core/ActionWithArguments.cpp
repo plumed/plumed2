@@ -79,7 +79,31 @@ bool ActionWithArguments::parseArgumentList(const std::string&key,int i,std::vec
   }
 }
 
+// True if readact cannot use v because not all the elements of v are computed (the action that computes v uses a mask)
+static bool maskedValueNotAllowed( const Action* readact, Value* v ) {
+  if( v->getRank()==0 ) {
+    return false;
+  }
+  if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) {
+    return false;
+  }
+  ActionWithVector* av=dynamic_cast<ActionWithVector*>( v->getPntrToAction() );
+  return av && av->getNumberOfMasks()>=0;
+}
+
 void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* readact, std::vector<Value*>&arg) {
+  // ARG=* and ARG=*.* take the values of all the actions, including the ones that the shortcuts create.
+  // The values that this action cannot use (a type it does not accept, or a vector of which only some elements
+  // are computed, e.g. the strand pairs of PARABETARMSD with STRANDS_CUTOFF) are left out, so that e.g.
+  // PRINT ARG=* works as in previous versions.
+  unsigned nskipped=0;
+  auto addFromWildcard=[&]( Value* v ) {
+    if( !readact->keywords.checkArgumentType( v->getRank(), v->hasDerivatives() ) || maskedValueNotAllowed( readact, v ) ) {
+      nskipped++;
+      return;
+    }
+    arg.push_back(v);
+  };
   for(unsigned i=0; i<c.size(); i++) {
     // is a regex? then just interpret it. The signal is ()
     if(!c[i].compare(0,1,"(")) {
@@ -133,7 +157,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
               continue;
             }
             for(unsigned k=0; k<all[j]->getNumberOfComponents(); ++k) {
-              arg.push_back(all[j]->copyOutput(k));
+              addFromWildcard(all[j]->copyOutput(k));
             }
           }
         } else if ( name=="*") {
@@ -221,7 +245,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
               continue;
             }
             for(unsigned k=0; k<all[j]->getNumberOfComponents(); ++k) {
-              arg.push_back(all[j]->copyOutput(k));
+              addFromWildcard(all[j]->copyOutput(k));
             }
           }
         } else {
@@ -241,20 +265,35 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
       }
     }
   }
+  if( nskipped>0 ) {
+    readact->log.printf("  %u values selected with * are not used: this action cannot use their type, or not all their elements are computed\n", nskipped);
+  }
   for(unsigned i=0; i<arg.size(); ++i) {
     if( !readact->keywords.checkArgumentType( arg[i]->getRank(), arg[i]->hasDerivatives() ) ) {
-      readact->error("documentation for input type is not provided in " + readact->getName() );
+      std::string type;
+      if( arg[i]->getRank()>0 && arg[i]->hasDerivatives() ) {
+        type = "function on a grid";
+      } else if( arg[i]->getRank()==0 ) {
+        type = "scalar";
+      } else if( arg[i]->getRank()==1 ) {
+        type = "vector";
+      } else if( arg[i]->getRank()==2 ) {
+        type = "matrix";
+      } else {
+        type = "value of rank " + std::to_string(arg[i]->getRank());
+      }
+      std::string accepted;
+      for(const auto & kw : readact->keywords.getArgumentKeys() ) {
+        accepted += " " + kw + " (" + readact->keywords.getArgumentType(kw) + ")";
+      }
+      readact->error("argument " + arg[i]->getName() + " is a " + type + ", which is not accepted by " + readact->getName() + ". Accepted types:" + accepted );
     }
   }
   if( readact->keywords.exists("MASKED_INPUT_ALLOWED") || readact->keywords.exists("IS_SHORTCUT") || readact->keywords.exists("MASK") ) {
     return;
   }
   for(unsigned i=0; i<arg.size(); ++i) {
-    if( arg[i]->getRank()==0 ) {
-      continue;
-    }
-    ActionWithVector* av=dynamic_cast<ActionWithVector*>( arg[i]->getPntrToAction() );
-    if( av && av->getNumberOfMasks()>=0 ) {
+    if( maskedValueNotAllowed( readact, arg[i] ) ) {
       readact->error("cannot use argument " + arg[i]->getName() + " in input as not all elements are computed");
     }
   }
@@ -313,7 +352,7 @@ void ActionWithArguments::requestExtraDependencies(const std::vector<Value*> &ex
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   Action(ao),
   lockRequestArguments(false) {
-  if( keywords.exists("ARG") ) {
+  if( getKeywords().exists("ARG") ) {
     std::vector<Value*> arg;
     parseArgumentList("ARG",arg);
 

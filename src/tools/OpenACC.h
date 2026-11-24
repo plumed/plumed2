@@ -25,9 +25,10 @@
 #include <vector>
 #include "View.h"
 
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
 #include <openacc.h>
-#endif //__PLUMED_HAS_OPENACC
+#include "Exception.h"
+#endif //_OPENACC
 
 namespace PLMD {
 
@@ -92,7 +93,7 @@ public:
     m.removeFromACCDevice();
   }
 };
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
 ///C++ wrapper around acc_malloc, allocates sizeof(T) bytes and return a typed pointer
 template <typename T> T *myAccMalloc(size_t size) {
   return reinterpret_cast<T *>(acc_malloc(size * sizeof(T)));
@@ -138,6 +139,29 @@ public:
       ptr_{acc_malloc(size_ * sizeof(T))} {
     copyToDevice(data.data());
   }
+  /// owns device memory: copying would free it twice
+  memoryManager(const memoryManager&)=delete;
+  memoryManager& operator=(const memoryManager&)=delete;
+  memoryManager(memoryManager&& other) noexcept
+    : size_{other.size_},
+  stored_{other.stored_},
+  ptr_{other.ptr_} {
+    other.size_=0;
+    other.stored_=0;
+    other.ptr_=nullptr;
+  }
+  memoryManager& operator=(memoryManager&& other) noexcept {
+    if (this!=&other) {
+      acc_free(ptr_);
+      size_=other.size_;
+      stored_=other.stored_;
+      ptr_=other.ptr_;
+      other.size_=0;
+      other.stored_=0;
+      other.ptr_=nullptr;
+    }
+    return *this;
+  }
   /// frees the stored memory
   ~memoryManager() {
     acc_free(ptr_);
@@ -147,13 +171,19 @@ public:
   constexpr T *devicePtr() const {
     return reinterpret_cast<T *>(ptr_);
   }
-  /// Resizes the data stored on the device if the new size is smaller that the curent one, the memory will not be realocated
+  /// Resizes the data stored on the device. If the new size is not larger than
+  /// the allocated one the memory is not reallocated. Otherwise the old content
+  /// is lost and the allocation grows by at least 50%, so that a size that
+  /// increases a little at every step does not cause a reallocation at every
+  /// step (acc_free usually synchronizes the whole device)
   void resize(size_t sz) {
     size_=sz;
     if (size_ > stored_) {
-      stored_=size_;
+      const size_t grown=stored_+stored_/2;
+      stored_=(size_>grown)?size_:grown;
       acc_free(ptr_);
-      ptr_=acc_malloc(size_ * sizeof(T));
+      ptr_=acc_malloc(stored_ * sizeof(T));
+      plumed_massert(ptr_, "acc_malloc failed: not enough memory on the device?");
     }
   }
   /// return the current number of elements stored on the device
@@ -172,8 +202,22 @@ public:
   void copyFromDevice(T *data) {
     acc_memcpy_from_device(data, ptr_, sizeof(T) * size_);
   }
+  /// @brief Queues the copy of the data from the address to the device on the
+  /// given async queue: the host data must stay valid until the queue is waited
+  void copyToDeviceAsync(T const *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_to_device_async(ptr_, const_cast<T *>(data), sizeof(T) * size_, queue);
+    }
+  }
+  /// @brief Queues the copy of the data from the device to the host on the
+  /// given async queue: the host data is valid only after the queue is waited
+  void copyFromDeviceAsync(T *data, int queue) {
+    if(size_>0) {
+      acc_memcpy_from_device_async(data, ptr_, sizeof(T) * size_, queue);
+    }
+  }
 };
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 }//namespace OpenACC
 }//namespace PLMD
 

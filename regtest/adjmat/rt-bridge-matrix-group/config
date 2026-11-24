@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=adjmat
+# BRIDGE_MATRIX with GROUP: the same matrix as with GROUPA=GROUPB (GROUP was ignored after #1559)
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces debug (checked when the test was written)
+extra_files="../../trajectories/trajectory.xyz"

@@ -1,0 +1,13 @@
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+d: DISTANCE ATOMS=5,17
+# g: families in a different order than the arguments (ARG=d,phi PF0=phi PF1=d), with grids;
+# s: the same without PF: the biases are the same
+g: PBMETAD ARG=d,phi PF0=phi PF1=d SIGMA=0.3,0.02 HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=10 FILE=HG0,HG1 GRID_MIN=-pi,0 GRID_MAX=pi,1 GRID_BIN=100,200 FMT=%14.6f
+s: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=10 FILE=HS0,HS1 GRID_MIN=-pi,0 GRID_MAX=pi,1 GRID_BIN=100,200 FMT=%14.6f
+# a: two torsions in one family with ADAPTIVE=DIFF (each argument has its own width, with the limits of its family)
+a: PBMETAD ARG=phi,psi,d PF0=phi,psi PF1=d ADAPTIVE=DIFF SIGMA=20 SIGMA_MIN=0.05,0.005 HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=10 FILE=HA0,HA1 FMT=%14.6f
+# r: continuation at step 300 (time 0.6) from hills files whose last hill is at time 0.59 (the previous run ended
+# before step 300): a hill is added at the first step
+r: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1 PACE=5 TEMP=300 BIASFACTOR=10 FILE=HR0,HR1 RESTART=YES FMT=%14.6f
+PRINT ARG=phi,psi,d,g.bias,s.bias,a.bias,r.bias FILE=colvar FMT=%14.6f

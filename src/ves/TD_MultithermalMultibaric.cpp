@@ -373,8 +373,7 @@ void TD_MultithermalMultibaric::updateGrid() {
           double value = getFesGridPntr()->getValue(l);
           value = beta*value + (beta_prime-beta)*energy + (beta_prime*pressure_prime-beta*press_)*volume - minval;
           if (value<threshold_) {
-            double value = 1.0;
-            targetDistGrid().setValue(l,value);
+            targetDistGrid().setValue(l,1.0);
           }
         }
       }
@@ -398,17 +397,17 @@ void TD_MultithermalMultibaric::updateGrid() {
             if (minBin[k] < 0) {
               minBin[k]=0;
             }
-            if (minBin[k] > (nbin[k]-1)) {
-              minBin[k]=nbin[k]-1;
+            if (minBin[k] > (static_cast<int>(nbin[k])-1)) {
+              minBin[k]=static_cast<int>(nbin[k])-1;
             }
             maxBin[k]=indices[k] + deltaBin;
-            if (maxBin[k] > (nbin[k]-1)) {
-              maxBin[k]=nbin[k]-1;
+            if (maxBin[k] > (static_cast<int>(nbin[k])-1)) {
+              maxBin[k]=static_cast<int>(nbin[k])-1;
             }
           }
           if (dim==2) {
-            for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-              for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
+            for(int l=minBin[0]; l<=maxBin[0]; l++) {
+              for(int m=minBin[1]; m<=maxBin[1]; m++) {
                 std::vector<unsigned> indices_prime(dim);
                 indices_prime[0]=l;
                 indices_prime[1]=m;
@@ -426,9 +425,9 @@ void TD_MultithermalMultibaric::updateGrid() {
               }
             }
           } else if (dim==3) {
-            for(unsigned l=minBin[0]; l<maxBin[0]+1; l++) {
-              for(unsigned m=minBin[1]; m<maxBin[1]+1; m++) {
-                for(unsigned n=minBin[2]; n<maxBin[2]+1; n++) {
+            for(int l=minBin[0]; l<=maxBin[0]; l++) {
+              for(int m=minBin[1]; m<=maxBin[1]; m++) {
+                for(int n=minBin[2]; n<=maxBin[2]; n++) {
                   std::vector<unsigned> indices_prime(dim);
                   indices_prime[0]=l;
                   indices_prime[1]=m;

@@ -26,6 +26,7 @@
 #include <string>
 #include <string_view>
 #include "WithCmd.h"
+#include "CLTool.h"
 #include "tools/ForwardDecl.h"
 
 
@@ -88,6 +89,12 @@ class CLToolMain:
   Communicator&comm=*comm_fwd;
   static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
+  /// Recognized global options, also used by shell completion.
+  static std::vector<std::string> getGlobalOptions();
+  /// Options and completion of the built-in modules command, owned here with
+  /// its implementation rather than in the shell adapter.
+  static std::vector<std::string> getModuleOptions();
+  static CLTool::Completion completeModules(const std::vector<std::string>& arguments);
   CLToolMain();
   ~CLToolMain();
   /**

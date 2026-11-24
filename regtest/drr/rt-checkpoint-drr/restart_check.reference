@@ -1,0 +1,16 @@
+restart/COLVAR IDENTICAL
+restart/eabf1.abf.grad IDENTICAL
+restart/eabf1.abf.count IDENTICAL
+restart/eabf1.czar.grad IDENTICAL
+restart/eabf2.abf.grad IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/eabf1.abf.grad IDENTICAL
+restart-stride/eabf1.abf.count IDENTICAL
+restart-stride/eabf1.czar.grad IDENTICAL
+restart-stride/eabf2.abf.grad IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

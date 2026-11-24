@@ -37,7 +37,7 @@ them as values
 
 
 
-@todo  ctors from std::array and from iterators to parallel the span implementatio
+@todo  ctors from std::array and from iterators to parallel the span implementation
 */
 template <typename T, std::size_t N= helpers::dynamic_extent, std::size_t M= helpers::dynamic_extent>
 class View2D {

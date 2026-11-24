@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Generate a C++ map from the first descriptive line after every PLUMEDOC.
+set -euo pipefail
+
+outputfile=$1
+root=$2
+tmpfile="${outputfile}.tmp"
+trap 'rm -f "$tmpfile"' EXIT
+
+awk '
+function quote_cpp(s,    i,c,n,out) {
+  out="\""
+  for(i=1;i<=length(s);i++) {
+    c=substr(s,i,1)
+    if(c=="\\") out=out "\\\\"
+    else if(c=="\"") out=out "\\\""
+    else if(c=="\t") out=out "\\t"
+    else if(c=="\r") out=out "\\r"
+    else if(c=="\b") out=out "\\b"
+    else if(c=="\f") out=out "\\f"
+    else {
+      n=0
+      for(n=1;n<32;n++) if(c==sprintf("%c",n)) break
+      if(n<32) out=out sprintf("\\%03o",n)
+      else out=out c
+    }
+  }
+  return out "\""
+}
+{
+  if(inside && NF>0 && $1!="/*" && $1!="*/") {
+    printf "  {%s, %s},\n", quote_cpp(action), quote_cpp($0)
+    inside=0
+  }
+  if($1=="//+PLUMEDOC") {
+    action=$3
+    inside=1
+  }
+}' "$root"/src/*/*.cpp > "$tmpfile"
+
+if ! cmp -s "$tmpfile" "$outputfile"; then
+  mv "$tmpfile" "$outputfile"
+fi

@@ -1,0 +1,4 @@
+type=driver
+# numbered LESS_THAN and MORE_THAN in a shortcut with weights
+plumed_modules="adjmat clusters"
+arg="--plumed plumed.dat --ixyz config.xyz"

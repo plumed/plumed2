@@ -1,0 +1,5 @@
+type=driver
+# PBMETAD with partitioned families (families in a different order than the arguments, ADAPTIVE=DIFF)
+# and continuation from hills files that end before the first step
+arg="--plumed plumed.dat --ixyz diala_traj_nm.xyz --timestep 0.002 --initial-step 300"
+extra_files="../../trajectories/diala_traj_nm.xyz"

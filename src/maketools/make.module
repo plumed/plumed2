@@ -1,3 +1,11 @@
+# Native dependencies are data in module.yml; no Python is needed by Make.
+ifneq ($(wildcard module.yml),)
+USE := $(shell ../maketools/module-header use module.yml || echo __INVALID_MODULE_HEADER__)
+ifneq ($(filter __INVALID_MODULE_HEADER__,$(USE)),)
+$(error Invalid module.yml; see the diagnostic above)
+endif
+endif
+
 #
 # This is a generic makefile which will work for any
 # subpackage which just depends on config/
@@ -34,18 +42,18 @@ all: dirslinks
 
 # build links for all modules
 dirslinks:
-	make -C ../lib dirslinks
+	$(MAKE) -C ../lib dirslinks
 
 # buils objects in this module
 obj: $(OBJ)
 
 # build everything
 lib:
-	cd ../lib ; make
+	$(MAKE) -C ../lib
 
 .PHONY: install
 install:
-	cd ../lib ; make install
+	$(MAKE) -C ../lib install
 
 ifneq ($(disable_dependency_tracking),yes)
 -include $(DEP)
@@ -70,7 +78,7 @@ clean:
 	rm -f $(CLEANLIST)
 
 # build links for this module
-links: Makefile
+links: Makefile $(wildcard module.yml) ../maketools/module-header ../maketools/module-header.awk
 	@echo Verify modules and create links in $(CURDIR)
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
 
@@ -88,7 +96,7 @@ codecheck:
 
 .PHONY: astyle
 astyle:
-	make -C ../../astyle
+	$(MAKE) -C ../../astyle
 	cd ../ ; ./astyle.sh $(CURDIR)
 
 .PHONY: show_used_modules

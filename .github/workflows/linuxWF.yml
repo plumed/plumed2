@@ -8,13 +8,23 @@ env:
   PLUMED_STACK_TRACE: yes
 # use two threads for openMP tests
   PLUMED_NUM_THREADS: 2
+# long regtests (plumed_long=yes) run in the nightly, and in manual runs when long_tests is ticked
+  PLUMED_LONG_TESTS: ${{ (github.event_name == 'schedule' || github.event.inputs.long_tests == 'true') && 'yes' || 'no' }}
 # these are used to build required packages
   CC: gcc
   CXX: g++
 
 jobs:
   linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      # objects compiled with -g and _GLIBCXX_DEBUG are about 15 times larger than optimized ones:
+      # with 100M the cache of the debug builds does not hold a full build and ccache keeps missing
+      PLUMED_CCACHE_SIZE: ${{ contains( matrix.variant, '-debug-' ) && '500M' || '100M' }}
+      # number of regtests run at the same time. The debug builds run them one at a time: the type=make
+      # regtests link the static libplumed.a, and with -g and _GLIBCXX_DEBUG a single link takes more than
+      # 5 GB, so two of them together exhaust the memory of the runner and the step is killed (exit 143)
+      PLUMED_REGTEST_JOBS: ${{ contains( matrix.variant, '-debug-' ) && '1' || '2' }}
     strategy:
       fail-fast: false
       matrix:
@@ -32,17 +42,22 @@ jobs:
         - -nvhpc-mpi-
     steps:
     - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      # ImageOS is set by GitHub on hosted runners (e.g. "ubuntu24"); fail loudly if it ever disappears
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@v5
       with:
         path: ~/.ccache
-        key: ccache-reset1-linux${{ matrix.variant }}hash-${{ github.sha }}
-        restore-keys: ccache-reset1-linux${{ matrix.variant }}hash-
-    # kenref_core is built from a pinned ref, so it only needs rebuilding when that ref moves.
-    # .ci/install.kenref exits early when the cache restored a usable prefix.
+        key: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-linux${{ matrix.variant }}hash-
+    # kenref_core is built from the ref named in .ci/install.kenref, so it only needs rebuilding when
+    # that ref moves. .ci/install.kenref exits early when the cache restored a usable prefix.
     #
-    # The cache key has to name the COMMIT, not just the ref: a tag can be re-pointed while
-    # .ci/install.kenref stays byte-identical, and keying on the file alone would then restore a prefix
-    # built from the old commit and silently skip the rebuild. Resolve the ref here so the key follows it.
+    # The cache key has to name the COMMIT, not just the ref: a branch moves (and a tag can be
+    # re-pointed) while .ci/install.kenref stays byte-identical, and keying on the file alone would then
+    # restore a prefix built from the old commit and silently skip the rebuild. Resolve the ref here so
+    # the key follows it.
     - name: Resolve the pinned KEnRef commit
       id: kenref_commit
       run: |
@@ -58,7 +73,7 @@ jobs:
     - uses: actions/cache@v5
       with:
         path: ~/opt/kenref
-        key: kenref-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
+        key: kenref-${{ steps.image.outputs.os }}-${{ steps.kenref_commit.outputs.sha }}-${{ hashFiles('.ci/install.kenref') }}-linux${{ matrix.variant }}
     - name: setup the CI environment
       uses: ./.github/actions/linux-setup
       with:
@@ -71,7 +86,7 @@ jobs:
       uses: actions/setup-python@v6
       with:
         # testing the oldest supported python version, see the "python" workflow for newer version
-        python-version: "3.10"
+        python-version: "3.11"
     - name: Install python packages needed for tests
       run: |
         python -m pip install --upgrade pip
@@ -81,7 +96,7 @@ jobs:
 
     - name: Configure libmetatomic & libtorch
       # the libraries on PyPI are not compiled with GLIBCXX_DEBUG.
-      # -nvhpc- only checks that the openacc plugin compiles. The plugin is built with PLUMED's flags,
+      # -nvhpc- only builds PLUMED and the openacc plugin (multicore). The plugin is built with PLUMED's flags,
       # and with the C++20 these libraries need, nvc++ 24.3 stops with an internal compiler error.
       # Before C++20 was added here, configure could not enable them in this job anyway.
       if: ${{ ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
@@ -94,8 +109,16 @@ jobs:
 
         # the flags above enable the use of both libmetatomic and libtorch
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libmetatomic --enable-libtorch --enable-cxx=20" >> $GITHUB_ENV
+    # ITensor is always built with g++ and options.mk.itensor, whatever the variant, so one cache is shared
+    # by all the jobs that use it. .ci/install.itensor skips the build when the prefix was restored.
+    # -nvhpc- is excluded since it does not configure ITensor (see below)
+    - uses: actions/cache@v5
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
+      with:
+        path: ~/opt/itensor
+        key: itensor-${{ steps.image.outputs.os }}-${{ hashFiles('.ci/install.itensor', '.ci/options.mk.itensor') }}
     - name: Install ITensor
-      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) }}
+      if: ${{ contains( matrix.variant, '-mpi-' ) && ! contains( matrix.variant, '-debug-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
       run: |
         .ci/install.itensor
     - name: Configure ITensor
@@ -111,6 +134,46 @@ jobs:
         echo "LDFLAGS=$LDFLAGS -L${ITENSOR_DIR}/lib ${HDF5_LIBDIR}" >> $GITHUB_ENV
         echo "CPPFLAGS=$CPPFLAGS -I${ITENSOR_DIR} ${HDF5_CFLAGS} -DITENSOR_USE_HDF5 -DITENSOR_USE_OMP -D__ITENSOR_LAPACK_WRAP_h -DH5_USE_110_API" >> $GITHUB_ENV
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libitensor" >> $GITHUB_ENV
+    # chemfiles (--itraj of the driver, configure option --enable-libchemfiles): the 0.10.4 release in the -mpi- and
+    # -coverage-mpi- jobs, the development version (master) in the -intel- job. Built with g++ before the compiler steps below.
+    # Not in the debug jobs (_GLIBCXX_DEBUG changes the STL ABI of the std::string and std::vector of its API).
+    # As for KEnRef, the cache key names the commit, so that a new commit on master is built again.
+    - name: Resolve the chemfiles version
+      id: chemfiles
+      run: |
+        case "${{ matrix.variant }}" in
+        (-mpi-|-coverage-mpi-) ref=0.10.4 ;;
+        (-intel-) ref=master ;;
+        (*) ref= ;;
+        esac
+        sha=
+        if test -n "$ref" ; then
+          url=https://github.com/chemfiles/chemfiles
+          sha="$(git ls-remote "$url" "refs/tags/$ref^{}" | cut -f1)"
+          test -n "$sha" || sha="$(git ls-remote "$url" "refs/tags/$ref" "refs/heads/$ref" | head -n1 | cut -f1)"
+          test -n "$sha" || { echo "cannot resolve chemfiles ref '$ref' at $url" >&2 ; exit 1 ; }
+        fi
+        echo "ref=$ref" >> "$GITHUB_OUTPUT"
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      if: steps.chemfiles.outputs.ref != ''
+      with:
+        path: ~/opt/chemfiles
+        key: chemfiles-${{ steps.image.outputs.os }}-${{ steps.chemfiles.outputs.sha }}-${{ hashFiles('.ci/install.chemfiles') }}
+    - name: Install chemfiles
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        .ci/install.chemfiles "${{ steps.chemfiles.outputs.ref }}"
+        echo "CPPFLAGS=$CPPFLAGS -I$HOME/opt/chemfiles/include" >> $GITHUB_ENV
+        echo "LDFLAGS=$LDFLAGS -L$HOME/opt/chemfiles/lib -Wl,-rpath,$HOME/opt/chemfiles/lib" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-libchemfiles" >> $GITHUB_ENV
+    # doxygen is built from source in its own prefix, so that it can be cached;
+    # .ci/install.doxygen skips the build when the right version is already there
+    - uses: actions/cache@v5
+      if: contains( matrix.variant, '-doc-' )
+      with:
+        path: ~/opt/doxygen
+        key: doxygen-${{ steps.image.outputs.os }}-Release_1_13_2-${{ hashFiles('.ci/install.doxygen') }}
     - name: Install tools for setting up the manuals
       if: contains( matrix.variant, '-doc-' )
       run: |
@@ -118,7 +181,8 @@ jobs:
         pip install --user -r ./new-manual/requirements.txt
         sudo apt-get install -y graphviz
         sudo apt-get install -y doxygen-latex
-        .ci/install.doxygen Release_1_13_2
+        DOXYGEN_PREFIX="$HOME/opt/doxygen" .ci/install.doxygen Release_1_13_2
+        echo "$HOME/opt/doxygen/bin" >> $GITHUB_PATH
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-pdfdoc" >> $GITHUB_ENV
         # make sure all tests are run
         echo "PLUMED_ALL_TESTS=yes" >> $GITHUB_ENV
@@ -133,6 +197,13 @@ jobs:
       if: contains( matrix.variant, '-debug-' )
       run: |
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-debug --enable-debug-glibcxx" >> $GITHUB_ENV
+    - name: Setup nvhpc flags
+      if: contains( matrix.variant, '-nvhpc-' )
+      # The openacc plugin is compiled with -acc=multicore and uses NVIDIA's OpenMP runtime. Loaded together with
+      # the libgomp of a PLUMED built with GCC and OpenMP the two runtimes conflict (segmentation faults),
+      # so PLUMED is built without OpenMP in this job (it is not needed with -acc=host, kept to be safe).
+      run: |
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG --disable-openmp" >> $GITHUB_ENV
     - name: Install INTEL compiler
       # install INTEL at last since it modifies CC and CXX
       if: contains( matrix.variant, '-intel-' )
@@ -152,6 +223,10 @@ jobs:
         echo "CXX=icpx" >> $GITHUB_ENV
         echo "CC=icx" >> $GITHUB_ENV
         echo "FC=ifx" >> $GITHUB_ENV
+        echo Compiler details
+        icx --version
+        icpx --version
+        ifx --version
     - name: Install MPI
       # install MPI at last since it modifies CC and CXX
       if: contains( matrix.variant, '-mpi-' )
@@ -183,59 +258,87 @@ jobs:
     - name: Configure PLUMED
       id: config
       run: |
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
         #removed LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH
         ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG  --prefix="$HOME/opt"
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
     - name: Config Log
       if: failure() && steps.config.outcome == 'failure'
       run: cat config.log
 
     - name: Build PLUMED
       run: |
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
         make -j 4
         make install
         # check for global symbols, see https://github.com/plumed/plumed2/issues/549
         make nmcheck
-        ccache -s -M 100M
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Check that chemfiles is enabled
+      # configure only warns when it cannot link chemfiles: the regtests that need it would then be skipped
+      if: steps.chemfiles.outputs.ref != ''
+      run: |
+        ./src/lib/plumed --no-mpi config has libchemfiles
 
     - name: Install NVHPC compiler
       if: contains( matrix.variant, '-nvhpc-' )
-      # use this if it does not work
-      # wget https://developer.download.nvidia.com/hpc-sdk/24.3/nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # tar xpzf nvhpc_2024_243_Linux_x86_64_cuda_12.3.tar.gz
-      # nvhpc_2024_243_Linux_x86_64_cuda_12.3/install
       run: |
+        NVVER=26.9
         curl https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
         echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
         sudo apt-get update -y
-        sudo apt-get install -y nvhpc-24-3
+        sudo apt-get install -y nvhpc-${NVVER//./-}
         NVHOME=/opt/nvidia/hpc_sdk
         NVARCH=`uname -s`_`uname -m`
-        # echo "NVHPC=$NVHOME" >> $GITHUB_ENV
-        # echo "NVHPC_ROOT=$NVHOME/$NVARCH/24.3" >> $GITHUB_ENV
-        nvcudadir=$NVHOME/$NVARCH/24.3/cuda
-        nvcompdir=$NVHOME/$NVARCH/24.3/compilers
-        nvmathdir=$NVHOME/$NVARCH/24.3/math_libs
-        nvcommdir=$NVHOME/$NVARCH/24.3/comm_libs
+        nvcudadir=$NVHOME/$NVARCH/$NVVER/cuda
+        nvcompdir=$NVHOME/$NVARCH/$NVVER/compilers
+        nvmathdir=$NVHOME/$NVARCH/$NVVER/math_libs
+        nvcommdir=$NVHOME/$NVARCH/$NVVER/comm_libs
 
         echo "PATH=$nvcudadir/bin:$nvcompdir/bin:$nvcommdir/mpi/bin:$nvcompdir/extras/qd/bin:$PATH" >> $GITHUB_ENV
-        # echo "LD_LIBRARY_PATH=$nvcudadir/lib64:$nvcudadir/12.3/targets/x86_64-linux/lib/stubs/:$nvcudadir/extras/CUPTI/lib64:$nvcompdir/extras/qd/lib:$nvcompdir/lib:$nvmathdir/lib64:$nvcommdir/nccl/lib:$nvcommdir/nvshmem/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        # echo "CPATH=$nvmathdir/include:$nvcommdir/nccl/include:$nvcommdir/nvshmem/include:$nvcompdir/extras/qd/include/qd:$CPATH" >> $GITHUB_ENV
-        # echo "NVHPC_CUDA_HOME=$nvcudadir/12.3" >> $GITHUB_ENV
 
         $nvcompdir/bin/nvc++ -help -gpu
+        ls -l $nvcommdir/mpi/bin/mpic++
         echo "NVCXX=$nvcommdir/mpi/bin/mpic++" >> $GITHUB_ENV
         echo "NVCC=$nvcommdir/mpi/bin/mpicc" >> $GITHUB_ENV
         echo "NVFC=$nvcompdir/bin/nvfortran" >> $GITHUB_ENV
-    - name: check if the openacc module can be compiled
+
+    - name: Build and test the openacc module (serial, on the host)
       if: contains( matrix.variant, '-nvhpc-' )
+      # The runners have no GPU, so the plugin is compiled with -acc=host: the kernels run serially on the CPU,
+      # without any OpenMP runtime (-acc=multicore needs NVIDIA's OpenMP runtime, which conflicts with libgomp).
+      # This tests the logic of the plugin (forces, virial, task manager), not device transfers,
+      # asynchronous queues or GPU scheduling, which need a real GPU.
       run: |
           source sourceme.sh
           cd plugins/openaccPTM/
           ./configure
-          NVCXX=$NVCXX make
+          NVCXX=$NVCXX make ACCTARGET=host -j 4
+          # The SAXS/SANS tests run with MPI. PLUMED is linked to the system OpenMPI, so they must be
+          # launched with the system mpirun, not the one of the NVHPC SDK (first in the PATH): mixing the two
+          # fails in MPI_Init ("Failed to create UCP worker"). UCX is not needed on a single node either.
+          PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/comm_libs/' | paste -sd: -)
+          export PATH
+          export OMPI_MCA_pml=ob1 OMPI_MCA_btl=self,vader OMPI_MCA_osc=^ucx
+          make ACCTARGET=host -C regtest
+          make -C regtest checkfail
+
+
+    - name: Diagnose the openacc module (only on failure)
+      # temporary: shows which OpenMP runtimes are loaded and the output of rt-volume-around
+      if: failure() && contains( matrix.variant, '-nvhpc-' )
+      run: |
+          source sourceme.sh
+          cd plugins/openaccPTM/
+          echo "== OpenMP/OpenACC libraries linked by plumed, libplumedKernel and the plugin"
+          for f in $(which plumed) $(ls ../../src/lib/libplumedKernel.* 2>/dev/null) plumedOpenACC.so ; do
+            echo "-- $f"; ldd $f | grep -i -E 'omp|acc|blas|lapack' || true
+          done
+          plumed config show | grep -i -E 'openmp|blas|lapack' || true
+          echo "== rt-volume-around"
+          cd regtest/targetGPU/rt-volume-around
+          make clean >/dev/null
+          NV_ACC_NOTIFY=3 NVCOMPILER_OMP_DISABLE_WARNINGS=true make 2>&1 | tail -5; sort tmp/err | uniq -c | sort -rn | head -20; head -3 tmp/colvar
 
     - name: Run tests
       if: ${{ ! contains( matrix.variant, '-doc-mpi-' ) && ! contains( matrix.variant, '-pycv-mpi-' ) && ! contains( matrix.variant, '-nvhpc-' ) }}
@@ -244,36 +347,96 @@ jobs:
               df -h
               sleep 15
               done) &
-         make --no-print-directory -C regtest testclean
+         # each regtest runs in its own tmp/ directory, so they can run concurrently.
+         # Two at a time on the 4 cores of the runner, since many tests use 2 OpenMP threads or 2-4 MPI processes
+         # (one at a time in the debug builds, see PLUMED_REGTEST_JOBS above)
+         make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
     - name: Run python tests
       run: |
+         if [[ "${{ matrix.variant }}" == *-nvhpc-* ]] ; then
+           # PLUMED was built with the system mpic++ (g++), but the NVHPC step then puts NVHPC's mpic++ (nvc++)
+           # first in the PATH: plumed mklib (used by test_load.py) would compile with it, and nvc++ rejects
+           # the g++ flags recorded in compile_options.sh
+           PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/opt/nvidia/hpc_sdk/' | paste -sd: -)
+           export PATH
+         fi
          cd python
          pip install --user pytest
          pytest -v
+    - name: Test serial build with injected Open MPI
+      if: ${{ (contains(matrix.variant, '-debug-') && !contains(matrix.variant, '-mpi-')) || contains(matrix.variant, '-intel-') }}
+      run: |
+        set -o pipefail
+        if [[ "${{ matrix.variant }}" == *-intel-* ]]; then
+          # Remove the compiler repository before apt refreshes package indexes.
+          sudo rm -f /etc/apt/sources.list.d/oneAPI.list
+        fi
+        sudo apt-get update -qq
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
+        plumed mkmpi --executable --compiler /usr/bin/mpicc.openmpi \
+          --out "$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_CLI_PROGRAM_NAME="$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_MPIRUN=/usr/bin/mpiexec.openmpi
+        # An absolute mpiexec path can prepend /usr/bin in rank environments.
+        # Keep the Python selected by setup-python, with its installed packages.
+        export PLUMED_PYTHON_SELECT="$(python3 -c 'import sys; print(sys.executable)')"
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
+        make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
+        make -C regtest checkfail
     - name: Build doc
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
+        # the errors of the failing examples are shown in the manual: no stack trace there
+        PLUMED_STACK_TRACE: no
       if: contains( matrix.variant, '-doc-' )
       run: |
          export PLUMED_MAXBACKUP=0 
          make doc >/dev/null
+    - name: Exercise separate modules in the instrumented kernel
+      if: contains( matrix.variant, '-coverage-' )
+      run: |
+        # The ordinary native build includes every real module in the kernel.
+        # These native-linked fixtures exercise discovery, hard dependencies,
+        # autoloading and feature inquiries through the instrumented loader.
+        python3 extensions/tests/module_features.py --base "$HOME/opt"
     - name: Coverage
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
-      if: contains( matrix.variant, '-coverage-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
       run: |
          make -C developer-doc coverage
          .ci/push coverage
-         # this is hanging for some reason now (2024-04-03) - GB
-         #bash <(curl -s https://codecov.io/bash) > /dev/null
+    # Replaces the deprecated codecov.io/bash uploader, disabled in 2024 because it was hanging.
+    # Upload the lcov report built above (third-party libraries already removed, consistently
+    # with .codecov.yml) instead of letting the action search for and re-process gcov files.
+    # Errors are not fatal: a Codecov outage should not make CI fail.
+    - name: Upload coverage to Codecov
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-coverage-' ) && github.event_name != 'schedule' }}
+      uses: codecov/codecov-action@v7
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./developer-doc/coverage.info
+        disable_search: true
+        plugins: noop
+        fail_ci_if_error: false
     - name: Push doc
-      if: contains( matrix.variant, '-doc-' )
+      # the nightly run publishes nothing: pushes to master already do
+      if: ${{ contains( matrix.variant, '-doc-' ) && github.event_name != 'schedule' }}
       env:
         GIT_TOKEN: ${{ secrets.GIT_TOKEN_PLUMEDBOT }}
       run: |
          .ci/push doc
+    # After the push, so that a failing example does not stop the publication of the manual
+    - name: Check the examples of the manual
+      if: contains( matrix.variant, '-doc-' )
+      working-directory: ./new-manual
+      run: |
+         python check_examples.py
     - name: Compile and test pycv
       if: contains( matrix.variant, '-pycv-' )
       working-directory: ./plugins/pycv/
@@ -281,3 +444,189 @@ jobs:
             source ../../sourceme.sh
             ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
             make check
+
+  # A serial PLUMED build can use real MPI supplied by its host at runtime. Keep
+  # this separate from the matrix so the full suite runs once through injection.
+  serial-mpi-injection:
+    runs-on: ubuntu-24.04
+    env:
+      PLUMED_REGTEST_JOBS: 2
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up the serial build environment
+      uses: ./.github/actions/linux-setup
+      with:
+        pytest-make: true
+        mpi: false
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.11"
+    - name: Install Python packages needed for tests
+      run: |
+        python -m pip install --upgrade pip
+        pip install --user -r ./python/requirements_build.txt
+        pip install --user -r ./python/requirements_run.txt
+        pip install --user -r ./.ci/pytorch/requirements.txt
+    - name: Build and install PLUMED without MPI
+      run: |
+        ./configure --enable-boost_serialization --disable-dependency-tracking \
+          --enable-modules=all --disable-mpi --prefix="$HOME/opt"
+        make -j 4
+        make install
+    - name: Install Open MPI and build the injecting host
+      id: injection_host
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y openmpi-bin libopenmpi-dev
+        plumed mkmpi --executable --compiler /usr/bin/mpicc.openmpi \
+          --out "$RUNNER_TEMP/plumed-openmpi-host"
+    - name: Run the full regression suite through the MPI host
+      run: |
+        set -o pipefail
+        export PLUMED_CLI_PROGRAM_NAME="$RUNNER_TEMP/plumed-openmpi-host"
+        export PLUMED_MPIRUN=/usr/bin/mpiexec.openmpi
+        # An absolute mpiexec path can prepend /usr/bin in rank environments.
+        # Keep the Python selected by setup-python, with its installed packages.
+        export PLUMED_PYTHON_SELECT="$(python3 -c 'import sys; print(sys.executable)')"
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        unset PLUMED_MPI_WRAPPER PLUMED_MPI_WRAPPER_FORCE
+        make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
+        make -C regtest checkfail
+    - name: Run focused MPI provider and thread-MPI checks
+      if: ${{ !cancelled() && steps.injection_host.outcome == 'success' }}
+      run: |
+        set -euo pipefail
+        bash regtest/basic/rt-mpiwrap-api/check-mkmpi.sh
+        bash regtest/basic/rt-mpiwrap-api/check-provider-discovery.sh
+        bash regtest/basic/rt-mpiwrap-typesafe/check-callers.sh
+        bash regtest/basic/rt-mpiwrap-api/check-provider-registry.sh
+        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
+        MPICC=/usr/bin/mpicc.openmpi MPICXX=/usr/bin/mpic++.openmpi \
+          bash regtest/basic/rt-mpiwrap-api/check-host-header-linkage.sh
+        PLUMED_TEST_MPIW_KERNEL="$PLUMED_KERNEL" \
+          python3 -m unittest -v python/test/test_mpi_flags.py
+        export OMPI_MCA_rmaps_base_oversubscribe=1
+        plumed mkmpi --compiler /usr/bin/mpicc.openmpi \
+          --out "$RUNNER_TEMP/provider-openmpi.so"
+        bash regtest/basic/rt-mpiwrap-api/check-mpi-provider-force.sh \
+          "$PLUMED_KERNEL" "$RUNNER_TEMP/provider-openmpi.so"
+        bash regtest/basic/rt-mpiwrap-api/check-mpi-host-injection.sh \
+          /usr/bin/mpic++.openmpi /usr/bin/mpiexec.openmpi "$PLUMED_KERNEL" \
+          "$RUNNER_TEMP/provider-openmpi.so"
+        bash regtest/basic/rt-mpiwrap-api/check-mpi-provider-selection.sh \
+          plumed "$RUNNER_TEMP/provider-openmpi.so" /usr/bin/mpicc.openmpi
+        PLUMED_MPI_WRAPPER="$RUNNER_TEMP/provider-openmpi.so" \
+          bash regtest/basic/rt-mpiwrap-api/check-mpi-provider-chdir.sh \
+          "$RUNNER_TEMP/plumed-openmpi-host"
+        python3 regtest/basic/rt-mpiwrap-launcher/check-reimport.py
+        CXX=g++ bash regtest/basic/rt-mpiwrap-launcher/check-thread-mpi-cli.sh \
+          "$HOME/opt/bin/plumed"
+        cmake -S regtest/basic/rt-mpiwrap-launcher -B "$RUNNER_TEMP/thread-mpi-tests"
+        cmake --build "$RUNNER_TEMP/thread-mpi-tests" -j 4
+        ctest --test-dir "$RUNNER_TEMP/thread-mpi-tests" --output-on-failure
+
+  # Regtests (no MPI, no optional libraries) on configurations that the jobs above do not cover:
+  # - clang-noopenmp: the configuration built in the gate (build job of checksWF.yml, where its warnings
+  #   are checked). Run with PLUMED_NUM_THREADS=2 like the other jobs, so the code paths of OpenMP builds
+  #   that do not depend on OpenMP are tested without it. It restores the ccache saved by the gate, so it
+  #   does not compile again: keep the cache key and the configure options in sync with checksWF.yml.
+  # - nodlopen: --disable-dlopen (LOAD and the runtime loading of the kernel are not available).
+  checks:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - variant: clang-noopenmp
+          cc: clang
+          cxx: clang++
+          config: --disable-openmp CXXFLAGS="-O2 -Wall -Wextra -Wno-unused-parameter"
+        - variant: nodlopen
+          cc: gcc
+          cxx: g++
+          config: --disable-dlopen
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      PLUMED_CCACHE_SIZE: 100M
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-${{ matrix.variant }}-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all ${{ matrix.config }} --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail
+
+  # AddressSanitizer and UndefinedBehaviorSanitizer: a memory error or undefined behaviour stops the
+  # regtest that triggers it. Regtests without MPI and optional libraries, as in the checks job above
+  # (it is not in the gate of checksWF.yml because its build is too slow).
+  sanitizers:
+    runs-on: ubuntu-24.04
+    env:
+      PLUMED_CCACHE_SIZE: 500M
+      # leaks are not checked: objects that live until the end of the program are not released
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: print_stacktrace=1
+      # the sanitizer runtime cannot load libraries with RTLD_DEEPBIND (google/sanitizers#611):
+      # without this the regtests that load the kernel at runtime fail
+      PLUMED_LOAD_NODEEPBIND: yes
+      # the Fortran regtests link their main program with $FC, which must also link the sanitizer
+      # runtime first (otherwise: "ASan runtime does not come first in initial library list")
+      PLUMED_FORTRAN_FLAGS: -fsanitize=address,undefined
+    steps:
+    - uses: actions/checkout@v6
+    - name: Identify runner image
+      id: image
+      run: echo "os=${ImageOS:?ImageOS is not set}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v5
+      with:
+        path: ~/.ccache
+        key: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-${{ github.sha }}
+        restore-keys: ccache-reset1-${{ steps.image.outputs.os }}-checks-sanitizers-hash-
+    - name: setup the CI environment
+      uses: ./.github/actions/linux-setup
+      with:
+        ccache: true
+    - name: Configure PLUMED
+      run: |
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+        ./configure CXX="ccache $CXX" --disable-python --disable-doc --disable-dependency-tracking --enable-modules=all \
+          --disable-external-blas --disable-external-lapack \
+          CXXFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined -Wno-maybe-uninitialized" \
+          LDFLAGS="-fsanitize=address,undefined" --prefix="$HOME/opt"
+    - name: Config Log
+      if: failure()
+      run: cat config.log
+    - name: Build PLUMED
+      run: |
+        make -j 4
+        make install
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
+    - name: Run tests
+      run: |
+         make --no-print-directory -j 2 -C regtest testclean
+         make -C regtest checkfail

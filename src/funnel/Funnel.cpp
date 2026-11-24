@@ -191,8 +191,6 @@ Funnel::Funnel(const ActionOptions& ao):
   bool spline=!nospline;
   bool walkers_mpi=false;
   parseFlag("WALKERS_MPI",walkers_mpi);
-//  bool components=false;
-//  parseFlag("POINTS",components);
   bool sphere=false;
   parseFlag("SPHERE",sphere);
   parse("SAFETY",safety);
@@ -232,8 +230,6 @@ Funnel::Funnel(const ActionOptions& ao):
 
   std::string funcl=getLabel() + ".bias";
 
-//  int size = plumed.comm.Get_size();
-//  int rank = plumed.comm.Get_rank();
   IFile I_hate_this;
   bool do_exist=I_hate_this.FileExist(file);
 
@@ -252,27 +248,12 @@ Funnel::Funnel(const ActionOptions& ao):
     }
   }
 
-  /*
-  if(comm.Get_rank()==0){
-    if(multi_sim_comm.Get_rank()==0 && walkers_mpi){
-  	  if(!do_exist){
-  		  createBIAS(RCYL, ZCC, ALPHA, KAPPA, MINS, MAXS, NBINS, NBINZ, safety, sphere, slope, funcl, file);
-  	  }
-    } else {
-  	  if(!do_exist){
-  		  createBIAS(RCYL, ZCC, ALPHA, KAPPA, MINS, MAXS, NBINS, NBINZ, safety, sphere, slope, funcl, file);
-  	  }
-    }
-    if(walkers_mpi) multi_sim_comm.Barrier();
-  }
-  */
   comm.Barrier();
 
 // read grid
   IFile gridfile;
   gridfile.open(file);
   BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
-//not necessary anymore?  gridfile.close();
   if(BiasGrid_->getDimension()!=getNumberOfArguments()) {
     error("mismatch between dimensionality of input grid and number of arguments");
   }
@@ -438,7 +419,6 @@ void Funnel::calculate() {
     cv[i]=getArgument(i);
   }
 
-//  log.printf("  In Funnel: %13.6lf  %13.6lf\n", cv[0], cv[1]);
 
   double ene=scale_*BiasGrid_->getValueAndDerivatives(cv,der);
 

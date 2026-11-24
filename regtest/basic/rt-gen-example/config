@@ -1,0 +1,23 @@
+type=plumed
+# gen_example builds an html version of an input. Only the presence of some
+# expected elements is checked, so that the test does not depend on the documentation
+arg="gen_example --plumed plumed.dat --out example.html --name eg --status working"
+
+function plumed_regtest_after(){
+  rm -f checks
+  for pattern in 'id="egshortd"' 'id="egshortdd"' 'id="egshortr"' 'id="egshortc"' 'virtual atom' 'group of atoms' 'passing-green' 'swapInput' 'id="eglong"' '<table' ; do
+    if grep -q -e "$pattern" example.html ; then
+      echo "$pattern: ok" >> checks
+    else
+      echo "$pattern: missing" >> checks
+    fi
+  done
+  $plumed_nompi gen_example --plumed plumed.dat --out example2.html --name eg2 --status nobadge
+  for pattern in 'nobadge' 'id="eg2d"' ; do
+    if grep -q -e "$pattern" example2.html ; then
+      echo "$pattern: ok" >> checks
+    else
+      echo "$pattern: missing" >> checks
+    fi
+  done
+}

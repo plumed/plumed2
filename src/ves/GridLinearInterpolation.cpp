@@ -100,7 +100,7 @@ double GridLinearInterpolation::getGridValueWithLinearInterpolation_2D(GridBase*
 
 double GridLinearInterpolation::getGridValueWithLinearInterpolation_ND(GridBase* grid_pntr, const std::vector<double>& arg) {
   unsigned int dimension = grid_pntr->getDimension();
-  plumed_massert(dimension==arg.size(),"The grid dimensions do not match the the given arguments.");
+  plumed_massert(dimension==arg.size(),"The grid dimensions do not match the given arguments.");
   // get points first
   std::vector<std::vector<unsigned>> point_indices = GridLinearInterpolation::getAdjacentPoints(grid_pntr, arg);
 

@@ -1,0 +1,10 @@
+# A function of the components of the bond vectors that is not rotationally invariant,
+# so that the virial is not symmetric. forces contains the numerical derivatives (also those with respect to the box)
+m: CONTACT_MATRIX GROUP=1-64 COMPONENTS SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+c: CUSTOM ARG=m.x,m.y,m.w FUNC=x*y*z PERIODIC=NO
+s: SUM ARG=c PERIODIC=NO
+ma: CONTACT_MATRIX GROUP=1-64 COMPONENTS SWITCH={RATIONAL D_0=3.0 R_0=1.5} AVOID_THREAD_GATHER
+ca: CUSTOM ARG=ma.x,ma.z,ma.w FUNC=x*y*z PERIODIC=NO
+sa: SUM ARG=ca PERIODIC=NO
+PRINT ARG=s,sa FILE=colvar FMT=%8.4f
+BIASVALUE ARG=s,sa

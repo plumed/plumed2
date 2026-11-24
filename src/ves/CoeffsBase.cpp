@@ -219,7 +219,6 @@ void CoeffsBase::setupBasisFunctionsInfo() {
       unsigned int mc_id = indices[ndimensions_-1];
       std::string mc_idstr;
       Tools::convert(mc_id,mc_idstr);
-      // std::string mc_label = getDimensionLabel(ndimensions_-1);
       std::string postfix = ":" + mc_idstr;
       std::string desc ="";
       desc+=multicoeffs_basisf_[mc_id][0]->getBasisFunctionLabel(indices[0]);

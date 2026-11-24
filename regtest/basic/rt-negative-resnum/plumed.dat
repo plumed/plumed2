@@ -1,0 +1,16 @@
+# helix_neg.pdb is the helix.pdb of rt32, with chain A and residues renumbered from -6 (ACE) to 7 (NME):
+# residue r of rt32 is residue r-7 here
+MOLINFO STRUCTURE=helix_neg.pdb
+# t1 and t2 must be identical to t1 and t2 in rt32 (@phi-4 and @psi-6 there)
+t1: TORSION ATOMS=@phi--3
+t2: TORSION ATOMS=@psi--1
+# same as t1 and t2, with the chain specified
+t1a: TORSION ATOMS=@phi-A-3
+t2a: TORSION ATOMS=@psi-A_-1
+# torsions involving residues across zero
+t3: TORSION ATOMS=@phi-0
+t4: TORSION ATOMS=@psi-0
+t5: TORSION ATOMS=@phi-1
+t6: TORSION ATOMS=@omega--1
+PRINT ARG=t1,t2,t1a,t2a,t3,t4,t5,t6 FILE=colvar FMT=%8.4f
+RESTRAINT ARG=t1,t2,t3,t4,t5,t6 AT=0,0,0,0,0,0 KAPPA=1,2,3,4,5,6

@@ -1,6 +1,7 @@
 mpiprocs=3
+plumed_mpi_harness=yes
 type=make
-extra_files="../rt-Neigbourlist/main.cpp"
+extra_files="../rt-Neigbourlist/main.cpp ../../scripts/mpi-test.h"
 
 function plumed_regtest_before() {
   perl -pi.bk -e 's%//#define USE_MPI%#define USE_MPI%g' main.cpp

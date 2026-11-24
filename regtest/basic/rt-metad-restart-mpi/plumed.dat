@@ -1,0 +1,15 @@
+# Continuation of a run at step 300 with two MPI processes, see rt-metad-diff-restart.
+# The hills files are read by the first process and the hills are broadcast; the messages written
+# on the log by the first process only (e.g. about the incomplete last lines of HG and HC) must not
+# leave the processes out of step.
+# c: as g, with a corrupted line in the hills file: the statistics of ADAPTIVE=DIFF start from scratch
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+a: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HA
+s: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HS DIFF_FROM_SCRATCH
+g: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HG GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=30,30 SIGMA_MIN=0.01,0.01 GRID_RFILE=GRID
+c: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f FILE=HC GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=30,30 SIGMA_MIN=0.01,0.01 GRID_RFILE=GRIDC
+
+PRINT ARG=phi,psi,a.bias,s.bias,g.bias,c.bias STRIDE=5 FILE=colvar FMT=%10.5f

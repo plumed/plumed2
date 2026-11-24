@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "types": [
+    {
+      "name": "MPI_Comm_errhandler_function",
+      "scope": "thread-MPI-surface",
+      "source": "MPI-1; contrast GROMACS tMPI_Errhandler_fn",
+      "representation": "void(MPI_Comm*,int*,...)",
+      "test_id": "thread-mpi-error-handler-unavailable",
+      "category": "callback-type",
+      "signature": "void(MPI_Comm *, int *, ...)",
+      "const_policy": "MPI-5 standard variadic callback; distinct from stable tMPI two-argument callback",
+      "bridge": "typed variadic trampoline and native handler lifetime tracking",
+      "provider": "unavailable in thread-MPI by owner policy"
+    },
+    {
+      "name": "MPI_Comm",
+      "scope": "current-use",
+      "source": "PLUMED src/tools/Communicator.h; MPI-1",
+      "representation": "opaque implementation-defined native handle",
+      "test_id": "comm-roundtrip",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Group",
+      "scope": "initial-union",
+      "source": "MPI-1",
+      "representation": "opaque implementation-defined native handle",
+      "test_id": "group-roundtrip",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Datatype",
+      "scope": "current-use",
+      "source": "PLUMED src/tools/Communicator.h; MPI-1",
+      "representation": "opaque implementation-defined native handle",
+      "test_id": "datatype-roundtrip",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Request",
+      "scope": "current-use",
+      "source": "PLUMED src/tools/Communicator.h; MPI-1",
+      "representation": "opaque implementation-defined native handle",
+      "test_id": "request-roundtrip",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Status",
+      "scope": "current-use",
+      "source": "PLUMED src/tools/Communicator.h; MPI-1",
+      "representation": "implementation-defined native status object",
+      "test_id": "status-roundtrip",
+      "category": "opaque-status-with-public-fields",
+      "wrapper_storage": "configured raw status capacity (default 128 bytes) plus int32 source/tag/error and raw_size",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "offsetof(source)",
+        "offsetof(tag)",
+        "offsetof(error)",
+        "native C int size/signedness"
+      ],
+      "conversion": "aligned native local; preserve raw bytes and synchronize public fields; status ignore sentinel checked before access",
+      "thread_mpi": "native tMPI_Status; verify size/align and field conversions"
+    },
+    {
+      "name": "MPI_Fint",
+      "scope": "current-use",
+      "source": "PLUMED src/tools/Communicator.cpp; MPI-1",
+      "representation": "implementation-defined Fortran communicator integer handle",
+      "test_id": "fint-communicator-import",
+      "category": "Fortran-handle-integer",
+      "wrapper_storage": "native int-width metadata and fixed-width transport when applicable",
+      "native_metadata": [
+        "sizeof",
+        "is_signed"
+      ],
+      "conversion": "MPI_Comm_f2c only through a verified native adapter; provider-mode conversion unavailable until explicit capability exists",
+      "thread_mpi": "not exposed as stable standard conversion"
+    },
+    {
+      "name": "MPI_Op",
+      "scope": "initial-union",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "opaque reduction-operation handle",
+      "test_id": "type:MPI_Op",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Errhandler",
+      "scope": "initial-union",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "opaque error-handler handle",
+      "test_id": "type:MPI_Errhandler",
+      "category": "opaque-handle",
+      "wrapper_storage": "distinct standard-layout/trivially-copyable byte array, default capacity max(8, sizeof(void *))",
+      "native_metadata": [
+        "sizeof",
+        "alignof",
+        "representation-byte-copy compatibility"
+      ],
+      "conversion": "zero-filled byte storage plus memcpy of native handle bytes; reverse memcpy to aligned native local; bytewise same-kind equality after validated representation",
+      "thread_mpi": "native declaration; verify pinned size; tMPI_Op is numeric enum type while other handles pointer types"
+    },
+    {
+      "name": "MPI_Aint",
+      "scope": "initial-union",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "address-sized signed integer type",
+      "test_id": "type:MPI_Aint",
+      "category": "signed-native-integer",
+      "wrapper_storage": "fixed-width transport value per generated argument spec",
+      "native_metadata": [
+        "sizeof",
+        "is_signed"
+      ],
+      "conversion": "checked range-checked numeric conversion; never byte-extend as opaque handle",
+      "thread_mpi": "direct only where public API uses MPI_Aint; probe provider typedef"
+    },
+    {
+      "name": "MPI_User_function",
+      "scope": "initial-union",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "user reduction callback type",
+      "test_id": "type:MPI_User_function",
+      "category": "callback-type",
+      "signature": "void(void *, void *, int *, MPI_Datatype *)",
+      "const_policy": "MPI-5 C callback signature has mutable void* invec and inoutvec; do not cast/invoke incompatible callback types",
+      "bridge": "typed trampoline plus provider datatype conversion and callback lifetime registry",
+      "provider": "unavailable in thread-MPI until bridge is implemented"
+    },
+    {
+      "name": "MPI_Handler_function",
+      "scope": "excluded-mpi5-removed",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "deprecated MPI-1 error callback type",
+      "test_id": "type:MPI_Handler_function",
+      "category": "excluded-legacy-callback",
+      "provider": "not generated or transported"
+    },
+    {
+      "name": "MPI_Copy_function",
+      "scope": "excluded-deprecated",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "deprecated MPI-1 attribute-copy callback type",
+      "test_id": "type:MPI_Copy_function",
+      "category": "excluded-legacy-callback",
+      "provider": "not generated or transported"
+    },
+    {
+      "name": "MPI_Delete_function",
+      "scope": "excluded-deprecated",
+      "source": "MPI-1.1 C binding; representation/provider declaration must be verified",
+      "representation": "deprecated MPI-1 attribute-delete callback type",
+      "test_id": "type:MPI_Delete_function",
+      "category": "excluded-legacy-callback",
+      "provider": "not generated or transported"
+    }
+  ]
+}

@@ -2,3 +2,8 @@ type=driver
 plumed_modules=symfunc
 # this is to test a different name
 arg="--plumed plumed.dat --ixyz traj_md-10.xyz --length-units A --dump-forces forces --dump-forces-fmt=%8.4f"
+# The printed values have 6 decimals and res.force2 is of order 100: its last digit
+# depends on the order of the neighbors (changed by the smaller link cells) and on the compiler.
+plumed_tolerance=(
+  "colvar_aq6:2e-6"
+)

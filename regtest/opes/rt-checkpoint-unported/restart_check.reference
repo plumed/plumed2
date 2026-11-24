@@ -1,0 +1,1 @@
+WARNING: the following actions have an internal state that is not stored in the checkpoint, an exact restart is not guaranteed: opes

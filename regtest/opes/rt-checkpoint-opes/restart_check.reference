@@ -1,0 +1,16 @@
+restart/COLVAR IDENTICAL
+restart/KERNELS1 IDENTICAL
+restart/KERNELS2 IDENTICAL
+restart/KERNELS3 IDENTICAL
+restart/STATE1 IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/KERNELS1 IDENTICAL
+restart-stride/KERNELS2 IDENTICAL
+restart-stride/KERNELS3 IDENTICAL
+restart-stride/STATE1 IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

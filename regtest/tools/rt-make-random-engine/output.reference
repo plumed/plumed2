@@ -1,0 +1,14 @@
+engine matches the reference xoshiro256** outputs: yes
+first numbers with seed -2026: 0.57373150279326768 0.28367946027485796 0.81250942675761761 0.89367465105063593
+seeds 2026 and -2026 give the same stream: yes
+default seed is 0: yes
+U01 in (0,1): yes
+U01 mean and variance within 5 sigma: yes
+Gaussian mean, variance and 4th moment within 5 sigma: yes
+RandInt(1) in range: yes, uniform: yes
+RandInt(7) in range: yes, uniform: yes
+RandInt(10) in range: yes, uniform: yes
+RandInt(0) is an error: yes
+stateToString/stateFromString continue the same stream: yes
+toString/fromString round trip: yes
+old ran1 state is an error: yes

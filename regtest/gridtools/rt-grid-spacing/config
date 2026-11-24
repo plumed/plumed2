@@ -1,0 +1,7 @@
+type=driver
+plumed_modules=gridtools
+# GRID_SPACING without GRID_BIN follows the convention of METAD: the grid ends at GRID_MAX, with
+# ceil((GRID_MAX-GRID_MIN)/GRID_SPACING) bins. It used to have one more point, past GRID_MAX, so
+# INTERPOLATE_GRID with GRID_SPACING read the input grid out of range
+arg="--plumed plumed.dat --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"

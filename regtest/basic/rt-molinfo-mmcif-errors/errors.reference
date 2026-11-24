@@ -1,0 +1,54 @@
+== empty file: exit code 1
+the mmCIF file test.cif is empty
+== only comments: exit code 1
+the mmCIF file test.cif is empty
+== text that is not cif: exit code 1
+cannot read the mmCIF file: test.cif:1:0(0): expected block header (data_)
+== binary data: exit code 1
+cannot read the mmCIF file: test.cif:1:0(0): expected block header (data_)
+== no _atom_site table: exit code 1
+the mmCIF file test.cif has no _atom_site table
+== _atom_site as items: exit code 1
+the _atom_site data of the mmCIF file test.cif must be a table (loop_): line 2
+== _atom_site table without values: exit code 1
+the _atom_site table of the mmCIF file test.cif has no atoms
+== no coordinates: exit code 1
+the _atom_site table of the mmCIF file test.cif has no Cartn_x, Cartn_y or Cartn_z column
+== wrong number of values: exit code 1
+wrong number of values in the _atom_site table of the mmCIF file test.cif (20 values for 11 columns, table starting at line 3)
+== unterminated quote: exit code 1
+cannot read the mmCIF file: test.cif:15:33(295): unterminated 'string'
+== unterminated text field: exit code 1
+cannot read the mmCIF file: test.cif:18:0(308): unterminated text field
+== coordinate that is not a number: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 16: cannot read the y coordinate (Cartn_y) from abc
+== missing coordinate: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 16: the y coordinate (Cartn_y) is missing
+== residue number that is not a number: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 16: cannot read the residue number from x
+== id that is not a number: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 15: the atom id N1 is not a positive integer: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+== id that is not a number, ATOM_ID=order (runs): exit code 0
+== id zero: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 15: the atom id 0 is not a positive integer: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+== id used twice: exit code 1
+in the _atom_site table of the mmCIF file test.cif at line 16: the atom id 1 is used twice: use ATOM_ID=order in MOLINFO to number the atoms in the order of the file
+== two _atom_site tables: exit code 1
+the mmCIF file test.cif has more than one _atom_site table
+== atoms in a second data block (runs, ignored): exit code 0
+== wrong ATOM_ID: exit code 1
+ERROR in input to action MOLINFO with label @0 : ATOM_ID should be serial or order, not id
+== cell length that is not a number: exit code 1
+the unit cell of the mmCIF file test.cif cannot be read: _cell.length_a is abc
+== cell without angles: exit code 1
+the unit cell of the mmCIF file test.cif cannot be read: _cell.angle_alpha is missing
+== cell with a zero length: exit code 1
+the unit cell of the mmCIF file test.cif is not valid: _cell.length_a must be positive
+== cell with a zero angle: exit code 1
+the unit cell of the mmCIF file test.cif is not valid: _cell.angle_alpha must be between 0 and 180 degrees
+== cell with angles that do not make a cell: exit code 1
+the unit cell of the mmCIF file test.cif is not valid: the angles do not define a cell
+== cell with unknown values (runs, no cell): exit code 0
+== pdb serial that cannot be read: exit code 1
+invalid number literal.
+== pdb serial that cannot be read, ATOM_ID=order (runs): exit code 0

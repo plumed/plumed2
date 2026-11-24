@@ -40,7 +40,7 @@ struct AccelerableShortcut : public ActionShortcut {
     keys.addActionNameSuffix("_ACC");
     //GPU related settings
     if (!keys.exists("USEGPU")) {
-      keys.addFlag("USEGPU",false,"run this calculation on the GPU or the accelerated version, if avaiable");
+      keys.addFlag("USEGPU",false,"run this calculation on the GPU or the accelerated version, if available");
       keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
     }
   }

@@ -37,11 +37,6 @@ MatrixOperationBase::MatrixOperationBase(const ActionOptions&ao):
   Action(ao),
   ActionWithArguments(ao),
   ActionWithValue(ao) {
-  if( getNumberOfArguments()==0 ) {
-    std::vector<Value*> args;
-    parseArgumentList("MATRIX",args);
-    requestArguments(args);
-  }
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument to this action");
   }

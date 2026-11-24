@@ -1,2 +1,5 @@
 mpiprocs=3
 type=make
+
+plumed_mpi_harness=yes
+extra_files="${extra_files} ../../scripts/mpi-test.h"

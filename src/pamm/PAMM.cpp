@@ -46,7 +46,7 @@ $$
 
 Each of the $\phi_k$ is a Gaussian function that acts on a set in quantities calculated that might be calculated
 using a [TORSION](TORSION.md), [DISTANCE](DISTANCE.md) or [ANGLE](ANGLE.md) action for example.
-These quantities are then inserted into the set of $n$ kernels that are in the the input file.   This will be done for multiple sets of values
+These quantities are then inserted into the set of $n$ kernels that are in the input file.   This will be done for multiple sets of values
 for the input quantities and a final quantity will be calculated by summing the above $s_k$ values or
 some transformation of the above.  This sounds less complicated than it is and is best understood by
 looking through the example given below, which can be expanded to show the full set of operations that PLUMED is performing.

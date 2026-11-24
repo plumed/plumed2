@@ -393,7 +393,6 @@ double LinearBasisSetExpansion::getBiasAndForces(const std::vector<double>& args
   plumed_assert(coeffsderivs_values.size()==coeffs_pntr_in->numberOfCoeffs());
 
   std::vector<double> args_values_trsfrm(nargs);
-  // std::vector<bool>   inside_interval(nargs,true);
   all_inside = true;
   //
   std::vector< std::vector <double> > bf_values(nargs);
@@ -404,7 +403,6 @@ double LinearBasisSetExpansion::getBiasAndForces(const std::vector<double>& args
     bf_derivs[k].assign(basisf_pntrs_in[k]->getNumberOfBasisFunctions(),0.0);
     bool curr_inside=true;
     basisf_pntrs_in[k]->getAllValues(args_values[k],args_values_trsfrm[k],curr_inside,bf_values[k],bf_derivs[k]);
-    // inside_interval[k]=curr_inside;
     if(!curr_inside) {
       all_inside=false;
     }

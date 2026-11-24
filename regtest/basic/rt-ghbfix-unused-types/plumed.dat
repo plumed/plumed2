@@ -1,0 +1,6 @@
+# the PARAMS file may contain pairs of types that are not in the TYPES table:
+# these must be ignored, and they must not change the entries of the types that are in the table
+clean: GHBFIX PAIR GROUPA=1 GROUPB=2 D_0=0.2 D_MAX=0.3 C=0.8 TYPES=typesTable.dat PARAMS=scalingParameters_clean.dat ENERGY_UNITS=kcal/mol
+extra: GHBFIX PAIR GROUPA=1 GROUPB=2 D_0=0.2 D_MAX=0.3 C=0.8 TYPES=typesTable.dat PARAMS=scalingParameters.dat ENERGY_UNITS=kcal/mol
+diff: COMBINE ARG=extra,clean COEFFICIENTS=1,-1 PERIODIC=NO
+PRINT ARG=clean,extra,diff FILE=colvar FMT=%8.4f

@@ -1,0 +1,46 @@
+plumed_modules="mapping landmarks dimred"
+type=driver
+# stack traces (PLUMED_STACK_TRACE=yes in the CI) would end up in the error messages that are compared
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --trajectory-stride 50 --timestep 0.005 --ixyz diala_traj_nm.xyz"
+extra_files="../../trajectories/diala_traj_nm.xyz  ../../trajectories/path_msd/all.pdb ../rt-adapt/mypath.pdb"
+
+# inputs found by .ci/audit-inputs.py: they crashed (segmentation fault or floating point exception)
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail with exit code 1
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz diala_traj_nm.xyz > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/with label [^ ]* //' >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "PATH with a reference pdb without atoms and arguments" "d1: DISTANCE ATOMS=1,2 COMPONENTS
+p: PATH REFERENCE=mypath.pdb LAMBDA=1.0"
+  expect_error "GPATH with a reference pdb without atoms and arguments" "d1: DISTANCE ATOMS=1,2 COMPONENTS
+p: GPATH REFERENCE=mypath.pdb PROPERTY=d1.x"
+  expect_error "ADAPTIVE_PATH with a reference pdb without atoms and arguments" "d1: DISTANCE ATOMS=1,2 COMPONENTS
+p: ADAPTIVE_PATH REFERENCE=mypath.pdb FIXED=1,5 UPDATE=50"
+  expect_error "RMSD with only one argument" "a: CONSTANT VALUES=0,0,0
+r: RMSD ARG=a DISPLACEMENT TYPE=OPTIMAL"
+  expect_error "COLLECT with STRIDE=0 and CLEAR" "d: DISTANCE ATOMS=1,2
+c: COLLECT ARG=d STRIDE=0 CLEAR=10"
+  expect_error "FARTHEST_POINT_SAMPLING with more landmarks than frames" "d: DISTANCE ATOMS=1,2
+ff: COLLECT_FRAMES ARG=d STRIDE=1 CLEAR=3
+ll: LANDMARK_SELECT_FPS ARG=ff NLANDMARKS=10"
+  expect_error "FARTHEST_POINT_SAMPLING without landmarks" "d: DISTANCE ATOMS=1,2
+ff: COLLECT_FRAMES ARG=d STRIDE=1 CLEAR=3
+ll: LANDMARK_SELECT_FPS ARG=ff NLANDMARKS=0"
+  expect_error "CLASSICAL_MDS with more dimensions than frames" "d: DISTANCE ATOMS=1,2
+e: DISTANCE ATOMS=2,3
+ff: COLLECT_FRAMES ARG=d,e STRIDE=1 CLEAR=4
+mds: CLASSICAL_MDS ARG=ff NLOW_DIM=5"
+  expect_error "CLASSICAL_MDS without dimensions" "d: DISTANCE ATOMS=1,2
+e: DISTANCE ATOMS=2,3
+ff: COLLECT_FRAMES ARG=d,e STRIDE=1 CLEAR=4
+mds: CLASSICAL_MDS ARG=ff NLOW_DIM=0"
+  rm -f bad.dat bad.out
+}

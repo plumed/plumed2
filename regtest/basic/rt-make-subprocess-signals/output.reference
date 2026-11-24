@@ -1,0 +1,6 @@
+process groups isolated: yes
+test1 grandchild terminated: yes
+test1 trap executed: yes
+test2 read: ready
+test2 trap executed: yes
+test3 shell terminated: yes

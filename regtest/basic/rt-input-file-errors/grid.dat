@@ -1,0 +1,10 @@
+#! FIELDS d1 m1.bias der_d1
+#! SET min_d1 0
+#! SET max_d1 1
+#! SET nbins_d1 4
+#! SET periodic_d1 false
+ 0.00 0.0 0.0
+ 0.25 0.0 0.0
+ 0.50 0.0 0.0
+ 0.75 0.0 0.0
+ 1.00 0.0 0.0

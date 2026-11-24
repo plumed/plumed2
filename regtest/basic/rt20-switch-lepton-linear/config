@@ -1,0 +1,6 @@
+type=driver
+export PLUMED_NUM_THREADS=4
+# A CUSTOM switching function with a constant derivative (FUNC=1-x, FUNC=1-x2)
+# stopped with "getVariableReference: Unknown variable". Compared with 1-abs(x), equal for x>=0.
+arg="--plumed plumed.dat --ixyz switchtraj.xyz"
+extra_files="../../trajectories/switchtraj.xyz"

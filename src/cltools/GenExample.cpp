@@ -268,6 +268,10 @@ std::vector<std::vector<std::string> > GenExample::createLongInput( const std::v
         trailingcomment=true;
         continue;
       }
+      // the words of a trailing comment are not part of the input
+      if( trailingcomment ) {
+        continue;
+      }
       if( interpreted[i]=="@newline" || interpreted[i]=="..." ) {
         continue;
       }
@@ -283,6 +287,10 @@ std::vector<std::vector<std::string> > GenExample::createLongInput( const std::v
       ActionShortcut* as=dynamic_cast<ActionShortcut*>( myplumed.getActionSet()[myplumed.getActionSet().size()-1].get() );
       plumed_assert( as );
       const auto & shortcut_commands = as->getSavedInputLines();
+      // some shortcuts do not save their expansion: keep the original line
+      if( shortcut_commands.size()==0 ) {
+        long_input.push_back( input[ll] );
+      }
       for(unsigned i=0; i<shortcut_commands.size(); ++i) {
         std::vector<std::string> words = Tools::getWords( shortcut_commands[i] );
         long_input.push_back( words );
@@ -386,7 +394,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
             ofile<<"</span>";
             trailingcomment=false;
           }
-          if( interpreted[i+1]=="..." ) {
+          if( i+1<interpreted.size() && interpreted[i+1]=="..." ) {
             ofile<<std::endl;
           } else {
             ofile<<std::endl<<"   ";
@@ -470,29 +478,28 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         ofile<<"The "<<interpreted[0]<<" action with label <b>"<<lab<<"</b>";
         myplumed.readInputLine( myinputline );
         ActionWithValue* av=myplumed.getActionSet().selectWithLabel<ActionWithValue*>(lab);
-        if( av ) {
+        // virtual atoms are also ActionWithValue, but their components are not documented
+        ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<ActionWithVirtualAtom*>(lab);
+        if( avv ) {
+          ofile<<" calculates the position of a virtual atom";
+        } else if( av ) {
           if( av->getNumberOfComponents()==1 ) {
             ofile<<" calculates a single scalar value";
           } else if( av->getNumberOfComponents()>0 ) {
             ofile<<" calculates the following quantities:"<<std::endl;
-            ofile<<"<table  align=\"center\" frame=\"void\" width=\"95%%\" cellpadding=\"5%%\">"<<std::endl;
-            ofile<<"<tr><td width=\"5%%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>"<<std::endl;
+            ofile<<"<table  align=\"center\" frame=\"void\" width=\"95%\" cellpadding=\"5%\">"<<std::endl;
+            ofile<<"<tr><td width=\"5%\"><b> Quantity </b>  </td><td><b> Description </b> </td></tr>"<<std::endl;
             unsigned ncomp = av->getNumberOfComponents();
             for(unsigned k=0; k<ncomp; ++k ) {
               std::string myname = av->copyOutput(k)->getName();
               std::size_t dot=myname.find_first_of(".");
               std::string tname=myname.substr(dot+1);
-              ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>"<<av->getOutputComponentDescription(tname,keys)<<"</td></tr>"<<std::endl;
+              ofile<<"<tr><td width=\"5%\">"<<myname<<"</td><td>"<<av->getOutputComponentDescription(tname,keys)<<"</td></tr>"<<std::endl;
             }
             ofile<<"</table>"<<std::endl;
           }
-        } else {
-          ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<ActionWithVirtualAtom*>(lab);
-          if( avv ) {
-            ofile<<" calculates the position of a virtual atom";
-          } else if( interpreted[0]=="GROUP" ) {
-            ofile<<" defines a group of atoms so that they can be referred to later in the input";
-          }
+        } else if( interpreted[0]=="GROUP" ) {
+          ofile<<" defines a group of atoms so that they can be referred to later in the input";
         }
         ofile<<"</span>"<<std::endl;
       } else {

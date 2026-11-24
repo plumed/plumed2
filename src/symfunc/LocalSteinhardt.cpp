@@ -496,8 +496,8 @@ void LocalSteinhardt::registerKeywords( Keywords& keys ) {
   keys.add("optional","SPECIES","the label of the action that computes the Steinhardt parameters for which you would like to calculate local steinhardt parameters");
   keys.add("optional","SPECIESA","the label of the action that computes the Steinhardt parameters for which you would like to calculate local steinhardt parameters");
   keys.add("optional","SPECIESB","the label of the action that computes the Steinhardt parameters that you would like to use when calculating the loal steinhardt parameters");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("optional","MASK","the label/s for vectors that are used to determine which local steinhardt parameters to compute");
   keys.addDeprecatedFlag("LOWMEM","");

@@ -1,0 +1,9 @@
+# Continuation at step 300 of a PBMETAD run (GR1, GR2 written at step 300; hills in HR*, copied in HH*).
+# r: restart from the grids (GRID_RFILES); h: restart from the hills, on the same grids.
+# The biases are the same, up to the precision of the grid files.
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+r: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HR1,HR2 GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005 GRID_RFILES=GR1,GR2
+h: PBMETAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HH1,HH2 GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005
+PRINT ARG=phi,d,r.bias,h.bias FILE=colvar FMT=%10.5f

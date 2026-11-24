@@ -1,0 +1,41 @@
+mpiprocs=4
+type=driver
+plumed_modules=isdb
+# Reference run: four replicas (--multi 4), an exchange attempt every 3 steps (--debug-grex, the
+# delta biases go to grex.N), the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --checkpoint-stride 10 --log-file driver.log"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  head -n 150 traj.xyz > part.xyz
+  # A) checkpoints at steps 0, 10 and 20, restart from step 20 (the step after it is an exchange step)
+  mkdir restart ; cd restart ; cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --debug-grex 3 --checkpoint-stride 10 --log-file driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt --log-file driver.log > out2 2> err2
+  cd ..
+  # B) checkpoints every 7 steps (STRIDE), restart from step 21, an exchange step
+  mkdir restart-stride ; cd restart-stride
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --multi 4 --debug-grex 3 --log-file driver.log > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --debug-grex 3 --debug-grex-log grex --restart-from-checkpoint plumed.cpt --log-file driver.log > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the logs of the restarted runs are read from the files of the replicas (--log-file): on the
+  # standard output the logs of the replicas are mixed, and their lines can be broken
+  {
+    for d in restart restart-stride ; do
+      for r in 0 1 2 3 ; do
+        if cmp -s COLVAR.$r $d/COLVAR.$r ; then echo "$d/COLVAR.$r IDENTICAL" ; else echo "$d/COLVAR.$r DIFFERENT" ; fi
+        # the exchange attempts after the restart (steps 21, 24, ..., 57: 13 lines) must give the same delta biases
+        if test "$(tail -n 13 grex.$r)" = "$(cat $d/grex.$r)" ; then echo "$d/grex.$r IDENTICAL" ; else echo "$d/grex.$r DIFFERENT" ; fi
+      done
+      # Replicas have independent logs; merged stdout can interleave prefixes and messages.
+      if grep -q "not stored in the checkpoint" $d/driver.*.log $d/err2 ; then echo "$d: unported state warning" ; fi
+      # BSD and GNU uniq use different padding for counts; keep the reference format.
+      grep -h "Checkpoint state restored" $d/driver.*.log | sed 's/by PLUMED.*//' | LC_ALL=C sort | uniq -c |
+        awk '{count=$1; sub(/^[[:space:]]*[0-9]+[[:space:]]+/, ""); printf "%7d %s\n", count, $0}'
+    done
+  } > restart_check
+}

@@ -32,6 +32,8 @@
 #include "tools/Tree.h"
 
 #include <vector>
+#include <map>
+#include <algorithm>
 #include <string>
 
 namespace PLMD {
@@ -117,6 +119,12 @@ class WholeMolecules:
   public ActionAtomistic {
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_groups;
   std::vector<std::vector<std::pair<std::size_t,std::size_t> > > p_roots;
+  // parent of atom j+1 of each group, as an index in the group
+  std::vector<std::vector<unsigned> > parents;
+  // child of each link (j+1)
+  std::vector<unsigned> children;
+  // positions of a group
+  std::vector<Vector> pos;
   std::vector<Vector> refs= {};
   bool doemst=false;
   bool addref=false;
@@ -139,7 +147,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY0, ENTITY1,...");
   keys.reset_style("ENTITY","atoms");
-  keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the \\ref MOLINFO "
+  keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the MOLINFO "
            "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "
            "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
            "you are interested in as a list of numbers");
@@ -283,6 +291,26 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
     }
   }
 
+  // parent of each atom of a group (the previous atom, or its root in the tree), as an
+  // index in the group
+  parents.resize(groups.size());
+  std::size_t maxsize=0;
+  for(unsigned i=0; i<groups.size(); ++i) {
+    std::map<AtomNumber,unsigned> local;
+    for(unsigned j=0; j<groups[i].size(); ++j) {
+      local.emplace(groups[i][j],j);
+    }
+    for(unsigned j=0; j+1<groups[i].size(); ++j) {
+      const auto it=local.find(roots[i][j]);
+      plumed_assert(it!=local.end() && it->second<=j) << "the parent of an atom must come before it";
+      parents[i].push_back(it->second);
+    }
+    maxsize=std::max(maxsize,groups[i].size());
+  }
+  for(unsigned j=1; j<maxsize; ++j) {
+    children.push_back(j);
+  }
+
   checkRead();
   Tools::removeDuplicates(merge);
   requestAtoms(merge);
@@ -292,23 +320,21 @@ WholeMolecules::WholeMolecules(const ActionOptions&ao):
 
 void WholeMolecules::calculate() {
   for(unsigned i=0; i<p_groups.size(); ++i) {
-    Vector first = getGlobalPosition(p_groups[i][0]);
-    if(addref) {
-      first = refs[i]+pbcDistance(refs[i],first);
-      setGlobalPosition( p_groups[i][0], first );
+    const std::size_t n=p_groups[i].size();
+    pos.resize(n);
+    for(unsigned j=0; j<n; ++j) {
+      pos[j]=getGlobalPosition(p_groups[i][j]);
     }
-    if(!doemst) {
-      for(unsigned j=1; j<p_groups[i].size(); ++j) {
-        Vector second=getGlobalPosition(p_groups[i][j]);
-        first = first+pbcDistance(first,second);
-        setGlobalPosition(p_groups[i][j], first );
-      }
-    } else {
-      for(unsigned j=1; j<p_groups[i].size(); ++j) {
-        Vector firstPos=getGlobalPosition(p_roots[i][j-1]);
-        Vector secondPos=getGlobalPosition(p_groups[i][j]);
-        secondPos=firstPos+pbcDistance(firstPos,secondPos);
-        setGlobalPosition(p_groups[i][j], secondPos );
+    if(addref) {
+      pos[0] = refs[i]+pbcDistance(refs[i],pos[0]);
+      setGlobalPosition( p_groups[i][0], pos[0] );
+    }
+    // link j: from atom parents[i][j] to atom j+1 (only the atoms that are moved change)
+    const std::vector<Vector> orig(pos);
+    getPbc().makeWhole(pos, n-1, parents[i].data(), children.data());
+    for(unsigned j=1; j<n; ++j) {
+      if(pos[j][0]!=orig[j][0] || pos[j][1]!=orig[j][1] || pos[j][2]!=orig[j][2]) {
+        setGlobalPosition(p_groups[i][j], pos[j]);
       }
     }
   }

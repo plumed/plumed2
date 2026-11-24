@@ -1,0 +1,29 @@
+type=driver
+plumed_modules=fisst
+# Restart from the restart file of FISST (IN_RESTART): the uninterrupted run (frames 0-4, full.dat) and a run on
+# frames 0-2 (first.dat) are done before the test; the test continues from the restart file on frames 2-4
+# (frame 2 is repeated, as an MD code repeats the step of its checkpoint). check.dat says whether frames 3 and 4
+# are identical (8 digits) to the ones of the uninterrupted run. With INITIAL_WEIGHT_DIST=GAUSS.
+arg="--plumed plumed.dat --ixyz second.xyz --kt 0.593"
+extra_files="../../trajectories/trajectory.xyz"
+
+function plumed_regtest_before(){
+  awk 'NR<=330' trajectory.xyz > first.xyz
+  awk 'NR>220' trajectory.xyz > second.xyz
+  base="UNITS LENGTH=A TIME=fs ENERGY=kcal/mol
+d1: DISTANCE ATOMS=1,2
+f: FISST ARG=d1 PERIOD=1 MIN_FORCE=0 MAX_FORCE=1.44 NINTERPOLATE=31 INITIAL_WEIGHT_DIST=GAUSS INITIAL_WEIGHT_RATE=0.5 RESTART_FMT=%.17g"
+  printf "%s OUT_RESTART=full_restart.out\nPRINT ARG=d1,f.bias,f.force2,f.d1_fbar FILE=full_colvar FMT=%%.8f\n" "$base" > full.dat
+  printf "%s OUT_RESTART=first_restart.out\nPRINT ARG=d1,f.bias,f.force2,f.d1_fbar FILE=first_colvar FMT=%%.8f\n" "$base" > first.dat
+  $plumed driver --plumed full.dat --ixyz trajectory.xyz --kt 0.593 > full.log
+  $plumed driver --plumed first.dat --ixyz first.xyz --kt 0.593 > first.log
+}
+
+function plumed_regtest_after(){
+  # frames 3 and 4: the last two lines of the uninterrupted run and of the restarted one, without the time
+  if test "$(tail -2 full_colvar | awk '{$1=""; print}')" = "$(tail -2 colvar_digits | awk '{$1=""; print}')" ; then
+    echo "restart: identical to the uninterrupted run" > check.dat
+  else
+    echo "restart: DIFFERENT from the uninterrupted run" > check.dat
+  fi
+}

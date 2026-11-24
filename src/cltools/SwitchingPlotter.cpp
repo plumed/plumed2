@@ -27,6 +27,9 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <sstream>
+#include <cmath>
+#include <cstdio>
 #include <limits>
 
 //+PLUMEDOC TOOLS plotswitch
@@ -124,7 +127,7 @@ SwitchingPlotter::SwitchingPlotter(const CLToolOptions& co ):
   CLTool(co) {
   inputdata=inputType::commandline;
 }
-int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
+int SwitchingPlotter::main( FILE*, FILE* out, Communicator& ) {
   //collecting options:
   std::string swInput;
   parse("--switch",swInput);
@@ -178,24 +181,42 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
     upperLimit=(1.0+centerrange*PLMD::epsilon)*r0;
     lowerLimit=(1.0-centerrange*PLMD::epsilon)*r0;
   }
+  if (Nsteps<=0) {
+    error("--steps should be a positive integer");
+  }
+  if (!(upperLimit>lowerLimit)) {
+    error("the end of the interval should be larger than its start");
+  }
   const double step = [=]() {
     if(r0 > lowerLimit && r0< upperLimit) {
-      //this will make the step pass trough r0
-      double interval = (r0-lowerLimit)/(upperLimit-lowerLimit);
-      return  (r0-lowerLimit)/(interval *Nsteps);
+      //this will make the step pass trough r0:
+      //r0 is the point number nr0 (rounded fraction of Nsteps)
+      long nr0=std::lround((r0-lowerLimit)/(upperLimit-lowerLimit)*Nsteps);
+      if(nr0<1) {
+        nr0=1;
+      }
+      return (r0-lowerLimit)/nr0;
     }
     return (upperLimit-lowerLimit)/double(Nsteps);
   }
   ();
-  if (step <0.0) {
-    error("I calculated a negative step");
+  if (!(step>0.0)) {
+    error("I calculated a non positive step");
   }
 
   //finally doing the job
   //descriptions starts with the values of "r_0"
-  std::cout <<"#r val dfunc ( r_0="<<switchingFunction.description()<<")\n";
-  double x=lowerLimit;
-  while(x < upperLimit) {
+  std::ostringstream ostr;
+  ostr <<"#r val dfunc ( r_0="<<switchingFunction.description()<<")\n";
+  // the points are computed as lowerLimit+i*step rather than by accumulating the step:
+  // this avoids accumulating rounding errors, and avoids an infinite loop
+  // if the step is smaller than the spacing of the floating point numbers around x
+  // (e.g. with a small --centerrange)
+  for(long i=0;; i++) {
+    const double x=lowerLimit+i*step;
+    if(!(x<upperLimit)) {
+      break;
+    }
     double dfunc=0.0;
     double res;
     if(dontOptimize) {
@@ -203,11 +224,11 @@ int SwitchingPlotter::main( FILE*, FILE*, Communicator& ) {
     } else {
       res=switchingFunction.calculateSqr(x*x,dfunc);
     }
-    std::cout << std::setprecision(plotPrecision) << x << "\t"
-              << std::setprecision(plotPrecision) << res << "\t"
-              << std::setprecision(plotPrecision) << dfunc << '\n';
-    x+=step;
+    ostr << std::setprecision(plotPrecision) << x << "\t"
+         << std::setprecision(plotPrecision) << res << "\t"
+         << std::setprecision(plotPrecision) << dfunc << '\n';
   }
+  std::fprintf(out,"%s",ostr.str().c_str());
   return 0;
 }
 

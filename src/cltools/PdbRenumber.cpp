@@ -97,7 +97,7 @@ The `list.txt` file that is used above might be something like this
 ````
 
 Numbers $>99999$ in the list should be provided as decimal numbers (not in hybrid-36 format).
-However, numbers $>999994 in the output PDB file will be written in hybrid-36 mat.
+However, numbers $>99999$ in the output PDB file will be written in hybrid-36 format.
 Notice that there should be at least as many lines in `list.txt` as there atoms in the PDB file.
 Additional lines in `list.txt` will just be ignored.
 
@@ -145,7 +145,7 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--atomnumbers",atomnumbers);
 
   plumed_assert(ipdb.length()>0) << "please specify the input PDB with --ipdb";
-  plumed_assert(opdb.length()>0) << "please specify the onput PDB with --opdb";
+  plumed_assert(opdb.length()>0) << "please specify the output PDB with --opdb";
   std::fprintf(out,"  with input PDB: %s\n",ipdb.c_str());
   std::fprintf(out,"  with output PDB: %s\n",opdb.c_str());
 
@@ -158,8 +158,14 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
     ifile.open(atomnumbers);
     std::string line;
     while(ifile.getline(line)) {
-      int i;
-      Tools::convert(line,i);
+      Tools::trim(line);
+      if(line.empty()) {
+        continue;
+      }
+      unsigned i;
+      if(!Tools::convertNoexcept(line,i)) {
+        error("cannot read atom number \"" + line + "\" in file " + atomnumbers);
+      }
       serials.push_back(i);
     }
   } else {
@@ -168,6 +174,8 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
     }
     std::fprintf(out,"  with atoms starting from %u\n",iat);
   }
+  // the numbering starts again from here after each END or ENDMDL record
+  const unsigned firstiat=iat;
 
   IFile ifile;
   ifile.open(ipdb);
@@ -181,6 +189,9 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
     Tools::trim(record);
 
     if(record=="ATOM" || record=="HETATM") {
+      if(line.length()<11) {
+        error("ATOM/HETATM record is too short in file " + ipdb + ": " + line);
+      }
       std::array<char,6> at;
       unsigned ii=iat;
       if(serials.size()>0) {
@@ -194,7 +205,7 @@ int PdbRenumber::main(FILE* in, FILE*out,Communicator& pc) {
       iat++;
     } else {
       if(record=="END" || record=="ENDMDL") {
-        iat=0;
+        iat=firstiat;
       }
       ofile << line << "\n";
     }

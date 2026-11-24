@@ -32,6 +32,7 @@
 #include <memory>
 #include <map>
 #include <atomic>
+#include <cstdint>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -59,6 +60,7 @@ class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
+class Checkpointing;
 class DLLoader;
 class Communicator;
 class Stopwatch;
@@ -87,6 +89,7 @@ class PlumedMain:
   std::set<FileBase*> files;
 /// Forward declaration.
   ForwardDecl<Communicator> comm_fwd;
+  friend class Action;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed in this replica.
@@ -148,8 +151,18 @@ private:
   std::unique_ptr<WithCmd> cltool;
 
   std::unique_ptr<WithCmd> grex;
+/// UTF-8 JSON snapshot for the two-call metadata transfer (API version 11).
+/// The length query refreshes this from the live registry; the copy command
+/// transfers exactly that many bytes, one unsigned byte per int, without a
+/// terminator. Keeping the snapshot on this object makes intervening registry
+/// changes harmless. The caller owns its destination buffer.
+  std::string inputBuilderMetadataJSON;
 /// Flag to avoid double initialization
   bool  initialized=false;
+/// True if OpenMP::lockNumThreads() was called at init (it is undone in the destructor)
+  bool numThreadsLocked=false;
+/// Number of OpenMP threads set by the MD code with setNumOMPthreads (0 if it did not set it)
+  unsigned numThreadsFromEngine=0;
 /// Name of MD engine
   std::string MDEngine{"mdcode"};
 
@@ -167,6 +180,13 @@ private:
   ForwardDecl<Citations> citations_fwd;
 /// tools/Citations.holder
   Citations& citations=*citations_fwd;
+
+/// Forward declaration.
+  ForwardDecl<Checkpointing> checkpointing_fwd;
+public:
+/// Exact-restart checkpoint, see CHECKPOINT.
+  Checkpointing& checkpointing=*checkpointing_fwd;
+private:
 
 /// Present step number.
   long long int step=0;
@@ -256,10 +276,10 @@ public:
 /// This determines if the user has created a value to hold the quantity that is being passed
   bool valueExists( const std::string& name ) const ;
 
-/// This sets the the value with a particular name to the pointer to the data in the MD code
+/// This sets the value with a particular name to the pointer to the data in the MD code
   void setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val );
 
-/// This sets the the forces with a particular name to the pointer to the data in the MD code
+/// This sets the forces with a particular name to the pointer to the data in the MD code
   void setInputForce( const std::string& name, const TypesafePtr & val );
 
 /// This updates the units of the input quantities
@@ -273,6 +293,25 @@ public:
 
 /// GpuDevice Identifier
   int gpuDeviceId=-1;
+
+private:
+/// Some action asked for Action::launch(), see Action::setLaunchable().
+/// Until then the forward loop does nothing more than before
+  bool useLaunch=false;
+/// Counts the forward loops, see Action::forwardLoop
+  std::uint64_t forwardLoop=0;
+/// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
+  std::uint64_t atomsVersion=0;
+/// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
+/// and of the active actions that move the atoms (both increasing)
+  std::vector<std::size_t> launchQueue;
+  std::vector<std::size_t> launchBarriers;
+/// Fills launchQueue and launchBarriers at the start of the forward loop
+  void prepareLaunch();
+/// Called when the action at position done has been calculated: calls Action::launch() for the actions
+/// of launchQueue whose dependencies have all been calculated, up to the next action that moves the atoms
+  void launchReady(std::size_t done);
+public:
 /// Number of replicas, and the index of this one, as seen from every rank.
 /// Set by updateReplicaIdentity(); see getNumberOfReplicas().
   int nReplicas=1;
@@ -448,7 +487,8 @@ public:
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
-  void load(const std::string&);
+  void load(const std::string&, const std::vector<std::string>& includeDirs = {});
+  void loadModule(const std::string&);
 /// Get the suffix string
   const std::string & getSuffix()const;
 /// Set the suffix string
@@ -467,6 +507,10 @@ public:
   void insertFile(FileBase&);
 /// Erase a file
   void eraseFile(FileBase&);
+/// Get the files currently registered with insertFile()
+  const std::set<FileBase*> & getFiles()const {
+    return files;
+  }
 /// Flush all files
   void fflush();
 /// Check if restarting
@@ -560,6 +604,8 @@ public:
   bool hasBeenInitialized() const ;
 /// Check if an action with the given name has been registered by default or LOADed
   bool checkAction(const std::string& action) const;
+/// Handles of libraries visible to this PLUMED instance, for plugin registers.
+  const std::vector<void*>& getLoadedLibraryHandles() const;
 };
 
 /////

@@ -64,8 +64,9 @@ PRINT ARG=mv.moment-2,mv.moment-3 FILE=colvar
 In this second case the four distances are passed to the MOMENTS action as a vector.  The MOMENTS action then outputs 2 components - the
 two central moments that were requested.
 
-These examples are representative the only two ways you can use this action.  In input it can accept either a list of scalars or a single vector.
-It does not accept matrices or a list of vectors in input.
+These examples are representative of the two main ways you can use this action: in input it can accept either a list of scalars or a single vector.
+It can also accept a list of vectors with the same number of elements, in which case the moments are computed element by element,
+i.e. the output components are vectors whose $i$th element is the moment of the $i$th elements of the input vectors.
 
 */
 //+ENDPLUMEDOC
@@ -93,10 +94,10 @@ PLUMED_REGISTER_ACTION(VectorMoments,"MOMENTS_VECTOR")
 
 void Moments::registerKeywords(Keywords& keys) {
   keys.add("compulsory","POWERS","calculate the central moments of the distribution of collective variables. "
-           "The \\f$m\\f$th central moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
-           "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of \\f$m\\f$. The final "
-           "calculated values can be referenced using moment-\\f$m\\f$.");
-  keys.addOutputComponent("moment","default","scalar","the central moments of the distribution of values. The second central moment "
+           "The $m$th central moment of a distribution is calculated using $\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m$, where $\\overline{s}$ is "
+           "the average for the distribution. The POWERS keyword takes a lists of integers as input or a range. Each integer is a value of $m$. The final "
+           "calculated values can be referenced using moment-$m$.");
+  keys.addOutputComponent("moment","default","scalar/vector","the central moments of the distribution of values. The second central moment "
                           "would be referenced elsewhere in the input file using "
                           "<em>label</em>.moment-2, the third as <em>label</em>.moment-3, etc.");
 }
@@ -145,22 +146,20 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
   double mean=0;
   double inorm = 1.0 / static_cast<double>( args.size() );
   if( func.isperiodic ) {
-    double sinsum=0, cossum=0, val;
+    // Circular mean: the angles are measured from the lower end of the domain,
+    // so the mean is min + (max-min)*atan2(<sin>,<cos>)/(2 pi)
+    double sinsum=0, cossum=0;
     for(unsigned i=0; i<args.size(); ++i) {
-      val=func.pfactor*( args[i] - func.min );
+      const double val=func.pfactor*( args[i] - func.min );
       sinsum+=sin(val);
       cossum+=cos(val);
     }
-    mean = 0.5 + atan2( inorm*sinsum, inorm*cossum ) / (2*pi);
-    mean = func.min + (func.max-func.min)*mean;
-  } else {
-    for(unsigned i=0; i<args.size(); ++i) {
-      mean+=args[i];
-    }
-    mean *= inorm;
-  }
-
-  if( func.isperiodic ) {
+    const double meanangle = atan2( sinsum, cossum );
+    mean = func.min + func.max_minus_min*meanangle/(2*pi);
+    // derivative of the circular mean with respect to argument i is cos(theta_i-theta_mean)/R
+    // with R=|sum_j exp(i theta_j)|; it reduces to 1/N when all the angles are equal
+    const double r2 = sinsum*sinsum + cossum*cossum;
+    const double invr = r2>0 ? 1.0/std::sqrt(r2) : 0.0;
     for(unsigned npow=0; npow<func.powers.size(); ++npow) {
       double dev1=0;
       for(unsigned i=0; i<args.size(); ++i) {
@@ -168,7 +167,6 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
         s = Tools::pbc(s);
         dev1+=pow( s*func.max_minus_min, func.powers[npow] - 1 );
       }
-      dev1*=inorm;
       funcout.values[npow] = 0;
       double prefactor = func.powers[npow]*inorm;
       for(unsigned i=0; i<args.size(); ++i) {
@@ -176,11 +174,16 @@ void Moments::calc( const Moments& func, bool noderiv, const View<const double> 
         tmp = func.max_minus_min*Tools::pbc(tmp);
         funcout.values[npow] += inorm*pow( tmp, func.powers[npow] );
         if( !noderiv ) {
-          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1);
+          const double dmean = invr*cos( func.pfactor*( args[i] - func.min ) - meanangle );
+          funcout.derivs[npow][i] = prefactor*(pow( tmp, func.powers[npow] - 1 ) - dev1*dmean);
         }
       }
     }
   } else {
+    for(unsigned i=0; i<args.size(); ++i) {
+      mean+=args[i];
+    }
+    mean *= inorm;
     for(unsigned npow=0; npow<func.powers.size(); ++npow) {
       double dev1=0;
       for(unsigned i=0; i<args.size(); ++i) {

@@ -152,7 +152,7 @@ This input calculates the average value of the local average for those atoms tha
 By including the MASK keyword in the LOCAL_AVERAGE line we reduce the number of local averages that are computed. These quantities are only calculated for those
 atoms that are within the spherical region of interest.  However, we are still asking PLUMED to calculate the coordination numbers for many atoms that
 will not contribute to the final averaged quantity in the COORDINATIONNUMBER commmand with label `cc`.  If you use an input like the one shown below you can ensure
-that only those coordiantion numbers that compute to the final average are computed.
+that only those coordination numbers that compute to the final average are computed.
 
 ```plumed
 # Fixed virtual atom which serves as the probe volume's center (pos. in nm)

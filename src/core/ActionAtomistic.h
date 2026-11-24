@@ -46,6 +46,7 @@ class SelectMassCharge;
 class ActionAtomistic :
   virtual public Action {
   friend class Group;
+  friend class PlumedMain;
   friend class DomainDecomposition;
   friend class colvar::SelectMassCharge;
   friend class ActionWithVirtualAtom;
@@ -56,6 +57,8 @@ class ActionAtomistic :
   std::vector<std::pair<std::size_t,std::vector<std::size_t>>> atom_value_ind_grouped;
 /// unique should be an ordered set since we later create a vector containing the corresponding indexes
   std::vector<AtomNumber>  unique;
+/// No atom is requested twice: the forces of the atoms can be added by several threads
+  bool atomsAreUnique=false;
 /// unique_local should be an ordered set since we later create a vector containing the corresponding indexes
   bool unique_local_needs_update;
   std::vector<AtomNumber>  unique_local;
@@ -76,6 +79,9 @@ class ActionAtomistic :
 
   bool                  donotretrieve;
   bool                  donotforce;
+/// This action has changed the shared positions of the atoms (e.g. FIT_TO_TEMPLATE).
+/// An action that changes the box must also set it (see PlumedMain::justCalculate())
+  bool                  modifiesGlobalAtoms=false;
 
   // EMST
   GenericMolInfo* actionMoldat{nullptr};
@@ -87,6 +93,8 @@ class ActionAtomistic :
 protected:
   bool                  massesWereSet;
   bool                  chargesWereSet;
+/// masses and charges are constant and were copied for the current list of atoms: they are not copied again
+  bool                  massesAndChargesRetrieved=false;
   void setExtraCV(const std::string &name);
 /// Used to interpret whether this index is a virtual atom or a real atom
   std::pair<std::size_t, std::size_t> getValueIndices( const AtomNumber& i ) const ;
@@ -112,6 +120,20 @@ public:
 /// Get total number of atoms, including virtual ones.
 /// Can be used to make a loop on modifyGlobalPosition or getGlobalPosition.
   unsigned getTotAtoms()const;
+/// Translate all the atoms, including virtual ones, in the shared position arrays.
+/// These functions loop directly on the arrays, which is much faster than calling
+/// getGlobalPosition and setGlobalPosition for every atom.
+/// \warning Should be only used by actions that need to modify the shared position array.
+  void translateAllGlobalPositions(const Vector& shift);
+/// Rotate all the atoms, including virtual ones, in the shared position arrays: pos -> matmul(rotation,pos)
+  void rotateAllGlobalPositions(const Tensor& rotation);
+/// Move all the atoms, including virtual ones, in the shared position arrays: pos -> matmul(rotation,pos-shiftBefore)+shiftAfter
+  void rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter);
+/// Get the sum of the forces on all the atoms, including virtual ones
+  Vector getTotalForceOnAllAtoms() const;
+/// Rotate the forces on all the atoms, including virtual ones: f -> matmul(rotation,f).
+/// Returns the sum of the rotated forces.
+  Vector rotateForcesOnAllAtoms(const Tensor& rotation);
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -313,6 +335,7 @@ Vector ActionAtomistic::getGlobalPosition(const std::pair<std::size_t,std::size_
 
 inline
 void ActionAtomistic::setGlobalPosition(const std::pair<std::size_t, std::size_t>& a, const Vector& pos ) {
+  modifiesGlobalAtoms=true;
   xpos[a.first]->data[a.second]=pos[0];
   ypos[a.first]->data[a.second]=pos[1];
   zpos[a.first]->data[a.second]=pos[2];

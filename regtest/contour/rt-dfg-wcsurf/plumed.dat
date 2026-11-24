@@ -25,8 +25,8 @@ DUMPATOMS ATOMS=c1 ARG=clust1 FILE=multicolvar.xyz GREATER_THAN_OR_EQUAL=0.001 U
  
 # Calculate the density of the dnesity of the multicolvar
 dens_dist: DISTANCES ORIGIN=cent ATOMS=c1 COMPONENTS 
-dens_numer: KDE VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
-dens_denom: KDE VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
+dens_numer: KDE VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z KERNEL={GAUSSIAN} GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
+dens_denom: KDE VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z KERNEL={GAUSSIAN} GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
 dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
 
 # Print the cube and find a contour

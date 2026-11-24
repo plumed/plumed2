@@ -1,0 +1,4 @@
+MAZE_RANDOM_WALK without LIGAND: exit code 1
+maze> LIGAND should be specified and contain at least one atom.
+MAZE_OPTIMIZER_BIAS with one argument: exit code 1
+maze> ARG should be the three components of a position (e.g. p.x,p.y,p.z).

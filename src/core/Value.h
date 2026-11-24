@@ -45,7 +45,7 @@ class ActionAtomistic;
 /// PLMD::ActionWithValue is part of a class that calculates multiple components
 /// then the class will contain multiple that will be called label.component-name
 /// This class is used to pass information between different PLMD::Action
-/// objects.  However, if you find a use for a tempory PLMD::Value in some method
+/// objects.  However, if you find a use for a temporary PLMD::Value in some method
 /// you are implementing please feel free to use it.
 class Value {
   friend struct ArgumentsBookkeeping;
@@ -67,6 +67,9 @@ private:
   std::vector<double> data;
 /// The force acting on this quantity
   std::vector<double> inputForce;
+/// The value whose matrix bookkeeping this one was copied from (nullptr: its own).
+/// Lets the task manager pack the bookkeeping of arguments that share it once.
+  const Value* bookeeping_root=nullptr;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce=false;
 /// The way this value is used in the code
@@ -110,6 +113,10 @@ private:
   void setupPeriodicity();
 // bring value within PBCs
   void applyPeriodicity( const unsigned& ival );
+/// Add a force on an element of a sparse matrix (the uncommon case of addForce)
+  void addForceToSparseMatrix( const std::size_t& iforce, double f );
+/// Error raised by addForce, out of line so that addForce can be inlined
+  [[noreturn]] void addForceOutOfRange( const std::size_t& iforce ) const ;
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -135,6 +142,8 @@ public:
   bool checkValueIsActiveForMMul(std::size_t task) const;
 /// A variant of get() for assigning data to an external view (assuems trueind=false), returns the number of arguments assigned
   std::size_t assignValues(View<double> target);
+/// Copy the stored values converted to single precision
+  std::size_t assignValues(View<float> target);
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -157,9 +166,13 @@ public:
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
   void clearDerivatives( const bool force=false );
+/// Clear the derivatives as above, with nt threads (for values with many derivatives)
+  void clearDerivatives( bool force, unsigned nt );
 /// Add some derivative to the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void setDerivative(unsigned i, double d);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
@@ -233,12 +246,16 @@ public:
   bool ignoreStoredValue(const std::string& n) const ;
 /// Set a matrix element to be non zero
   void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+/// The value that holds the original of the matrix bookkeeping of this value (see bookeeping_root)
+  const Value* getBookeepingRoot() const ;
 ///
   unsigned getRowLength( const std::size_t& irow ) const ;
 ///
   unsigned getRowIndex( std::size_t irow, std::size_t jind ) const ;
 ///
   void setRowIndices( const std::size_t& irow, const std::vector<std::size_t>& ind );
+///
+  std::size_t getLengthOfLongestColumn() const ;
 ///
   std::size_t getNumberOfColumns() const ;
 ///
@@ -299,6 +316,8 @@ bool Value::valueHasBeenSet() const {
 
 inline
 const std::string& Value::getName()const {
+  // name is a member; cppcheck 2.13 can mistake it for a local variable.
+  // cppcheck-suppress returnReference
   return name;
 }
 
@@ -334,12 +353,22 @@ void Value::resizeDerivatives(int n) {
 
 inline
 void Value::addDerivative(unsigned i,double d) {
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
+    return;
+  }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
   data[1+i]+=d;
 }
 
 inline
 void Value::setDerivative(unsigned i, double d) {
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
+    return;
+  }
   plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
   data[1+i]=d;
 }
@@ -387,6 +416,19 @@ inline
 void Value::addForce(double f) {
   hasForce=true;
   inputForce[0]+=f;
+}
+
+inline
+void Value::addForce(const std::size_t& iforce, double f, const bool trueind) {
+  hasForce=true;
+  if( shape.size()==2 && !hasDeriv && ncols<shape[1] && trueind ) {
+    addForceToSparseMatrix( iforce, f );
+    return;
+  }
+  if( iforce>=inputForce.size() ) {
+    addForceOutOfRange( iforce );
+  }
+  inputForce[iforce]+=f;
 }
 
 inline
@@ -477,8 +519,14 @@ bool Value::isDerivativeZeroWhenValueIsZero() const {
 }
 
 inline
+const Value* Value::getBookeepingRoot() const {
+  return bookeeping_root ? bookeeping_root : this;
+}
+
+inline
 void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
   plumed_dbg_assert( i<matrix_bookeeping.size() );
+  bookeeping_root=nullptr;
   matrix_bookeeping[i]=n;
 }
 

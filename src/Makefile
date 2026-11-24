@@ -23,7 +23,7 @@ SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 
 # this is cleaning all subdirectories
 clean: $(SUBDIRSCLEAN)
-	rm -f codecheck.log codecheck.fatal
+	rm -f codecheck.log codecheck.fatal codecheck.sarif ruff.sarif
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean

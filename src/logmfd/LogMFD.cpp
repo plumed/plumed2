@@ -357,12 +357,24 @@ The output file replica.out.1 records all collective variables and the Jarzynski
 ...
 ````
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the fictitious variables, velocities, forces, thermostat variables, averages and works are stored in the checkpoint, and the `logmfd.out` and `replica.out` files are cut to the size they had at the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
+#include "tools/Checkpoint.h"
+
+#include <filesystem>
+#ifndef _WIN32
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 #include <iostream>
 
@@ -428,8 +440,13 @@ public:
   static void registerKeywords(Keywords& keys);
 
   explicit LogMFD(const ActionOptions&);
-  void calculate();
-  void update();
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
+  void calculate() override;
+  void update() override;
   void updateNVE();
   void updateNVT();
   void updateVS();
@@ -591,6 +608,9 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   backup.weight = 0.0;
 
   parse("INTERVAL",interval);
+  if( interval<=0 ) {
+    error("INTERVAL must be positive");
+  }
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
   kbt = getkBT(); // read as temperature
@@ -607,6 +627,17 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   parseVector("FICT",fict);
   parseVector("VFICT",vfict);
   parseVector("MFICT",mfict);
+  // FICT, VFICT and MFICT are optional, and parseVector empties the vector of an
+  // optional keyword that is absent: put back the defaults.
+  if( fict.empty() ) {
+    fict.assign(getNumberOfArguments(),-999.0);
+  }
+  if( vfict.empty() ) {
+    vfict.assign(getNumberOfArguments(),0.0);
+  }
+  if( mfict.empty() ) {
+    mfict.assign(getNumberOfArguments(),10000.0);
+  }
 
   parse("XETA",xeta);
   parse("VETA",veta);
@@ -614,12 +645,19 @@ LogMFD::LogMFD( const ActionOptions& ao ):
 
   parse("FLOG",flog);
 
-  // read initial value of work for each replica of LogPD
-  if( multi_sim_comm.Get_size()>1 ) {
-    vector<double> vwork(multi_sim_comm.Get_size(),0.0);
+  // read initial value of work for each replica of LogPD.
+  // multi_sim_comm is only valid on the first process of each replica (see Action::multi_sim_comm),
+  // so the number of replicas and the replica index are taken from getNumberOfReplicas()
+  // and getReplicaIndex(), which are correct on every process.
+  if( getNumberOfReplicas()>1 ) {
+    vector<double> vwork(getNumberOfReplicas(),0.0);
     parseVector("WORK",vwork);
+    // WORK is optional and defaults to 0: parseVector empties vwork if it is absent
+    if( vwork.empty() ) {
+      vwork.assign(getNumberOfReplicas(),0.0);
+    }
     // initial work of this replica
-    work = vwork[multi_sim_comm.Get_rank()];
+    work = vwork[getReplicaIndex()];
   } else {
     work = 0.0;
   }
@@ -647,13 +685,13 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   checkRead();
 
   // output messaages to Plumed's log file
-  if( multi_sim_comm.Get_size()>1 ) {
+  if( getNumberOfReplicas()>1 ) {
     if( TAMD ) {
       log.printf("TAMD-PD, replica parallel of TAMD, no logarithmic flattening.\n");
     } else {
       log.printf("LogPD, replica parallel of LogMFD.\n");
     }
-    log.printf("number of replica : %d.\n", multi_sim_comm.Get_size() );
+    log.printf("number of replica : %d.\n", getNumberOfReplicas() );
   } else {
     if( TAMD ) {
       log.printf("TAMD, no logarithmic flattening.\n");
@@ -746,6 +784,102 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   }
 }
 
+namespace {
+// size of a plain output file (the log files of LogMFD are not OFile, so they are
+// not trimmed by the checkpoint): 0 if it does not exist
+long long fileSizeOrZero(const std::string& name) {
+  std::error_code ec;
+  const auto size=std::filesystem::file_size(name,ec);
+  return ec ? 0 : static_cast<long long>(size);
+}
+// open a plain output file for writing (append=false) or appending (append=true)
+// with the permissions rw-r--r-- (further restricted by the umask): fopen would ask for rw-rw-rw-
+FILE* openLogFile(const char* name,bool append) {
+#ifndef _WIN32
+  const int fd=open(name,O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC),S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+  if(fd<0) {
+    return nullptr;
+  }
+  FILE* fp=fdopen(fd,append?"a":"w");
+  if(!fp) {
+    close(fd);
+  }
+  return fp;
+#else
+  return std::fopen(name,append?"a":"w");
+#endif
+}
+// cut a plain output file at the size recorded in the checkpoint
+void cutFile(const std::string& name,long long size) {
+  if(fileSizeOrZero(name)>size) {
+    std::error_code ec;
+    std::filesystem::resize_file(name,static_cast<std::uintmax_t>(size),ec);
+  }
+}
+}
+
+// Fictitious variables, velocities, thermostat, work and weight, free energy and
+// invariant, and the forces and averages accumulated since the last MFD update.
+// The backup is set again at every update. logmfd.out and replica.out are written
+// with plain C files: their sizes are stored and they are cut at restart, so that
+// the MFD step that is replayed does not write its line twice.
+void LogMFD::writeCheckpoint(CheckpointWriter& w) {
+  w.write("firsttime",(long long) firsttime);
+  w.write("step_initial",(long long) step_initial);
+  w.write("fict",fict);
+  w.write("vfict",vfict);
+  w.write("ffict",ffict);
+  w.write("fict_ave",fict_ave);
+  w.write("xeta",xeta);
+  w.write("veta",veta);
+  w.write("phivs",phivs);
+  w.write("work",work);
+  w.write("weight",weight);
+  w.write("flog",flog);
+  w.write("hlog",hlog);
+  w.write("size_logmfd_out",fileSizeOrZero("logmfd.out"));
+  w.write("size_replica_out",fileSizeOrZero("replica.out"));
+  writeComponentValues(w);
+}
+
+void LogMFD::readCheckpoint(CheckpointReader& r) {
+  const unsigned n=getNumberOfArguments();
+  long long b;
+  r.read("firsttime",b);
+  firsttime=b!=0;
+  r.read("step_initial",b);
+  step_initial=static_cast<int>(b);
+  std::vector<double> f,v,ff,fa;
+  r.read("fict",f);
+  r.read("vfict",v);
+  r.read("ffict",ff);
+  r.read("fict_ave",fa);
+  if(f.size()!=n || v.size()!=n || ff.size()!=n || fa.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  fict=f;
+  vfict=v;
+  ffict=ff;
+  fict_ave=fa;
+  r.read("xeta",xeta);
+  r.read("veta",veta);
+  r.read("phivs",phivs);
+  r.read("work",work);
+  r.read("weight",weight);
+  r.read("flog",flog);
+  r.read("hlog",hlog);
+  long long size;
+  if( comm.Get_rank()==0 ) {
+    if( getReplicaIndex()==0 ) {
+      r.read("size_logmfd_out",size);
+      cutFile("logmfd.out",size);
+    }
+    r.read("size_replica_out",size);
+    cutFile("replica.out",size);
+  }
+  readComponentValues(r);
+}
+
 /**
    \brief calculate forces for fictitious variables at every MD steps.
    \details This function calculates initial values of fictitious variables
@@ -769,9 +903,14 @@ void LogMFD::calculate() {
       fict[i] = getArgument(i);
 
       // average values of fictitious variables by all replica.
-      if( multi_sim_comm.Get_size()>1 ) {
-        multi_sim_comm.Sum(fict[i]);
-        fict[i] /= multi_sim_comm.Get_size();
+      // multi_sim_comm is only valid on the first process of each replica:
+      // sum there and broadcast the result to the other processes of the replica.
+      if( getNumberOfReplicas()>1 ) {
+        if( comm.Get_rank()==0 ) {
+          multi_sim_comm.Sum(fict[i]);
+        }
+        comm.Bcast(fict[i],0);
+        fict[i] /= getNumberOfReplicas();
       }
     }
 
@@ -823,13 +962,16 @@ void LogMFD::calculate() {
     weight = 1.0; // for replica parallel
 
     // open LogMFD's log file
-    if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
-      FILE *outlog = std::fopen("logmfd.out", "w");
+    if( comm.Get_rank()==0 && getReplicaIndex()==0 ) {
+      FILE *outlog = openLogFile("logmfd.out",false);
+      if (!outlog) {
+        error("cannot open logmfd.out for writing");
+      }
 
       // output messages to LogMFD's log file
-      if( multi_sim_comm.Get_size()>1 ) {
+      if( getNumberOfReplicas()>1 ) {
         fprintf(outlog, "# LogPD, replica parallel of LogMFD\n");
-        fprintf(outlog, "# number of replica : %d\n", multi_sim_comm.Get_size() );
+        fprintf(outlog, "# number of replica : %d\n", getNumberOfReplicas() );
       } else {
         fprintf(outlog, "# LogMFD\n");
       }
@@ -862,9 +1004,12 @@ void LogMFD::calculate() {
 
     if( comm.Get_rank()==0 ) {
       // the number of replica is added to file name to distingwish replica.
-      FILE *outlog2 = fopen("replica.out", "w");
+      FILE *outlog2 = openLogFile("replica.out",false);
+      if (!outlog2) {
+        error("cannot open replica.out for writing");
+      }
       fprintf(outlog2, "# Replica No. %d of %d.\n",
-              multi_sim_comm.Get_rank(), multi_sim_comm.Get_size() );
+              getReplicaIndex(), getNumberOfReplicas() );
 
       fprintf(outlog2, "# 1:iter_mfd, 2:work, 3:weight,\n");
       for(unsigned i=0; i<getNumberOfArguments(); ++i) {
@@ -936,11 +1081,14 @@ void LogMFD::update() {
   calcMeanForce();
 
   // record log for fictitious variables
-  if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
+  if( comm.Get_rank()==0 && getReplicaIndex()==0 ) {
     const double ekin = calcEkin();
     const double temp = 2.0*ekin/getNumberOfArguments()/getKBoltzmann();
 
-    FILE *outlog = std::fopen("logmfd.out", "a");
+    FILE *outlog = openLogFile("logmfd.out",true);
+    if (!outlog) {
+      error("cannot open logmfd.out for appending");
+    }
     fprintf(outlog, "%*d", 8, (int)(getStep()-step_initial)/interval);
     fprintf(outlog, "%15.6f", flog);
     fprintf(outlog, "%15.6f", temp);
@@ -958,7 +1106,10 @@ void LogMFD::update() {
   // record log for collective variables
   if( comm.Get_rank()==0 ) {
     // the number of replica is added to file name to distingwish replica.
-    FILE *outlog2 = fopen("replica.out", "a");
+    FILE *outlog2 = openLogFile("replica.out",true);
+    if (!outlog2) {
+      error("cannot open replica.out for appending");
+    }
     fprintf(outlog2, "%*d", 8, (int)(getStep()-step_initial)/interval);
     fprintf(outlog2, "%16.6e ", work);
     fprintf(outlog2, "%16.6e ", weight);
@@ -1148,11 +1299,17 @@ void LogMFD::calcMeanForce() {
     fict_ave[i] = fictValue[i]->bringBackInPbc(fict_ave[i]);
   }
 
-  // for replica parallel
-  if( multi_sim_comm.Get_size()>1 ) {
+  // for replica parallel.
+  // multi_sim_comm is only valid on the first process of each replica:
+  // reduce there and broadcast the results to the other processes of the replica,
+  // so that all of them evolve the fictitious variables in the same way.
+  if( getNumberOfReplicas()>1 ) {
     // find the minimum work among all replicas
     double work_min = work;
-    multi_sim_comm.Min(work_min);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Min(work_min);
+    }
+    comm.Bcast(work_min,0);
 
     // weight of this replica.
     // here, work is reduced by work_min to avoid all exp(-work/kbt)s disconverge
@@ -1164,7 +1321,10 @@ void LogMFD::calcMeanForce() {
 
     // normalize the weight
     double sum_weight = weight;
-    multi_sim_comm.Sum(sum_weight);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Sum(sum_weight);
+    }
+    comm.Bcast(sum_weight,0);
     weight /= sum_weight;
 
     // weighting force of this replica
@@ -1173,9 +1333,10 @@ void LogMFD::calcMeanForce() {
     }
 
     // averaged mean forces of all replica.
-    for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-      multi_sim_comm.Sum(ffict[i]);
+    if( comm.Get_rank()==0 ) {
+      multi_sim_comm.Sum(ffict);
     }
+    comm.Bcast(ffict,0);
     // now, mean force is obtained.
   }
 } // calcMeanForce

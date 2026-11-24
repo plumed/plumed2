@@ -202,7 +202,7 @@ PCA::PCA(const ActionOptions&ao):
       fmt=" FMT=" + fmt;
     }
     readInputLine("DUMPPDB DESCRIPTION=PCA ARG_NAMES=" + argname_str + " ARG=" + getShortcutLabel() + "_pca FILE=" + filename + " STRIDE=" + pstride + fmt );
-  } else {
+  } else if( filename.length()>0 ) {
     if( av2->getName()!="COLLECT" ) {
       error("input data should be VSTACK if list of arguments of COLLECT if atom positions");
     }

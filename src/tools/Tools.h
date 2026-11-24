@@ -95,6 +95,9 @@ class Tools {
   template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
   static constexpr inline T fastpow_rec(T base, T result);
 public:
+/// Quote one literal argument for a POSIX shell, including embedded single quotes.
+  static std::string quoteForShell(const std::string&);
+
   static constexpr std::string_view replicaToken="@replicas:";
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
@@ -155,6 +158,9 @@ public:
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
   template <typename T>
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
   static double pbc(T);
 /// Retrieve a key from a vector of options.
 /// It finds a key starting with "key=" or equal to "key" and copy the
@@ -297,7 +303,6 @@ public:
     set_to_zero(vec[0].data(),s*n*m);
   }
 
-  static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
   /// Build a concatenated exception message.
   /// Should be called with an in-flight exception.
   static std::string concatenateExceptionMessages();
@@ -437,7 +442,7 @@ public:
 ///
 ///C++ wants a raw string (like `R"<<(content)<<"`) for the regexes
 ///and the python package json (and the json format itself actually)
-/// wants the various '\' to be escaped with and '\' becasue the interpreter tries
+/// wants the various '\' to be escaped with and '\' because the interpreter tries
 /// to read anything that begins with '\' as an escape sequence (it does not know that it is an input for a regex)
 ///
 /// For example '\n' will not cause an error but it will be intepreted as and explicit newline, so we we want '\\n' in the json
@@ -526,7 +531,10 @@ bool Tools::parseVector(
 }
 template<typename T>
 void Tools::removeDuplicates(std::vector<T>& vec) {
-  std::sort(vec.begin(), vec.end());
+  // lists of atoms are often sorted already: checking is much cheaper than sorting
+  if(!std::is_sorted(vec.begin(), vec.end())) {
+    std::sort(vec.begin(), vec.end());
+  }
   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
@@ -544,17 +552,18 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 template <typename T>
+#ifdef __CUDACC__
+__host__ __device__
+#endif
 inline double Tools::pbc(T x) {
-#ifdef __PLUMED_PBC_WHILE
-  while (x>0.5) {
-    x-=1.0;
-  }
-  while (x<-0.5) {
-    x+=1.0;
-  }
-  return x;
-#else
-  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+  if constexpr (std::is_same_v<T,float>) {
+    // In single precision the offset used below costs accuracy: the spacing of floats
+    // close to 100 is 7.6e-6, so the result would have an error up to 3.8e-6
+    // whatever the value of x (e.g. in the scaled coordinates of a triclinic box
+    // in the single precision GPU code). x-rint(x) is exact and branch-free.
+    // At exact ties (x=+-0.5) the result can be +0.5 or -0.5 (both are valid images).
+    return x-std::rint(x);
+  } else if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
     constexpr T offset=100.0;
     x+=offset;
     if(x>=0) {
@@ -567,7 +576,6 @@ inline double Tools::pbc(T x) {
   } else {
     return x-floor(x+0.5);
   }
-#endif
 }
 
 template<typename T>

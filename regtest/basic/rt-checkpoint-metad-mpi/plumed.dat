@@ -1,0 +1,10 @@
+# exact restart of METAD and PBMETAD with two replicas and two processes per replica: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=@replicas:{{1,2} {1,3}}
+d2: DISTANCE ATOMS=@replicas:{{3,4} {2,4}}
+# multiple walkers sharing the hills through MPI (one hills file, written by the first replica), grid
+mw: METAD ARG=d1,d2 PACE=4 HEIGHT=1 SIGMA=0.1,0.1 BIASFACTOR=10 TEMP=300 GRID_MIN=0,0 GRID_MAX=3,3 GRID_BIN=60,60 WALKERS_MPI FILE=HILLS_W
+# one per replica, no grid, adaptive hills
+mh: METAD ARG=d1 PACE=2 HEIGHT=0.5 SIGMA=5 ADAPTIVE=DIFF SIGMA_MIN=0.02 SIGMA_MAX=1 FILE=HILLS_H
+pb: PBMETAD ARG=d1,d2 PACE=3 HEIGHT=0.5 SIGMA=0.1,0.1 BIASFACTOR=8 TEMP=300 GRID_MIN=0,0 GRID_MAX=3,3 WALKERS_MPI FILE=HB1,HB2
+PRINT ARG=*.* FILE=COLVAR STRIDE=1 FMT=%.17g

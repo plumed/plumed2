@@ -56,7 +56,7 @@ public:
   using precision = typename cvprecision<CV>::type;
   typedef typename PTM::ParallelActionsInput ParallelActionsInput;
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
-  constexpr static size_t virialSize = 9;
+  static constexpr size_t virialSize = 9;
 private:
 /// The parallel task manager
   PTM taskmanager;
@@ -79,8 +79,8 @@ public:
   unsigned getNumberOfDerivatives() override ;
   void addValueWithDerivatives( const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
   void addComponentWithDerivatives( const std::string& name, const std::vector<std::size_t>& shape=std::vector<std::size_t>() ) override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<double>& inputdata ) const override ;
+  void getAtomicInputData( std::vector<float>& inputdata ) const override ;
   void calculate() override;
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
   static void performTask( std::size_t task_index,
@@ -88,6 +88,9 @@ public:
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
   static int getNumberOfValuesPerTask( std::size_t task_index, const MultiColvarInput& actiondata );
+/// All the components of a task have the same force indices: getForceIndices fills the
+/// rows of force_indices it gets (one on the CPU, see ParallelTaskManager::gatherSharedIndexForces)
+  static constexpr bool forceIndicesSharedByComponents = true;
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
@@ -122,7 +125,12 @@ MultiColvarTemplate<CV,myPTM>::MultiColvarTemplate(const ActionOptions&ao):
   wholemolecules(false),
   needs_charges(keywords.exists("NEEDS_CHARGES")) {
   std::vector<AtomNumber> all_atoms;
-  if( getName()=="POSITION_VECTOR" || getName()=="MASS_VECTOR" || getName()=="CHARGE_VECTOR" ) {
+  // the GPU versions (provided by the openaccPTM plugin) have the same name with ACC at the end
+  std::string name=getName();
+  if( name.size()>3 && name.compare(name.size()-3,3,"ACC")==0 ) {
+    name.erase(name.size()-3);
+  }
+  if( name=="POSITION_VECTOR" || name=="MASS_VECTOR" || name=="CHARGE_VECTOR" ) {
     parseAtomList( "ATOMS", all_atoms );
   }
   if( all_atoms.size()>0 ) {
@@ -211,7 +219,7 @@ void MultiColvarTemplate<T,myPTM>::addComponentWithDerivatives( const std::strin
 }
 
 template <class CV, typename myPTM>
-void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void MultiColvarTemplate<CV,myPTM>::getAtomicInputData( std::vector<double>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -244,7 +252,7 @@ void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<double>& inputdata
 }
 
 template <class CV, typename myPTM>
-void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void MultiColvarTemplate<CV,myPTM>::getAtomicInputData( std::vector<float>& inputdata ) const {
   std::size_t ntasks = getConstPntrToComponent(0)->getNumberOfStoredValues();
   if( inputdata.size()!=5*natoms_per_task*ntasks ) {
     inputdata.resize( 5*natoms_per_task*ntasks );
@@ -264,6 +272,10 @@ void MultiColvarTemplate<CV,myPTM>::getInputData( std::vector<float>& inputdata 
     for(unsigned j=0; j<natoms_per_task; ++j) {
       inputdata[k] = getMass( natoms_per_task*i + j );
       k++;
+    }
+    if( !chargesWereSet && !needs_charges ) {
+      k += natoms_per_task;
+      continue ;
     }
     for(unsigned j=0; j<natoms_per_task; ++j) {
       inputdata[k] = getCharge( natoms_per_task*i + j );
@@ -326,13 +338,14 @@ void MultiColvarTemplate<CV,myPTM>::performTask( std::size_t task_index,
   ColvarOutput cvout { output.values,
                        local_ndev,
                        output.derivatives.data() };
-  CV::calculateCV( ColvarInput{actiondata.mode,
-                               actiondata.nindices_per_task,
-                               input.inputdata+pos_start,
-                               input.inputdata+mass_start,
-                               input.inputdata+charge_start,
-                               *input.pbc},
-                   cvout );
+  ColvarInput cvin{actiondata.mode,
+                   actiondata.nindices_per_task,
+                   input.inputdata+pos_start,
+                   input.inputdata+mass_start,
+                   input.inputdata+charge_start,
+                   *input.pbc};
+  cvin.noderiv = input.noderiv;
+  CV::calculateCV( cvin, cvout );
 }
 
 template <class CV, typename myPTM>
@@ -348,7 +361,8 @@ void MultiColvarTemplate<CV,myPTM>::getForceIndices( std::size_t task_index,
     const MultiColvarInput& actiondata,
     const ParallelActionsInput& input,
     ForceIndexHolder force_indices ) {
-  for(unsigned i=0; i<input.ncomponents; ++i) {
+  // all the components have the same indices: fill the rows that force_indices has
+  for(unsigned i=0; i<force_indices.tot_indices.size(); ++i) {
     std::size_t m=0;
     std::size_t base = 3*task_index*actiondata.nindices_per_task;
     for(unsigned j=0; j<actiondata.nindices_per_task; ++j) {

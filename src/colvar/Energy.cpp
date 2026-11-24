@@ -53,10 +53,21 @@ number of required replicas.
 
 !!! caution "replica exchange"
 
-    Acceptance for replica exchange when ENERGY is biased
-    is computed correctly only if all the replicas have the same
-    potential energy function. This is for instance not true when
-    using GROMACS with lambda replica exchange or with plumed-hrex branch.
+    With different Hamiltonians, the foreign bias must use the local Hamiltonian
+    evaluated at the foreign configuration. Starting with PLUMED 2.11, the GREX
+    interface supports this when the MD engine supplies the current and foreign
+    physical energies, as the GROMACS `-hrex` patches do. This also works with older
+    GROMACS patches when loading the 2.11 kernel. Older PLUMED kernels retain the
+    limitation, even when loaded by a newly patched GROMACS. Updated maintenance
+    kernels in the 2.9 and 2.10 series stop with an error when an ENERGY CV is
+    defined and the host supplies a foreign physical energy through GREX.
+
+    Native GROMACS lambda replica exchange also requires the engine to supply
+    the cross-Hamiltonian potential energy. The updated GROMACS 2026.4 patch uses
+    the existing GREX physical-energy caches for this purpose. GROMACS removes
+    their physical contribution from the GREX correction because its native
+    alchemical acceptance already includes that contribution. Older patches do not supply this value, so loading a
+    new kernel alone does not fix lambda exchange with ENERGY. See \issue{115}.
 
 */
 //+ENDPLUMEDOC

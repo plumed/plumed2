@@ -154,6 +154,8 @@ public:
   void parseInput( ActionVolume<VolumeTetrapore>* action );
   static void parseAtoms( ActionVolume<VolumeTetrapore>* action,
                           std::vector<AtomNumber>& atoms );
+  // the assignment is customized (see below): copy construction is the default one
+  VolumeTetrapore(const VolumeTetrapore&) = default;
   VolumeTetrapore& operator=( const VolumeTetrapore& m ) {
     jacob_det=m.jacob_det;
     len_bi=m.len_bi;

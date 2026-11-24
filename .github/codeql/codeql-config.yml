@@ -1,0 +1,24 @@
+name: "PLUMED CodeQL configuration"
+
+# These path filters apply to interpreted and no-build analysis. Manual C++
+# builds still analyze compiled imports; filter-sarif.py removes the quality
+# (non-security) results in the imported sources listed below, leaving their
+# security diagnostics enabled.
+#
+# Third-party code that is kept as close as possible to the upstream version
+# (it is updated by re-importing it, so local style fixes would be lost):
+#   lepton, asmjit, xdrfile, small_vector, vesin, gemmi
+#
+# Test and tutorial scripts (regression tests, python tests, tutorial scripts):
+# short-lived scripts for which resource handling or unreachable-code notes are not relevant.
+paths-ignore:
+  - src/lepton
+  - src/asmjit
+  - src/xdrfile
+  - src/small_vector
+  - src/gemmi
+  - src/metatomic/vesin.cpp
+  - regtest
+  - python/test
+  - plugins/*/regtest
+  - plugins/pycv/pythontests

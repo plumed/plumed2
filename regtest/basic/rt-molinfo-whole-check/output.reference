@@ -1,0 +1,8 @@
+whole.pdb ENTITY0=1-304 : accepted
+torn.pdb ENTITY0=1-304 : warning, in the box of its CRYST1 record, 14 atoms are across the periodic boundary from the atom before them in their chain: 200 (SER13) 202 (SER13) 205 (SER13) 206 (SER13) 207 (SER13) 208 (SER13) 211 (SER14) 213 (SER14) 216 (SER14) 217 (SER14) and 4 more
+torn_nocryst.pdb ENTITY0=1-304 : accepted
+torn_placeholder.pdb ENTITY0=1-304 : accepted
+torn_zero.pdb ENTITY0=1-304 : accepted
+torn_crystal.pdb ENTITY0=1-304 : accepted
+dna_whole.pdb ENTITY0=1-243 : accepted
+dna_torn.pdb ENTITY0=1-243 : warning, in the box of its CRYST1 record, 1 atoms are across the periodic boundary from the atom before them in their chain: 122 (DT7)

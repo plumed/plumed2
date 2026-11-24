@@ -113,7 +113,7 @@ set -e
 if ! test "$VALIDATED" ; then
   update_changelog CHANGES/v$shortversion.md $version $shortversion "coming soon"
   echo 
-  msg="Travis tests for v$version
+  msg="CI tests for v$version
 "
   echo "Now I will add an empty commit and push the result to origin"
   echo "I will use the following commands:"
@@ -128,8 +128,8 @@ if ! test "$VALIDATED" ; then
   git push -f origin v$shortversion:test-v$shortversion
   echo
   echo "Now you should go at this link:"
-  echo "  http://travis-ci.org/plumed/plumed2/builds"
-  echo "and wait for travis to finish the tests"
+  echo "  https://github.com/plumed/plumed2/actions"
+  echo "and wait for the GitHub Actions tests to finish"
   echo "In case of failures, fix and repeat the procedure"
   echo "Also check the online manual, that should be here:"
   echo "  http://www.plumed.org/doc-v$shortversion"

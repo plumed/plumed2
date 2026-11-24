@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/Checkpoint.h"
 
 //+PLUMEDOC GRIDCALC ACCUMULATE
 /*
@@ -103,7 +104,7 @@ a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
 DUMPGRID ARG=a FILE=histo.grid
 ```
 
-At first glance the fact that we use a [KDE](KDE.md) action to construct an instaneous histogram from a single
+At first glance the fact that we use a [KDE](KDE.md) action to construct an instantaneous histogram from a single
 distance may appear odd.  The reason for doing this, however, is to introduce a clear distinction between
 the syntaxes that are used for spatial and temporal averaging.  To see what I mean consider the following input:
 
@@ -122,9 +123,13 @@ a: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
 DUMPGRID ARG=a FILE=histo.grid
 ```
 
-This input computes 5 distances. Kernels correpsonding to all five of these distances are added to the instaneous
+This input computes 5 distances. Kernels corresponding to all five of these distances are added to the instantaneous
 histogram that is constructed using the [KDE](KDE.md) action.  When we call the accumulate action here we are thus
-not simply adding a single kernel to the accumulated grid when we add the the elements from `kde`.
+not simply adding a single kernel to the accumulated grid when we add the elements from `kde`.
+
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the accumulated data (scalar or grid) is stored in the checkpoint, so that sums, averages and histograms continue exactly after a restart.
 
 */
 //+ENDPLUMEDOC
@@ -141,6 +146,11 @@ private:
   unsigned clearstride;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   Accumulate( const ActionOptions& );
   unsigned getNumberOfDerivatives() override;
   bool calculateOnUpdate() override {
@@ -168,6 +178,7 @@ void Accumulate::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","STRIDE","1","the frequency with which the data should be collected and added to the quantity being averaged");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear all the accumulated data.  The default value "
            "of 0 implies that all the data will be used and that the grid will never be cleared");
+  keys.addFlag("DO_AFTER_FINAL_STEP",false,"do a final accumulation step at end the trajectory even if the trajectory's length is not a multiple of the stride");
   keys.setValueDescription("scalar/grid","a sum calculated from the time series of the input quantity");
 }
 
@@ -184,6 +195,9 @@ Accumulate::Accumulate( const ActionOptions& ao ):
     error("input to the accumulate action should be a scalar or a grid");
   }
 
+  if( getStride()==0 ) {
+    error("STRIDE should be a positive number of steps");
+  }
   parse("CLEAR",clearstride);
   if( clearstride>0 ) {
     if( clearstride%getStride()!=0 ) {
@@ -204,6 +218,81 @@ unsigned Accumulate::getNumberOfDerivatives() {
     return getPntrToArgument(0)->getNumberOfGridDerivatives();
   }
   return getPntrToArgument(0)->getNumberOfDerivatives();
+}
+
+// The accumulated data is the state that survives from one step to the next (this
+// is the value of type "average"): the data of the output value, with the
+// derivatives for grids, and whether it has to be cleared at the next update
+void Accumulate::writeCheckpoint(CheckpointWriter& w) {
+  w.write("clearnextstep",(long long) clearnextstep);
+  if( clearnextstep ) {
+    return;
+  }
+  const Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  for(const auto& d : myout->getShape()) {
+    shape.push_back(d);
+  }
+  w.write("shape",shape);
+  std::vector<double> data;
+  const std::size_t nvals = myout->getNumberOfValues();
+  for(std::size_t i=0; i<nvals; ++i) {
+    data.push_back( myout->get(i) );
+  }
+  w.write("data",data);
+  if( myout->getRank()>0 ) {
+    std::vector<double> der;
+    const unsigned nder = myout->getNumberOfGridDerivatives();
+    for(std::size_t i=0; i<nvals; ++i) {
+      for(unsigned j=0; j<nder; ++j) {
+        der.push_back( myout->getGridDerivative(i,j) );
+      }
+    }
+    w.write("derivatives",der);
+  }
+}
+
+void Accumulate::readCheckpoint(CheckpointReader& r) {
+  long long cl;
+  r.read("clearnextstep",cl);
+  clearnextstep = cl!=0;
+  if( clearnextstep ) {
+    return;
+  }
+  Value* myout = getPntrToComponent(0);
+  std::vector<long long> shape;
+  r.read("shape",shape);
+  std::vector<std::size_t> ss(shape.begin(),shape.end());
+  if( ss!=getPntrToArgument(0)->getShape() ) {
+    error("the checkpoint was written with a different shape of the argument");
+  }
+  if( myout->getShape()!=ss ) {
+    myout->setShape(ss);
+  }
+  std::vector<double> data;
+  r.read("data",data);
+  const std::size_t nvals = myout->getNumberOfValues();
+  if( data.size()!=nvals ) {
+    error("the checkpoint was written with a different number of values");
+  }
+  // the data of a grid holds the values and the derivatives: clear first, then restore
+  myout->clearDerivatives(true);
+  for(std::size_t i=0; i<nvals; ++i) {
+    myout->set( i, data[i] );
+  }
+  if( myout->getRank()>0 ) {
+    std::vector<double> der;
+    r.read("derivatives",der);
+    const unsigned nder = myout->getNumberOfGridDerivatives();
+    if( der.size()!=nvals*nder ) {
+      error("the checkpoint was written with a different number of derivatives");
+    }
+    for(std::size_t i=0; i<nvals; ++i) {
+      for(unsigned j=0; j<nder; ++j) {
+        myout->addGridDerivatives( i, j, der[i*nder+j] );
+      }
+    }
+  }
 }
 
 void Accumulate::update() {

@@ -47,7 +47,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 NOPBC
 ```
 
 Once you have calculated your distance matrix in this way you can do many of the operations that were discussed for [CONTACT_MATRIX](CONTACT_MATRIX.md) with the output.
-For example, you can use the COMPONENTS flag to calcuate the $x$, $y$ and $z$ components of the vectors connecting the atoms in your two groups by using
+For example, you can use the COMPONENTS flag to calculate the $x$, $y$ and $z$ components of the vectors connecting the atoms in your two groups by using
 an input like that shown below:
 
 ```plumed
@@ -56,7 +56,7 @@ d1: DISTANCE_MATRIX GROUP=1-7 COMPONENTS
 
 ## Optimisation details
 
-If for some reaon, you only want to calculate the distances if they are less than a certain cutoff can add the LINKCELL_CUTOFF keyword as follows:
+If for some reason, you only want to calculate the distances if they are less than a certain cutoff can add the LINKCELL_CUTOFF keyword as follows:
 
 ```plumed
 d3: DISTANCE_MATRIX GROUP=1-7 LINKCELL_CUTOFF=1.0
@@ -64,7 +64,7 @@ d3: DISTANCE_MATRIX GROUP=1-7 LINKCELL_CUTOFF=1.0
 
 Using a LINKCELL_CUTOFF ensures that PLUMED can use the link cell technique that is described in the documentation for the [CONTACT_MATRIX](CONTACT_MATRIX.md) action to optimise the calculation.
 Using this technique ensures that many of the distance calculations are avoided. However, this __does not__ mean that PLUMED will not evaluate and store the distances between pairs of
-atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are are calculated and stored__.
+atoms that are more than the cutoff apart. __The distances for some of the values that are larger than the cutoff are calculated and stored__.
 
 You can see how to work around this strange implementation detail in the following example input.  Lets suppose that we want to calculate the average distances
 between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this we would use an input similar to the one shown below:
@@ -72,8 +72,9 @@ between atoms 1-10 and all the atoms that are within 1 nm of them.  To do this w
 ```plumed
 d5: DISTANCE_MATRIX GROUPA=1-10 GROUPB=1-250 LINKCELL_CUTOFF=1.0
 # Apply a switching function to determine the elements in the matrix d5
-# where the distance is less than the cutoff
-cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO
+# where the distance is less than the cutoff. MASK=d5 computes it only for the
+# elements that d5 stores: the others are not zero distances, they are beyond the cutoff
+cut: CUSTOM ARG=d5 FUNC=step(1-x) PERIODIC=NO MASK=d5
 # Taking the element-wise product in the next command gives us a matrix
 # where every element that is greater than the cutoff is zero.
 d5cut: CUSTOM ARG=d5,cut FUNC=x*y PERIODIC=NO
@@ -102,7 +103,7 @@ average: CUSTOM ARG=totdist,ndist FUNC=x/y PERIODIC=NO
 DUMPATOMS ATOMS=1-10 ARG=average FILE=avdist.xyz
 ``
 
-The advantage when using this input is the the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
+The advantage when using this input is the final vector `average` that is evaluated here is a continous function. You can thus evaluate derivatives for it and use it as input in a biasing
 method.
 
 Also notice that you can use MASK to calculate a subset of the rows in the DISTANCE matrix as is done in the following example:
@@ -159,6 +160,7 @@ PLUMED_REGISTER_ACTION(dmap,"DISTANCE_MATRIX")
 
 void DistanceMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","LINKCELL_CUTOFF","-1","use a link cells algorithm with this cutoff to optimise the calculation - distances (but not derivatives) for atoms that are further apart than this cutoff and that in the same link cells will still be computed");
+  keys.addDeprecatedKeyword("CUTOFF","LINKCELL_CUTOFF");
 }
 
 void DistanceMatrix::parseInput( AdjacencyMatrixBase<DistanceMatrix>* action ) {

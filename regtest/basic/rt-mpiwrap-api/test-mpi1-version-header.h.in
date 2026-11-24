@@ -1,0 +1,17 @@
+/* Wrap a real MPI-3/4 header while presenting the MPI-1.1 declaration set. */
+#include_next <mpi.h>
+
+#undef MPI_VERSION
+#define MPI_VERSION 1
+#undef MPI_SUBVERSION
+#define MPI_SUBVERSION 1
+
+/* Turn accidental references to post-MPI-1 declarations into hard errors. */
+#define MPI_Comm_f2c PLUMED_MPIW_MPI2_FUNCTION_MUST_NOT_BE_USED
+#define MPI_Finalized PLUMED_MPIW_MPI2_FUNCTION_MUST_NOT_BE_USED
+#define MPI_Comm_get_errhandler PLUMED_MPIW_MPI2_FUNCTION_MUST_NOT_BE_USED
+#define MPI_Comm_set_errhandler PLUMED_MPIW_MPI2_FUNCTION_MUST_NOT_BE_USED
+#define MPI_IN_PLACE PLUMED_MPIW_MPI2_CONSTANT_MUST_NOT_BE_USED
+#define MPI_LONG_LONG_INT PLUMED_MPIW_MPI2_CONSTANT_MUST_NOT_BE_USED
+#define MPI_LONG_LONG PLUMED_MPIW_MPI2_CONSTANT_MUST_NOT_BE_USED
+#define MPI_UNSIGNED_LONG_LONG PLUMED_MPIW_MPI2_CONSTANT_MUST_NOT_BE_USED

@@ -1,0 +1,7 @@
+# PRINT ARG=* takes the values of all the actions, also the ones created by the shortcuts.
+# With STRANDS_CUTOFF only some of the strand pairs are computed: these vectors cannot be printed, and
+# PRINT stopped with "not all elements are computed" (PLUMED-NEST 24.033). They are now left out of *.
+MOLINFO STRUCTURE=amyloid.pdb
+p: PARABETARMSD RESIDUES=all TYPE=OPTIMAL STRANDS_CUTOFF=1.0 R_0=0.1
+PRINT ARG=* FILE=all
+PRINT ARG=p FILE=colvar FMT=%8.4f

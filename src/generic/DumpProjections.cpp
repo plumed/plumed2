@@ -139,6 +139,7 @@ DumpProjections::DumpProjections(const ActionOptions&ao):
   }
   parse("FMT",fmt);
   fmt=" "+fmt;
+  of.link(*this);
   of.open(file);
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());

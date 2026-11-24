@@ -1,0 +1,2 @@
+type=make
+export PLUMED_STACK_TRACE=no

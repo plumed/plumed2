@@ -1,0 +1,10 @@
+# MFILTER_MORE and MFILTER_LESS on the output of LOCAL_Q6 (as in PLUMED-NEST 21.011, 21.044, 23.026):
+# the shortcuts did not document the type of their value, and the run stopped with "map::at"
+grp: GROUP ATOMS=1-60
+q6: Q6 SPECIES=grp SWITCH={RATIONAL R_0=0.5 D_MAX=0.8}
+lq6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL R_0=0.5 D_MAX=0.8}
+fm: MFILTER_MORE DATA=lq6 SWITCH={GAUSSIAN R_0=0.3 D_MAX=0.5} HIGHEST
+fl: MFILTER_LESS DATA=lq6 SWITCH={GAUSSIAN R_0=0.3 D_MAX=0.5}
+sm: SUM ARG=fm PERIODIC=NO
+sl: SUM ARG=fl PERIODIC=NO
+PRINT ARG=sm,sl,fm_highest FILE=colvar FMT=%8.4f

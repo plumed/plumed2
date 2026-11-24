@@ -1,0 +1,10 @@
+x: DISTANCE ATOMS=1,2
+# instantaneous KDE of x: its maximum is at x
+kde: KDE ARG=x GRID_MIN=0.0 GRID_MAX=3.0 GRID_BIN=300 BANDWIDTH=0.1
+max: FIND_GRID_MAXIMUM ARG=kde
+maxn: FIND_GRID_MAXIMUM ARG=kde NOINTERPOL
+# the same point is the minimum of -kde
+mkde: CUSTOM ARG=kde FUNC=-x PERIODIC=NO
+min: FIND_GRID_MINIMUM ARG=mkde
+diff: CUSTOM ARG=max.x_opt,x,min.x_opt,max.optval,min.optval VAR=a,b,c,d,f FUNC=abs(a-b)+abs(a-c)+abs(d+f) PERIODIC=NO
+PRINT ARG=x,max.x_opt,max.optval,maxn.x_opt,maxn.optval,diff FILE=colvar FMT=%8.4f

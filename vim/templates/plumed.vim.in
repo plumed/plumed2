@@ -1,0 +1,342 @@
+" Vim syntax file
+" Language: PLUMED
+
+if exists("b:current_syntax")
+  finish
+endif
+
+" Keep the installed dictionary usable on its own (including vim2html).
+" Interactive PLUMED buffers can replace it with metadata from live modules.
+let s:path=expand('<sfile>:p:h:h')
+if &l:filetype ==# 'plumed' && filereadable(s:path . '/autoload/plumed.vim')
+  execute 'source ' . fnameescape(s:path . '/autoload/plumed.vim')
+  if plumed#Load(s:path)
+    finish
+  endif
+endif
+
+syntax case ignore
+
+let b:current_syntax="plumed"
+
+if get(g:, 'plumed_shortcuts', 0)
+  noremap  <buffer> <F2> :PHelp<CR>
+  inoremap <buffer> <F2> <Esc>:PHelp<CR>
+endif
+
+" path for plumed plugin
+let s:path=expand('<sfile>:p:h:h')
+let b:plumed_help_root=s:path
+
+" All except space and hash are in word
+setlocal iskeyword=33,34,36-126
+
+" Matching dots, possibly followed by a comment
+" Only dots are part of the match
+syntax match plumedDots /\v\.\.\.(\s*(#.*)*$)@=/ contained
+highlight default link plumedDots Type
+
+let b:plumedActions=[]
+let b:plumedDictionary={}
+
+@PLUMED_DICTIONARY@
+function! PlumedDefineSyntax()
+  let b:plumedActions=[]
+
+  for key in sort(keys(b:plumedDictionary))
+    call add(b:plumedActions,{"word":key})
+  endfor
+
+for a in b:plumedActions
+  let action=a["word"]
+" vim variables cannot contain -
+" we convert it to triple ___
+  let action_=substitute(action,"-","___","g")
+
+  for b in b:plumedDictionary[action]
+    if(b["menu"]=="(numbered)")
+      let string='"\v<' . b["word"] . '[0-9]*\=[^{ #]*"'
+    elseif(b["menu"]=="(option)")
+" this is necessary since word for option is e.g ."RESTART="
+      let string='"\v<' . substitute(b["word"],"=","","") . '\=[^{ #]*"'
+    elseif(b["menu"]=="(flag)")
+      let string='"\v<' . b["word"] . '>"'
+    else
+      continue
+    endif
+    execute 'syntax match   plumedKeywords' . action_ . ' ' . string . ' contained contains=plumedStringInKeyword,plumedFillTodo'
+  endfor
+
+" single line, with explicit LABEL
+" matching action at beginning of line, till the end of the line
+" can contain all the keywords associated with this action, plus strings, label, and comments
+execute 'syntax region plumedLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedStringOneline,plumedFillTodo fold'
+" multiple line, with explicit LABEL
+" first row might contain extra words before arriving at the dots
+" thus continuation dots are matched by plumedDots
+" matching action at beginning of line, followed by dots and possibly by a comment
+" ends on dots, possibly followed by the same action name and possibly a comment
+" comments and initial dots are not part of the match
+" can contain all the keywords associated with this action, plus strings, label, and comments
+execute 'syntax region plumedCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+' . action . ')?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedLabel,plumedString,plumedDots,plumedFillTodo fold'
+" single line, with label: syntax
+" matching label followed by action
+" can contain all the keywords associated with this action, plus strings and comments
+" labels are not allwed
+execute 'syntax region plumedLLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*[^ #@][^ #]*:\s+' . action . '>/ excludenl end=/$/ contains=plumedComment,plumedKeywords' . action_ . ',plumedStringOneline,plumedFillTodo fold'
+" multiple line, with label: syntax
+" first row might contain extra words before arriving at the dots
+" thus continuation dots are matched by plumedDots
+" matching label, action, dots, and possibly comment
+" comments and dots are not part of the match
+" ends on dots, possibly followed by the same label and possibly a comment
+" comments and initial dots are not part of the match
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+' . action . '>(.+\.\.\.\s*(#.*)*$)@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedDots,plumedFillTodo fold'
+" this is a hack required to match the ACTION when it is in the second line
+execute 'syntax match plumedSpecial' . action_ . ' /\v(\.\.\.\s*(#.*)*\_s*)@<=' . action . '>/ contained'
+execute 'highlight default link plumedSpecial' . action_ . ' Type'
+" multiple line, with label: syntax
+" here ACTION is on the second line
+" matching label, dots, possibly comments, newline, then action name
+" comments, dots, and action are not part of the match
+" ends on dots possibly followed by the same label and possibly a comment
+execute 'syntax region plumedLCLine' . action_ . ' matchgroup=plumedAction' . action_ . ' start=/\v^\s*\z([^ #@][^ #]*\:)\s+(\.\.\.\s*(#.*)*\_s*' . action . ')@=/ end=/\v^\s*\.\.\.(\s+\z1)?\s*((#.*)*$)@=/ contains=plumedComment,plumedKeywords' . action_ . ',plumedString,plumedSpecial' . action_ . ',plumedDots,plumedFillTodo fold'
+execute 'highlight default link plumedAction' . action_ . ' Type'
+execute 'highlight default link plumedKeywords' . action_ . ' Statement'
+endfor
+
+" comments and strings last, with highest priority
+syntax region  plumedString start=/\v\{/  end=/\v\}/ contained contains=ALL fold
+syntax region  plumedStringOneline start=/\v\{/  end=/\v\}/ oneline contained contains=ALL fold
+highlight default link plumedString String
+highlight default link plumedStringOneline String
+syntax match   plumedStringInKeyword /\v(<[^ #]+\=)@<=[^ #]+/ contained
+highlight default link plumedStringInKeyword String
+
+" Matching label
+syntax match   plumedLabel "\v<LABEL\=[^ #]*" contained contains=plumedLabelWrong,plumedFillTodo
+highlight default link plumedLabel Type
+
+" Errors
+syntax match   plumedLabelWrong "\v<LABEL\=\@[^ #]*" contained
+highlight default link plumedLabelWrong Error
+
+" Todo
+" This is used since the Trieste tutorials to indicate
+" parts that should be filled by the user
+syntax match   plumedFillTodo "__FILL__"
+highlight default link plumedFillTodo Todo
+
+syntax region  plumedComment start="\v^\s*ENDPLUMED>" end="\%$" fold
+syntax match   plumedComment excludenl "\v#.*$"
+highlight default link plumedComment Comment
+endfunction
+
+call PlumedDefineSyntax()
+
+
+function! PlumedSyntaxSync() abort
+  if get(g:, 'plumed_syntax_sync', '') ==# 'fromstart'
+    syntax sync fromstart
+  elseif get(g:, 'plumed_syntax_sync', '') ==# 'bounded'
+    execute 'syntax sync minlines=' . max([1, get(g:, 'plumed_syntax_minlines', 100)])
+  endif
+endfunction
+call PlumedSyntaxSync()
+if exists('g:plumed_synmaxcol')
+  let &l:synmaxcol = g:plumed_synmaxcol
+endif
+
+function! PlumedGuessRegion() abort
+  " Force accurate context only for this query. Do not permanently turn every
+  " later redraw into a scan from the beginning of a large input file.
+  syntax sync fromstart
+  try
+    for id in synstack(line('.'), max([1, col('.') - (col('.') > 1)]))
+      let name = synIDattr(id, 'name')
+      if name =~# '^plumed[LC]*Line'
+        return substitute(substitute(name, '^plumed[LC]*Line', '', ''), '___', '-', 'g')
+      endif
+    endfor
+    return ''
+  finally
+    " Restore the defaults or the explicit user policy after the query.
+    syntax sync clear
+    call PlumedSyntaxSync()
+  endtry
+endfunction
+
+fun! PlumedContextManual()
+  if(exists("b:plumed_helpfile"))
+    quit
+    return
+  endif
+  let m=PlumedGuessRegion()
+  if(m=="")
+    return
+  else
+    let name=b:plumed_help_root . "/help/" . m . ".txt"
+    if(exists("b:plumed_helpfile_vertical"))
+      execute 'rightbelow vsplit | view ' . fnameescape(name)
+    else
+      execute 'rightbelow split | view ' . fnameescape(name)
+    endif
+    let b:plumed_helpfile=1
+    command! -buffer -nargs=0 PHelp call PlumedContextManual()
+" this is to allow closing the window with F2
+    if get(g:, 'plumed_shortcuts', 0)
+      noremap  <buffer> <F2> :PHelp<CR>
+    endif
+  endif
+endfunction
+
+fun! PlumedManualV()
+  let b:plumed_helpfile_vertical=1
+endfunction
+
+fun! PlumedManualH()
+  unlet! b:plumed_helpfile_vertical
+endfunction
+
+command! -buffer -nargs=0 PHelp call PlumedContextManual()
+
+" Match a value on the current line. Braces protect paths containing spaces.
+function! PlumedValueContext() abort
+  let before = strpart(getline('.'), 0, col('.') - 1)
+  let token = matchlist(before, '\C\([A-Za-z_][A-Za-z_0-9]*\)=\({[^}]*\|[^{}[:space:]]*\)$')
+  if empty(token)
+    return {}
+  endif
+  let action = PlumedGuessRegion()
+  if index(map(synstack(line('.'), max([1, col('.') - 1])), "synIDattr(v:val, 'name')"), 'plumedComment') >= 0
+    return {}
+  endif
+  let keyword = toupper(token[1])
+  let paths = {'LOAD': ['FILE', 'INCLUDE_PATH'], 'MOLINFO': ['STRUCTURE'],
+        \ 'RMSD': ['REFERENCE'], 'FIT_TO_TEMPLATE': ['REFERENCE'],
+        \ 'DRMSD': ['REFERENCE'], 'ERMSD': ['REFERENCE'],
+        \ 'MULTI_RMSD': ['REFERENCE'], 'PATHMSD': ['REFERENCE'],
+        \ 'PDB2CONSTANT': ['REFERENCE'], 'PCAVARS': ['REFERENCE'],
+        \ 'INCLUDE': ['FILE'], 'READ': ['FILE']}
+  if action ==# 'LOAD' && keyword ==# 'MODULE'
+    let kind = 'module'
+  elseif index(get(paths, action, []), keyword) >= 0
+    let kind = keyword ==# 'INCLUDE_PATH' ? 'dir' : 'file'
+  else
+    return {}
+  endif
+  let value = token[2]
+  let start = strlen(before) - strlen(value)
+  let braced = value =~# '^{'
+  if braced
+    let start += 1
+    let value = strpart(value, 1)
+  endif
+  if kind ==# 'dir'
+    " Keep preceding entries in LOAD's colon-separated INCLUDE_PATH list.
+    let separator = strridx(value, ':')
+    if has('win32') && separator == 1 && value =~# '^\a:[/\\]'
+      let separator = -1
+    endif
+    let start += separator + 1
+  endif
+  return {'start': start, 'kind': kind, 'braced': braced}
+endfunction
+
+function! PlumedComplete(findstart, base) abort
+  if a:findstart
+    let b:plumed_completion = PlumedValueContext()
+    if !empty(b:plumed_completion)
+      return b:plumed_completion.start
+    endif
+    let before = strpart(getline('.'), 0, col('.') - 1)
+    return match(before, '[A-Za-z_0-9=.-]*$')
+  endif
+
+  let context = get(b:, 'plumed_completion', {})
+  if !empty(context)
+    if context.kind ==# 'module'
+      let modules = uniq(sort(copy(get(b:, 'plumedModules', []))
+            \ + get(b:, 'plumed_module_candidates', [])))
+      return filter(modules, 'stridx(v:val, a:base) == 0')
+    endif
+    " Files are case-sensitive where the filesystem is. Do not interpret glob
+    " metacharacters in a typed prefix as a request to broaden the search.
+    let literals = {'[': '[[]', ']': '[]]', '*': '[*]', '?': '[?]'}
+    let pattern = join(map(split(a:base, '\zs'), 'get(literals, v:val, v:val)'), '')
+    let paths = getcompletion(pattern, context.kind)
+    let result = []
+    for path in paths
+      let directory = isdirectory(path)
+      let brace = context.braced || path =~# '[[:space:]#]'
+      let word = (!context.braced && brace ? '{' : '') . path
+      if brace && !directory && strpart(getline('.'), col('.') - 1, 1) !=# '}'
+        let word .= '}'
+      endif
+      call add(result, {'word': word, 'abbr': path, 'menu': directory ? '(directory)' : '(file)'})
+    endfor
+    return result
+  endif
+
+  let action = PlumedGuessRegion()
+  let names = map(synstack(line('.'), max([1, col('.') - 1])), "synIDattr(v:val, 'name')")
+  if index(names, 'plumedComment') >= 0
+    return []
+  endif
+  let candidates = empty(action) ? copy(b:plumedActions) : copy(b:plumedDictionary[action])
+  let labeled = !empty(filter(copy(names), "v:val =~# '^plumedL[C]*Line'"))
+  if labeled
+    call filter(candidates, "get(v:val, 'word', '') !=# 'LABEL='")
+  endif
+  call add(candidates, {'word': '#', 'menu': '(add comment)'})
+  if empty(action) && !has_key(b:plumedDictionary, 'ENDPLUMED')
+    call add(candidates, {'word': 'ENDPLUMED', 'menu': '(end input)'})
+  endif
+  return filter(candidates, "stridx(toupper(v:val.word), toupper(a:base)) == 0")
+endfunction
+setlocal omnifunc=PlumedComplete
+
+" inspect the entire file to find lines containing
+" non highlighted characters
+fun! PlumedAnnotateSyntax()
+" buffer where errors are written
+  let buffer=[]
+  let l=1
+" loop over lines
+  while l <= line("$")
+    let line=getline(l)
+    let p=0
+" line is assumed right a priori
+    let wrong=0
+" position the cursor and redraw the screen
+    call cursor(l,1)
+    redraw! "! is required for some reason
+    while p <len(line)
+      let stack=synstack(l,p+1)
+      if line[p] !~ "[ \t]"
+        if(len(stack)==0)
+          let wrong=1
+        elseif(synIDattr(stack[len(stack)-1],"name")=~"^plumed[LC]*Line.*")
+          let wrong=1
+        endif
+      endif
+      let annotation=""
+      for s in stack
+        let annotation=annotation."+".synIDattr(s,"name")
+      endfor
+      call add(buffer,printf("ANNOTATION %5d %3d %s %s",l,p,line[p],annotation))
+      let p=p+1
+    endwhile
+    
+    if(wrong)
+      call add(buffer,"ERROR AT LINE ".l." : ".line)
+    endif
+    let l=l+1
+  endwhile
+" dump the buffer on a new window
+  new
+  for l in buffer
+    put=l
+  endfor
+endfun
+

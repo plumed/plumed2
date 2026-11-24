@@ -83,7 +83,7 @@ w: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1
 g: GYRATION ATOMS=1-100 WEIGHTS=w TYPE=RADIUS
 ```
 
-In calculating the gyration radius you first calculate the [GYRATION_TENSOR](GYRATION_TENSOR.md). Instad of computing the radius from this
+In calculating the gyration radius you first calculate the [GYRATION_TENSOR](GYRATION_TENSOR.md). Instead of computing the radius from this
 tensor you can instead compute the trace of the tensor by using the following input:
 
 ```plumed

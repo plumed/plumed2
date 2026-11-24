@@ -1,0 +1,25 @@
+plumed_modules=fisst
+type=driver
+export PLUMED_STACK_TRACE=no
+arg="--plumed plumed.dat --ixyz trajectory.xyz --kt 0.593"
+extra_files="../../trajectories/trajectory.xyz"
+driver_args="--ixyz trajectory.xyz --kt 0.593"
+
+# inputs found by .ci/audit-inputs.py: they crashed (segmentation fault or floating point exception)
+function expect_error(){
+# expect_error "description" "plumed input" : the input should fail; the message is recorded
+  local what="$1"
+  echo "$2" > bad.dat
+  $plumed_nompi driver $driver_args --plumed bad.dat > bad.out 2>&1
+  local rc=$?
+  echo "$what: exit code $rc" >> errors
+  grep -m1 -e "^PLUMED: ERROR in input" -e "maze>" bad.out | sed -e "s/^PLUMED: //" -e "s/with label [^ ]* //" >> errors
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  expect_error "FISST with PERIOD=0" "d1: DISTANCE ATOMS=1,2
+f: FISST ARG=d1 PERIOD=0 MIN_FORCE=0 MAX_FORCE=1.44 NINTERPOLATE=31"
+  expect_error "FISST with NINTERPOLATE=0" "d1: DISTANCE ATOMS=1,2
+f: FISST ARG=d1 PERIOD=1 MIN_FORCE=0 MAX_FORCE=1.44 NINTERPOLATE=0"
+}

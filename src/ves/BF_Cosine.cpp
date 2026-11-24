@@ -119,8 +119,6 @@ BF_Cosine::BF_Cosine(const ActionOptions&ao):
 
 
 void BF_Cosine::getAllValues(const double arg, double& argT, bool& inside_range, std::vector<double>& values, std::vector<double>& derivs) const {
-  // plumed_assert(values.size()==numberOfBasisFunctions());
-  // plumed_assert(derivs.size()==numberOfBasisFunctions());
   inside_range=true;
   argT=translateArgument(arg, inside_range);
   values[0]=1.0;

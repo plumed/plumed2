@@ -33,7 +33,7 @@ The remaining points are then selected by taking the unselected point in the inp
 from all the points that have been selected thus far.
 
 This particular action is designed to be used in conjunction with [SELECT_WITH_MASK](SELECT_WITH_MASK.md) in the same way that
-[CREATE_MASK](CREATE_MASK.md) is designed to be be used with that action.  This action takes an $N\times N$ matrix of dissimilarities
+[CREATE_MASK](CREATE_MASK.md) is designed to be used with that action.  This action takes an $N\times N$ matrix of dissimilarities
 in input and outputs and $N$ dimensional vector whose elements are ones and zeros. As shown in the example input below, this output
 vector is passed to a [SELECT_WITH_MASK](SELECT_WITH_MASK.md) using the MASK keyword.
 
@@ -92,7 +92,7 @@ void FarthestPointSampling::registerKeywords( Keywords& keys ) {
   matrixtools::MatrixOperationBase::registerKeywords( keys );
   keys.add("compulsory","NZEROS","the number of landmark points that you want to select");
   keys.add("compulsory","SEED","1234","a random number seed");
-  keys.setValueDescription("vector","a vector which has as many elements as there are rows in the input matrix of dissimilarities. NZEROS of the elements in this vector are equal to one, the rest of the elements are equal to zero.  The nodes that have elements equal to one are the NZEROS points that are farthest appart according to the input dissimilarities");
+  keys.setValueDescription("vector","a vector which has as many elements as there are rows in the input matrix of dissimilarities. NZEROS of the elements in this vector are equal to one, the rest of the elements are equal to zero.  The nodes that have elements equal to one are the NZEROS points that are farthest apart according to the input dissimilarities");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
@@ -103,6 +103,13 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
   }
   parse("NZEROS",nlandmarks);
   parse("SEED",seed);
+  if( nlandmarks==0 ) {
+    error("NZEROS should be greater than zero");
+  }
+  // the matrix has no rows yet if the frames are collected without CLEAR
+  if( getPntrToArgument(0)->getShape()[0]>0 && nlandmarks>getPntrToArgument(0)->getShape()[0] ) {
+    error("NZEROS is larger than the number of rows of the input matrix");
+  }
   log.printf("  selecting %d landmark points \n", nlandmarks );
 
   std::vector<std::size_t> shape(1);
@@ -118,10 +125,12 @@ void FarthestPointSampling::prepare() {
     shape[0] = getPntrToArgument(0)->getShape()[0];
     myval->setShape(shape);
   }
-  for(unsigned i=0; i<nlandmarks; ++i) {
+  // there can be fewer points than landmarks while the frames are still being collected
+  unsigned nl = std::min<std::size_t>( nlandmarks, myval->getShape()[0] );
+  for(unsigned i=0; i<nl; ++i) {
     myval->set( i, 0.0 );
   }
-  for(unsigned i=nlandmarks; i<myval->getShape()[0]; ++i) {
+  for(unsigned i=nl; i<myval->getShape()[0]; ++i) {
     myval->set( i, 1.0 );
   }
 }
@@ -132,7 +141,11 @@ void FarthestPointSampling::calculate() {
   for(unsigned i=0; i<npoints; ++i) {
     myval->set( i, 1.0 );
   }
-  std::vector<unsigned> landmarks( nlandmarks );
+  if( npoints==0 ) {
+    return;
+  }
+  unsigned nland = std::min( nlandmarks, npoints );
+  std::vector<unsigned> landmarks( nland );
 
   // Select first point at random
   Random random;
@@ -142,14 +155,14 @@ void FarthestPointSampling::calculate() {
   myval->set( landmarks[0], 0 );
 
   // Now find distance to all other points (N.B. We can use squared distances here for speed)
-  Matrix<double> distances( nlandmarks, npoints );
+  Matrix<double> distances( nland, npoints );
   Value* myarg = getPntrToArgument(0);
   for(unsigned i=0; i<npoints; ++i) {
     distances(0,i) = myarg->get( landmarks[0]*npoints + i );
   }
 
   // Now find all other landmarks
-  for(unsigned i=1; i<nlandmarks; ++i) {
+  for(unsigned i=1; i<nland; ++i) {
     // Find point that has the largest minimum distance from the landmarks selected thus far
     double maxd=0;
     for(unsigned j=0; j<npoints; ++j) {

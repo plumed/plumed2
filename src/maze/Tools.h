@@ -173,6 +173,12 @@ std::vector<T> tls::get_pointers_labels(
       missing.push_back(action_labels[i]);
     }
   }
+  if(!missing.empty()) {
+    error_msg="cannot find an action of the right type with label";
+    for(const auto & m : missing) {
+      error_msg+=" "+m;
+    }
+  }
 
   return action_pntrs;
 }

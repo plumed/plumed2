@@ -1,0 +1,26 @@
+no GPUs: GPU -1 ()
+MD code: GPU 2 (assigned by the MD code)
+MD code, not available: GPU 1 (the GPU the MD code is using; the GPU 5 assigned by the MD code is not among the 4 available)
+MD code, not available, no caller: GPU 3 (the default; the GPU 5 assigned by the MD code is not among the 4 available)
+caller: GPU 1 (the GPU the MD code is using)
+caller, not available: GPU 2 (chosen in the environment)
+environment: GPU 2 (chosen in the environment)
+default: GPU 0 (the default)
+default, one GPU: GPU 0 (the default)
+default, wrong runtime device: GPU 0 (the default)
+rank, launcher before SLURM: GPU 1 (process 5 of the node, from OMPI_COMM_WORLD_LOCAL_RANK, with 4 GPUs)
+rank, one GPU: GPU 0 (the default)
+rank, MD code first: GPU 3 (assigned by the MD code)
+rank, caller first: GPU 2 (the GPU the MD code is using)
+rank, environment first: GPU 3 (chosen in the environment)
+rank, SLURM: GPU 1 (process 3 of the node, from SLURM_LOCALID, with 2 GPUs)
+rank, not a number: GPU 1 (the default)
+rank, negative: GPU 1 (the default)
+caller CUDA device: -1
+caller CUDA device, fake driver: 3
+caller CUDA device, fake driver, no context: -1
+PLUMED:   a runs on GPU 2 (assigned by the MD code)
+PLUMED:   chosen: 2
+PLUMED:   b runs on GPU 1 (the GPU the MD code is using; the GPU 2 assigned by the MD code is not among the 2 available)
+PLUMED:   chosen: 1
+PLUMED:   chosen: -1

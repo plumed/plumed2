@@ -1,0 +1,3 @@
+# a single DISTANCE with USEGPU is computed on the CPU (with a note in the log)
+d: DISTANCE ATOMS=1,2 USEGPU
+PRINT ARG=d FILE=colvar FMT=%8.4f

@@ -1,0 +1,37 @@
+type=driver
+plumed_modules=opes
+# Reference run: the whole trajectory (60 frames)
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the interrupted run: frames 0-34; the restart from step 20: frames 20-59
+  head -n 210 traj.xyz > part.xyz
+  tail -n +121 traj.xyz > rest.xyz
+  # A) restart from the KERNELS file: the kernels from step 20 on are removed, the kernel of step 20 is added again
+  # Avoid colliding with the top-level KERNELS file on case-insensitive filesystems.
+  mkdir restart-kernels ; cd restart-kernels ; cp ../plumed.dat .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+  # B) restart from the STATE file written at the checkpoint of the "MD engine" at step 20 (it contains the
+  # kernel of step 20): the kernels after step 20 are removed
+  mkdir state ; cd state
+  sed 's/FMT=%14.10f NLIST/& STATE_WFILE=STATE/' ../plumed.dat > plumed.dat
+  sed 's/FMT=%14.10f NLIST/& STATE_WFILE=STATE STATE_RFILE=STATE/' ../plumed.dat > plumed-restart.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 20 > out1 2> err1
+  $plumed driver --plumed plumed-restart.dat --ixyz ../rest.xyz --restart --initial-step 20 > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for d in restart-kernels state ; do
+      # the kernels are deposited at the same times as in the uninterrupted run, once
+      if test "$(awk '!/^#/{print $1}' KERNELS)" = "$(awk '!/^#/{print $1}' $d/KERNELS)" ; then echo "$d/KERNELS SAME TIMES" ; else echo "$d/KERNELS DIFFERENT TIMES" ; fi
+      # the header (with constant fields printed with FMT) is not printed again
+      echo "$d/KERNELS header lines: $(grep -c '^#! FIELDS' $d/KERNELS)"
+      grep -h "restart step" $d/out2 | sed 's/^PLUMED: *//'
+    done
+  } > restart_check
+}

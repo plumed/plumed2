@@ -1,0 +1,5 @@
+# LAMBDA is only used by spath and zpath: PATH with GPATH NOSPATH NOZPATH does not need it (as in PLUMED-NEST 24.008).
+# The same path with LAMBDA gives the same gspath and gzpath.
+p1: PATH REFERENCE=all.pdb TYPE=OPTIMAL GPATH NOSPATH NOZPATH
+p2: PATH REFERENCE=all.pdb TYPE=OPTIMAL GPATH LAMBDA=69087
+PRINT ARG=p1.gspath,p1.gzpath,p2.gspath,p2.gzpath FILE=colvar FMT=%8.4f

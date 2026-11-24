@@ -1,0 +1,27 @@
+# Two central atoms.  The angles between bonds that start from different atoms must not be included, so
+# every quantity is the sum of the quantities for the two central atoms (the check_ quantities)
+a: COORD_ANGLES CATOMS=1,2 GROUP=3-10 SWITCH={RATIONAL R_0=3.0} MEAN LESS_THAN={RATIONAL R_0=1.5} MORE_THAN1={RATIONAL R_0=1.5} MORE_THAN2={RATIONAL R_0=2.5} BETWEEN={GAUSSIAN LOWER=0.5 UPPER=1.5}
+b1: COORD_ANGLES CATOMS=1 GROUP=3-10 SWITCH={RATIONAL R_0=3.0} MEAN LESS_THAN={RATIONAL R_0=1.5} MORE_THAN1={RATIONAL R_0=1.5} MORE_THAN2={RATIONAL R_0=2.5} BETWEEN={GAUSSIAN LOWER=0.5 UPPER=1.5}
+b2: COORD_ANGLES CATOMS=2 GROUP=3-10 SWITCH={RATIONAL R_0=3.0} MEAN LESS_THAN={RATIONAL R_0=1.5} MORE_THAN1={RATIONAL R_0=1.5} MORE_THAN2={RATIONAL R_0=2.5} BETWEEN={GAUSSIAN LOWER=0.5 UPPER=1.5}
+check_sum: COMBINE ARG=b1_sum,b2_sum PERIODIC=NO
+check_lt: COMBINE ARG=b1_lessthan,b2_lessthan PERIODIC=NO
+check_mt1: COMBINE ARG=b1_morethan-1,b2_morethan-1 PERIODIC=NO
+check_mt2: COMBINE ARG=b1_morethan-2,b2_morethan-2 PERIODIC=NO
+check_bt: COMBINE ARG=b1_between,b2_between PERIODIC=NO
+check_den: COMBINE ARG=b1_denom,b2_denom PERIODIC=NO
+check_mean: CUSTOM ARG=check_sum,check_den FUNC=x/y PERIODIC=NO
+
+# The central atoms can also be in GROUP: an atom is not bonded to itself
+c: COORD_ANGLES CATOMS=1-3 GROUP=1-6 SWITCH={RATIONAL R_0=3.0} SUM
+d1: COORD_ANGLES CATOMS=1 GROUP=2-6 SWITCH={RATIONAL R_0=3.0} SUM
+d2: COORD_ANGLES CATOMS=2 GROUP=1,3-6 SWITCH={RATIONAL R_0=3.0} SUM
+d3: COORD_ANGLES CATOMS=3 GROUP=1-2,4-6 SWITCH={RATIONAL R_0=3.0} SUM
+check_c: COMBINE ARG=d1_sum,d2_sum,d3_sum PERIODIC=NO
+
+# Same thing with the old syntax
+e: ANGLES GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=3.0} SUM
+
+PRINT ARG=a_lessthan,check_lt,a_morethan-1,check_mt1,a_morethan-2,check_mt2,a_between,check_bt,a_sum,check_sum,a_mean,check_mean FILE=colvar FMT=%9.5f
+PRINT ARG=c_sum,check_c,e_sum FILE=colvar2 FMT=%9.5f
+BIASVALUE ARG=a_mean
+BIASVALUE ARG=c_sum

@@ -71,7 +71,7 @@ void SMACOF::optimize( const double& tol, const unsigned& maxloops, std::vector<
   double myfirstsig = calculateSigma( Z, dists );
 
   // initial sigma is made up of the original distances minus the distances between the projections all squared.
-  Matrix<double> temp( M, M ), BZ( M, M ), newZ( M, nlow );
+  Matrix<double> temp( M, nlow ), BZ( M, M ), newZ( M, nlow );
   for(unsigned n=0; n<maxloops; ++n) {
     if(n==maxloops-1) {
       plumed_merror("ran out of steps in SMACOF algorithm");
@@ -100,8 +100,9 @@ void SMACOF::optimize( const double& tol, const unsigned& maxloops, std::vector<
       }
     }
 
-    mult( mypseudo, BZ, temp);
-    mult(temp, Z, newZ);
+    // computing pseudo*(BZ*Z) costs O(M^2*nlow), while (pseudo*BZ)*Z costs O(M^3)
+    mult( BZ, Z, temp );
+    mult( mypseudo, temp, newZ );
     //Compute new sigma
     double newsig = calculateSigma( newZ, dists );
     //Computing whether the algorithm has converged (has the mass of the potato changed

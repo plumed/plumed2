@@ -43,7 +43,7 @@ $$
  f(x) = \sum_{ijk} g( \theta_{ijk} )
 $$
 
-where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and and $j$ and the vector connecting atom $j$ and atom $k$.
+where $\theta_{ijk}$ is the angle between the vector connecting atom $i$ and $j$ and the vector connecting atom $j$ and atom $k$.
 Alternatively you can use this command to calculate functions such as:
 
 $$
@@ -123,6 +123,9 @@ Angles::Angles(const ActionOptions&ao):
       error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
     }
     Tools::interpretRanges( group );
+    if( group.size()<3 ) {
+      error("GROUP must contain at least three atoms");
+    }
     std::string ainput = getShortcutLabel() + ": ANGLE";
     unsigned n=1;
     // Not sure if this triple sum makes any sense
@@ -138,6 +141,9 @@ Angles::Angles(const ActionOptions&ao):
     }
     readInputLine( ainput );
   } else if( groupc.size()>0 ) {
+    if( groupa.size()==0 || groupb.size()==0 ) {
+      error("GROUPC must be used together with GROUPA and GROUPB");
+    }
     Tools::interpretRanges( groupa );
     Tools::interpretRanges( groupb );
     Tools::interpretRanges( groupc );
@@ -155,8 +161,14 @@ Angles::Angles(const ActionOptions&ao):
     }
     readInputLine( ainput );
   } else if( groupa.size()>0 ) {
+    if( groupb.size()==0 ) {
+      error("GROUPA must be used together with GROUPB");
+    }
     Tools::interpretRanges( groupa );
     Tools::interpretRanges( groupb );
+    if( groupb.size()<2 ) {
+      error("GROUPB must contain at least two atoms");
+    }
     unsigned n=1;
     std::string ainput;
     ainput = getShortcutLabel() + ": ANGLE";
@@ -171,6 +183,8 @@ Angles::Angles(const ActionOptions&ao):
       }
     }
     readInputLine( ainput );
+  } else {
+    error("found no atoms: use GROUP, GROUPA and GROUPB, or GROUPA, GROUPB and GROUPC");
   }
   MultiColvarShortcuts::expandFunctions( getShortcutLabel(), getShortcutLabel(), "", this );
 }

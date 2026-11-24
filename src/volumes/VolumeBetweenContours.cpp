@@ -93,18 +93,22 @@ public:
   using precision=double;
   typedef VolumeIn<precision> VolumeInput;
   typedef VolumeOut<precision> VolumeOutput;
-  double gvol, maxs;
+  double gvol=0.0;
+  double maxs=0.0;
   std::string kerneltype;
   std::vector<double> bandwidth;
   std::string sfunc_str;
   SwitchingFunction sfunc, switchingFunction;
-  unsigned natoms_in_list;
-  unsigned natoms_per_list;
+  unsigned natoms_in_list=0;
+  unsigned natoms_per_list=0;
   std::vector<std::size_t> nlist;
   static void registerKeywords( Keywords& keys );
   void parseInput( ActionVolume<VolumeInEnvelope>* action );
   void setupRegions( ActionVolume<VolumeInEnvelope>* action, const Pbc& pbc, const std::vector<Vector>& positions );
   static void parseAtoms( ActionVolume<VolumeInEnvelope>* action, std::vector<AtomNumber>& atom );
+  // the assignment is customized (see below): copy construction is the default one
+  VolumeInEnvelope() = default;
+  VolumeInEnvelope(const VolumeInEnvelope&) = default;
   VolumeInEnvelope& operator=( const VolumeInEnvelope& m ) {
     gvol=m.gvol;
     maxs=m.maxs;
@@ -132,7 +136,7 @@ void VolumeInEnvelope::registerKeywords( Keywords& keys ) {
   keys.add("atoms","FIELD_ATOMS","the atom whose positions we are constructing a field from");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
-  keys.add("compulsory","CONTOUR","a switching funciton that tells PLUMED how large the density should be");
+  keys.add("compulsory","CONTOUR","a switching function that tells PLUMED how large the density should be");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
 }
 

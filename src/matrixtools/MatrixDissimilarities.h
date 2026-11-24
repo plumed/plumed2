@@ -41,7 +41,7 @@ struct Dissimilarities {
                          const Dissimilarities& actdata,
                          const InputVectors& vectors,
                          MatrixElementOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], squared, periodic, min, max, \
                               max_minus_min, inv_max_minus_min)
@@ -51,7 +51,7 @@ struct Dissimilarities {
 #pragma acc exit data delete(inv_max_minus_min, max_minus_min, max, \
                              min, periodic, squared, this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 
@@ -84,7 +84,8 @@ void Dissimilarities::calculate( const bool noderiv,
                                  const Dissimilarities& actdata,
                                  const InputVectors& vectors,
                                  MatrixElementOutput& output ) {
-  std::size_t pp = vectors.arg1.size();
+  // same layout of the derivatives as in MatrixProduct::calculate
+  const std::size_t pp = vectors.nelem;
   for(unsigned i=0; i<vectors.nelem; ++i) {
     double tmp1 = vectors.arg1[i] - vectors.arg2[i];
     if( actdata.periodic ) {
@@ -103,7 +104,7 @@ void Dissimilarities::calculate( const bool noderiv,
 
   for(unsigned i=0; i<vectors.nelem; ++i) {
     output.derivs[0][i] = output.derivs[0][i] / (2*output.values[0]);
-    output.derivs[0][pp+i] = output.derivs[0][vectors.nelem+i] / (2*output.values[0]);
+    output.derivs[0][pp+i] = output.derivs[0][pp+i] / (2*output.values[0]);
   }
 }
 } //namespace matrixtools

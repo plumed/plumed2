@@ -1,0 +1,12 @@
+# ADAPTIVE=DIFF with hills deposited only from UPDATE_FROM=0.5 ps (step 250).
+# Without PRECAL_DIFF the statistics of the fluctuations start at UPDATE_FROM and the first hills are
+# very narrow; with PRECAL_DIFF they are accumulated from step 0 and the first hills have a width
+# comparable with the later ones.
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+m0: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 UPDATE_FROM=0.5 FILE=H0 FMT=%10.5f
+m1: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 UPDATE_FROM=0.5 FILE=H1 FMT=%10.5f PRECAL_DIFF
+
+PRINT ARG=phi,psi,m0.bias,m1.bias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,psi STRIDE=5 FILE=forces FMT=%10.5f

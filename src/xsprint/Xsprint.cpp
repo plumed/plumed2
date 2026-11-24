@@ -24,7 +24,7 @@
 /*
 Calculate eXtended SPRINT (xSPRINT) topological variables from adjacency matrices over multiple shells.
 
-The xSPRINT coordinates, introduced in \cite ketkaew2022, extend the standard [SPRINT](SPRINT.md) coordinates
+The xSPRINT coordinates, introduced in the paper cited below, extend the standard [SPRINT](SPRINT.md) coordinates
 by incorporating structural information from multiple concentric spherical shells around each atom.
 For a system divided into $N$ shells, the xSPRINT coordinate of atom $i$ is defined as:
 
@@ -134,10 +134,13 @@ Xsprint::Xsprint(const ActionOptions& ao):
 
   unsigned nshells = 1;
   parse("NSHELLS", nshells);
+  if( nshells<1 ) {
+    error("NSHELLS should be at least 1");
+  }
   std::string matinp;
   parse("MATRIX", matinp);
   if( !matinp.empty() && nshells > 1 ) {
-    plumed_merror("MATRIX keyword can only be used with NSHELLS=1");
+    error("MATRIX keyword can only be used with NSHELLS=1");
   }
   double r0 = 0.0;
   parse("R0", r0);

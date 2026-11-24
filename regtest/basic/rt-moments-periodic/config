@@ -1,0 +1,4 @@
+type=driver
+# central moments of periodic variables (circular mean) and their derivatives
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"
+extra_files="../../trajectories/trajectory.xyz"

@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=multicolvar
+# three atoms on a line: the dot product of the two unit bond vectors can be out of [-1,1] by rounding,
+# and acos gave nan on master (frames 1 to 4; frame 0 is the same geometry where it did not happen)
+arg="--plumed plumed.dat --ixyz traj.xyz"

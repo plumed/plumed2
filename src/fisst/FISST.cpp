@@ -19,6 +19,9 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include "tools/File.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
+#include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "legendre_rule_fast.h"
 
 #include <iostream>
@@ -94,6 +97,10 @@ f: FISST MIN_FORCE=0 MAX_FORCE=1.44 PERIOD=100 NINTERPOLATE=31 ARG=dend OUT_REST
 PRINT ARG=dend,f.dend_fbar,f.bias,f.force2 FILE=pull.colvar.txt STRIDE=1000
 ```
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the force weights, the estimates of the partition function, the averaged forces and the number of samples are stored in the checkpoint, the `IN_RESTART` file is not read and the output files are trimmed, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -156,9 +163,14 @@ private:
 
 public:
   explicit FISST(const ActionOptions&);
-  void calculate();
-  void update();
-  void turnOnDerivatives();
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
+  void calculate() override;
+  void update() override;
+  void turnOnDerivatives() override;
   static void registerKeywords(Keywords& keys);
   ~FISST();
 };
@@ -264,6 +276,11 @@ FISST::FISST(const ActionOptions&ao):
     error("Must have same number of CENTER arguments as ARG arguments");
   }
 
+  if(in_restart_name_ != "" && getRestart() && plumed.checkpointing.isRestartingFromCheckpoint()) {
+    // the weights, the partition estimate and the number of samples come from the checkpoint
+    log.printf("  restarting from the checkpoint: %s is not read\n",in_restart_name_.c_str());
+    in_restart_name_="";
+  }
   if(in_restart_name_ != "") {
     b_restart_ = true;
     log.printf("  reading simulation information from file: %s\n",in_restart_name_.c_str());
@@ -277,8 +294,15 @@ FISST::FISST(const ActionOptions&ao):
     //in driver, this results in kbt of 0
     if(kbt_ == 0) {
       error("  Unable to determine valid kBT. "
-            "Could be because you are runnning from driver or MD didn't give temperature.\n"
+            "Could be because you are running from driver or MD didn't give temperature.\n"
             "Consider setting temperature manually with the KBT keyword.");
+    }
+
+    if(period_ <= 0) {
+      error("PERIOD must be a positive number of steps");
+    }
+    if(n_interpolation_ <= 0) {
+      error("NINTERPOLATE must be positive");
     }
 
     log.printf("  kBT = %f\n",kbt_);
@@ -290,7 +314,7 @@ FISST::FISST(const ActionOptions&ao):
     }
     log.printf("\n");
     observable_weight_.resize(n_interpolation_);
-    for(unsigned int i = 0; i<n_interpolation_; i++) {
+    for(int i = 0; i<n_interpolation_; i++) {
       observable_weight_[i] = 1.0;
     }
 
@@ -303,15 +327,15 @@ FISST::FISST(const ActionOptions&ao):
 
     log.printf("Using weight distribution %s with rate %f\n",initial_weight_dist_.c_str(),initial_weight_rate_);
     if(initial_weight_dist_ == "UNIFORM" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = 1.0;
       }
     } else if (initial_weight_dist_ == "EXP" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = exp(-fabs(forces_[i])*initial_weight_rate_);
       }
     } else if (initial_weight_dist_ == "GAUSS" ) {
-      for(unsigned int i = 0; i<n_interpolation_; i++) {
+      for(int i = 0; i<n_interpolation_; i++) {
         force_weight_[i] = exp(-pow(forces_[i],2)*initial_weight_rate_);
       }
     } else {
@@ -322,7 +346,7 @@ FISST::FISST(const ActionOptions&ao):
     partition_estimate_.resize(n_interpolation_);
     NormalizeForceWeights();
     double sum = 0.0;
-    for(unsigned int i = 0; i<n_interpolation_; i++) {
+    for(int i = 0; i<n_interpolation_; i++) {
       //setting partition estimate as 1/w_i
       partition_estimate_[i] = 1/force_weight_[i];
       log.printf("force/gauss weight/force_weight: %i %f %f %f\n",i,forces_[i],gauss_weight_[i],force_weight_[i]);
@@ -333,6 +357,10 @@ FISST::FISST(const ActionOptions&ao):
   }
 
   //set inverse temperature
+  if(period_==0) {
+    error("PERIOD cannot be zero");
+  }
+
   beta_ = 1/kbt_;
 
   if(b_freeze_ && b_restart_) {
@@ -357,14 +385,57 @@ FISST::FISST(const ActionOptions&ao):
   //log<<"  Bibliography "<<plumed.cite("")<<"\n";
 }
 
+// The weights of the forces and the estimate of the partition function are updated
+// at every step: they are the state, with the number of samples and the flag of the
+// first sample after a restart from a file. The grid of forces is stored too (it
+// is read from the IN_RESTART file otherwise); the average force and the weights of the
+// observable are recomputed at the step. The components are written by Bias.
+void FISST::writeCheckpoint(CheckpointWriter& w) {
+  w.write("n_samples",(long long) n_samples_);
+  w.write("b_first_restart_sample",(long long) b_first_restart_sample_);
+  w.write("forces",forces_);
+  w.write("gauss_weight",gauss_weight_);
+  w.write("force_weight",force_weight_);
+  w.write("partition_estimate",partition_estimate_);
+  w.write("observable_weight",observable_weight_);
+  w.write("current_avg_force",current_avg_force_);
+  writeComponentValues(w);
+}
+
+void FISST::readCheckpoint(CheckpointReader& r) {
+  long long b;
+  r.read("n_samples",b);
+  n_samples_=static_cast<int>(b);
+  r.read("b_first_restart_sample",b);
+  b_first_restart_sample_=b!=0;
+  std::vector<double> f,g,fw,pe,ow,af;
+  r.read("forces",f);
+  r.read("gauss_weight",g);
+  r.read("force_weight",fw);
+  r.read("partition_estimate",pe);
+  r.read("observable_weight",ow);
+  r.read("current_avg_force",af);
+  const std::size_t n=n_interpolation_;
+  if(f.size()!=n || g.size()!=n || fw.size()!=n || pe.size()!=n || ow.size()!=n || af.size()!=ncvs_) {
+    error("the checkpoint was written with a different NINTERPOLATE or number of arguments");
+  }
+  forces_=f;
+  gauss_weight_=g;
+  force_weight_=fw;
+  partition_estimate_=pe;
+  observable_weight_=ow;
+  current_avg_force_=af;
+  readComponentValues(r);
+}
+
 void FISST::NormalizeForceWeights() {
   double denom = 0.0;
 
-  for(unsigned i=0; i<n_interpolation_; i++) {
+  for(int i =0; i<n_interpolation_; i++) {
     denom += gauss_weight_[i] * force_weight_[i];
   }
 
-  for(unsigned i=0; i<n_interpolation_; i++) {
+  for(int i =0; i<n_interpolation_; i++) {
     force_weight_[i] /= denom;
   }
 }
@@ -425,7 +496,7 @@ void FISST::readInRestart() {
     for(unsigned int i = 0; i<ncvs_; ++i) {
       cv_name = getPntrToArgument(i)->getName();
       in_restart_.scanField(cv_name,tmp);
-      for(unsigned int j =0; j<n_interpolation_; ++j) {
+      for(int j =0; j<n_interpolation_; ++j) {
         in_restart_.scanField(cv_name + "_f"+std::to_string(j),forces_[j]);
         in_restart_.scanField(cv_name + "_g"+std::to_string(j),gauss_weight_[j]);
         in_restart_.scanField(cv_name + "_w"+std::to_string(j),force_weight_[j]);
@@ -437,7 +508,7 @@ void FISST::readInRestart() {
   }
 
   double sum = 0.0;
-  for(unsigned int j =0; j<n_interpolation_; ++j) {
+  for(int j =0; j<n_interpolation_; ++j) {
     //clear observable weight, which will be set later
     observable_weight_[j] = 1.0;
 
@@ -541,16 +612,13 @@ void FISST::calculate() {
   apply_bias();
 
   //check about writing restart file
-  if(getStep()>0 && getStep()%period_==0) {
-    if(b_write_restart_) {
-      writeOutRestart();
-    }
+  if(b_write_restart_ && getStep()>0 && getStep()%period_==0) {
+    writeOutRestart();
   }
-  if(getStep()>0 && getStep()%observable_freq_==0) {
-    if(b_write_observable_) {
-      compute_observable_weight();
-      writeOutObservable();
-    }
+  // observable_freq_ is zero (and the modulo is a division by zero) without OUT_OBSERVABLE
+  if(b_write_observable_ && getStep()>0 && getStep()%observable_freq_==0) {
+    compute_observable_weight();
+    writeOutObservable();
   }
 }
 
@@ -573,7 +641,6 @@ void FISST::apply_bias() {
 
   setBias(ene);
   value_force2_->set(totf2);
-  //log.flush();
 }
 
 void FISST::update_statistics()  {
@@ -592,7 +659,7 @@ void FISST::update_statistics()  {
 
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
-    for(unsigned int j=0; j<n_interpolation_; j++) {
+    for(int j =0; j<n_interpolation_; j++) {
       //if multiple cvs, these need to be updated to have 2 columns
       double f_j = forces_[j];
       double w_j = force_weight_[j];
@@ -601,7 +668,7 @@ void FISST::update_statistics()  {
       fbar_denum_integral += g_j * w_j * exp(beta_*f_j * Q_i);
     }
 
-    for(unsigned int j=0; j<n_interpolation_; j++) {
+    for(int j =0; j<n_interpolation_; j++) {
       double f_j = forces_[j];
       double sample_weight = exp(beta_*f_j * Q_i) / fbar_denum_integral;
 
@@ -626,7 +693,7 @@ void FISST::update_bias() {
     double fbar_num_integral = 0.0;
     double fbar_denum_integral = 0.0;
 
-    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+    for(int j =0; j<n_interpolation_; j++ ) {
       double f_j = forces_[j];
       double w_j = force_weight_[j];
       double g_j = gauss_weight_[j];
@@ -645,12 +712,12 @@ void FISST::compute_observable_weight() {
   for(unsigned int i = 0; i < ncvs_; ++i) {
     double Q_i = difference(i, center_[i], getArgument(i));
 
-    for(unsigned int j=0; j<n_interpolation_; j++ ) {
+    for(int j =0; j<n_interpolation_; j++ ) {
       double z_j = partition_estimate_[j];
       double f_j = forces_[j];
       double denum_integral = 0.0;
 
-      for( unsigned int k=0; k<n_interpolation_; k++ ) {
+      for(int k =0; k<n_interpolation_; k++ ) {
         double f_k = forces_[k];
         double w_k = force_weight_[k];
         double g_k = gauss_weight_[k];

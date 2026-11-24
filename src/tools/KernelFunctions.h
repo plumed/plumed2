@@ -26,6 +26,7 @@
 #include "core/Value.h"
 #include <vector>
 #include <memory>
+#include <utility>
 
 namespace PLMD {
 
@@ -53,16 +54,19 @@ private:
                 const double& w );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
+/// Position of element (i,j) of the metric in width (upper triangle stored row by row)
+  static unsigned packedIndex( unsigned i, unsigned j, unsigned ncv ) {
+    if( i>j ) {
+      std::swap(i,j);
+    }
+    return i*ncv - (i*(i-1))/2 + (j-i);
+  }
 public:
-  explicit KernelFunctions( const std::string& input );
   KernelFunctions( const std::vector<double>& at,
                    const std::vector<double>& sig,
                    const std::string& type,
                    const std::string& mtype,
                    const double& w );
-  explicit KernelFunctions( const KernelFunctions* in );
-/// Normalise the function and scale the height accordingly
-  void normalize( const std::vector<Value*>& myvals );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
 /// Get the cutoff for a kernel
@@ -80,6 +84,10 @@ public:
                    bool doInt=false,
                    double lowI_=-1,
                    double uppI_=-1 ) const;
+/// If this is a Gaussian kernel with a diagonal metric, get the parameters to evaluate it
+/// as a product over the dimensions: with t_i=(x_i-c_i)/w_i and r2=sum_i t_i^2, the kernel is
+/// height*(a*prod_i exp(-t_i^2/2)+b) for r2<r2cut and zero otherwise. Returns false otherwise.
+  bool getSeparableGaussian(double & h, double & a, double & b, double & r2cut, std::vector<double> & w) const;
 /// Read a kernel function from a file
   static std::unique_ptr<KernelFunctions> read( IFile* ifile,
       const bool& cholesky,

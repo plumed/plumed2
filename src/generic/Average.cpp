@@ -106,7 +106,7 @@ void Average::registerKeywords( Keywords& keys ) {
   keys.addInputKeyword("compulsory","ARG","scalar/grid","the quantity that is being averaged");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
-  keys.add("compulsory","CLEAR","0","the frequency with whihc to clear the data that is being averaged");
+  keys.add("compulsory","CLEAR","0","the frequency with which to clear the data that is being averaged");
   keys.addDeprecatedKeyword("NORMALIZATION","");
   keys.setValueDescription("scalar/grid","the value of the average");
   keys.needsAction("COMBINE");

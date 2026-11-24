@@ -119,6 +119,8 @@ public:
   void clear();
   void setAllValuesToZero();
   //
+  // Preserve the established by-value accessor contract.
+  // cppcheck-suppress returnByReference
   std::vector<double> getDataAsVector() const {
     return data;
   }

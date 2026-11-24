@@ -350,7 +350,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
         bool file_exist = ifile.FileExist(coeffs_fnames[i]);
         if(!file_exist) {
           std::string fname = FileBase::appendSuffix(coeffs_fnames[i],ifile.getSuffix());
-          plumed_merror("Cannot find coefficient file " + fname + " when trying to restart an optimzation. If you don't want to restart the optimzation please remove the RESTART keyword or use the RESTART=NO within the "+getName()+" action to locally disable the restart.");
+          plumed_merror("Cannot find coefficient file " + fname + " when trying to restart an optimization. If you don't want to restart the optimization please remove the RESTART keyword or use the RESTART=NO within the "+getName()+" action to locally disable the restart.");
         }
       }
       readCoeffsFromFiles(coeffs_fnames,true);
@@ -379,6 +379,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
     parse("COEFFS_OUTPUT",coeffs_wstride_tmpstr);
     if(coeffs_wstride_tmpstr!="OFF" && coeffs_wstride_tmpstr.size()>0) {
       Tools::convert(coeffs_wstride_tmpstr,coeffs_wstride_);
+      plumed_massert(coeffs_wstride_>0,"COEFFS_OUTPUT has to be positive, use OFF to switch off the output");
     }
     if(coeffs_wstride_tmpstr=="OFF") {
       coeffs_fnames.clear();
@@ -413,6 +414,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   if(keywords.exists("GRADIENT_FILE")) {
     parseFilenames("GRADIENT_FILE",gradient_fnames);
     parse("GRADIENT_OUTPUT",gradient_wstride_);
+    plumed_massert(gradient_wstride_>0,"GRADIENT_OUTPUT has to be positive");
 
     if(coeffs_fnames.size()>0) {
       for(unsigned int i=0; i<gradient_fnames.size(); i++) {
@@ -443,6 +445,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
   if(keywords.exists("HESSIAN_FILE")) {
     parseFilenames("HESSIAN_FILE",hessian_fnames);
     parse("HESSIAN_OUTPUT",hessian_wstride_);
+    plumed_massert(hessian_wstride_>0,"HESSIAN_OUTPUT has to be positive");
 
     if(coeffs_fnames.size()>0) {
       for(unsigned int i=0; i<hessian_fnames.size(); i++) {
@@ -504,7 +507,7 @@ Optimizer::Optimizer(const ActionOptions&ao):
           size_t nread = coeffs_mask_pntrs_[i]->readFromFile(mask_fnames_in[i],true,true);
           log.printf("  mask for coefficient set %u:\n",i);
           log.printf("   read %zu values from file %s\n",nread,mask_fnames_in[i].c_str());
-          size_t ndeactived = coeffs_mask_pntrs_[0]->countValues(0.0);
+          size_t ndeactived = coeffs_mask_pntrs_[i]->countValues(0.0);
           log.printf("   deactived optimization of %zu coefficients\n",ndeactived);
         }
       }
@@ -854,13 +857,11 @@ void Optimizer::registerKeywords( Keywords& keys ) {
   // Components that are always active
   keys.addOutputComponent("gradrms","MONITOR_INSTANTANEOUS_GRADIENT","scalar","the root mean square value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradrms-#.");
   keys.addOutputComponent("gradmax","MONITOR_INSTANTANEOUS_GRADIENT","scalar","the largest absolute value of the coefficient gradient. For multiple biases this component is labeled using the number of the bias as gradmax-#.");
-  // keys.addOutputComponent("gradmaxidx","default","the index of the maximum absolute value of the gradient");
   keys.setValueDescription("scalar","a scalar");
 }
 
 
 void Optimizer::useHessianKeywords(Keywords& keys) {
-  // keys.use("FULL_HESSIAN");
   keys.use("HESSIAN_FILE");
   keys.use("HESSIAN_OUTPUT");
   keys.use("HESSIAN_FMT");
@@ -963,28 +964,8 @@ std::vector<CoeffsMatrix*> Optimizer::enableHessian(VesBias* bias_pntr_in, const
 }
 
 
-// CoeffsMatrix* Optimizer::switchToDiagonalHessian(VesBias* bias_pntr_in) {
-//   plumed_massert(use_hessian_,"it does not make sense to switch to diagonal Hessian if it Hessian is not used");
-//   diagonal_hessian_=true;
-//   bias_pntr_in->enableHessian(diagonal_hessian_);
-//   CoeffsMatrix* hessian_pntr_out = bias_pntr_in->getHessianPntr();
-//   plumed_massert(hessian_pntr_out != NULL,"Hessian is needed but not linked correctly");
-//   //
-//   log.printf("  %s (with label %s): switching to a diagonal Hessian for VES bias %s (with label %s) at time  %f\n",getName().c_str(),getLabel().c_str(),bias_pntr_in->getName().c_str(),bias_pntr_in->getLabel().c_str(),getTime());
-//   return hessian_pntr_out;
-// }
 
 
-// CoeffsMatrix* Optimizer::switchToFullHessian(VesBias* bias_pntr_in) {
-//   plumed_massert(use_hessian_,"it does not make sense to switch to diagonal Hessian if it Hessian is not used");
-//   diagonal_hessian_=false;
-//   bias_pntr_in->enableHessian(diagonal_hessian_);
-//   CoeffsMatrix* hessian_pntr_out = bias_pntr_in->getHessianPntr();
-//   plumed_massert(hessian_pntr_out != NULL,"Hessian is needed but not linked correctly");
-//   //
-//   log.printf("  %s (with label %s): switching to a diagonal Hessian for VES bias %s (with label %s) at time  %f\n",getName().c_str(),getLabel().c_str(),bias_pntr_in->getName().c_str(),bias_pntr_in->getLabel().c_str(),getTime());
-//   return hessian_pntr_out;
-// }
 
 
 void Optimizer::update() {
@@ -1087,9 +1068,9 @@ void Optimizer::updateOutputComponents() {
         getPntrToComponent("gradmax"+is)->set( gradient_pntrs_[i]->getMaxAbsValue(gradient_maxabs_idx) );
       }
       if(aver_gradient_pntrs_.size()>0) {
-        getPntrToComponent("avergradrms"+is)->set( aver_gradient_pntrs_[0]->getRMS() );
+        getPntrToComponent("avergradrms"+is)->set( aver_gradient_pntrs_[i]->getRMS() );
         size_t avergradient_maxabs_idx=0;
-        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[0]->getMaxAbsValue(avergradient_maxabs_idx) );
+        getPntrToComponent("avergradmax"+is)->set( aver_gradient_pntrs_[i]->getMaxAbsValue(avergradient_maxabs_idx) );
       }
     }
   }

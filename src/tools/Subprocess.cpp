@@ -22,10 +22,26 @@
 #include "Subprocess.h"
 #include "Exception.h"
 #include "Tools.h"
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+#include <dlfcn.h>
+#endif
 #ifdef __PLUMED_HAS_SUBPROCESS
 #include <unistd.h>
 #include <csignal>
+#include <cerrno>
+#include <chrono>
+#include <thread>
 #include <sys/wait.h>
+#include <spawn.h>
+#include <cstring>
+extern char **environ;
+#endif
+
+#if defined(__PLUMED_HAS_SUBPROCESS) || defined(__PLUMED_HAS_DLOPEN)
+#include <spawn.h>
+#include <sys/wait.h>
+#include <cerrno>
+extern char **environ;
 #endif
 
 namespace PLMD {
@@ -39,8 +55,32 @@ inline static bool SubprocessPidGetenvSignals() noexcept {
 }
 
 /// Small utility class, used to avoid inclusion of unistd.h> in a header file.
+///
+/// The subprocess is launched as `/bin/sh -c cmd` and is made leader of a new
+/// process group (with pgid equal to its pid). All signals are sent to the whole
+/// process group (`kill(-pid,...)`), so that they also reach the processes
+/// spawned by the shell (e.g. the python interpreter launched by a script).
+/// Sending them only to the shell would leave the actual worker untouched.
 class SubprocessPid {
 #ifdef __PLUMED_HAS_SUBPROCESS
+  /// Time given to the process group to exit after SIGTERM before sending SIGKILL.
+  static constexpr std::chrono::milliseconds gracePeriod{1000};
+  /// Returns true if the shell process has exited.
+  /// The process is NOT reaped (WNOWAIT), so that its pid (and thus the process group id)
+  /// cannot be recycled by the system before we are done signaling the group.
+  bool exited() const noexcept {
+    while(true) {
+      siginfo_t info;
+      info.si_pid=0;
+      if(waitid(P_PID,pid,&info,WEXITED|WNOHANG|WNOWAIT)==0) {
+        return info.si_pid==pid;
+      }
+      if(errno!=EINTR) {
+        // ECHILD or other errors: nothing to wait for
+        return true;
+      }
+    }
+  }
 public:
   const pid_t pid;
   explicit SubprocessPid(pid_t pid_):
@@ -51,34 +91,116 @@ public:
     // Signals give problems with MPI on Travis.
     // I disable them for now.
     if(SubprocessPidGetenvSignals()) {
-      kill(pid,SIGSTOP);
+      kill(-pid,SIGSTOP);
     }
   }
   void cont() noexcept {
     // Signals give problems with MPI on Travis.
     // I disable them for now.
     if(SubprocessPidGetenvSignals()) {
-      kill(pid,SIGCONT);
+      kill(-pid,SIGCONT);
     }
   }
   ~SubprocessPid() {
-    // the destructor implies we do not need the subprocess anymore, so SIGKILL
-    // is the fastest exit.
-    // if we want to gracefully kill the process with a delay, it would be cleaner
-    // to have another member function
-    kill(pid,SIGKILL);
-    // Wait for the child process to terminate
-    // This is anyway required to avoid leaks
+    // The destructor implies we do not need the subprocess anymore.
+    // At this point its stdin has already been closed.
+    // We first ask the whole process group to terminate with SIGTERM, which
+    // allows a clean exit (e.g., shell EXIT traps removing temporary files).
+    // SIGCONT is needed because the group might have been stopped with SIGSTOP
+    // (see stop()), in which case SIGTERM would remain pending forever.
+    kill(-pid,SIGTERM);
+    kill(-pid,SIGCONT);
+    // Poll with an increasing interval, so that the common case
+    // (immediate exit) is fast.
+    const auto start=std::chrono::steady_clock::now();
+    std::chrono::microseconds interval{50};
+    while(!exited() && std::chrono::steady_clock::now()-start<gracePeriod) {
+      std::this_thread::sleep_for(interval);
+      if(interval<std::chrono::milliseconds(20)) {
+        interval*=2;
+      }
+    }
+    // If the shell did not exit within the grace period (e.g. because it ignores SIGTERM),
+    // kill the whole process group.
+    // This is safe since the shell has not been reaped yet, so the pgid cannot
+    // have been recycled.
+    // Notice that if the shell has exited we do not send SIGKILL to the rest of the group:
+    // processes started by the shell received SIGTERM as well, and they might still be
+    // running their cleanup (e.g. a bash EXIT trap in a script launched by a
+    // shell that does not exec it).
+    if(!exited()) {
+      kill(-pid,SIGKILL);
+    }
+    // Reap the shell. This is anyway required to avoid leaks
     int status;
-    waitpid(pid, &status, 0);
+    while(waitpid(pid, &status, 0)<0 && errno==EINTR) {}
   }
 #endif
 };
 
+int Subprocess::run(const std::string& executable,
+                    const std::vector<std::string>& arguments,
+                    const std::map<std::string,std::string>& overrides) {
+#if defined(__PLUMED_HAS_SUBPROCESS) || defined(__PLUMED_HAS_DLOPEN)
+  std::vector<char*> argv {const_cast<char*>(executable.c_str())};
+  for(const auto& argument : arguments) {
+    argv.push_back(const_cast<char*>(argument.c_str()));
+  }
+  argv.push_back(nullptr);
+
+  char** inherited=environ;
+#if defined(__linux__) && (defined(__PLUMED_HAS_DLOPEN) || defined(__PLUMED_HAS_DLADDR))
+  // RTLD_DEEPBIND can resolve environ to libc's stale/empty data symbol
+  // instead of the executable's copy relocation (notably in Python hosts).
+  // Look it up in the main program's scope, without modifying either copy.
+  if(void* process=dlopen(nullptr,RTLD_LAZY)) {
+    if(auto address=static_cast<char***>(dlsym(process,"environ"))) {
+      inherited=*address;
+    }
+    dlclose(process);
+  }
+#endif
+  std::vector<std::string> environment;
+  for(char** entry=inherited; entry && *entry; ++entry) {
+    const std::string setting(*entry);
+    if(overrides.count(setting.substr(0,setting.find('=')))==0) {
+      environment.push_back(setting);
+    }
+  }
+  for(const auto& entry : overrides) {
+    if(entry.first.empty() || entry.first.find('=')!=std::string::npos) {
+      errno=EINVAL;
+      return -1;
+    }
+    environment.push_back(entry.first+"="+entry.second);
+  }
+  std::vector<char*> envp;
+  for(auto& entry : environment) {
+    envp.push_back(entry.data());
+  }
+  envp.push_back(nullptr);
+
+  pid_t child;
+  const int error=posix_spawn(&child,executable.c_str(),nullptr,nullptr,argv.data(),envp.data());
+  if(error!=0) {
+    errno=error;
+    return -1;
+  }
+  int status=0;
+  pid_t result;
+  do {
+    result=waitpid(child,&status,0);
+  } while(result<0 && errno==EINTR);
+  return result<0 ? -1 : status;
+#else
+  plumed_error()<<"Subprocess execution not supported";
+#endif
+}
+
 Subprocess::Subprocess(const std::string & cmd) {
 #ifdef __PLUMED_HAS_SUBPROCESS
   char* arr [] = {
-    // const_cast are necessary here due to the declaration of execv
+    // const_cast are necessary here due to the declaration of posix_spawn
     const_cast<char*>("/bin/sh"),
     const_cast<char*>("-c"),
     const_cast<char*>(cmd.c_str()),
@@ -90,52 +212,65 @@ Subprocess::Subprocess(const std::string & cmd) {
     plumed_error()<<"error creating parent to child pipe";
   }
   if(pipe(cp)<0) {
+    close(pc[0]);
+    close(pc[1]);
     plumed_error()<<"error creating child to parent pipe";
   }
-  pid_t forkedPid=fork();
-  switch(forkedPid) {
-  case -1:
-    plumed_error()<<"error forking";
-    break;
-// CHILD:
-  case 0: {
-    if(close(1)<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(dup(cp[1])<0) {
-      plumed_error()<<"error duplicating file";
-    }
-    if(close(0)<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(dup(pc[0])<0) {
-      plumed_error()<<"error duplicating file";
-    }
-    if(close(pc[1])<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(close(cp[0])<0) {
-      plumed_error()<<"error closing file";
-    }
-    auto err=execv(arr[0],arr);
-    plumed_error()<<"error in script file " << cmd << ", execv returned "<<err;
+  // Establish the process group as part of spawning the shell. Calling
+  // setpgid in both parent and child races on macOS (one call can fail with
+  // EPERM), while calling it only in the child would let an immediate stop()
+  // or destruction signal the group before it exists.
+  posix_spawn_file_actions_t actions;
+  posix_spawnattr_t attributes;
+  int error=posix_spawn_file_actions_init(&actions);
+  const bool actionsInitialized=(error==0);
+  if(error==0) {
+    error=posix_spawnattr_init(&attributes);
   }
-// PARENT::
-  default:
-    pid=Tools::make_unique<SubprocessPid>(forkedPid);
-    if(close(pc[0])<0) {
-      plumed_error()<<"error closing file";
-    }
-    if(close(cp[1])<0) {
-      plumed_error()<<"error closing file";
-    }
-    fpc=pc[1];
-    fcp=cp[0];
-    fppc=fdopen(fpc,"w");
-    parent_to_child.link(fppc);
-    fpcp=fdopen(fcp,"r");
-    child_to_parent.link(fpcp);
+  const bool attributesInitialized=(error==0);
+  if(error==0) {
+    error=posix_spawn_file_actions_adddup2(&actions,pc[0],STDIN_FILENO);
   }
+  if(error==0) {
+    error=posix_spawn_file_actions_adddup2(&actions,cp[1],STDOUT_FILENO);
+  }
+  const int pipeDescriptors[4]= {pc[0],pc[1],cp[0],cp[1]};
+  for(const int fd : pipeDescriptors) {
+    if(error==0 && fd!=STDIN_FILENO && fd!=STDOUT_FILENO) {
+      error=posix_spawn_file_actions_addclose(&actions,fd);
+    }
+  }
+  if(error==0) {
+    // A zero pgroup requests a new group with the child's pid as its pgid.
+    error=posix_spawnattr_setpgroup(&attributes,0);
+  }
+  if(error==0) {
+    error=posix_spawnattr_setflags(&attributes,POSIX_SPAWN_SETPGROUP);
+  }
+  pid_t spawnedPid;
+  if(error==0) {
+    error=posix_spawn(&spawnedPid,arr[0],&actions,&attributes,arr,environ);
+  }
+  if(attributesInitialized) {
+    posix_spawnattr_destroy(&attributes);
+  }
+  if(actionsInitialized) {
+    posix_spawn_file_actions_destroy(&actions);
+  }
+  close(pc[0]);
+  close(cp[1]);
+  if(error!=0) {
+    close(pc[1]);
+    close(cp[0]);
+    plumed_error()<<"error spawning script file "<<cmd<<": "<<std::strerror(error);
+  }
+  pid=Tools::make_unique<SubprocessPid>(spawnedPid);
+  fpc=pc[1];
+  fcp=cp[0];
+  fppc=fdopen(fpc,"w");
+  parent_to_child.link(fppc);
+  fpcp=fdopen(fcp,"r");
+  child_to_parent.link(fpcp);
 #else
   plumed_error()<<"Subprocess not supported";
 #endif

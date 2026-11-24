@@ -4,57 +4,57 @@
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
 #! SET compression_threshold  1.500000
-#! SET zed  1.085948
-#! SET sum_weights  1.275138
-#! SET sum_weights2  0.659513
+#! SET zed  1.085947
+#! SET sum_weights  1.275139
+#! SET sum_weights2  0.659514
 #! SET counter  7
 #! SET adaptive_counter  20
 #! SET sigma0_phi_0  1.074577
 #! SET av_cv_phi_0  -1.770315
-#! SET av_M2_phi_0  97.797936
+#! SET av_M2_phi_0  97.797890
 #! SET sigma0_psi_0  1.129505
 #! SET av_cv_psi_0  1.351977
-#! SET av_M2_psi_0  110.231984
+#! SET av_M2_psi_0  110.231972
 #! SET sigma0_phi_1  1.074577
 #! SET av_cv_phi_1  -1.770315
-#! SET av_M2_phi_1  97.797936
+#! SET av_M2_phi_1  97.797890
 #! SET sigma0_psi_1  1.129505
 #! SET av_cv_psi_1  1.351977
-#! SET av_M2_psi_1  110.231984
+#! SET av_M2_psi_1  110.231972
 #! SET min_phi -pi
 #! SET max_phi pi
 #! SET min_psi -pi
 #! SET max_psi pi
- 20.000000 -2.924667 2.861987 0.754990 0.798915 2.297577
- 20.000000 -2.561349 0.916740 0.646061 0.685902 0.365491
+ 20.000000 -2.924666 2.861988 0.754990 0.798915 2.297580
+ 20.000000 -2.561348 0.916739 0.646061 0.685902 0.365490
 #! FIELDS time phi psi sigma_phi sigma_psi height
 #! SET action OPES_METAD_state
 #! SET biasfactor  8.018158
 #! SET epsilon  0.000105
 #! SET kernel_cutoff  4.280338
 #! SET compression_threshold  1.500000
-#! SET zed  1.007702
-#! SET sum_weights  5.897974
-#! SET sum_weights2  8.001989
+#! SET zed  1.007701
+#! SET sum_weights  5.897963
+#! SET sum_weights2  8.001962
 #! SET counter  15
 #! SET adaptive_counter  40
 #! SET sigma0_phi_0  1.074577
 #! SET av_cv_phi_0  -0.882084
-#! SET av_M2_phi_0  139.969030
+#! SET av_M2_phi_0  139.968977
 #! SET sigma0_psi_0  1.129505
 #! SET av_cv_psi_0  0.891556
-#! SET av_M2_psi_0  158.257343
+#! SET av_M2_psi_0  158.257335
 #! SET sigma0_phi_1  1.074577
 #! SET av_cv_phi_1  -0.882084
-#! SET av_M2_phi_1  139.969030
+#! SET av_M2_phi_1  139.968977
 #! SET sigma0_psi_1  1.129505
 #! SET av_cv_psi_1  0.891556
-#! SET av_M2_psi_1  158.257343
+#! SET av_M2_psi_1  158.257335
 #! SET min_phi -pi
 #! SET max_phi pi
 #! SET min_psi -pi
 #! SET max_psi pi
- 40.000000 -2.924667 2.861987 0.754990 0.798915 2.297577
- 40.000000 -2.561349 0.916740 0.646061 0.685902 0.365491
- 40.000000 -1.130836 0.951774 0.509458 0.546054 20.565327
- 40.000000 1.478705 -1.341386 0.587154 0.621457 0.035442
+ 40.000000 -2.924666 2.861988 0.754990 0.798915 2.297580
+ 40.000000 -2.561348 0.916739 0.646061 0.685902 0.365490
+ 40.000000 -1.130837 0.951774 0.509458 0.546054 20.565275
+ 40.000000 1.478705 -1.341386 0.587154 0.621457 0.035441

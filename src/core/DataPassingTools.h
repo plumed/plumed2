@@ -39,6 +39,8 @@ private:
   Units units;
   Units MDUnits;
 /// Is the code using natural units
+  // PlumedMain sets this during construction before reading it.
+  // cppcheck-suppress uninitMemberVarNoCtor
   bool usingNaturalUnits;
 public:
 /// Virtual destructor, just to allow inheritance.

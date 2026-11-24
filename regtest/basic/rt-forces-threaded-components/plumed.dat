@@ -1,0 +1,15 @@
+# An action with many components that receive forces (CONTACTMAP, 20 components) and an action
+# with three values with many derivatives each (CENTER of 6000 atoms): with two threads
+# ActionWithValue::checkForForces and ActionWithValue::clearDerivatives use OpenMP.
+cm: CONTACTMAP ...
+  ATOMS1=1,101 ATOMS2=2,102 ATOMS3=3,103 ATOMS4=4,104 ATOMS5=5,105
+  ATOMS6=6,106 ATOMS7=7,107 ATOMS8=8,108 ATOMS9=9,109 ATOMS10=10,110
+  ATOMS11=11,111 ATOMS12=12,112 ATOMS13=13,113 ATOMS14=14,114 ATOMS15=15,115
+  ATOMS16=16,116 ATOMS17=17,117 ATOMS18=18,118 ATOMS19=19,119 ATOMS20=20,120
+  SWITCH={RATIONAL R_0=1.0}
+...
+RESTRAINT ARG=cm.contact-1,cm.contact-2,cm.contact-3,cm.contact-4,cm.contact-5,cm.contact-6,cm.contact-7,cm.contact-8,cm.contact-9,cm.contact-10,cm.contact-11,cm.contact-12,cm.contact-13,cm.contact-14,cm.contact-15,cm.contact-16,cm.contact-17,cm.contact-18,cm.contact-19,cm.contact-20 AT=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 KAPPA=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+com: CENTER ATOMS=1-6000 NOPBC
+p: POSITION ATOM=com NOPBC
+RESTRAINT ARG=p.x,p.y,p.z AT=0,0,0 KAPPA=1,1,1
+PRINT ARG=cm.contact-1,cm.contact-2,cm.contact-3,cm.contact-4,cm.contact-5,cm.contact-6,cm.contact-7,cm.contact-8,cm.contact-9,cm.contact-10,cm.contact-11,cm.contact-12,cm.contact-13,cm.contact-14,cm.contact-15,cm.contact-16,cm.contact-17,cm.contact-18,cm.contact-19,cm.contact-20,p.x,p.y,p.z FILE=colvar FMT=%10.5f

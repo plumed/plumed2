@@ -1,0 +1,48 @@
+mpiprocs=4
+type=driver
+plumed_modules=generic
+# Reference run: four processes with a (fake) domain decomposition, the whole trajectory, the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10 --debug-dd yes"
+
+# With several processes the atoms are distributed at random among them at every step (--debug-dd),
+# so the drift is the same as with one process only up to the rounding of the sum over the processes:
+# the drift is compared with a tolerance, the bias (COLVAR) bitwise.
+function plumed_regtest_before() {
+  # 60 frames of 20 atoms (analytic positions)
+  awk 'BEGIN{for(f=0;f<60;f++){print 20; print "10 10 10"; for(i=0;i<20;i++){printf "X %f %f %f\n", 0.5*i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1))+0.1*i, 0.2*(i%5)*f/60.0}}}' > traj.xyz
+  # the first 25 frames: the interrupted run
+  head -n 550 traj.xyz > part.xyz
+  # the same with a single process
+  mkdir serial ; cd serial ; cp ../plumed.dat .
+  $plumed_nompi driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 > out1 2> err1
+  cd ..
+  # A) four processes, restart with four processes from step 20
+  mkdir dd-dd ; cd dd-dd ; cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 --debug-dd yes > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --debug-dd yes --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoint written by four processes (STRIDE=7), restart with one process from step 21
+  mkdir dd-serial ; cd dd-serial
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../part.xyz --debug-dd yes > out1 2> err1
+  $plumed_nompi driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # C) checkpoint written by one process, restart with four processes from step 20
+  mkdir serial-dd ; cd serial-dd ; cp ../plumed.dat .
+  $plumed_nompi driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --debug-dd yes --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  for d in serial dd-dd dd-serial serial-dd ; do
+    if cmp -s COLVAR $d/COLVAR ; then echo "$d/COLVAR IDENTICAL" ; else echo "$d/COLVAR DIFFERENT" ; fi
+    # same number of lines, same times, drift within 1e-9 (relative to its scale)
+    awk -v d=$d 'FNR==NR{if($1!~/^#/){t[++n]=$1;e[n]=$2};next}
+      $1!~/^#/{m++; if($1!=t[m]) bad=1; x=$2-e[m]; if(x<0) x=-x; s=(e[m]<0?-e[m]:e[m]); if(s<1) s=1; if(x>1e-9*s) bad=1}
+      END{if(m!=n) bad=1; print d "/eed.dat " (bad?"DIFFERENT":"SAME WITHIN 1e-9")}' eed.dat $d/eed.dat
+    test $d = serial && continue
+    if grep -q "not stored in the checkpoint\|not in the checkpoint" $d/out2 $d/err2 ; then echo "$d: state not restored" ; fi
+    grep -h "Checkpoint state restored" $d/out2 | sed 's/by PLUMED.*//' | sort -u
+  done > restart_check
+}

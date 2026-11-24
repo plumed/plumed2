@@ -1,0 +1,8 @@
+LOAD FILE=../../../../plumedOpenACC.so
+pcpu: POSITION ATOMS=1,3,5
+p: POSITION ATOMS=1,3,5 USEGPU
+diff_x: CUSTOM ARG=p.x,pcpu.x FUNC=y-x PERIODIC=NO
+diff_y: CUSTOM ARG=p.y,pcpu.y FUNC=y-x PERIODIC=NO
+diff_z: CUSTOM ARG=p.z,pcpu.z FUNC=y-x PERIODIC=NO
+PRINT ARG=diff_x,diff_y,diff_z FILE=diff FMT=%8.4f
+PRINT ARG=p.x,p.y,p.z FILE=positions FMT=%8.4f

@@ -1,0 +1,7 @@
+# write valid xtc and trr files from the xyz trajectory: 20 atoms and 10 atoms, two frames and one frame
+DUMPATOMS ATOMS=1-20 FILE=ok20.xtc
+DUMPATOMS ATOMS=1-10 FILE=ok10.xtc
+DUMPATOMS ATOMS=1-20 FILE=ok20.trr
+DUMPATOMS ATOMS=1-10 FILE=ok10.trr
+DUMPATOMS ATOMS=1-20 FILE=one20.xtc STRIDE=100
+DUMPATOMS ATOMS=1-20 FILE=ok.xyz PRECISION=3

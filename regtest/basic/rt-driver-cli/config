@@ -1,0 +1,5 @@
+type=driver
+# command line options of driver that are not used elsewhere:
+# 9-component box, masses and charges from --mc, initial step, --kt,
+# forces dumped with the full virial and a custom format
+arg="--plumed plumed.dat --ixyz traj.xyz --box 2.0,0.1,0.0,0.0,2.2,0.0,0.0,0.0,2.4 --mc mc.dat --initial-step 5 --trajectory-stride 2 --dump-forces forces --dump-full-virial --dump-forces-fmt %10.4f --kt 2.5"

@@ -207,12 +207,29 @@ hh: HISTOGRAM ...
 DUMPGRID ARG=hh FILE=histo STRIDE=100000 PRINT_ONE_FILE
 ```
 
-Now all estimates of the histogram are contained in a single file called `histo`.
+Now all estimates of the histogram are contained in a single file called `histo`.  However, not all the data in the trajectory is necessarily included in the final
+estimate of the histogram that is output.  In the previous input the histogram is only output on every 100000th step consequently if your trajectory has 400500 the
+last 500 trajectory frames are not used in the calculation of the last histogram output as it was output on the 400000th step.  If you want to ensure that the final
+histogram output is a histogram is is computed from all the trajectory data you use the DO_AFTER_FINAL_STEP flag as shown below
+
+```plumed
+r1: TORSION ATOMS=1,2,3,4
+r2: TORSION ATOMS=2,3,4,5
+hh: HISTOGRAM ...
+  ARG=r1,r2
+  GRID_MIN=-3.14,-3.14
+  GRID_MAX=3.14,3.14
+  GRID_BIN=200,200
+  BANDWIDTH=0.05,0.05
+...
+
+DUMPGRID ARG=hh FILE=histo STRIDE=100000 DO_AFTER_FINAL_STEP
+```
 
 The following input monitors two torsional angles during a simulation
 and outputs a separate histogram for each 100000 steps worth of trajectory.
 Notice how the CLEAR keyword is used here and how it is not used in the
-previous two examples.
+previous three examples.
 
 ```plumed
 r1: TORSION ATOMS=1,2,3,4
@@ -283,6 +300,7 @@ void DumpGrid::registerKeywords( Keywords& keys ) {
     keys.addFlag("PRINT_XYZ",false,"output coordinates on fibonacci grid to xyz file");
   }
   keys.addFlag("PRINT_ONE_FILE",false,"output grids one after the other in a single file");
+  keys.addFlag("DO_AFTER_FINAL_STEP",false,"output the grid at the end of the trajectory even if the trajectory has a length that is not a multiple of the stride");
 }
 
 DumpGrid::DumpGrid(const ActionOptions&ao):
@@ -290,11 +308,6 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   ActionWithArguments(ao),
   ActionPilot(ao),
   fmt("%f") {
-  if( getNumberOfArguments()==0 ) {
-    std::vector<Value*> grids;
-    parseArgumentList("GRID",grids);
-    requestArguments(grids);
-  }
   if( getNumberOfArguments()!=1 ) {
     error("should only be one argument");
   }
@@ -356,6 +369,14 @@ void DumpGrid::update() {
   ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
+  // A grid that was never calculated has no points, and the loops below read an empty grid (segmentation fault).
+  // This happens with STRIDE=0 (output at the end of the run) for an instantaneous grid that nothing else uses
+  // during the run, e.g. RDF with the default CLEAR=1: at the end only the actions that depend on averages are calculated.
+  if( mygrid.getNumberOfPoints()==0 ) {
+    error("the grid " + getPntrToArgument(0)->getName() + " was never calculated. "
+          "With STRIDE=0 (the default) the grid is written at the end of the run, so it must be accumulated over the trajectory "
+          "(e.g. HISTOGRAM, or RDF with CLEAR=0) or calculated at every step for another action. Use STRIDE to write an instantaneous grid");
+  }
 
   if( getName()=="DUMPCUBE" ) {
     double lunit=1.0;

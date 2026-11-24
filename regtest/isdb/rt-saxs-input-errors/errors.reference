@@ -1,0 +1,4 @@
+SAXS with an atom listed twice: exit code 1
+ERROR in input to action SAXS : ATOMS contains duplicate atoms (atom 1 is listed more than once) 
+SANS with an atom listed twice: exit code 1
+ERROR in input to action SANS : ATOMS contains duplicate atoms (atom 4 is listed more than once) 

@@ -34,8 +34,16 @@
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
 #include "tools/Tree.h"
+#include "tools/OpenMP.h"
 
 namespace PLMD {
+
+namespace {
+/// Threads to copy n atoms (see OpenMP.h)
+unsigned atomCopyThreads(const std::size_t n) {
+  return OpenMP::getGoodNumThreads<Vector>(nullptr,n);
+}
+}
 
 ActionAtomistic::~ActionAtomistic() {
 // empty destructor to delete unique_ptr
@@ -63,49 +71,9 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 }
 
 void ActionAtomistic::getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev ) {
-  std::vector<ActionShortcut*> shortcuts = plumed.getActionSet().select<ActionShortcut*>();
-  bool foundpdb=false;
-  for(const auto & ss : shortcuts ) {
-    if( ss->getName()=="READMASSCHARGE" ) {
-      foundpdb=true;
-      ActionWithValue* mv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_mass");
-      plumed_assert( mv );
-      masv.push_back( mv->copyOutput(0) );
-      ActionWithValue* qv = plumed.getActionSet().selectWithLabel<ActionWithValue*>( ss->getShortcutLabel() + "_charges");
-      plumed_assert( qv );
-      chargev.push_back( qv->copyOutput(0) );
-    }
-  }
-  std::vector<ActionWithValue*> vatoms = plumed.getActionSet().select<ActionWithValue*>();
-  for(const auto & vv : vatoms ) {
-    plumed_assert(vv); // needed for following calls, see #1046
-    ActionToPutData* ap = vv->castToActionToPutData();
-    if( ap ) {
-      if( ap->getRole()=="x" ) {
-        xpos.push_back( ap->copyOutput(0) );
-      }
-      if( ap->getRole()=="y" ) {
-        ypos.push_back( ap->copyOutput(0) );
-      }
-      if( ap->getRole()=="z" ) {
-        zpos.push_back( ap->copyOutput(0) );
-      }
-      if( !foundpdb && ap->getRole()=="m" ) {
-        masv.push_back( ap->copyOutput(0) );
-      }
-      if( !foundpdb && ap->getRole()=="q" ) {
-        chargev.push_back( ap->copyOutput(0) );
-      }
-    }
-    ActionWithVirtualAtom* av = vv->castToActionWithVirtualAtom();
-    if( av || vv->getName()=="ARGS2VATOM" ) {
-      xpos.push_back( vv->copyOutput( vv->getLabel() + ".x") );
-      ypos.push_back( vv->copyOutput( vv->getLabel() + ".y") );
-      zpos.push_back( vv->copyOutput( vv->getLabel() + ".z") );
-      masv.push_back( vv->copyOutput( vv->getLabel() + ".mass") );
-      chargev.push_back( vv->copyOutput( vv->getLabel() + ".charge") );
-    }
-  }
+  // the lists are kept by the ActionSet, so that they are not rebuilt by scanning
+  // all the actions every time a new atomistic action is created
+  plumed.getActionSet().getAtomValues( xpos, ypos, zpos, masv, chargev );
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ) {
@@ -129,17 +97,21 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
     clearDependencies();
   }
   unique.clear();
+  unique.reserve(nat);
   std::vector<bool> requirements( xpos.size(), false );
   if( boxValue ) {
     addDependency( boxValue->getPntrToAction() );
   }
+  // the atoms of the first position value (the atoms of the MD code) are found without a search
+  const std::size_t nfirst=xpos.empty() ? 0 : xpos[0]->getNumberOfValues();
   for(unsigned i=0; i<indexes.size(); i++) {
     if(indexes[i].index()>=n) {
       std::string num;
       Tools::convert( indexes[i].serial(),num );
       error("atom " + num + " out of range");
     }
-    atom_value_ind[i] = getValueIndices( indexes[i] );
+    atom_value_ind[i] = indexes[i].index()<nfirst ? std::pair<std::size_t,std::size_t>(0,indexes[i].index())
+                        : getValueIndices( indexes[i] );
     requirements[atom_value_ind[i].first] = true;
     if( atom_value_ind[i].first==0 ) {
       unique.push_back(indexes[i]);
@@ -149,25 +121,28 @@ void ActionAtomistic::requestAtoms(const std::vector<AtomNumber> & a, const bool
   }
 
   atom_value_ind_grouped.clear();
+  massesAndChargesRetrieved=false;
 
-  if(atom_value_ind.size()>0) {
-    auto prev_nn=atom_value_ind[0].first;
-    atom_value_ind_grouped.push_back(
-      std::pair<std::size_t,std::vector<std::size_t>>(
-        prev_nn, {}));
-    atom_value_ind_grouped.back().second.push_back(atom_value_ind[0].second);
-    for(unsigned i=1; i<atom_value_ind.size(); i++) {
-      auto nn = atom_value_ind[i].first;
-      auto kk = atom_value_ind[i].second;
-      if(nn!=prev_nn)
-        atom_value_ind_grouped.push_back(std::pair<std::size_t,std::vector<std::size_t>>(nn, {}));
-      atom_value_ind_grouped.back().second.push_back(kk);
-      prev_nn=nn;
+  // consecutive atoms from the same value form a group
+  for(std::size_t i=0; i<atom_value_ind.size();) {
+    const auto nn=atom_value_ind[i].first;
+    std::size_t j=i+1;
+    while(j<atom_value_ind.size() && atom_value_ind[j].first==nn) {
+      ++j;
     }
+    std::vector<std::size_t> kk(j-i);
+    for(std::size_t l=i; l<j; ++l) {
+      kk[l-i]=atom_value_ind[l].second;
+    }
+    atom_value_ind_grouped.emplace_back(nn,std::move(kk));
+    i=j;
   }
 
   // Add the dependencies to the actions that we require
+  const auto nunique=unique.size();
   Tools::removeDuplicates(unique);
+  // (the atoms that are not in unique are virtual atoms, one per value)
+  atomsAreUnique=(unique.size()==nunique);
   value_depends.resize(0);
   for(unsigned i=0; i<requirements.size(); ++i ) {
     if( !requirements[i] ) {
@@ -257,7 +232,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
         for(int k=0; k<3; k++) {
           virial(i,k)= (valuebox[j](i,k)-ref)/delta;
         }
-// BE CAREFUL WITH NON ORTHOROMBIC CELL
+// BE CAREFUL WITH NON ORTHORHOMBIC CELL
       virial=-matmul(box.transpose(),virial);
       for(int i=0; i<3; i++)
         for(int k=0; k<3; k++) {
@@ -425,7 +400,6 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const
     if(!ok) {
       action->error("it was not possible to interpret atom name " + strings[i]);
     }
-    // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }
 
@@ -447,7 +421,10 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
     plumed_assert(ptr); // needed for following calls, see #1046
     PbcAction* pbca = ptr->castToPbcAction();
     plumed_assert( pbca );
-    actionPbc=pbca->pbc;
+    // the copy is needed only when the box changed (or when this action changed its copy, e.g. with changeBox)
+    if( actionPbc.getVersion()!=pbca->pbc.getVersion() ) {
+      actionPbc=pbca->pbc;
+    }
   }
   if( donotretrieve || indexes.size()==0 ) {
     return;
@@ -468,35 +445,42 @@ void ActionAtomistic::retrieveAtoms( const bool& force ) {
   } else if( (chargev[0]->getPntrToAction())->getName()=="CONSTANT" ) {
     chargesWereSet=true;  // Read masses from PDB file
   }
-  unsigned j = 0;
-
-// for(const auto & a : atom_value_ind) {
-//   std::size_t nn = a.first, kk = a.second;
-//   actionPositions[j][0] = xpos[nn]->data[kk];
-//   actionPositions[j][1] = ypos[nn]->data[kk];
-//   actionPositions[j][2] = zpos[nn]->data[kk];
-//   charges[j] = chargev[nn]->data[kk];
-//   masses[j] = masv[nn]->data[kk];
-//   j++;
-// }
-
+  // masses and charges are usually constant: copy them only when they can have changed
+  bool constantMassesAndCharges=true;
   for(const auto & a : atom_value_ind_grouped) {
-    const auto nn=a.first;
-    auto & xp=xpos[nn]->data;
-    auto & yp=ypos[nn]->data;
-    auto & zp=zpos[nn]->data;
-    auto & ch=chargev[nn]->data;
-    auto & ma=masv[nn]->data;
-    for(const auto & kk : a.second) {
-      actionPositions[j][0] = xp[kk];
-      actionPositions[j][1] = yp[kk];
-      actionPositions[j][2] = zp[kk];
-      charges[j] = ch[kk];
-      masses[j] = ma[kk];
-      j++;
+    if( !masv[a.first]->isConstant() || !chargev[a.first]->isConstant() ) {
+      constantMassesAndCharges=false;
+      break;
     }
   }
-
+  const bool copyMassesAndCharges=!(massesAndChargesRetrieved && constantMassesAndCharges);
+  std::size_t j = 0;
+  for(const auto & a : atom_value_ind_grouped) {
+    const auto nn=a.first;
+    const double* const xp=xpos[nn]->data.data();
+    const double* const yp=ypos[nn]->data.data();
+    const double* const zp=zpos[nn]->data.data();
+    const std::size_t* const kk=a.second.data();
+    const std::size_t n=a.second.size();
+    Vector* const pos=actionPositions.data()+j;
+    [[maybe_unused]] const unsigned nt=atomCopyThreads(n);
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<n; ++i) {
+      pos[i][0] = xp[kk[i]];
+      pos[i][1] = yp[kk[i]];
+      pos[i][2] = zp[kk[i]];
+    }
+    if( copyMassesAndCharges ) {
+      const auto & ch=chargev[nn]->data;
+      const auto & ma=masv[nn]->data;
+      for(std::size_t i=0; i<n; ++i) {
+        charges[j+i] = ch[kk[i]];
+        masses[j+i] = ma[kk[i]];
+      }
+    }
+    j+=n;
+  }
+  massesAndChargesRetrieved=constantMassesAndCharges;
 }
 
 void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply, unsigned& ind) {
@@ -509,28 +493,25 @@ void ActionAtomistic::setForcesOnAtoms(const std::vector<double>& forcesToApply,
     zpos[value_depends[i]]->hasForce = true;
   }
 
-// for(const auto & a : atom_value_ind) {
-//   plumed_dbg_massert( ind<forcesToApply.size(), "problem setting forces in " + getLabel() );
-//   std::size_t nn = a.first, kk = a.second;
-//   xpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-//   ypos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-//   zpos[nn]->inputForce[kk] += forcesToApply[ind]; ind++;
-// }
 
   for(const auto & a : atom_value_ind_grouped) {
     const auto nn=a.first;
     plumed_dbg_assert(ind<forcesToApply.size()) << "problem setting forces in " << getLabel();
-    auto & xp=xpos[nn]->inputForce;
-    auto & yp=ypos[nn]->inputForce;
-    auto & zp=zpos[nn]->inputForce;
-    for(const auto & kk : a.second) {
-      xp[kk] += forcesToApply[ind];
-      ind++;
-      yp[kk] += forcesToApply[ind];
-      ind++;
-      zp[kk] += forcesToApply[ind];
-      ind++;
+    double* const xp=xpos[nn]->inputForce.data();
+    double* const yp=ypos[nn]->inputForce.data();
+    double* const zp=zpos[nn]->inputForce.data();
+    const std::size_t* const kk=a.second.data();
+    const std::size_t n=a.second.size();
+    const double* const f=forcesToApply.data()+ind;
+    // an atom requested twice would be written by two threads
+    [[maybe_unused]] const unsigned nt=atomsAreUnique ? atomCopyThreads(n) : 1;
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<n; ++i) {
+      xp[kk[i]] += f[3*i];
+      yp[kk[i]] += f[3*i+1];
+      zp[kk[i]] += f[3*i+2];
     }
+    ind+=3*n;
   }
 
   setForcesOnCell( forcesToApply, ind );
@@ -584,25 +565,125 @@ unsigned ActionAtomistic::getTotAtoms()const {
   return natoms;
 }
 
+namespace {
+/// matmul(rotation,Vector(x,y,z)) written out for the loops on all the atoms below, where it is several times faster.
+/// The sums start from zero and are done in the same order as in matmul, so that the result is identical.
+inline void rotateVector( const Tensor& r, const double x, const double y, const double z,
+                          double& rx, double& ry, double& rz ) {
+  rx=((0.0+r(0,0)*x)+r(0,1)*y)+r(0,2)*z;
+  ry=((0.0+r(1,0)*x)+r(1,1)*y)+r(1,2)*z;
+  rz=((0.0+r(2,0)*x)+r(2,1)*y)+r(2,2)*z;
+}
+}
+
+void ActionAtomistic::translateAllGlobalPositions(const Vector& shift) {
+  modifiesGlobalAtoms=true;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      xp[i]+=shift[0];
+      yp[i]+=shift[1];
+      zp[i]+=shift[2];
+    }
+  }
+}
+
+void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation) {
+  modifiesGlobalAtoms=true;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      double rx, ry, rz;
+      rotateVector( rotation, xp[i], yp[i], zp[i], rx, ry, rz );
+      xp[i]=rx;
+      yp[i]=ry;
+      zp[i]=rz;
+    }
+  }
+}
+
+void ActionAtomistic::rotateAllGlobalPositions(const Tensor& rotation, const Vector& shiftBefore, const Vector& shiftAfter) {
+  modifiesGlobalAtoms=true;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & xp=xpos[j]->data;
+    auto & yp=ypos[j]->data;
+    auto & zp=zpos[j]->data;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      double rx, ry, rz;
+      rotateVector( rotation, xp[i]-shiftBefore[0], yp[i]-shiftBefore[1], zp[i]-shiftBefore[2], rx, ry, rz );
+      xp[i]=rx+shiftAfter[0];
+      yp[i]=ry+shiftAfter[1];
+      zp[i]=rz+shiftAfter[2];
+    }
+  }
+}
+
+Vector ActionAtomistic::getTotalForceOnAllAtoms() const {
+  Vector totForce;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    const auto & fx=xpos[j]->inputForce;
+    const auto & fy=ypos[j]->inputForce;
+    const auto & fz=zpos[j]->inputForce;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    for(std::size_t i=0; i<n; ++i) {
+      totForce+=Vector(fx[i],fy[i],fz[i]);
+    }
+  }
+  return totForce;
+}
+
+Vector ActionAtomistic::rotateForcesOnAllAtoms(const Tensor& rotation) {
+  Vector totForce;
+  for(unsigned j=0; j<xpos.size(); ++j) {
+    auto & fx=xpos[j]->inputForce;
+    auto & fy=ypos[j]->inputForce;
+    auto & fz=zpos[j]->inputForce;
+    const std::size_t n=xpos[j]->getNumberOfValues();
+    if( n>0 ) {
+      xpos[j]->hasForce=true;
+      ypos[j]->hasForce=true;
+      zpos[j]->hasForce=true;
+    }
+    double tx=totForce[0], ty=totForce[1], tz=totForce[2];
+    for(std::size_t i=0; i<n; ++i) {
+      double nx, ny, nz;
+      rotateVector( rotation, fx[i], fy[i], fz[i], nx, ny, nz );
+      // the difference is added (as addForce would do) so that the result is identical
+      fx[i]+=nx-fx[i];
+      fy[i]+=ny-fy[i];
+      fz[i]+=nz-fz[i];
+      tx+=nx;
+      ty+=ny;
+      tz+=nz;
+    }
+    totForce=Vector(tx,ty,tz);
+  }
+  return totForce;
+}
+
 void ActionAtomistic::makeWhole() {
   if(actionMoldat && actionMoldat->isWhole()) {
     // make sure the tree has been constructed
     if(!tree) {
       tree=std::make_unique<Tree>(actionMoldat);
+      tree->buildTree(getAbsoluteIndexes());
     }
+    // link j: from atom root_indexes[j] to atom tree_indexes[j+1]
     const auto & tree_indexes=tree->getTreeIndexes();
     const auto & root_indexes=tree->getRootIndexes();
-    for(unsigned j=0; j<root_indexes.size(); j++) {
-      const Vector & first (actionPositions[root_indexes[j]]);
-      Vector & second (actionPositions[tree_indexes[j]]);
-      second=first+pbcDistance(first,second);
+    if(root_indexes.size()>0) {
+      actionPbc.makeWhole(actionPositions, root_indexes.size(), root_indexes.data(), tree_indexes.data()+1);
     }
-  } else {
-    for(unsigned j=0; j<actionPositions.size()-1; ++j) {
-      const Vector & first (actionPositions[j]);
-      Vector & second (actionPositions[j+1]);
-      second=first+pbcDistance(first,second);
-    }
+  } else if(actionPositions.size()>1) {
+    // link j: from atom j to atom j+1
+    actionPbc.makeWhole(actionPositions, actionPositions.size()-1);
   }
 }
 
@@ -618,12 +699,12 @@ void ActionAtomistic::getGradient( const unsigned& ind, Vector& deriv, std::map<
 }
 
 void ActionAtomistic::updateUniqueLocal( const bool& useunique, const std::vector<int>& g2l ) {
+  // The flag is set again when the atoms are requested again or when the local atoms change
+  unique_local_needs_update=false;
   if( useunique ) {
     unique_local=unique;
     return;
   }
-  // Update unique local if it needs an update
-  unique_local_needs_update=false;
   unique_local.clear();
   for(auto pp=unique.begin(); pp!=unique.end(); ++pp) {
     if(g2l[pp->index()]>=0) {

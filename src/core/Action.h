@@ -23,6 +23,7 @@
 #define __PLUMED_core_Action_h
 #include <iomanip>
 #include <vector>
+#include <cstdint>
 #include <string>
 #include <set>
 #include "tools/Keywords.h"
@@ -35,6 +36,8 @@ namespace PLMD {
 
 class PDB;
 class PlumedMain;
+class CheckpointWriter;
+class CheckpointReader;
 class Communicator;
 class ActionWithValue;
 class ActionWithArguments;
@@ -75,6 +78,7 @@ public:
 /// in the plumed.dat file and are applied in order at each time-step.
 class Action {
   friend class ActionShortcut;
+  friend class PlumedMain;
   using KeyMap = TokenizedLine;
 /// Name of the directive in the plumed.dat file.
   const std::string actionName;
@@ -121,6 +125,8 @@ private:
   std::set<std::string> actionOptions;
 
   bool restart;
+/// NO_TRIM: the files of this action are not trimmed at the restart step
+  bool noTrim=false;
 
   bool doCheckPoint;
 
@@ -128,6 +134,15 @@ private:
 
 /// The set of default arguments that we are using
   std::string defaults;
+
+/// See setLaunchable(): whether launch() should be called
+  bool launchable=false;
+/// launch() was called and calculate() has not used it yet
+  bool launched=false;
+/// The forward loop in which this action was calculated last
+  std::uint64_t forwardLoop=0;
+/// The version of the atoms when launch() was called (see PlumedMain::atomsVersion)
+  std::uint64_t launchAtomsVersion=0;
 public:
 
 /// Reference to main plumed object
@@ -147,7 +162,7 @@ public:
 
 /// Get the value of kBT by either reading the TEMP keyword
 /// and multiplying the temperature by Boltzmann's constant
-/// or get it fro the MD code
+/// or get it fro the MD code. It can only be called in the constructor.
   double getkBT();
 
 /// Return the present timestep
@@ -161,6 +176,10 @@ public:
 
 /// Return true if we are doing a restart
   bool getRestart()const;
+/// True if the files of this action are not trimmed at the restart step (NO_TRIM)
+  bool getNoTrim()const {
+    return noTrim;
+  }
 
 /// Return true if we are doing at a checkpoint step
   bool getCPT()const;
@@ -258,6 +277,18 @@ public:
   int getReplicaIndex() const;
 
   const Keywords& keywords;
+/// Same object as keywords, read through a call defined in Action.cpp.
+/// Constructors of classes that derive virtually from Action should use it when
+/// their first statement reads the keywords: GCC>=14 emits the never-called
+/// complete-object constructor of an abstract class without constructing the
+/// virtual base Action, and warns (-Wuninitialized) on a direct read of keywords there.
+  const Keywords& getKeywords() const;
+/// false after the constructor: keywords refers to an object that exists only while the action is constructed
+  bool keywordsAvailable=true;
+/// Called by ActionRegister when the constructor has returned
+  void releaseKeywords() {
+    keywordsAvailable=false;
+  }
 /// Prepare an Action for calculation
 /// This can be used by Action if they need some special preparation
 /// before calculation. Typical case is for collective variables
@@ -281,6 +312,31 @@ public:
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
 
+/// Start the calculation without waiting for its result (e.g. queue the work on a GPU), see setLaunchable().
+/// Called as soon as the actions this one depends on have been calculated, possibly before the calculate()
+/// of actions that come first in the input, with the atoms already retrieved. It must not change what other
+/// actions can see (values, derivatives, forces). calculate() collects the result if takeLaunch() is true,
+/// and otherwise does all the work: launch() is not always called (e.g. with numerical derivatives).
+  virtual void launch() {}
+
+/// Discard the work started by launch().
+/// Called instead of using it when another action changed the atoms (e.g. FIT_TO_TEMPLATE) after launch():
+/// the atoms are then retrieved again and calculate() is called as if launch() had not been.
+/// It should wait for the queued work if that reads or writes data of this action.
+  virtual void cancelLaunch() {}
+
+protected:
+/// Ask that launch() is called before calculate()
+/// (unless the environment variable PLUMED_LAUNCH is set to "no"). It writes in the log.
+  void setLaunchable();
+/// To be used once in calculate(): true if the work was queued by launch() (and it is still valid)
+  bool takeLaunch() {
+    const bool l=launched;
+    launched=false;
+    return l;
+  }
+public:
+
 /// Before Update.
 /// This is a special method that is called just
 /// before the update() method. It can be used by
@@ -299,6 +355,20 @@ public:
 /// This method is called once at the very end of the calculation.
 /// The set of all Actions in run for the final time in forward order.
   virtual void runFinalJobs() {}
+
+/// Return true if the action keeps an internal state from one step to the next
+/// that must be restored for an exact restart (accumulators, hills, random
+/// generators, ...). Such actions store it in writeCheckpoint() and restore it in
+/// readCheckpoint(); an action that returns true and writes nothing gets a
+/// warning that the exact restart is not guaranteed. See CHECKPOINT.
+  virtual bool hasCheckpointState() const {
+    return false;
+  }
+/// Store the internal state in the checkpoint. Called on every rank with the
+/// state at the start of the step (after the update of the previous step).
+  virtual void writeCheckpoint(CheckpointWriter&) {}
+/// Restore the internal state from the checkpoint, before the first step after a restart.
+  virtual void readCheckpoint(CheckpointReader&) {}
 
 /// Tell to the Action to flush open files
   void fflush();
@@ -439,6 +509,8 @@ void Action::parse(const std::string&key,T&t) {
     if( keywords.getDefaultValue(key,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,t) ) {
         plumed_error() <<"ERROR in action "<<actionName<<" with label "<<actionLabel<<" : keyword "<<key<<" has weird default value";
+      } else if( def.find(" ")!=std::string::npos ) {
+        def = "{" + def + "}";
       }
       defaults += " " + key + "=" + def;
     } else if( keywords.style(key,"compulsory") ) {
@@ -479,8 +551,6 @@ void Action::parseVector(const std::string&key,std::vector<T>&t) {
 
   // Check vectors size is correct (not if this is atoms or ARG)
   if( !keywords.style(key,"atoms") && found ) {
-//     bool skipcheck=false;
-//     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
     if( !skipcheck && t.size()!=size ) {
       error("vector read in for keyword " + key + " has the wrong size");
     }

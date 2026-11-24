@@ -155,7 +155,7 @@ PLUMED_REGISTER_ACTION(TD_Custom,"TD_CUSTOM")
 
 void TD_Custom::registerKeywords(Keywords& keys) {
   TargetDistribution::registerKeywords(keys);
-  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the \\f$k_B T\\f$ and _beta_ variables.");
+  keys.add("compulsory","FUNCTION","The function you wish to use for the target distribution where you should use the variables _s1_,_s2_,... for the arguments. You can also use the current estimate of the FES by using the variable _FE_ and the temperature by using the $k_B T$ and _beta_ variables.");
   keys.use("WELLTEMPERED_FACTOR");
   keys.use("SHIFT_TO_ZERO");
 }
@@ -296,7 +296,7 @@ void TD_Custom::updateGrid() {
   if(norm>0.0) {
     targetDistGrid().scaleAllValuesAndDerivatives(1.0/norm);
   } else if(!isTargetDistGridShiftedToZero()) {
-    plumed_merror(getName()+": The target distribution function cannot be normalized proberly. You should change the definition of the function used for the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
+    plumed_merror(getName()+": The target distribution function cannot be normalized properly. You should change the definition of the function used for the target distribution to avoid this. You can also use the SHIFT_TO_ZERO keyword to avoid this problem.");
   }
   logTargetDistGrid().setMinToZero();
 }

@@ -126,6 +126,26 @@ int main(){
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1");
   test_line(ofs,plumed,"COMBINE ARG=d,d1 COEFFICIENTS=3,3 PARAMETERS=1,2 POWERS=4");
   test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 GRID_MIN=bla GRID_MAX=100");
+// PBMETAD needs the temperature
+  test_line(ofs,plumed,"PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 HEIGHT=1");
+// the arguments of a PBMETAD family must have the same periodicity
+  test_line(ofs,plumed,"PBMETAD ARG=d,t PF0=d,t PACE=1 SIGMA=1 HEIGHT=1 TEMP=300");
+// invalid values
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=0 HEIGHT=1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 SIGMA_MIN=0.1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=0 WALKERS_RSTRIDE=0");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 WALKERS_N=2 WALKERS_ID=-1");
+  test_line(ofs,plumed,"METAD ARG=d PACE=1 SIGMA=1 HEIGHT=1 GRID_WSTRIDE=10");
+  test_line(ofs,plumed,"PBMETAD ARG=d,d1 PACE=1 SIGMA=1,1 TAU=-1 BIASFACTOR=5 TEMP=300");
+// a vector given to a keyword that only accepts scalars
+  plumed.cmd("readInputLine","dv: DISTANCE ATOMS1=1,2 ATOMS2=3,4");
+  test_line(ofs,plumed,"RESTRAINT_SCALAR ARG=dv AT=1 KAPPA=1");
+// biases act on scalars (BIASVALUE accepts vectors with one element)
+  test_line(ofs,plumed,"BIASVALUE ARG=dv");
+// MOVINGRESTRAINT needs KAPPA0 and a valid VERSE, MAXENT a valid TYPE
+  test_line(ofs,plumed,"MOVINGRESTRAINT ARG=d STEP0=0 AT0=1 STEP1=10 AT1=2 KAPPA1=1");
+  test_line(ofs,plumed,"MOVINGRESTRAINT ARG=d VERSE=X STEP0=0 AT0=1 KAPPA0=1");
+  test_line(ofs,plumed,"MAXENT ARG=d AT=1 TAU=1 TYPE=EQUALS TEMP=300");
 
 // these should not fail
   plumed.cmd("readInputLine","m1: METAD ARG=d PACE=1 SIGMA=5 HEIGHT=1 FILE=H1 FMT=%9.5f");

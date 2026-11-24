@@ -112,10 +112,12 @@ private:
     std::string linkaction;
     ///This stores any pages of doucmentation that we should link to
     std::string linkpage;
+    /// For a deprecated keyword: the keyword that replaces it (empty if there is none)
+    std::string replacement;
     /// Do we allow stuff like key1, key2 etc
     bool allowmultiple;
     keyInfo();
-    //these functions are not neeeded (this is a struct), but are useful in constructing the key
+    //these functions are not needed (this is a struct), but are useful in constructing the key
     keyInfo& setType(KeyType t);
     keyInfo& setDocString(std::string_view d);
     keyInfo& setDefaultValue(std::string_view d);
@@ -143,7 +145,7 @@ private:
     /// The type of the component
     componentType type;
     component();
-    //these functions are not neeeded (this is a struct), but are useful in constructing the component
+    //these functions are not needed (this is a struct), but are useful in constructing the component
     component& setKey(std::string_view k);
     component& setDocstring(std::string_view d);
     component& setType(componentType t);
@@ -181,6 +183,13 @@ public:
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
   bool numbered( const std::string & k ) const;
+  /// Check whether this keyword explicitly accepts numbered input variants.
+  /// Unlike numbered(), this reports the allowmultiple registration used by
+  /// print_vim(); atom-list parsing permission alone does not enable it.
+  /// \param k Name of a registered keyword.
+  /// \return True if the keyword was explicitly registered as numbered.
+  /// \throws Exception If the keyword is not registered.
+  bool explicitlyNumbered( const std::string & k ) const;
   /// Get the ordered list of active keywords (not the reserved ones)
   const std::vector<std::string>& getKeys() const {
     return keys;
@@ -211,7 +220,7 @@ public:
   void add( std::string_view keytype, std::string_view key, std::string_view docstring );
 /// Add a keyword that was used in older versions of the code and that has now been replaced
   void addDeprecatedKeyword( std::string_view key, const std::string& replacement );
-/// Add a flag that was used in older versions of the the code that has now been replaced
+/// Add a flag that was used in older versions of the code that has now been replaced
   void addDeprecatedFlag( const std::string& key, const std::string& replacement );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
   void add( std::string_view keytype, std::string_view key, std::string_view defaultValue, std::string_view docstring );
@@ -225,6 +234,8 @@ public:
   bool reserved( std::string_view k ) const ;
 /// Get the type for the keyword with string k
   std::string getStyle(const std::string & k ) const ;
+/// The keyword that replaces the deprecated keyword k (empty if k is not deprecated or has no replacement)
+  std::string getDeprecatedReplacement( std::string_view k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
@@ -286,7 +297,7 @@ public:
   void addInputKeyword( const std::string & keyType, const std::string & key, const std::string & dataType, const std::string& defaultValue, const std::string & docstring );
   /// Create the documentation for a keyword that reads arguments
   void addInputKeyword( const std::string & keyType, const std::string & key, argType dataType, const std::string& defaultValue, const std::string & docstring );
-/// Check the documentation of the argument types
+/// Check that a value of this rank (with or without derivatives) is accepted by at least one of the keywords that read arguments
   bool checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const ;
 /// Get the valid types that can be used as argument for this keyword
   std::string getArgumentType( const std::string& name ) const ;
@@ -310,7 +321,7 @@ public:
   bool isActionNeeded( std::string_view name ) const ;
 /// Add a suffix to the list of possible action name suffixes
   void addActionNameSuffix( const std::string& suffix );
-  /** @brief checks that name is is a composition of basename and one of the possible suffixes
+  /** @brief checks that name is a composition of basename and one of the possible suffixes
 
   Cycles on the registered suffixed and return true if the combination
   `basename+suffix` equals to the passed name

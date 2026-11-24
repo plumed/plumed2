@@ -127,6 +127,9 @@ void Piecewise::read( Piecewise& func, ActionWithArguments* action, FunctionOpti
     }
   }
 
+  if( func.points.empty() ) {
+    action->error("no points found: use POINT0=x,y POINT1=x,y ...");
+  }
   for(unsigned i=0; i<action->getNumberOfArguments(); i++) {
     if(action->getPntrToArgument(i)->isPeriodic()) {
       action->error("Cannot use PIECEWISE on periodic arguments");

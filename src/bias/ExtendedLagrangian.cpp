@@ -22,6 +22,7 @@
 #include "Bias.h"
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
+#include "tools/Checkpoint.h"
 #include "core/PlumedMain.h"
 
 namespace PLMD {
@@ -78,7 +79,7 @@ a Gaussian thermostat.
     of the real variable, and its velocity is set to zero.
     This is not expected to introduce big errors, but certainly is
     introducing a small inconsistency between a single long run
-    and many shorter runs.
+    and many shorter runs. Use [CHECKPOINT](CHECKPOINT.md) for an exact restart.
 
 ## Examples
 
@@ -107,6 +108,10 @@ ex: EXTENDED_LAGRANGIAN ARG=phi,psi KAPPA=20,20.0 TAU=0.1,0.1 FRICTION=10,10 TEM
 PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
 ```
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the positions and velocities of the fictitious particles and the random number generator of the thermostat are stored in the checkpoint, so that the restart is exact.
+
 */
 //+ENDPLUMEDOC
 
@@ -128,6 +133,11 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
 };
 
 PLUMED_REGISTER_ACTION(ExtendedLagrangian,"EXTENDED_LAGRANGIAN")
@@ -168,6 +178,26 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   kbt=getkBT();
   checkRead();
 
+  bool hasFriction=false;
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // the mass of the fictitious particle is KAPPA*TAU^2/(4 pi^2)
+    if(!(kappa[i]>0.0)) {
+      error("KAPPA should be positive");
+    }
+    if(!(tau[i]>0.0)) {
+      error("TAU should be positive");
+    }
+    if(friction[i]<0.0) {
+      error("FRICTION should not be negative");
+    }
+    if(friction[i]>0.0) {
+      hasFriction=true;
+    }
+  }
+  if(hasFriction && !(kbt>0.0)) {
+    log.printf("  WARNING: FRICTION without a temperature (TEMP, or passed by the MD code): the fictitious particles are cooled to zero temperature\n");
+  }
+
   log.printf("  with harmonic force constant");
   for(unsigned i=0; i<kappa.size(); i++) {
     log.printf(" %f",kappa[i]);
@@ -179,12 +209,6 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
     log.printf(" %f",tau[i]);
   }
   log.printf("\n");
-
-  bool hasFriction=false;
-  for(unsigned i=0; i<getNumberOfArguments(); ++i)
-    if(friction[i]>0.0) {
-      hasFriction=true;
-    }
 
   if(hasFriction) {
     log.printf("  with friction");
@@ -223,6 +247,41 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   log<<"\n";
 }
 
+
+// Positions and velocities of the fictitious particles, the velocity printed at
+// the next step and the generator of the thermostat; the components are written by Bias
+void ExtendedLagrangian::writeCheckpoint(CheckpointWriter& w) {
+  w.write("firsttime",(long long) firsttime);
+  w.write("fict",fict);
+  w.write("vfict",vfict);
+  w.write("vfict_laststep",vfict_laststep);
+  w.write("ffict",ffict);
+  w.write("random",rand.stateToString());
+  writeComponentValues(w);
+}
+
+void ExtendedLagrangian::readCheckpoint(CheckpointReader& r) {
+  long long ft;
+  r.read("firsttime",ft);
+  firsttime=ft!=0;
+  std::vector<double> f,v,vl,ff;
+  r.read("fict",f);
+  r.read("vfict",v);
+  r.read("vfict_laststep",vl);
+  r.read("ffict",ff);
+  const unsigned n=getNumberOfArguments();
+  if(f.size()!=n || v.size()!=n || vl.size()!=n || ff.size()!=n) {
+    error("the checkpoint was written with a different number of arguments");
+  }
+  fict=f;
+  vfict=v;
+  vfict_laststep=vl;
+  ffict=ff;
+  std::string state;
+  r.read("random",state);
+  rand.stateFromString(state);
+  readComponentValues(r);
+}
 
 void ExtendedLagrangian::calculate() {
 

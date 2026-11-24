@@ -210,6 +210,18 @@ struct PlumedInputFilename
     //! The name of plumed input file, empty by default
     std::optional<std::string> plumedFilename_{};
     bool replex_{};
+    //! The input record: after a restart from a checkpoint its init_step is the step from which
+    //! the simulation continues, which PLUMED needs (it is read when the module is set up)
+    const t_inputrec* inputrec_{};
+};
+
+/*! \libinternal \brief Provides the GPU used by this rank to the PLUMED module,
+ *  for the PLUMED actions that run on a GPU
+ */
+struct PlumedGpuDevice
+{
+    //! The index of the GPU as CUDA or HIP number it, -1 if there is none or GROMACS uses neither
+    int id_{ -1 };
 };
 
 /*! \libinternal \brief Provides the constant ensemble temperature
@@ -404,6 +416,7 @@ struct MDModulesNotifiers
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
+     * \tparam PlumedGpuDevice& Allows the PLUMED module to know the GPU used by this rank
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -422,7 +435,8 @@ struct MDModulesNotifiers
                            const gmx_multisim_t*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
-                           const PlumedInputFilename&>::type simulationSetupNotifier_;
+                           const PlumedInputFilename&,
+                           const PlumedGpuDevice&>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

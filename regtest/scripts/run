@@ -10,6 +10,8 @@ else
   make=make
 fi
 
+regtest_scripts_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 export valgrind=env
 
 for opt in ${*}
@@ -24,6 +26,7 @@ done
 
 date
 echo "Running regtest in $(pwd)"
+regtest_test_dir="$PWD"
 
 if [ "$valgrind" = valgrind ] ; then
 echo "using valgrind"
@@ -40,13 +43,25 @@ test -f config || {
 }
 
 mpiprocs=0
+plumed_thread_mpi=auto
 
 plumed_needs=
 plumed_modules=
+plumed_long=
+# Optional filename:absolute-tolerance entries. Other files use exact diffs.
+plumed_tolerance=()
 
 plumed_language=c++
+plumed_mpi_harness=no
 
 source ./config
+
+# These test types invoke a PLUMED CLTool rather than an external executable.
+plumed_cli_test=no
+plumed_internal_launch=no
+case "$type" in
+  driver|sum_hills|simplemd|plumed) plumed_cli_test=yes ;;
+esac
 
 for file in $extra_files
 do
@@ -57,31 +72,43 @@ echo "++ Test type: $type"
 echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
+# long tests run only when asked for (CI asks for them in its nightly run)
+if test "$plumed_long" = yes && test "$PLUMED_LONG_TESTS" != yes ; then
+  echo "DEFERRED (long test, set PLUMED_LONG_TESTS=yes to run it)"
+  exit 0
+fi
+
 mpi=env
 
 # this is the executable used for running the tests:
 plumed="${PLUMED_PROGRAM_NAME:-plumed}"
+# An injection host replaces CLTool invocations only. External-engine tests
+# still query the original executable and use their own initialization path.
+if [[ "$plumed_cli_test" = yes && -n "${PLUMED_CLI_PROGRAM_NAME:-}" ]]; then
+  plumed="$PLUMED_CLI_PROGRAM_NAME"
+fi
 
 # this is the executable used for getting the configuration:
 plumed_nompi="$plumed --no-mpi"
 
 root=$($plumed_nompi info --root)
+test_root=$(cd "$regtest_test_dir/../../.." && pwd)
 
 if test -z "$root" ; then
   echo "FAILURE: plumed executable not available"
   exit 1
 fi
 
-cd ../../../../
-if [[ "${PWD}"/ != "$root" ]] ; then
+if [[ "${test_root}"/ != "$root" ]] ; then
 echo "WARNING using plumed from $root"
 fi
-cd -
 
 
 if ((mpiprocs>0)); then
 mpi=""
-if $plumed_nompi config -q mpiexec
+if [[ -n "${PLUMED_MPIRUN:-}" ]]; then
+  mpi="$PLUMED_MPIRUN"
+elif $plumed_nompi config -q mpiexec
 then
   mpi="$($plumed_nompi config mpiexec)"
 fi
@@ -90,18 +117,68 @@ if test -z "$mpi" ; then
 fi
 mpi="$mpi -np $mpiprocs"
 
-if ! $plumed_nompi config -q has mpi
-then
-    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
-        echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
-      else
-        echo "SKIP_ON_TRAVIS found!"
-      fi
+if $plumed --has-mpi >/dev/null 2>&1 ; then
+  has_mpi=yes
+else
+  has_mpi=no
+fi
+
+# Older executables may not recognize this option. Treat that as unavailable
+# for internal launching; --has-mpi above still selects their native path.
+if $plumed_nompi --has-thread-mpi >/dev/null 2>&1 ; then
+  has_thread_mpi=yes
+else
+  has_thread_mpi=no
+fi
+
+has_real_mpi=no
+if $plumed_nompi --has-real-mpi >/dev/null 2>&1 ; then
+  # An injecting host can supply real MPI to a serial kernel at runtime.
+  # Check the live runtime before falling back to build-time configuration.
+  has_real_mpi=yes
+elif $plumed_nompi config -q has real_mpi >/dev/null 2>&1 ; then
+  has_real_mpi=yes
+elif $plumed_nompi info --configuration 2>/dev/null | grep -q -- '-D__PLUMED_HAS_MPI'; then
+  # Older kernels may not expose the real_mpi config query.
+  has_real_mpi=yes
+elif [[ "$has_mpi" = yes && "$has_thread_mpi" = no ]]; then
+  # Last-resort compatibility with older native-MPI executables.
+  has_real_mpi=yes
+fi
+
+if [[ "$has_real_mpi" = yes ]]; then
+  : # Native MPI remains the preferred path and uses the configured launcher.
+elif [[ "$has_thread_mpi" = yes ]]; then
+  if [[ "$plumed_cli_test" = yes && "$plumed_thread_mpi" = no ]]; then
+    if [[ "${plumed_chdir:-no}" = yes ]]; then
+      echo "NOT_APPLICABLE (CHDIR is unsupported with thread-MPI)"
     else
-      echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+      echo "NOT_APPLICABLE (thread-MPI disabled by test config)"
     fi
-  exit 0;
+    exit 0
+  fi
+  # The launcher dispatches PLUMED CLTools, including generic commands such as
+  # benchmark. External engines need a native-MPI PLUMED build.
+  if [[ ( "$plumed_cli_test" = yes || ( "$type" = make && "$plumed_mpi_harness" = yes ) ) && "$plumed_thread_mpi" != no && -z "${PLUMED_MPIRUN:-}" ]]; then
+    echo "++ Using PLUMED internal thread-MPI with $mpiprocs ranks"
+    mpi=env
+    plumed="$plumed --tmpi-threads $mpiprocs"
+    plumed_internal_launch=yes
+  else
+    echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+    exit 0
+  fi
+elif [[ "$has_mpi" = no ]]; then
+  if [ "$GITHUB_ACTIONS" = true ] ; then
+    if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+    else
+      echo "SKIP_ON_TRAVIS found!"
+    fi
+  else
+    echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
+  fi
+  exit 0
 fi
 
 else
@@ -112,7 +189,7 @@ fi
 
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
-    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
+    if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
       else
@@ -124,12 +201,19 @@ then
   exit 0;
 fi
 
+# Curated package checks can assert that their prerequisites are installed and
+# require actual execution. This bypasses eligibility only, never calculations
+# or comparisons; the package runner rejects any remaining skip or failure.
+if [[ ${PLUMED_REGTEST_FORCE_REQUIREMENTS:-no} = yes ]]; then
+  echo "Module/library prerequisites asserted by the package test selection"
+else
+source "$regtest_scripts_dir/requirements.sh"
 for need in $plumed_needs
 do
   echo "Checking for $need dependency"
-  if ! $plumed_nompi config -q has $need
+  if ! plumed_check_feature "$need"
   then
-    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
+    if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($need NOT ENABLED)"
       else
@@ -145,9 +229,9 @@ done
 for module in $plumed_modules
 do
   echo "Checking for $module module"
-  if ! $plumed_nompi config -q module $module
+  if ! plumed_check_module "$module"
   then
-    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
+    if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
       else
@@ -160,9 +244,11 @@ do
   fi
 done
 
+fi
+
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
-    if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
+    if [ "$GITHUB_ACTIONS" = true ] ; then
       if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
         echo "NOT_APPLICABLE (plumed_custom_skip)"
       else
@@ -176,11 +262,20 @@ if type -t plumed_custom_skip 1>/dev/null ; then
 fi
 
 if $plumed_nompi --is-installed ; then
-  export PLUMED_KERNEL="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}Kernel.$($plumed_nompi info --soext)"
-  export PLUMED_LIB="$root/../lib${PLUMED_PROGRAM_NAME:-plumed}.$($plumed_nompi info --soext)"
+  program_base=$(basename "${PLUMED_PROGRAM_NAME:-plumed}")
+  if [[ -z "${PLUMED_KERNEL:-}" ]]; then
+    export PLUMED_KERNEL="$root/../lib${program_base}Kernel.$($plumed_nompi info --soext)"
+  fi
+  if [[ -z "${PLUMED_LIB:-}" ]]; then
+    export PLUMED_LIB="$root/../lib${program_base}.$($plumed_nompi info --soext)"
+  fi
 else
-  export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed_nompi info --soext)"
-  export PLUMED_LIB="$root/src/lib/libplumed.$($plumed_nompi info --soext)"
+  if [[ -z "${PLUMED_KERNEL:-}" ]]; then
+    export PLUMED_KERNEL="$root/src/lib/libplumedKernel.$($plumed_nompi info --soext)"
+  fi
+  if [[ -z "${PLUMED_LIB:-}" ]]; then
+    export PLUMED_LIB="$root/src/lib/libplumed.$($plumed_nompi info --soext)"
+  fi
 fi
 if type -t plumed_regtest_before 1>/dev/null ; then
   plumed_regtest_before || exit 1
@@ -192,7 +287,12 @@ case "$type" in
     echo "FAILURE: in file not present"
     exit 1
   }
-  $mpi $valgrind $plumed simplemd < in > out 2> err
+  if [[ "$plumed_internal_launch" = yes ]]; then
+    # A future MPI-enabled simplemd must not consume one stdin across threads.
+    $mpi $valgrind $plumed simplemd in > out 2> err
+  else
+    $mpi $valgrind $plumed simplemd < in > out 2> err
+  fi
   ;;
 (driver)
   $mpi $valgrind $plumed driver $arg > out 2> err
@@ -207,7 +307,9 @@ case "$type" in
   if test -n "$plumed_src" ; then
     echo "CXX_SRC=$plumed_src" > Makefile
   fi
-  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 || test "$plumed_link" = shared ; then
+  if test "$plumed_link" = runtime ; then
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.runtime" ../../../scripts/exe.make >> Makefile
+  elif test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 || test "$plumed_link" = shared ; then
     cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make >> Makefile
   else
     cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make >> Makefile
@@ -224,10 +326,12 @@ subroutine a()
   call b(10.0)
 end subroutine a
 EOF
+    # flags given in the environment (e.g. -fsanitize in the sanitizers CI job) are kept
     if ! make test-fortran-arg-mismatch 2>err | grep SUCCESS=YES 1> /dev/null ; then
-      export PLUMED_FORTRAN_FLAGS=-fallow-argument-mismatch
+      plumed_fortran_flags_env="$PLUMED_FORTRAN_FLAGS"
+      export PLUMED_FORTRAN_FLAGS="$PLUMED_FORTRAN_FLAGS -fallow-argument-mismatch"
       if ! make test-fortran-arg-mismatch 2>err| grep SUCCESS=YES 1> /dev/null ; then
-        PLUMED_FORTRAN_FLAGS=""
+        PLUMED_FORTRAN_FLAGS="$plumed_fortran_flags_env"
       fi
     fi
 
@@ -291,11 +395,27 @@ EOF
   elif test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 ; then
     sed "s/-std=c++[0-9][0-9]/-std=$plumed_language/g" Makefile > __Makefile.tmp
     mv __Makefile.tmp Makefile
-    make exe 1>out 2> err
+    $make exe 1>out 2>err
   else
-    make exe 1>out 2> err
+    $make exe 1>out 2>err
   fi
-  $mpi $valgrind ./exe $arg >> out 2>> err
+  if [[ "$plumed_mpi_harness" = yes ]]; then
+    if [[ "$plumed_language" != c++ ]]; then
+      echo "FAILURE: plumed_mpi_harness requires the configured C++ language mode"
+      exit 1
+    fi
+    if ((mpiprocs<1)); then
+      echo "FAILURE: plumed_mpi_harness requires mpiprocs greater than zero"
+      exit 1
+    fi
+    if [[ "$plumed_internal_launch" = yes ]]; then
+      $valgrind ./exe -n "$mpiprocs" $arg >> out 2>> err
+    else
+      $mpi $valgrind ./exe -n "$mpiprocs" $arg >> out 2>> err
+    fi
+  else
+    $mpi $valgrind ./exe $arg >> out 2>> err
+  fi
  ;;
 (plumed)
   $mpi $valgrind $plumed $arg > out 2> err
@@ -325,6 +445,11 @@ for file in *.reference ; do
   if test -f "$new" ; then
     ../../../scripts/fixzeroes.sh "$file"
     cp "$new" "$new.zfix"
+    # on Windows, outputs not written through OFile (stdout, some cltools)
+    # have CRLF line endings: compare them as if they were LF
+    case "$(uname -s)" in
+      (MINGW*|MSYS*|CYGWIN*) sed -i 's/\r$//' "$new.zfix" ;;
+    esac
     ../../../scripts/fixzeroes.sh "$new.zfix"
     DIFFOPT=""
 # this is to enforce ASCII check
@@ -333,12 +458,22 @@ for file in *.reference ; do
 # In this way, at least PLUMED native files (with fields) will be assumed to be
 # ASCII and diff will be shown in the log
     test "$(head -c 10 "$file")" = "#! FIELDS " && DIFFOPT="-a"
-    out="$(diff $DIFFOPT "$file" "$new.zfix")"
-    test -n "$out" && {
+    tolerance=
+    for entry in "${plumed_tolerance[@]}"; do
+      if [[ "$new" = "${entry%:*}" ]]; then
+        tolerance="${entry##*:}"
+      fi
+    done
+    if [[ -n "$tolerance" ]]; then
+      out="$(../../../scripts/numeric-diff "$file" "$new.zfix" "$tolerance" 2>&1)"
+    else
+      out="$(diff $DIFFOPT "$file" "$new.zfix" 2>&1)"
+    fi
+    if [[ $? -ne 0 ]]; then
       echo FAILURE
       echo "Diff for ${file%.reference}:"
       echo "$out"
-    }
+    fi
   else
     echo FAILURE
     echo FILE $new does not exist

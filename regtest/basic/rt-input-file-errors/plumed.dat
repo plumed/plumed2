@@ -1,0 +1,4 @@
+# Errors in input files that were assertions (see config): a misaligned line in a PDB file,
+# a grid file whose bias column has another label (as in PLUMED-NEST 20.028 and 24.026)
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=colvar FMT=%8.4f

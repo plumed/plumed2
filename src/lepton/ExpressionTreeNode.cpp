@@ -1,42 +1,8 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * -------------------------------------------------------------------------- *
- *                                   Lepton                                   *
- * -------------------------------------------------------------------------- *
- * This is part of the Lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
- *                                                                            *
- * Portions copyright (c) 2013-2016 Stanford University and the Authors.      *
- * Authors: Peter Eastman                                                     *
- * Contributors:                                                              *
- *                                                                            *
- * Permission is hereby granted, free of charge, to any person obtaining a    *
- * copy of this software and associated documentation files (the "Software"), *
- * to deal in the Software without restriction, including without limitation  *
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,   *
- * and/or sell copies of the Software, and to permit persons to whom the      *
- * Software is furnished to do so, subject to the following conditions:       *
- *                                                                            *
- * The above copyright notice and this permission notice shall be included in *
- * all copies or substantial portions of the Software.                        *
- *                                                                            *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR *
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   *
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL    *
- * THE AUTHORS, CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,    *
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR      *
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE  *
- * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
- * -------------------------------------------------------------------------- *
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* -------------------------------------------------------------------------- *
  *                                   lepton                                   *
  * -------------------------------------------------------------------------- *
- * This is part of the lepton expression parser originating from              *
- * Simbios, the NIH National Center for Physics-Based Simulation of           *
- * Biological Structures at Stanford, funded under the NIH Roadmap for        *
- * Medical Research, grant U54 GM072970. See https://simtk.org.               *
+ * This is part of the lepton expression parser.                              *
+ * See https://openmm.org/development.                                        *
  *                                                                            *
  * Portions copyright (c) 2009-2021 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
@@ -96,7 +62,7 @@ ExpressionTreeNode::ExpressionTreeNode(Operation* operation) : operation(operati
 ExpressionTreeNode::ExpressionTreeNode(const ExpressionTreeNode& node) : operation(node.operation == NULL ? NULL : node.operation->clone()), children(node.getChildren()) {
 }
 
-ExpressionTreeNode::ExpressionTreeNode(ExpressionTreeNode&& node) : operation(node.operation), children(move(node.children)) {
+ExpressionTreeNode::ExpressionTreeNode(ExpressionTreeNode&& node) : operation(node.operation), children(std::move(node.children)) {
     node.operation = NULL;
     node.children.clear();
 }
@@ -141,7 +107,7 @@ ExpressionTreeNode& ExpressionTreeNode::operator=(ExpressionTreeNode&& node) {
     if (operation != NULL)
         delete operation;
     operation = node.operation;
-    children = move(node.children);
+    children = std::move(node.children);
     node.operation = NULL;
     node.children.clear();
     return *this;
@@ -165,7 +131,7 @@ void ExpressionTreeNode::assignTags(vector<const ExpressionTreeNode*>& examples)
         child.assignTags(examples);
     if (numTags == examples.size()) {
         // All the children matched existing tags, so possibly this node does too.
-        
+
         for (int i = 0; i < examples.size(); i++) {
             const ExpressionTreeNode& example = *examples[i];
             bool matches = (getChildren().size() == example.getChildren().size() && getOperation() == example.getOperation());
@@ -178,10 +144,11 @@ void ExpressionTreeNode::assignTags(vector<const ExpressionTreeNode*>& examples)
             }
         }
     }
-    
+
     // This node does not match any previous node, so assign a new tag.
-    
+
     tag = examples.size();
     examples.push_back(this);
 }
-}
+
+} // namespace PLMD

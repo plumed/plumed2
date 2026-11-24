@@ -41,7 +41,7 @@ PRINT ARG=d1,ff FILE=colvar
 ```
 
 You can perform the same calculation using [CUSTOM](CUSTOM.md), which will do the calculation exactly and not perform any interpolation. However,
-if for some reaon you only have the values of the function at a grid of point EVALUATE_FUNCTION_FROM_GRID may be a useful alternative as you can
+if for some reason you only have the values of the function at a grid of point EVALUATE_FUNCTION_FROM_GRID may be a useful alternative as you can
 use [REFERENCE_GRID](REFERENCE_GRID.md) to read in the values of the function at your grid of point from a file as shown below:
 
 ```plumed

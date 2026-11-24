@@ -1,0 +1,3 @@
+type=driver
+# scan of a distance from 0 to 2: bias at and beyond the ends of extended grids
+arg="--plumed plumed.dat --ixyz scan.xyz"

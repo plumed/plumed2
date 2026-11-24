@@ -4,7 +4,7 @@ SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 SUBDIRSTESTCLEAN := $(addsuffix .testclean,$(SUBDIRS))
 
-.PHONY: all checkfail copytodoc  clean valgrind $(SUBDIRS) $(SUBDIRSCLEAN) $(SUBDIRSVALGRIND) 
+.PHONY: all checkfail clean valgrind $(SUBDIRS) $(SUBDIRSCLEAN) $(SUBDIRSVALGRIND) 
 
 all: $(SUBDIRS)
 	scripts/check
@@ -12,9 +12,6 @@ all: $(SUBDIRS)
 
 checkfail:
 	scripts/check --fail
-
-copytodoc:
-	scripts/copytodoc
 
 clean: $(SUBDIRSCLEAN)
 

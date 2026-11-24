@@ -36,6 +36,7 @@
 #
 # PRINT ARG=t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,t24,t25,t26,t27,t28,t29,t30,t31,t32 FILE=colvar.ref FMT=%8.4f
 
+import glob
 import unittest
 import numpy as np
 import plumed
@@ -54,25 +55,27 @@ def cd(newdir):
 
 
 def read_xyz(filename):
-    xyz = open(filename)
-    n_atoms = int(xyz.readline())
-    _, trajectory = xyz.readline(), []
-    while True:
-        atom_type, coordinates = np.zeros(n_atoms).astype(str), np.zeros([n_atoms, 3])
-        for i in range(0, n_atoms):
-            line = xyz.readline()
-            atom, x, y, z = line.split()
-            atom_type[i] = atom
-            coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
-        trajectory.append(coordinates)
-        nextline = xyz.readline()
-        if nextline == "":
-            break
-        c_atoms = int(nextline)
-        if c_atoms != n_atoms:
-            break
-        _ = xyz.readline()
-    xyz.close()
+    with open(filename) as xyz:
+        n_atoms = int(xyz.readline())
+        _, trajectory = xyz.readline(), []
+        while True:
+            atom_type, coordinates = (
+                np.zeros(n_atoms).astype(str),
+                np.zeros([n_atoms, 3]),
+            )
+            for i in range(0, n_atoms):
+                line = xyz.readline()
+                atom, x, y, z = line.split()
+                atom_type[i] = atom
+                coordinates[i, :] = np.array([x, y, z], dtype=np.float64)
+            trajectory.append(coordinates)
+            nextline = xyz.readline()
+            if nextline == "":
+                break
+            c_atoms = int(nextline)
+            if c_atoms != n_atoms:
+                break
+            _ = xyz.readline()
     return trajectory
 
 
@@ -87,7 +90,8 @@ def create_plumed_var(p, name, command):
 
 class Test(unittest.TestCase):
     def runtest(self):
-        os.system("rm -f bck.*")
+        for backup in glob.glob("bck.*"):
+            os.remove(backup)
         # Output to four decimal places only
         np.set_printoptions(precision=4)
         # Read trajectory
@@ -152,61 +156,59 @@ class Test(unittest.TestCase):
         # Read in the correct answers that were calculated directly using PLUMED
         correct_torsions = np.loadtxt("colvar.ref")
         # Open an output file
-        of = open("logfile", "w+")
-
-        # Now analyze the trajectory
-        for step in range(0, num_frames):
-            of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
-            p.cmd("setStep", step)
-            p.cmd("setBox", box)
-            p.cmd("setMasses", masses)
-            p.cmd("setCharges", charges)
-            p.cmd("setPositions", traj[step])
-            p.cmd("setForces", forces)
-            p.cmd("setVirial", virial)
-            p.cmd("calc")
-            bias = np.zeros((1), dtype=np.float64)
-            p.cmd("getBias", bias)
-            variables = np.array(
-                [
-                    t1,
-                    t2,
-                    t3,
-                    t4,
-                    t5,
-                    t6,
-                    t7,
-                    t8,
-                    t9,
-                    t10,
-                    t11,
-                    t12,
-                    t13,
-                    t14,
-                    t15,
-                    t16,
-                    t17,
-                    t18,
-                    t19,
-                    t20,
-                    t21,
-                    t22,
-                    t23,
-                    t24,
-                    t25,
-                    t26,
-                    t27,
-                    t28,
-                    t29,
-                    t30,
-                    t31,
-                    t32,
-                ]
-            ).ravel()
-            zeros = variables - correct_torsions[step, 1:]
-            for data in zeros:
-                self.assertAlmostEqual(data, 0.0, places=4)
-        of.close()
+        with open("logfile", "w+") as of:
+            # Now analyze the trajectory
+            for step in range(0, num_frames):
+                of.write("RUNNING ANALYSIS FOR STEP " + str(step) + "\n")
+                p.cmd("setStep", step)
+                p.cmd("setBox", box)
+                p.cmd("setMasses", masses)
+                p.cmd("setCharges", charges)
+                p.cmd("setPositions", traj[step])
+                p.cmd("setForces", forces)
+                p.cmd("setVirial", virial)
+                p.cmd("calc")
+                bias = np.zeros((1), dtype=np.float64)
+                p.cmd("getBias", bias)
+                variables = np.array(
+                    [
+                        t1,
+                        t2,
+                        t3,
+                        t4,
+                        t5,
+                        t6,
+                        t7,
+                        t8,
+                        t9,
+                        t10,
+                        t11,
+                        t12,
+                        t13,
+                        t14,
+                        t15,
+                        t16,
+                        t17,
+                        t18,
+                        t19,
+                        t20,
+                        t21,
+                        t22,
+                        t23,
+                        t24,
+                        t25,
+                        t26,
+                        t27,
+                        t28,
+                        t29,
+                        t30,
+                        t31,
+                        t32,
+                    ]
+                ).ravel()
+                zeros = variables - correct_torsions[step, 1:]
+                for data in zeros:
+                    self.assertAlmostEqual(data, 0.0, places=4)
 
     def test(self):
         with cd("test/"):

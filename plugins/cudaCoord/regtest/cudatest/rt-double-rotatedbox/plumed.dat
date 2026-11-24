@@ -1,0 +1,30 @@
+LOAD FILE=../../../../CudaCoordination.so
+# In every frame of the trajectory the whole system is rigidly rotated (and
+# wrapped in the box). FIT_TO_TEMPLATE brings the frames back to the frame of
+# the template and rotates the box accordingly: the actions below receive a box
+# that is orthorhombic but NOT diagonal, as it happens in a funnel-like setup
+# (FIT_TO_TEMPLATE + coordination of the ligand with the solvent).
+# The host (1-20) is off-centre, so part of its "solvation shell" (21-220) is
+# across the periodic boundary: the test fails if the minimum image convention
+# is not applied with the full (rotated) box.
+FIT_TO_TEMPLATE STRIDE=1 REFERENCE=template-rotating.pdb TYPE=OPTIMAL
+
+# dual mode: the host with the solvent
+gpu:  CUDACOORDINATION GROUPA=1-20 GROUPB=21-220 R_0=0.4 NN=6 MM=12 D_MAX=2.5
+cpu:      COORDINATION GROUPA=1-20 GROUPB=21-220 SWITCH={RATIONAL R_0=0.4 NN=6 MM=12 D_MAX=2.5}
+# dual mode with a single atom in the first group, with a neighbour list
+gpu1: CUDACOORDINATION GROUPA=1 GROUPB=21-220 R_0=0.4 NN=6 MM=12 D_MAX=2.5 NL_CUTOFF=2.9
+cpu1:     COORDINATION GROUPA=1 GROUPB=21-220 SWITCH={RATIONAL R_0=0.4 NN=6 MM=12 D_MAX=2.5}
+# self mode
+gpus: CUDACOORDINATION GROUPA=1-220 R_0=0.4 NN=6 MM=12 D_MAX=2.5
+cpus:     COORDINATION GROUPA=1-220 SWITCH={RATIONAL R_0=0.4 NN=6 MM=12 D_MAX=2.5}
+
+diff:  CUSTOM ARG=gpu,cpu   FUNC=y-x PERIODIC=NO
+diff1: CUSTOM ARG=gpu1,cpu1 FUNC=y-x PERIODIC=NO
+diffs: CUSTOM ARG=gpus,cpus FUNC=y-x PERIODIC=NO
+
+PRINT ARG=gpu,cpu,gpu1,cpu1,gpus,cpus FILE=colvars FMT=%8.4f STRIDE=1
+PRINT ARG=diff,diff1,diffs FILE=colvar FMT=%8.4f STRIDE=1
+
+DUMPDERIVATIVES ARG=gpu,cpu FILE=deriv FMT=%8.5f
+FLUSH STRIDE=1

@@ -1,0 +1,16 @@
+type=driver
+plumed_modules=adjmat
+# NEIGHBORS with NHIGHEST=1 and NHIGHEST>1 must select the same neighbors as NLOWEST on the inverse matrix (diff must be zero)
+arg="--plumed plumed.dat --trajectory-stride 10 --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"
+export PLUMED_STACK_TRACE=no
+# NEIGHBORS only selects positive elements: a matrix with negative elements must give a clear error
+function plumed_regtest_after(){
+  printf "dmat: DISTANCE_MATRIX GROUPA=1-5 GROUPB=6-30\nndmat: CUSTOM ARG=dmat FUNC=-x PERIODIC=NO\nh: NEIGHBORS ARG=ndmat NHIGHEST=3\nPRINT ARG=h FILE=h\n" > bad_negative.dat
+  $plumed driver --plumed bad_negative.dat --ixyz trajectory.xyz > bad_negative.out 2>&1
+  if test $? -ne 0 && grep -q -F "elements larger than zero, but 3 neighbors were requested" bad_negative.out ; then
+    echo "negative: rejected" > errors
+  else
+    echo "negative: NOT REJECTED PROPERLY" > errors
+  fi
+}

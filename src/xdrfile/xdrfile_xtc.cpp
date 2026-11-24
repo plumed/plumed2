@@ -57,29 +57,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xdrfile_xtc.h"
 	
 #define MAGIC 1995
+/* PLUMED: GROMACS 2023 and later write frames with more than XTC_1995_MAX_NATOMS
+ * atoms with this magic number, and the size of the compressed data as a 64 bit
+ * integer (see GROMACS src/gromacs/fileio/xdrf.h) */
+#define MAGIC_2023 2023
+#define XTC_1995_MAX_NATOMS 298261617
 
 namespace PLMD {
 namespace xdrfile {
 
 enum { FALSE, TRUE };
 
-static int xtc_header(XDRFILE *xd,int *natoms,int *step,float *time,mybool bRead)
+/* PLUMED: the magic number is returned in *magic when reading, and chosen
+ * from the number of atoms when writing */
+static int xtc_header(XDRFILE *xd,int *natoms,int *step,float *time,mybool bRead,int *magic)
 {
-	int result,magic,n=1;
+	int result,n=1;
 	
 	/* Note: read is same as write. He he he */
-	magic  = MAGIC;
-	if ((result = xdrfile_write_int(&magic,n,xd)) != n)
+	if (!bRead)
+		*magic = (*natoms > XTC_1995_MAX_NATOMS) ? MAGIC_2023 : MAGIC;
+	if ((result = xdrfile_write_int(magic,n,xd)) != n)
 		{
 			if (bRead)
 				return exdrENDOFFILE;
 			else
 				return exdrINT;
 		}
-	if (magic != MAGIC)
+	if (*magic != MAGIC && *magic != MAGIC_2023)
 		return exdrMAGIC;
 	if ((result = xdrfile_write_int(natoms,n,xd)) != n)
 		return exdrINT;
+	/* PLUMED: a negative number of atoms is not a valid frame */
+	if (*natoms < 0)
+		return exdrHEADER;
 	if ((result = xdrfile_write_int(step,n,xd)) != n)
 		return exdrINT;
 	if ((result = xdrfile_write_float(time,n,xd)) != n)
@@ -89,9 +100,9 @@ static int xtc_header(XDRFILE *xd,int *natoms,int *step,float *time,mybool bRead
 }
 
 static int xtc_coord(XDRFILE *xd,int *natoms,matrix box,rvec *x,float *prec,
-					 mybool bRead)
+					 mybool bRead,int magic)
 {
-	int i,j,result;
+	int result;
     
 	/* box */
 	result = xdrfile_read_float(box[0],DIM*DIM,xd);
@@ -101,13 +112,13 @@ static int xtc_coord(XDRFILE *xd,int *natoms,matrix box,rvec *x,float *prec,
 		{
 			if (bRead)
 				{
-					result = xdrfile_decompress_coord_float(x[0],natoms,prec,xd); 
+					result = xdrfile_decompress_coord_float_long(x[0],natoms,prec,xd,magic==MAGIC_2023); 
 					if (result != *natoms)
 						return exdr3DX;
 				}
 			else
 				{
-					result = xdrfile_compress_coord_float(x[0],*natoms,*prec,xd); 
+					result = xdrfile_compress_coord_float_long(x[0],*natoms,*prec,xd,magic==MAGIC_2023); 
 					if (result != *natoms)
 						return exdr3DX;
 				}
@@ -118,13 +129,13 @@ static int xtc_coord(XDRFILE *xd,int *natoms,matrix box,rvec *x,float *prec,
 int read_xtc_natoms(char *fn,int *natoms)
 {
 	XDRFILE *xd;
-	int step,result;
+	int step,result,magic;
 	float time;
 	
 	xd = xdrfile_open(fn,"r");
 	if (NULL == xd)
 		return exdrFILENOTFOUND;
-	result = xtc_header(xd,natoms,&step,&time,TRUE);
+	result = xtc_header(xd,natoms,&step,&time,TRUE,&magic);
 	xdrfile_close(xd);
 	
 	return result;
@@ -135,12 +146,16 @@ int read_xtc(XDRFILE *xd,
 			 matrix box,rvec *x,float *prec)
 /* Read subsequent frames */
 {
-	int result;
+	int result,magic;
+	/* PLUMED: x is sized for natoms atoms: the frame must have this number of atoms */
+	int natoms_frame=natoms;
   
-	if ((result = xtc_header(xd,&natoms,step,time,TRUE)) != exdrOK)
+	if ((result = xtc_header(xd,&natoms_frame,step,time,TRUE,&magic)) != exdrOK)
 		return result;
+	if (natoms_frame != natoms)
+		return exdrHEADER;
 	  
-	if ((result = xtc_coord(xd,&natoms,box,x,prec,1)) != exdrOK)
+	if ((result = xtc_coord(xd,&natoms,box,x,prec,1,magic)) != exdrOK)
 		return result;
   
 	return exdrOK;
@@ -151,12 +166,12 @@ int write_xtc(XDRFILE *xd,
 			  matrix box,rvec *x,float prec)
 /* Write a frame to xtc file */
 {
-	int result;
+	int result,magic;
   
-	if ((result = xtc_header(xd,&natoms,&step,&time,FALSE)) != exdrOK)
+	if ((result = xtc_header(xd,&natoms,&step,&time,FALSE,&magic)) != exdrOK)
 		return result;
 
-	if ((result = xtc_coord(xd,&natoms,box,x,&prec,0)) != exdrOK)
+	if ((result = xtc_coord(xd,&natoms,box,x,&prec,0,magic)) != exdrOK)
 		return result;
   
 	return exdrOK;

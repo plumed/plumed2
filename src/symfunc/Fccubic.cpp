@@ -47,7 +47,9 @@ atom $j$ and $r_{ij}$ is the magnitude of this vector.  $\sigma(r_{ij})$ is a sw
 atom $i$ and atom $j$ and its inclusion in the numerator and the denominator of the above expression as well as the fact that we are summing
 over all of the other atoms in the system ensures that we are calculating an average
 of the function of $x_{ij}$, $y_{ij}$ and $z_{ij}$ for the atoms in the first coordination sphere around atom $i$.  Lastly, $\alpha$
-is a parameter that can be set by the user, which by default is equal to three.  The values of $a$ and $b$ are calculated from $\alpha$ using:
+is a parameter that can be set by the user, which by default is equal to three.
+The $s_i$ values are stored in the vector with label `label_n` (e.g. `d_n` in the inputs below), while the vector with the label of the action contains
+the numerators of the expression above, as explained for [COORDINATION_SHELL_AVERAGE](COORDINATION_SHELL_AVERAGE.md).  The values of $a$ and $b$ are calculated from $\alpha$ using:
 
 $$
 a = \frac{ 80080}{ 2717 + 16 \alpha} \qquad \textrm{and} \qquad b = \frac{ 16(\alpha - 143) }{2717 + 16\alpha}
@@ -63,7 +65,7 @@ and then calculates and prints the average value for this quantity.
 
 ```plumed
 d: FCCUBIC SPECIES=1-64 D_0=3.0 R_0=1.5 NN=6 MM=12
-dm: MEAN ARG=d PERIODIC=NO
+dm: MEAN ARG=d_n PERIODIC=NO
 PRINT ARG=dm FILE=colv
 ```
 
@@ -74,7 +76,7 @@ switching function as demonstrated below:
 
 ```plumed
 d: FCCUBIC SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-dm: MEAN ARG=d PERIODIC=NO
+dm: MEAN ARG=d_n PERIODIC=NO
 PRINT ARG=dm FILE=colv
 ```
 
@@ -83,12 +85,12 @@ of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
 ## Working with two types of atom
 
-If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in in an FCC structure you use an input like the one
+If you would like to calculate whether the atoms in GROUPB are arranged around the atoms in GROUPA as they in an FCC structure you use an input like the one
 shown below:
 
 ```plumed
 d: FCCUBIC SPECIESA=1-64 SPECIESB=65-200 SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
-lt: MORE_THAN ARG=d SWITCH={RATIONAL R_0=0.5}
+lt: MORE_THAN ARG=d_n SWITCH={RATIONAL R_0=0.5}
 s: SUM ARG=lt PERIODIC=NO
 PRINT ARG=s FILE=colv
 ```
@@ -112,7 +114,7 @@ cc: FCCUBIC ...
   SWITCH={RATIONAL D_0=3.0 R_0=1.5 D_MAX=6.0}
 ...
 # Multiply fccubic parameters numbers by sphere vector
-prod: CUSTOM ARG=cc,sphere FUNC=x*y PERIODIC=NO
+prod: CUSTOM ARG=cc_n,sphere FUNC=x*y PERIODIC=NO
 # Sum of coordination numbers for atoms that are in the sphere of interest
 numer: SUM ARG=prod PERIODIC=NO
 # Number of atoms that are in sphere of interest
@@ -152,7 +154,7 @@ Notice that the decomposition of the function that is illustrated above allows y
 d_mat: DISTANCE_MATRIX GROUP=1-64 LINKCELL_CUTOFF=4.5 COMPONENTS
 # Find the six nearest atom to each of the coordinates
 nn: NEIGHBORS ARG=d_mat.w NLOWEST=6
-# Evalulate the FCC function
+# Evaluate the FCC function
 d_vfunc: FCCUBIC_FUNC ARG=d_mat.x,d_mat.y,d_mat.z MASK=nn ALPHA=3.0
 # Take the product of the weights with the fcc function evaluations
 d_wvfunc: CUSTOM ARG=d_vfunc,nn FUNC=x*y PERIODIC=NO

@@ -1,0 +1,11 @@
+mpiprocs=3
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# 3 replicas, one argument with a different scaling in each bias
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 3 --kt 2.49 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 3 40
+}

@@ -22,18 +22,79 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Exception.h"
+#include "FileTools.h"
 #include "IFile.h"
 #include "lepton/Lepton.h"
+#include <cctype>
+#include <charconv>
 #include <cstring>
 #include <filesystem>
+#include <limits>
+#include <type_traits>
 #include <iomanip>
 #include <sstream>
 #include <string_view>
 
 namespace PLMD {
 
+namespace {
+/// Removes leading and trailing blanks without allocating
+std::string_view trimBlanks(const std::string & str) {
+  std::size_t b=0;
+  std::size_t e=str.size();
+  while(b<e && std::isspace(static_cast<unsigned char>(str[b]))) {
+    ++b;
+  }
+  while(e>b && std::isspace(static_cast<unsigned char>(str[e-1]))) {
+    --e;
+  }
+  return std::string_view(str).substr(b,e-b);
+}
+
+/// Fast conversion of the whole (trimmed) string with std::from_chars.
+/// Returns false if std::from_chars is not available for T, or if it fails,
+/// in which case the caller falls back to the slower conversions.
+template<class T>
+bool convertFromChars(std::string_view s,T & t) {
+#if defined(__cpp_lib_to_chars)
+  // floating point std::from_chars is only available when __cpp_lib_to_chars is defined
+  constexpr bool available=std::is_arithmetic_v<T>;
+#else
+  constexpr bool available=std::is_integral_v<T>;
+#endif
+  if constexpr (available && !std::is_same_v<T,bool>) {
+    if(s.empty()) {
+      return false;
+    }
+    T v;
+    const auto [ptr,ec]=std::from_chars(s.data(),s.data()+s.size(),v);
+    if(ec!=std::errc() || ptr!=s.data()+s.size()) {
+      return false;
+    }
+    t=v;
+    return true;
+  } else {
+    (void) s;
+    (void) t;
+    return false;
+  }
+}
+}
+
 template<class T>
 bool Tools::convertToAny(const std::string & str,T & t) {
+  const auto trimmed=trimBlanks(str);
+  if constexpr (std::is_unsigned_v<T>) {
+    // istream accepts a minus sign for unsigned types and wraps the number around
+    // (e.g. "-1" becomes 4294967295): negative numbers are rejected here
+    if(!trimmed.empty() && trimmed[0]=='-') {
+      return false;
+    }
+  }
+  // fast path: std::from_chars is about 20 times faster than an istringstream
+  if(convertFromChars(trimmed,t)) {
+    return true;
+  }
   std::istringstream istr(str.c_str());
   bool ok=static_cast<bool>(istr>>t);
   if(!ok) {
@@ -132,6 +193,24 @@ bool Tools::convertToReal(const std::string & str,T & t) {
   if(convertToAny(str,t)) {
     return true;
   }
+  {
+    // nan and inf, as written by printf (OFile writes NaNs as "nan"),
+    // case insensitive and with an optional sign
+    auto s=trimBlanks(str);
+    bool negative=false;
+    if(!s.empty() && (s[0]=='+' || s[0]=='-')) {
+      negative=(s[0]=='-');
+      s.remove_prefix(1);
+    }
+    if(caseInSensStringCompare(s,"nan")) {
+      t=std::numeric_limits<T>::quiet_NaN();
+      return true;
+    }
+    if(caseInSensStringCompare(s,"inf") || caseInSensStringCompare(s,"infinity")) {
+      t=negative ? -std::numeric_limits<T>::infinity() : std::numeric_limits<T>::infinity();
+      return true;
+    }
+  }
   if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi") {
     t=pi;
     return true;
@@ -193,6 +272,14 @@ bool Tools::convertNoexcept(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
+std::string Tools::quoteForShell(const std::string& value) {
+  std::string result="'";
+  for(const char c : value) {
+    result += c=='\'' ? "'\\''" : std::string(1,c);
+  }
+  return result+"'";
+}
+
 bool Tools::convertNoexcept(const std::string & str,std::string & t) {
   t=str;
   return true;
@@ -246,7 +333,6 @@ std::vector<std::string> Tools::getWords(std::string_view line,
     if(!(parenthesisLevel==0 && (found||onParenthesis))) {
       word.push_back(line[i]);
     }
-    //if(onParenthesis) word.push_back(' ');
     if(line[i]==openpar) {
       parenthesisLevel++;
     }
@@ -295,10 +381,10 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
                            std::string_view line,
                            const std::string_view separators) {
   words.clear();
-  //NOTE::this function is written assuming that we have only a level of parentesis
+  //NOTE::this function is written assuming that we have only a level of parenthesis
   // so "{a b x},{s}" is ok, "x,{{a,r}}" is not
-  // unlike getWords it will not delete the parentesis, in the spirit of returning a view
-  // to remove the parentesis you have to use a erase-remove idiom (see parseVector)
+  // unlike getWords it will not delete the parenthesis, in the spirit of returning a view
+  // to remove the parenthesis you have to use a erase-remove idiom (see parseVector)
   constexpr char openPar='{';
   constexpr char closePar = '}';
   size_t init=0;
@@ -325,7 +411,6 @@ void Tools::getWordsSimple(gch::small_vector<std::string_view> & words,
         size=0;
       }
     }
-//    plumed_assert(parlevel<=1&& parlevel>=0) << "getWordsSimple do not support nested parenthesis ('" << line << "')";
   }
   if(size>0) {
     words.emplace_back(line.substr(init,size));
@@ -416,7 +501,8 @@ bool Tools::getline(FILE* fp,std::string & line) {
     if(*(line.end()-1)=='\r') {
       line.erase(line.end()-1);
     }
-  return ret;
+  // a last line without a newline is still a line
+  return ret || line.length()>0;
 }
 
 void Tools::trim(std::string & s) {
@@ -489,7 +575,7 @@ void getWords_replicas(gch::small_vector<std::string_view> & words,
   //NOTE: this function is tested in basic/rt-make-getwords
   // via unravelReplicas and parseVector
 
-  //NOTE: this function ignores the first parenthesis becasue
+  //NOTE: this function ignores the first parenthesis because
   // expects something like "@replica:{a,b c}" or "@replica:a b c"
   // the user should cut the "@replica:" before running this.
   // in case of a '{' being present the vector will be returned as soon the '}' is found
@@ -560,7 +646,9 @@ void Tools::interpretRanges(std::vector<std::string>&s) {
   std::vector<std::string> news;
   for(const auto & p :s) {
     news.push_back(p);
-    size_t dash=p.find("-");
+    // the separating dash is searched from the second character, so that the first
+    // end of the range can be negative (e.g. -10-5 or -10--1, used for residue numbers)
+    size_t dash=p.find('-',1);
     if(dash==std::string::npos) {
       continue;
     }
@@ -619,8 +707,8 @@ void Tools::interpretLabel(std::vector<std::string>&s) {
 
 std::vector<std::string> Tools::ls(const std::string&d) {
   std::vector<std::string> result;
-  for (auto const& dir_entry : std::filesystem::directory_iterator{d}) {
-    result.push_back(dir_entry.path().filename());
+  for (auto const& dir_entry : std::filesystem::directory_iterator{pathFromUTF8(d)}) {
+    result.push_back(pathToUTF8(dir_entry.path().filename()));
   }
   return result;
 }
@@ -687,20 +775,19 @@ Tools::DirectoryChanger::DirectoryChanger(const char*path):
   if(std::strlen(path)==0) {
     return;
   }
-  std::filesystem::current_path(path);
+  try {
+    std::filesystem::current_path(pathFromUTF8(path));
+  } catch(std::filesystem::filesystem_error & e) {
+    plumed_error() << "cannot change directory to " << path << ": " << e.code().message();
+  }
 }
 
 Tools::DirectoryChanger::~DirectoryChanger() {
   try {
     std::filesystem::current_path(originalpath);
   } catch(std::filesystem::filesystem_error & e) {
-    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",originalpath.c_str());
+    std::fprintf(stderr,"+++ WARNING: cannot cd back to directory %s\n",pathToUTF8(originalpath).c_str());
   }
-}
-
-std::unique_ptr<std::lock_guard<std::mutex>> Tools::molfile_lock() {
-  static std::mutex mtx;
-  return Tools::make_unique<std::lock_guard<std::mutex>>(mtx);
 }
 
 /// Internal tool, I am keeping it private for now

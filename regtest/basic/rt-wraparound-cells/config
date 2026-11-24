@@ -1,0 +1,11 @@
+type=driver
+# WRAPAROUND with at least 128 reference atoms searches the closest reference atom in cells:
+# the result must be the same as with the loop over all the reference atoms (the reference
+# files were written with that loop), also for atoms that are at the same distance from
+# several reference atoms and for atoms far out of the box.
+# Main run: orthorhombic box; plumed_regtest_after: triclinic box
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_after(){
+  $plumed driver --plumed plumed_triclinic.dat --ixyz traj_triclinic.xyz > out_triclinic 2> err_triclinic
+}

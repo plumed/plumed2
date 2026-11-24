@@ -1,0 +1,6 @@
+mpiprocs=2
+type=driver
+# rt-pines with 2 processes: each process computes all the elements, the values must be the ones of the serial run
+plumed_modules=pines
+arg="--plumed plumed.dat --mf_xtc rt_traj.xtc"
+extra_files="../rt-pines/md.pdb ../rt-pines/rt_traj.xtc"

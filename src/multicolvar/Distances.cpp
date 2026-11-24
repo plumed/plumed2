@@ -202,7 +202,7 @@ d1: XDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 
@@ -251,7 +251,7 @@ d1: YDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 
@@ -299,7 +299,7 @@ d1: ZDISTANCES GROUP=1-3 MEAN
 PRINT ARG=d1.mean
 ```
 
-The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+The following input tells plumed to calculate all the vectors connecting the atoms in GROUPA to the atoms in GROUPB.
 In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values
 more than 0.1 is then printed to a file.
 
@@ -338,6 +338,8 @@ void Distances::registerKeywords(Keywords& keys) {
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
   keys.addFlag("SCALED_COMPONENTS",false,"calculate the a, b and c scaled components of the distance separately and store them as label.a, label.b and label.c");
+  keys.addFlag("SQUARED",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");
+  keys.addFlag("USEGPU",false,"run this calculation on the GPU");
   keys.addDeprecatedFlag("LOWMEM","");
   keys.reset_style("ATOMS","atoms");
   MultiColvarShortcuts::shortcutKeywords( keys );
@@ -378,6 +380,16 @@ Distances::Distances(const ActionOptions& ao):
     parseFlag("SCALED_COMPONENTS",scomp);
     if( scomp ) {
       dline += " SCALED_COMPONENTS";
+    }
+    bool sq;
+    parseFlag("SQUARED",sq);
+    if( sq ) {
+      dline += " SQUARED";
+    }
+    bool gpu;
+    parseFlag("USEGPU",gpu);
+    if( gpu ) {
+      dline += " USEGPU";
     }
   } else {
     dline += " COMPONENTS";

@@ -29,7 +29,10 @@
 #include "core/GenericMolInfo.h"
 #include "tools/Communicator.h"
 #include "tools/OpenMP.h"
+#include "tools/LinkCells.h"
+#include <algorithm>
 #include <initializer_list>
+#include <numeric>
 
 #define INV_PI_SQRT_PI 0.179587122
 #define KCAL_TO_KJ 4.184
@@ -155,39 +158,82 @@ EEFSolv::EEFSolv(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void EEFSolv::update_neighb() {
-  constexpr double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
-  const unsigned size = getNumberOfAtoms();
+namespace {
+/// The visitor of EEFSolv::update_neighb: the atoms i<j that have atom j in their
+/// neighbor list, with the same tests as in a loop over the pairs (i,j)
+struct EEFSolvNeighbors {
+  unsigned* kept;
+  std::size_t n;
+  const unsigned j;
+  const double lambda_j;
+  const bool zero_j;
+  // the correlation lengths of the atoms, and if their free energy is zero, in the order of the cells
+  const double* lambda;
+  const unsigned char* zero;
+  const double nl_buffer;
+  const unsigned* lists;
+  void operator()(const std::size_t ii, const Vector& d) {
+    constexpr double lower_c2 = 0.24 * 0.24; // this is the cut-off for bonded atoms
+    const unsigned i = lists[ii];
+    const double d2 = d.modulo2();
+    // We choose the maximum lambda value and use a more conservative cutoff
+    const double mlambda = (lambda_j > lambda[ii] ? lambda_j : lambda[ii]);
+    const double c2 = (2. * mlambda + nl_buffer) * (2. * mlambda + nl_buffer);
+    // no branch: the tests are not predictable (kept has one more element)
+    kept[n] = i;
+    n += (i < j) && !(zero[ii] && zero_j)
+         // crude approximation for i-i+1/2 interactions,
+         // we want to exclude atoms separated by less than three bonds
+         && !((d2 < lower_c2) && (j < i+14))
+         && (d2 < c2);
+  }
+};
+}
 
+void EEFSolv::update_neighb() {
+  const unsigned size = getNumberOfAtoms();
   for (unsigned i=0; i<size; i++) {
     nl[i].clear();
     nlexpo[i].clear();
-    const Vector posi = getPosition(i);
-    // Loop through neighboring atoms, add the ones below cutoff
-    for (unsigned j=i+1; j<size; j++) {
-      if(parameter[i][1]==0&&parameter[j][1]==0) {
-        continue;
-      }
-      const double d2 = delta(posi, getPosition(j)).modulo2();
-      if (d2 < lower_c2 && j < i+14) {
-        // crude approximation for i-i+1/2 interactions,
-        // we want to exclude atoms separated by less than three bonds
-        continue;
-      }
-      // We choose the maximum lambda value and use a more conservative cutoff
-      double mlambda = 1./parameter[i][2];
-      if (1./parameter[j][2] > mlambda) {
-        mlambda = 1./parameter[j][2];
-      }
-      const double c2 = (2. * mlambda + nl_buffer) * (2. * mlambda + nl_buffer);
-      if (d2 < c2 ) {
-        nl[i].push_back(j);
-        if(parameter[i][2] == parameter[j][2] && parameter[i][3] == parameter[j][3]) {
-          nlexpo[i].push_back(true);
-        } else {
-          nlexpo[i].push_back(false);
-        }
-      }
+  }
+  if(size==0) {
+    return;
+  }
+  // The atoms are binned in cells as large as the largest cutoff (the molecules
+  // are whole: no periodic boundary conditions)
+  double maxlambda = 0.0;
+  for (unsigned i=0; i<size; i++) {
+    maxlambda = std::max(maxlambda, 1./parameter[i][2]);
+  }
+  const std::vector<Vector>& positions = getPositions();
+  std::vector<unsigned> indices(size);
+  std::iota(indices.begin(), indices.end(), 0);
+  LinkCells cells;
+  cells.setCutoff(2. * maxlambda + nl_buffer);
+  cells.setSubdivision(LinkCells::maxSubdivision);
+  cells.setLimitCellsByAtoms(true);
+  cells.setupCells(positions);
+  const auto collection = cells.getCollection(positions, indices, true);
+  const LinkCellsView view = cells.getView(collection, false);
+  std::vector<double> lambda(size);
+  std::vector<unsigned char> zero(size);
+  for (unsigned ii=0; ii<size; ii++) {
+    const unsigned i = view.lists[ii];
+    lambda[ii] = 1./parameter[i][2];
+    zero[ii] = (parameter[i][1]==0);
+  }
+  const unsigned side = 2*view.nsub+1;
+  std::vector<unsigned> kept(collection.getMaximimumCombination(side*side*side)+1);
+  // The neighbors of atom j are added to the lists of the atoms i<j: with j in
+  // increasing order the lists are sorted, as with a loop over the pairs
+  for (unsigned j=0; j<size; j++) {
+    EEFSolvNeighbors neighbors{kept.data(), 0, j, 1./parameter[j][2], parameter[j][1]==0,
+                               lambda.data(), zero.data(), nl_buffer, view.lists};
+    forEachCandidate(view, positions[j], neighbors);
+    for (std::size_t k=0; k<neighbors.n; k++) {
+      const unsigned i = kept[k];
+      nl[i].push_back(j);
+      nlexpo[i].push_back(parameter[i][2] == parameter[j][2] && parameter[i][3] == parameter[j][3]);
     }
   }
 }
@@ -410,14 +456,17 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms,
       }
 
       // Temperature correction
-      if (tcorr && parameterlist[i][1] > 0.0) {
+      // (parameterlist is still zero here, the test must use the table value that was just read)
+      if (tcorr && parameter_temp[i][1] != 0.0) {
         const double t0 = 298.15;
         const double delta_g_ref_t0 = parameter_temp[i][1];
         const double delta_h_ref_t0 = parameter_temp[i][3];
-        const double delta_cp = parameter_temp[i][4];
+        // the table stores dCp in cal/(mol K) (times KCAL_TO_KJ), while dG and dH are in kcal/mol: rescale to the same energy unit
+        const double delta_cp = 0.001 * parameter_temp[i][4];
         const double delta_s_ref_t0 = (delta_h_ref_t0 - delta_g_ref_t0) / t0;
         const double t = getkBT() / getKBoltzmann();
-        parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) - delta_cp * t * std::log(t / t0) + delta_cp * (t - t0);
+        // Lazaridis & Karplus, Biophys. J. 76, 1999: dG(T) = dG(T0) - dS(T0)(T-T0) - dCp[T ln(T/T0) - T + T0]
+        parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) + delta_cp * (t * std::log(t / t0) - (t - t0));
         parameter_temp[i][2] *= parameter_temp[i][1] / delta_g_ref_t0;
       }
       parameterlist[i][0] = parameter_temp[i][0];

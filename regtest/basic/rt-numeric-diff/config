@@ -1,0 +1,6 @@
+type=plumed
+arg="info --version"
+
+function plumed_regtest_after() {
+  bash check.sh > checks
+}

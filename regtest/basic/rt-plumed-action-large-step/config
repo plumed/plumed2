@@ -1,0 +1,3 @@
+type=driver
+# the step passed to the guest PLUMED instance was an int: steps above 2^31 overflowed
+arg="--plumed plumed.dat --ixyz traj.xyz --initial-step 3000000000 --timestep 0.001"

@@ -1,0 +1,5 @@
+type=driver
+# Function variants not reached elsewhere: LESS_THAN, MORE_THAN, BETWEEN and BESSEL of a scalar,
+# HIGHEST and MOMENTS of a list of vectors, OUTER_PRODUCT with FUNC=min. The diff_* columns must be zero
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz --debug-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/trajectory.xyz"

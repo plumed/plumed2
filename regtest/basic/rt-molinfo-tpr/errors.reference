@@ -1,0 +1,3 @@
+--pdb with a TPR file
+exit code 1
+--pdb cannot be a TPR file

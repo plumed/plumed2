@@ -1,0 +1,8 @@
+m: CONTACT_MATRIX GROUP=1-3 SWITCH={RATIONAL D_0=3.0 R_0=1.5} COMPONENTS
+ones: ONES SIZE=3
+f: CUSTOM ARG=m.w,m.x VAR=w,x FUNC=w*sin(x) PERIODIC=NO
+# the elements are sin(1)+sin(2), sin(-1)+sin(1)=0 and sin(-2)+sin(-1)
+s: MATRIX_VECTOR_PRODUCT ARG=f,ones
+s3: SELECT_COMPONENTS ARG=s COMPONENTS=3
+BIASVALUE ARG=s3
+PRINT ARG=s FILE=colvar FMT=%10.6f

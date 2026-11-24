@@ -32,21 +32,13 @@ class Custom {
 public:
   std::string func;
   std::vector<std::string> var;
-  bool zerowhenallzero;
+  bool zerowhenallzero{false};
   LeptonCall function;
   std::vector<unsigned> check_multiplication_vars;
   static void registerKeywords( Keywords& keys );
   static std::string getFunctionString( const std::string& func );
   static void read( Custom& f, ActionWithArguments* action, FunctionOptions& options );
   static void calc( const Custom& func, bool noderiv, const View<const double>& args, FunctionOutput& funcout );
-  Custom& operator=( const Custom& m ) {
-    func = m.func;
-    var = m.var;
-    function.set( func, var, NULL );
-    zerowhenallzero = m.zerowhenallzero;
-    check_multiplication_vars = m.check_multiplication_vars;
-    return *this;
-  }
 };
 
 }

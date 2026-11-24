@@ -1,5 +1,3 @@
-USE=config tools lepton small_vector blas
-
 # generic makefile
 include ../maketools/make.module
 
@@ -7,7 +5,7 @@ include ../maketools/make.module
 # -Werror makes fixing warnings mandatory
 CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror
 
-CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc
+CLEANLIST:=$(CLEANLIST) PlumedMainMap.inc PlumedMainEnum.inc GREXMap.inc GREXEnum.inc CLToolMainMap.inc CLToolMainEnum.inc ModuleMap.inc ActionDescriptions.inc
 
 PlumedMain.o: PlumedMainMap.inc PlumedMainEnum.inc
 
@@ -35,5 +33,16 @@ CLToolMainEnum.inc: CLToolMain.cpp
 
 ModuleMap.o: ModuleMap.inc
 
-ModuleMap.inc: ../*/*.cpp
+ModuleMap.inc: ../maketools/makeModuleMap ../*/*.cpp $(wildcard ../../plugins/*/*.cpp ../../plugins/*/*.cu ../../plugins/*/src/*.cpp ../../plugins/*/src/*.cu)
 	../maketools/makeModuleMap $@
+
+ActionDescriptions.o: ActionDescriptions.inc
+
+# FORCE makes the script rescan the directory so additions and removals are
+# noticed as well as edits. The generator preserves the include's mtime when
+# the extracted summaries have not changed.
+ActionDescriptions.inc: FORCE $(wildcard ../*/*.cpp) ../maketools/makeActionDescriptions
+	../maketools/makeActionDescriptions $@ ../..
+
+.PHONY: FORCE
+FORCE:

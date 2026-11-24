@@ -1,0 +1,14 @@
+umbrellas_line_sigma_zero: rejected
+umbrellas_line_sigma_negative: rejected
+umbrellas_line_spacing_zero: rejected
+umbrellas_line_spacing_negative: rejected
+umbrellas_file_sigma: rejected
+umbrellas_file_empty: rejected
+multithermal_temp: rejected
+multithermal_temp_min: rejected
+multithermal_temp_min_linear: rejected
+multithermal_temp_set_all: rejected
+multibaric_set_all_temp: rejected
+linear_geom: rejected
+expanded_print_stride: rejected
+expanded_restart_empty: rejected

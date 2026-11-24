@@ -45,7 +45,7 @@ UNITS NATURAL
 # symmetry functions tell us whether the environment around each atom resembles
 # the environment in the solid or the environment in the liquid.
 fcc: FCCUBIC SPECIES=1-20736 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27
-smapfcc: MORE_THAN ARG=fcc SWITCH={SMAP R_0=0.5 A=8 B=8}
+smapfcc: MORE_THAN ARG=fcc_n SWITCH={SMAP R_0=0.5 A=8 B=8}
 smapfcc_grp: GROUP ATOMS=1-20736
 # This calculates the position of the center of the solid region of the simulation box.  What we are computing here a weighted average position
 # the weights are the order parameters computed using the two commands above.
@@ -192,12 +192,16 @@ const gridtools::GridCoordinatesObject& FourierTransform::getGridCoordinatesObje
 
 std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
   gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  // already checked in the constructor
+  plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
 
 void FourierTransform::calculate() {
   if( firsttime ) {
     gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+    // already checked in the constructor
+    plumed_assert( ag );
     const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
     std::vector<double> fspacing;
     std::vector<std::size_t> snbins( getGridCoordinatesObject().getDimension() );

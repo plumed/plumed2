@@ -1,0 +1,11 @@
+inputfile input.xyz
+outputfile output.xyz
+temperature NVE
+tstep 0.004
+sigma 1.5
+epsilon 0.8
+forcecutoff 3.75
+listcutoff 4.2
+nstep 100
+nconfig 50 trajectory.xyz
+nstat 10 energies.dat

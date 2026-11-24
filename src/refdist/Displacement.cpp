@@ -60,7 +60,7 @@ PRINT ARG=e FILE=colvar
 
 The DISPLACEMENT command that has been introduced in the above inputs is primarily used within the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md),
 [NORMALIZED_EUCLIDEAN_DISTANCE](NORMALIZED_EUCLIDEAN_DISTANCE.md) and [MAHALANOBIS_DISTANCE](MAHALANOBIS_DISTANCE.md) shortcuts.  If the $1 \times N$ matrix
-of displacements that that we obtainfrom these commands is, $E$, these three actions calculate
+of displacements that we obtain from these commands is, $E$, these three actions calculate
 
 $$
 d = E M E^T
@@ -106,7 +106,7 @@ PRINT ARG=dd FILE=colvar
 
 !!! note "scalars must be specified in ARG2"
 
-    If you use a mixture of vectors are scalars when specifying the input to to this action the
+    If you use a mixture of vectors are scalars when specifying the input to this action the
     vectors should be passed using the ARG1 keyword and the scalars must be passed in the ARG2 keyword
     as is done in the example inputs above. Obviously, this limitation sometimes means that you have to add in
     an additional [CUSTOM](CUSTOM.md) action that multiplies the output vectors by -1 to get the vectors pointing
@@ -129,7 +129,7 @@ PRINT ARG=dd FILE=colvar
 ```
 
 The output here is still a $3 \times 2$ matrix. Now, however, each of the three instantaneous angles we have calculated
-has its own set of reference values. A different pair of instaneous and reference values is used to calculate each element
+has its own set of reference values. A different pair of instantaneous and reference values is used to calculate each element
 of the resulting matrix.
 
 DISPLACEMENT actions that compute $M\times N$ matrices, $D$, are used within the [EUCLIDEAN_DISTANCE](EUCLIDEAN_DISTANCE.md),

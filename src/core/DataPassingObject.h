@@ -84,12 +84,17 @@ public:
   virtual void share_data( std::vector<double>& values ) const = 0;
 /// Share the data and put it in the value from sequential data
   virtual void share_data( const unsigned& j, const unsigned& k, Value* value )=0;
-/// Share the data and put it in the value from a scattered data
-  virtual void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, Value* value )=0;
+/// Share the data and put it in the value from a scattered data.
+/// index holds the positions in the value, i the positions in the MD array and
+/// nlocal is the number of elements in the MD array, which is used to check its size
+  virtual void share_data( const std::vector<AtomNumber>&index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value )=0;
+/// Check if the MD code passed an array to store the forces on this quantity
+  virtual bool hasForcePointer() const = 0;
 /// Pass the force from the value to the output value
   virtual void add_force( Value* vv )=0;
   virtual void add_force( const std::vector<int>& index, Value* value )=0;
-  virtual void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, Value* value )=0;
+/// Pass the forces on the elements index of the value to the elements i of the MD array, which has nlocal elements
+  virtual void add_force( const std::vector<AtomNumber>& index, const std::vector<unsigned>& i, const std::size_t& nlocal, Value* value )=0;
 /// Rescale the forces that were passed
   virtual void rescale_force( const unsigned& n, const double& factor, Value* value )=0;
 /// This transfers everything to the output

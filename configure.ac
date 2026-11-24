@@ -16,6 +16,22 @@
 AC_PREREQ([2.69])
 AC_INIT([PLUMED], [2])
 
+AC_ARG_WITH([extension-base],
+  AS_HELP_STRING([--with-extension-base=PREFIX], [build extensions only, against an installed exact-compatible base]))
+AC_ARG_ENABLE([extension-modules],
+  AS_HELP_STRING([--enable-extension-modules=LIST], [colon-separated extension modules (requires --with-extension-base)]))
+
+# Extension-only builds reuse the installed base's compiler/ABI configuration.
+# Dispatch before ordinary configure probes or module-selection mutations.
+for plumed_option in "$[]@"; do
+  case "$plumed_option" in
+    --with-extension-base=*)
+      rm -f confdefs.h
+      exec python3 "$(dirname "$[]0")/extensions/configure.py" "$[]@"
+      ;;
+  esac
+done
+
 ##################################################################
 # In order to add m4 macros, put then in a m4 directory and include them here.
 # E.g.:
@@ -243,6 +259,15 @@ AC_DEFUN([PLUMED_OPENMP],
 
 ##################################################################
 
+src/maketools/module-header check-obsolete src ||
+  AC_MSG_ERROR([obsolete module declaration])
+
+# Validate the restricted build fields with a POSIX reader, without Python.
+for modules_file in src/*/module.yml; do
+  src/maketools/module-header type "$modules_file" >/dev/null ||
+    AC_MSG_ERROR([invalid module declaration $modules_file])
+done
+
 AC_MSG_NOTICE([Optional modules are disabled by default])
 rm -f src/*.on src/*.off
 
@@ -256,26 +281,47 @@ AC_ARG_ENABLE([modules],
    if test "${enableval}" = no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
+   # Preserve names containing hyphens while accepting legacy all-foo+bar syntax.
+   modules_words=""
+   for modules_word in `echo "${enableval}" | sed 's/:/ /g'`; do
+     modules_name=$modules_word
+     case "$modules_name" in
+       (+*|-*) modules_name=${modules_name#?} ;;
+     esac
+     if test -f "src/$modules_name/module.yml"; then
+       modules_words="$modules_words $modules_word"
+     else
+       modules_words="$modules_words `echo "$modules_word" | sed 's/+/ +/g' | sed 's/-/ -/g'`"
+     fi
+   done
+   for modules_mod in $modules_words
    do
      case "$modules_mod" in
      (none)
        AC_MSG_NOTICE([Disabling all optional modules])
        rm -f src/*.off src/*.on
-       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+       for modules_file in src/*/module.yml; do
+         if test "$(src/maketools/module-header type "$modules_file")" = default-on; then
+           touch "${modules_file%/module.yml}.off"
+         fi
+       done ;;
      (all)
        AC_MSG_NOTICE([Enabling all optional modules])
        rm -f src/*.off src/*.off
-       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+       for modules_file in src/*/module.yml; do
+         if test "$(src/maketools/module-header type "$modules_file")" = default-off; then
+           touch "${modules_file%/module.yml}.on"
+         fi
+       done ;;
      (reset)
         AC_MSG_NOTICE([Resetting modules to default])
         rm -f src/*.on src/*.off ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
-       if grep -q always src/$modules_mod/module.type ; then
+       if test "$(src/maketools/module-header type "src/$modules_mod/module.yml")" = always ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which is always enabled])
        fi
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
@@ -283,14 +329,14 @@ AC_ARG_ENABLE([modules],
        touch src/$modules_mod.off ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
        rm -f src/$modules_mod.off
        touch src/$modules_mod.on ;;
      (*)
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
@@ -354,30 +400,33 @@ PLUMED_CONFIG_ENABLE([ar-cr],[use ar to build libplumedWrapper.a],[yes])
 PLUMED_CONFIG_ENABLE([static-archive],[try to build libplumed.a for static linking],[yes])
 PLUMED_CONFIG_ENABLE([asmjit],[enable embedded asmjit],[yes])
 PLUMED_CONFIG_ENABLE([mpi],[search for mpi],[yes])
+thread_mpi_request=auto
+AC_ARG_ENABLE([thread-mpi],
+  AS_HELP_STRING([--enable-thread-mpi], [enable the internal thread-MPI provider; conflicts with native MPI]),
+  [case "${enableval}" in
+     (yes) thread_mpi_request=yes ;;
+     (no)  thread_mpi_request=no ;;
+     (*) AC_MSG_ERROR([wrong argument to --enable-thread-mpi]) ;;
+   esac],
+  [])
 PLUMED_CONFIG_ENABLE([external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external-blas],[search for external blas],[yes])
-PLUMED_CONFIG_ENABLE([molfile-plugins],[use molfile_plugins],[yes])
-PLUMED_CONFIG_ENABLE([external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([dladdr],[search for dladdr],[yes])
 PLUMED_CONFIG_ENABLE([rtld_default],[search for RTLD_DEFAULT macro],[yes])
 PLUMED_CONFIG_ENABLE([subprocess],[search for functions needed to manage a subprocess],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[search for execinfo],[yes])
-PLUMED_CONFIG_ENABLE([gsl],[search for gsl],[yes])
-PLUMED_CONFIG_ENABLE([boost_graph],[search for boost graph],[no])
 PLUMED_CONFIG_ENABLE([boost_serialization],[search for boost serialization],[no])
 PLUMED_CONFIG_ENABLE([fftw],[search for fftw],[yes])
 PLUMED_CONFIG_ENABLE([python],[search for python],[yes])
-PLUMED_CONFIG_ENABLE([af_ocl],[search for arrayfire_ocl],[no])
-PLUMED_CONFIG_ENABLE([af_cuda],[search for arrayfire_cuda],[no])
-PLUMED_CONFIG_ENABLE([af_cpu],[search for arrayfire_cpu],[no])
 PLUMED_CONFIG_ENABLE([libtorch],[search for libtorch],[no]) #added by luigibonati
 PLUMED_CONFIG_ENABLE([libmetatomic],[search for libmetatomic],[no])
 PLUMED_CONFIG_ENABLE([libitensor],[search for libitensor],[no])
-PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5],[no])
+PLUMED_CONFIG_ENABLE([libhdf5],[search for libhdf5 (needed for the HDF5 tables, files with extension .h5)],[yes])
+PLUMED_CONFIG_ENABLE([system-gemmi],[the gemmi CIF parser installed in the system instead of the copy in src/gemmi],[no])
+PLUMED_CONFIG_ENABLE([libchemfiles],[search for chemfiles, to read more trajectory formats in driver and benchmark],[no])
 PLUMED_CONFIG_ENABLE([linuxperf],[activate the compile options for a more accurate report with perf on linux],[no])
-PLUMED_CONFIG_ENABLE([openacc],[search for openacc (use PLUMED_ACC_TYPE and PLUMED_ACC_GPU for controlling the settings)],[no])
 PLUMED_CONFIG_ENABLE([kenref],[enable the KEnRef pathway (compile the kenref module + find/link libkenref_core); equivalent to --enable-modules=+kenref],[no]) # Added by Amr Alhossary
 # KEnRef find-or-fetch controls: with --enable-kenref, if kenref_core is not already installed, configure
 # clones the KEnRef repo and delegates the build to its own CMake. Override the source / coordinates here.
@@ -385,7 +434,7 @@ AC_ARG_WITH([kenref-src],
   AS_HELP_STRING([--with-kenref-src=DIR],[use a local KEnRef checkout instead of cloning it (with --enable-kenref)]),
   [with_kenref_src="$withval"],[with_kenref_src=""])
 AC_ARG_VAR([KENREF_GIT_URL],[KEnRef git URL to clone when --enable-kenref and kenref_core is not installed (default: https://github.com/Smith-Group/KEnRef.git)])
-AC_ARG_VAR([KENREF_GIT_TAG],[KEnRef git branch/tag to clone (default: master, KEnRef's development trunk)])
+AC_ARG_VAR([KENREF_GIT_TAG],[KEnRef git branch/tag to clone (default: stable, KEnRef's latest verified release; master gives its development trunk)])
 dnl NB: -DACCEL is passed to KEnRef's CMake only when this variable is SET (see below), so leaving it
 dnl empty does not select a fixed tier -- it lets KEnRef auto-detect this machine's SIMD, as it does for
 dnl its own builds. Set it explicitly for a portable binary (e.g. KENREF_ACCEL=AVX2_256).
@@ -397,8 +446,6 @@ AC_ARG_VAR(LDSHARED,[command for linking shared library - configure will use CXX
 AC_ARG_VAR(PYTHON_BIN,[python executable (e.g. python2.7 or /opt/local/bin/python2.7) - default: search for a python executable])
 AC_ARG_VAR(BASH_COMPLETION_DIR,[path where bash completion will be installed - default: search with pkg-config])
 AC_ARG_VAR(MPIEXEC,[command to run mpi programs in tests - default not specified, which means use PLUMED_MPIRUN env var at runtime for backward compatibility])
-AC_ARG_VAR(PLUMED_ACC_TYPE,[with --enable-openacc this is the setting  ('host' or 'gpu') for determining the target of the OPENACC pragmas - default: 'gpu'])
-AC_ARG_VAR(PLUMED_ACC_GPU,[if PLUMED_ACC_TYPE is 'gpu', this is read as a space separated list of '-gpu' options for openacc (example "cc75 managed")])
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
 # include symbol information (obj files are huge)
@@ -463,9 +510,7 @@ if test $basic_warnings = true
 then
   PLUMED_CHECK_CXXFLAG([-Wall])
   PLUMED_CHECK_CXXFLAG([-pedantic])
-  if ! test $openacc = true; then
-    PLUMED_CHECK_CXXFLAG([-Wno-unknown-pragmas])
-  fi
+  PLUMED_CHECK_CXXFLAG([-Wno-unknown-pragmas])
   if test $fussy = true
   then
     PLUMED_CHECK_CXXFLAG([-Wextra])
@@ -629,7 +674,7 @@ fi
 
 # if not found, then use internal lapack and blas
 if test -z "$blas_found" ; then
-AC_MSG_WARN([using internal lapack and blas, could be inefficient])
+AC_MSG_WARN([using internal lapack and blas; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 fi
 
 # if found, also look for external lapack
@@ -648,7 +693,7 @@ fi
 
 # if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([using internal lapack, could be inefficient])
+AC_MSG_WARN([using internal lapack; an optimized external library (e.g. OpenBLAS or MKL) is only faster with large matrices])
 else
 AC_DEFINE([__PLUMED_HAS_EXTERNAL_LAPACK])
 fi
@@ -730,32 +775,6 @@ fi
 #### Optional libraries ####
 AC_MSG_NOTICE([Now we will check for optional headers and libraries])
 
-#############################################################
-# I add the possibility to completely remove molfile_plugins
-# I would like to be 100% that the molfile module compiles
-# correctly on all machines
-# In case of problem, it is sufficient to configure with
-# ./configure --disable-molfile-plugins
-# GB
-#############################################################
-
-if test $molfile_plugins = true ; then
-
-# Check for molfile_plugins and use internal fallback if not found. TG
-
-# We always have molfile, now
-AC_DEFINE([__PLUMED_HAS_MOLFILE_PLUGINS])
-
-  if test "$external_molfile_plugins" = true ; then
-    PLUMED_CHECK_PACKAGE([libmolfile_plugin.h],[molfile_dcdplugin_init],[__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS],molfile_plugin)
-    if test "$__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS" != yes ; then
-      AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
-    else
-      AC_DEFINE([__PLUMED_HAS_EXTERNAL_MOLFILE_PLUGINS])
-    fi
-  fi
-fi
-
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
 # to be loaded later
@@ -775,37 +794,69 @@ else
   mpi_found=ko
 fi
 
+# Native MPI and the internal thread-MPI provider are mutually exclusive.
+# Unless explicitly disabled, thread-MPI fills in when native MPI is unavailable.
+if test "$mpi_found" = ok; then
+  if test "$thread_mpi_request" = yes; then
+    AC_MSG_ERROR([--enable-thread-mpi conflicts with an available native MPI implementation])
+  fi
+  thread_mpi_found=ko
+else
+  if test "$thread_mpi_request" = no; then
+    thread_mpi_found=ko
+  else
+    thread_mpi_found=ok
+  fi
+fi
+
+if test "$thread_mpi_found" = ok; then
+  # OpenMP may be disabled, and older libc implementations require a separate
+  # pthread library for the embedded runtime even when C++ links successfully.
+  PLUMED_SEARCH_LIBS([pthread_create],[pthread],[],
+    [AC_MSG_ERROR([internal thread-MPI requires POSIX threads; use --disable-thread-mpi to omit it])])
+  AC_DEFINE([__PLUMED_HAS_THREAD_MPI])
+fi
+# The provider frontend also supplies runtime-selected serial fallbacks.
+# Compiling it does not select or initialize an MPI implementation.
+AC_DEFINE([__PLUMED_MPIWRAP])
+
 # search for openmp is automatically disabled by autoconf
 # when configuring with --disable-openmp
 PLUMED_OPENMP
 
 if test $asmjit = true ; then
-  AC_MSG_CHECKING([whether architecture is X86/X64])
+  AC_MSG_CHECKING([whether architecture is X86/X64 or AArch64])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 #if !(defined(_M_IX86 ) || defined(__X86__ ) || defined(__i386  ) || \
       defined(__IA32__) || defined(__I86__ ) || defined(__i386__) || \
       defined(__i486__) || defined(__i586__) || defined(__i686__) || \
       defined(_M_X64  ) || defined(__x86_64) || defined(__x86_64__) || \
-      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__ ))
-this_is_not_x86_x64
+      defined(_M_AMD64) || defined(__amd64 ) || defined(__amd64__) || \
+      defined(__aarch64__) || defined(_M_ARM64))
+this_is_not_x86_x64_or_aarch64
 #endif
   ])],
   [AC_MSG_RESULT([yes])];
-  x86_x64=true,
+  asmjit_arch_supported=true,
   [AC_MSG_RESULT([no]) ;
-  x86_x64=false])
+  asmjit_arch_supported=false])
 fi
 
-if test $asmjit = true && test $x86_x64 = false ; then
+if test $asmjit = true && test $asmjit_arch_supported = false ; then
   AC_MSG_WARN([asmjit does not support this architecture, it will be disabled])
   asmjit=false
 fi
 
 if test $asmjit = true ; then
   found=ko
-# asmjit calls clock_gettime and thus should be linked to rt on Linux
+# On older Linux systems, AsmJit's clock and POSIX shared-memory functions
+# require librt. Check each symbol: clock_gettime can be in libc even when
+# shm_open and shm_unlink still require -lrt.
   if test `(uname)` = Linux ; then
-    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[found=ok])
+    found=ok
+    PLUMED_SEARCH_LIBS([clock_gettime],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_open],[rt],[],[found=ko])
+    PLUMED_SEARCH_LIBS([shm_unlink],[rt],[],[found=ko])
   else
     found=ok
   fi
@@ -813,8 +864,25 @@ if test $asmjit = true ; then
     AC_MSG_NOTICE([Enabling embedded asmjit])
     AC_DEFINE([__PLUMED_HAS_ASMJIT])
   else
-    AC_MSG_WARN([cannot link clock_gettime on this Linux, asmjit will not be enabled])
+    AC_MSG_WARN([cannot link required clock or shared-memory functions on this Linux, asmjit will not be enabled])
   fi
+fi
+
+# the gemmi CIF parser (header only) is in src/gemmi; with --enable-system-gemmi
+# the one installed in the system is used instead (put its include directory in CPPFLAGS)
+if test $system_gemmi = true ; then
+  AC_MSG_CHECKING([whether the gemmi CIF parser installed in the system can be used])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <gemmi/cif.hpp>
+template<typename Rule> struct plumed_test_action : tao::pegtl::nothing<Rule> {};
+  ],[
+  tao::pegtl::memory_input<> in("data_test\n", "test");
+  return tao::pegtl::parse<gemmi::cif::rules::file, plumed_test_action, gemmi::cif::Errors>(in) ? 0 : 1;
+  ])],
+  [AC_MSG_RESULT([yes]);
+  AC_DEFINE([__PLUMED_HAS_SYSTEM_GEMMI])],
+  [AC_MSG_RESULT([no]);
+  AC_MSG_WARN([cannot use the gemmi CIF parser installed in the system, the copy in src/gemmi will be used])])
 fi
 
 if test $dlopen = true ; then
@@ -835,10 +903,13 @@ fi
 
 if test $subprocess = true ; then
   PLUMED_CHECK_CXX_PACKAGE([subprocess],[
-/* random program calling all the functions needed to manage a subprocess */
+/* Check the functions used to spawn, communicate with and reap a subprocess. */
 #include <cstdio>
 #include <unistd.h>
 #include <csignal>
+#include <spawn.h>
+#include <sys/wait.h>
+extern char **environ;
 
 int
 main ()
@@ -846,22 +917,30 @@ main ()
 // notice that [[]] is required to cheat autoconf
   int cp[[2]];
   FILE* fp;
-  char* arr[[3]];
-  arr[[0]]=NULL;
-  arr[[1]]=NULL;
-  arr[[2]]=NULL;
-  arr[[3]]=NULL;
-  if(pipe(cp)>=0)
-  if(fork()>=0)
-  if(close(1)>=0)
-  if(dup(cp[[1]])>=0) {
-    fp=fdopen(cp[[0]],"w");
-    execv(arr[[0]],arr);
-  }
-  auto p=fork();
+  char* arr[[4]]={nullptr,nullptr,nullptr,nullptr};
+  posix_spawn_file_actions_t actions;
+  posix_spawnattr_t attributes;
+  posix_spawn_file_actions_init(&actions);
+  posix_spawnattr_init(&attributes);
+  pipe(cp);
+  posix_spawn_file_actions_adddup2(&actions,cp[[0]],STDIN_FILENO);
+  posix_spawn_file_actions_addclose(&actions,cp[[1]]);
+  posix_spawnattr_setpgroup(&attributes,0);
+  posix_spawnattr_setflags(&attributes,POSIX_SPAWN_SETPGROUP);
+  pid_t p;
+  posix_spawn(&p,"/bin/sh",&actions,&attributes,arr,environ);
+  posix_spawnattr_destroy(&attributes);
+  posix_spawn_file_actions_destroy(&actions);
+  fp=fdopen(cp[[0]],"w");
+  fclose(fp);
+  close(cp[[1]]);
   kill(p,SIGINT);
   kill(p,SIGCONT);
   kill(p,SIGSTOP);
+  siginfo_t info;
+  waitid(P_PID,p,&info,WEXITED|WNOHANG|WNOWAIT);
+  int status;
+  waitpid(p,&status,0);
   return 0;
 }
 
@@ -873,34 +952,6 @@ if test $execinfo = true ; then
 fi
 if test $zlib = true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
-fi
-
-if test $gsl = true ; then
-  found=ko
-  PLUMED_SEARCH_LIBS([cblas_dgemv],[gslcblas], [
-    AC_CHECK_HEADER(  [gsl/gsl_vector.h], [
-      PLUMED_SEARCH_LIBS([gsl_vector_alloc],[gsl],[found=ok])
-    ])
-  ])
-  if test $found = ok ; then
-    AC_DEFINE([__PLUMED_HAS_GSL])
-  else
-    AC_MSG_WARN([cannot enable __PLUMED_HAS_GSL])
-  fi
-fi
-
-if test $boost_graph = true ; then
-  PLUMED_CHECK_CXX_PACKAGE([boost graph],[
-#include <boost/graph/graph_utility.hpp>
-#include <boost/graph/adjacency_matrix.hpp>
-int
-main ()
-{
-  boost::adjacency_matrix<boost::directedS> a(1);
-  ;
-  return 0;
-}
-  ], [__PLUMED_HAS_BOOST_GRAPH])
 fi
 
 if test $boost_serialization = true ; then
@@ -926,8 +977,9 @@ AC_SUBST(PYTHON_BIN)
 AC_SUBST(PYTHON_BUILD_FOUND)
 
 # if PYTHON_BIN is defined, it is expected to be the full path to python
-# Otherwise, search from a list of names:
-if test -z "$PYTHON_BIN" ; then
+# Otherwise, search from a list of names (only when the python interface is
+# enabled, so that --disable-python does not look for python at all):
+if test "$python" = true && test -z "$PYTHON_BIN" ; then
     AC_CHECK_PROGS([PYTHON_BIN],[python3])
 fi
 if test -n "$PYTHON_BIN" ; then
@@ -960,18 +1012,6 @@ if test "${PYTHON_BUILD_FOUND}" != yes; then
   PYTHON_BIN=
 fi
 
-if test "$af_ocl" = true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afopencl])
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_OCL],[afopencl])
-fi
-if test "$af_cuda" = true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcuda])
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE_CUDA],[afcuda])
-fi
-if test "$af_cpu" = true ; then
-  PLUMED_CHECK_PACKAGE([arrayfire.h],[af_is_double],[__PLUMED_HAS_ARRAYFIRE],[afcpu])
-fi
-
 # ==============================================================================
 # KEnRef library check.
 #
@@ -989,7 +1029,7 @@ fi
 AC_DEFUN([KENREF_CHECK_LIBS], [
   # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on the --libs calls: pkg-config SUPPRESSES -L for any directory it
   # considers a system library path, and it treats the caller's LIBRARY_PATH entries as exactly that.
-  # install.md tells users to put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
+  # Users may put the kenref libdir on LIBRARY_PATH (so --enable-rpath records it), and
   # doing so silently reduces `pkg-config --libs kenref_core` to a bare -lkenref_core. The captured LIBS
   # then only link while LIBRARY_PATH happens to be set, which fails as soon as `make` runs in a fresh
   # shell. Forcing the flag through keeps the captured value self-contained.
@@ -1027,6 +1067,22 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
     AC_MSG_NOTICE([KEnRef: using $kenref_flavor])
     LIBS="$KENREF_LIBS $LIBS"
     HAVE_KENREF=yes
+    # The rpath that --enable-rpath records below is "$libdir:$LIBRARY_PATH", not the -L dirs of LIBS.
+    # A KEnRef that configure built in kenref-deps/, or one found only through PKG_CONFIG_PATH, has its
+    # libdir in LIBS but not on LIBRARY_PATH, so libplumedKernel.so got no RUNPATH to it and linking the
+    # plumed executable failed with "libkenref_core.so.2 ... not found". Add those dirs to LIBRARY_PATH.
+    for kn_flag in $KENREF_LIBS ; do
+      case "$kn_flag" in
+      (-L*)
+        kn_dir=`echo "$kn_flag" | sed 's/^-L//'`
+        case ":$LIBRARY_PATH:" in
+        (*":$kn_dir:"*) ;;
+        (*) LIBRARY_PATH="$kn_dir${LIBRARY_PATH:+:$LIBRARY_PATH}" ;;
+        esac
+      ;;
+      esac
+    done
+    export LIBRARY_PATH
   fi
   AC_SUBST([HAVE_KENREF])
   AC_SUBST([KENREF_LIBS])
@@ -1107,7 +1163,7 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
-    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="master"
+    test -n "$KENREF_GIT_TAG" || KENREF_GIT_TAG="stable"
     AC_MSG_NOTICE([KEnRef: not installed -> fetch+build kenref_core (delegated to the KEnRef repo's CMake)])
     kn_src="$with_kenref_src"
     if test -z "$kn_src" ; then
@@ -1299,6 +1355,22 @@ if test $libitensor = true ; then
 fi
 
 if test $libhdf5 = true ; then
+  # distributions may install hdf5.h in a subdirectory (e.g. Debian/Ubuntu: /usr/include/hdf5/serial):
+  # if it is not found as it is, the flags given by pkg-config are used
+  AC_MSG_CHECKING([whether hdf5.h needs the flags of pkg-config])
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([
+#include <hdf5.h>
+int main() { return 0; }
+  ])],
+  [hdf5_pkgconfig=no],
+  [hdf5_pkgconfig=yes])
+  if test "$hdf5_pkgconfig" = yes && pkg-config --exists hdf5 2>/dev/null ; then
+    AC_MSG_RESULT([yes])
+    CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I hdf5`"
+    LDFLAGS="$LDFLAGS `pkg-config --libs-only-L hdf5`"
+  else
+    AC_MSG_RESULT([no])
+  fi
   PLUMED_CHECK_CXX_PACKAGE([libhdf5],[
     #include <hdf5.h>
     int main() {
@@ -1307,6 +1379,19 @@ if test $libhdf5 = true ; then
       return 0;
     }
   ], [__PLUMED_HAS_LIBHDF5], [ hdf5_hl hdf5 ], [true])
+fi
+
+if test $libchemfiles = true ; then
+  PLUMED_CHECK_CXX_PACKAGE([libchemfiles],[
+    #include <chemfiles.hpp>
+    #if CHEMFILES_VERSION_MAJOR == 0 && CHEMFILES_VERSION_MINOR < 10
+    #error "PLUMED needs chemfiles 0.10 or later"
+    #endif
+    int main() {
+      chemfiles::Frame frame;
+      return static_cast<int>(frame.size());
+    }
+  ], [__PLUMED_HAS_LIBCHEMFILES], [chemfiles])
 fi
 
 if test $libitensor = true ; then
@@ -1330,32 +1415,6 @@ if test $libitensor = true ; then
   if test "$__PLUMED_HAS_LIBITENSOR" = yes ; then
     PLUMED_CHECK_CXXFLAG([-fconcepts])
   fi
-fi
-
-acc_found=ko
-if test $openacc = true; then
-  if test -z "$PLUMED_ACC_TYPE"; then
-    PLUMED_ACC_TYPE=gpu
-  fi
-# optional libraries follow
-  PLUMED_CHECK_PACKAGE([openacc.h],[acc_get_device_type],[__PLUMED_HAS_OPENACC])
-  if test "$__PLUMED_HAS_OPENACC" = yes; then
-    acc_found=ok
-    #test if we can compile with openacc
-    PLUMED_CHECK_CXXFLAG([-acc])
-    PLUMED_CHECK_CXXFLAG([-acc=$PLUMED_ACC_TYPE])
-    if test "$PLUMED_ACC_TYPE" = "gpu"; then
-      if test -n "$PLUMED_ACC_GPU"; then
-        for flag in $PLUMED_ACC_GPU; do
-          PLUMED_CHECK_CXXFLAG([-gpu=$flag])
-        done
-      fi
-    fi
-    LDSHARED="$LDSHARED -acc -static-nvidia"
-    AC_MSG_WARN([Please remember to personalize the openacc settings with  "PLUMED_ACC_GPU"])
-  fi
-else
-  acc_found=ko
 fi
 
 # in non-debug mode, add -DNDEBUG
@@ -1442,9 +1501,22 @@ then
       test_LDSHARED="$LDSHARED -Wl,-R -Wl,/some/random/dir/"
       $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
       if readelf -d conftest.$SOEXT | grep RPATH | grep -q /some/random/dir ; then
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
-        LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
-        AC_MSG_NOTICE([Enabling RPATH])
+        # RPATH takes precedence over LD_LIBRARY_PATH: the executables of the build tree would then
+        # load the kernel installed in $libdir (e.g. an older version) instead of their own one,
+        # even after sourcing sourceme.sh. Ask the linker for RUNPATH instead, if it can.
+        rm -f conftest.$SOEXT
+        test_LDSHARED="$LDSHARED -Wl,--enable-new-dtags -Wl,-R -Wl,/some/random/dir/"
+        $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+        if test -f conftest.$SOEXT && readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
+          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+          AC_MSG_NOTICE([Enabling RUNPATH (with --enable-new-dtags)])
+        else
+          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
+          AC_MSG_NOTICE([Enabling RPATH])
+          AC_MSG_WARN([with RPATH the executables of the build tree load the kernel installed in $libdir, if there is one, also after sourcing sourceme.sh])
+        fi
       elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
         LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
         LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
@@ -1883,7 +1955,7 @@ AC_MSG_NOTICE([**** Please configure and make clean to change the prefix])
 if test -z "$BASH_COMPLETION_DIR" ; then
   AC_MSG_WARN([**** Bash completion for plumed will not be installed, please add the following two lines to your bashrc])
   AC_MSG_WARN([**** _$program_name() { eval "\$($program_name --no-mpi completion 2>/dev/null)";}])
-  AC_MSG_WARN([**** complete -F _$program_name -o default $program_name])
+  AC_MSG_WARN([**** complete -F _$program_name -o default -o filenames $program_name])
 fi
 
 if test $mpi = true; then
@@ -1908,16 +1980,6 @@ elif test $mpi_found = ok ; then
     AC_MSG_WARN([to patch an MD code use 'plumed --no-mpi patch'])
     AC_MSG_WARN([(notice that MPI will be available anyway in the patched code)])
   fi
-fi
-
-if test $openacc = true; then
-  if test $acc_found = ok; then
-    AC_MSG_NOTICE([**** PLUMED will be compiled using OPENACC])
-  else
-    AC_MSG_WARN([**** PLUMED will NOT be compiled using OPENACC because OPENACC have not been found!])
-  fi
-else
-    AC_MSG_NOTICE([**** PLUMED will be compiled without OPENACC])
 fi
 
 AC_SUBST(build_dir)

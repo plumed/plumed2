@@ -102,6 +102,9 @@ CovarianceMatrix::CovarianceMatrix(const ActionOptions&ao):
   ActionShortcut(ao) {
   std::vector<std::string> args;
   parseVector("ARG",args);
+  if( args.empty() ) {
+    error("no arguments were specified with ARG");
+  }
   unsigned nargs=args.size();
   std::string argstr="ARG=" + args[0];
   for(unsigned i=1; i<args.size(); ++i) {

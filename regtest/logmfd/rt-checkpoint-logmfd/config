@@ -1,0 +1,42 @@
+type=driver
+plumed_modules=logmfd
+# one reference run (the NVE one) is made by the harness; the three thermostats are run in before/after
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  # a trajectory of 60 frames of 4 atoms (analytic positions)
+  awk 'BEGIN{for(f=0;f<60;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i), 0.3*cos(0.07*f*(i+1)), 0.2*i*f/60.0}}}' > traj.xyz
+  # the first 25 frames: the interrupted run
+  head -n 150 traj.xyz > part.xyz
+  for t in NVE NVT VS ; do
+    # reference run
+    mkdir ref-$t
+    sed "s/THERMOSTAT=NVE/THERMOSTAT=$t/" plumed.dat > ref-$t/plumed.dat
+    ( cd ref-$t ; $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 > out 2> err )
+    # A) checkpoints requested by the "MD engine" at steps 0, 10 and 20, restart from step 20
+    mkdir restart-$t
+    cp ref-$t/plumed.dat restart-$t/
+    ( cd restart-$t
+      $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+      $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2 )
+    # B) checkpoints every 7 steps (STRIDE), restart from step 21
+    mkdir restart-stride-$t
+    sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ref-$t/plumed.dat > restart-stride-$t/plumed.dat
+    ( cd restart-stride-$t
+      $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+      $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2 )
+  done
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise, with the plain log files of LogMFD
+  for t in NVE NVT VS ; do
+    for d in restart restart-stride ; do
+      for f in COLVAR logmfd.out replica.out ; do
+        if cmp -s ref-$t/$f $d-$t/$f ; then echo "$d-$t/$f IDENTICAL" ; else echo "$d-$t/$f DIFFERENT" ; fi
+      done
+      if grep -q "not stored in the checkpoint" $d-$t/out2 ; then echo "$d-$t: unported state warning" ; fi
+      grep -h "Restarting from checkpoint\|Checkpoint state restored" $d-$t/out2 | sed 's/by PLUMED.*//'
+    done
+  done > restart_check
+}

@@ -23,17 +23,7 @@ awk '
 {
   printf("%s","\\class PLMD::"namespace""$1"\n");
   printf("%s","\\ingroup INPUTDIRECTIVES\n");
-  action=tolower($2);
-  firstchar=substr($2,1,1);
-  n=split(action,actionarray,"");
-  lowercase=0;
-  if(firstchar==actionarray[1]) lowercase=1;
-  printf("%s","\\brief Provides the keyword <a href=\"../../user-doc/html/");
-  for(i=1;i<=n;i++){
-    if(actionarray[i]!="_") printf("_");
-    printf("%s",actionarray[i]);
-  };
-  printf("%s",".html\"> "$2" </a>\n");
+  printf("%s","\\brief Provides the keyword <a href=\"../../user-doc/html/"$2"/index.html\"> "$2" </a>\n");
 }' >  links-to-user-manual.md
 
 cat ../src/maketools/plumedcheck | grep "# DOC:" |

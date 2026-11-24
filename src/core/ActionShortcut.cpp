@@ -24,6 +24,8 @@
 #include "ActionWithValue.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include <cctype>
+#include <unordered_map>
 
 namespace PLMD {
 
@@ -119,7 +121,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
           savedOutputs.push_back( av_label );
           plumed_massert( keywords.componentHasCorrectType(".#!value",
                           (av->copyOutput(0))->getRank(), (av->copyOutput(0))->hasDerivatives() ),
-                          "documentation for type of value is incorrect");
+                          "documentation for type of value of " + getName() + " is missing or incorrect");
         } else {
           for(const auto& cname: keywords.getOutputComponents()) {
             if( av_label == getShortcutLabel() + "_" + cname ) {
@@ -127,7 +129,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
               plumed_massert( keywords.componentHasCorrectType(cname,
                               (av->copyOutput(0))->getRank(),
                               (av->copyOutput(0))->hasDerivatives() ),
-                              "documentation for type of component " + cname + " is incorrect");
+                              "documentation for type of component " + cname + " of " + getName() + " is missing or incorrect");
             } else if( keywords.getOutputComponentFlag(cname)!="default" ) {
               std::string thisflag = keywords.getOutputComponentFlag(cname);
               if( keywords.numbered(thisflag) && av_label.find(getShortcutLabel() + "_" + cname)!=std::string::npos ) {
@@ -135,7 +137,7 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
                 plumed_massert( keywords.componentHasCorrectType(cname,
                                 (av->copyOutput(0))->getRank(),
                                 (av->copyOutput(0))->hasDerivatives() ),
-                                "documentation for type of component " + cname + " is incorrect");
+                                "documentation for type of component " + cname + " of " + getName() + " is missing or incorrect");
               }
             }
           }
@@ -147,12 +149,11 @@ void ActionShortcut::readInputLine( const std::string& input, bool saveline ) {
         error("shortcut is using suffix but action created is not ActionWithValue");
       }
       Keywords thiskeys;
-      //TODO: check if it is possible to do this: plumed.getKeywordsForAction(av->getName(),thiskeys);
       actionRegister().getKeywords( av->getName(), thiskeys );
       if( thiskeys.getDisplayName()!=getName() ) {
         //NOTE: this was an error
         // I deactivated it because it clashes with the gpu-openacc-by-LOAD does not load
-        // at moment of writing this I do not know if there is a way to to the check by passing the
+        // at moment of writing this I do not know if there is a way to the check by passing the
         // dlloader object to this function.
         // bypassing this check makes my contraption work
         warning("mismatch between display name of hidden action " + thiskeys.getDisplayName() + " and shortcut that creates it " + getName() );
@@ -220,17 +221,38 @@ void ActionShortcut::addToSavedInputLines( const std::string& line ) {
         }
       }
     }
+    // Index the KEY=value words once.  Looking up each numbered keyword with Tools::parse
+    // (a linear search followed by an erase in the middle of the vector) made this function
+    // quadratic in the number of numbered keywords, which dominated the set up of shortcuts
+    // such as DISTANCES with GROUPA/GROUPB (hundreds of thousands of ATOMSn keywords).
+    // As in Tools::parse, the first occurrence wins, the comparison is case insensitive and
+    // a keyword with an empty value is treated as not present.
+    auto upper = []( std::string s ) {
+      for(auto& c : s) {
+        c = static_cast<char>( std::toupper( static_cast<unsigned char>(c) ) );
+      }
+      return s;
+    };
+    std::unordered_map<std::string,std::string> wordvalues;
+    wordvalues.reserve( words.size() );
+    for(const auto& w : words ) {
+      std::size_t eq=w.find_first_of("=");
+      if( eq!=std::string::npos ) {
+        wordvalues.emplace( upper( w.substr(0,eq) ), w.substr(eq+1) );
+      }
+    }
     std::vector<unsigned> ninstances( numberedkeys.size(), 0 );
     for(unsigned j=0; j<numberedkeys.size(); ++j) {
+      const std::string ukey = upper( numberedkeys[j] );
       for(unsigned i=1;; ++i) {
-        std::string num, val;
+        std::string num;
         Tools::convert(i, num);
-        bool found = Tools::parse(words, numberedkeys[j] + num, val );
-        if( !found) {
+        auto it = wordvalues.find( ukey + num );
+        if( it==wordvalues.end() || it->second.empty() ) {
           break ;
         }
         if( i<6 ) {
-          reducedline += numberedkeys[j] + num + "=" + val + " ";
+          reducedline += numberedkeys[j] + num + "=" + it->second + " ";
         } else {
           ninstances[j]++;
         }

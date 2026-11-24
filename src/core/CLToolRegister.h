@@ -35,6 +35,8 @@ struct CLToolRegisterPointers {
   typedef std::unique_ptr<CLTool>(*creator_pointer)(const CLToolOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
+  // CLToolRegister::add always supplies this through aggregate initialization.
+  // cppcheck-suppress uninitMemberVarNoCtor
   creator_pointer create;
   Keywords keys;
 };

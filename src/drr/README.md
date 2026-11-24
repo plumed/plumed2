@@ -17,7 +17,7 @@ After clone this repository, please cd to the plumed2 directory and run:
 
 **Usage**
 
-Run `make doc` and the usage is in `user-doc/html/_d_r_r.html`
+Run `make doc` and the usage is in `new-manual/site/module_drr/index.html`
 
 **Authors**
 

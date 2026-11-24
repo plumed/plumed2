@@ -37,14 +37,27 @@ class MolDataClass {
 public:
 /// Return true if the residue name is one of the allowed reisude names e.g. one of the 20 amino acids for proteins
   static bool allowedResidue( const std::string& type, const std::string& residuename );
+/// The residue name without the fourth character of the variants of the amino acids written by GROMACS
+/// (HISE -> HIS, LYSH -> LYS, CYS2 -> CYS: four characters whose first three are an amino acid); other names unchanged
+  static std::string baseResidueName( const std::string& residuename );
 /// Return the number of atoms in the backbone per residue e.g. 5 for proteins
   static unsigned numberOfAtomsPerResidueInBackbone( const std::string& type );
-/// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues
-  static void getBackboneForResidue( const std::string& type, const unsigned& residuenum, const PDB& mypdb, std::vector<AtomNumber>& atoms );
+/// Return the names of the atoms in the backbone e.g. N, CA, CB, C, O for most protein residues.
+/// The residue is searched in the chain named chain ("*" matches any chain, picking the first residue with that number)
+  static void getBackboneForResidue( const std::string& type, int residuenum, const std::string& chain, const PDB& mypdb, std::vector<AtomNumber>& atoms );
+/// Same, for residue residuenum with insertion code icode ("*" matches any insertion code)
+  static void getBackboneForResidue( const std::string& type, int residuenum, const std::string& chain, const std::string& icode, const PDB& mypdb, std::vector<AtomNumber>& atoms );
 /// Return true if the residue is a terminal group e.g. ACE, NME for proteins
   static bool isTerminalGroup( const std::string& type, const std::string& residuename );
 /// Used to interpret special symbols - currently phi and psi and omega
   static void specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers );
+/// Return true if symbol is one of the hydrogen-bond symbols (hbdonors, hbacceptors, polarhydrogens)
+  static bool isHbondSymbol( const std::string& symbol );
+/// The atoms of the hydrogen-bond symbols: the N and O atoms (hbacceptors), the hydrogens whose closest C, N or O atom is an N or O atom
+/// closer than bondCutoff (polarhydrogens) and those N and O atoms (hbdonors).
+/// The elements are taken from the element column, or from the first letter of the atom name if it is empty; ions are excluded.
+/// bondCutoff is in the units of the positions of mypdb; distances are computed without periodic boundary conditions
+  static void hbondSymbol( const std::string& symbol, const PDB& mypdb, double bondCutoff, std::vector<AtomNumber>& numbers );
 };
 
 }

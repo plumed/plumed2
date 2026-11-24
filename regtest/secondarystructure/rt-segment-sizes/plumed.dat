@@ -1,0 +1,22 @@
+# three atoms in each segment, one reference structure
+r3: SECONDARY_STRUCTURE_RMSD ...
+    ATOMS=1-12 TYPE=OPTIMAL
+    STRUCTURE1=1,0,0,0,1,0,0,0,1
+    SEGMENT1=0,1,2 SEGMENT2=3,4,5 SEGMENT3=6,7,8
+...
+# four atoms in each segment, two reference structures, no alignment
+r4: SECONDARY_STRUCTURE_RMSD ...
+    ATOMS=1-12 TYPE=SIMPLE
+    STRUCTURE1=0,0,0,3,0,0,0,3,0,0,0,3
+    STRUCTURE2=0,0,0,3,0,0,3,3,0,0,3,3
+    SEGMENT1=0,1,2,3 SEGMENT2=4,5,6,7 SEGMENT3=8,9,10,11
+...
+# four atoms in each segment: the last one is closer than BONDLENGTH to all the others in the reference
+# so it is not in any pair
+d4: SECONDARY_STRUCTURE_DRMSD ...
+    ATOMS=1-12 BONDLENGTH=0.17
+    STRUCTURE1=0,0,0,3.2,0,0,1.6,2.2,0,1.6,0.518,0
+    SEGMENT1=0,1,2,3 SEGMENT2=4,5,6,7 SEGMENT3=8,9,10,11
+...
+PRINT ARG=r3,r4.struct-1,r4.struct-2,d4 FILE=colvar FMT=%8.4f
+RESTRAINT ARG=r3,r4.struct-1,r4.struct-2,d4 AT=0.1,0.1,0.1,0.1 KAPPA=1,2,3,4

@@ -44,14 +44,14 @@ struct Fccubic {
                     View<const precision> args,
                     function::FunctionOutput& funcout );
 
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], alpha,a1,b1)
   }
   void removeFromACCDevice() const {
 #pragma acc exit data delete(b1,a1,alpha,this[0:1])
   }
-#endif // __PLUMED_HAS_OPENACC
+#endif // _OPENACC
 };
 
 template <typename T>

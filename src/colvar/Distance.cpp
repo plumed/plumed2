@@ -123,7 +123,7 @@ c: COM ATOMS=1-100
 # this is the distance between atom 101 and the group
 d: DISTANCE ATOMS=c,101 COMPONENTS
 # this makes a new variable, dd, equal to d and periodic, with domain -10,10
-# this is the right choise if e.g. the cell is orthorombic and its size in
+# this is the right choice if e.g. the cell is orthorhombic and its size in
 # z direction is 20.
 dz: COMBINE ARG=d.z PERIODIC=-10,10
 # metadynamics on dd

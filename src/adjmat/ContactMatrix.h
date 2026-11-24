@@ -28,7 +28,7 @@ namespace PLMD {
 namespace adjmat {
 
 struct ContactMatrix {
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   SwitchingFunctionAccelerable switchingFunction;
 #else
   SwitchingFunction switchingFunction;
@@ -39,7 +39,7 @@ struct ContactMatrix {
   static void calculateWeight( const ContactMatrix& data,
                                const AdjacencyMatrixInput& input,
                                MatrixOutput output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     switchingFunction.toACCDevice();
@@ -48,7 +48,7 @@ struct ContactMatrix {
     switchingFunction.removeFromACCDevice();
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 void ContactMatrix::registerKeywords( Keywords& keys ) {
@@ -57,8 +57,8 @@ void ContactMatrix::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","MM","0","The m parameter of the switching function; 0 implies 2*NN");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
-           "The following provides information on the \\ref switchingfunction that are available. "
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous switching function defined above. "
+           "The following provides information on the switching functions that are available. "
            "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.linkActionInDocs("SWITCH","LESS_THAN");
 }
@@ -89,7 +89,7 @@ void ContactMatrix::parseInput( AdjacencyMatrixBase<ContactMatrix,myPTM>* action
   }
   // And set the link cell cutoff
   action->log.printf("  switching function cutoff is %s \n",switchingFunction.description().c_str() );
-  action->setLinkCellCutoff( true, switchingFunction.get_dmax() );
+  action->setLinkCellCutoff( true, switchingFunction.get_dmax(), -1.0, true );
 }
 
 void ContactMatrix::calculateWeight( const ContactMatrix& data,
@@ -97,6 +97,7 @@ void ContactMatrix::calculateWeight( const ContactMatrix& data,
                                      MatrixOutput output ) {
   const double mod2 = input.pos.modulo2();
   if( mod2<epsilon ) {
+    output.val[0]=0;
     return;  // Atoms can't be bonded to themselves
   }
   double dfunc;

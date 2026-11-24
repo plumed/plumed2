@@ -1,0 +1,10 @@
+#! FIELDS time pdb_phi pdb_psi tpr_phi tpr_psi
+#! SET min_pdb_phi -pi
+#! SET max_pdb_phi pi
+#! SET min_pdb_psi -pi
+#! SET max_pdb_psi pi
+#! SET min_tpr_phi -pi
+#! SET max_tpr_phi pi
+#! SET min_tpr_psi -pi
+#! SET max_tpr_psi pi
+ 0.000000  -2.8744   2.7256  -2.8744   2.7256

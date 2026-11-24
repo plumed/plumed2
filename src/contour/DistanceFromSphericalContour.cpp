@@ -58,7 +58,7 @@ p(x,y,x) = \sum_{i=1}^N \xi_i f(c_i) K\left[\frac{x-x_i}{\sigma_x},\frac{y-y_i}{
 $$
 
 is found using this action.  In this expression $\xi_i$ is 1 if atom $i$ is part of the largest cluster and zero otherwise, $c_i$ is the coordination number of atom $i$ and
-$f$ is a swtiching function.  The distance between this isocontour and position of atom 513 as well as the distance between `com` (the center of the largest cluster)
+$f$ is a switching function.  The distance between this isocontour and position of atom 513 as well as the distance between `com` (the center of the largest cluster)
 and the isocontour is then output to a file called colvar.
 
 ```plumed
@@ -137,13 +137,6 @@ void DistanceFromSphericalContour::calculate() {
     }
     active_list[nactive]=j;
     nactive++;
-    Vector distance=pbcDistance( getPosition(getNumberOfAtoms()-1), getPosition(j) );
-    double dp = dotProduct( distance, dirv );
-    double cp = distance.modulo2() - dp*dp;
-    if( cp<rcut2 ) {
-      active_list[nactive]=j;
-      nactive++;
-    }
   }
   // Get maximum length to fit in box
   double hbox = 0.5*getBox()(0,0);

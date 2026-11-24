@@ -1,0 +1,20 @@
+restart/COLVAR IDENTICAL
+restart/hist.grid IDENTICAL
+restart/histn.grid IDENTICAL
+restart/col.dat IDENTICAL
+restart/colc.dat IDENTICAL
+restart/colm.dat IDENTICAL
+restart/colmc.dat IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 20
+PLUMED: Restarting from checkpoint plumed.cpt written at step 20 
+PLUMED: Checkpoint state restored at step 20
+restart-stride/COLVAR IDENTICAL
+restart-stride/hist.grid IDENTICAL
+restart-stride/histn.grid IDENTICAL
+restart-stride/col.dat IDENTICAL
+restart-stride/colc.dat IDENTICAL
+restart-stride/colm.dat IDENTICAL
+restart-stride/colmc.dat IDENTICAL
+Restarting from checkpoint plumed.cpt written at step 21
+PLUMED: Restarting from checkpoint plumed.cpt written at step 21 
+PLUMED: Checkpoint state restored at step 21

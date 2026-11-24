@@ -1,0 +1,4 @@
+type=driver
+# COORD_ANGLES with more than one central atom and with numbered functions (MORE_THAN1, ...)
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/trajectory.xyz"

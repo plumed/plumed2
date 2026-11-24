@@ -1,0 +1,22 @@
+# Same as plumed.dat, with WORK, VFICT and MFICT set to their documented defaults.
+
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+
+LOGMFD ...
+ LABEL=logmfd
+ ARG=d1,d2
+ KAPPA=1000.0,1000.0
+ DELTA_T=0.5
+ INTERVAL=4
+ TEMP=300.0
+ FLOG=0.0
+ WORK=0.0,0.0
+ VFICT=0.0,0.0
+ MFICT=10000.0,10000.0
+ THERMOSTAT=NVE
+ FICT_MIN=0.0,0.0
+ FICT_MAX=2.0,2.0
+... LOGMFD
+
+PRINT ARG=d1,d2,logmfd.d1_fict,logmfd.d2_fict,logmfd.d1_vfict,logmfd.d2_vfict FILE=colvar FMT=%12.6f

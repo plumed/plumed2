@@ -6,7 +6,7 @@ or adding a small feature, the best way to do it is to open a pull request.
 If it is a bug fix, please open a merge request on the oldest maitained branch
 where the bug appears. If you are submitting a new feature, please open a merge request on the
 latest developer branch (master). Please ensure that your change does not break any of the
-existing regression tests on Travis. In addition, add regression tests for any new features that you have added.  If you do not do 
+existing regression tests, which are run automatically on GitHub Actions. In addition, add regression tests for any new features that you have added.  If you do not do 
 this it is very likely that someone else will break the code for your new feature it in the future.
 We (the developers) need to be certain that we will be able to maintain
 your code in the future.  Consequently, please  be ready to answer to specific questions about your changes.

@@ -26,7 +26,7 @@
 /*
 Dump atom positions and a vector of values to a file.
 
-This action has been depracated as the same result can be be achieved using [DUMPATOMS](DUMPATOMS.md) as you can if you look
+This action has been deprecated as the same result can be achieved using [DUMPATOMS](DUMPATOMS.md) as you can if you look
 at the expanded version of the shortct in the example input below:
 
 ```plumed
@@ -61,7 +61,7 @@ void DumpMultiColvar::registerKeywords(Keywords& keys) {
 DumpMultiColvar::DumpMultiColvar(const ActionOptions& ao):
   Action(ao),
   ActionShortcut(ao) {
-  warning("This action has been depracated.  Look at the log to see how the same result is achieved with the new syntax");
+  warning("This action has been deprecated.  Look at the log to see how the same result is achieved with the new syntax");
   std::string dd;
   parse("DATA",dd);
   readInputLine("DUMPATOMS ATOMS=" + dd + "_grp ARG=" + dd + " " + convertInputLineToString() );

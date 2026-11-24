@@ -4,3 +4,11 @@ pypi/
 dist/
 plumed.egg-info/
 PLUMED_VERSION
+.python-build.stamp
+.python-build.config
+plumed_source/
+plumed/runtime/bin/
+plumed/runtime/lib/
+plumed/runtime/include/
+plumed/runtime/licenses/
+plumed/runtime/share/

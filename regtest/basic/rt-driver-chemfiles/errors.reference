@@ -1,0 +1,17 @@
+missing: rejected
+  cannot open the trajectory file missing.nc with chemfiles: ...
+format: rejected
+  cannot open the trajectory file traj.nc with chemfiles: ...
+format_native: rejected
+  --traj-format can only be used with --itraj
+stdin: rejected
+  a trajectory read with chemfiles (--itraj) cannot be read from standard input
+natoms: rejected
+  frame 2 of the trajectory file natoms.xyz has 11 atoms, the first frame has 12
+truncated_nc: rejected
+  cannot read frame 2 of the trajectory file truncated.nc with chemfiles: ...
+truncated_trr: exit code 0
+truncated_lammpstrj: rejected
+  cannot open the trajectory file truncated.lammpstrj with chemfiles: ...
+garbage: rejected
+  cannot open the trajectory file garbage.nc with chemfiles: ...

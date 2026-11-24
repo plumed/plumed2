@@ -1,0 +1,16 @@
+type=driver
+# a small bilayer, continuous across the box, in one group and in separate groups.
+# There is no warning, and the frames are made whole right.
+arg="--plumed plumed.dat --igro traj.gro"
+
+function plumed_regtest_before() {
+  $valgrind $plumed driver --plumed plumed_sep.dat --igro traj.gro > out_sep 2> err_sep || return 1
+}
+
+# the WHOLEMOLECULES lines of the log and the warnings, up to the list of atoms
+function plumed_regtest_after() {
+  for f in out_sep out; do
+    echo "# $f"
+    grep -E "^PLUMED: (Action WHOLEMOLECULES|WARNING for action MOLINFO)" $f | sed -e "s/^PLUMED: //" -e "s/\\. WHOLEMOLECULES will.*//"
+  done > warnings
+}

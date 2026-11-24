@@ -155,25 +155,15 @@ void ResetCell::calculate() {
   rotation=transpose(matmul(inverse(box),newbox));
 
 // rotate all coordinates
-  unsigned nat = getTotAtoms();
-  for(unsigned i=0; i<nat; i++) {
-    std::pair<std::size_t,std::size_t> valIndex = getValueIndices( AtomNumber::index(i));
-    Vector ato=matmul(rotation,getGlobalPosition(valIndex));
-    setGlobalPosition(valIndex,ato);
-  }
+  rotateAllGlobalPositions(rotation);
 // rotate box
   pbc_action->getPbc().setBox(newbox);
 }
 
 void ResetCell::apply() {
 // rotate back forces
-  unsigned nat = getTotAtoms();
-  for(unsigned i=0; i<nat; i++) {
-    std::pair<std::size_t,std::size_t> a = getValueIndices( AtomNumber::index(i));
-    Vector f=getForce(a);
-    Vector nf=matmul(transpose(rotation),f);
-    addForce(a, nf-f );
-  }
+  const Tensor rotationT=transpose(rotation);
+  rotateForcesOnAllAtoms(rotationT);
 
 // I have no mathematical derivation for this.
 // The reasoning is the following.
@@ -196,7 +186,7 @@ void ResetCell::apply() {
   virial[0][2]=virial[2][0];
   virial[1][2]=virial[2][1];
 // rotate back virial
-  virial=matmul(transpose(rotation),matmul(virial,rotation));
+  virial=matmul(rotationT,matmul(virial,rotation));
   boxValue->clearInputForce();
   for(unsigned i=0; i<3; ++i)
     for(unsigned j=0; j<3; ++j) {

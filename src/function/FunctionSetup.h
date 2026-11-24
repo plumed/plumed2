@@ -26,6 +26,8 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionWithVector.h"
 
+#include <cmath>
+
 namespace PLMD {
 namespace function {
 
@@ -49,7 +51,7 @@ struct FunctionData {
                      const std::vector<std::size_t>& shape,
                      bool hasderiv,
                      ActionWithValue* action );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1], argstart, nscalars)
     f.toACCDevice();
@@ -58,7 +60,7 @@ struct FunctionData {
     f.removeFromACCDevice();
 #pragma acc exit data delete(nscalars, argstart, this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 template <class T>
@@ -134,7 +136,9 @@ void FunctionData<T>::setup( T& myfunc,
       if( period[0]!="NO") {
         action->error("input to PERIODIC keyword does not make sense");
       }
-      action->setNotPeriodic();
+      for(unsigned i=0; i<action->getNumberOfComponents(); ++i) {
+        (action->copyOutput(i))->setNotPeriodic();
+      }
       return;
     } else if( period.size()!=2 ) {
       action->error("input to PERIODIC keyword does not make sense");
@@ -149,7 +153,7 @@ void FunctionData<T>::setup( T& myfunc,
       action->setPeriodic(min,max);
     } else if( aarg->getPntrToArgument(1)->isPeriodic() ) {
       std::string min, max;
-      aarg->getPntrToArgument(0)->getDomain( min, max );
+      aarg->getPntrToArgument(1)->getDomain( min, max );
       action->setPeriodic( min, max );
     } else {
       action->setNotPeriodic();
@@ -174,6 +178,22 @@ struct FunctionOutput {
     };
   }
 };
+
+/// Check if all the values returned by the function are zero when all the arguments are zero.
+/// When this is not the case an element of a vector cannot be skipped because its arguments are zero.
+/// A value that is not finite (e.g. 0/0) is treated as zero, as that element is not meaningful.
+template <class T>
+bool functionIsZeroWhenArgumentsAreZero( const T& f, std::size_t nargs, std::size_t ncomponents ) {
+  std::vector<double> zeros( nargs, 0.0 ), vals( ncomponents, 0.0 ), derivs( ncomponents*nargs, 0.0 );
+  auto funcout = FunctionOutput::create( ncomponents, vals.data(), nargs, derivs.data() );
+  T::calc( f, true, View<const double>( zeros.data(), nargs ), funcout );
+  for(const auto & v : vals) {
+    if( std::isfinite(v) && std::fabs(v)>epsilon ) {
+      return false;
+    }
+  }
+  return true;
+}
 
 } // namespace function
 } // namespace PLMD

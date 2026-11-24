@@ -25,6 +25,22 @@ For the impatient use:
 
 This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a word.
 
+Completion also offers filenames after `LOAD FILE=`, `MOLINFO STRUCTURE=`,
+`RMSD REFERENCE=` and related reference-structure options, `INCLUDE FILE=` and
+`READ FILE=`. Relative paths are completed against Vim's current working
+directory (`:pwd`); use the directory from which you will run PLUMED.
+Directories remain available so you can continue completing a nested path.
+Paths containing spaces are enclosed in PLUMED's braces. `LOAD INCLUDE_PATH=`
+completes directories in its colon-separated list.
+
+`LOAD MODULE=` completes built-in module names and names advertised by the
+selected installation's registration files, including registrations exposed by
+`PLUMED_PLUGIN_PATH` when `PLUMED_AUTOLOAD=0`. Registered names are suggestions;
+the module loader checks compatibility and dependencies when you run PLUMED.
+The editor does not execute `LOAD` statements in the input. Module candidates
+reuse the runtime cache described below; static syntax copies offer built-in
+module names only.
+
 - If you want to fold multi-line statements, type
 
 ````
@@ -41,6 +57,102 @@ This will also enable autocompletion. Use `<CTRL-X><CTRL-O>` to autocomplete a w
   you can move a highlighted column.
 
 See below for more detailed instructions.
+
+## Runtime syntax and cache
+
+The installed Vim syntax and help describe the actions compiled into that PLUMED
+build. When you set `ft=plumed`, the Vim support also runs `plumed --no-mpi gen_vim`
+to include actions from the selected installation's autoloaded modules. This works
+with source builds, ordinary installations and conda packages. The edited input
+is not executed. `LOAD MODULE` statements in the input are not interpreted by the
+editor; explicitly selected modules can be configured as shown below.
+
+Vim uses the installed syntax immediately. With Vim's job support, generation runs
+in the background and visible PLUMED buffers are refreshed when it finishes.
+Hidden buffers are refreshed when entered. Vim builds without job support generate
+synchronously on first use. A valid cache is reused across buffers and Vim
+sessions, without starting PLUMED. File paths, modification times, sizes and the
+small module registration files detect installation changes; large libraries are
+not read or hashed. Checks occur when entering a PLUMED buffer, not on keystrokes.
+
+The cache directory is selected in this order:
+
+1. `g:plumed_cache_dir`, if explicitly configured.
+2. `$XDG_CACHE_HOME/plumed/vim`, if `XDG_CACHE_HOME` is an absolute path.
+3. On macOS, `~/Library/Caches/plumed/vim`; on Windows,
+   `$LOCALAPPDATA/plumed/vim`; on other systems, `~/.cache/plumed/vim`.
+4. A private temporary directory for the Vim session if the cache cannot be
+   written. An existing valid cache can still be used when it is read-only.
+
+Nothing is written into the PLUMED installation or the working directory by
+default. Different installations and module selections have separate cache
+entries. Completed generations are published together, keeping syntax,
+completion and help consistent even when multiple Vim processes generate files.
+Older generations remain available for existing help windows. The cache can
+be deleted at any time; Vim will generate it again when needed.
+
+Use `:PlumedRefresh` to force regeneration, for example after rebuilding a library
+without changing its size or timestamp. If PLUMED cannot be run or generation
+fails, the installed syntax remains available; an already loaded cached version
+also remains usable. `:echo get(g:, 'plumed_cache_error', '')` reports the most
+recent generation error.
+
+Optional settings in `.vimrc`:
+
+```vim
+" Override the cache location (a project-local path is allowed explicitly).
+let g:plumed_cache_dir = '/path/to/my/cache/plumed-vim'
+" Normally the executable beside the selected installation is used.
+let g:plumed_executable = '/path/to/plumed/bin/plumed'
+" Explicit module selection, useful with PLUMED_AUTOLOAD=0.
+let g:plumed_modules = ['ves']
+" Set to 0 to use only the installed static syntax and help.
+let g:plumed_vim_dynamic = 1
+" Set to 0 to wait for generation instead of refreshing in the background.
+let g:plumed_vim_async = 1
+```
+
+The normal module environment, including `PLUMED_PLUGIN_PATH`, `PLUMED_AUTOLOAD`
+and `PLUMED_MODULE_OVERRIDE`, is respected. No Python support in Vim is required.
+If you copy Vim support files manually, copy the entire `vim` directory, including
+`autoload` and `templates`, to retain runtime generation. Copying only the
+generated syntax and help continues to work as static Vim support.
+
+## Large files
+
+Vim normally starts highlighting partway through a file when you jump to a
+distant line. This can lose the context of a long multiline PLUMED action or
+an earlier `ENDPLUMED`. For accurate highlighting from the beginning, set this
+before loading the PLUMED syntax:
+
+```vim
+let g:plumed_syntax_sync = 'fromstart'
+```
+
+Parsing from the beginning can be slow in very large input files, especially
+after edits. Alternatively, request a finite lookback:
+
+```vim
+let g:plumed_syntax_sync = 'bounded'
+let g:plumed_syntax_minlines = 200
+```
+
+A finite lookback cannot guarantee correct context inside regions longer than
+that lookback. Leaving `plumed_syntax_sync` unset retains Vim's normal policy.
+Help and completion query exact context without permanently enabling full-file
+synchronization for later redraws.
+
+Very wide COLVAR rows encounter a separate limit: Vim's `synmaxcol` option
+normally stops highlighting at column 3000. To raise that limit, set:
+
+```vim
+let g:plumedf_synmaxcol = 10000
+" For PLUMED input buffers, the corresponding setting is:
+let g:plumed_synmaxcol = 10000
+```
+
+Zero removes the limit, which can slow down extremely wide files. These
+settings apply when the syntax is loaded and do not change other filetypes.
 
 ## Configuration
 
@@ -321,6 +433,15 @@ in the file and tags provided in the `FIELDS` line.
 The highlighted column can be moved back and forth using `:PPlus` and `:PMinus`.
 Adding a count to the command will move the highlighted column more. E.g. `:2PPlus` will move
 the column to the right twice.
+
+You can also select a field by name, for example `:PCol time`. Names are resolved
+against the nearest preceding `#! FIELDS` header, so files containing repeated
+headers are supported. `:PField` reports the number and name of the field under
+the cursor. Each COLVAR buffer keeps its own selected column.
+
+Colors can be customized with the `plumedFOdd`, `plumedFEven` and
+`plumedFSelected` highlight groups. The syntax preserves existing highlight
+definitions. Set `g:plumed_shortcuts` to zero to leave the function keys unmapped.
 
 If you have a long output file, it might be convenient to split it with
 `:split` so that one of the two windows will only show the header. The other window

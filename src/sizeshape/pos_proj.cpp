@@ -30,6 +30,8 @@ namespace sizeshape {
 /*
 Calculates a linear projection in the space of a given reference configurational distribution in size-and-shape space.
 
+This CV can be used, for example, to bias along the linear discriminant that separates two conformational states, as discussed in the first paper cited below.
+
 The linear projection is given by:
 
 $$
@@ -46,10 +48,10 @@ $$
 
 where, $\mathbf{\Sigma}^{-1}$ is the $N\times N$ precision matrix. See also [SIZESHAPE_POSITION_MAHA_DIST](SIZESHAPE_POSITION_MAHA_DIST.md) for information about calculating Mahalanobis distance in size-and-shape space.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) \cite Heidi-shapeGMM-2022 is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
-Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM), which is discussed in the second paper cited below, is a probabilistic clustering technique that is used to perform structural clustering on ensemble of molecular configurations and to obtain reference $(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers.
+Please check out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
-##Examples
+## Examples
 
 In the following example, a group is defined with atom indices of selected atoms and then linear projection is calculated for the given reference, precision and coefficients. Each file is a space separated list of 3N floating point numbers.
 
@@ -116,6 +118,8 @@ void position_linear_proj::registerKeywords( Keywords& keys ) {
   keys.add("compulsory", "COEFFS", "Vector of linear coefficients.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial, for debug purposes only.");
   keys.setValueDescription("scalar","the linear projection");
+  keys.addDOI("10.1021/acs.jctc.3c00051");
+  keys.addDOI("10.1021/acs.jctc.1c01290");
 }
 
 // constructor function
@@ -272,10 +276,10 @@ double position_linear_proj::determinant(int n, const std::vector<std::vector<do
       return 0.0;  // Singular matrix
     }
 
-    for ( int r = i + 1; r < n; r++ ) {                  // On lower rows
-      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+    for ( int row = i + 1; row < n; row++ ) {            // On lower rows
+      double multiple = A[row][i] / pivot;              // Multiple of row i to clear element in ith column
       for ( int j = i; j < n; j++ ) {
-        A[r][j] -= multiple * A[i][j];
+        A[row][j] -= multiple * A[i][j];
       }
     }
     det *= pivot;                                        // Determinant is product of diagonal
@@ -325,17 +329,16 @@ void position_linear_proj::kabsch_rot_mat() {
 
   // Create some containers for stuff from single value decomposition
   std::vector<double> S(nsv);
-  std::vector<double> U(nrows*nrows);
-  std::vector<double> VT(ncols*ncols);
+  std::vector<double> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<double> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<double> work(1);
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
   // Retrieve correct sizes for work and rellocate
@@ -344,9 +347,8 @@ void position_linear_proj::kabsch_rot_mat() {
 
   // This does the singular value decomposition
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
 
@@ -384,7 +386,6 @@ void position_linear_proj::kabsch_rot_mat() {
   }
 
 
-  //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
   for(int i=0; i<3; ++i) {
@@ -419,7 +420,6 @@ double position_linear_proj::cal_position_linear_proj() {
     }
   }
 
-  //double proj_val = dotProduct(disp, linear_coeffs);
   double proj_val = 0.0;
   for(unsigned int i=0; i<N*3; ++i) {
     proj_val += (linear_coeffs[i]*disp[i]);

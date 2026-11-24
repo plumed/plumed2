@@ -183,6 +183,10 @@ Dimer::Dimer(const ActionOptions& ao):
 
   nranks=getNumberOfReplicas();
   myrank=getReplicaIndex();
+  // this check must be done before dsigmas is indexed with myrank
+  if(dsigmas.size()!=nranks && dsigmas.size()!=1) {
+    error("Mismatch between provided sigmas and number of replicas");
+  }
   if(dsigmas.size()==1) {
     dsigma=dsigmas[0];
   } else {
@@ -239,7 +243,7 @@ void Dimer::calculate() {
   double cv_val=0;
   Tensor virial;
   std::vector<Vector> derivatives;
-  std::vector<Vector> my_pos=getPositions();
+  const std::vector<Vector>& my_pos=getPositions();
   int atms = my_pos.size();
   std::vector<Vector> der_b2;
   for(int i=0; i<atms/2; i++) {

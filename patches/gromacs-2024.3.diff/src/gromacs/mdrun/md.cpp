@@ -831,6 +831,12 @@ void gmx::LegacySimulator::do_md()
         int res=1;
         if( (startingBehavior_ != StartingBehavior::NewSimulation) ) plumed_cmd(plumedmain,"setRestart",&res);
       }
+      if(pversion>11 && startingBehavior_ != StartingBehavior::NewSimulation){
+        /* the step from which the simulation continues after -cpi: PLUMED removes from its
+           output files the lines written at or after it, as GROMACS does with its own files */
+        long long int restartStep=ir->init_step;
+        plumed_cmd(plumedmain,"setRestartStep",&restartStep);
+      }
 
       if(isMultiSim(ms_)) {
         if(MAIN(cr_)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&ms_->mainRanksComm_);

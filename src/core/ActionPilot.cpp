@@ -26,14 +26,22 @@ namespace PLMD {
 void ActionPilot::registerKeywords(Keywords& keys) {}
 
 ActionPilot::ActionPilot(const ActionOptions&ao):
-  Action(ao) {
-  if( keywords.exists("STRIDE") ) {
+  Action(ao),
+  performActionAtEnd(false) {
+  const Keywords& keys=getKeywords();
+  if( keys.exists("STRIDE") ) {
     parse("STRIDE",actionStride);
-    if( !keywords.style("STRIDE","hidden") ) {
+    if( !keys.style("STRIDE","hidden") ) {
       log.printf("  with stride %d\n",actionStride);
     }
   } else {
     actionStride=0;
+  }
+  if( keys.exists("DO_AFTER_FINAL_STEP") ) {
+    parseFlag("DO_AFTER_FINAL_STEP",performActionAtEnd);
+    if( performActionAtEnd ) {
+      log.printf("  performing action at end of trajectory even if length of trajectory is not a multiple of the stride\n");
+    }
   }
 }
 
@@ -42,6 +50,13 @@ bool ActionPilot::onStep()const {
     return getStep()%actionStride==0;
   }
   return false;
+}
+
+bool ActionPilot::doOnFinalStep()const {
+  if( actionStride==0 ) {
+    return true;
+  }
+  return performActionAtEnd;
 }
 
 unsigned ActionPilot::getStride()const {

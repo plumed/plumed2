@@ -1,0 +1,173 @@
+{
+  "differential_and_numerical": [
+    {
+      "name": "streamed",
+      "errors": {
+        "values": 2.220446049250313e-16,
+        "derivatives": 7.993605777301127e-15
+      }
+    },
+    {
+      "name": "direct",
+      "errors": {
+        "values": 2.220446049250313e-16,
+        "derivatives": 7.993605777301127e-15
+      }
+    },
+    {
+      "name": "cells",
+      "errors": {
+        "values": 2.220446049250313e-16,
+        "derivatives": 7.993605777301127e-15
+      }
+    },
+    {
+      "name": "verlet",
+      "errors": {
+        "values": 2.220446049250313e-16,
+        "derivatives": 7.993605777301127e-15
+      }
+    },
+    {
+      "name": "omp4",
+      "errors": {
+        "values": 6.661338147750939e-16,
+        "derivatives": 7.41073868937292e-15
+      }
+    },
+    {
+      "name": "tmpi2",
+      "errors": {
+        "values": 7.771561172376096e-16,
+        "derivatives": 8.049116928532385e-15
+      }
+    },
+    {
+      "name": "openmpi2",
+      "errors": {
+        "values": 7.771561172376096e-16,
+        "derivatives": 8.049116928532385e-15
+      }
+    },
+    {
+      "name": "hybrid",
+      "errors": {
+        "values": 6.661338147750939e-16,
+        "derivatives": 7.993605777301127e-15
+      }
+    },
+    {
+      "name": "pairs-DIRECT",
+      "errors": {
+        "values": 5.551115123125783e-17,
+        "derivatives": 5.329070518200751e-15
+      }
+    },
+    {
+      "name": "pairs-CELLS",
+      "errors": {
+        "values": 5.551115123125783e-17,
+        "derivatives": 5.329070518200751e-15
+      }
+    },
+    {
+      "name": "pairs-VERLET",
+      "errors": {
+        "values": 5.551115123125783e-17,
+        "derivatives": 5.329070518200751e-15
+      }
+    },
+    {
+      "name": "numerical-DIRECT",
+      "max_derivative_error": 8.946837608991842e-06
+    },
+    {
+      "name": "numerical-CELLS",
+      "max_derivative_error": 8.946837608991842e-06
+    },
+    {
+      "name": "numerical-VERLET",
+      "max_derivative_error": 8.946837608991842e-06
+    }
+  ],
+  "boundary_and_large": [
+    {
+      "name": "boundaries-DIRECT",
+      "errors": {
+        "values": 0.0,
+        "derivatives": 4.440892098500626e-16
+      }
+    },
+    {
+      "name": "boundaries-CELLS",
+      "errors": {
+        "values": 0.0,
+        "derivatives": 4.440892098500626e-16
+      }
+    },
+    {
+      "name": "boundaries-VERLET",
+      "errors": {
+        "values": 0.0,
+        "derivatives": 4.440892098500626e-16
+      }
+    },
+    {
+      "name": "coincident-DIRECT",
+      "max_derivative_error": 2.211584086420082e-07
+    },
+    {
+      "name": "coincident-CELLS",
+      "max_derivative_error": 2.211584086420082e-07
+    },
+    {
+      "name": "coincident-VERLET",
+      "max_derivative_error": 2.211584086420082e-07
+    },
+    {
+      "name": "6000-CELLS",
+      "errors": {
+        "values": 0.0,
+        "derivatives": 0.0
+      }
+    },
+    {
+      "name": "6000-VERLET",
+      "errors": {
+        "values": 0.0,
+        "derivatives": 0.0
+      }
+    },
+    {
+      "name": "6000-OMP4",
+      "errors": {
+        "values": 6.994405055138486e-15,
+        "derivatives": 1.4328815911568427e-15
+      }
+    },
+    {
+      "name": "6000-TMPI4",
+      "errors": {
+        "values": 6.994405055138486e-15,
+        "derivatives": 1.0234868508263162e-15
+      }
+    },
+    {
+      "name": "6000-MPI4",
+      "errors": {
+        "values": 6.994405055138486e-15,
+        "derivatives": 1.0234868508263162e-15
+      }
+    }
+  ],
+  "domain_decomposition": {
+    "benchmark-dd-tmpi4": {
+      "values": 6.661338147750939e-16,
+      "derivatives": 7.494005416219807e-15
+    },
+    "benchmark-dd-mpi4": {
+      "values": 6.661338147750939e-16,
+      "derivatives": 7.494005416219807e-15
+    }
+  }
+}

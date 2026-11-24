@@ -25,7 +25,9 @@
 #include "ActionForInterface.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include "Checkpointing.h"
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
 #include "ActionWithVirtualAtom.h"
 #include "ActionToGetData.h"
 #include "ActionToPutData.h"
@@ -36,16 +38,23 @@
 #include "config/Config.h"
 #include "tools/Citations.h"
 #include "tools/Communicator.h"
+#if defined(__PLUMED_MPIWRAP) && !defined(__PLUMED_HAS_MPI)
+#include "../mpiwrap/internal.h"
+#endif
 #include "tools/DLLoader.h"
+#include "tools/FileTools.h"
+#include "ModuleLoader.h"
 #include "tools/Exception.h"
 #include "tools/IFile.h"
 #include "tools/Log.h"
 #include "tools/OpenMP.h"
 #include "tools/Tools.h"
 #include "tools/Stopwatch.h"
+#include "tools/Subprocess.h"
 #include "tools/TypesafePtr.h"
 #include "lepton/Exception.h"
 #include "DataPassingTools.h"
+#include "InputBuilderMetadata.h"
 #include "small_vector/small_vector.h"
 #include <cmath>
 #include <cstdlib>
@@ -70,8 +79,31 @@
 #include <optional>
 #include <variant>
 #include <filesystem>
+#include <limits>
+#include <random>
+#include <atomic>
 
 namespace PLMD {
+
+namespace {
+// An action that is calculated on update (e.g. one that analyses the frames stored by
+// COLLECT_FRAMES) can be asked for its output before there is any data: at the first step
+// when the frames are collected without CLEAR, if something is output at that step.
+// Such an action has an argument with no values, and it is not calculated.
+bool hasArgumentWithNoValues(Action* p) {
+  const auto* aa=dynamic_cast<const ActionWithArguments*>(p);
+  if(!aa) {
+    return false;
+  }
+  for(const auto* arg : aa->getArguments()) {
+    if(arg->getRank()>0 && arg->getNumberOfValues()==0) {
+      return true;
+    }
+  }
+  return false;
+}
+}
+
 
 namespace {
 
@@ -434,8 +466,12 @@ PlumedMain::PlumedMain():
   datoms_fwd(*this),
 // automatically write on log in destructor
   stopwatch_fwd(log),
+  checkpointing_fwd(*this),
   actionSet_fwd(*this),
   passtools(DataPassingTools::create(sizeof(double))) {
+  ModuleLoader::autoload(dlloader);
+  ModuleLoader::inheritContext(dlloader);
+  OpenMP::retainRuntime();
   passtools->usingNaturalUnits=false;
   increaseReferenceCounter();
   log.link(comm);
@@ -446,6 +482,20 @@ PlumedMain::PlumedMain():
 
 // destructor needed to delete forward declarated objects
 PlumedMain::~PlumedMain() {
+  // final checkpoint, if the MD engine did not call runFinalJobs (and not while an exception
+  // is propagating, since the state of the run could be inconsistent)
+  if(initialized && std::uncaught_exceptions()==0) {
+    try {
+      checkpointing.atRunEnd(true);
+    } catch(const std::exception& e) {
+      log<<"Final checkpoint not written: "<<e.what()<<"\n";
+    } catch(...) {
+      log<<"Final checkpoint not written: unknown error\n";
+    }
+  }
+  if(numThreadsLocked) {
+    OpenMP::unlockNumThreads();
+  }
   CountInstances::decrease();
 }
 
@@ -465,7 +515,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static Tools::FastStringUnorderedMap<int> word_map = {
+  static const Tools::FastStringUnorderedMap<int> word_map = {
 #include "PlumedMainMap.inc"
   };
 
@@ -551,6 +601,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       case cmd_calc:
         CHECK_INIT(initialized,word);
         calc();
+        break;
+      case cmd_setExchangeStep:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        setExchangeStep(val.get<int>()!=0);
         break;
       case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
@@ -776,8 +831,35 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(10));
+        val.set(int(13));
         break;
+      case cmd_getInputBuilderJSONLength: {
+        CHECK_NOTNULL(val,word);
+        std::ostringstream output;
+        writeInputBuilderJSON(output,nullptr,dlloader.getHandles());
+        std::string metadata=output.str();
+        if(metadata.size()>static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+          plumed_merror("InputBuilder metadata exceeds the supported transfer size");
+        }
+        inputBuilderMetadataJSON=std::move(metadata);
+        val.set(static_cast<int>(inputBuilderMetadataJSON.size()));
+      }
+      break;
+      case cmd_getInputBuilderJSON: {
+        CHECK_NOTNULL(val,word);
+        const std::size_t size=inputBuilderMetadataJSON.size();
+        if(size==0) {
+          plumed_merror("call getInputBuilderJSONLength before getInputBuilderJSON");
+        }
+        if(val.getNelem()<size) {
+          plumed_merror("buffer passed to getInputBuilderJSON is too small");
+        }
+        int* buffer=val.get<int*>(static_cast<int>(size));
+        for(std::size_t i=0; i<size; ++i) {
+          buffer[i]=static_cast<unsigned char>(inputBuilderMetadataJSON[i]);
+        }
+      }
+      break;
       // commands which can be used only before initialization:
       case cmd_init:
         CHECK_NOTINIT(initialized,word);
@@ -838,6 +920,27 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_NOTINIT(initialized,word);
         CHECK_NOTNULL(val,word);
         plumedDat=val.getCString();
+        break;
+      /* ADDED WITH API==13 */
+      case cmd_injectMPIImplementation:
+#if defined(__PLUMED_HAS_MPI)
+        // Native MPI already owns the implementation. Ignore injection without
+        // inspecting the descriptor, including tables supplied by MD engines.
+#else
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+#if !defined(__PLUMED_MPIWRAP)
+        plumed_merror("MPI provider injection is unavailable in a fully serial kernel");
+#else
+        if(!mpiwrap::forceEnvironmentProvider()) {
+          std::string error;
+          if(!mpiwrap::currentRegistry().install(
+                val.get<const mpiwrap::plumed_mpi_provider*>(),error)) {
+            plumed_merror(error);
+          }
+        }
+#endif
+#endif
         break;
       case cmd_setMPIComm:
         CHECK_NOTINIT(initialized,word);
@@ -907,6 +1010,14 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           restart=true;
         }
         break;
+      /* ADDED WITH API==12 */
+      case cmd_setRestartStep:
+        // the step from which the MD engine restarts: the lines written at or after
+        // it in the files that are appended are removed (see RESTART)
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        checkpointing.setEngineRestartStep(val.get<long long int>());
+        break;
       /* ADDED WITH API==4 */
       case cmd_doCheckPoint:
         CHECK_INIT(initialized,word);
@@ -924,7 +1035,17 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
           if(nt==0) {
             nt=1;
           }
-          OpenMP::setNumThreads(nt);
+          numThreadsFromEngine=nt;
+          // while an initialized PLUMED instance exists the number of threads can only decrease
+          if(!OpenMP::setNumThreads(nt)) {
+            std::string msg="WARNING: setNumOMPthreads("+std::to_string(nt)+") ignored: the number of OpenMP threads cannot be increased "
+                            "after PLUMED has been initialized, "+std::to_string(OpenMP::getNumThreads())+" threads are used\n";
+            if(log.isOpen()) {
+              log<<msg;
+            } else {
+              std::fprintf(stderr,"PLUMED: %s",msg.c_str());
+            }
+          }
         }
         break;
       /* ADDED WITH API==10 */
@@ -995,6 +1116,8 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_runFinalJobs:
         CHECK_INIT(initialized,word);
+        // before the final jobs, whose output would be written again at the end of the continuation
+        checkpointing.atRunEnd();
         runJobsAtEndOfCalculation();
         break;
       case cmd_isEnergyNeeded: {
@@ -1016,6 +1139,11 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         plumedQuantityToMD( "energy", getBias(), val );
+        break;
+      case cmd_checkModule:
+        CHECK_NOTNULL(val,word);
+        plumed_assert(nw==2);
+        val.set(int(ModuleLoader::available(std::string(words[1]),dlloader) ? 1:0));
         break;
       case cmd_checkAction:
         CHECK_NOTNULL(val,word);
@@ -1149,7 +1277,22 @@ void PlumedMain::init() {
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",passtools->getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  // the actions size their per-thread storage when they are created: from now on the
+  // number of threads can only decrease (see setNumOMPthreads)
+  OpenMP::lockNumThreads();
+  numThreadsLocked=true;
   log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+#ifdef _OPENMP
+  // PLUMED shares the OpenMP threads of the MD code: with the GNU OpenMP runtime, a region with a different
+  // number of threads (other than 1) replaces some of them at every step (see OpenMP.h).
+  // PLUMED_NUM_THREADS takes precedence over setNumOMPthreads.
+  if(numThreadsFromEngine>0 && OpenMP::getNumThreads()>1 && OpenMP::getNumThreads()!=numThreadsFromEngine) {
+    log<<"WARNING: PLUMED uses "<<OpenMP::getNumThreads()<<" OpenMP threads, but the MD code set "<<numThreadsFromEngine<<" (PLUMED_NUM_THREADS takes precedence).\n"
+       <<"  PLUMED uses the OpenMP threads of the MD code: with the GNU OpenMP runtime a different number of threads (other than 1)\n"
+       <<"  makes the runtime destroy and create threads at every step, and the new ones run on the core of the main thread\n"
+       <<"  (this can make the MD code much slower). Unset PLUMED_NUM_THREADS, or set it to 1 or "<<numThreadsFromEngine<<".\n";
+  }
+#endif
   log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   for(const auto & pp : inputs ) {
     plumed_assert(pp);
@@ -1297,10 +1440,16 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words, const bo
     }
     action->checkRead();
     actionSet.emplace_back(std::move(action));
+    // update the lists incrementally: rebuilding them by scanning the whole action set
+    // after every line makes reading the input quadratic in the number of actions
+    Action* last=actionSet.back().get();
+    if( auto* pilot=dynamic_cast<ActionPilot*>(last) ) {
+      pilots.push_back(pilot);
+    }
+    if( dynamic_cast<ActionForInterface*>(last) ) {
+      setupInterfaceActions();
+    }
   };
-
-  pilots=actionSet.select<ActionPilot*>();
-  setupInterfaceActions();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1332,6 +1481,19 @@ void PlumedMain::prepareDependencies() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("1 Prepare dependencies");
 
+// When the MD engine writes its checkpoint at this step, the files are flushed before anything
+// of this step is written, so that at a restart from this step they are trimmed exactly at the
+// end of what was flushed (e.g. an archive of HDF5 tables at the end of a member, which is not rewritten).
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
+// Restore the checkpoint at the first step after a restart and write one when
+// requested: before anything of this step is computed, see Checkpointing.
+  checkpointing.atStepStart(doCheckPoint);
+
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
 // before doing that, the prepare() method is called to see if there is some
@@ -1346,7 +1508,11 @@ void PlumedMain::prepareDependencies() {
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
-    if(pilots[i]->onStep()) {
+    auto* value=exchangeStep ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
+    // Calculation-only exchange trials need the full potential even when an
+    // MTS bias does not apply forces on this MD step.
+    const bool exchangeBias=exchangeStep && value && value->exists(value->getLabel()+".bias");
+    if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
       active=true;
     }
@@ -1408,6 +1574,15 @@ void PlumedMain::performCalcNoForces() {
 }
 
 void PlumedMain::performCalc() {
+// In case the checkpointing signal arrived after prepareCalc() (2024 GROMACS patch);
+// does nothing if the checkpoint of this step was already written
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
+  checkpointing.atStepStart(doCheckPoint);
   waitData();
   justCalculate();
   backwardPropagate();
@@ -1433,6 +1608,59 @@ void PlumedMain::waitData() {
   }
 }
 
+void PlumedMain::prepareLaunch() {
+  launchQueue.clear();
+  launchBarriers.clear();
+  for(std::size_t k=0; k<actionSet.size(); ++k) {
+    Action* a=actionSet[k].get();
+    if(!a->isActive()) {
+      continue;
+    }
+    const ActionAtomistic* aa=a->castToActionAtomistic();
+    if(aa && aa->modifiesGlobalAtoms) {
+      launchBarriers.push_back(k);
+    }
+    ActionWithValue* av=a->castToActionWithValue();
+    if(a->launchable && !a->checkNumericalDerivatives() && !(av && av->calculateOnUpdate())) {
+      launchQueue.push_back(k);
+    }
+  }
+}
+
+void PlumedMain::launchReady(const std::size_t done) {
+  // what comes after an action that moves the atoms is launched when that action has been calculated
+  const auto barrier=std::upper_bound(launchBarriers.begin(),launchBarriers.end(),done);
+  const std::size_t limit = barrier==launchBarriers.end() ? actionSet.size() : *barrier;
+  std::size_t kept=0;
+  for(std::size_t i=0; i<launchQueue.size(); ++i) {
+    const std::size_t k=launchQueue[i];
+    if(k<=done) {
+      // reached before being launched: calculated as usual
+      continue;
+    }
+    Action* a=actionSet[k].get();
+    bool ready=k<limit && !a->launched;
+    for(const Action* d : a->getDependencies()) {
+      // the inactive dependencies are constant (see Action::setupConstantValues())
+      if(!ready || (d->isActive() && d->forwardLoop!=forwardLoop)) {
+        ready=false;
+        break;
+      }
+    }
+    if(!ready) {
+      launchQueue[kept++]=k;
+      continue;
+    }
+    if(ActionAtomistic* aa=a->castToActionAtomistic()) {
+      aa->retrieveAtoms();
+    }
+    a->launch();
+    a->launched=true;
+    a->launchAtomsVersion=atomsVersion;
+  }
+  launchQueue.resize(kept);
+}
+
 void PlumedMain::justCalculate() {
   if(!active) {
     return;
@@ -1456,9 +1684,18 @@ void PlumedMain::justCalculate() {
     }
   }
 
-  int iaction=0;
+  forwardLoop++;
+  // the atoms are new: a launch that was not used (after an error) is not valid any more
+  atomsVersion++;
+  if(useLaunch) {
+    prepareLaunch();
+  }
+  // the counter is incremented at the top of the loop so that the labels of the
+  // detailed timers stay aligned also after the actions skipped with continue
+  int iaction=-1;
 // calculate the active actions in order (assuming *backward* dependence)
   for(const auto & pp : actionSet) {
+    iaction++;
     Action* p(pp.get());
     plumed_assert(p);
     try {
@@ -1491,16 +1728,32 @@ void PlumedMain::justCalculate() {
             continue ;
           }
         }
-        {
-          if(aa)
-            if(aa->isActive()) {
-              aa->retrieveAtoms();
-            }
+        // the atoms of a launched action were retrieved before launch()
+        bool launched=false;
+        if(useLaunch) {
+          if(p->launched && p->launchAtomsVersion!=atomsVersion) {
+            // an action in between changed the atoms (or the box, which is changed only with them): the work is done again
+            p->cancelLaunch();
+            p->launched=false;
+          }
+          launched=p->launched;
+        }
+        if(aa && !launched) {
+          aa->retrieveAtoms();
         }
         if(p->checkNumericalDerivatives()) {
           p->calculateNumericalDerivatives();
         } else {
           p->calculate();
+        }
+        if(useLaunch) {
+          p->launched=false;
+          p->forwardLoop=forwardLoop;
+          if(aa && aa->modifiesGlobalAtoms) {
+            atomsVersion++;
+          }
+          // the actions that were waiting for this one are started
+          launchReady(iaction);
         }
         traceActionNonFinite(actionSet,*p,step,"forward",true,false,comm);
 
@@ -1522,7 +1775,6 @@ void PlumedMain::justCalculate() {
     } catch(...) {
       plumed_error_nested() << "An error happened while calculating " << p->getLabel();
     }
-    iaction++;
   }
 }
 
@@ -1565,17 +1817,11 @@ void PlumedMain::backwardPropagate() {
     }
     iaction++;
   }
-
-// Stopwatch is stopped when sw goes out of scope.
-// We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
-  Stopwatch::Handler sw1;
-  if(detailedTimers) {
-    sw1=stopwatch.startStop("5B Update forces");
-  }
 }
 
 void PlumedMain::update() {
   if(!active) {
+    checkpointing.atStepEnd();
     return;
   }
 
@@ -1595,20 +1841,24 @@ void PlumedMain::update() {
   for(const auto & p : actionSet) {
     p->beforeUpdate();
     if(p->isActive() && p->checkUpdate() && updateFlagsTop()) {
-      ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
+      ActionWithValue* av=p->castToActionWithValue();
       if( av && av->calculateOnUpdate() ) {
         p->prepare();
-        p->calculate();
+        if(!hasArgumentWithNoValues(p.get())) {
+          p->calculate();
+        }
       } else {
         p->update();
       }
     }
   }
+  // an UPDATE_IF block that is not closed with END extends to the end of the input,
+  // so more than one flag can be left here. Extra END lines are rejected when reading the input.
+  if(updateFlags.empty()) {
+    plumed_merror("non matching changes in the update flags");
+  }
   while(!updateFlags.empty()) {
     updateFlags.pop();
-  }
-  if(!updateFlags.empty()) {
-    plumed_merror("non matching changes in the update flags");
   }
 // Check that no action has told the calculation to stop
   if(stopNow) {
@@ -1632,9 +1882,23 @@ void PlumedMain::update() {
 // invalidate the checkpoint status
 // this fix issues like #1428
   doCheckPoint = false;
+  checkpointing.atStepEnd();
 }
 
-void PlumedMain::load(const std::string& fileName) {
+void PlumedMain::loadModule(const std::string& name) {
+  ModuleLoader::load(name,dlloader);
+}
+
+void PlumedMain::load(const std::string& fileName, const std::vector<std::string>& includeDirs) {
+  struct BuildDirectory {
+    std::filesystem::path path;
+    ~BuildDirectory() {
+      if(!path.empty()) {
+        std::error_code ec;
+        std::filesystem::remove_all(path,ec);
+      }
+    }
+  } buildDirectory;
   if(DLLoader::installed()) {
     std::string libName=fileName;
     size_t n=libName.find_last_of(".");
@@ -1648,11 +1912,61 @@ void PlumedMain::load(const std::string& fileName) {
     }
 
     if(extension=="cpp") {
-      libName="./"+base+"."+config::getVersionLong()+"."+config::getSoExt();
+      const auto script=config::getPlumedRoot()+"/scripts/mklib.sh";
+      plumed_massert(std::filesystem::is_regular_file(pathFromUTF8(script)),
+                     "LOAD of C++ source requires mklib; for conda install plumed-mklib");
+      libName="./"+base+"."+config::getVersionLong()+"."+config::getModuleBuildID()+"."+config::getSoExt();
 // full path command, including environment setup
 // this will work even if plumed is not in the execution path or if it has been
 // installed with a name different from "plumed"
-      std::string cmd=config::getEnvCommand()+" \""+config::getPlumedRoot()+"\"/scripts/mklib.sh -n -o "+libName+" "+fileName;
+      if(!includeDirs.empty()) {
+        // Separate output paths also prevent dlopen from returning an older
+        // image when another Plumed object still owns a previous compilation.
+        int created=0;
+        if(comm.Get_rank()==0) {
+          try {
+            std::random_device random;
+            // Never reuse a path in this process, even after its directory was
+            // removed: an earlier image can still be held by another object.
+            static std::atomic<unsigned long long> sequence{0};
+            for(unsigned attempt=0; attempt<100; ++attempt) {
+              auto candidate=std::filesystem::absolute(base+".load-"+std::to_string(random())+"-"+std::to_string(sequence++));
+              if(std::filesystem::create_directory(candidate)) {
+                buildDirectory.path=candidate;
+                break;
+              }
+            }
+            if(!buildDirectory.path.empty()) {
+              libName=(buildDirectory.path/("extension."+config::getSoExt())).string();
+              created=1;
+            }
+          } catch(const std::exception& e) {
+            log<<"Cannot create LOAD build directory: "<<e.what()<<"\n";
+          }
+        }
+        // Report root failures on every rank before broadcasting the path.
+        comm.Bcast(created,0);
+        plumed_massert(created,"Cannot create LOAD build directory next to "+fileName);
+        unsigned length=libName.size();
+        comm.Bcast(length,0);
+        libName.resize(length);
+        comm.Bcast(libName,0);
+      }
+      std::vector<std::string> options;
+      if(includeDirs.empty()) {
+        options.push_back("-n");
+      }
+      for(const auto& dir : includeDirs) {
+        options.push_back("--include");
+        options.push_back(dir);
+      }
+      options.insert(options.end(), {"-o",libName,fileName});
+      // Keep a readable command for logging and the per-command build lock.
+      // This string is not executed.
+      std::string cmd=config::getEnvCommand()+" "+Tools::quoteForShell(config::getPlumedRoot()+"/scripts/mklib.sh");
+      for(const auto& option : options) {
+        cmd+=" "+Tools::quoteForShell(option);
+      }
 
       if(std::getenv("PLUMED_LOAD_ACTION_DEBUG")) {
         log<<"Executing: "<<cmd;
@@ -1667,6 +1981,7 @@ void PlumedMain::load(const std::string& fileName) {
 
       // On MPI process (intracomm), we use Get_rank to make sure a single process does the compilation
       // Processes from multiple replicas might simultaneously do the compilation.
+      int ret=0;
       if(comm.Get_rank()==0) {
         static Tools::CriticalSectionWithKey<std::string> section;
         // This is only locking commands that are running with identical arguments.
@@ -1674,13 +1989,24 @@ void PlumedMain::load(const std::string& fileName) {
         // the library is already there, even if running simultaneously).
         // It however decreases the system load if many threads are used.
         auto s=section.startStop(cmd);
-        int ret=std::system(cmd.c_str());
-        if(ret!=0) {
-          plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
-        }
+        std::vector<std::string> arguments{"--",config::getPlumedRoot()+"/scripts/mklib.sh"};
+        arguments.insert(arguments.end(),options.begin(),options.end());
+        ret=Subprocess::run("/bin/bash",arguments, {
+          {"PLUMED_ROOT",config::getPlumedRoot()},
+          {"PLUMED_VERSION",config::getVersionLong()},
+          {"PLUMED_HTMLDIR",config::getPlumedHtmldir()},
+          {"PLUMED_INCLUDEDIR",config::getPlumedIncludedir()},
+          {"PLUMED_PROGRAM_NAME",config::getPlumedProgramName()},
+          {"PLUMED_IS_INSTALLED",config::isInstalled() ? "yes" : "no"}
+        });
+      }
+      comm.Bcast(ret,0);
+      if(ret!=0) {
+        plumed_error() <<"An error happened while executing command "<<cmd<<"\n";
       }
       comm.Barrier();
     } else {
+      plumed_massert(includeDirs.empty(),"INCLUDE_PATH requires a .cpp source file");
       libName=base+"."+config::getSoExt();
     }
 
@@ -1688,6 +2014,10 @@ void PlumedMain::load(const std::string& fileName) {
     // will load the library, but each of them will only see actions registered
     // from the owned library
     auto *p=dlloader.load(libName);
+    if(!includeDirs.empty()) {
+      // Every rank must finish dlopen before the root removes the library.
+      comm.Barrier();
+    }
     log<<"Loading shared library "<<libName.c_str()<<" at "<<p<<"\n";
     log<<"Here is the list of new actions\n";
     log<<"\n";
@@ -1719,12 +2049,17 @@ double PlumedMain::getWork() const {
 FILE* PlumedMain::fopen(const char *path, const char *mode) {
   std::string mmode(mode);
   std::string ppath(path);
-  std::string ppathsuf=ppath+getSuffix();
-  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
-  if(!fp) {
-    fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
+  if(ppath=="/dev/null") {
+    ppath=FileBase::nullDevice;
   }
-  plumed_massert(fp,"file " + ppath + " cannot be found");
+  std::string ppathsuf=ppath+getSuffix();
+  FILE*fp=fopenUTF8(ppathsuf,mmode.c_str());
+  if(!fp) {
+    fp=fopenUTF8(ppath,mmode.c_str());
+  }
+  if(!fp) {
+    plumed_error() << "file " << ppath << " cannot be found";
+  }
   return fp;
 }
 
@@ -1765,8 +2100,11 @@ void PlumedMain::runJobsAtEndOfCalculation() {
     ActionPilot* ap=dynamic_cast<ActionPilot*>(p.get());
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(p.get());
     if( av && av->calculateOnUpdate() ) {
-      p->calculate();
-    } else if( ap && !av && ap->getStride()==0 ) {
+      p->prepare();
+      if(!hasArgumentWithNoValues(p.get())) {
+        p->calculate();
+      }
+    } else if( ap && ap->doOnFinalStep() ) {
       p->update();
     } else {
       p->runFinalJobs();
@@ -1931,6 +2269,10 @@ void PlumedMain::getKeywordsForAction( const std::string& action, Keywords& keys
 
 bool PlumedMain::checkAction(const std::string& action) const {
   return actionRegister().check(dlloader.getHandles(),action);
+}
+
+const std::vector<void*>& PlumedMain::getLoadedLibraryHandles() const {
+  return dlloader.getHandles();
 }
 #ifdef __PLUMED_HAS_PYTHON
 // This is here to stop cppcheck throwing an error

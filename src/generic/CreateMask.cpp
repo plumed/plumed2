@@ -157,6 +157,9 @@ CreateMask::CreateMask( const ActionOptions& ao ) :
     type=nomask;
     log.printf("  setting all points in output mask to zero \n");
   } else if( stype=="stride" ) {
+    if( nzeros==0 ) {
+      error("NZEROS should be greater than zero");
+    }
     type=stride;
     log.printf("  setting every %d equally spaced points in output mask to zero \n", nzeros );
   } else if( stype=="random" ) {
@@ -201,6 +204,10 @@ void CreateMask::calculate() {
   Value* out=getPntrToComponent(0);
   Value* arg=getPntrToArgument(0);
   unsigned ns = arg->getShape()[0];
+  // there is nothing to select if the data is still being collected
+  if( ns==0 ) {
+    return;
+  }
   for(unsigned i=0; i<ns; ++i) {
     out->set( i, 1.0 );
   }

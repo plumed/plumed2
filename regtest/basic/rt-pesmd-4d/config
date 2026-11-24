@@ -1,0 +1,4 @@
+type=plumed
+# 4-dimensional landscape (two moving particles): checks the thermostat energy in stats.out
+# and that final jobs are run (the histogram is written only at the end, STRIDE=0)
+arg="pesmd input.dat"

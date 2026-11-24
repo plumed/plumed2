@@ -1,0 +1,123 @@
+#include <thread_mpi_tmpi.h>
+#include "internal.h"
+#include "mpiwrap.h"
+
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+
+namespace PLMD {
+namespace thread_mpi {
+namespace launcher_test {
+
+int rank_callback(int rank, const void *native_comm, std::size_t native_size,
+                  void *opaque) {
+  if (opaque && *static_cast<int *>(opaque) == rank) {
+    throw std::runtime_error("injected callback failure");
+  }
+  if (!native_comm || native_size != sizeof(thread_mpi::tMPI_Comm)) {
+    return 101;
+  }
+  int wrapper_rank = -1;
+  if (mpiwrap::Comm_rank(mpiwrap::COMM_WORLD(), &wrapper_rank) !=
+      thread_mpi::TMPI_SUCCESS || wrapper_rank != rank) {
+    return 100;
+  }
+  return rank + 1;
+}
+
+int run(int ranks, int throw_rank) {
+  if (throw_rank >= 0) {
+    int result = 0;
+    (void)mpiwrap::launchRanks(
+      ranks, rank_callback, &throw_rank, &result,
+      mpiwrap::MPILifecyclePolicy::internal_thread_mpi);
+    return 1;
+  }
+  int result = -1;
+  const int status = mpiwrap::launchRanks(
+                       ranks, rank_callback, nullptr, &result,
+                       mpiwrap::MPILifecyclePolicy::internal_thread_mpi);
+  if (status != 0 || result != ranks) {
+    std::cerr << "internal launch result mismatch: status=" << status
+              << " result=" << result << " expected=" << ranks << '\n';
+    return 1;
+  }
+  int finalized = 0;
+  if (thread_mpi::tMPI_Finalized(&finalized) != thread_mpi::TMPI_SUCCESS ||
+      !finalized) {
+    std::cerr << "internal launch did not finalize its worker runtime\n";
+    return 1;
+  }
+
+  const int second_ranks = ranks == 4 ? 2 : ranks + 1;
+  int second_result = -1;
+  const int second_status = mpiwrap::launchRanks(
+                              second_ranks, rank_callback, nullptr,
+                              &second_result,
+                              mpiwrap::MPILifecyclePolicy::internal_thread_mpi);
+  if (second_status != 0 || second_result != second_ranks) {
+    std::cerr << "sequential internal launch result mismatch: status="
+              << second_status << " result=" << second_result
+              << " expected=" << second_ranks << '\n';
+    return 1;
+  }
+  if (thread_mpi::tMPI_Finalized(&finalized) != thread_mpi::TMPI_SUCCESS ||
+      !finalized) {
+    std::cerr << "sequential internal launch did not finalize its worker runtime\n";
+    return 1;
+  }
+  return 0;
+}
+
+int runUnlaunchedSerial() {
+  auto &registry = mpiwrap::currentRegistry();
+  if (registry.installed()) {
+    return 1;
+  }
+  int initialized = 1;
+  if (mpiwrap::Initialized(&initialized) != thread_mpi::TMPI_SUCCESS ||
+      initialized != 0 || registry.installed()) {
+    std::cerr << "MPI_Initialized selected or initialized a provider without an explicit launch\n";
+    return 1;
+  }
+  (void) mpiwrap::COMM_SELF();
+  if (registry.installed()) {
+    std::cerr << "MPI_COMM_SELF selected a provider without an explicit launch\n";
+    return 1;
+  }
+  // Merely building with embedded tMPI must not start or select it. The only
+  // supported activation path is the explicit internal launcher.
+  if (mpiwrap::Initialized(&initialized) != thread_mpi::TMPI_SUCCESS ||
+      initialized != 0 || registry.installed()) {
+    std::cerr << "unlaunched MPI inquiry selected or initialized a provider\n";
+    return 1;
+  }
+  return 0;
+}
+
+}  // namespace launcher_test
+}  // namespace thread_mpi
+}  // namespace PLMD
+
+int main(int argc, char **argv) {
+  if (argc == 2 && std::strcmp(argv[1], "serial") == 0) {
+    return PLMD::thread_mpi::launcher_test::runUnlaunchedSerial();
+  }
+  if (argc != 2 && argc != 3) {
+    return 2;
+  }
+  const int ranks = std::atoi(argv[1]);
+  if (ranks < 1 || ranks > 4) {
+    return 2;
+  }
+  int throw_rank = -1;
+  if (argc == 3) {
+    if (std::strcmp(argv[2], "throw") != 0) {
+      return 2;
+    }
+    throw_rank = ranks > 1 ? 1 : 0;
+  }
+  return PLMD::thread_mpi::launcher_test::run(ranks, throw_rank);
+}

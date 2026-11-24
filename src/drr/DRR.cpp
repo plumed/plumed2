@@ -17,6 +17,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "DRR.h"
+#include <stdexcept>
 
 namespace PLMD {
 namespace drr {
@@ -351,6 +352,9 @@ void DRRForceGrid::write1DPMF(string filename, const string &fmt) const {
   std::string fmtv=fmt+" "+fmt+"\n";
   FILE *ppmf;
   ppmf = fopen(filename.c_str(), "w");
+  if (!ppmf) {
+    throw std::runtime_error("cannot open " + filename + " for writing");
+  }
   const double w = dimensions[0].binWidth;
   double pmf = 0;
   fprintf(ppmf, fmtv.c_str(), endpoints[0], pmf);
@@ -376,6 +380,16 @@ void DRRForceGrid::writeAll(const string &filename, const string &fmt, bool addi
   } else {
     pGrad = fopen(gradname.c_str(), "w");
     pCount = fopen(countname.c_str(), "w");
+  }
+  if (!pGrad || !pCount) {
+    if (pGrad) {
+      fclose(pGrad);
+    }
+    if (pCount) {
+      fclose(pCount);
+    }
+    throw std::runtime_error("cannot open " + (!pGrad ? gradname : countname) +
+                             " for writing");
   }
 
   char *buffer1, *buffer2;
@@ -413,6 +427,9 @@ void DRRForceGrid::writeDivergence(const string &filename, const string &fmt) co
   vector<double> pos(ndims, 0);
   FILE *pDiv;
   pDiv = fopen(divname.c_str(), "w");
+  if (!pDiv) {
+    throw std::runtime_error("cannot open " + divname + " for writing");
+  }
   fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pDiv);
   for (size_t i = 0; i < sampleSize; ++i) {
     for (size_t j = 0; j < ndims; ++j) {
@@ -550,6 +567,16 @@ void CZAR:: writeZCountZGrad(const string &filename, bool addition) const {
   } else {
     pCount = fopen(countname.c_str(), "w");
     pGrad = fopen(gradname.c_str(), "w");
+  }
+  if (!pCount || !pGrad) {
+    if (pCount) {
+      fclose(pCount);
+    }
+    if (pGrad) {
+      fclose(pGrad);
+    }
+    throw std::runtime_error("cannot open " + (!pCount ? countname : gradname) +
+                             " for writing");
   }
   fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pCount);
   fwrite(headers.c_str(), sizeof(char), strlen(headers.c_str()), pGrad);

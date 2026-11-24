@@ -24,6 +24,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
+#include "tools/Tools.h"
 
 namespace PLMD {
 namespace bias {
@@ -52,7 +53,6 @@ void Walls::registerKeywords(Keywords& keys) {
   keys.needsAction("COMBINE");
   keys.needsAction("CUSTOM");
   keys.needsAction("SUM");
-  keys.needsAction("COMBINE");
   keys.needsAction("BIASVALUE");
 }
 
@@ -108,6 +108,11 @@ Walls::Walls(const ActionOptions&ao):
   std::vector<std::string> at(kappa.size());
   parseVector("AT",at);
 
+  std::string stride;
+  parse("STRIDE",stride);
+  if( stride.length()>0 ) {
+    stride=" STRIDE=" + stride;
+  }
   std::string biasinp, forceinp;
   for(unsigned i=0; i<args.size(); ++i) {
     std::string argn;
@@ -117,19 +122,44 @@ Walls::Walls(const ActionOptions&ao):
     } else {
       argn = args[i];
     }
-    readInputLine( getShortcutLabel() + "_cv_" + argn + ": COMBINE PERIODIC=NO ARG=" + args[i] + " PARAMETERS=" + at[i] );
-    if( getName()=="UPPER_WALLS" ) {
-      readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x+" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(x)*x^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
-    } else if( getName()=="LOWER_WALLS" ) {
-      readInputLine( getShortcutLabel() + "_scale_" + argn + ": CUSTOM PERIODIC=NO FUNC=(x-" + offset[i] +")/" + eps[i] + " ARG=" + getShortcutLabel() + "_cv_" + argn );
-      readInputLine( getShortcutLabel() + "_pow_" + argn + ": CUSTOM PERIODIC=NO FUNC=step(-x)*(-x)^" + exp[i] + " ARG=" + getShortcutLabel() + "_scale_" + argn );
+    // The wall acts on the value of the argument in its domain, without periodic images
+    // (see https://github.com/plumed/plumed2/issues/658). COMBINE cannot be used here
+    // because it applies periodic boundary conditions to the difference: CUSTOM with PERIODIC=NO does not.
+    std::vector<Value*> argvals;
+    ActionWithArguments::interpretArgumentList( std::vector<std::string>(1,args[i]), plumed.getActionSet(), this, argvals );
+    for(const auto & v : argvals) {
+      if( v->isPeriodic() ) {
+        double min, max, atv;
+        v->getDomain( min, max );
+        Tools::convert( at[i], atv );
+        if( atv<min || atv>max ) {
+          error("the position of the wall (AT) for periodic argument " + v->getName() + " should be within its periodic domain");
+        }
+        log.printf("  WARNING: argument %s is periodic. The wall acts on its value in the domain [%f,%f]\n"
+                   "    without periodic images, so the bias is discontinuous at the boundary of the domain.\n"
+                   "    Make sure that the walls keep the argument far from it (e.g. use both an upper and a lower wall).\n",
+                   v->getName().c_str(), min, max );
+      }
     }
-    readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] +"*x" + " ARG=" + getShortcutLabel() + "_pow_" + argn );
+    // The scaled distance from the wall, s=(x-AT+OFFSET)/EPS (UPPER_WALLS) or s=(x-AT-OFFSET)/EPS (LOWER_WALLS).
+    // The wall acts where s is positive (UPPER_WALLS) or negative (LOWER_WALLS): select() is used instead of
+    // a product with step(), because a non-integer power of a negative number is nan and nan*0 is nan.
+    // Energy and squared force of each element are computed by one CUSTOM each: the chain of one CUSTOM per
+    // operation that was used before took about four times longer.
+    std::string scaled, inactive, power;
+    if( getName()=="UPPER_WALLS" ) {
+      scaled = "(((x-(" + at[i] + "))+(" + offset[i] + "))/(" + eps[i] + "))";
+      inactive = "step(-" + scaled + ")";
+      power = scaled + "^(" + exp[i] + ")";
+    } else if( getName()=="LOWER_WALLS" ) {
+      scaled = "(((x-(" + at[i] + "))-(" + offset[i] + "))/(" + eps[i] + "))";
+      inactive = "step(" + scaled + ")";
+      power = "(-" + scaled + ")^(" + exp[i] + ")";
+    }
+    readInputLine( getShortcutLabel() + "_v_wall_" + argn + ": CUSTOM PERIODIC=NO FUNC=select(" + inactive + ",0,(" + kappa[i] + ")*" + power + ") ARG=" + args[i] );
     readInputLine( getShortcutLabel() + "_wall_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_wall_" + argn + " PERIODIC=NO");
-    readInputLine( getShortcutLabel() + "_force_" + argn + ": CUSTOM PERIODIC=NO FUNC=" + kappa[i] + "*" + exp[i] + "*x/(y*" + eps[i] + ") " +
-                   "ARG=" + getShortcutLabel() + "_pow_" + argn + "," + getShortcutLabel() + "_scale_" + argn );
-    readInputLine( getShortcutLabel() + "_v_force2_" + argn + ": CUSTOM PERIODIC=NO FUNC=x*x ARG=" + getShortcutLabel() + "_force_" + argn );
+    // the derivative of the wall with respect to x is KAPPA*EXP*s^EXP/(s*EPS)
+    readInputLine( getShortcutLabel() + "_v_force2_" + argn + ": CUSTOM PERIODIC=NO FUNC=select(" + inactive + ",0,((" + kappa[i] + ")*(" + exp[i] + ")*" + power + "/(" + scaled + "*(" + eps[i] + ")))^2) ARG=" + args[i] );
     readInputLine( getShortcutLabel() + "_force2_" + argn + ": SUM ARG=" + getShortcutLabel() + "_v_force2_" + argn + " PERIODIC=NO");
     if(i==0) {
       biasinp = " ARG=" + getShortcutLabel() + "_wall_" + argn;
@@ -140,7 +170,7 @@ Walls::Walls(const ActionOptions&ao):
     }
   }
   readInputLine( getShortcutLabel() + "_bias: COMBINE PERIODIC=NO " + biasinp );
-  readInputLine( "BIASVALUE ARG=" + getShortcutLabel() + "_bias" );
+  readInputLine( "BIASVALUE ARG=" + getShortcutLabel() + "_bias" + stride );
   readInputLine( getShortcutLabel() + "_force2: COMBINE PERIODIC=NO " + forceinp  );
 }
 

@@ -1,0 +1,67 @@
+type=driver
+# MOLINFO with malformed mmCIF files: the messages (errors.reference); a valid file is read by plumed.dat
+arg="--plumed plumed.dat --ixyz traj.xyz"
+extra_files=""
+# the messages of errors raised outside an action are compared: no stack trace (as on CI)
+export PLUMED_STACK_TRACE=no
+
+function check(){
+# check "description" "plumed input": write the exit code and the error message
+  local what="$1"
+  printf "%b\n" "$2" > bad.dat
+  $plumed_nompi driver --plumed bad.dat --ixyz traj.xyz > bad.out 2>&1
+  local rc=$?
+  echo "== $what: exit code $rc" >> errors
+  grep -m1 "^PLUMED: ERROR in input" bad.out | sed -e 's/^PLUMED: //' -e 's/ *$//' >> errors
+  # errors raised outside an action (plumed_merror): the line after the location
+  if test $rc -ne 0 && ! grep -q "^PLUMED: ERROR in input" bad.out ; then
+    grep -A2 "^ERROR : in input for command line tool driver" bad.out | tail -1 >> errors
+  fi
+}
+
+# cif "description" "body of the file" [MOLINFO options]: a file test.cif and a MOLINFO that reads it
+function cif(){
+  printf "%b" "$2" > test.cif
+  check "$1" "MOLINFO STRUCTURE=test.cif $3\nd: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=/dev/null"
+}
+
+function plumed_regtest_after(){
+  rm -f errors
+  local h="$(cat header.cif)\n"
+  cif "empty file" ""
+  cif "only comments" "# nothing here\n\n"
+  cif "text that is not cif" "this is not a CIF file\n"
+  cif "binary data" "\x01\x02\x03\xff\xfe\n"
+  cif "no _atom_site table" "data_x\n_cell.length_a 10\n"
+  cif "_atom_site as items" "data_x\n_atom_site.id 1\n_atom_site.Cartn_x 1.0\n"
+  cif "_atom_site table without values" "${h}#\n"
+  cif "no coordinates" "data_x\nloop_\n_atom_site.id\n_atom_site.label_atom_id\n1 N\n2 C\n"
+  cif "wrong number of values" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0\n"
+  cif "unterminated quote" "${h}ATOM 1 N 'N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  cif "unterminated text field" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C\n;CA\n"
+  cif "coordinate that is not a number" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 abc 3.0 1\n"
+  cif "missing coordinate" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 ? 3.0 1\n"
+  cif "residue number that is not a number" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A x 2.0 2.0 3.0 1\n"
+  cif "id that is not a number" "${h}ATOM N1 N N ALA A 1 1.0 2.0 3.0 1\nATOM C2 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  cif "id that is not a number, ATOM_ID=order (runs)" "${h}ATOM N1 N N ALA A 1 1.0 2.0 3.0 1\nATOM C2 C CA ALA A 1 2.0 2.0 3.0 1\n" "ATOM_ID=order"
+  cif "id zero" "${h}ATOM 0 N N ALA A 1 1.0 2.0 3.0 1\nATOM 1 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  cif "id used twice" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 1 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  local table="$(tail -n +2 header.cif)\n"
+  cif "two _atom_site tables" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\n#\n${table}ATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  cif "atoms in a second data block (runs, ignored)" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n#\n${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\n"
+  cif "wrong ATOM_ID" "${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n" "ATOM_ID=id"
+  local atoms="${h}ATOM 1 N N ALA A 1 1.0 2.0 3.0 1\nATOM 2 C CA ALA A 1 2.0 2.0 3.0 1\n"
+  local cell="_cell.length_a 10\n_cell.length_b 10\n_cell.length_c 10\n"
+  cif "cell length that is not a number" "${atoms}_cell.length_a abc\n_cell.length_b 10\n_cell.length_c 10\n_cell.angle_alpha 90\n_cell.angle_beta 90\n_cell.angle_gamma 90\n"
+  cif "cell without angles" "${atoms}${cell}"
+  cif "cell with a zero length" "${atoms}_cell.length_a 0\n_cell.length_b 10\n_cell.length_c 10\n_cell.angle_alpha 90\n_cell.angle_beta 90\n_cell.angle_gamma 90\n"
+  cif "cell with a zero angle" "${atoms}${cell}_cell.angle_alpha 0\n_cell.angle_beta 90\n_cell.angle_gamma 90\n"
+  cif "cell with angles that do not make a cell" "${atoms}${cell}_cell.angle_alpha 10\n_cell.angle_beta 10\n_cell.angle_gamma 170\n"
+  cif "cell with unknown values (runs, no cell)" "${atoms}_cell.length_a ?\n_cell.length_b ?\n_cell.length_c ?\n_cell.angle_alpha ?\n_cell.angle_beta ?\n_cell.angle_gamma ?\n"
+  # PDB files: serial numbers that cannot be read (as written by VMD above 99999 atoms), read or not with ATOM_ID=order
+  local pdbatoms="ATOM  ***** N    ALA A   1       1.000   2.000   3.000  1.00  0.00           N\nATOM  ***** CA   ALA A   1       2.000   2.000   3.000  1.00  0.00           C\n"
+  printf "%b" "$pdbatoms" > test.pdb
+  check "pdb serial that cannot be read" "MOLINFO STRUCTURE=test.pdb\nd: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=/dev/null"
+  check "pdb serial that cannot be read, ATOM_ID=order (runs)" "MOLINFO STRUCTURE=test.pdb ATOM_ID=order\nd: DISTANCE ATOMS=@N-A_1,@CA-A_1\nPRINT ARG=d FILE=/dev/null"
+  rm -f bad.dat bad.out test.cif test.pdb
+}

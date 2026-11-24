@@ -1,5 +1,5 @@
 #include "plumed/wrapper/Plumed.h"
-#include <mpi.h>
+#include "mpi-test.h"
 #include <array>
 #include <algorithm>
 #include <iterator>
@@ -9,6 +9,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+namespace PLMD {
+namespace regtest_mpi {
 
 // A configurable number of synchronized beads, with one or more ranks per bead. The bias values
 // used by the oracle are sampled before update at the deposition coordinates.
@@ -89,13 +92,12 @@ std::string contents(const std::string& file) {
   return std::string(std::istreambuf_iterator<char>(in),std::istreambuf_iterator<char>());
 }
 
-int main(int argc,char** argv) {
-  MPI_Init(&argc,&argv);
+int run(MPI_Comm world, int argc,char** argv) {
   int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(world,&rank);
+  MPI_Comm_size(world,&size);
   if(size!=4) {
-    MPI_Abort(MPI_COMM_WORLD,2);
+    MPI_Abort(world,2);
   }
   bool passed=true;
   std::ofstream output;
@@ -104,7 +106,7 @@ int main(int argc,char** argv) {
   }
   auto record=[&](const std::string& name,bool good) {
     int local=good?1:0,all=0;
-    MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+    MPI_Allreduce(&local,&all,1,MPI_INT,MPI_MIN,world);
     passed=passed && all;
     if(rank==0) {
       output << name << " " << (all?"PASS":"FAIL") << "\n";
@@ -115,8 +117,8 @@ int main(int argc,char** argv) {
       }) {
     int local=rank%(size/beads),bead=rank/(size/beads);
     MPI_Comm intra,inter;
-    MPI_Comm_split(MPI_COMM_WORLD,bead,local,&intra);
-    MPI_Comm_split(MPI_COMM_WORLD,local,bead,&inter);
+    MPI_Comm_split(world,bead,local,&intra);
+    MPI_Comm_split(world,local,bead,&inter);
     std::string label="P"+std::to_string(beads),train=label+"-train",frozen=label+"-frozen";
     {
       Harness h(intra,inter,local,train,true,false);
@@ -124,7 +126,7 @@ int main(int argc,char** argv) {
         h.sample(step,0.8+0.1*bead+0.03*step,true);
       }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(world);
     std::string original=rank==0?contents(train+".state"):"";
     bool good=true;
     {
@@ -145,7 +147,7 @@ int main(int argc,char** argv) {
       const double alpha=std::exp(-(vb-minimum)/kbt)/sum;
       const double total=mixed.sample(0,x,true),force=mixed.f[3];
       double virial=local==0?mixed.virial[0]:0;
-      MPI_Allreduce(MPI_IN_PLACE,&virial,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&virial,1,MPI_DOUBLE,MPI_SUM,world);
       good=std::abs(total-va)<2e-11 && std::abs(force-alpha*fb)<2e-9 && std::abs(fb)>1e-3;
       int step=1;
       for(int changed=0; changed<beads; ++changed)
@@ -165,7 +167,7 @@ int main(int argc,char** argv) {
       good=good && std::abs(direct.sample(step++,x,true)-vb)<1e-12;
     }
     record(label+"_energy_force_virial",good);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(world);
     good=true;
     if(rank==0) {
       good=!original.empty() && contents(train+".state")==original;
@@ -196,6 +198,12 @@ int main(int argc,char** argv) {
     MPI_Comm_free(&intra);
     MPI_Comm_free(&inter);
   }
-  MPI_Finalize();
   return passed?0:1;
+}
+
+} // namespace regtest_mpi
+} // namespace PLMD
+
+int main(int argc, char **argv) {
+  return PLMD::mpi_test::run(argc,argv,4,PLMD::regtest_mpi::run);
 }

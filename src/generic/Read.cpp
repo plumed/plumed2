@@ -25,6 +25,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "tools/IFile.h"
+#include "tools/Checkpoint.h"
 #include <memory>
 
 namespace PLMD {
@@ -67,6 +68,17 @@ when we read the value `p2.X` from the input file the output value the action wi
 value that contains this information `r1.X`.  The READ command is implemented this way so that you can use the
 wildcard syntax that is illustrated in the command labelled `r2` in the above input.
 
+If you are reading one component from the input file and want to turn off this preserving of the component name
+you can use the IGNORE_COMPONENT flag as shown below:
+
+```plumed
+#SETTINGS INPUTFILES=regtest/basic/rt41/input_colvar
+r1: READ VALUES=p2.X IGNORE_COMPONENT FILE=regtest/basic/rt41/input_colvar
+PRINT ARG=r1 FILE=colvar
+```
+
+Notice that the `.X` is ignored now and that you can refer to the read in value using the label of the READ action.
+
 ## Reading COLVAR files and trajectories
 
 The example input below indicates a case where a trajectory is being post processed and where some COLVAR files
@@ -106,6 +118,10 @@ mixing variables that have been calculated from a trajectory with variables that
 `IGNORE_TIME` flag.  Notice also that you can use the `EVERY` flag to tell PLUMED to ignore parts of the COLVAR file if data
 has been output to that file more frequently that data has been output to the trajectory.
 
+## Restart
+
+With [CHECKPOINT](CHECKPOINT.md) the position in the file is stored in the checkpoint, so that the file is read again up to the step of the checkpoint.
+
 */
 //+ENDPLUMEDOC
 
@@ -117,6 +133,8 @@ private:
   bool ignore_forces;
   bool cloned_file;
   unsigned nlinesPerStep;
+/// number of times the file has been advanced to the next line by this action (state of the checkpoint)
+  long long nadvanced=0;
   std::string filename;
 /// Unique pointer with the same scope as ifile.
   std::unique_ptr<IFile> ifile_ptr;
@@ -127,6 +145,11 @@ private:
   std::vector<std::unique_ptr<Value>> readvals;
 public:
   static void registerKeywords( Keywords& keys );
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter& w) override;
+  void readCheckpoint(CheckpointReader& r) override;
   explicit Read(const ActionOptions&);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void prepare() override;
@@ -153,6 +176,7 @@ void Read::registerKeywords(Keywords& keys) {
                "about the start time of the simulation and the stride between frames");
   keys.addFlag("IGNORE_FORCES",false,"use this flag if the forces added by any bias can be safely ignored.  As an example forces can be "
                "safely ignored if you are doing post processing that does not involve outputting forces");
+  keys.addFlag("IGNORE_COMPONENT",false,"if you turn this option on the component name will not be used in the output value");
   keys.remove("NUMERICAL_DERIVATIVES");
   keys.use("UPDATE_FROM");
   keys.use("UPDATE_UNTIL");
@@ -172,6 +196,9 @@ Read::Read(const ActionOptions&ao):
   parseFlag("IGNORE_TIME",ignore_time);
   // Check if forces are to be ignored
   parseFlag("IGNORE_FORCES",ignore_forces);
+  // Check if the component should be ignored
+  bool ignore_component;
+  parseFlag("IGNORE_COMPONENT",ignore_component);
   // Open the file if it is not already opened
   cloned_file=false;
   std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
@@ -206,7 +233,7 @@ Read::Read(const ActionOptions&ao):
   }
 
   std::size_t dot=valread[0].find_first_of('.');
-  if( valread[0].find(".")!=std::string::npos ) {
+  if( valread[0].find(".")!=std::string::npos && !ignore_component ) {
     std::string labelVal=valread[0].substr(0,dot);
     std::string nameVal=valread[0].substr(dot+1);
     if( nameVal=="*" ) {
@@ -249,7 +276,9 @@ Read::Read(const ActionOptions&ao):
     }
   } else {
     if( valread.size()!=1 ) {
-      error("all values must be from the same Action when using READ");
+      error("multiple VALUES can only be read if they are components of the same action");
+    } else if( valread[0].find(".*")!=std::string::npos && ignore_component ) {
+      error("IGNORE_COMPONENT flag is not compatible with wildcards");
     }
     readvals.emplace_back(Tools::make_unique<Value>(this, valread[0], false) );
     addValueWithDerivatives();
@@ -292,6 +321,32 @@ void Read::turnOnDerivatives() {
           "these forces do not matter add the flag IGNORE_FORCES to all READ actions");
 }
 
+// The file is read sequentially: the state is the number of lines consumed. At
+// restart the file is read again from the beginning, with the same sequence of
+// calls, up to the line of the checkpointing step (that is then read again by
+// the replayed step). A file shared with another READ is advanced only by the
+// action that opened it.
+void Read::writeCheckpoint(CheckpointWriter& w) {
+  w.write("nadvanced",nadvanced);
+}
+
+void Read::readCheckpoint(CheckpointReader& r) {
+  long long n;
+  r.read("nadvanced",n);
+  if( cloned_file ) {
+    return;
+  }
+  double du_time;
+  if( n>0 && !ifile->scanField("time",du_time) ) {
+    error("Reached end of file " + filename + " before the line of the checkpoint");
+  }
+  for(long long i=0; i<n; ++i) {
+    ifile->scanField();
+    ifile->scanField("time",du_time);
+  }
+  nadvanced=n;
+}
+
 void Read::prepare() {
   if( !cloned_file ) {
     double du_time;
@@ -323,6 +378,7 @@ void Read::calculate() {
 void Read::update() {
   if( !cloned_file ) {
     for(unsigned i=0; i<nlinesPerStep; ++i) {
+      nadvanced++;
       ifile->scanField();
       double du_time;
       if( !ifile->scanField("time",du_time) && !plumed.inputsAreActive() ) {

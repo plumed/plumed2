@@ -1,0 +1,16 @@
+readInputLine d: DISTANCE ATOMS=1,2
++++ ok
+readInputLine p1: PRINT ARG=d FILE=COLVAR
++++ ok
+readInputLine p2: PRINT ARG=d FILE=COLVAR
++++ catched
++++ message ok
+readInputLine p3: PRINT ARG=d FILE=./COLVAR
++++ catched
++++ message ok
+readInputLine p4: PRINT ARG=d FILE=/absolute/path/to/COLVAR
++++ catched
++++ message ok
+readInputLine p5: PRINT ARG=d FILE=COLVAR2
++++ ok
+done

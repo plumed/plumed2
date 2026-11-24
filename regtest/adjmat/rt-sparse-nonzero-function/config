@@ -1,0 +1,29 @@
+type=driver
+plumed_modules="adjmat matrixtools"
+arg="--plumed plumed.dat --ixyz traj.xyz"
+export PLUMED_STACK_TRACE=no
+# The elements that a sparse matrix does not store are not passed to a function of the matrix.
+# This is only right when the function is zero for zero arguments: otherwise the function must
+# stop with an error (on master these inputs silently gave wrong results).
+function plumed_regtest_before(){
+  {
+    echo 5 ; echo 10 10 10
+    echo X 0 0 0 ; echo X 1 0 0 ; echo X 0 1 0 ; echo X 0 0 1 ; echo X 1 1 1
+  } > traj.xyz
+  printf "cm: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}\nm: CUSTOM ARG=cm FUNC=1-x PERIODIC=NO\ns: SUM ARG=m PERIODIC=NO\nPRINT ARG=s FILE=out\n" > bad_one_minus_x.dat
+  printf "cm: CONTACT_MATRIX GROUP=1-5 SWITCH={RATIONAL R_0=1.0 D_MAX=1.2}\nc: CONSTANT VALUE=2\nm: CUSTOM ARG=cm,c FUNC=x+y PERIODIC=NO\ns: SUM ARG=m PERIODIC=NO\nPRINT ARG=s FILE=out\n" > bad_scalar_argument.dat
+}
+function plumed_regtest_after(){
+  rm -f errors
+  while read -r name text ; do
+    $plumed driver --plumed bad_$name.dat --ixyz traj.xyz > bad_$name.out 2> bad_$name.err
+    if test $? -ne 0 && grep -q -F "$text" bad_$name.out bad_$name.err && ! grep -q "assertion failed" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY" >> errors
+    fi
+  done <<'EOT'
+one_minus_x is sparse and this function is not zero when its matrix arguments are zero
+scalar_argument is sparse and this function is not zero when its matrix arguments are zero
+EOT
+}

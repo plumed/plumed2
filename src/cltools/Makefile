@@ -1,11 +1,14 @@
-USE=core config tools molfile xdrfile
-
 # generic makefile
 include ../maketools/make.module
 
-Completion.o: completion.xxd
+CLEANLIST += completion-scripts.h
 
-completion.xxd: completion.sh ../../scripts/*.sh ../../patches/*.sh
-	{ ../maketools/make-scripts-options.sh ; cat completion.sh ; }| ../maketools/xxd  > completion.xxd
+Completion.o: completion.xxd completion-scripts.h
+
+completion.xxd: completion.sh
+	../maketools/xxd < completion.sh > completion.xxd
+
+completion-scripts.h: ../maketools/make-scripts-options.sh ../../scripts/*.sh ../../patches/*.sh
+	../maketools/make-scripts-options.sh | ../maketools/xxd > completion-scripts.h
 
 CXXFLAGS:= $(CXXFLAGS) -Wshadow -Werror

@@ -1,0 +1,14 @@
+type=plumed
+# two kernels (here the same library with two inputs) on a simple cubic lattice,
+# enough steps to do the comparative analysis of the timings. Timings are not checked,
+# only the values printed by the two inputs
+arg="benchmark --plumed plumed.dat:plumed2.dat --natoms 64 --nsteps 40 --atom-distribution sc --shuffled"
+
+function plumed_regtest_after(){
+  $plumed_nompi benchmark --ad-help > adhelp.out
+  grep -q "sc" adhelp.out && echo "ad-help: ok" > checks
+# dump the trajectory, then read it back with a modification
+  $plumed_nompi benchmark --natoms 27 --nsteps 2 --atom-distribution "sc" --dump-trajectory traj.xyz > /dev/null
+  $plumed_nompi benchmark --plumed plumed3.dat --ixyz traj.xyz --modify-trajectory "box 4 4 4" --nsteps 3 --domain-decomposition > /dev/null
+  rm -f adhelp.out
+}

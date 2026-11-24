@@ -133,6 +133,17 @@ bool TokenizedLine::readAndRemoveFlag(std::string_view key) {
   return false;
 }
 
+bool TokenizedLine::renameKey(std::string_view key, std::string_view newkey) {
+  auto keytext = tokens.find(key);
+  if(keytext == tokens.end() || tokens.find(newkey) != tokens.end()) {
+    return false;
+  }
+  auto value = std::move(keytext->second);
+  tokens.erase(keytext);
+  tokens.emplace(std::string(newkey),std::move(value));
+  return true;
+}
+
 std::string TokenizedLine::getValue(std::string_view key, int rep) const {
   auto keyArg = tokens.find(key);
   rep = (rep<0) ? -1:rep;

@@ -1,0 +1,22 @@
+== missing reference file: exit code 1
+missing input file nofile.pdb
+== residue that is not a number: exit code 1
+ERROR in input to action MOLINFO with label @0 : cannot interpret a as a residue number
+== residue not in the pdb file: exit code 1
+ERROR in input to action MOLINFO with label @0 : residue 20 is not in the reference pdb file
+== terminal group: exit code 1
+ERROR in input to action MOLINFO with label @0 : residue 1 of chain   appears to be a terminal group
+== unknown residue name: exit code 1
+ERROR in input to action MOLINFO with label @0 : residue 5 of chain   is not recognized for moltype protein
+== missing backbone atom: exit code 1
+residue 5 from chain   does not contain an atom named CA
+== variable for another molecule type: exit code 1
+ERROR in input to action MOLINFO with label @0 : cannot calculate a variable designed for protein molecules for molecule type rna
+== only terminal groups: exit code 1
+ERROR in input to action MOLINFO with label @0 : no residues found in the reference pdb file
+== CHAIN with a residue list: exit code 1
+ERROR in input to action MOLINFO with label @0 : cannot interpret anything other than all for residues when using CHAIN keywords
+== glycine (runs, with a warning): exit code 0
+WARNING for action MOLINFO with label @0 : GLY residues are achiral - assuming HA2 atom is in CB position
+== residues in two chains (runs, with a warning): exit code 0
+WARNING for action MOLINFO with label @0 : residues 2 3 4 5 6 7 are present in more than one chain of the reference pdb file: they are taken from the first chain that contains them. Use RESIDUES=all to include all the chains

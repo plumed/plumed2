@@ -1,21 +1,23 @@
 #include "plumed/wrapper/Plumed.h"
 
-#include <mpi.h>
+#include "mpi-test.h"
 
 #include <array>
 #include <fstream>
 #include <string>
 #include <vector>
 
-int main(int argc, char** argv) {
-  MPI_Init(&argc,&argv);
+namespace PLMD {
+namespace voronoi_distance_regtest {
+
+int runRank(MPI_Comm world,int,char**) {
   int rank=0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(world,&rank);
   bool localPassed=false;
   {
     try {
       PLMD::Plumed plumed;
-      MPI_Comm communicator=MPI_COMM_WORLD;
+      MPI_Comm communicator=world;
       int precision=8;
       int natoms=32;
       double timestep=0.001;
@@ -59,12 +61,18 @@ int main(int argc, char** argv) {
   }
   int localValue=localPassed ? 1 : 0;
   int globalValue=0;
-  MPI_Allreduce(&localValue,&globalValue,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+  MPI_Allreduce(&localValue,&globalValue,1,MPI_INT,MPI_MIN,world);
   if(rank==0) {
     std::ofstream output("output");
     output << (globalValue ? "PASS" : "FAIL")
            << " mpi-omp-deterministic-first-pair-no-deadlock\n";
   }
-  MPI_Finalize();
   return globalValue ? 0 : 1;
+}
+
+} // namespace voronoi_distance_regtest
+} // namespace PLMD
+
+int main(int argc,char** argv) {
+  return PLMD::mpi_test::run(argc,argv,4,PLMD::voronoi_distance_regtest::runRank);
 }

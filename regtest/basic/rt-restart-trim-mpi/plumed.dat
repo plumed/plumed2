@@ -1,0 +1,8 @@
+# trimming of the files of two replicas at a restart from a step given by the MD engine: see config
+d1: DISTANCE ATOMS=@replicas:{{1,2} {1,3}}
+PRINT ARG=d1 FILE=COLVAR FMT=%.10f
+# a bias for each replica (HILLS.0, HILLS.1)
+m: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.5 PACE=5 FILE=HILLS FMT=%14.10f
+# a bias shared by the walkers (a single HILLS_W file)
+w: METAD ARG=d1 SIGMA=0.1 HEIGHT=0.3 PACE=4 FILE=HILLS_W FMT=%14.10f WALKERS_MPI
+PRINT ARG=m.bias,w.bias FILE=BIAS FMT=%.6f

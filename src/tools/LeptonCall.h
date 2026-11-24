@@ -31,8 +31,10 @@ namespace PLMD {
 /// \ingroup TOOLBOX
 class LeptonCall {
 private:
-  unsigned nargs;
-  bool allow_extra_args;
+  unsigned nargs{0};
+  bool allow_extra_args{false};
+/// The names of the variables
+  std::vector<std::string> varnames;
 /// Lepton expression.
 /// \warning Since lepton::CompiledExpression is mutable, a vector is necessary for multithreading!
   std::vector<lepton::CompiledExpression> expression;
@@ -41,7 +43,16 @@ private:
   std::vector<std::vector<lepton::CompiledExpression> > expression_deriv;
   std::vector<double*> lepton_ref;
   std::vector<double*> lepton_ref_deriv;
+/// Point lepton_ref and lepton_ref_deriv to the variables of the expressions owned by this object
+  void linkVariables();
 public:
+  LeptonCall() = default;
+/// A copy must not point to the variables of the original expressions
+  LeptonCall(const LeptonCall&);
+  LeptonCall& operator=(const LeptonCall&);
+/// Moving the vectors keeps the expressions at the same address, so the references stay valid
+  LeptonCall(LeptonCall&&) = default;
+  LeptonCall& operator=(LeptonCall&&) = default;
   void set(const std::string & func,
            const std::vector<std::string>& var,
            Action* action=nullptr,

@@ -1,0 +1,37 @@
+type=driver
+# Reference run: the whole trajectory, with the checkpointing signal every 10 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --checkpoint-stride 10"
+
+function plumed_regtest_before() {
+  # a trajectory of 60 frames of the 22 atoms of structure.pdb (nm), moving analytically
+  awk 'BEGIN{n=0} /^ATOM/{x[n]=substr($0,31,8)/10; y[n]=substr($0,39,8)/10; z[n]=substr($0,47,8)/10; n++}
+       END{for(f=0;f<60;f++){print n; print "10 10 10"; for(i=0;i<n;i++){printf "X %f %f %f\n", x[i]+0.02*sin(0.1*f+i), y[i]+0.02*cos(0.07*f*(1+i%3)), z[i]+0.01*sin(0.05*f*(i+1))}}}' structure.pdb > traj.xyz
+  # the first 25 frames: the interrupted run
+  head -n 600 traj.xyz > part.xyz
+  # A) checkpoints requested by the "MD engine" at steps 0, 10 and 20, restart from step 20
+  mkdir restart
+  cd restart
+  cp ../plumed.dat ../map.dat ../err.dat ../ovexp.dat ../structure.pdb ../index.ndx .
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz --checkpoint-stride 10 > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --checkpoint-stride 10 --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+  # B) checkpoints every 7 steps (STRIDE), restart from step 21
+  mkdir restart-stride
+  cd restart-stride
+  cp ../map.dat ../err.dat ../ovexp.dat ../structure.pdb ../index.ndx .
+  sed 's/^CHECKPOINT.*/CHECKPOINT FILE=plumed.cpt STRIDE=7/' ../plumed.dat > plumed.dat
+  $plumed driver --plumed plumed.dat --ixyz ../part.xyz > out1 2> err1
+  $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --restart-from-checkpoint plumed.cpt > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  # the restarted runs must reproduce the reference bitwise, with the files of the model overlap and the status files
+  for d in restart restart-stride ; do
+    for f in COLVAR ov1.dat-0 ov1.dat-10 ov1.dat-20 ov1.dat-30 ov1.dat-40 ov1.dat-50 MCSTATUS1gmm MCSTATUS2gmmov ; do
+      if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
+    done
+    grep -h "Restarting from checkpoint\|Checkpoint state restored\|WARNING: the following" $d/out2 | sed 's/by PLUMED.*//'
+  done > restart_check
+}
+include ../../scripts/test.make

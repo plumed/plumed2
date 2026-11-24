@@ -23,6 +23,7 @@
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace generic {
@@ -52,7 +53,7 @@ only when another variable is within a given range.
 !!! caution ""
 
     Notice that not all the possible usage make
-    particular sense. For example, conditionally updating a \ref METAD keyword
+    particular sense. For example, conditionally updating a [METAD](METAD.md) keyword
     (that is: adding hills only if a variable is within a given range)
     can lead to unexpected results.
 
@@ -113,9 +114,9 @@ void UpdateIf::registerKeywords(Keywords& keys) {
   ActionWithArguments::registerKeywords(keys);
   keys.addInputKeyword("compulsory","ARG","scalar","the labels of values that should be used to make the decision on whether to update or not");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
-  keys.addFlag("END",false,"end");
-  keys.add("optional","LESS_THAN","upper bound");
-  keys.add("optional","MORE_THAN","lower bound");
+  keys.addFlag("END",false,"end the if block that was started by a previous UPDATE_IF action");
+  keys.add("optional","LESS_THAN","the upper bounds for the arguments: the update is done only if all the arguments are smaller than these values");
+  keys.add("optional","MORE_THAN","the lower bounds for the arguments: the update is done only if all the arguments are larger than these values");
 }
 
 UpdateIf::UpdateIf(const ActionOptions&ao):
@@ -127,6 +128,17 @@ UpdateIf::UpdateIf(const ActionOptions&ao):
   parseFlag("END",end);
   parseVector("LESS_THAN",upper);
   parseVector("MORE_THAN",lower);
+  if(end) {
+    // an END without a matching opening line would remove the flag of the
+    // enclosing level at every step (undefined behavior in PlumedMain::update)
+    int open=0;
+    for(const auto & u : plumed.getActionSet().select<UpdateIf*>()) {
+      open += ( u->end ? -1 : 1 );
+    }
+    if(open<=0) {
+      error("END without a matching UPDATE_IF");
+    }
+  }
   if(end && upper.size()!=0) {
     error("END and LESS_THAN are not compatible");
   }

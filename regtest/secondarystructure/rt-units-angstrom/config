@@ -1,0 +1,4 @@
+type=driver
+# the default value of R_0 is in nm: with UNITS LENGTH=A the results are the same as with the default units
+extra_files="../rt32/helix.pdb ../rt32/ala12_trajectory.xyz"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz ala12_trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.6f"

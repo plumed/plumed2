@@ -1,0 +1,8 @@
+increase after init, threads: 1
+increase after init, same forces: yes
+decrease after init, threads: 2
+increase after a decrease, threads: 2
+decrease after init, same forces: yes
+other instance, threads: 2
+other instance, same forces: yes
+after destruction, threads: 4

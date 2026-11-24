@@ -53,6 +53,7 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -122,6 +123,17 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
         }
     }
 
+    if (plumedAPIversion_ > 11)
+    {
+        /* The step from which the simulation continues after -cpi: PLUMED removes from its
+           output files the lines written at or after it, as GROMACS does with its own files */
+        if (options.startingBehavior_ != StartingBehavior::NewSimulation && options.inputrec_ != nullptr)
+        {
+            long long int restartStep = options.inputrec_->init_step;
+            plumed_->cmd("setRestartStep", &restartStep);
+        }
+    }
+
     if (plumedAPIversion_ > 5)
     {
         /* tell PLUMED how many OpenMP threads GROMACS is using, so that it can
@@ -129,6 +141,13 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
            always reports 1 unless PLUMED_NUM_THREADS is set by hand */
         int numOmpThreads = gmx_omp_nthreads_get(ModuleMultiThread::Default);
         plumed_->cmd("setNumOMPthreads", &numOmpThreads);
+    }
+
+    if (plumedAPIversion_ > 9 && options.gpuDeviceId_ >= 0)
+    {
+        /* The PLUMED actions that run on a GPU use the GPU of this rank,
+           instead of guessing it from the GPU context of the calling thread. */
+        plumed_->cmd("setGpuDeviceId", &options.gpuDeviceId_);
     }
 
     if (isMultiSim(options.ms_))
@@ -209,7 +228,11 @@ try
     plumed_->cmd("setPositions", &(forceProviderInput.x_.data()->as_vec()[0]));
     plumed_->cmd("setMasses", forceProviderInput.massT_.data());
     plumed_->cmd("setCharges", forceProviderInput.chargeA_.data());
-    plumed_->cmd("setBox", &forceProviderInput.box_[0][0]);
+    /* PLUMED keeps the pointer and reads the box when it calculates. When it needs the energy
+       that happens in applyAfterPotentialEnergy(), after forceProviderInput (which owns its
+       copy of the box) has been destroyed: PLUMED is given a copy that lives as long as this object. */
+    copy_mat(forceProviderInput.box_, plumedBox_);
+    plumed_->cmd("setBox", &plumedBox_[0][0]);
 
     if (preparedStep_ == lstep)
     {

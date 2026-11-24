@@ -10,9 +10,8 @@ revision            @_REVISION_@
 name                plumed
 categories          science
 
-# Most of the PLUMED code is L-GPL3. However, PLUMED containts
-# molfile plugins from VMD that are released with a BSD-like license
-# http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/
+# Most of the PLUMED code is L-GPL3. However, PLUMED contains
+# third-party code released with BSD-like licenses (e.g. xdrfile, lepton)
 license             LGPL-3 BSD
 maintainers         {gmail.com:giovanni.bussi @GiovanniBussi} openmaintainer
 description         PLUMED is a plugin for molecular dynamics

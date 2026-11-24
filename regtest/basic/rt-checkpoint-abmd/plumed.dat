@@ -1,0 +1,13 @@
+# exact restart of ABMD, also with LINEAR (running minimum, white noise generators) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+d3: DISTANCE ATOMS=3,4
+# the running minimum starts from the first value of the CVs; white noise on the minimum
+abmd1: ABMD ARG=d1,d2 TO=0.3,0.2 KAPPA=50.0,30.0 NOISE=0.01,0.02 SEED=11,12
+# the minimum is given and there is no noise
+abmd2: ABMD ARG=d3 TO=0.1 KAPPA=20.0 MIN=2.0
+# the same with LINEAR (the minimum is a distance and not a squared distance)
+abmd3: ABMD ARG=d1,d3 TO=0.3,0.1 KAPPA=40.0,25.0 NOISE=0.01,0.02 SEED=21,22 LINEAR
+abmd4: ABMD ARG=d2 TO=0.2 KAPPA=15.0 MIN=1.5 LINEAR
+PRINT ARG=abmd1.*,abmd2.*,abmd3.*,abmd4.* FILE=COLVAR STRIDE=1 FMT=%.17g

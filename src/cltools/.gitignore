@@ -6,7 +6,9 @@
 !/*.h
 !/Makefile
 !/README
-!/module.type
 !/*.sh
 !/module.md
 !/module.yml
+
+# Generated completion option records.
+/completion-scripts.h

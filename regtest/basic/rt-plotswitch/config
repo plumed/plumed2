@@ -1,0 +1,11 @@
+type=plumed
+# plotswitch with the default switching function
+arg="plotswitch --steps 10 --plotprecision 6"
+
+function plumed_regtest_after(){
+  $plumed_nompi plotswitch --switch "EXP R_0=0.5 D_0=0.1 D_MAX=2.0" --nosquare --steps 8 --plotprecision 6 > exp.dat
+  # the points pass through R_0
+  $plumed_nompi plotswitch --rationalR_0=1.3 --rationalNN=5 --rationalMM=9 --from=1.0 --to=1.6 --steps 7 --plotprecision 6 > rational.dat
+  # a range of a few epsilons around R_0: this used to never end
+  $plumed_nompi plotswitch --switch "RATIONAL R_0=1.3 NN=5 MM=9" --centerrange 10 --steps 5 --plotprecision 6 > center.dat
+}

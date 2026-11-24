@@ -84,6 +84,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xdrfile.h"
 
+#ifdef _WIN32
+/* PLUMED: file names in UTF-8 (as in the rest of PLUMED), converted to UTF-16
+   for _wfopen; a name that is not valid UTF-8 is opened with fopen, in the
+   ANSI code page, as before */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+static FILE* xdrfile_fopen(const char* path,const char* mode)
+{
+	int npath=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,NULL,0);
+	int nmode=MultiByteToWideChar(CP_UTF8,0,mode,-1,NULL,0);
+	wchar_t *wpath,*wmode;
+	FILE* fp=NULL;
+	if(npath<=0 || nmode<=0)
+		return fopen(path,mode);
+	wpath=(wchar_t*)malloc(npath*sizeof(wchar_t));
+	wmode=(wchar_t*)malloc(nmode*sizeof(wchar_t));
+	if(wpath && wmode) {
+		MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wpath,npath);
+		MultiByteToWideChar(CP_UTF8,0,mode,-1,wmode,nmode);
+		fp=_wfopen(wpath,wmode);
+	}
+	free(wpath);
+	free(wmode);
+	return fp;
+}
+#else
+#define xdrfile_fopen fopen
+#endif
+
 /* Default FORTRAN name mangling is: lower case name, append underscore */
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _
@@ -216,6 +250,12 @@ struct XDRFILE
 
 
 
+int
+xdrfile_eof(XDRFILE *xfp)
+{
+	return (xfp!=NULL && xfp->fp!=NULL && feof(xfp->fp)) ? 1 : 0;
+}
+
 /*************************************************************
  * Implementation of higher-level routines to read/write     * 
  * portable data based on the XDR standard. These should be  *
@@ -247,7 +287,7 @@ xdrfile_open(const char *path, const char *mode)
   
 	if((xfp=(XDRFILE *)malloc(sizeof(XDRFILE)))==NULL)
 		return NULL;
-	if((xfp->fp=fopen(path,newmode))==NULL)
+	if((xfp->fp=xdrfile_fopen(path,newmode))==NULL)
     {
 		free(xfp);
 		return NULL;
@@ -806,6 +846,61 @@ static const int magicints[] =
 /* note that magicints[FIRSTIDX-1] == 0 */
 #define LASTIDX (sizeof(magicints) / sizeof(*magicints))
 
+/* PLUMED: spare ints at the end of the buffer used to decompress coordinates.
+ * The decoder checks that the data are not exhausted once per atom, and an
+ * atom (with its run) uses less than XTC_BUFSLACK*4 bytes, so a corrupted
+ * frame cannot make it read past the buffer. */
+#define XTC_BUFSLACK 64
+/* PLUMED: largest number of atoms of a compressed frame: 3*natoms*1.2 ints
+ * (plus the slack) must fit an int */
+#define XTC_MAX_DECOMPRESSED_NATOMS 500000000
+
+/* PLUMED: size of the compressed data. XTC files with magic number 2023
+ * (written by GROMACS 2023 and later for more than XTC_1995_MAX_NATOMS atoms)
+ * store it as a 64 bit integer. Sizes that do not fit an int are returned as -1. */
+static int
+xdrfile_read_bytecount(int *count, int long_format, XDRFILE *xfp)
+{
+	int hilo[2];
+	if(!long_format)
+		return xdrfile_read_int(count,1,xfp);
+	if(xdrfile_read_int(hilo,2,xfp)!=2)
+		return 0;
+	*count = (hilo[0]!=0 || hilo[1]<0) ? -1 : hilo[1];
+	return 1;
+}
+
+static int
+xdrfile_write_bytecount(int *count, int long_format, XDRFILE *xfp)
+{
+	int hilo[2];
+	if(!long_format)
+		return xdrfile_write_int(count,1,xfp);
+	hilo[0]=0;
+	hilo[1]=*count;
+	return (xdrfile_write_int(hilo,2,xfp)==2) ? 1 : 0;
+}
+
+/* PLUMED: (re)allocate the buffers used to (de)compress size3 ints,
+ * freeing the old ones (they were leaked) */
+static int
+xdrfile_alloc_buffers(XDRFILE *xfp, unsigned size3)
+{
+	if(size3<=(unsigned)xfp->buf1size)
+		return 0;
+	free(xfp->buf1);
+	free(xfp->buf2);
+	xfp->buf1=xfp->buf2=NULL;
+	xfp->buf1size=xfp->buf2size=0;
+	if((xfp->buf1=(int *)malloc(sizeof(int)*size3))==NULL)
+		return -1;
+	xfp->buf1size=size3;
+	if((xfp->buf2=(int *)malloc(sizeof(int)*((size_t)(size3*1.2)+XTC_BUFSLACK)))==NULL)
+		return -1;
+	xfp->buf2size=(int)(size3*1.2)+XTC_BUFSLACK;
+	return 0;
+}
+
 /* Compressed coordinate routines - modified from the original
  * implementation by Frans v. Hoesel to make them threadsafe.
  */
@@ -815,10 +910,22 @@ xdrfile_decompress_coord_float(float     *ptr,
 							   float     *precision,
 							   XDRFILE*   xfp)
 {
+	return xdrfile_decompress_coord_float_long(ptr,size,precision,xfp,0);
+}
+
+/* PLUMED: the checks on the data read from the file are the ones added to
+ * the copy of this decoder in the molfile plugins (Gromacs.h, xtc_3dfcoord; removed in v2.11) */
+int
+xdrfile_decompress_coord_float_long(float     *ptr,
+									int       *size,
+									float     *precision,
+									XDRFILE*   xfp,
+									int        long_format)
+{
 	int minint[3], maxint[3], *lip;
 	int smallidx, minidx, maxidx;
 	unsigned sizeint[3], sizesmall[3], bitsizeint[3], size3;
-	int k, *buf1, *buf2, lsize, flag;
+	int k, *buf1, *buf2, lsize, flag, datalen;
 	int smallnum, smaller, larger, i, is_smaller, run;
 	float *lfp, inv_precision;
 	int tmp, *thiscoord,  prevcoord[3];
@@ -833,28 +940,24 @@ xdrfile_decompress_coord_float(float     *ptr,
 	tmp=xdrfile_read_int(&lsize,1,xfp);
 	if(tmp==0)
 		return -1; /* return if we could not read size */
-	if (*size < lsize) 
+	/* PLUMED: the frame must have exactly the number of atoms requested,
+	 * which sets the size of the buffer of the caller */
+	if (*size != lsize) 
     {
 		fprintf(stderr, "Requested to decompress %d coords, file contains %d\n",
 				*size, lsize);
 		return -1;
 	}
-	*size = lsize;
-	size3 = *size * 3;
-	if(size3>xfp->buf1size) 
+	if (lsize < 0 || lsize > XTC_MAX_DECOMPRESSED_NATOMS)
     {
-		if((xfp->buf1=(int *)malloc(sizeof(int)*size3))==NULL) 
-        {
-			fprintf(stderr,"Cannot allocate memory for decompressing coordinates.\n");
-			return -1; 
-		}
-		xfp->buf1size=size3;
-		xfp->buf2size=size3*1.2;
-		if((xfp->buf2=(int *)malloc(sizeof(int)*xfp->buf2size))==NULL)
-        {
-			fprintf(stderr,"Cannot allocate memory for decompressing coordinates.\n");
-			return -1;
-		}
+		fprintf(stderr, "XTC corrupted or too large, %d atoms\n", lsize);
+		return -1;
+	}
+	size3 = *size * 3;
+	if(xdrfile_alloc_buffers(xfp,size3)!=0)
+    {
+		fprintf(stderr,"Cannot allocate memory for decompressing coordinates.\n");
+		return -1; 
 	}
 	/* Dont bother with compression for three atoms or less */
 	if(*size<=9) 
@@ -863,19 +966,27 @@ xdrfile_decompress_coord_float(float     *ptr,
 		/* return number of coords, not floats */
 	}
 	/* Compression-time if we got here. Read precision first */
-	xdrfile_read_float(precision,1,xfp);
+	if(xdrfile_read_float(precision,1,xfp)!=1)
+		return -1;
   
 	/* avoid repeated pointer dereferencing. */
 	buf1=xfp->buf1; 
 	buf2=xfp->buf2;
 	/* buf2[0-2] are special and do not contain actual data */
 	buf2[0] = buf2[1] = buf2[2] = 0;
-	xdrfile_read_int(minint,3,xfp);
-	xdrfile_read_int(maxint,3,xfp);
+	if(xdrfile_read_int(minint,3,xfp)!=3 || xdrfile_read_int(maxint,3,xfp)!=3)
+		return -1;
   
 	sizeint[0] = maxint[0] - minint[0]+1;
 	sizeint[1] = maxint[1] - minint[1]+1;
 	sizeint[2] = maxint[2] - minint[2]+1;
+
+	/* PLUMED: sizeint is a divisor when decoding */
+	if (!sizeint[0] || !sizeint[1] || !sizeint[2])
+    {
+		fprintf(stderr,"XTC corrupted, sizeint==0\n");
+		return -1;
+	}
 	
 	/* check if one of the sizes is to big to be multiplied */
 	if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff)
@@ -892,6 +1003,12 @@ xdrfile_decompress_coord_float(float     *ptr,
 	
 	if (xdrfile_read_int(&smallidx,1,xfp) == 0)	
 		return 0; /* not sure what has happened here or why we return... */
+	/* PLUMED: smallidx indexes magicints */
+	if (smallidx < FIRSTIDX || smallidx >= (int) LASTIDX)
+    {
+		fprintf(stderr,"XTC corrupted, smallidx out of range\n");
+		return -1;
+	}
 	tmp=smallidx+8;
 	maxidx = (LASTIDX<tmp) ? LASTIDX : tmp;
 	minidx = maxidx - 8; /* often this equal smallidx */
@@ -904,9 +1021,15 @@ xdrfile_decompress_coord_float(float     *ptr,
 
 	/* buf2[0] holds the length in bytes */
   
-	if (xdrfile_read_int(buf2,1,xfp) == 0)
+	if (xdrfile_read_bytecount(&datalen,long_format,xfp) == 0)
 		return 0;
-	if (xdrfile_read_opaque((char *)&(buf2[3]),(unsigned int)buf2[0],xfp) == 0)
+	/* PLUMED: the data must fit the buffer */
+	if (datalen < 0 || (long long) datalen > ((long long) xfp->buf2size - 3 - XTC_BUFSLACK) * 4)
+    {
+		fprintf(stderr,"XTC corrupted, compressed data larger than the frame\n");
+		return -1;
+	}
+	if (xdrfile_read_opaque((char *)&(buf2[3]),(unsigned int)datalen,xfp) == 0)
 		return 0;
 	buf2[0] = buf2[1] = buf2[2] = 0;
   
@@ -917,6 +1040,13 @@ xdrfile_decompress_coord_float(float     *ptr,
 	lip = buf1;
 	while ( i < lsize ) 
     {
+		/* PLUMED: buf2[0] is the number of bytes consumed: a corrupted frame
+		 * must not make the decoder run past the data */
+		if (buf2[0] > datalen)
+        {
+			fprintf(stderr,"XTC corrupted, data exhausted\n");
+			return -1;
+		}
 		thiscoord = (int *)(lip) + i * 3;
     
 		if (bitsize == 0) 
@@ -950,6 +1080,12 @@ xdrfile_decompress_coord_float(float     *ptr,
 		}
 		if (run > 0)
         {
+			/* PLUMED: the run must not go beyond the last atom */
+			if (i + run / 3 > lsize)
+            {
+				fprintf(stderr,"XTC corrupted, run beyond the last atom\n");
+				return -1;
+			}
 			thiscoord += 3;
 			for (k = 0; k < run; k+=3) 
             {
@@ -988,6 +1124,12 @@ xdrfile_decompress_coord_float(float     *ptr,
 			*lfp++ = thiscoord[2] * inv_precision;		
 		}
 		smallidx += is_smaller;
+		/* PLUMED: smallidx indexes magicints */
+		if (smallidx < FIRSTIDX || smallidx >= (int) LASTIDX)
+        {
+			fprintf(stderr,"XTC corrupted, smallidx out of range\n");
+			return -1;
+		}
 		if (is_smaller < 0) 
         {
 			smallnum = smaller;
@@ -1017,6 +1159,16 @@ xdrfile_compress_coord_float(float   *ptr,
 							 float    precision,
 							 XDRFILE* xfp)
 {
+	return xdrfile_compress_coord_float_long(ptr,size,precision,xfp,0);
+}
+
+int
+xdrfile_compress_coord_float_long(float   *ptr,
+								  int      size,
+								  float    precision,
+								  XDRFILE* xfp,
+								  int      long_format)
+{
 	int minint[3], maxint[3], mindiff, *lip, diff;
 	int lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
 	int minidx, maxidx;
@@ -1037,20 +1189,16 @@ xdrfile_compress_coord_float(float   *ptr,
     bitsizeint[1] = 0;
     bitsizeint[2] = 0;
 
-	if(size3>xfp->buf1size)
+	/* PLUMED: same limit as the decoder, which uses the same buffers */
+	if(size<0 || size>XTC_MAX_DECOMPRESSED_NATOMS)
     {
-		if((xfp->buf1=(int *)malloc(sizeof(int)*size3))==NULL) 
-        {
-			fprintf(stderr,"Cannot allocate memory for compressing coordinates.\n");
-			return -1;
-		}
-		xfp->buf1size=size3;
-		xfp->buf2size=size3*1.2;
-		if((xfp->buf2=(int *)malloc(sizeof(int)*xfp->buf2size))==NULL)
-        {
-			fprintf(stderr,"Cannot allocate memory for compressing coordinates.\n");
-			return -1;
-		}
+		fprintf(stderr,"Cannot compress %d coordinates.\n",size);
+		return -1;
+	}
+	if(xdrfile_alloc_buffers(xfp,size3)!=0)
+    {
+		fprintf(stderr,"Cannot allocate memory for compressing coordinates.\n");
+		return -1;
 	}
 	if(xdrfile_write_int(&size,1,xfp)==0)
 		return -1; /* return if we could not write size */
@@ -1296,7 +1444,9 @@ xdrfile_compress_coord_float(float   *ptr,
 		}   
 	}
 	if (buf2[1] != 0) buf2[0]++;
-	xdrfile_write_int(buf2,1,xfp); /* buf2[0] holds the length in bytes */
+	/* buf2[0] holds the length in bytes */
+	if(xdrfile_write_bytecount(buf2,long_format,xfp)==0)
+		return -1;
 	tmp=xdrfile_write_opaque((char *)&(buf2[3]),(unsigned int)buf2[0],xfp);
 	if(tmp==(unsigned int)buf2[0])
 		return size;

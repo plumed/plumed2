@@ -354,9 +354,9 @@ SUBROUTINE run_pwscf( exit_status )
   IF ( lensemb ) CALL beef_energies( )
   IF ( io_level > -2 ) CALL punch( 'all' )
   !
-  ! finalize plumed
+  ! finalize plumed (it is created only on ionode, see plugin_initialization)
   !
-  IF(use_plumed) then
+  IF(use_plumed .AND. ionode) then
       CALL plumed_f_gfinalize()
   ENDIF
   !

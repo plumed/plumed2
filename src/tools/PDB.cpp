@@ -21,10 +21,12 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PDB.h"
 #include "Tools.h"
+#include "FileTools.h"
 #include "Log.h"
 #include "h36.h"
+#include <cctype>
 #include <cstdio>
-#include "core/GenericMolInfo.h"
+#include <set>
 #include "Tensor.h"
 
 //+PLUMEDOC INTERNAL pdbreader
@@ -42,15 +44,81 @@ columns | content
 1-6     | record name (ATOM or HETATM)
 7-11    | serial number of the atom (starting from 1)
 13-16   | atom name
-18-20   | residue name
+17      | alternate location
+18-20   | residue name (and column 21, if not blank, for residue names of four characters, as written by GROMACS)
 22      | chain id
 23-26   | residue number
+27      | insertion code
 31-38   | x coordinate
 39-46   | y coordinate
 47-54   | z coordinate
 55-60   | occupancy
 61-66   | beta factor
+77-78   | element symbol
 \endverbatim
+
+REMARK records are read only when they are not numbered: the numbered remarks of the wwPDB (`REMARK 465 ...`) are free text.
+
+The serial numbers of a PDB file written by the wwPDB count the TER records, so that they skip a number at the end of each chain.
+\ref MOLINFO has the keyword ATOM_ID: with ATOM_ID=order the atoms are numbered 1,2,3... in the order in which they are read,
+and the serial numbers in the file are not used.
+
+When atoms have alternate locations (column 17), only the first location found in each residue is read,
+together with the atoms of the residue that have no alternate location; the other atoms are skipped
+(\ref MOLINFO writes how many in the log). Residues are identified by chain, residue number and insertion code,
+so that residues 52 and 52A of the same chain are different residues.
+
+\par mmCIF files
+
+Files with extension `.cif` or `.mmcif` are read as mmCIF (PDBx/mmCIF) files, with the CIF parser of
+[gemmi](https://gemmi.readthedocs.io). The atoms are read from the `_atom_site` table of the first data block:
+
+\verbatim
+column                                      | content
+_atom_site.id                               | serial number of the atom (see below)
+_atom_site.auth_atom_id, label_atom_id      | atom name
+_atom_site.auth_comp_id, label_comp_id      | residue name
+_atom_site.auth_asym_id, label_asym_id      | chain id
+_atom_site.auth_seq_id, label_seq_id        | residue number
+_atom_site.pdbx_PDB_ins_code                | insertion code
+_atom_site.label_alt_id                     | alternate location
+_atom_site.type_symbol                      | element symbol
+_atom_site.Cartn_x, Cartn_y, Cartn_z        | coordinates
+_atom_site.occupancy                        | occupancy
+_atom_site.B_iso_or_equiv                   | beta factor
+_atom_site.pdbx_PDB_model_num               | model number: only the first model is read
+\endverbatim
+
+The author (`auth_`) columns are used, as in PDB files written from the same structure; the `label_` columns
+are used for the atoms where the `auth_` value is missing (or when the column is not there). Chain ids and residue names
+are read in full (chain ids with more than one character, residue names with four or five characters, which a PDB file
+truncates to the three characters of columns 18-20); residue names shorter than three characters are right-justified
+to three, as in the columns 18-20 of a PDB file.
+Only the coordinates are compulsory: a missing occupancy or beta factor is 1, a missing residue number is 0.
+The unit cell is read from `_cell.length_a`, `_cell.length_b`, `_cell.length_c`, `_cell.angle_alpha`,
+`_cell.angle_beta` and `_cell.angle_gamma` (as the CRYST1 record of a PDB file), the space group from
+`_symmetry.space_group_name_H-M` or `_space_group.name_H-M_alt`.
+The PLUMED-specific REMARK lines of PDB files (arguments, TYPE, ...) cannot be given in an mmCIF file.
+
+By default the serial number of an atom is the value of `_atom_site.id`, which must then be a positive integer.
+With ATOM_ID=order in \ref MOLINFO the atoms are numbered 1,2,3... in the order in which they are read (after skipping
+the other models and the alternate locations), for files where the ids do not match the numbering of the atoms in the simulation.
+The same numbering is then obtained from the PDB and the mmCIF file of a wwPDB entry (whose ids do not count the TER records).
+
+\par GROMACS TPR files
+
+When PLUMED is configured with `--enable-libchemfiles`, files with extension `.tpr` are read as GROMACS TPR files,
+with the [chemfiles](https://chemfiles.org) library (0.10.4 or later). The structure is that of the PDB file written by
+`gmx editconf -f topol.tpr -o reference.pdb`:
+- the atoms are numbered 1,2,3... in the order of the file, as in the simulation (ATOM_ID has no effect);
+- the atom names, the residue names, numbers and insertion codes, the elements and the coordinates are those of the TPR file;
+- a TPR file has no chain ids: the sequences of residues in which each residue is bonded to the next one (e.g. the protein and
+  nucleic acid chains) are the chains A, B, C... (then AA, AB...) in the order of the file, and keep their residue numbers;
+  the other residues (water, ions...) have no chain and are numbered after the largest residue number of the chains.
+  This is what `gmx editconf` does with the molecules of more than one residue: the result is the same, unless a molecule
+  of the topology has residues that are not bonded to each other (e.g. two chains in the same molecule, which are here two chains);
+- the occupancy and the beta factor of all the atoms are 1;
+- the box of the simulation is the unit cell (space group P 1).
 PLUMED parser is slightly more permissive than the official PDB format
 in the fact that the format of real numbers is not fixed. In other words,
 any real number that can be parsed is OK and the dot can be placed anywhere. However,
@@ -129,25 +197,15 @@ In addition, as of PLUMED 2.5, we provide a \ref pdbrenumber "command line tool"
 
 namespace PLMD {
 
-void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ) {
-  positions.resize( atoms.size() );
-  occupancy.resize( atoms.size() );
-  beta.resize( atoms.size() );
-  numbers.resize( atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    numbers[i]=atoms[i];
-    beta[i]=1.0;
-    occupancy[i]=1.0;
+namespace {
+/// the string without leading and trailing blanks (empty if it is all blanks)
+std::string withoutBlanks(const std::string& s) {
+  const auto first=s.find_first_not_of(" \t");
+  if(first==std::string::npos) {
+    return "";
   }
+  return s.substr(first,s.find_last_not_of(" \t")-first+1);
 }
-
-void PDB::setArgumentNames( const std::vector<std::string>& argument_names ) {
-  argnames.resize( argument_names.size() );
-  std::vector<double> tmp(1,0);
-  for(unsigned i=0; i<argument_names.size(); ++i) {
-    argnames[i]=argument_names[i];
-    arg_data.insert( std::pair<std::string,std::vector<double> >( argnames[i], tmp ) );
-  }
 }
 
 bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value ) const {
@@ -162,19 +220,6 @@ bool PDB::getArgumentValue( const std::string& name, std::vector<double>& value 
     return true;
   }
   return false;
-}
-
-void PDB::setAtomPositions( const std::vector<Vector>& pos ) {
-  plumed_assert( pos.size()==positions.size() );
-  for(unsigned i=0; i<positions.size(); ++i) {
-    positions[i]=pos[i];
-  }
-}
-
-void PDB::setArgumentValue( const std::string& argname, const double& val ) {
-  // First set the value of the value of the argument in the map
-  arg_data.find(argname)->second.resize(1);
-  arg_data.find(argname)->second[0] = val;
 }
 
 // bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
@@ -197,10 +242,6 @@ void PDB::setArgumentValue( const std::string& argname, const double& val ) {
 //   }
 //   return true;
 // }
-
-void PDB::addBlockEnd( const unsigned& end ) {
-  block_ends.push_back( end );
-}
 
 unsigned PDB::getNumberOfAtomBlocks()const {
   return block_ends.size();
@@ -235,7 +276,6 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       std::size_t eq=v1[i].find_first_of('=');
       std::string name=v1[i].substr(0,eq);
       std::string sval=v1[i].substr(eq+1);
-      // double val; Tools::convert( sval, val );
       std::vector<std::string> words=Tools::getWords(sval,"\t\n ,");
       std::vector<double> val( words.size() );
       for(unsigned ii=0; ii<val.size(); ++ii) {
@@ -246,15 +286,6 @@ void PDB::addRemark( std::vector<std::string>& v1 ) {
       flags.push_back(v1[i]);
     }
   }
-}
-
-bool PDB::hasFlag( const std::string& fname ) const {
-  for(unsigned i=0; i<flags.size(); ++i) {
-    if( flags[i]==fname ) {
-      return true;
-    }
-  }
-  return false;
 }
 
 
@@ -274,6 +305,10 @@ const Tensor & PDB::getBoxVec()const {
   return Box;
 }
 
+const std::string & PDB::getSpaceGroup()const {
+  return spaceGroup;
+}
+
 std::string PDB::getAtomName(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
@@ -285,7 +320,7 @@ std::string PDB::getAtomName(AtomNumber a)const {
   }
 }
 
-unsigned PDB::getResidueNumber(AtomNumber a)const {
+int PDB::getResidueNumber(AtomNumber a)const {
   const auto p=number2index.find(a);
   if(p==number2index.end()) {
     std::string num;
@@ -312,7 +347,6 @@ unsigned PDB::size()const {
 }
 
 bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
-  //cerr<<file<<endl;
   bool file_is_alive=false;
   if(naturalUnits) {
     scale=1.0;
@@ -321,7 +355,6 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   fpos_t pos;
   bool between_ters=true;
   while(Tools::getline(fp,line)) {
-    //cerr<<line<<"\n";
     fgetpos (fp,&pos);
     while(line.length()<80) {
       line.push_back(' ');
@@ -329,9 +362,14 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     std::string record=line.substr(0,6);
     std::string serial=line.substr(6,5);
     std::string atomname=line.substr(12,4);
-    std::string residuename=line.substr(17,3);
+    std::string altloc=line.substr(16,1);
+    // residue names of four characters (as written by GROMACS) use column 21;
+    // shorter names keep the three columns 18-20 as they are, with their blanks
+    std::string residuename=line.substr(17,3) + (line[20]!=' ' ? line.substr(20,1) : "");
     std::string chainID=line.substr(21,1);
     std::string resnum=line.substr(22,4);
+    std::string icode=line.substr(26,1);
+    std::string elem=line.substr(76,2);
     std::string x=line.substr(30,8);
     std::string y=line.substr(38,8);
     std::string z=line.substr(46,8);
@@ -359,7 +397,11 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
     if(record=="REMARK") {
       std::vector<std::string> v1;
       v1=Tools::getWords(line.substr(6));
-      addRemark( v1 );
+      // numbered remarks ("REMARK 465 ...") are those of the wwPDB, with free text: only the remarks of PLUMED are read
+      int remarkNumber;
+      if( v1.empty() || !Tools::convertNoexcept(v1[0],remarkNumber) ) {
+        addRemark( v1 );
+      }
     }
     if(record=="CRYST1") {
       Tools::convert(BoxX,BoxXYZ[0]);
@@ -368,30 +410,19 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
       Tools::convert(BoxA,BoxABG[0]);
       Tools::convert(BoxB,BoxABG[1]);
       Tools::convert(BoxG,BoxABG[2]);
+      spaceGroup=line.substr(55,11);
+      Tools::trim(spaceGroup);
       BoxXYZ*=scale;
-      double cosA=std::cos(BoxABG[0]*pi/180.);
-      double cosB=std::cos(BoxABG[1]*pi/180.);
-      double cosG=std::cos(BoxABG[2]*pi/180.);
-      double sinG=std::sin(BoxABG[2]*pi/180.);
-      for (unsigned i=0; i<3; i++) {
-        Box[i][0]=0.;
-        Box[i][1]=0.;
-        Box[i][2]=0.;
-      }
-      Box[0][0]=BoxXYZ[0];
-      Box[1][0]=BoxXYZ[1]*cosG;
-      Box[1][1]=BoxXYZ[1]*sinG;
-      Box[2][0]=BoxXYZ[2]*cosB;
-      Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
-      Box[2][2]=std::sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
+      setBoxFromLengthsAndAngles();
     }
     if(record=="ATOM" || record=="HETATM") {
       between_ters=true;
       AtomNumber a;
-      unsigned resno=0; // GB: when resnum string is not present, we set res number to zero
+      int resno=0; // GB: when resnum string is not present, we set res number to zero
       double o,b;
       Vector p;
-      {
+      // with AtomNumbering::order the serial is not read (it is set below, when the atom is kept)
+      if(numbering==AtomNumbering::serial) {
         int result;
         auto trimmed=serial;
         Tools::trim(trimmed);
@@ -424,24 +455,40 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
         }
       }
 
-      Tools::convert(occ,o);
-      Tools::convert(bet,b);
-      Tools::convert(x,p[0]);
-      Tools::convert(y,p[1]);
-      Tools::convert(z,p[2]);
+      // a field that cannot be read is an error that shows the line (it was an assertion that showed only the text)
+      auto readField=[&line](const std::string& field, double& val, const std::string& what) {
+        if( !Tools::convertNoexcept(field,val) ) {
+          plumed_merror("cannot read the " + what + " from the following line of a PDB file: in a PDB file each field must be in its own columns\n"
+                        + line.substr(0,line.find_last_not_of(' ')+1));
+        }
+      };
+      // occupancy and beta can be missing (a line that ends after the coordinates): they are then 1
+      // (v2.10 accepted these lines and left the values undefined)
+      auto blank=[](const std::string& field) {
+        return field.find_first_not_of(" \t")==std::string::npos;
+      };
+      o=1.0;
+      b=1.0;
+      if(!blank(occ)) {
+        readField(occ,o,"occupancy (columns 55-60)");
+      }
+      if(!blank(bet)) {
+        readField(bet,b,"beta (columns 61-66)");
+      }
+      readField(x,p[0],"x coordinate (columns 31-38)");
+      readField(y,p[1],"y coordinate (columns 39-46)");
+      readField(z,p[2],"z coordinate (columns 47-54)");
       // scale into nm
       p*=scale;
-      numbers.push_back(a);
-      number2index[a]=positions.size();
-      std::size_t startpos=atomname.find_first_not_of(" \t");
-      std::size_t endpos=atomname.find_last_not_of(" \t");
-      atomsymb.push_back( atomname.substr(startpos, endpos-startpos+1) );
-      residue.push_back(resno);
-      chain.push_back(chainID);
-      occupancy.push_back(o);
-      beta.push_back(b);
-      positions.push_back(p);
-      residuenames.push_back(residuename);
+      icode=withoutBlanks(icode);
+      if( !keepAltLoc(chainID,resno,icode,withoutBlanks(altloc)) ) {
+        skippedAltLocs++;
+        continue;
+      }
+      if(numbering==AtomNumbering::order) {
+        a.setIndex(size());
+      }
+      addAtom(a,withoutBlanks(atomname),residuename,resno,chainID,icode,withoutBlanks(elem),p,o,b);
     }
   }
   if( between_ters ) {
@@ -450,10 +497,45 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale) {
   return file_is_alive;
 }
 
-bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
-  FILE* fp=std::fopen(file.c_str(),"r");
+namespace {
+/// the extension of a file name, in lower case (empty if there is none)
+std::string lowerCaseExtension(const std::string& file) {
+  const auto dot=file.find_last_of('.');
+  if(dot==std::string::npos) {
+    return "";
+  }
+  std::string ext=file.substr(dot+1);
+  for(auto & c : ext) {
+    c=static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return ext;
+}
+}
+
+bool PDB::isCifFile(const std::string& file) {
+  const std::string ext=lowerCaseExtension(file);
+  return ext=="cif" || ext=="mmcif";
+}
+
+bool PDB::isTprFile(const std::string& file) {
+  return lowerCaseExtension(file)=="tpr";
+}
+
+bool PDB::read(const std::string&file,bool naturalUnits,double scale,AtomNumbering atomNumbering) {
+  numbering=atomNumbering;
+  FILE* fp=fopenUTF8(file,"r");
   if(!fp) {
     return false;
+  }
+  if(isCifFile(file)) {
+    std::fclose(fp);
+    readCif(file,(naturalUnits ? 1.0 : scale));
+    return true;
+  }
+  if(isTprFile(file)) {
+    std::fclose(fp);
+    readTpr(file,(naturalUnits ? 1.0 : scale));
+    return true;
   }
 // call fclose when exiting this function
   auto deleter=[](auto f) {
@@ -464,8 +546,119 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale) {
   return true;
 }
 
+void PDB::setBoxFromLengthsAndAngles() {
+  double cosA=std::cos(BoxABG[0]*pi/180.);
+  double cosB=std::cos(BoxABG[1]*pi/180.);
+  double cosG=std::cos(BoxABG[2]*pi/180.);
+  double sinG=std::sin(BoxABG[2]*pi/180.);
+  for (unsigned i=0; i<3; i++) {
+    Box[i][0]=0.;
+    Box[i][1]=0.;
+    Box[i][2]=0.;
+  }
+  Box[0][0]=BoxXYZ[0];
+  Box[1][0]=BoxXYZ[1]*cosG;
+  Box[1][1]=BoxXYZ[1]*sinG;
+  Box[2][0]=BoxXYZ[2]*cosB;
+  Box[2][1]=(BoxXYZ[2]*BoxXYZ[1]*cosA-Box[2][0]*Box[1][0])/Box[1][1];
+  Box[2][2]=std::sqrt(BoxXYZ[2]*BoxXYZ[2]-Box[2][0]*Box[2][0]-Box[2][1]*Box[2][1]);
+}
+
+bool PDB::keepAltLoc(const std::string& chainid,int resnum,const std::string& icode,const std::string& altloc) {
+  if(altloc.empty()) {
+    return true;
+  }
+  // the key cannot be confused between residues: the chain id comes last and the other fields have no blanks
+  const std::string key=std::to_string(resnum)+" "+icode+" "+chainid;
+  const auto p=altLocKept.insert({key,altloc}).first;
+  return p->second==altloc;
+}
+
+void PDB::addAtom(AtomNumber a,const std::string& atomname,const std::string& residuename,int resnum,
+                  const std::string& chainid,const std::string& icode,const std::string& elem,
+                  const Vector& p,double o,double b) {
+  numbers.push_back(a);
+  number2index[a]=positions.size();
+  atomsymb.push_back(atomname);
+  residue.push_back(resnum);
+  chain.push_back(chainid);
+  insertion.push_back(icode);
+  element.push_back(elem);
+  occupancy.push_back(o);
+  beta.push_back(b);
+  positions.push_back(p);
+  residuenames.push_back(residuename);
+}
+
+std::string PDB::getInsertionCode(AtomNumber a) const {
+  const auto p=number2index.find(a);
+  if(p==number2index.end()) {
+    plumed_merror("Insertion code for atom " + std::to_string(a.serial()) + " not found" );
+  }
+  return insertion[p->second];
+}
+
+std::string PDB::getElement(AtomNumber a) const {
+  const auto p=number2index.find(a);
+  if(p==number2index.end()) {
+    plumed_merror("Element for atom " + std::to_string(a.serial()) + " not found" );
+  }
+  return element[p->second];
+}
+
+unsigned PDB::getNumberOfSkippedAlternateLocations() const {
+  return skippedAltLocs;
+}
+
+std::vector<std::pair<int,std::string> > PDB::getResidueIdsInChain( const std::string& chainname ) const {
+  std::vector<std::pair<int,std::string> > res;
+  std::set<std::pair<int,std::string> > seen;
+  for(unsigned i=0; i<size(); ++i) {
+    if( chain[i]==chainname && seen.insert({residue[i],insertion[i]}).second ) {
+      res.emplace_back(residue[i],insertion[i]);
+    }
+  }
+  return res;
+}
+
+long PDB::findResidue(int resnum,const std::string& chainid,const std::string& icode) const {
+  for(unsigned i=0; i<size(); ++i) {
+    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) && ( icode=="*" || insertion[i]==icode ) ) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void PDB::getAdjacentResidue(int resnum,const std::string& chainid,const std::string& icode,int step,int& adjnum,std::string& adjicode) const {
+  plumed_assert(step==1 || step==-1);
+  const long i0=findResidue(resnum,chainid,icode);
+  if(i0>=0) {
+    const std::string & c=chain[i0];
+    const std::string & ic=insertion[i0];
+    // the residue before (after) it in the file, in the same chain
+    for(long j=i0+step; j>=0 && j<static_cast<long>(size()); j+=step) {
+      if( chain[j]!=c || ( residue[j]==resnum && insertion[j]==ic ) ) {
+        continue;
+      }
+      if( residue[j]==resnum+step || ( residue[j]==resnum && insertion[j]!=ic ) ) {
+        adjnum=residue[j];
+        adjicode=insertion[j];
+        return;
+      }
+      break;
+    }
+  }
+  // as in previous versions
+  adjnum=resnum+step;
+  adjicode="*";
+}
+
 void PDB::getChainNames( std::vector<std::string>& chains ) const {
   chains.resize(0);
+  if(chain.empty()) {
+    return;
+  }
   chains.push_back( chain[0] );
   for(unsigned i=1; i<size(); ++i) {
     if( chains[chains.size()-1]!=chain[i] ) {
@@ -474,7 +667,7 @@ void PDB::getChainNames( std::vector<std::string>& chains ) const {
   }
 }
 
-void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const {
+void PDB::getResidueRange( const std::string& chainname, int& res_start, int& res_end, std::string& errmsg ) const {
   bool inres=false, foundchain=false;
   for(unsigned i=0; i<size(); ++i) {
     if( chain[i]==chainname ) {
@@ -494,6 +687,17 @@ void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, un
   if(inres) {
     res_end=residue[size()-1];
   }
+}
+
+std::vector<int> PDB::getResiduesInChain( const std::string& chainname ) const {
+  std::vector<int> res;
+  std::set<int> seen;
+  for(unsigned i=0; i<size(); ++i) {
+    if( chain[i]==chainname && seen.insert(residue[i]).second ) {
+      res.push_back(residue[i]);
+    }
+  }
+  return res;
 }
 
 void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const {
@@ -518,86 +722,62 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
   }
 }
 
-std::string PDB::getResidueName( const unsigned& resnum ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum ) {
-      return residuenames[i];
-    }
-  }
-  std::string num;
-  Tools::convert( resnum, num );
-  plumed_merror("residue " + num + " not found" );
+std::string PDB::getResidueName(int resnum,const std::string& chainid ) const {
+  return getResidueName(resnum,chainid,"*");
 }
 
-std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
-      return residuenames[i];
-    }
+std::string PDB::getResidueName(int resnum,const std::string& chainid,const std::string& icode ) const {
+  const long i=findResidue(resnum,chainid,icode);
+  if(i>=0) {
+    return residuenames[i];
   }
   std::string num;
   Tools::convert( resnum, num );
+  if(icode!="*") {
+    num+=icode;
+  }
   plumed_merror("residue " + num + " not found in chain " + chainid );
 }
 
 
-AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && atomsymb[i]==aname ) {
-      return numbers[i];
-    }
-  }
-  std::string num;
-  Tools::convert( resnum, num );
-  plumed_merror("residue " + num + " does not contain an atom named " + aname );
+AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chainid ) const {
+  return getNamedAtomFromResidueAndChain(aname,resnum,chainid,"*");
 }
 
-AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const {
+AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, int resnum, const std::string& chainid, const std::string& icode ) const {
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) {
+    if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) && ( icode=="*" || insertion[i]==icode ) ) {
       return numbers[i];
     }
   }
   std::string num;
   Tools::convert( resnum, num );
+  if(icode!="*") {
+    num+=icode;
+  }
   plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
 }
 
-std::vector<AtomNumber> PDB::getAtomsInResidue(const unsigned& resnum,const std::string& chainid)const {
+std::vector<AtomNumber> PDB::getAtomsInResidue(int resnum,const std::string& chainid)const {
+  return getAtomsInResidue(resnum,chainid,"*");
+}
+
+std::vector<AtomNumber> PDB::getAtomsInResidue(int resnum,const std::string& chainid,const std::string& icode)const {
   std::vector<AtomNumber> tmp;
   for(unsigned i=0; i<size(); ++i) {
-    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) {
+    if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) && ( icode=="*" || insertion[i]==icode ) ) {
       tmp.push_back(numbers[i]);
     }
   }
   if(tmp.size()==0) {
     std::string num;
     Tools::convert( resnum, num );
+    if(icode!="*") {
+      num+=icode;
+    }
     plumed_merror("Cannot find residue " + num + " from chain " + chainid  );
   }
   return tmp;
-}
-
-std::vector<AtomNumber> PDB::getAtomsInChain(const std::string& chainid)const {
-  std::vector<AtomNumber> tmp;
-  for(unsigned i=0; i<size(); ++i) {
-    if( chainid=="*" || chain[i]==chainid ) {
-      tmp.push_back(numbers[i]);
-    }
-  }
-  if(tmp.size()==0) {
-    plumed_merror("Cannot find atoms from chain " + chainid  );
-  }
-  return tmp;
-}
-
-std::string PDB::getChainID(const unsigned& resnumber) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if(resnumber==residue[i]) {
-      return chain[i];
-    }
-  }
-  plumed_merror("Not enough residues in pdb input file");
 }
 
 std::string PDB::getChainID(AtomNumber a) const {
@@ -610,37 +790,9 @@ std::string PDB::getChainID(AtomNumber a) const {
   return chain[p->second];
 }
 
-bool PDB::checkForResidue( const std::string& name ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( residuenames[i]==name ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool PDB::checkForAtom( const std::string& name ) const {
-  for(unsigned i=0; i<size(); ++i) {
-    if( atomsymb[i]==name ) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool PDB::checkForAtom( AtomNumber a ) const {
   const auto p=number2index.find(a);
   return (p!=number2index.end());
-}
-
-Log& operator<<(Log& ostr, const PDB&  pdb) {
-  const std::size_t bufferlen=1000;
-  char buffer[bufferlen];
-  for(unsigned i=0; i<pdb.positions.size(); i++) {
-    std::snprintf(buffer,bufferlen,"ATOM %3u %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
-    ostr<<buffer;
-  }
-  return ostr;
 }
 
 Vector PDB::getPosition(AtomNumber a)const {
@@ -654,77 +806,6 @@ Vector PDB::getPosition(AtomNumber a)const {
 
 std::vector<std::string> PDB::getArgumentNames()const {
   return argnames;
-}
-
-std::string PDB::getMtype() const {
-  return mtype;
-}
-
-void PDB::print( const double& lunits, GenericMolInfo* mymoldat, OFile& ofile, const std::string& fmt ) {
-  if( argnames.size()>0 ) {
-    ofile.printf("REMARK ARG=%s", argnames[0].c_str() );
-    for(unsigned i=1; i<argnames.size(); ++i) {
-      ofile.printf(",%s",argnames[i].c_str() );
-    }
-    ofile.printf("\n");
-    ofile.printf("REMARK ");
-  }
-  std::string descr2;
-  if(fmt.find("-")!=std::string::npos) {
-    descr2="%s=" + fmt + " ";
-  } else {
-    // This ensures numbers are left justified (i.e. next to the equals sign
-    std::size_t psign=fmt.find("%");
-    plumed_assert( psign!=std::string::npos );
-    descr2="%s=%-" + fmt.substr(psign+1) + " ";
-  }
-  for(std::map<std::string,std::vector<double> >::iterator it=arg_data.begin(); it!=arg_data.end(); ++it) {
-    ofile.printf( descr2.c_str(),it->first.c_str(), it->second[0] );
-  }
-  if( argnames.size()>0 ) {
-    ofile.printf("\n");
-  }
-  if( !mymoldat ) {
-    for(unsigned i=0; i<positions.size(); ++i) {
-      std::array<char,6> at;
-      {
-        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-        plumed_assert(msg==nullptr) << msg;
-        at[5]=0;
-      }
-      std::array<char,5> res;
-      {
-        const char* msg = h36::hy36encode(4,i,&res[0]);
-        plumed_assert(msg==nullptr) << msg;
-        res[4]=0;
-      }
-      ofile.printf("ATOM  %s  X   RES  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   &at[0], &res[0],
-                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
-                   occupancy[i], beta[i] );
-    }
-  } else {
-    for(unsigned i=0; i<positions.size(); ++i) {
-      std::array<char,6> at;
-      {
-        const char* msg = h36::hy36encode(5,numbers[i].serial(),&at[0]);
-        plumed_assert(msg==nullptr) << msg;
-        at[5]=0;
-      }
-      std::array<char,5> res;
-      {
-        const char* msg = h36::hy36encode(4,mymoldat->getResidueNumber(numbers[i]),&res[0]);
-        plumed_assert(msg==nullptr) << msg;
-        res[4]=0;
-      }
-      ofile.printf("ATOM  %s %-4s %3s  %s    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                   &at[0], mymoldat->getAtomName(numbers[i]).c_str(),
-                   mymoldat->getResidueName(numbers[i]).c_str(), &res[0],
-                   lunits*positions[i][0], lunits*positions[i][1], lunits*positions[i][2],
-                   occupancy[i], beta[i] );
-    }
-  }
-  ofile.printf("END\n");
 }
 
 bool PDB::allowedResidue( const std::string& type, const std::string& residuename ) const {

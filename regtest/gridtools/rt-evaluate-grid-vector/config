@@ -1,0 +1,6 @@
+type=driver
+plumed_modules=gridtools
+# EVALUATE_FUNCTION_FROM_GRID with vector arguments: the grid argument was rejected by the type check of
+# EVALUATE_FUNCTION_FROM_GRID_VECTOR. The vector result must be equal to the scalar ones.
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/trajectory.xyz ../rt-weights-integral/kde.grid"

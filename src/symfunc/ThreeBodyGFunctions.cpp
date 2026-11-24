@@ -126,16 +126,12 @@ You can read more about how to calculate more Behler-type symmetry functions [he
 
 class ThreeBodyGFunctionsInput {
 public:
-  bool multi_action_input;
+  bool multi_action_input=false;
   std::vector<std::string> funcstr;
   std::vector<LeptonCall> functions;
-  ThreeBodyGFunctionsInput& operator=( const ThreeBodyGFunctionsInput& m ) {
-    multi_action_input = m.multi_action_input;
-    for(unsigned i=0; i<m.funcstr.size(); ++i) {
-      addFunction( m.funcstr[i], NULL );
-    }
-    return *this;
-  }
+  ThreeBodyGFunctionsInput() = default;
+  ThreeBodyGFunctionsInput(const ThreeBodyGFunctionsInput&) = default;
+  ThreeBodyGFunctionsInput& operator=(const ThreeBodyGFunctionsInput&) = default;
   void addFunction( std::string myfunc, ActionWithVector* action ) {
     funcstr.push_back( myfunc );
     functions.push_back( LeptonCall() );
@@ -246,6 +242,9 @@ ThreeBodyGFunctions::ThreeBodyGFunctions(const ActionOptions&ao):
     }
     log.printf("  component labelled %s is computed using %s \n",lab.c_str(), myfunc.c_str() );
     input.addFunction( myfunc, this );
+  }
+  if( input.funcstr.empty() ) {
+    error("no functions to compute: use FUNCTION1, FUNCTION2, ...");
   }
   checkRead();
   input.multi_action_input = getPntrToArgument(3)->getPntrToAction()!=getPntrToArgument(0)->getPntrToAction();

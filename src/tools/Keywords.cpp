@@ -338,7 +338,7 @@ void Keywords::addOrReserve( std::string_view keytype,
     //keytype may be "residues" or something like "atoms-3"
     keywords.find(key)->second.atomtag=keytype;
     if (isaction && keytype == "atoms") { //this narrow the doctrstring ONLY to atoms
-      keywords.find(key)->second.docstring+= ".  For more information on how to specify lists of atoms see \\ref Group";
+      keywords.find(key)->second.docstring+= ".  For more information on how to specify lists of atoms see the section of the manual on specifying atoms";
     }
   }
   if (reserve) {
@@ -375,8 +375,17 @@ void Keywords::reserveFlag(const std::string & key, const bool defaultValue, con
 
 ///this "copies" a reserved key into the keylist so it can be used
 void Keywords::use(std::string_view  k ) {
+  // Keywords that were reserved in older versions (e.g. ARG of Bias and Function) are now added directly
+  // by the base classes: code written for those versions (e.g. LOADed actions) calls use() on them.
+  if( exists(k) ) {
+    return;
+  }
   plumed_massert( reserved(k), "the " + std::string(k) + " keyword is not reserved");
   keys.emplace_back(k);
+  // the actions that can be restarted can also keep their files as they are at restart
+  if( k=="RESTART" && reserved("NO_TRIM") ) {
+    use("NO_TRIM");
+  }
 }
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
@@ -413,6 +422,8 @@ void Keywords::addDeprecatedKeyword( std::string_view key,
   if( exists(replacement) ) {
     std::string docs = "You should use " + replacement + " instead of this keyword which was used in older versions of PLUMED and is provided for back compatibility only.";
     add("deprecated", key, docs);
+    // Action reads the value given with key as if it was given with replacement
+    keywords.at(std::string(key)).replacement=replacement;
   } else {
     add("deprecated", key, "Including this keyword in the input to this action makes no difference to the calculation performed it was used in older versions of PLUMED and is provided here for back compatibility only.");
   }
@@ -527,6 +538,11 @@ bool Keywords::numbered( const std::string & k ) const {
   return keywords.at(k).allowmultiple;
 }
 
+bool Keywords::explicitlyNumbered( const std::string & k ) const {
+  plumed_massert( exists(k), "Did not find keyword " + k );
+  return keywords.at(k).allowmultiple;
+}
+
 bool Keywords::style( const std::string & k, const std::string & t ) const {
   if( getStyle(k)==t ) {
     return true;
@@ -541,6 +557,14 @@ unsigned Keywords::size() const {
 std::string Keywords::getKeyword( const unsigned i ) const {
   plumed_assert( i<size() );
   return keys[i];
+}
+
+std::string Keywords::getDeprecatedReplacement( std::string_view k ) const {
+  auto kw=keywords.find(k);
+  if( kw==keywords.end() || !kw->second.type.isDeprecated() ) {
+    return "";
+  }
+  return kw->second.replacement;
 }
 
 bool Keywords::exists( std::string_view k ) const {
@@ -623,7 +647,6 @@ void Keywords::print_html() const {
       std::printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
       unsigned nndef=0;
       for(const auto& cname : cnames) {
-        //plumed_assert( components.at(cname).key=="default" );
         if( components.at(cname).key!="default" ) {
           nndef++;
           continue;
@@ -904,7 +927,7 @@ std::string Keywords::getTooltip( const std::string& name ) const {
       mystring += w[i] + " ";
     }
     if( w[i].find(".")!=std::string::npos ) {
-      break;  // Only write up the the first dot
+      break;  // Only write up the first dot
     }
   }
   return mystring;
@@ -918,7 +941,6 @@ void Keywords::print_html_item( const std::string& key ) const {
 }
 
 bool Keywords::getLogicalDefault(const std::string & key, bool& def ) const {
-  // plumed_massert(exists(key)||reserved(key),"You can't ask for the default value of a keyword that doesn't exist("+key+")");
   if (std::holds_alternative<bool>(keywords.at(key).defaultValue)) {
     def = std::get<bool>(keywords.at(key).defaultValue);
     return true;
@@ -1023,31 +1045,42 @@ bool Keywords::componentHasCorrectType( const std::string& name, const std::size
     return true;
   }
 
-  std::string sname;
-  std::size_t num=name.find_first_of("-");
-  std::size_t num2=name.find_last_of("_");
-  if( num2!=std::string::npos ) {
-    sname=name.substr(num2);
-  } else if( num!=std::string::npos ) {
-    sname=name.substr(0,num);
-  } else {
-    sname=name;
+  auto comp=components.find(name);
+  if( comp==components.end() ) {
+    std::string sname;
+    std::size_t num=name.find_first_of("-");
+    std::size_t num2=name.find_last_of("_");
+    if( num2!=std::string::npos ) {
+      sname=name.substr(num2);
+    } else if( num!=std::string::npos ) {
+      sname=name.substr(0,num);
+    } else {
+      sname=name;
+    }
+    comp=components.find(sname);
   }
+  // an output that is not documented does not have the correct type
+  // (components.at() threw std::out_of_range here, and users only saw "map::at")
+  if( comp==components.end() ) {
+    return false;
+  }
+  const componentType type=comp->second.type;
 
-  // using valid(components.at(sname).type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
+  // using valid(type & (componentType::atom | componentType::atoms) will have a sligthly different flavour
   // == means "is exactly", the valid(&) construct instead measn "can be different, but must contain the asked flag"
-  if( thisactname=="CENTER" && (components.at(sname).type == componentType::atom || components.at(sname).type == componentType::atoms)) {
+  if( thisactname=="CENTER" && (type == componentType::atom || type == componentType::atoms)) {
     return true;
   }
 
+  // The types are bits of a mask: they must be tested with &, a test with | was always true.
   if( rank==0 ) {
-    return (valid(components.at(sname).type | componentType::scalar));
+    return valid(type & componentType::scalar);
   } else if( hasderiv ) {
-    return (valid(components.at(sname).type | componentType::grid));
+    return valid(type & componentType::grid);
   } else if( rank==1 ) {
-    return (valid(components.at(sname).type | componentType::vector));
+    return valid(type & componentType::vector);
   } else if( rank==2 ) {
-    return (valid(components.at(sname).type | componentType::matrix ));
+    return valid(type & componentType::matrix);
   }
   return false;
 }
@@ -1062,25 +1095,29 @@ std::vector<std::string> Keywords::getArgumentKeys() const {
 }
 
 bool Keywords::checkArgumentType( const std::size_t& rank, const bool& hasderiv ) const {
-  bool allArgumentsAreCorrect = true;
-  for(auto const& kw : getArgumentKeys() ) {
-    const auto & at = std::get<argType>(keywords.at(kw).argument_type);
-    bool kwIsCorrect = false;
-    if( rank==0  && valid(at | argType::scalar)) {
-      kwIsCorrect = true;
-    }
-    if( hasderiv && valid(at | argType::grid)) {
-      kwIsCorrect = true;
-    }
-    if( rank==1  && valid(at | argType::vector)) {
-      kwIsCorrect = true;
-    }
-    if( rank==2  && valid(at | argType::matrix)) {
-      kwIsCorrect = true;
-    }
-    allArgumentsAreCorrect &= kwIsCorrect;
+  // The argument is accepted if at least one of the keywords that read arguments accepts its type
+  // (the argument list does not record which keyword it was read from).
+  // The types are bits of a mask: they must be tested with &, a test with | was always true.
+  const auto argument_keys=getArgumentKeys();
+  if( argument_keys.empty() ) {
+    return true;
   }
-  return allArgumentsAreCorrect;
+  for(auto const& kw : argument_keys ) {
+    const auto & at = std::get<argType>(keywords.at(kw).argument_type);
+    if( rank==0  && valid(at & argType::scalar)) {
+      return true;
+    }
+    if( hasderiv && valid(at & argType::grid)) {
+      return true;
+    }
+    if( rank==1  && valid(at & argType::vector)) {
+      return true;
+    }
+    if( rank==2  && valid(at & argType::matrix)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::string Keywords::getArgumentType( const std::string& name ) const {

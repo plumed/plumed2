@@ -1,0 +1,16 @@
+type=driver
+# protein_neg.pdb is the protein.pdb of rt-saxs-2 with residues 1-20 renumbered -20 to -1 and
+# residues 21... renumbered 1... (there is no residue 0, as in many constructs with a tag)
+extra_files="../rt-saxs-2/protein.pdb"
+arg="--plumed plumed.dat --mf_pdb protein.pdb"
+
+function plumed_regtest_before() {
+  awk '{
+    if(substr($0,1,4)=="ATOM" || substr($0,1,6)=="HETATM") {
+      r=substr($0,23,4)+0
+      if(r<=20) r=r-21; else r=r-20
+      $0=substr($0,1,22) sprintf("%4d",r) substr($0,27)
+    }
+    print
+  }' protein.pdb > protein_neg.pdb
+}

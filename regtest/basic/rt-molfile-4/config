@@ -1,2 +1,2 @@
 type=driver
-arg="--plumed plumed.dat --mf_crd test.crd --natoms 2257"
+arg="--plumed plumed.dat --ixyz input.xyz"

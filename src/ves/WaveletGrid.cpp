@@ -41,7 +41,7 @@ std::unique_ptr<Grid> WaveletGrid::setupGrid(const unsigned order, unsigned grid
   // the range of the grid is from 0 to maxsupport
   unsigned maxsupport = order*2 -1;
   // determine needed recursion depth for specified size
-  unsigned recursion_number = 0;
+  unsigned recursion_number = 1; // the cascade needs at least one recursion step
   while (maxsupport*(1U<<recursion_number) < gridsize) {
     recursion_number++;
   }
@@ -128,10 +128,10 @@ std::vector<double> WaveletGrid::calcIntegerValues(const Matrix<double> &M, cons
 std::vector<double> WaveletGrid::getEigenvector(const Matrix<double> &A, const double eigenvalue) {
   // mostly copied from tools/matrix.h
   int info, N = A.ncols(); // ncols == nrows
-  std::vector<double> da(N*N);
+  std::vector<double> da(static_cast<std::size_t>(N)*N);
   std::vector<double> S(N);
-  std::vector<double> U(N*N);
-  std::vector<double> VT(N*N);
+  std::vector<double> U(static_cast<std::size_t>(N)*N);
+  std::vector<double> VT(static_cast<std::size_t>(N)*N);
   std::vector<int> iwork(8*N);
 
   // Transfer the matrix to the local array and substract eigenvalue

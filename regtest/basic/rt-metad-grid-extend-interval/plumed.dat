@@ -1,0 +1,16 @@
+# INTERVAL: the bias beyond the limits is constant. The grid always contains the interval and one more point
+# beyond each limit; when it is extended, the new points beyond a limit take the constant value.
+# b: large grid, s: initial grid outside the interval, n: no initial range. Same bias (up to round-off).
+# Transition wells: the grid is extended to contain them (tb: large grid, ts: small initial grid).
+phi: TORSION ATOMS=5,7,9,15
+d: DISTANCE ATOMS=5,17
+
+b: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 PACE=5 FMT=%14.6f FILE=HB INTERVAL=0.3213,0.3587 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.005
+s: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 PACE=5 FMT=%14.6f FILE=HS INTERVAL=0.3213,0.3587 GRID_MIN=0.40 GRID_MAX=0.41 GRID_SPACING=0.005
+n: METAD ARG=d SIGMA=0.02 HEIGHT=1.0 PACE=5 FMT=%14.6f FILE=HN INTERVAL=0.3213,0.3587 GRID_SPACING=0.005
+
+tb: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HTB GRID_MIN=-pi,0.0 GRID_MAX=pi,1.0 GRID_SPACING=0.05,0.005 CALC_TRANSITION_BIAS TRANSITIONWELL0=-1.5,0.3312 TRANSITIONWELL1=-1.1,0.3487
+ts: METAD ARG=phi,d SIGMA=0.3,0.02 HEIGHT=1.0 BIASFACTOR=10 TEMP=300 PACE=5 FMT=%14.6f FILE=HTS GRID_MIN=-pi,0.40 GRID_MAX=pi,0.41 GRID_SPACING=0.05,0.005 CALC_TRANSITION_BIAS TRANSITIONWELL0=-1.5,0.3312 TRANSITIONWELL1=-1.1,0.3487
+
+PRINT ARG=d,b.bias,s.bias,n.bias,tb.bias,ts.bias,tb.transbias,ts.transbias FILE=colvar FMT=%10.5f
+DUMPFORCES ARG=phi,d STRIDE=5 FILE=forces FMT=%10.4f

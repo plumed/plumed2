@@ -111,7 +111,10 @@ done
 echo "#endif"
 # removing static seems to be still necessary
 # even though the problem was reported upstream https://gerrit.gromacs.org/#/c/4651/
-} | sed 's/static //' > lapack.cpp
+} | sed 's/static //' |
+# dlarrex and slarrex read isplit[0], which is out of bounds, when the requested
+# eigenvalues are all in the first block (as before the loop, it should be 1)
+perl -0pe 's/(cnt = iwork\[\*n \+ iwork\[j\]\];\n\s*)ibegin = isplit\[itmp - 1\] \+ 1;/${1}ibegin = (itmp == 1) ? 1 : isplit[itmp - 1] + 1;/g' > lapack.cpp
 
 cd ../
 ./header.sh lapack

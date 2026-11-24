@@ -23,20 +23,38 @@
 #include "Tools.h"
 #include "Exception.h"
 #include "LatticeReduction.h"
+#include "OpenMP.h"
+#include <array>
+#include <atomic>
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 
 Pbc::Pbc():
-  type(unset) {
+  type(unset),
+  nShiftsPerOctant{} {
   box.zero();
   invBox.zero();
 }
 
-void Pbc::toACCDevice()const  {
-  if(type!=unset && type!=orthorombic) {
-    plumed_merror("Current openACC implementation only works with unset or orthorombic pbcs");
+namespace {
+/// Same value as Tools::pbc in double precision, without the branch on the sign of the
+/// shifted argument: a loop over many values can then be vectorized by the compiler.
+/// In scalar code (e.g. the scaled coordinates of generic boxes) the branch is faster.
+inline double pbcNoBranch(double x) {
+  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    x+=100.0;
+    return x-int(x+std::copysign(0.5,x));
+  } else {
+    return Tools::pbc(x);
   }
+}
+}
+
+void Pbc::toACCDevice()const  {
+  // all the data (including the reduced box and the shifts used for generic
+  // boxes) is stored in fixed-size members, so copying the object is enough
 #pragma acc enter data copyin(this[0:1], type)
   box.toACCDevice();
   invBox.toACCDevice();
@@ -48,22 +66,14 @@ void Pbc::removeFromACCDevice() const {
 #pragma acc exit data delete(type, this[0:1])
 }
 
-// Pbc::Pbc(const Pbc& other):
-//   type(other.type),
-//   box(other.box),
-//    invBox(other.invBox),
-//   reduced(other.reduced),
-//   invReduced(other.invReduced)
-// {}
-
-void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> newshifts[2][2][2])const {
+void Pbc::buildShifts() {
   const double small=1e-28;
 
 // clear all shifts
   for(int i=0; i<2; i++)
     for(int j=0; j<2; j++)
       for(int k=0; k<2; k++) {
-        newshifts[i][j][k].clear();
+        nShiftsPerOctant[i][j][k]=0;
       }
 
 // enumerate all possible shifts
@@ -129,9 +139,98 @@ void Pbc::buildShifts(gch::small_vector<Vector,maxshiftsize> newshifts[2][2][2])
               }
 
 // if we arrive to this point, shift is eligible and is added to the list
-              newshifts[i][j][k].push_back(matmul(transpose(reduced),dshift));
+              plumed_assert(nShiftsPerOctant[i][j][k]<maxshiftsize) << "too many shifts for a generic box";
+              shifts[i][j][k][nShiftsPerOctant[i][j][k]++]=matmul(transpose(reduced),dshift);
             }
       }
+}
+
+void Pbc::findCubic() {
+  cubic=notCubic;
+  // The three shortest vectors of an fcc or bcc lattice (the reduced ones) join nearest neighbours
+  const double d2=modulo2(reduced.getRow(0));
+  const double tol=cubicTolerance*d2;
+  if(std::fabs(modulo2(reduced.getRow(1))-d2)>tol || std::fabs(modulo2(reduced.getRow(2))-d2)>tol) {
+    return;
+  }
+  // The second neighbours are at the ends of the six edges of the cubic cell.
+  // fcc: 12 nearest neighbours, edges sqrt(2) times longer. bcc: 8, edges sqrt(4/3) times longer
+  unsigned nnearest=0, nfcc=0, nbcc=0;
+  Vector fccEdges[6], bccEdges[6];
+  for(int i=-2; i<=2; ++i)
+    for(int j=-2; j<=2; ++j)
+      for(int k=-2; k<=2; ++k) {
+        const Vector v=matmul(Vector(i,j,k),reduced);
+        const double v2=modulo2(v);
+        if(std::fabs(v2-d2)<=tol) {
+          ++nnearest;
+        } else if(std::fabs(v2-2.0*d2)<=2.0*tol) {
+          if(nfcc<6) {
+            fccEdges[nfcc]=v;
+          }
+          ++nfcc;
+        } else if(std::fabs(v2-4.0/3.0*d2)<=2.0*tol) {
+          if(nbcc<6) {
+            bccEdges[nbcc]=v;
+          }
+          ++nbcc;
+        }
+      }
+  const Vector* edges=nullptr;
+  if(nnearest==12 && nfcc==6) {
+    edges=fccEdges;
+  } else if(nnearest==8 && nbcc==6) {
+    edges=bccEdges;
+  } else {
+    return;
+  }
+  // three orthogonal edges
+  const Vector a=edges[0];
+  unsigned ib=6, ic=6;
+  for(unsigned i=1; i<6 && ib==6; ++i) {
+    if(std::fabs(dotProduct(a,edges[i]))<=tol) {
+      ib=i;
+    }
+  }
+  for(unsigned i=ib+1; i<6 && ic==6; ++i) {
+    if(std::fabs(dotProduct(a,edges[i]))<=tol && std::fabs(dotProduct(edges[ib],edges[i]))<=tol) {
+      ic=i;
+    }
+  }
+  if(ib==6 || ic==6) {
+    return;
+  }
+  cubicHalf.setRow(0,0.5*a);
+  cubicHalf.setRow(1,0.5*edges[ib]);
+  cubicHalf.setRow(2,0.5*edges[ic]);
+  toCubic=inverse(cubicHalf);
+  // The lattice must be the set of the combinations of the half edges with integer
+  // coefficients of even sum (fcc), or all even or all odd (bcc): this is checked on the
+  // reduced vectors and on the volume (one lattice point every 2 or 4 cells of the half edges)
+  const bool isfcc=(edges==fccEdges);
+  for(unsigned i=0; i<3; ++i) {
+    const Vector u=matmul(reduced.getRow(i),toCubic);
+    int n[3];
+    for(unsigned k=0; k<3; ++k) {
+      const double r=std::round(u[k]);
+      if(std::fabs(u[k]-r)>1e-8) {
+        return;
+      }
+      n[k]=static_cast<int>(r);
+    }
+    if(isfcc) {
+      if((n[0]+n[1]+n[2])%2!=0) {
+        return;
+      }
+    } else if((n[0]-n[1])%2!=0 || (n[0]-n[2])%2!=0) {
+      return;
+    }
+  }
+  const double volume=std::fabs(reduced.determinant());
+  if(std::fabs((isfcc?2.0:4.0)*std::fabs(cubicHalf.determinant())-volume)>1e-8*volume) {
+    return;
+  }
+  cubic=(isfcc?fcc:bcc);
 }
 
 void Pbc::fullSearch(Vector&d)const {
@@ -163,11 +262,14 @@ void Pbc::fullSearch(Vector&d)const {
 }
 
 void Pbc::setBox(const Tensor&b) {
+  static std::atomic<std::uint64_t> lastVersion{0};
+  version=++lastVersion;
   box=b;
 // detect type:
   constexpr double boxEpsilon=1e-28;
 
   type=unset;
+  cubic=notCubic;
   double det=box.determinant();
   if(det*det<boxEpsilon) {
     return;
@@ -197,16 +299,12 @@ void Pbc::setBox(const Tensor&b) {
   if(type==orthorombic) {
     reduced=box;
     invReduced=inverse(reduced);
-    for(unsigned i=0; i<3; i++) {
-      diag[i]=box[i][i];
-      hdiag[i]=0.5*box[i][i];
-      mdiag[i]=-0.5*box[i][i];
-    }
   } else {
     reduced=box;
     LatticeReduction::reduce(reduced);
     invReduced=inverse(reduced);
-    buildShifts(shifts);
+    buildShifts();
+    findCubic();
   }
 
 }
@@ -219,6 +317,145 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
   }
 }
 
+// The search of the minimum image is written once and used by all the versions of
+// distance and by apply. It must be inlined in them: a call for each vector of apply
+// costs 5-10% (clang does not inline it by itself), and the results do not depend on it.
+#if defined(__GNUC__)
+#define PLUMED_PBC_INLINE inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define PLUMED_PBC_INLINE __forceinline
+#else
+#define PLUMED_PBC_INLINE inline
+#endif
+
+template <typename T>
+PLUMED_PBC_INLINE bool Pbc::fccLatticeVector(const VectorTyped<T,3>& d, int& m0, int& m1, int& m2) const {
+  const VectorTyped<T,3> u=matmul(d,toCubic);
+  {
+    // round to nearest without branches or library calls. With this offset the conversion
+    // to int is valid up to 2^30 (as in the other boxes, there is no check: a vector
+    // that is longer than a billion boxes is not expected), and the integer can be wrong
+    // only for values that are within 2e-7 from a half integer, that are not accepted below
+    constexpr double offset=1073741824.0;
+    int n0=static_cast<int>(u[0]+(offset+0.5))-1073741824;
+    int n1=static_cast<int>(u[1]+(offset+0.5))-1073741824;
+    int n2=static_cast<int>(u[2]+(offset+0.5))-1073741824;
+    const double f0=u[0]-n0, f1=u[1]-n1, f2=u[2]-n2;
+    const double a0=std::fabs(f0), a1=std::fabs(f1), a2=std::fabs(f2);
+    // The image is accepted if the second closest lattice point is farther by more than
+    // 2*cubicMargin in squared length. No minimum or maximum is used, since compilers
+    // may turn them into branches that cannot be predicted
+    const double limit=1.0-cubicMargin;
+    bool ok;
+    if((n0+n1+n2)&1) {
+      // odd sum: the worst coordinate is rounded the other way. The second closest point
+      // has another coordinate, or all of them, rounded the other way
+      if(a0>=a1 && a0>=a2) {
+        n0+=(f0>=0?1:-1);
+        ok=(a0-a1>cubicMargin) & (a0-a2>cubicMargin) & (a1+a2<limit);
+      } else if(a1>=a2) {
+        n1+=(f1>=0?1:-1);
+        ok=(a1-a0>cubicMargin) & (a1-a2>cubicMargin) & (a0+a2<limit);
+      } else {
+        n2+=(f2>=0?1:-1);
+        ok=(a2-a0>cubicMargin) & (a2-a1>cubicMargin) & (a0+a1<limit);
+      }
+    } else {
+      // even sum: the second closest point has two coordinates rounded the other way
+      ok=(a0+a1<limit) & (a0+a2<limit) & (a1+a2<limit);
+    }
+    m0=n0;
+    m1=n1;
+    m2=n2;
+    return ok;
+  }
+  return false;
+}
+
+template <typename T>
+PLUMED_PBC_INLINE bool Pbc::bccLatticeVector(const VectorTyped<T,3>& d, int& m0, int& m1, int& m2) const {
+  const VectorTyped<T,3> u=matmul(d,toCubic);
+  // the closest even integers, rounding as in fccLatticeVector
+  constexpr double offset=1073741824.0;
+  int n0=2*(static_cast<int>(0.5*u[0]+(offset+0.5))-1073741824);
+  int n1=2*(static_cast<int>(0.5*u[1]+(offset+0.5))-1073741824);
+  int n2=2*(static_cast<int>(0.5*u[2]+(offset+0.5))-1073741824);
+  const double f0=u[0]-n0, f1=u[1]-n1, f2=u[2]-n2;
+  // distances from the even integers, between 0 and 1: those from the closest odd integers are 1-a
+  const double a0=std::fabs(f0), a1=std::fabs(f1), a2=std::fabs(f2);
+  const double sum=a0+a1+a2;
+  // The squared distance of the odd point is larger than that of the even one by 3-2*sum.
+  // The second closest lattice point is the other of the two, or the chosen one with a
+  // coordinate moved by two: the image is accepted as in fccLatticeVector
+  bool ok;
+  if(sum<1.5) {
+    const double limit=1.0-0.5*cubicMargin;
+    ok=(sum<1.5-cubicMargin) & (a0<limit) & (a1<limit) & (a2<limit);
+  } else {
+    n0+=(f0>=0?1:-1);
+    n1+=(f1>=0?1:-1);
+    n2+=(f2>=0?1:-1);
+    const double limit=0.5*cubicMargin;
+    ok=(sum>1.5+cubicMargin) & (a0>limit) & (a1>limit) & (a2>limit);
+  }
+  m0=n0;
+  m1=n1;
+  m2=n2;
+  return ok;
+}
+
+template <typename T>
+PLUMED_PBC_INLINE VectorTyped<T,3> Pbc::searchImage(const VectorTyped<T,3>& d, int* nshifts) const {
+  if(cubic!=notCubic) {
+    int n0, n1, n2;
+    if(cubic==fcc ? fccLatticeVector(d,n0,n1,n2) : bccLatticeVector(d,n0,n1,n2)) {
+      // a vector that is already the minimum image, as most of the short ones, is not changed
+      if((n0|n1|n2)==0) {
+        return d;
+      }
+      return d-matmul(VectorTyped<T,3>(n0,n1,n2),cubicHalf);
+    }
+  }
+  VectorTyped<T,3> s=matmul(d,invReduced);
+  // bring to -0.5,+0.5 region in scaled coordinates
+  // (also the vectors that are already there, and for which no shift is attempted:
+  // skipping them would change the results in the last digits)
+  for(int i=0; i<3; ++i) {
+    s[i]=Tools::pbc(s[i]);
+  }
+  VectorTyped<T,3> best(matmul(s,reduced));
+  // check if shifts have to be attempted:
+  if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
+    // list of shifts is specific for that "octant" (depends on signs of s[i]):
+    const unsigned o0=(s[0]>0?1:0), o1=(s[1]>0?1:0), o2=(s[2]>0?1:0);
+    const Vector* myshifts=shifts[o0][o1][o2];
+    const unsigned nmyshifts=nShiftsPerOctant[o0][o1][o2];
+    const VectorTyped<T,3> reference(best);
+    double lbest(modulo2(best));
+    if(nshifts) {
+      *nshifts+=nmyshifts;
+    }
+    // loop over possible shifts:
+    for(unsigned i=0; i<nmyshifts; ++i) {
+      const VectorTyped<T,3> trial=sumT(reference,myshifts[i]);
+      const double ltrial=modulo2(trial);
+      if(ltrial<lbest) {
+        lbest=ltrial;
+        best=trial;
+      }
+    }
+  }
+  return best;
+}
+
+Vector Pbc::distanceNotOrthorhombic(const Vector&v1,const Vector&v2) const {
+  Vector d=delta(v1,v2);
+  if(type==generic) {
+    d=searchImage(d,nullptr);
+  }
+  return d;
+}
+
 void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
   apply(VectorView(&dlist[0][0],dlist.size()),max_index);
 }
@@ -227,245 +464,51 @@ void Pbc::apply(VectorView dlist, unsigned max_index) const {
   if (max_index==0) {
     max_index=dlist.size();
   }
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned k=0; k<max_index; ++k) {
-      while(dlist[k][0]>hdiag[0]) {
-        dlist[k][0]-=diag[0];
-      }
-      while(dlist[k][0]<=mdiag[0]) {
-        dlist[k][0]+=diag[0];
-      }
-      while(dlist[k][1]>hdiag[1]) {
-        dlist[k][1]-=diag[1];
-      }
-      while(dlist[k][1]<=mdiag[1]) {
-        dlist[k][1]+=diag[1];
-      }
-      while(dlist[k][2]>hdiag[2]) {
-        dlist[k][2]-=diag[2];
-      }
-      while(dlist[k][2]<=mdiag[2]) {
-        dlist[k][2]+=diag[2];
-      }
-    }
-#else
+  if(type==orthorombic) {
+    // Keep invariant box values independent of writes through the distance view.
+    const Vector inverseDiagonal(invBox(0,0),invBox(1,1),invBox(2,2));
+    const Vector diagonal(box(0,0),box(1,1),box(2,2));
+    // VectorView has exactly three components per row. Express the fixed
+    // stride directly so the compiler can prove that rows do not overlap.
+    double* const values=dlist.data();
     for(unsigned k=0; k<max_index; ++k) {
       for(int i=0; i<3; i++) {
-        dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
+        double& value=values[std::size_t(k)*3+i];
+        value=pbcNoBranch(value*inverseDiagonal[i])*diagonal[i];
       }
     }
-#endif
   } else if(type==generic) {
     for(unsigned k=0; k<max_index; ++k) {
-      //Inlining by hand this part of function from distance speeds up by about 20-30%
-      //against the previos version, and 60-80% agains this version non inlined.
-      //I do not think is the `if(nshifts) *nshifts+=myshifts.size();`,
-      //but that the compiler now see how we are juggling with the memory and it
-      //does its magic
-
-      //I tried writing VectorGeneric<3> matmul(const MemoryView<3UL> a,const TensorGeneric<3,3>&b)
-      // by copy-pasting the original vector-tensor, but slows down this method by 10%... (on gcc9)
-      Vector s=matmul(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},invReduced);
-      // bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; ++i) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      Vector best(matmul(s,reduced));
-      // check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-        // list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
-        Vector reference = best;
-        double lbest(modulo2(best));
-        // loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); ++i) {
-          Vector trial=reference+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-      }
+      const Vector best=searchImage(Vector{dlist[k][0],dlist[k][1],dlist[k][2]},nullptr);
       dlist[k][0]  = best[0];
       dlist[k][1]  = best[1];
       dlist[k][2]  = best[2];
     }
   }
-  // throws are not compatible with GPUs
-  // so the `plumed_merror("unknown pbc type");` must be anticipated by
-  // a check before running the whole calculation
+  // nothing to do if the box is not set
 }
 
 Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const {
   Vector d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
+  if(type==orthorombic) {
     for(int i=0; i<3; i++) {
       d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
     }
-#endif
   } else if(type==generic) {
-    Vector s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
-        Vector best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        if(nshifts) {
-          *nshifts+=myshifts.size();
-        }
-        for(unsigned i=0; i<myshifts.size(); i++) {
-          Vector trial=d+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-  } else {
-    plumed_merror("unknown pbc type");
+    d=searchImage(d,nshifts);
   }
-  return d;
-}
-
-Vector Pbc::distance(const Vector&v1,const Vector&v2)const {
-  Vector d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
-    for(int i=0; i<3; i++) {
-      d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
-    }
-#endif
-  } else if(type==generic) {
-    Vector s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
-        Vector best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); i++) {
-          Vector trial=d+myshifts[i];
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-    // no throws on the GPU
-  } //else plumed_merror("unknown pbc type");
   return d;
 }
 
 Vector3f Pbc::distance(const Vector3f&v1,const Vector3f&v2)const {
   Vector3f d=delta(v1,v2);
-  if(type==unset) {
-    // do nothing
-  } else if(type==orthorombic) {
-#ifdef __PLUMED_PBC_WHILE
-    for(unsigned i=0; i<3; i++) {
-      while(d[i]>hdiag[i]) {
-        d[i]-=diag[i];
-      }
-      while(d[i]<=mdiag[i]) {
-        d[i]+=diag[i];
-      }
-    }
-#else
+  if(type==orthorombic) {
     for(int i=0; i<3; i++) {
       d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
     }
-#endif
   } else if(type==generic) {
-    Vector3f s=matmul(d,invReduced);
-// check if images have to be computed:
-//    if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)){
-// NOTICE: the check in the previous line, albeit correct, is breaking many regtest
-//         since it does not apply Tools::pbc in many cases. Moreover, it does not
-//         introduce a significant gain. I thus leave it out for the moment.
-    if constexpr (true) {
-// bring to -0.5,+0.5 region in scaled coordinates:
-      for(int i=0; i<3; i++) {
-        s[i]=Tools::pbc(s[i]);
-      }
-      d=matmul(s,reduced);
-// check if shifts have to be attempted:
-      if((std::fabs(s[0])+std::fabs(s[1])+std::fabs(s[2])>0.5)) {
-// list of shifts is specific for that "octant" (depends on signs of s[i]):
-        const auto & myshifts(shifts[(s[0]>0?1:0)][(s[1]>0?1:0)][(s[2]>0?1:0)]);
-        Vector3f best(d);
-        double lbest(modulo2(best));
-// loop over possible shifts:
-        for(unsigned i=0; i<myshifts.size(); i++) {
-          Vector3f trial=sumT(d,myshifts[i]);
-          double ltrial=modulo2(trial);
-          if(ltrial<lbest) {
-            lbest=ltrial;
-            best=trial;
-          }
-        }
-        d=best;
-      }
-    }
-    // no throws on the GPU
-  } //else plumed_merror("unknown pbc type");
+    d=searchImage(d,nullptr);
+  }
   return d;
 }
 
@@ -494,6 +537,113 @@ const Tensor& Pbc::getBox()const {
 
 const Tensor& Pbc::getInvBox()const {
   return invBox;
+}
+
+void Pbc::makeWhole(std::vector<Vector>& pos, const std::size_t nlinks,
+                    const unsigned* parent, const unsigned* child)const {
+  if(type==unset || nlinks==0) {
+    return;
+  }
+  auto par=[&](std::size_t l) -> std::size_t {
+    return parent ? parent[l] : l;
+  };
+  auto chi=[&](std::size_t l) -> std::size_t {
+    return child ? child[l] : l+1;
+  };
+  // A vector shorter than half the smallest distance between lattice planes is the
+  // unique minimum image (any other image is longer than that distance minus it).
+  // The length of d-n*box, with s=d*invBox and n=round(s), is at most
+  // sum_k |s_k-n_k| |box row k|.
+  double hmin=std::numeric_limits<double>::max();
+  double rowlen[3];
+  for(unsigned k=0; k<3; ++k) {
+    hmin=std::min(hmin,1.0/std::sqrt(invBox(0,k)*invBox(0,k)+invBox(1,k)*invBox(1,k)+invBox(2,k)*invBox(2,k)));
+    rowlen[k]=std::sqrt(box(k,0)*box(k,0)+box(k,1)*box(k,1)+box(k,2)*box(k,2));
+  }
+  const double safe=0.5*hmin;
+  const bool ortho = type==orthorombic;
+  // the scalar code avoids temporaries in memory, which are slow here
+  const double i00=invBox(0,0), i01=invBox(0,1), i02=invBox(0,2);
+  const double i10=invBox(1,0), i11=invBox(1,1), i12=invBox(1,2);
+  const double i20=invBox(2,0), i21=invBox(2,1), i22=invBox(2,2);
+  // round to nearest without branches or library calls, for |x| < 2^20 (checked
+  // below). The conversion to int also works with value-unsafe floating point
+  // optimizations (e.g. the default of the Intel compiler), which would remove
+  // the usual (x+2^52+2^51)-(2^52+2^51).
+  auto rnd=[](const double x) {
+    return static_cast<double>(static_cast<int>(x+1048576.5)-1048576);
+  };
+  // shift of each link, in lattice vectors, from the original positions (a shift of the
+  // parent does not change the minimum image); it is stored in the child
+  std::vector<std::array<int,3> > shift(pos.size(), std::array<int,3> {0,0,0});
+  // A link costs about 10 nanoseconds: at least 1000 links, about 10 microseconds, per thread
+  // (see OpenMP.h). This is called for every molecule at every step, and most are small.
+  const unsigned nt=OpenMP::getGoodNumThreads(nlinks,1000);
+  auto linkShift=[&](const std::size_t l) {
+    const Vector & a = pos[par(l)];
+    const Vector & b = pos[chi(l)];
+    const double d0=b[0]-a[0], d1=b[1]-a[1], d2=b[2]-a[2];
+    const double s0=d0*i00+d1*i10+d2*i20;
+    const double s1=d0*i01+d1*i11+d2*i21;
+    const double s2=d0*i02+d1*i12+d2*i22;
+    const bool small=std::fabs(s0)<1e6 && std::fabs(s1)<1e6 && std::fabs(s2)<1e6;
+    double n0=0.0, n1=0.0, n2=0.0;
+    bool ok=false;
+    if(small) {
+      n0=rnd(s0);
+      n1=rnd(s1);
+      n2=rnd(s2);
+      // in an orthorhombic box the rounding is the minimum image at any distance
+      ok=ortho || std::fabs(s0-n0)*rowlen[0]+std::fabs(s1-n1)*rowlen[1]+std::fabs(s2-n2)*rowlen[2]<safe;
+    }
+    if(!ok) {
+      // far from the parent (or not finite): minimum image from distance()
+      const Vector t=matmul(b-(a+distance(a,b)),invBox);
+      n0=std::nearbyint(t[0]);
+      n1=std::nearbyint(t[1]);
+      n2=std::nearbyint(t[2]);
+    }
+    auto & sh = shift[chi(l)];
+    sh[0]=-static_cast<int>(n0);
+    sh[1]=-static_cast<int>(n1);
+    sh[2]=-static_cast<int>(n2);
+  };
+  if(nt>1) {
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t l=0; l<nlinks; ++l) {
+      linkShift(l);
+    }
+  } else {
+    for(std::size_t l=0; l<nlinks; ++l) {
+      linkShift(l);
+    }
+  }
+  // total shift of each atom: exact integer sums, parents before children
+  for(std::size_t l=0; l<nlinks; ++l) {
+    const auto & sp = shift[par(l)];
+    auto & sc = shift[chi(l)];
+    sc[0]+=sp[0];
+    sc[1]+=sp[1];
+    sc[2]+=sp[2];
+  }
+  auto move=[&](const std::size_t i) {
+    const auto & t = shift[i];
+    if(t[0]!=0 || t[1]!=0 || t[2]!=0) {
+      for(unsigned k=0; k<3; ++k) {
+        pos[i][k]+=t[0]*box(0,k)+t[1]*box(1,k)+t[2]*box(2,k);
+      }
+    }
+  };
+  if(nt>1) {
+    #pragma omp parallel for num_threads(nt)
+    for(std::size_t i=0; i<pos.size(); ++i) {
+      move(i);
+    }
+  } else {
+    for(std::size_t i=0; i<pos.size(); ++i) {
+      move(i);
+    }
+  }
 }
 
 }

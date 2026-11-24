@@ -36,14 +36,14 @@ struct MatrixProduct {
                          const MatrixProduct& actdata,
                          const InputVectors& vectors,
                          MatrixElementOutput& output );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
   }
   void removeFromACCDevice() const {
 #pragma acc exit data delete(this[0:1])
   }
-#endif //__PLUMED_HAS_OPENACC
+#endif //_OPENACC
 };
 
 
@@ -57,11 +57,10 @@ void MatrixProduct::calculate(  const bool noderiv,
                                 const MatrixProduct& actdata,
                                 const InputVectors& vectors,
                                 MatrixElementOutput& output ) {
-  std::size_t pp = vectors.arg1.size();
   for(unsigned i=0; i<vectors.nelem; ++i) {
     output.values[0] += vectors.arg1[i]*vectors.arg2[i];
     output.derivs[0][i] = vectors.arg2[i];
-    output.derivs[0][pp+i] = vectors.arg1[i];
+    output.derivs[0][vectors.vec2start+i] = vectors.arg1[i];
   }
 }
 } //namespace matrixtools

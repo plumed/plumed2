@@ -87,6 +87,10 @@ UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
 
 p: POSITION ATOM=2635 NOPBC
 
+l: MAZE_LOSS PARAMS=1,1,1
+
+opt: MAZE_RANDOM_WALK LOSS=l OPTIMIZER_STRIDE=200 LIGAND=2635-2646 PROTEIN=1-2634
+
 MAZE_OPTIMIZER_BIAS ...
   LABEL=bias
 
@@ -112,6 +116,10 @@ MAZE_OPTIMIZER_BIAS ...
  */
 class OptimizerBias: public bias::Bias {
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   /**
    * Standard PLUMED2 constructor.
    *
@@ -134,7 +142,7 @@ public:
   /**
    * Calculate the adaptive biasing potential for ligand unbinding.
    */
-  void calculate();
+  void calculate() override;
 
 private:
   /**
@@ -203,28 +211,26 @@ PLUMED_REGISTER_ACTION(OptimizerBias, "MAZE_OPTIMIZER_BIAS")
 
 void OptimizerBias::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
+  keys.addDOI("10.1063/1.5108638");
 
   keys.add(
     "compulsory",
     "BIASING_RATE",
-    "Biasing rate."
+    "The biasing rate w in the bias potential, i.e. the rate at which the ligand is pushed along the biasing direction (length per unit time)."
   );
 
   keys.add(
     "compulsory",
     "ALPHA",
-    "Rescaled force constant."
+    "The rescaled force constant alpha in the bias potential."
   );
 
   keys.add(
     "compulsory",
     "OPTIMIZER",
-    "Optimization technique to minimize the collective variable for ligand\
-     unbinding: RANDOM_WALK,\
-                STEERED_MD,\
-                RANDOM_ACCELERATION_MD,\
-                SIMULATED_ANNEALING,\
-                MEMETIC_SAMPLING"
+    "The label of the maze optimizer that computes the biasing direction for ligand "
+    "unbinding: MAZE_RANDOM_WALK, MAZE_STEERED_MD, MAZE_RANDOM_ACCELERATION_MD, "
+    "MAZE_SIMULATED_ANNEALING or MAZE_MEMETIC_SAMPLING."
   );
 
   keys.addOutputComponent(
@@ -273,10 +279,15 @@ OptimizerBias::OptimizerBias(const ActionOptions& ao)
     please read and cite "
   );
 
-  log << plumed.cite("Rydzewski J. and Valsson O., arXiv:1808.08089, 2018");
+  log << plumed.cite("Rydzewski J. and Valsson O., J. Chem. Phys. 150, 221101 (2019)");
   log.printf("\n");
 
   args_ = getArguments();
+
+  plumed_massert(
+    args_.size() >= 3,
+    "maze> ARG should be the three components of a position (e.g. p.x,p.y,p.z).\n"
+  );
   log.printf(
     "maze> Number of args %zu\n",
     args_.size()

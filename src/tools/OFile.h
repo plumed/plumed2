@@ -23,6 +23,7 @@
 #define __PLUMED_tools_OFile_h
 
 #include "FileBase.h"
+#include "H5Table.h"
 #include <vector>
 #include <sstream>
 #include <memory>
@@ -140,7 +141,7 @@ int main(){
 }
 
 \notice
-Notice that it is not necessary to explicitely close files, since they are closed implicitly
+Notice that it is not necessary to explicitly close files, since they are closed implicitly
 when the object goes out of scope. In case you need to explicitly close the file before it is
 destroyed, please check it the procedure is exception safe and, if necessary, add some `try/catch`
 statement.
@@ -164,7 +165,23 @@ class OFile:
 /// Class identifying a single field for fielded output
   class Field:
     public FieldBase {
+  public:
+/// the value with its type, for HDF5 tables (value holds it as text)
+    h5table::Value typed;
   };
+/// Set a field (text: as written in a text file, typed: for HDF5 tables)
+  void setField(const std::string& name,const std::string& text,const h5table::Value& typed);
+/// True for an HDF5 table (extension .h5): the rows are written with h5writer
+  bool h5mode=false;
+/// Writer of the HDF5 table (on the writing process only), created at the first row (see h5open)
+  std::unique_ptr<h5table::Writer> h5writer;
+/// The HDF5 table is appended to (restart, or after its first row) rather than created
+  bool h5append=false;
+/// Create the writer of the HDF5 table, if not done yet (writing process only): after the
+/// trim at the restart step, so that files rewritten at every write are never trimmed
+  void h5open();
+/// Close the HDF5 table
+  void closeBackend() override;
 /// Low-level write
   std::size_t llwrite(const char*,std::size_t);
 /// True if fields has changed.
@@ -179,6 +196,9 @@ class OFile:
   std::vector<Field> fields;
 /// All the defined constant fields
   std::vector<Field> const_fields;
+/// Values of the constant fields in the header of the last line written before a checkpoint
+/// (see setLastFields): they are given to the constant fields when they are added
+  std::vector<Field> restored_const_fields;
 /// Prefix for line (e.g. "PLUMED: ")
   std::string linePrefix;
 /// Temporary ostringstream for << output
@@ -193,9 +213,39 @@ class OFile:
   bool enforceRestart_;
 /// True if backup behavior (i.e. non restart) should be forced
   bool enforceBackup_;
+/// True if the file, opened for appending at a restart, is still to be trimmed at the
+/// restart step (see Checkpointing::trimAtRestart): it is done just before the first
+/// write, so that files rewritten at every write (rewind) are never trimmed
+  bool trimPending_=false;
+/// True if the file is never trimmed at the restart step (see enforceNoTrim)
+  bool enforceNoTrim_=false;
+/// Check that no other OFile linked to the same PlumedMain object
+/// is currently writing on the file this->path.
+/// Throws an exception if this is the case.
+  void checkNotOpenElsewhere()const;
+/// True if this process writes the file: the first process of the communicator,
+/// or every process if there is no communicator
+  bool isWriter()const;
+/// Open fp (and gzfp for gz files) with the given modes.
+/// Only the writer opens the file: the other processes open the null device (/dev/null, NUL on Windows),
+/// so that fp is valid on all processes but the file is opened (and truncated) only once.
+  void openOnWriter(const char* fmode,const char* gzmode,bool reopenFp=true);
+/// After the writer opened the file: let all processes know whether it succeeded.
+/// This is also a synchronization point: the other processes continue
+/// only after the writer has opened (and created) the file.
+  void syncOpen();
 public:
+/// Trim the file at the restart step, if still to be done (see trimPending_)
+  void applyPendingTrim();
+/// Never trim this file at the restart step (to be called before open)
+  OFile& enforceNoTrim() {
+    enforceNoTrim_=true;
+    return *this;
+  }
 /// Constructor
   OFile();
+/// Destructor
+  ~OFile() override;
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open
@@ -255,6 +305,12 @@ public:
   this method can be used to clean the field list.
   */
   OFile& clearFields();
+/// Header of the last line written with printField() (field names and the
+/// current values of the constant fields), as a string. Stored in the checkpoint
+/// so that a restart does not print the header again.
+  std::string getLastFields() const;
+/// Set the header of the last line written, see getLastFields().
+  void setLastFields(const std::string& str);
 /// Formatted output with explicit format - a la printf
   int printf(const char*fmt,...);
 /// Formatted output with << operator

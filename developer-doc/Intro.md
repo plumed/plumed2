@@ -16,6 +16,14 @@ If you would like to contribute new functionalities to PLUMED please read the fo
 
 \ref HowToContributeToPlumed
 
+Before changing an action or a tool used by other actions, read the checks collected here:
+
+\ref DeveloperPitfalls
+
+Inputs written for PLUMED 2.10 that need changes to run with PLUMED 2.11 are listed here:
+
+\ref Migration211
+
 We ask that contributors endeavor to maintain the portability of plumed by, as much as possible, using only the STL library and lapack in modifications.  
 If you need to use any less standard library (e.g. Boost, Sockets) please ensure that your functionality is not installed during a default compilation.  
 However, do feel free to provide alternative compilation options that incorporate your functionality.
@@ -27,7 +35,7 @@ http://www.parashift.com/c++-faq-lite/
 
 This manual might also contain a detailed analysis of which parts of the PLUMED code have been tested when compiling it.
 In case so, you will find it at <a href="../coverage/index.html"> this link </a>.
-If this manual was compiled on Travis-CI, notice that as of PLUMED 2.5 the coverage scan ends up on a separate 
+If this manual was compiled on GitHub Actions, notice that as of PLUMED 2.5 the coverage scan ends up on a separate 
 repository named `github.com/plumed/coverage-branchname`.
 
 \defgroup TOOLBOX Tool Box

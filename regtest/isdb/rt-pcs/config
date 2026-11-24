@@ -1,0 +1,4 @@
+type=driver
+# PCS, analytical against numerical derivatives
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"
+extra_files="../../trajectories/trajectory.xyz"

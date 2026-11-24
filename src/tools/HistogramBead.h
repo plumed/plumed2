@@ -29,7 +29,6 @@
 
 namespace PLMD {
 
-class Keywords;
 class Log;
 
 /**
@@ -56,8 +55,6 @@ private:
 
   double difference(double d1, double d2 ) const ;
 public:
-  static void registerKeywords( Keywords& keys );
-  static void generateBins( const std::string& params, std::vector<std::string>& bins );
   std::string description() const ;
   //Non periodic constructor
 #pragma acc routine seq
@@ -71,17 +68,17 @@ public:
 
 #pragma acc routine seq
   void isNotPeriodic();
+#pragma acc routine seq
   void isPeriodic( double mlow, double mhigh );
   static KernelType getKernelType( const std::string& ktype );
-  void setKernelType( const std::string& ktype );
-#pragma acc routine seq
-  void setKernelType( KernelType ktype );
   void set(const std::string& params, std::string& errormsg);
 #pragma acc routine seq
   void set(double l, double h, double w);
 #pragma acc routine seq
   double calculate(double x, double&df) const;
+#pragma acc routine seq
   double calculateWithCutoff( double x, double l, double u, double s, double& df ) const ;
+#pragma acc routine seq
   double calculateWithCutoff( double x, double& df ) const;
   double lboundDerivative( double x ) const;
   double uboundDerivative( double x ) const;
@@ -112,7 +109,6 @@ void HistogramBead::isPeriodic( const double mlow, const double mhigh ) {
   min=mlow;
   max=mhigh;
   max_minus_min=max-min;
-  plumed_massert(max_minus_min>0, "your function has a very strange domain?");
   inv_max_minus_min=1.0/max_minus_min;
 }
 

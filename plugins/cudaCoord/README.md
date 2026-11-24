@@ -5,13 +5,6 @@ This is the optimized version of the lesson that I presented in the [plumed-scho
 The files `cudaHelpers.cuh` and `cudaHelpers.cu` contains a few support functions for helping in interfacing `PLMD::Vector` and `PLMD::Tensor` with Cuda's thrust,
 along with the reduction functions baked with Cuda's cub building blocks and their drivers.
 
->[!WARNING]
->Plumed may refuse to to the calculations if the GPU does not allow for the calculations to be done.
->We are currently working on a solution for this
->
->A workaround is reducing the size of the cutoff of the neigbor list or to increase the number of threads with THREADS
->Plumed will present the user wiht an error message with the suggestion.
-
 ### Compile
   
 With a ready to run plumed in your path:
@@ -26,22 +19,60 @@ NVCCLDFLAGS = -shared -dlto --gpu-architecture=sm_75
 ```
 If you are using a T1000
 
+For AMD GPUs, with ROCm 6.2 or later (`hipcc`, rocThrust and hipCUB) installed:
+  - `USE_HIP=1 ./configure.sh`
+  - `make USE_HIP=1`
+
+the code is compiled for the GPUs of the machine that compiles; other targets can be chosen with, for example, `make USE_HIP=1 HIP_ARCHITECTURES="gfx90a gfx1100"`.
+The tests are run in the same way, with `make USE_HIP=1 check` and `make USE_HIP=1 check-gpu`.
+
 
 ### How to tests
 
-Assuming you are using this plugin from the plugin directory of a plumed source directory:
- - `cd regtest; ln -s ../../../regtest/scripts .`
- - `make check`
+From the plugin directory of a plumed source directory (`regtest/scripts` links to the scripts of the plumed regtests):
+ - `make check` runs all the tests (it needs a GPU)
+ - `make check-nogpu` runs only the tests that do not need a GPU (in `regtest/nogpu`: loading the plugin, input errors, the error when there is no GPU)
+
+The CI (`.github/workflows/gpuPluginsWF.yml`) runs on machines without a GPU: it compiles the plugin with the oldest and the newest tested CUDA toolkits, and with HIP with the oldest and the newest tested ROCm versions, and runs `make check-nogpu`.
 
 ## Limitations
 
 `CUDACOORDINATION` and `CUDACOORDINATIONFLOAT` work more or less as the standard `COORDINATION`, except from:
 
- - work only with orthogonal pbcs or no pbcs at all
+ - the minimum image convention is applied in scaled coordinates: it is exact for an orthorhombic box in any orientation (e.g. the box rotated by `FIT_TO_TEMPLATE`); for a skewed (triclinic) box it is exact only up to half the smallest height of the box, so `D_MAX` must be smaller than that (an error is raised otherwise)
  - do not support the SWITCH keyword
- - new `THREADS` keyword to control the maximum number of threads that can be used by the kernels
+ - new `THREADS` keyword to control the maximum number of threads per block used by the kernels (rounded down to a multiple of 32, the cell kernels use at most 256); there is no limit on the number of atoms per cell
+
+## Which GPU is used
+
+The GPU is chosen by PLUMED (`PLMD::GpuDevice`, in `src/core/GpuDevice.h`) as for the openaccPTM plugin, so that the two
+behave in the same way on a node with several GPUs: the GPU assigned to PLUMED by the MD code (with the `setGpuDeviceId`
+command, as the GROMACS and NAMD patches do when GROMACS or NAMD use CUDA), otherwise the GPU the MD code is using (the
+one whose CUDA context is current when the action is created), otherwise, with several GPUs, the rank of the process in
+its node modulo the number of GPUs, otherwise the current one of the CUDA runtime (by default the first one; with
+`CUDA_VISIBLE_DEVICES` each rank can be given its own GPU). It is written in the log with the rule that was applied
+(e.g. `c runs on GPU 1 (assigned by the MD code)` for an action labelled `c`). With MPI only the first rank uses the GPU.
+Every step runs on that GPU, and the MD code finds its own GPU as it left it, also when it is using another one.
+With HIP (AMD GPUs) the plugin shares the runtime with the MD code, and the GPU the MD code is using is the current one of
+the HIP runtime: the rank is not used, and without an MD code (`plumed driver`) every process uses the first GPU, unless
+`HIP_VISIBLE_DEVICES` gives each rank its own GPU.
+`make check-gpu` (on a node with GPUs; `make USE_HIP=1 check-gpu` for AMD GPUs) checks this, see `../openaccPTM/gpucheck`.
+
+## Performance notes
+
+The plugin is designed to coexist with an MD code that keeps the GPU busy (e.g. GPU-resident GROMACS):
+
+ - all the work is enqueued on non-blocking, highest-priority CUDA streams, so it never implicitly synchronizes with the legacy default stream (and so with the other code's streams), and there are no device-wide synchronizations (`cudaDeviceSynchronize`): each step waits only for its own work with a single `cudaStreamSynchronize`
+ - device and pinned host buffers are persistent and grow-only, so there are no `cudaMalloc`/`cudaFree` (that synchronize the whole device) in the steady state
+ - each step does one host-to-device copy (positions), the kernels, a deterministic two-stage reduction of the coordination and of the virial, and one device-to-host copy (derivatives, coordination and virial)
+ - the kernels use a warp per atom: the 32 lanes split the candidate neighbours of the atom, and the atoms of a crowded cell are spread over several blocks, so that the GPU is fully used also with a few hundred atoms in a handful of cells (or a single atom with thousands of candidates)
+ - only the "active atoms", i.e. the atoms that appear in the cell lists, are moved to/from the GPU: with a small `GROUPA` in a large `GROUPB` (e.g. an ion in water) these are just the atoms within `NL_CUTOFF` of the `GROUPA` atoms, cells whose neighbourhood is empty are skipped altogether. Note that PLUMED itself still gathers the positions and scatters the forces of all the atoms in the groups at each step (and, with a GPU-resident MD code, forces a host round trip for them), so keeping the groups small is still the most effective optimization
+ - the cell lists are built on the CPU, in a compact (CSR) format with only the non empty cells, and are uploaded only when the neighbor list is updated
+ - by default (`NL_CUTOFF` equal to `D_MAX`) the lists are rebuilt at every step. Set `NL_CUTOFF` larger than `D_MAX`: the lists are then rebuilt only when an atom moved more than half of the skin (`NL_CUTOFF-D_MAX`) since the last update (or every `NL_STRIDE` steps, if given), and the result is the same as rebuilding them at every step
+ - always set `D_MAX`: the default cutoff of the rational switching function is very large (about 6.8 `R_0` for `NN=6 MM=12`), which makes the cells, and the work per atom, huge
+
+Since PLUMED receives the positions and returns the forces through host memory, each step still pays for the data round trip: for small groups the CPU `COORDINATION` may still be faster.
 
 ## Current TODO
  
- - The GPU device needs to be explicitly selected
- - Integrate the CI
+ - Run the GPU tests in CI (it needs a runner with a GPU)

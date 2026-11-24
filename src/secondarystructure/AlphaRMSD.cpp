@@ -36,7 +36,8 @@ the [DRMSD](DRMSD.md) or [RMSD](RMSD.md) distance between the configuration in w
 and an idealized alpha helical structure. These distances can be calculated by either
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of inter-atomic
-distances in the reference and instantaneous structures.
+distances in the reference and instantaneous structures. The backbone atoms N, CA, CB, C and O
+of each residue are used (for glycine the HA2 atom is used in place of CB), so each section contains 30 atoms.
 
 In the original paper on this method (see below) the authors used the set of distances from the alpha helix configurations to measure
 the number of segments that have an alpha helical configuration. This is done by calculating
@@ -47,15 +48,19 @@ s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i
 $$
 
 where the sum runs over all possible segments of alpha helix.  By default the
-NN, MM and D_0 parameters are set equal to those used in the paper cited below.  The R_0
-parameter must be set by the user - the value used in the paper cited below was 0.08 nm.
+NN, MM, D_0 and R_0 parameters are set equal to those used in the paper cited below, which are
+$n=8$, $m=12$, $d_0=0$ and $r_0=0.08$ nm. The value of R_0 is given in the length units of [UNITS](UNITS.md);
+the default is converted, so it is always 0.08 nm. As in the other actions that take R_0, NN, MM and D_0, the function above, $f(r)$,
+is stretched so that it goes to zero at $d_{max}=d_0+r_0\,10^{5/(m-n)}$, where $f(d_{max})=10^{-5}$ (1.42 nm with the default
+parameters): each segment contributes $\left(f(r_i)-f(d_{max})\right)/\left(1-f(d_{max})\right)$ if $r_i<d_{max}$ and zero otherwise.
+The value of $d_{max}$ is the D_MAX of the switching function in the expanded input. To use the function without stretching,
+use LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}.
 
-If you change the function in the above sum you can calculate quantities such as the average
-distance from a purely the alpha helical configuration or the distance between the set of
-residues that is closest to an alpha helix and the reference configuration. To do these sorts of
-calculations you can use the AVERAGE and MIN keywords. In addition you can use the LESS_THAN
-keyword if you would like to change the form of the switching function. If you use any of these
-options you no longer need to specify NN, R_0, MM and D_0.
+If you would like to use a different switching function you can use the LESS_THAN keyword, as in the second example below,
+where D_MAX is given as for the default function.
+In this case the label of the action is the vector of the distances between each segment and the ideal alpha helix, and
+the number of segments that are similar to an alpha helix is the `lessthan` component. The vector can be given in input to other
+actions: for example [LOWEST](LOWEST.md) gives the distance of the segment that is closest to an alpha helix.
 
 The following input calculates the number of six residue segments of
 protein that are in an alpha helical configuration.
@@ -67,19 +72,24 @@ alpha: ALPHARMSD RESIDUES=all R_0=0.1
 PRINT ARG=alpha FILE=colvar
 ```
 
-Here the same is done use [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), which is normally faster.
+Here the same is done using [RMSD](RMSD.md) instead of [DRMSD](DRMSD.md), and with the LESS_THAN keyword. The cost of the two methods is similar.
+The distance of the segment that is closest to an alpha helix is also computed.
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
 MOLINFO STRUCTURE=regtest/basic/rt32/helix.pdb
-WHOLEMOLECULES ENTITY0=1-100
-alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12}
-PRINT ARG=alpha.lessthan FILE=colvar
+alpha: ALPHARMSD RESIDUES=all TYPE=OPTIMAL LESS_THAN={RATIONAL R_0=0.1 NN=8 MM=12 D_MAX=1.78}
+closest: LOWEST ARG=alpha
+PRINT ARG=alpha.lessthan,closest FILE=colvar
 ```
 
-## Periodic boundary conditions
+## Periodic boundary conditions
 
-You can turn off periodic boundary conditions by using the NOPBC flag as shown below:
+Unless the NOPBC flag is used, each six residue section is made whole before computing its distance from the reference: the
+atoms N, CA, CB, C and O of the six residues are taken in this order, and each atom is moved to the periodic image that is closest
+to the previous one, as is done by [WHOLEMOLECULES](WHOLEMOLECULES.md). This is done in the same way for [DRMSD](DRMSD.md) and
+[RMSD](RMSD.md), so there is no need to use [WHOLEMOLECULES](WHOLEMOLECULES.md) before this action.
+You can turn off this treatment by using the NOPBC flag as shown below:
 
 ```plumed
 #SETTINGS MOLFILE=regtest/basic/rt32/helix.pdb
@@ -88,13 +98,15 @@ alpha: ALPHARMSD RESIDUES=all R_0=0.1 NOPBC
 PRINT ARG=alpha FILE=colvar
 ```
 
-If you are using [DRMSD](DRMSD.md) to measure distances and you __don't__ use the NOPBC flag then
-all distances in the instaneous structure are evaluated in a way that takes the periodic boundary conditions
-into account. Using the NOPBC flag turns off this treatment.
+## How the number of segments is computed
 
-If you are using [RMSD](RMSD.md) to measure distances and you __don't__ use the NOPBC flag the the instaneous positions of
-each segment for which the RMSD is computed is reconstructed using the procedure outlined in the documentation for [WHOLEMOLECULES](WHOLEMOLECULES.md)
-before the RMSD is computed. Using the NOPBC flag turns off this treatment.
+The number of segments that are similar to an alpha helix (the value of the action, or its `lessthan` component when
+LESS_THAN is used) is computed by a single action, ALPHARMSD_SCALAR, which loops over the segments and adds the derivatives
+of each segment directly to the atoms, so that the segments are computed once per step. The vectors that appear in the expanded
+input (the distances from the reference structure and their switching functions) are only computed when they are used
+elsewhere in the input, e.g. when the vector that is the value of the action with LESS_THAN is printed. The result is the same.
+With `USEGPU` and TYPE=DRMSD the same calculation is done on the GPU by ALPHARMSD_SCALAR_ACC, from the openaccPTM plugin.
+With `USEGPU` and the other types the number of segments is the sum of the vector of the switching functions.
 
 */
 //+ENDPLUMEDOC
@@ -114,7 +126,9 @@ void AlphaRMSD::registerKeywords( Keywords& keys ) {
   keys.remove("STRUCTURE");
   keys.remove("MASK");
   keys.remove("ALIGN_STRANDS");
-  keys.setValueDescription("scalar/vector","if LESS_THAN is present the RMSD distance between each residue and the ideal alpha helix.  If LESS_THAN is not present the number of residue segments where the structure is similar to an alpha helix");
+  keys.setValueDescription("scalar/vector","if LESS_THAN is present the vector of the distances between each segment of six residues and the ideal alpha helix. If LESS_THAN is not present the number of segments where the structure is similar to an alpha helix");
+  keys.addActionNameSuffix("_SCALAR");
+  keys.addActionNameSuffix("_SCALAR_ACC");
 }
 
 AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
@@ -131,6 +145,7 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nprevious=0, segno=1;
   std::string seglist;
+  std::vector<unsigned> nlist(30);
   for(unsigned i=0; i<chains.size(); ++i) {
     if( chains[i]<30 ) {
       error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
@@ -140,15 +155,10 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
       error("backbone segment received does not contain a multiple of five residues");
     }
     for(unsigned ires=0; ires<nres-5; ires++) {
-      unsigned accum=nprevious + 5*ires;
-      std::string strval, num;
-      Tools::convert( segno, num );
-      Tools::convert( accum, strval );
-      seglist += " SEGMENT" + num + "=" + strval;
-      for(unsigned k=1; k<30; ++k) {
-        Tools::convert( accum+k, strval );
-        seglist += "," + strval;
+      for(unsigned k=0; k<30; ++k) {
+        nlist[k] = nprevious + 5*ires + k;
       }
+      SecondaryStructureInput::addSegment( seglist, segno, nlist );
       segno++;
     }
     nprevious+=chains[i];
@@ -186,56 +196,39 @@ AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
   reference[27] = Vector(-1.933, -2.219, -3.074 ); // CB
   reference[28] = Vector(-1.663, -0.171, -4.475 ); // C
   reference[29] = Vector(-1.916, -0.296, -5.673 ); // O
-  std::string ref0, ref1, ref2;
-  Tools::convert(  reference[0][0], ref0 );
-  Tools::convert(  reference[0][1], ref1 );
-  Tools::convert(  reference[0][2], ref2 );
-  std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
-  for(unsigned i=1; i<30; ++i) {
-    for(unsigned k=0; k<3; ++k) {
-      Tools::convert( reference[i][k], ref0 );
-      structure += "," + ref0;
-    }
-  }
+  std::string structure;
+  SecondaryStructureInput::addStructure( structure, 1, reference );
 
   std::string type;
-  parse("TYPE",type);
+  bool nopbc=false, usegpu=false;
+  std::string distanceAction = SecondaryStructureInput::readDistanceAction( this, type, nopbc, usegpu );
   std::string lab = getShortcutLabel() + "_rmsd";
   if( uselessthan ) {
     lab = getShortcutLabel();
   }
-  std::string nopbcstr="";
-  bool nopbc;
-  parseFlag("NOPBC",nopbc);
-  if( nopbc ) {
-    nopbcstr = " NOPBC";
-  }
-  std::string usegpustr="";
-  {
-    bool usegpu;
-    parseFlag("USEGPU",usegpu);
-    if( usegpu ) {
-      usegpustr = " USEGPU";
-    }
-  }
-
   std::string atoms="ATOMS=" + all_atoms[0];
   for(unsigned i=1; i<all_atoms.size(); ++i) {
     atoms += "," + all_atoms[i];
   }
-  if( type=="DRMSD" ) {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_DRMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + nopbcstr + usegpustr);
-  } else {
-    readInputLine( lab + ": SECONDARY_STRUCTURE_RMSD " + seglist + structure + " " + atoms + " TYPE=" + type + nopbcstr + usegpustr);
-  }
+  readInputLine( lab + ": " + distanceAction + seglist + structure + " " + atoms );
   // Create the less than object
-  if( ltmap.length()>0 ) {
-    readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
-    if( uselessthan ) {
-      readInputLine( getShortcutLabel() + "_lessthan: SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
-    } else {
-      readInputLine( getShortcutLabel() + ": SUM ARG=" + getShortcutLabel() + "_lt PERIODIC=NO");
+  readInputLine( getShortcutLabel() + "_lt: LESS_THAN ARG=" + lab + " SWITCH={" + ltmap  +"}");
+  if( usegpu && type!="DRMSD" ) {
+    // there is no GPU version of the single action with the RMSD
+    SecondaryStructureInput::addSum( this, uselessthan );
+  } else {
+    // The number of segments that are similar to a helix is computed by a single action: the vectors above are
+    // only computed if they are used elsewhere in the input. With USEGPU this is its GPU version
+    std::string chainsizes=std::to_string(chains[0]);
+    for(unsigned i=1; i<chains.size(); ++i) {
+      chainsizes += "," + std::to_string(chains[i]);
     }
+    std::string sumline = getShortcutLabel() + (uselessthan ? "_lessthan" : "") + ": ALPHARMSD_SCALAR" + (usegpu ? "_ACC " : " ") + atoms
+                          + " CHAIN_SIZES=" + chainsizes + " TYPE=" + type + " SWITCH={" + ltmap + "}" + structure;
+    if( nopbc ) {
+      sumline += " NOPBC";
+    }
+    readInputLine( sumline );
   }
 }
 

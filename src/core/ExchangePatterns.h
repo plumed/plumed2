@@ -23,6 +23,7 @@
 #define __PLUMED_core_ExchangePatterns_h
 
 #include "tools/ForwardDecl.h"
+#include <string>
 #include "tools/TypesafePtr.h"
 
 namespace PLMD {
@@ -39,6 +40,9 @@ public:
   enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
   void setNofR(const int);
   void setSeed(const int);
+/// Full state of the random number generator (stored in the checkpoint)
+  std::string getRandomState() const;
+  void setRandomState(const std::string&);
   void setFlag(const int);
   void getList(const TypesafePtr & ind);
   void getFlag(int&);

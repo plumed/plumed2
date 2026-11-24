@@ -18,10 +18,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
+#include "core/Checkpointing.h"
 #include "core/ActionRegister.h"
 #include "tools/Communicator.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
+#include "tools/Checkpoint.h"
+
+#include <algorithm>
 
 namespace PLMD {
 namespace opes {
@@ -80,17 +84,20 @@ The neighbor list can be switched off with NLIST_OFF.
 You can target a uniform flat distribution by explicitly setting BIASFACTOR=inf.
 However, this should be useful only in very specific cases.
 
-It is possible to take into account also of other bias potentials besides the one of OPES_METAD during the internal reweighting for \f$P(\mathbf{s})\f$ estimation.
+It is possible to take into account also of other bias potentials besides the one of OPES_METAD during the internal reweighting for $P(\mathbf{s})$ estimation.
 To do so, one has to add those biases with the EXTRA_BIAS keyword, as in the example below.
 This allows one to define a custom target distribution by adding another bias potential equal to the desired target free energy and setting BIASFACTOR=inf (see example below).
 Another possible usage of EXTRA_BIAS is to make sure that OPES_METAD does not push against another fixed bias added to restrain the CVs range (e.g. [UPPER_WALLS](UPPER_WALLS.md)).
 
 Through the EXCLUDED_REGION keywork, it is possible to specify a region of CV space where no kernels will be deposited.
 This can be useful for example for making sure the bias does not modify the transition region, thus allowing for rate calculation.
+With WALKERS_MPI, a walker that is in the excluded region does not deposit, while the other walkers do.
 See below for an example of how to use this keyword.
 
 Restart can be done from a KERNELS file, but it might be not perfect (due to limited precision when printing kernels to file, or if adaptive SIGMA is used).
 For an exact restart you must use STATE_RFILE to read a checkpoint with all the needed info.
+With [CHECKPOINT](CHECKPOINT.md) the restart is exact without STATE_RFILE: the full state is stored in the PLUMED checkpoint,
+the KERNELS file is truncated at the checkpointing step and STATE_RFILE is not read.
 To save such checkpoints, define a STATE_WFILE and choose how often to print them with STATE_WSTRIDE.
 By default this file is overwritten, but you can instead append to it using the flag STORE_STATES.
 
@@ -195,6 +202,7 @@ class OPESmetad : public bias::Bias {
 
 private:
   bool isFirstStep_;
+  bool fromCheckpoint_; //restart from a CHECKPOINT: the state is restored by readCheckpoint, no file is read
   unsigned NumOMP_;
   unsigned NumParallel_;
   unsigned rank_;
@@ -297,6 +305,12 @@ public:
   void calculate() override;
   void update() override;
   static void registerKeywords(Keywords& keys);
+/// Internal state not stored in the checkpoint yet (see CHECKPOINT): the restart is file-based
+  bool hasCheckpointState() const override {
+    return true;
+  }
+  void writeCheckpoint(CheckpointWriter&) override;
+  void readCheckpoint(CheckpointReader&) override;
 };
 
 struct convergence {
@@ -383,6 +397,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
            "Larger values give a larger list, rebuilt less often. A second value is accepted for backward compatibility, but is not used");
   keys.addFlag("NLIST_OFF",false,"do not use the neighbor list for the kernels summation. The result is the same, but it can be slower when there are many kernels");
   keys.addDeprecatedFlag("NLIST","");
+  keys.addDeprecatedFlag("NLIST_PACE_RESET","");
   keys.addFlag("FIXED_SIGMA",false,"do not decrease sigma as the simulation proceeds. Can be added in a RESTART, to keep in check the number of compressed kernels");
   keys.addFlag("RECURSIVE_MERGE_OFF",false,"do not recursively attempt kernel merging when a new one is added");
   keys.addFlag("NO_ZED",false,"do not normalize over the explored CV space, Z_n=1");
@@ -392,7 +407,7 @@ void OPESmetad<mode>::registerKeywords(Keywords& keys) {
   keys.add("optional","STATE_RFILE","read from this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WFILE","write to this file the compressed kernels and all the info needed to RESTART the simulation");
   keys.add("optional","STATE_WSTRIDE","number of MD steps between writing the STATE_WFILE. Default is only on CPT events (but not all MD codes set them)");
-  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of ovewriting it each time");
+  keys.addFlag("STORE_STATES",false,"append to STATE_WFILE instead of overwriting it each time");
 //miscellaneous
   keys.addInputKeyword("optional","EXCLUDED_REGION","scalar","kernels are not deposited when the action provided here has a nonzero value, see example above");
   if(!mode::explore) {
@@ -426,6 +441,7 @@ template <class mode>
 OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   : PLUMED_BIAS_INIT(ao)
   , isFirstStep_(true)
+  , fromCheckpoint_(getRestart() && plumed.checkpointing.isRestartingFromCheckpoint())
   , counter_(1)
   , ncv_(getNumberOfArguments())
   , Zed_(1)
@@ -538,6 +554,11 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
   plumed_massert(!(nlist_off && nlist_flag),"NLIST and NLIST_OFF cannot be used together");
   nlist_=!nlist_off;
   nlist_components_=nlist_flag;
+  bool nlist_pace_reset=false; //removed, the neighbor list is reset after each deposition with WALKERS_MPI
+  parseFlag("NLIST_PACE_RESET",nlist_pace_reset);
+  if(nlist_pace_reset) {
+    warning("NLIST_PACE_RESET has no effect: the neighbor list is exact, and with WALKERS_MPI it is reset after each deposition");
+  }
   std::vector<double> nlist_param;
   parseVector("NLIST_PARAMETERS",nlist_param);
   nlist_param_=3.0;//*cutoff2_ -> max distance of neighbors
@@ -701,11 +722,32 @@ OPESmetad<mode>::OPESmetad(const ActionOptions& ao)
 
 //restart if needed
   bool convertKernelsToState=false;
-  if(getRestart()) {
+  if(fromCheckpoint_) {
+    log.printf("  RESTART from the checkpoint: the state is restored from it%s\n",restartFileName.length()>0?", STATE_RFILE is not read":"");
+  } else if(getRestart()) {
     bool stateRestart=true;
     if(restartFileName.length()==0) {
       stateRestart=false;
       restartFileName=kernelsFileName;
+    }
+    // At a restart from a step given by the MD engine the KERNELS file is trimmed at that step before
+    // being read (see RESTART). The kernel of that step is computed again, so it is removed and the first
+    // update is not skipped; the STATE file written at the checkpoint of the MD engine already contains
+    // it, so with STATE_RFILE it is kept (and the first update is skipped as usual).
+    if(plumed.checkpointing.trimsAtRestart() && !getNoTrim()) {
+      if(comm.Get_rank()==0 && walker_rank_==0) {
+        plumed.checkpointing.trimAtRestart(NumWalkers_>1 ? kernelsFileName : FileBase::appendSuffix(kernelsFileName,plumed.getSuffix()),stateRestart);
+      }
+      comm.Barrier();
+      if(walkers_mpi) {
+        if(comm.Get_rank()==0) {
+          multi_sim_comm.Barrier();
+        }
+        comm.Barrier();
+      }
+      if(!stateRestart) {
+        isFirstStep_=false;
+      }
     }
     IFile ifile;
     ifile.link(*this);
@@ -1171,8 +1213,18 @@ void OPESmetad<mode>::update() {
     }
   }
 
-//do update
-  if(getStep()%stride_==0 && (excluded_region_==NULL || excluded_region_->get()==0)) {
+//do update. A walker in the EXCLUDED_REGION does not deposit, but it still takes part in the
+//communication with the other walkers, which might deposit
+  const bool deposit=(excluded_region_==NULL || excluded_region_->get()==0);
+  std::vector<int> all_deposit(NumWalkers_,deposit?1:0);
+  if(NumWalkers_>1 && getStep()%stride_==0) {
+    if(comm.Get_rank()==0) {
+      multi_sim_comm.Allgather(deposit?1:0,all_deposit);
+    }
+    comm.Bcast(all_deposit,0);
+  }
+  const unsigned num_deposit=std::count(all_deposit.begin(),all_deposit.end(),1);
+  if(getStep()%stride_==0 && num_deposit>0) {
     old_KDEnorm_=KDEnorm_;
     delta_kernels_.clear();
     unsigned old_nker=kernels_.size();
@@ -1189,7 +1241,7 @@ void OPESmetad<mode>::update() {
       }
       comm.Bcast(log_weight,0);
     }
-    double height=std::exp(log_weight);
+    double height=deposit?std::exp(log_weight):0;
 
     //update sum_weights_ and neff
     double sum_heights=height;
@@ -1202,7 +1254,8 @@ void OPESmetad<mode>::update() {
       comm.Bcast(sum_heights,0);
       comm.Bcast(sum_heights2,0);
     }
-    counter_+=NumWalkers_;
+    const bool first_deposition=(counter_==1);
+    counter_+=num_deposit;
     sum_weights_+=sum_heights;
     sum_weights2_+=sum_heights2;
     const double neff=std::pow(1+sum_weights_,2)/(1+sum_weights2_); //adding 1 makes it more robust at the start
@@ -1219,7 +1272,7 @@ void OPESmetad<mode>::update() {
     std::vector<double> sigma=sigma0_;
     if(adaptive_sigma_) {
       const double factor=mode::explore?1:biasfactor_;
-      if(counter_==1+NumWalkers_) { //first time only
+      if(first_deposition) {
         for(unsigned i=0; i<ncv_; i++) {
           av_M2_[i]*=biasfactor_;  //from unbiased, thus must be adjusted
         }
@@ -1326,7 +1379,9 @@ void OPESmetad<mode>::update() {
       for(unsigned w=0; w<NumWalkers_; w++) {
         std::vector<double> center_w(all_center.begin()+ncv_*w,all_center.begin()+ncv_*(w+1));
         std::vector<double> sigma_w(all_sigma.begin()+ncv_*w,all_sigma.begin()+ncv_*(w+1));
-        addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
+        if(all_deposit[w]) {
+          addKernel(all_height[w],center_w,sigma_w,all_logweight[w]);
+        }
       }
     }
     getPntrToComponent("nker")->set(kernels_.size());
@@ -1854,6 +1909,86 @@ void OPESmetad<mode>::listKernels(const unsigned begin,const unsigned end,std::v
       }
     }
   }
+}
+
+//the state at the start of a step (see CHECKPOINT)
+template <class mode>
+void OPESmetad<mode>::writeCheckpoint(CheckpointWriter& w) {
+  w.write("isFirstStep",isFirstStep_);
+  w.write("counter",counter_);
+  if(adaptive_sigma_) {
+    w.write("adaptive_counter",adaptive_counter_);
+    w.write("av_cv",av_cv_);
+    w.write("av_M2",av_M2_);
+  }
+  w.write("sigma0",sigma0_);
+  w.write("sigma_min",sigma_min_);
+  w.write("sum_weights",sum_weights_);
+  w.write("sum_weights2",sum_weights2_);
+  w.write("zed",Zed_);
+  w.write("KDEnorm",KDEnorm_);
+  w.write("work",work_);
+  std::vector<double> height,center,sigma;
+  for(const auto & k : kernels_) {
+    height.push_back(k.height);
+    center.insert(center.end(),k.center.begin(),k.center.end());
+    sigma.insert(sigma.end(),k.sigma.begin(),k.sigma.end());
+  }
+  w.write("kernels_height",height);
+  w.write("kernels_center",center);
+  w.write("kernels_sigma",sigma);
+  if(nlist_) {
+    w.write("nlist_index",nlist_index_);
+    w.write("nlist_center",nlist_center_);
+    w.write("nlist_sigma_min",nlist_sigma_min_);
+    w.write("nlist_steps",nlist_steps_);
+    w.write("nlist_update",nlist_update_);
+  }
+  writeComponentValues(w);
+}
+
+template <class mode>
+void OPESmetad<mode>::readCheckpoint(CheckpointReader& r) {
+  r.read("isFirstStep",isFirstStep_);
+  r.read("counter",counter_);
+  if(adaptive_sigma_) {
+    r.read("adaptive_counter",adaptive_counter_);
+    r.read("av_cv",av_cv_);
+    r.read("av_M2",av_M2_);
+  }
+  r.read("sigma0",sigma0_);
+  r.read("sigma_min",sigma_min_);
+  r.read("sum_weights",sum_weights_);
+  r.read("sum_weights2",sum_weights2_);
+  r.read("zed",Zed_);
+  r.read("KDEnorm",KDEnorm_);
+  r.read("work",work_);
+  plumed_massert(sigma0_.size()==ncv_,"checkpoint: wrong number of arguments for "+getLabel());
+  std::vector<double> height,center,sigma;
+  r.read("kernels_height",height);
+  r.read("kernels_center",center);
+  r.read("kernels_sigma",sigma);
+  plumed_massert(center.size()==ncv_*height.size() && sigma.size()==ncv_*height.size(),"checkpoint: wrong size of the kernels of "+getLabel());
+  kernels_.clear();
+  for(unsigned k=0; k<height.size(); k++) {
+    kernels_.emplace_back(height[k],std::vector<double>(center.begin()+k*ncv_,center.begin()+(k+1)*ncv_),
+                          std::vector<double>(sigma.begin()+k*ncv_,sigma.begin()+(k+1)*ncv_));
+  }
+  delta_kernels_.clear();
+  sum_outdated_=true;
+  if(nlist_) {
+    if(r.has("nlist_index")) {
+      r.read("nlist_index",nlist_index_);
+      r.read("nlist_center",nlist_center_);
+      r.read("nlist_sigma_min",nlist_sigma_min_);
+      r.read("nlist_steps",nlist_steps_);
+      r.read("nlist_update",nlist_update_);
+    } else {
+      nlist_update_=true;
+    }
+    nlist_all_outdated_=true;
+  }
+  readComponentValues(r);
 }
 
 template <class mode>

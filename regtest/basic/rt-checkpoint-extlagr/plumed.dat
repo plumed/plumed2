@@ -1,0 +1,11 @@
+# exact restart of EXTENDED_LAGRANGIAN (fictitious positions and velocities, Langevin generator) from the checkpoint: see config
+CHECKPOINT FILE=plumed.cpt
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=2,3
+d3: DISTANCE ATOMS=3,4
+# Langevin thermostat (own generator) and a bias acting on the fictitious variable
+ex1: EXTENDED_LAGRANGIAN ARG=d1,d2 KAPPA=20,20 TAU=0.05,0.1 FRICTION=10,5 TEMP=300
+r1: RESTRAINT ARG=ex1.d1_fict AT=0.5 KAPPA=10
+# without friction (no random numbers)
+ex2: EXTENDED_LAGRANGIAN ARG=d3 KAPPA=30 TAU=0.1
+PRINT ARG=ex1.*,ex2.*,r1.bias FILE=COLVAR STRIDE=1 FMT=%.17g

@@ -1,0 +1,3 @@
+type=driver
+arg="--ixyz traj.xyz --length-units A"
+plumed_modules="colvar vatom"

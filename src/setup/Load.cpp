@@ -37,6 +37,28 @@ This new functionality can be in a .so file or a .cpp file. If the
 new functionality is in a cpp file then the code is compiled and the
 the resulting object is loaded.
 
+Extra header search directories can be supplied when compiling a `.cpp` file:
+
+````
+LOAD FILE=x.cpp INCLUDE_PATH={headers:other headers}
+````
+
+`INCLUDE_PATH` is a colon-separated, ordered list. Enclose the whole value in
+braces when a directory contains spaces. Relative directories are resolved from
+the working directory, not from the source or input file directory. Empty values
+and empty entries are errors; directory names containing colons are not supported.
+The option is rejected for precompiled libraries. Existing compiler flags and
+include environment variables remain in effect; these additional directories
+apply only to this LOAD invocation.
+
+With `INCLUDE_PATH`, PLUMED compiles on every LOAD into a separate temporary
+location next to the source and removes the temporary library after loading.
+This avoids reusing a library compiled with different include paths, including
+when multiple PLUMED objects load the same source concurrently, and reflects
+header changes on the next LOAD. The source directory must be writable.
+Without `INCLUDE_PATH`, the existing source-timestamp cache is unchanged (it does
+not track header dependencies).
+
 Using the LOAD action is useful for making quick tests while developing your own
 actions. Of course, once your implementation is ready you should
 add it to the PLUMED source tree and recompile PLUMED.
@@ -111,6 +133,43 @@ Another example is if multiple Plumed objects are created in the C/C++ or Python
 If a LOAD command is used in one of these objects, the loaded action will not affect
 the other objects.
 
+
+## Code written for older versions of PLUMED
+
+The C++ interface that is used by the files you LOAD changes between versions of PLUMED.
+If a file that you wrote for an older version does not compile, the following changes are usually enough:
+
+- `#include "core/Atoms.h"` and `plumed.getAtoms()`: the Atoms class was removed in PLUMED 2.10.
+  The include is removed automatically by `plumed mklib` (with a warning). Use the methods of the action instead:
+  `getKBoltzmann()` instead of `plumed.getAtoms().getKBoltzmann()`, `getkBT()` instead of `plumed.getAtoms().getKbT()`
+  (`getkBT()` also reads the TEMP keyword), `getUnits()`, `usingNaturalUnits()` and `getTimeStep()`.
+- `error: invalid use of incomplete type 'class PLMD::Communicator'`: since PLUMED 2.10 the headers of the actions
+  do not include the definition of the communicators any more. If your code uses `comm` or `multi_sim_comm`, add
+
+  ```c++
+  #include "tools/Communicator.h"
+  ```
+
+- `componentsAreNotOptional(keys)` was removed. It only changed the text of the manual, so you can delete the line.
+- `keys.addOutputComponent(name,flag,description)` is deprecated: give the type of the component as third argument,
+  e.g. `keys.addOutputComponent("x","COMPONENTS","scalar","the x component")`.
+- `keys.use("ARG")` after the `registerKeywords` of the base class is not needed any more (ARG is added by the base class),
+  but it is still accepted.
+- A flag cannot be on by default: `keys.addFlag("COMPONENTS",true,...)` stops with "the second argument to addFlag must be false".
+  Use `false` and, if needed, a flag with the opposite meaning.
+- Include paths such as `#include "colvar/ActionRegister.h"` are replaced by `#include "core/ActionRegister.h"`
+  automatically by `plumed mklib` (with a warning).
+- The classes of the old multicolvar module (`multicolvar/MultiColvarBase.h`) were removed in PLUMED 2.10.
+  A collective variable that is computed for many groups of atoms is now written for one group of atoms and then
+  used with the `MultiColvarTemplate` class: see how `src/colvar/Distance.cpp` defines DISTANCE_SCALAR and DISTANCE_VECTOR.
+- Some helper functions of the tools that PLUMED itself did not use were removed in PLUMED 2.11:
+  in `PDB` the setters (`setAtomNumbers`, `setAtomPositions`, `setArgumentNames`, `setArgumentValue`, `addBlockEnd`), `print`, `hasFlag`, `getMtype`,
+  `getAtomsInChain`, `checkForResidue`, `getChainID` of a residue number (use the one of an atom), and the versions without a chain
+  of `getResidueName` and `getNamedAtomFromResidue` (use the ones that take a chain, with `"*"` for any chain);
+  in `Grid` `addKernel`, `writeCubeFile`, `integrate`, `findSetOfPointsOnContour`, `logAllValuesAndDerivatives` and `mpiSumValuesAndDerivatives`;
+  in `RMSD` `calc_SOMA`, `getAlign` and `getDisplace`; in `HistogramBead` `generateBins` and `setKernelType`
+  (give the kernel type to the constructor); in `KernelFunctions` the constructors from a string and from a pointer, and `normalize`.
+
 !!! note ""
 
     The example inputs on this page appear as not working because you cannot use the dynamic loading on GitHub Actions. On a machine where this functionality is available these inputs should work.
@@ -129,16 +188,53 @@ PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ) {
   ActionAnyorder::registerKeywords(keys);
-  keys.add("compulsory","FILE","file to be loaded");
+  keys.add("optional","FILE","file to be loaded");
+  keys.add("optional","INCLUDE_PATH","colon-separated header search directories for a .cpp file; relative to the working directory");
+  keys.add("optional","MODULE","installed module to be loaded, together with its hard dependencies");
 }
 
 Load::Load(const ActionOptions&ao):
   Action(ao),
   ActionAnyorder(ao) {
-  std::string f;
+  std::string f, module;
   parse("FILE",f);
+  parse("MODULE",module);
+  const bool hasIncludePath=!getKeyword("INCLUDE_PATH").empty();
+  std::string includePath;
+  parse("INCLUDE_PATH",includePath);
+  // An explicitly empty keyword must not silently select the ordinary cache.
+  if(hasIncludePath && includePath.empty()) {
+    error("INCLUDE_PATH must contain at least one directory");
+  }
+  std::vector<std::string> includeDirs;
+  if(hasIncludePath) {
+    size_t start=0;
+    while(true) {
+      const auto end=includePath.find(':',start);
+      const auto dir=includePath.substr(start,end==std::string::npos ? end : end-start);
+      if(dir.empty()) {
+        error("INCLUDE_PATH cannot contain empty directories");
+      }
+      includeDirs.push_back(dir);
+      if(end==std::string::npos) {
+        break;
+      }
+      start=end+1;
+    }
+    if(f.size()<4 || f.substr(f.size()-4)!=".cpp") {
+      error("INCLUDE_PATH is only supported for FILE ending in .cpp");
+    }
+  }
   checkRead();
-  plumed.load(f);
+
+  if(f.empty()==module.empty()) {
+    error("Specify exactly one of FILE and MODULE");
+  }
+  if(!module.empty()) {
+    plumed.loadModule(module);
+  } else {
+    plumed.load(f,includeDirs);
+  }
 }
 
 }

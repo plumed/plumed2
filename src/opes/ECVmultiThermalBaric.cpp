@@ -125,7 +125,7 @@ void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   keys.add("optional","PRESSURE_SET_ALL","manually set all the pressures");
 //other
   keys.add("optional","SET_ALL_TEMP_PRESSURE","manually set all the target temperature_pressure pairs. An underscore separates temperature and pressure, while different points are comma-separated, e.g.: temp1_pres1,temp1_pres2,...");
-  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: \\f$T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}\\f$");
+  keys.add("optional","CUT_CORNER","avoid region of high temperature and low pressure. Exclude all points below a line in the temperature-pressure plane, defined by two points: $T_{\\text{low}},P_{\\text{low}},T_{\\text{high}},P_{\\text{high}}$");
   keys.addDOI("10.1103/PhysRevX.10.041034");
 }
 
@@ -188,6 +188,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
       try {
         std::size_t pos1;
         const double temp_i=std::stod(custom_lambdas_[i],&pos1);
+        plumed_massert(temp_i>0,error_msg+custom_lambdas_[i]);
         plumed_massert(pos1+1<custom_lambdas_[i].size(),error_msg+custom_lambdas_[i]);
         plumed_massert(custom_lambdas_[i][pos1]=='_',error_msg+custom_lambdas_[i]);
         std::size_t pos2;
@@ -206,6 +207,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
       plumed_massert(temp_steps==0,"cannot set both TEMP_STEPS and TEMP_SET_ALL");
       plumed_massert(temp_min==-1 && temp_max==-1,"cannot set both TEMP_SET_ALL and TEMP_MIN/MAX");
       plumed_massert(temps.size()>=2,"set at least 2 temperatures");
+      plumed_massert(temps[0]>0,"temperatures must be greater than zero");
       temp_min=temps[0];
       temp_max=temps[temps.size()-1];
       derECVs_beta_.resize(temps.size());
@@ -225,6 +227,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
         temp_max=temp0;
         log.printf("  no TEMP_MAX provided, using TEMP_MAX=TEMP\n");
       }
+      plumed_massert(temp_min>0,"TEMP_MIN must be greater than zero");
       plumed_massert(temp_max>=temp_min,"TEMP_MAX should be bigger than TEMP_MIN");
       derECVs_beta_.resize(2);
       derECVs_beta_[0]=(temp0/temp_min-1.)/kbt_;

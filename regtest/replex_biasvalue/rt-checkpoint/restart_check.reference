@@ -1,0 +1,11 @@
+restart/COLVAR.0 IDENTICAL
+restart/COLVAR.1 IDENTICAL
+restart/COLVAR.2 IDENTICAL
+restart/COLVAR.3 IDENTICAL
+restart/bias_index.xvg IDENTICAL
+Restarting from checkpoint plumed.0.cpt written at step 14 
+  initial state read from file: bias_index.xvg
+REPLEX_BIASVALUE bias: reading the initial state
+  read from file bias_index.xvg, line at time 12.000000
+  bias indices: 0 1 3 2
+  replica indices: 0 1 3 2

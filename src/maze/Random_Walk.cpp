@@ -49,6 +49,8 @@ Every optimizer implemented in the maze module needs a loss function as
 an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
 ```plumed
+l: MAZE_LOSS PARAMS=1,1,1
+
 MAZE_RANDOM_WALK ...
   LABEL=rw
 
@@ -115,7 +117,7 @@ Random_Walk::Random_Walk(const ActionOptions& ao)
 }
 
 void Random_Walk::optimize() {
-  set_opt(rnd::next_plmd_vector());
+  set_opt(rnd_.next_plmd_vector());
   set_opt_value(score());
 }
 

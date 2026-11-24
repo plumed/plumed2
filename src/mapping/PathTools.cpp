@@ -157,7 +157,6 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
   int s=sizeof(double);
   plmd.cmd("setRealPrecision",&s);
   plmd.cmd("setMDEngine","pathtools");
-  // plmd.cmd("setNoVirial");
   double tstep=1.0;
   plmd.cmd("setTimestep",&tstep);
   plmd.cmd("init");
@@ -181,7 +180,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
     std::vector<double> alig( mypdb.getOccupancy() ), disp( mypdb.getBeta() );
     std::vector<AtomNumber> indices( mypdb.getAtomNumbers() );
-    std::vector<unsigned> residue_indices( indices.size() );
+    std::vector<int> residue_indices( indices.size() );
     for(unsigned i=0; i<residue_indices.size(); ++i) {
       residue_indices[i] = mypdb.getResidueNumber( indices[i] );
     }
@@ -409,7 +408,7 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
 
 // Now create the metric object
   std::vector<double> alig, disp;
-  std::vector<unsigned> residue_indices;
+  std::vector<int> residue_indices;
   if( mtype=="OPTIMAL-FAST" || mtype=="OPTIMAL" || mtype=="SIMPLE" ) {
     std::string trinput = "endT: TRANSPOSE ARG=end";
     const char* tinp=trinput.c_str();
@@ -473,8 +472,9 @@ int PathTools::main(FILE* in, FILE*out,Communicator& pc) {
     if( !as ) {
       break ;
     }
-    aind = aind - 1;
-    plumed_assert( aind>=0 );
+    // aind is unsigned: check before decrementing, otherwise it wraps around
+    plumed_assert( aind>0 );
+    --aind;
   }
   ActionWithValue* av = dynamic_cast<ActionWithValue*>( plmd.getActionSet()[aind].get() );
   if( !av ) {

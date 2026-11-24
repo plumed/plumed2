@@ -1,0 +1,5 @@
+{
+  "MPI_Init": "launchRanks standalone_owned initializes native MPI; tMPI initialization belongs to the internal launcher, and direct frontend Init must throw when unavailable",
+  "MPI_Finalize": "launchRanks standalone_owned finalizes native MPI; internal launcher owns tMPI finalization, and direct frontend Finalize must throw when unavailable",
+  "MPI_Abort": "The same main.cpp has --abort -n 4 mode; check-isolated.sh runs it as a separate process and requires failure"
+}

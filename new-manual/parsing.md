@@ -65,7 +65,7 @@ t: METAD ARG=e1 SIGMA=0.15 PACE=10 HEIGHT=2 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=20
 
 Notice here that the boundaries for `GRID_MIN` and `GRID_MAX` are `-pi` and `pi`. 
 
-Any real numbers that are read in from input are interpretted using the [Lepton library] that is described in the documtation for the [CUSTOM](CUSTOM.md) 
+Any real numbers that are read in from input are interpreted using the [Lepton library] that is described in the documentation for the [CUSTOM](CUSTOM.md) 
 action. You can thus employ complicated expressions such as `1+2` or `exp(10)` as shown in the in the input as shown below:
 
 ```plumed
@@ -97,12 +97,12 @@ Notice that this functionality cannot be used when the keyword takes integer num
 
 PLUMED provides a number of ways to prepare the multiple replicas with almost identical PLUMED files that are required to run a multiple replica simulation:
 
-* You can repare input files for such calculation using cut-and-paste but that is is very error prone.
+* You can repare input files for such calculation using cut-and-paste but that is very error prone.
 * You can write a smart bash or python script to generate all the inputs.
 * You can use different inputs for the various replicas that all contain an [INCLUDE](INCLUDE.md) directive to include a file that contains the parts of the input that are common to all replicas 
 
 We think, however, the best option is to use features that have been available from PLUMED 2.4 onwards that allow you 
-manipulate multiple replica inputs that have only tiny differences in the the input.  The following example illustrates how the syntax 
+manipulate multiple replica inputs that have only tiny differences in the input.  The following example illustrates how the syntax 
 for this option operates:  
 
 ```plumed

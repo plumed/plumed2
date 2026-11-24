@@ -1,0 +1,4 @@
+FISST with PERIOD=0: exit code 1
+ERROR in input to action FISST : PERIOD must be a positive number of steps 
+FISST with NINTERPOLATE=0: exit code 1
+ERROR in input to action FISST : NINTERPOLATE must be positive 

@@ -23,6 +23,7 @@
 #define __PLUMED_tools_Grid_h
 
 #include <vector>
+#include <functional>
 #include <array>
 #include <string>
 #include <map>
@@ -52,8 +53,6 @@ public:
     beta=v;
     invbeta=1./beta;
   }
-  //double projectInnerLoop(double &input, double &v) override {return  input+exp(beta*v);}
-  //double projectOuterLoop(double &v) override {return -invbeta*std::log(v);}
   double projectInnerLoop(double &input, double &v) override {
     auto betav=beta*v;
     auto x=betav-shift;
@@ -94,8 +93,8 @@ public:
 class Value;
 class IFile;
 class OFile;
-class KernelFunctions;
-class Communicator;
+class CheckpointWriter;
+class CheckpointReader;
 
 /// \ingroup TOOLBOX
 class GridBase {
@@ -227,7 +226,12 @@ protected:
   std::string fmt_; // format for output
 /// get "neighbors" for spline
   unsigned getSplineNeighbors(const unsigned* indices, std::size_t indices_size, index_t* neighbors, std::size_t neighbors_size)const;
-// std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
+/// move the values after resize(): oldnbin are the numbers of points before resizing; the point with index k
+/// along direction i before resizing has index k+shift[i] after (it was removed if this is out of range)
+  virtual void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift);
+/// the values (and derivatives) for writeCheckpoint/readCheckpoint
+  virtual void writeCheckpointData(CheckpointWriter& w) const;
+  virtual void readCheckpointData(CheckpointReader& r);
 
 
 public:
@@ -259,6 +263,24 @@ public:
   std::vector<bool> getIsPeriodic() const;
 /// get grid dimension
   unsigned getDimension() const;
+/// true if x is within the range of the grid along all the non-periodic directions,
+/// i.e. if getIndices(x) gives a point of the grid
+  bool isInside(const std::vector<double> & x) const;
+/// position of x along direction i, in units of the grid spacing, from the first point of the grid:
+/// its floor is the index of the point below x (also outside the grid, where it can be negative or too large)
+  double getLatticeCoordinate(unsigned i, double x) const {
+    return (x-min_[i])/dx_[i];
+  }
+/// Change the range of the grid along non-periodic directions: lower[i] (upper[i]) points are added at the lower (upper)
+/// end of direction i if positive, removed if negative. The spacing does not change, and the values (and derivatives)
+/// at the points that are kept do not change; new points are set to zero, the values at removed points are lost.
+/// The new bounds (getMin, getMax, written in the grid files) have 12 significant digits.
+  void resize(const std::vector<long long> & lower, const std::vector<long long> & upper);
+/// Store the range, the spacing and the data of the grid in a checkpoint section (see CHECKPOINT)
+  void writeCheckpoint(CheckpointWriter& w) const;
+/// Restore a grid stored by writeCheckpoint: the range, spacing and data are replaced (bitwise), the dimension,
+/// periodicity and the presence of derivatives must be the same
+  void readCheckpoint(CheckpointReader& r);
 /// get argument names  of this grid
   std::vector<std::string> getArgNames() const;
 /// get if the grid has derivatives
@@ -327,9 +349,12 @@ public:
 /// add to grid value and derivatives
   virtual void addValueAndDerivatives(index_t index, double value, std::vector<double>& der)=0;
   void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
-/// add a kernel function to the grid
-  void addKernel( const KernelFunctions& kernel );
+/// add to grid value and derivatives (der_size must be the dimension of the grid)
+  virtual void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size);
 
+/// call f(index,value) for each point that is stored, in increasing order of index: all the points of a dense grid,
+/// the points that have been set in a sparse grid (the others are zero)
+  virtual void forEachStoredPoint(const std::function<void(index_t,double)> & f) const;
 /// get minimum value
   virtual double getMinValue() const = 0;
 /// get maximum value
@@ -337,8 +362,6 @@ public:
 
 /// dump grid on file
   virtual void writeToFile(OFile&)=0;
-/// dump grid to gaussian cube file
-  void writeCubeFile(OFile&, const double& lunit);
 
   virtual ~GridBase() = default;
 
@@ -360,6 +383,9 @@ class Grid : public GridBase {
   std::vector<double> grid_;
   std::vector<double> der_;
   double contour_location=0.0;
+protected:
+  void writeCheckpointData(CheckpointWriter& w) const override;
+  void readCheckpointData(CheckpointReader& r) override;
 public:
   Grid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
        const std::vector<std::string> & gmax,
@@ -401,6 +427,10 @@ public:
   void addValue(index_t index, double value) override;
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
+  void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
+protected:
+  void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) override;
+public:
 
 /// get minimum value
   double getMinValue() const override;
@@ -408,8 +438,6 @@ public:
   double getMaxValue() const override;
 /// Scale all grid values and derivatives by a constant factor
   void scaleAllValuesAndDerivatives( const double& scalef );
-/// Takes the scalef times the logarithm of all grid values and derivatives
-  void logAllValuesAndDerivatives( const double& scalef );
 /// dump grid on file
   void writeToFile(OFile&) override;
 
@@ -419,16 +447,11 @@ public:
   void applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) );
 /// Get the difference from the contour
   double getDifferenceFromContour(const std::vector<double> & x, std::vector<double>& der) const ;
-/// Find a set of points on a contour in the function
-  void findSetOfPointsOnContour(const double& target, const std::vector<bool>& nosearch, unsigned& npoints, std::vector<std::vector<double> >& points );
 /// Since this method returns a concrete Grid, it should be here and not in GridBase - GB
 /// project a high dimensional grid onto a low dimensional one: this should be changed at some time
 /// to enable many types of weighting
   Grid project( const std::vector<std::string> & proj, WeightBase *ptr2obj  );
   void projectOnLowDimension(double &val, std::vector<int> &varHigh, WeightBase* ptr2obj );
-  void mpiSumValuesAndDerivatives( Communicator& comm );
-/// Integrate the function calculated on the grid
-  double integrate( std::vector<unsigned>& npoints );
   void clear();
 };
 
@@ -437,6 +460,9 @@ class SparseGrid : public GridBase {
 
   std::map<index_t,double> map_;
   std::map< index_t,std::vector<double> > der_;
+protected:
+  void writeCheckpointData(CheckpointWriter& w) const override;
+  void readCheckpointData(CheckpointReader& r) override;
 
 public:
   SparseGrid(const std::string& funcl, const std::vector<Value*> & args, const std::vector<std::string> & gmin,
@@ -445,7 +471,6 @@ public:
     GridBase(funcl,args,gmin,gmax,nbin,dospline,usederiv) {}
 
   index_t getSize() const override;
-  index_t getMaxSize() const;
 
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
   using GridBase::getValue;
@@ -468,6 +493,11 @@ public:
   void addValue(index_t index, double value) override;
 /// add to grid value and derivatives
   void addValueAndDerivatives(index_t index, double value, std::vector<double>& der) override;
+  void addValueAndDerivatives(index_t index, double value, const double* der, std::size_t der_size) override;
+protected:
+  void resizeData(const std::vector<unsigned> & oldnbin, const std::vector<long long> & shift) override;
+public:
+  void forEachStoredPoint(const std::function<void(index_t,double)> & f) const override;
 
 /// get minimum value
   double getMinValue() const override;

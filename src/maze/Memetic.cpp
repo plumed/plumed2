@@ -44,6 +44,8 @@ Every optimizer implemented in the maze module needs a loss function as
 an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
 ```plumed
+l: MAZE_LOSS PARAMS=1,1,1
+
 MAZE_MEMETIC_SAMPLING ...
   LABEL=ma
 
@@ -88,19 +90,19 @@ void Memetic::registerKeywords(Keywords& keys) {
   keys.add(
     "compulsory",
     "CAPACITY",
-    "Sampling set size."
+    "Number of candidate biasing directions in the population."
   );
 
   keys.add(
     "compulsory",
     "MUTATION_RATE",
-    "Probability of mutation."
+    "Probability that a member of the population is mutated at each iteration."
   );
 
   keys.add(
     "compulsory",
     "MATING_RATE",
-    "Probability of mating."
+    "Probability that two members of the population are mated (crossover) at each iteration."
   );
 
   keys.add(
@@ -118,7 +120,7 @@ void Memetic::registerKeywords(Keywords& keys) {
   keys.addFlag(
     "LOCAL_SEARCH_ON",
     false,
-    "Turn local search on."
+    "Refine the members of the population with a local search."
   );
 
   keys.add(
@@ -136,7 +138,7 @@ void Memetic::registerKeywords(Keywords& keys) {
   keys.add(
     "optional",
     "LOCAL_SEARCH_TYPE",
-    "Type of local search."
+    "Type of local search: stochastic_hill_climbing or adaptive_random_search."
   );
 }
 

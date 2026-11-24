@@ -43,12 +43,14 @@ Every optimizer implemented in the maze module needs a loss function as
 an argument, and it should be passed using the [MAZE_LOSS](MAZE_LOSS.md) keyword.
 
 ```plumed
+l: MAZE_LOSS PARAMS=1,1,1
+
 MAZE_RANDOM_ACCELERATION_MD ...
   LABEL=rw
 
-  OPTIMIZER_STRIDE=_
+  OPTIMIZER_STRIDE=200
   LOSS=l
-  RMIN=_
+  R_MIN=0.5
 
   LIGAND=2635-2646
   PROTEIN=1-2634
@@ -158,7 +160,7 @@ Random_Acceleration_MD::Random_Acceleration_MD(const ActionOptions& ao)
   }
 
   set_label("RANDOM_ACCELERATION_MD");
-  set_opt(rnd::next_plmd_vector());
+  set_opt(rnd_.next_plmd_vector());
   set_opt_value(0.0);
 
   start_step_stride();
@@ -190,7 +192,7 @@ void Random_Acceleration_MD::optimize() {
   total_dist_ += dist_;
 
   if(dist_ < r_min_) {
-    set_opt(rnd::next_plmd_vector());
+    set_opt(rnd_.next_plmd_vector());
   }
 
   set_opt_value(score());

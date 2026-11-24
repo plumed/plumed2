@@ -37,8 +37,8 @@ $$
 
 Here $\mathbf{x}$ is the configuration at time t, $\mathbf{\mu}$ is the reference and $\mathbf{\Sigma}^{-1}$ is the $N \times N$ precision matrix.
 
-Size-and-shape Gaussian Mixture Model (shapeGMM) is a probabilistic clustering technique that is used to perform structural clusteing on ensemble of molecular configurations and to obtain reference
-$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please chcek out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and informations on preforming shapeGMM clustering.
+Size-and-shape Gaussian Mixture Model (shapeGMM), which is discussed in the paper cited below, is a probabilistic clustering technique that is used to perform structural clustering on ensemble of molecular configurations and to obtain reference
+$(\mathbf{\mu})$ and precision $(\mathbf{\Sigma}^{-1})$ corresponding to each of the cluster centers. Please check out <a href="https://github.com/mccullaghlab/shapeGMMTorch">shapeGMMTorch-GitHub</a> and <a href="https://pypi.org/project/shapeGMMTorch/"> shapeGMMTorch-PyPI</a> for examples and information on performing shapeGMM clustering.
 
 ## Examples
 In the following example, a group is defined with atom indices of selected atoms and then Mahalanobis distance is calculated with respect to the given reference and precision. Each file is a space separated list of 3N floating point numbers.
@@ -96,10 +96,11 @@ PLUMED_REGISTER_ACTION(position_maha_dist,"SIZESHAPE_POSITION_MAHA_DIST")
 void position_maha_dist::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("compulsory", "PRECISION", "Precision Matrix (inverse of covariance)" );
-  keys.add("compulsory", "REFERENCE", "Reference structure.");
+  keys.add("compulsory", "REFERENCE", "File with the coordinates of the reference structure.");
   keys.add("atoms","GROUP","The group of atoms being used");
   keys.addFlag("SQUARED",false,"Returns the square of distance.");
   keys.setValueDescription("scalar","the Mahalanobis distance between the instantaneous configuration and a given reference distribution in size-and-shape space");
+  keys.addDOI("10.1021/acs.jctc.1c01290");
 }
 
 // constructor function
@@ -243,10 +244,10 @@ double position_maha_dist::determinant(int n, const std::vector<std::vector<doub
       return 0.0;  // Singular matrix
     }
 
-    for ( int r = i + 1; r < n; r++ ) {                  // On lower rows
-      double multiple = A[r][i] / pivot;                // Multiple of row i to clear element in ith column
+    for ( int row = i + 1; row < n; row++ ) {            // On lower rows
+      double multiple = A[row][i] / pivot;              // Multiple of row i to clear element in ith column
       for ( int j = i; j < n; j++ ) {
-        A[r][j] -= multiple * A[i][j];
+        A[row][j] -= multiple * A[i][j];
       }
     }
     det *= pivot;                                        // Determinant is product of diagonal
@@ -296,17 +297,16 @@ void position_maha_dist::kabsch_rot_mat() {
 
   // Create some containers for stuff from single value decomposition
   std::vector<double> S(nsv);
-  std::vector<double> U(nrows*nrows);
-  std::vector<double> VT(ncols*ncols);
+  std::vector<double> U(static_cast<std::size_t>(nrows)*nrows);
+  std::vector<double> VT(static_cast<std::size_t>(ncols)*ncols);
   std::vector<int> iwork(8*nsv);
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1;
   std::vector<double> work(1);
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
   // Retrieve correct sizes for work and rellocate
@@ -315,9 +315,8 @@ void position_maha_dist::kabsch_rot_mat() {
 
   // This does the singular value decomposition
   plumed_lapack_dgesdd( "A", &nrows, &ncols, da.data(), &nrows, S.data(), U.data(), &nrows, VT.data(), &ncols, work.data(), &lwork, iwork.data(), &info );
-  //if(info!=0) return info;
   if(info!=0) {
-    log.printf("info:", info);
+    log.printf("info: %d\n", info);
   }
 
 
@@ -355,7 +354,6 @@ void position_maha_dist::kabsch_rot_mat() {
   }
 
 
-  //Matrix<double> rotation(3,3);
   rotation.resize(3,3);
   Matrix<double> u(3,3), vt(3,3);
   for(int i=0; i<3; ++i) {

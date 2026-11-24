@@ -80,7 +80,7 @@ private:
   unsigned ifix1, ifix2;
 /// Tolerance for the minimization algorithm
   double TOL;
-/// Value containing ammount to displace each reference configuration by
+/// Value containing amount to displace each reference configuration by
   Value* displace_value;
 /// The action for calculating the distances between the frames
   PathProjectionCalculator path_projector;
@@ -95,11 +95,15 @@ private:
 ///
   void reparameterizePart( int istart, int iend, double target );
 public:
+  /// the internal state is not stored in the checkpoint yet: the action is listed in the warning
+  bool hasCheckpointState() const override {
+    return true;
+  }
   static void registerKeywords( Keywords& keys );
   PathReparameterization(const ActionOptions&);
-  void calculate() {}
-  void apply() {}
-  void update();
+  void calculate() override {}
+  void apply() override {}
+  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(PathReparameterization,"REPARAMETERIZE_PATH")
@@ -181,7 +185,6 @@ double PathReparameterization::computeSpacing( const unsigned ifrom, const unsig
 void PathReparameterization::calcCurrentPathSpacings( const int istart, const int iend ) {
   plumed_dbg_assert( static_cast<unsigned>(istart)<len.size() && static_cast<unsigned>(iend)<len.size() );
   len[istart] = sumlen[istart]=0;
-  //printf("HELLO PATH SPACINGS ARE CURRENTLY \n");
 
   // Get the spacings given we can go forward and backwards
   int incr=1;
@@ -192,7 +195,6 @@ void PathReparameterization::calcCurrentPathSpacings( const int istart, const in
   for(int i=istart+incr; loopEnd(i,iend+incr,incr)==false; i+=incr) {
     len[i] = computeSpacing( i-incr, i );
     sumlen[i] = sumlen[i-incr] + len[i];
-    //printf("FRAME %d TO FRAME %d EQUALS %f : %f \n",i-incr,i,len[i],sumlen[i] );
   }
 }
 
@@ -258,7 +260,7 @@ void PathReparameterization::reparameterizePart( const int istart, const int ien
         newmatrix(i,j) = data[j];
       }
       path_projector.getDisplaceVector( k, k+incr, data );
-      // Shift the reference configuration by this ammount
+      // Shift the reference configuration by this amount
       for(unsigned j=0; j<data.size(); ++j) {
         newmatrix(i,j) += dr*data[j];
       }

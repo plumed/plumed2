@@ -1,0 +1,5 @@
+mpiprocs=2
+type=driver
+# 8 frames of a drifting structure: the LCPO list is rebuilt and reused
+arg="--plumed plumed.dat --ixyz traj.xyz --length-units A"
+export PLUMED_NUM_THREADS=2

@@ -20,10 +20,32 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
+#include "tools/Checkpoint.h"
+
+#include <algorithm>
 
 
 namespace PLMD {
 namespace bias {
+
+void Bias::writeComponentValues(CheckpointWriter& w) const {
+  std::vector<double> v;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    v.push_back(copyOutput(i)->get());
+  }
+  w.write("components",v);
+}
+
+void Bias::readComponentValues(CheckpointReader& r) {
+  std::vector<double> v;
+  r.read("components",v);
+  if(v.size()!=getNumberOfComponents()) {
+    error("the checkpoint was written with a different number of components");
+  }
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    copyOutput(i)->set(v[i]);
+  }
+}
 
 Bias::Bias(const ActionOptions&ao):
   Action(ao),
@@ -40,6 +62,10 @@ Bias::Bias(const ActionOptions&ao):
     log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
   }
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    // only the first element of a vector or matrix argument would be read and biased
+    if(getPntrToArgument(i)->getRank()!=0 && getPntrToArgument(i)->getNumberOfValues()!=1) {
+      error("argument " + getPntrToArgument(i)->getName() + " is not a scalar: biases act on scalars (use e.g. SUM to make a scalar)");
+    }
     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }
 
@@ -51,9 +77,14 @@ void Bias::registerKeywords( Keywords& keys ) {
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.addInputKeyword("compulsory","ARG","scalar","the labels of the scalars on which the bias will act");
+  keys.addInputKeyword("compulsory","ARG","scalar/vector","the labels of the scalars on which the bias will act (a vector must have a single element, e.g. a component of PCAVARS)");
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.addOutputComponent("bias","default","scalar","the instantaneous value of the bias potential");
+}
+
+void Bias::clearDerivatives(const bool& force) {
+  ActionWithValue::clearDerivatives(force);
+  std::fill(outputForces.begin(),outputForces.end(),0.0);
 }
 
 void Bias::apply() {

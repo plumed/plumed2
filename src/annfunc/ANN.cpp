@@ -28,13 +28,9 @@ SOFTWARE.
 #include <string>
 #include <cmath>
 #include <iostream>
-// #include <stdio.h>
 
 using namespace std;
 
-// #define DEBUG
-// #define DEBUG_2
-// #define DEBUG_3
 
 namespace PLMD {
 namespace function {
@@ -64,10 +60,13 @@ Bias for layer 1 and 2 are [10, 11, 12] and [13], respectively.
 
 All activation functions are Tanh.
 
-Then if input variables are l_0_out_0, l_0_out_1, the corresponding ANN function object can be defined using
-following plumed script:
+The inputs of the network are the outputs of layer 0, which are labelled l_0_out_0 and l_0_out_1 below.
+They can be any PLUMED values; in the following script they are two distances.
+The corresponding ANN function object can be defined using the following plumed script:
 
 ```plumed
+l_0_out_0: DISTANCE ATOMS=1,2
+l_0_out_1: DISTANCE ATOMS=3,4
 ann: ANN ...
 ARG=l_0_out_0,l_0_out_1
 NUM_LAYERS=3
@@ -78,6 +77,7 @@ WEIGHTS1=7,8,9
 BIASES0=10,11,12
 BIASES1=13
 ...
+PRINT ARG=ann.node-0 FILE=colvar
 ```
 
 To access its components, we use "ann.node-0", "ann.node-1", ..., which represents the components of neural network outputs.
@@ -100,6 +100,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   explicit ANN(const ActionOptions&);
+  ~ANN();
   virtual void calculate();
   void calculate_output_of_each_layer(const vector<double>& input);
   void back_prop(vector<vector<double> >& derivatives_of_each_layer, int index_of_output_component);
@@ -107,9 +108,22 @@ public:
 
 PLUMED_REGISTER_ACTION(ANN,"ANN")
 
+ANN::~ANN() {
+  for (int ii = 0; ii < static_cast<int>(coeff.size()); ii ++) {
+    if (coeff[ii] == nullptr) {
+      continue;
+    }
+    for (int kk = 0; kk < num_nodes[ii + 1]; kk ++) {
+      delete [] coeff[ii][kk];
+    }
+    delete [] coeff[ii];
+  }
+}
+
 void ANN::registerKeywords( Keywords& keys ) {
   Function::registerKeywords(keys);
   keys.use("PERIODIC");
+  keys.addDOI("10.1002/jcc.25520");
   keys.add("compulsory", "NUM_LAYERS", "number of layers of the neural network");
   keys.add("compulsory", "NUM_NODES", "numbers of nodes in each layer of the neural network");
   keys.add("compulsory", "ACTIVATIONS", "activation functions for the neural network");
@@ -160,7 +174,7 @@ ANN::ANN(const ActionOptions&ao):
     log.printf("size of biases = %lu\n", biases.size());
   }
 
-  if(getNumberOfArguments() != num_nodes[0]) {
+  if(static_cast<int>(getNumberOfArguments()) != num_nodes[0]) {
     error("Number of arguments is wrong");
   }
 
@@ -169,13 +183,13 @@ ANN::ANN(const ActionOptions&ao):
     int num_of_rows, num_of_cols; // num of rows/cols for the coeff matrix of this connection
     num_of_rows = num_nodes[ii + 1];
     num_of_cols = num_nodes[ii];
-    assert (num_of_rows * num_of_cols == temp_coeff[ii].size()); // check whether the size matches
+    assert (num_of_rows * num_of_cols == static_cast<int>(temp_coeff[ii].size())); // check whether the size matches
     // create a 2d array to hold coefficients
     coeff[ii] = new double*[num_of_rows];
     for (int kk = 0; kk < num_of_rows; kk ++) {
       coeff[ii][kk] = new double[num_of_cols];
     }
-    for (int jj = 0; jj < temp_coeff[ii].size(); jj ++) {
+    for (int jj = 0; jj < static_cast<int>(temp_coeff[ii].size()); jj ++) {
       coeff[ii][jj / num_of_cols][jj % num_of_cols] = temp_coeff[ii][jj];
     }
   }
@@ -211,7 +225,7 @@ void ANN::calculate_output_of_each_layer(const vector<double>& input) {
   // first layer
   output_of_each_layer[0] = input;
   // following layers
-  for(int ii = 1; ii < num_nodes.size(); ii ++) {
+  for(int ii = 1; ii < static_cast<int>(num_nodes.size()); ii ++) {
     output_of_each_layer[ii].resize(num_nodes[ii]);
     input_of_each_layer[ii].resize(num_nodes[ii]);
     // first calculate input
@@ -247,7 +261,6 @@ void ANN::calculate_output_of_each_layer(const vector<double>& input) {
 #ifdef DEBUG_2
   // print out the result for debugging
   printf("output_of_each_layer = \n");
-  // for (int ii = num_layers - 1; ii < num_layers; ii ++) {
   for (int ii = 0; ii < num_layers; ii ++) {
     printf("layer[%d]: ", ii);
     if (ii != 0) {
@@ -285,7 +298,6 @@ void ANN::back_prop(vector<vector<double> >& derivatives_of_each_layer, int inde
 #endif
       // first calculate the derivative of input from derivative of output of this circular layer
       for(int ii = 0; ii < num_nodes[jj + 1] / 2; ii ++) {
-        // printf("size of input_of_each_layer[%d] = %d\n",jj,  input_of_each_layer[jj].size());
         double x_p = input_of_each_layer[jj + 1][2 * ii];
         double x_q = input_of_each_layer[jj + 1][2 * ii + 1];
         double radius = sqrt(x_p * x_p + x_q * x_q);
@@ -320,12 +332,10 @@ void ANN::back_prop(vector<vector<double> >& derivatives_of_each_layer, int inde
         derivatives_of_each_layer[jj][mm] = 0;
         for (int kk = 0; kk < num_nodes[jj + 1]; kk ++) {
           if (activations[jj] == string("Tanh")) {
-            // printf("tanh\n");
             derivatives_of_each_layer[jj][mm] += derivatives_of_each_layer[jj + 1][kk] \
                                                  * coeff[jj][kk][mm] \
                                                  * (1 - output_of_each_layer[jj + 1][kk] * output_of_each_layer[jj + 1][kk]);
           } else if (activations[jj] == string("Linear")) {
-            // printf("linear\n");
             derivatives_of_each_layer[jj][mm] += derivatives_of_each_layer[jj + 1][kk] \
                                                  * coeff[jj][kk][mm] \
                                                  * 1;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- plumed.exe uses UTF-8 as its ANSI code page (Windows 10 1903 and later):
+     command line arguments, environment and the narrow C library functions
+     then use UTF-8, as on the other systems. Ignored by older Windows versions. -->
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <application>
+    <windowsSettings>
+      <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+    </windowsSettings>
+  </application>
+</assembly>

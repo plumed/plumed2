@@ -61,17 +61,29 @@ public:
   void prepare() override ;
   void calculate() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
-  std::vector<unsigned>& getListOfActiveTasks( ActionWithVector* action ) override ;
-  void getInputData( std::vector<double>& inputdata ) const override ;
-  void getInputData( std::vector<float>& inputdata ) const override ;
+  std::vector<unsigned>& getListOfActiveTasks() override ;
+  void getArgumentInputData( std::vector<double>& inputdata ) const override ;
+  void getArgumentInputData( std::vector<float>& inputdata ) const override ;
   static void performTask( std::size_t task_index,
                            const FunctionData<CV>& actiondata,
                            ParallelActionsInput& input,
                            ParallelActionsOutput& output );
 /// Add some forces
   void applyNonZeroRankForces( std::vector<double>& outforces ) override ;
+/// Each task is an element of the output matrices, and it only uses the same element of the input matrices
+  std::size_t getNumberOfTasksPerRow() const override {
+    return getConstPntrToComponent(0)->getNumberOfColumns();
+  }
+  bool canDistributeRows() const override {
+    return std::is_same_v<myPTM,defaultPTM> && !taskmanager.runInSerial() && getNumberOfMasks()<=0 && argstart==0;
+  }
+  bool readsOnlyOwnRowOfArgument( unsigned iarg ) const override {
+    return canDistributeRows() && getPntrToArgument(iarg)->getRank()==2;
+  }
 /// Get the indices of the forces
   static int getNumberOfValuesPerTask( std::size_t task_index, const FunctionData<CV>& actiondata );
+/// The same as in FunctionOfVector, whose getForceIndices is used
+  static constexpr bool forceIndicesSharedByComponents = true;
   static void getForceIndices( std::size_t task_index,
                                std::size_t colno,
                                std::size_t ntotal_force,
@@ -218,7 +230,7 @@ void FunctionOfMatrix<CV,myPTM>::getNumberOfTasks( unsigned& ntasks ) {
 }
 
 template <class CV, typename myPTM>
-std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks( ActionWithVector* action ) {
+std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks() {
   if( active_tasks.size()>0 ) {
     return active_tasks;
   }
@@ -244,13 +256,56 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks( ActionW
     }
     base += myarg->getNumberOfColumns();
   }
+  // The elements of a sparse matrix that are not stored are zero, and the function is not
+  // evaluated for them: this is only right if the function is zero when the matrices are zero.
+  // The diagonal of a square matrix is not counted: a matrix built from one GROUP never
+  // stores the pairs of an atom with itself.
+  bool hasMissingElements=false;
+  if( getNumberOfMasks()<=0 && argstart==0 ) {
+    const std::size_t ncolsfull=myarg->getShape()[1];
+    const bool square=(ncolsfull==nrows);
+    for(unsigned i=0; i<nrows && !hasMissingElements; ++i) {
+      const std::size_t rowlen=myarg->getRowLength(i);
+      if( rowlen+1<ncolsfull || (rowlen+1==ncolsfull && !square) ) {
+        hasMissingElements=true;
+      } else if( rowlen+1==ncolsfull ) {
+        // the only element that may be missing is the diagonal one
+        for(unsigned j=0; j<rowlen; ++j) {
+          if( myarg->getRowIndex(i,j)==i ) {
+            hasMissingElements=true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if( hasMissingElements ) {
+    const unsigned nargs = getNumberOfFunctionArguments();
+    std::vector<double> args( nargs, 0.0 ), vals( getNumberOfComponents(), 0.0 ), derivs( getNumberOfComponents()*nargs, 0.0 );
+    for(unsigned i=0; i<nargs; ++i) {
+      if( getPntrToArgument(i)->getRank()==0 ) {
+        args[i] = getPntrToArgument(i)->get();
+      }
+    }
+    auto funcout = FunctionOutput::create( getNumberOfComponents(), vals.data(), nargs, derivs.data() );
+    CV::calc( taskmanager.getActionInput().f, true, View<const double>( args.data(), nargs ), funcout );
+    for(const auto & v : vals) {
+      if( std::isfinite(v) && std::fabs(v)>epsilon ) {
+        error("the input matrix " + myarg->getName() + " is sparse and this function is not zero when its matrix arguments are zero, "
+              "so the elements that are not stored in " + myarg->getName() + " would be wrong. Calculate " + myarg->getName() + " without a cutoff, "
+              "or use the MASK keyword to say which elements should be computed");
+      }
+    }
+  }
   if( getNumberOfMasks()>0 && doNotCalculateDerivatives() ) {
     return active_tasks;
   }
 // All the matrices input have to have the same sparsity pattern.
 // I can do everything I want to do with this limitation.  If
 // anyone wants to make this smarter in the future they can
-#ifndef DNDEBUG
+// This check was guarded by a misspelled "#ifndef DNDEBUG", so it has always been active.
+// It is kept active also in optimized builds: it costs ~1% of a CONTACT_MATRIX->CUSTOM pipeline
+// and it catches inputs that would otherwise give wrong results silently.
   for(unsigned k=argstart; k<getNumberOfArguments(); ++k) {
     if( getPntrToArgument(k)->getRank()!=2 ) {
       continue ;
@@ -263,18 +318,19 @@ std::vector<unsigned>& FunctionOfMatrix<CV,myPTM>::getListOfActiveTasks( ActionW
       if( getNumberOfMasks()>0 && ncols==0 ) {
         continue;
       }
-      plumed_massert( ncols==getPntrToArgument(k)->getRowLength(i), "failing in " + getLabel() );
+      if( ncols!=getPntrToArgument(k)->getRowLength(i) ) {
+        error("the input matrices " + myarg->getName() + " and " + getPntrToArgument(k)->getName() + " have different sparsity patterns. Use the MASK keyword in the action that calculates " + getPntrToArgument(k)->getName() + " or in this action, so that the same elements are computed in all the matrices");
+      }
       for(unsigned j=0; j<ncols; ++j) {
         plumed_assert( myarg->getRowIndex(i,j)==getPntrToArgument(k)->getRowIndex(i,j) );
       }
     }
   }
-#endif
   return active_tasks;
 }
 
 template <class CV, typename myPTM>
-void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) const {
+void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<double>& inputdata ) const {
   int nmasks = getNumberOfMasks();
   unsigned nargs = getNumberOfFunctionArguments();
 
@@ -288,19 +344,23 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
   if( getNumberOfMasks()>0 ) {
     maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   }
+  // when the tasks are shared by row between the MPI processes, only the rows of this process are used
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned rowstart = byRow ? comm.Get_rank() : 0;
+  const unsigned rowstride = byRow ? comm.Get_size() : 1;
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
     if( jarg->getRank()==0 ) {
       double val = jarg->get();
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
     } else if( nmasks>0 && jarg!=maskarg ) {
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
@@ -308,7 +368,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
         }
       }
     } else {
-      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<jarg->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*jarg->getNumberOfColumns();
         for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
@@ -319,7 +379,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<double>& inputdata ) 
 }
 
 template <class CV, typename myPTM>
-void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) const {
+void FunctionOfMatrix<CV,myPTM>::getArgumentInputData( std::vector<float>& inputdata ) const {
   int nmasks = getNumberOfMasks();
   unsigned nargs = getNumberOfFunctionArguments();
 
@@ -333,19 +393,23 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) c
   if( getNumberOfMasks()>0 ) {
     maskarg = getPntrToArgument(getNumberOfArguments()-getNumberOfMasks());
   }
+  // when the tasks are shared by row between the MPI processes, only the rows of this process are used
+  const bool byRow = getRowDistribution().byRow;
+  const unsigned rowstart = byRow ? comm.Get_rank() : 0;
+  const unsigned rowstride = byRow ? comm.Get_size() : 1;
 
   for(unsigned j=argstart; j<nargs; ++j) {
     const Value* jarg =  getPntrToArgument(j);
     if( jarg->getRank()==0 ) {
       double val = jarg->get();
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = val;
         }
       }
     } else if( nmasks>0 && jarg!=maskarg ) {
-      for(unsigned i=0; i<myval->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<myval->getShape()[0]; i+=rowstride) {
         unsigned jcolbase = i*jarg->getShape()[1];
         unsigned vcolbase = i*myval->getNumberOfColumns();
         for(unsigned k=0; k<myval->getRowLength(i); ++k) {
@@ -353,7 +417,7 @@ void FunctionOfMatrix<CV,myPTM>::getInputData( std::vector<float>& inputdata ) c
         }
       }
     } else {
-      for(unsigned i=0; i<jarg->getShape()[0]; ++i) {
+      for(unsigned i=rowstart; i<jarg->getShape()[0]; i+=rowstride) {
         unsigned colbase=i*jarg->getNumberOfColumns();
         for(unsigned k=0; k<jarg->getRowLength(i); ++k) {
           inputdata[(nargs-argstart)*(colbase+k) + j-argstart] = jarg->get(colbase+k,false);
@@ -416,6 +480,11 @@ void FunctionOfMatrix<CV,myPTM>::getForceIndices( std::size_t task_index,
   FunctionOfVector<CV>::getForceIndices( task_index, colno, ntotal_force, actiondata, input, force_indices );
 }
 
+
+
+/// Explicit specialization defined in the corresponding .cpp file; declared
+/// here so that every translation unit instantiating the template sees it.
+template <> std::string FunctionOfMatrix<Custom>::writeInGraph() const;
 }
 }
 #endif

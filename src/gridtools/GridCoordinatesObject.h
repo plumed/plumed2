@@ -75,7 +75,7 @@ public:
 /// Check if a point is within the grid boundaries
   bool inbounds( const std::vector<double>& point ) const ;
   bool inbounds( View<const double> point ) const ;
-/// Convert a point in space the the correspoinding grid point
+/// Convert a point in space the correspoinding grid point
   unsigned getIndex( const std::vector<double>& p ) const ;
   unsigned getIndex( View<const double> point ) const ;
 ///  Flatten the grid and get the grid index for a point
@@ -106,6 +106,8 @@ public:
   double getCellVolume() const ;
 /// Get the set of points neighouring a particular location in space
   void getNeighbors( const std::vector<double>& pp, const std::vector<unsigned>& nneigh,
+                     unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
+  void getNeighbors( const View<const double> pp, const std::vector<unsigned>& nneigh,
                      unsigned& num_neighbours, std::vector<unsigned>& neighbors ) const ;
 /// Get the neighbors for a set of indices of a point
   void getNeighbors( const std::vector<unsigned>& indices, const std::vector<unsigned>& nneigh,

@@ -29,8 +29,20 @@
 #include "tools/IFile.h"
 #include "tools/PDB.h"
 
+#include <cstdio>
+
 namespace PLMD {
 namespace generic {
+
+namespace {
+// the values are passed to CONSTANT as text: they are written with all their digits,
+// so that they are read back exactly (Tools::convert would only keep 6 digits)
+std::string fullPrecision(double v) {
+  char buffer[32];
+  std::snprintf(buffer,sizeof(buffer),"%.17g",v);
+  return buffer;
+}
+}
 
 //+PLUMEDOC COLVAR READMASSCHARGE
 /*
@@ -134,14 +146,13 @@ MassChargeInput::MassChargeInput(const ActionOptions& ao):
   }
 
   // Now get masses and charges
-  std::string nnn, qstr, mstr;
-  Tools::convert( masses[0], mstr );
-  Tools::convert( charges[0], qstr );
+  if( natoms==0 ) {
+    error("no atoms: READMASSCHARGE should be used when the number of atoms is known");
+  }
+  std::string qstr=fullPrecision( charges[0] ), mstr=fullPrecision( masses[0] );
   for(unsigned i=1; i<natoms; ++i) {
-    Tools::convert( masses[i], nnn );
-    mstr += "," + nnn;
-    Tools::convert( charges[i], nnn );
-    qstr += "," + nnn;
+    mstr += "," + fullPrecision( masses[i] );
+    qstr += "," + fullPrecision( charges[i] );
   }
   // And create constant actions to hold masses and charges
   readInputLine( getShortcutLabel() + "_mass: CONSTANT VALUES=" + mstr );

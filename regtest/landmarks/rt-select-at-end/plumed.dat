@@ -1,0 +1,17 @@
+# The frames are collected in blocks of 100 and the trajectory has 546 frames, so the last block is
+# not full when the run ends. The landmarks are selected again at the end of the run.
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+cc: COLLECT_FRAMES ARG=d1,d2 STRIDE=1 CLEAR=100
+ls: LANDMARK_SELECT_STRIDE ARG=cc NLANDMARKS=5
+lr: LANDMARK_SELECT_RANDOM ARG=cc NLANDMARKS=5 SEED=23
+lf: LANDMARK_SELECT_FPS ARG=cc NLANDMARKS=5
+DUMPVECTOR ARG=ls_data FILE=stride_landmarks FMT=%8.4f STRIDE=0
+DUMPVECTOR ARG=lr_data FILE=random_landmarks FMT=%8.4f STRIDE=0
+DUMPVECTOR ARG=lf_data FILE=fps_landmarks FMT=%8.4f STRIDE=0
+# The same without CLEAR: there are no frames in the first calculation
+cu: COLLECT_FRAMES ARG=d1,d2 STRIDE=1
+lu: LANDMARK_SELECT_STRIDE ARG=cu NLANDMARKS=5
+DUMPVECTOR ARG=lu_data FILE=unbounded_landmarks FMT=%8.4f STRIDE=0
+# and also at the first step, with no frame collected yet
+DUMPVECTOR ARG=lu_data FILE=unbounded_first FMT=%8.4f STRIDE=1000

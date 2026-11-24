@@ -1,0 +1,16 @@
+type=driver
+# a pdb trajectory read with --ipdb (see traj.pdb), from the file and from standard input,
+# and with the deprecated --mf_pdb (the same reader, with a warning)
+arg="--plumed plumed.dat --ipdb traj.pdb"
+
+function plumed_regtest_after(){
+  echo "DUMPATOMS ATOMS=@mdatoms FILE=stdin.xyz PRECISION=6" > plumed_stdin.dat
+  $plumed driver --plumed plumed_stdin.dat --ipdb - < traj.pdb > stdin.out 2> stdin.err
+  echo "stdin: exit code $?" > messages
+  cmp stdin.xyz traj.xyz >> messages && echo "stdin: same frames" >> messages
+  echo "DUMPATOMS ATOMS=@mdatoms FILE=alias.xyz PRECISION=6" > plumed_alias.dat
+  $plumed driver --plumed plumed_alias.dat --mf_pdb traj.pdb > alias.out 2> alias.err
+  echo "alias: exit code $?" >> messages
+  grep WARNING alias.err >> messages
+  cmp alias.xyz traj.xyz >> messages && echo "alias: same frames" >> messages
+}

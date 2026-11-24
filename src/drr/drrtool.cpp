@@ -23,6 +23,7 @@
 #include "DRR.h"
 #include "tools/Tools.h"
 #include "tools/Units.h"
+#include "tools/OpenMP.h"
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
@@ -139,7 +140,7 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
 }
 
 void drrtool::extractdrr(const vector<string> &filename) {
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
     in.open(filename[j]);
@@ -238,7 +239,7 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
 }
 
 void drrtool::calcDivergence(const vector<string> &filename, const string &dumpFmt) {
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
   for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
     in.open(filename[j]);

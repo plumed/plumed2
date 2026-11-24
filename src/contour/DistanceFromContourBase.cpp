@@ -35,7 +35,7 @@ void DistanceFromContourBase::registerKeywords( Keywords& keys ) {
   keys.add("atoms","ATOM","The atom whose perpendicular distance we are calculating from the contour");
   keys.add("compulsory","BANDWIDTH","the bandwidths for kernel density esimtation");
   keys.add("compulsory","KERNEL","GAUSSIAN","the kernel function you are using.  More details on  the kernels available "
-           "in plumed plumed can be found in \\ref kernelfunctions.");
+           "in plumed can be found in the documentation for KDE.");
   keys.add("compulsory","CUTOFF","6.25","the cutoff at which to stop evaluating the kernel functions is set equal to sqrt(2*x)*bandwidth in each direction where x is this number");
   keys.add("compulsory","CONTOUR","the value we would like for the contour");
 }
@@ -57,6 +57,9 @@ DistanceFromContourBase::DistanceFromContourBase( const ActionOptions& ao ):
   // Read in the multicolvar/atoms
   std::vector<AtomNumber> atoms;
   parseAtomList("POSITIONS",atoms);
+  if( atoms.empty() ) {
+    error("no atoms were specified with POSITIONS");
+  }
   std::vector<AtomNumber> origin;
   parseAtomList("ATOM",origin);
   if( origin.size()!=1 ) {

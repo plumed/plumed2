@@ -145,29 +145,30 @@ void Plane<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutput<T>& cvout )
   const auto d2=delta( cvin.pos[2], cvin.pos[3] );
   const auto cp = crossProduct( d1, d2 );
   using T33 = TensorTyped<T,3,3>;
+  cvout.values[0] = cp[0];
+  cvout.values[1] = cp[1];
+  cvout.values[2] = cp[2];
+  if( cvin.noderiv ) {
+    return;
+  }
   cvout.derivs[0][0] = crossProduct( Versors::xm<T>, d2 );
   cvout.derivs[0][1] = crossProduct( Versors::xp<T>, d2 );
   cvout.derivs[0][2] = crossProduct( Versors::xm<T>, d1 );
   cvout.derivs[0][3] = crossProduct( Versors::xp<T>, d1 );
   cvout.virial.set( 0, T33(d1,crossProduct(Versors::xp<T>, d2))
                     + T33(d2, crossProduct(Versors::xm<T>, d1)));
-  cvout.values[0] = cp[0];
-
   cvout.derivs[1][0] = crossProduct( Versors::ym<T>, d2 );
   cvout.derivs[1][1] = crossProduct( Versors::yp<T>, d2 );
   cvout.derivs[1][2] = crossProduct( Versors::ym<T>, d1 );
   cvout.derivs[1][3] = crossProduct( Versors::yp<T>, d1 );
   cvout.virial.set(1, T33(d1,crossProduct(Versors::yp<T>, d2))
                    + T33(d2, crossProduct(Versors::ym<T>, d1)));
-  cvout.values[1] = cp[1];
-
   cvout.derivs[2][0] = crossProduct( Versors::zm<T>, d2 );
   cvout.derivs[2][1] = crossProduct( Versors::zp<T>, d2 );
   cvout.derivs[2][2] = crossProduct( Versors::zm<T>, d1 );
   cvout.derivs[2][3] = crossProduct( Versors::zp<T>, d1 );
   cvout.virial.set(2, T33(d1,crossProduct(Versors::zp<T>, d2))
                    + T33(d2, crossProduct(Versors::zm<T>, d1)));
-  cvout.values[2] = cp[2];
 }
 
 }

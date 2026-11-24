@@ -1,0 +1,71 @@
+/* Capture the public C11 wrapper's annotations without initializing MPI. */
+#include <mpi.h>
+#define __PLUMED_WRAPPER_IMPLEMENTATION 0
+#include "../../../src/wrapper/Plumed.h"
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+void* plumed_malloc(size_t n) {
+  return malloc(n);
+}
+void plumed_free(void* p) {
+  free(p);
+}
+
+static MPI_Comm expected_comm;
+static int communicator_command;
+static unsigned expected_type;
+static int expected_not_comm;
+void plumed_cmd_safe_nothrow(plumed p,const char* key,plumed_safeptr safe,plumed_nothrow_handler handler) {
+  (void)p;
+  (void)key;
+  (void)handler;
+  if(communicator_command) {
+    assert(memcmp(safe.ptr,&expected_comm,sizeof(expected_comm))==0);
+  }
+  assert(((safe.flags>>16)&0xffu)==expected_type);
+  assert(!!(safe.flags&0x20000000u)==(__PLUMED_WRAPPER_C_MPI_COMM_CHECK ? expected_not_comm : 0));
+  assert(!(safe.flags&0x40000000u));
+}
+void plumed_cmd_safe(plumed p,const char* key,plumed_safeptr safe) {
+  plumed_nothrow_handler handler= {0,0};
+  plumed_cmd_safe_nothrow(p,key,safe,handler);
+}
+int main(void) {
+  plumed p= {0};
+  MPI_Comm comm;
+  double wrong=0;
+  struct unrelated {
+    int member;
+  } unrelated= {0};
+  memset(&comm,0x5a,sizeof(comm));
+  expected_comm=comm;
+  expected_type=0; /* MPI integer handles use code 3; opaque handles use void. */
+expected_type=_Generic((&comm),int*:3u,default:1u);
+  expected_not_comm=0;
+  communicator_command=1;
+  plumed_cmd(p,"comm",&comm);
+  const MPI_Comm constant=comm;
+  plumed_cmd(p,"const comm",&constant);
+  communicator_command=0;
+  MPI_Comm* nested=&comm;
+  expected_not_comm=1;
+  plumed_cmd(p,"nested comm",&nested);
+expected_type=_Generic((comm),int:3u,default:1u);
+  expected_not_comm=1;
+#if defined(PLUMED_TEST_VOID_COMM)
+  expected_not_comm=0; // preserves the historical untyped-pointer path
+#endif
+  plumed_cmd(p,"byvalue",comm);
+  expected_not_comm=1;
+  expected_type=4;
+  plumed_cmd(p,"wrong",&wrong);
+  expected_type=1;
+  plumed_cmd(p,"unrelated",&unrelated);
+  expected_not_comm=0;
+  plumed_cmd(p,"legacy",(const void*)&comm);
+  expected_type=6;
+  expected_not_comm=1;
+  plumed_cmd(p,"provider",(const struct plumed_mpi_provider*)&unrelated);
+  return 0;
+}

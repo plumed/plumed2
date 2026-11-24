@@ -86,7 +86,7 @@ void SketchMapProjection::registerKeywords( Keywords& keys ) {
   ActionShortcut::registerKeywords( keys );
   mapping::Path::registerInputFileKeywords( keys );
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-  keys.add("compulsory","WEIGHT","the weight of each individual landmark in the stress fucntion that is to be optimised");
+  keys.add("compulsory","WEIGHT","the weight of each individual landmark in the stress function that is to be optimised");
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
   keys.add("compulsory","CGTOL","1E-6","The tolerance for the conjugate gradient minimization that finds the out of sample projections");

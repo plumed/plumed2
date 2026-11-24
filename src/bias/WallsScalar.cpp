@@ -71,6 +71,26 @@ The sum over $i$ here is runs over the two arguments, while the sum over $j$ run
 Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be
 equal to the number of arguments to the action.
 
+## Periodic arguments
+
+If an argument is periodic (e.g. a [TORSION](TORSION.md)), the wall acts on the value of the argument in its periodic domain
+and periodic boundary conditions are __not__ applied to the difference $x_i-a_i$. The value of AT must thus be within the
+periodic domain of the argument. The following input restrains a torsion within the interval $[-2,2]$:
+
+```plumed
+t: TORSION ATOMS=1,2,3,4
+uwall: UPPER_WALLS ARG=t AT=2.0 KAPPA=150.0
+lwall: LOWER_WALLS ARG=t AT=-2.0 KAPPA=150.0
+PRINT ARG=t,uwall.bias,lwall.bias
+```
+
+Notice that the bias is discontinuous at the boundary of the periodic domain (here at $\pm\pi$). You should thus make sure that
+the walls keep the argument far from this boundary, e.g. by using both an upper and a lower wall as in the input above.
+
+Versions of PLUMED before 2.9.7 and 2.10.3 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
+periodic domain, and the region left free by an upper and a lower wall is smaller than the one between AT values
+(see [#658](https://github.com/plumed/plumed2/issues/658)).
+
 */
 //+ENDPLUMEDOC
 
@@ -119,6 +139,26 @@ $$
 The sum over $i$ here is runs over the two arguments, while the sum over $j$ runs over the three components of the input vectors.
 Notice, that regardless of whether the input is a scalar, vector or matrix the number of $k_i$, $a_i$, $o_i$, $e_i$ and $s_i$ values must be
 equal to the number of arguments to the action.
+
+## Periodic arguments
+
+If an argument is periodic (e.g. a [TORSION](TORSION.md)), the wall acts on the value of the argument in its periodic domain
+and periodic boundary conditions are __not__ applied to the difference $x_i-a_i$. The value of AT must thus be within the
+periodic domain of the argument. The following input restrains a torsion within the interval $[-2,2]$:
+
+```plumed
+t: TORSION ATOMS=1,2,3,4
+uwall: UPPER_WALLS ARG=t AT=2.0 KAPPA=150.0
+lwall: LOWER_WALLS ARG=t AT=-2.0 KAPPA=150.0
+PRINT ARG=t,uwall.bias,lwall.bias
+```
+
+Notice that the bias is discontinuous at the boundary of the periodic domain (here at $\pm\pi$). You should thus make sure that
+the walls keep the argument far from this boundary, e.g. by using both an upper and a lower wall as in the input above.
+
+Versions of PLUMED before 2.9.7 and 2.10.3 applied periodic boundary conditions to the difference $x_i-a_i$. With that choice, each wall acts on half of the
+periodic domain, and the region left free by an upper and a lower wall is smaller than the one between AT values
+(see [#658](https://github.com/plumed/plumed2/issues/658)).
 
 */
 //+ENDPLUMEDOC
@@ -226,6 +266,23 @@ WallsScalar<W>::WallsScalar(const ActionOptions&ao):
   }
   log.printf("\n");
 
+  // The wall acts on the value of the argument in its domain, without periodic images
+  // (see https://github.com/plumed/plumed2/issues/658).
+  for(unsigned i=0; i<getNumberOfArguments(); i++) {
+    Value* arg=getPntrToArgument(i);
+    if( arg->isPeriodic() ) {
+      double min, max;
+      arg->getDomain( min, max );
+      if( at[i]<min || at[i]>max ) {
+        error("the position of the wall (AT) for periodic argument " + arg->getName() + " should be within its periodic domain");
+      }
+      log.printf("  WARNING: argument %s is periodic. The wall acts on its value in the domain [%f,%f]\n"
+                 "    without periodic images, so the bias is discontinuous at the boundary of the domain.\n"
+                 "    Make sure that the walls keep the argument far from it (e.g. use both an upper and a lower wall).\n",
+                 arg->getName().c_str(), min, max );
+    }
+  }
+
   addComponent(force2);
   componentIsNotPeriodic(force2);
 }
@@ -238,7 +295,8 @@ void WallsScalar<W>::calculate() {
   double totf2 = 0.0;
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     double f = 0.0;
-    const double cv=difference(i,at[i],getArgument(i));
+    // no periodic boundary conditions here, see the documentation and issue #658
+    const double cv=getArgument(i)-at[i];
     const double off=offset[i];
     const double epsilon=eps[i];
     const double scale = walloff(cv,off)/epsilon;

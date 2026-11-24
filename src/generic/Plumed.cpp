@@ -26,6 +26,7 @@
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
 #include "tools/Communicator.h"
+#include "../mpiwrap/mpiwrap.h"
 #include "core/PlumedMain.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN
@@ -68,7 +69,7 @@ from libraries linked to PLUMED, and would differ depending on the operating sys
 are using:
 - On OSX:
   - Symbols from the PLUMED library would clash. The only way to avoid is to load PLUMED dynamically:
-    - If you are are using PLUMED with an MD code, it should be patched with `--runtime`.
+    - If you are using PLUMED with an MD code, it should be patched with `--runtime`.
     - If you are using PLUMED driver, you should launch the `plumed-runtime` executable (contained in the
       `prefix/lib/plumed/` directory) and export `PLUMED_KERNEL` equal to the path of the host kernel library
      (as usual in runtime loading). Notice that as of PLUMED 2.10 we load kernels with RTLD_LOCAL by default.
@@ -201,6 +202,9 @@ Plumed::Plumed(const ActionOptions&ao):
   std::string dir;
   parse("CHDIR",dir);
   if(dir.length()>0) {
+    if(mpiwrap::is_thread_mpi_active()) {
+      plumed_error() << "CHDIR is not supported while a thread-MPI runtime is active";
+    }
     log<<"  running on separate directory "<<dir<<"\n";
   }
   return dir;
@@ -352,9 +356,16 @@ API([&]() {
 
 void Plumed::prepare() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  int step=getStep();
+  // steps above 2^31 overflowed an int (setStepLong is available in every kernel with API>3)
   if(root) {
-    p.cmd("setStep",&step);
+    if constexpr(sizeof(long int)==sizeof(long long int)) {
+      long int step=getStep();
+      p.cmd("setStepLong",&step);
+    } else {
+      // Windows: long is 32 bits (setStepLongLong needs a guest kernel >= 2.10)
+      long long int step=getStep();
+      p.cmd("setStepLongLong",&step);
+    }
   }
   if(root) {
     p.cmd("prepareDependencies");

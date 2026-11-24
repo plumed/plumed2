@@ -1,0 +1,8 @@
+# ADAPTIVE=DIFF with two MPI walkers sharing the hills file HW, continuation at step 300.
+# Each walker initializes the statistics of its CV fluctuations from its own hills
+# (in HW the hills of each time are written in the order of the walkers).
+RESTART
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+m: METAD ARG=phi,psi ADAPTIVE=DIFF SIGMA=100 HEIGHT=1.0 PACE=5 FMT=%10.5f WALKERS_MPI FILE=HW
+PRINT ARG=phi,psi,m.bias STRIDE=5 FILE=colvar FMT=%10.5f

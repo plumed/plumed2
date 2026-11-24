@@ -1,0 +1,11 @@
+# walls on a vector with a non-integer exponent gave nan where the wall is not acting
+# the vector and scalar walls must give the same bias and force2
+dv: DISTANCE ATOMS1=1,2 ATOMS2=3,4
+uw: UPPER_WALLS ARG=dv AT=1.2 KAPPA=10 EXP=2.5 OFFSET=0.05
+lw: LOWER_WALLS ARG=dv AT=0.7 KAPPA=10 EXP=2.5 EPS=2
+d: DISTANCE ATOMS=1,2
+e: DISTANCE ATOMS=3,4
+uws: UPPER_WALLS_SCALAR ARG=d,e AT=1.2,1.2 KAPPA=10,10 EXP=2.5,2.5 OFFSET=0.05,0.05
+lws: LOWER_WALLS_SCALAR ARG=d,e AT=0.7,0.7 KAPPA=10,10 EXP=2.5,2.5 EPS=2,2
+PRINT ARG=uw.bias,uws.bias,uw_force2,uws.force2,lw.bias,lws.bias,lw_force2,lws.force2 FILE=colvar FMT=%8.4f
+DUMPFORCES ARG=dv,d,e FILE=fd FMT=%8.4f

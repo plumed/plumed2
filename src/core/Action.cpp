@@ -37,6 +37,7 @@
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
 namespace PLMD {
 
 Keywords ActionOptions::emptyKeys;
@@ -59,6 +60,7 @@ void Action::registerKeywords( Keywords& keys ) {
   keys.reserve("optional","UPDATE_FROM","Only update this action from this time");
   keys.reserve("optional","UPDATE_UNTIL","Only update this action until this time");
   keys.reserve("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
+  keys.reserveFlag("NO_TRIM",false,"at a restart from a step given by the MD engine, append to the files of this action as they are, without removing the lines written at or after that step (see RESTART)");
 }
 
 Action::Action(const ActionOptions&ao):
@@ -99,7 +101,7 @@ Action::Action(const ActionOptions&ao):
   }
   if(actionLabel.length()==0) {
     std::string s;
-    Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().select<ActionForInterface*>().size(),s);
+    Tools::convert(plumed.getActionSet().size()-plumed.getActionSet().getNumberOfActionsForInterface(),s);
     actionLabel="@"+s;
   } else if ( actionLabel.find(".")!=std::string::npos ) {
     warning("using full stop in an action label should be avaoided as . has a special meaning in PLUMED action labels");
@@ -109,6 +111,14 @@ Action::Action(const ActionOptions&ao):
   }
   if( !keywords.exists("NO_ACTION_LOG") ) {
     log.printf("  with label %s\n",actionLabel.c_str());
+  }
+  // Keywords from older versions of PLUMED are read as the keyword that replaces them,
+  // so that they also satisfy compulsory keywords that are read by the base classes (e.g. GRID for ARG)
+  for(const auto & key : keywords.getKeys()) {
+    const std::string replacement=keywords.getDeprecatedReplacement(key);
+    if( replacement.length()>0 && linemap.renameKey(key,replacement) ) {
+      warning("keyword " + key + " is deprecated and is read as " + replacement + ": use " + replacement + " instead");
+    }
   }
   if ( keywords.exists("UPDATE_FROM") ) {
     parse("UPDATE_FROM",update_from);
@@ -137,6 +147,9 @@ Action::Action(const ActionOptions&ao):
       error("RESTART should be either YES, NO, or AUTO");
     }
   }
+  if ( keywords.exists("NO_TRIM") ) {
+    parseFlag("NO_TRIM",noTrim);
+  }
 }
 
 void Action::resetStoredTimestep() {
@@ -144,6 +157,11 @@ void Action::resetStoredTimestep() {
   if( ts ) {
     timestep = (ts->copyOutput(0))->get();
   }
+}
+
+const Keywords& Action::getKeywords() const {
+  plumed_massert(keywordsAvailable,"keywords of action " + getLabel() + " are available only in the constructor");
+  return keywords;
 }
 
 Action::~Action() {
@@ -216,6 +234,19 @@ void Action::parseFlag(const std::string&key,bool & t) {
       plumed_error();
     }
   }
+}
+
+void Action::setLaunchable() {
+  // PLUMED_LAUNCH=no: the actions do all their work in calculate(), with the same results (to compare timings and to debug)
+  const char* e=std::getenv("PLUMED_LAUNCH");
+  if(e && std::string(e)=="no") {
+    log.printf("  the work of this action is not started in advance (PLUMED_LAUNCH=no)\n");
+    return;
+  }
+  log.printf("  the work of this action is started as soon as possible (launch), set PLUMED_LAUNCH=no to disable\n");
+  launchable=true;
+  // the forward loop looks for launchable actions only after this
+  plumed.useLaunch=true;
 }
 
 void Action::addDependency(Action*action) {
@@ -336,6 +367,7 @@ double Action::getTimeStep()const {
 }
 
 double Action::getkBT() {
+  plumed_massert(keywordsAvailable,"getkBT() can only be called in the constructor of an action: store its result (action " + getLabel() + ")");
   double temp=-1.0;
   if( keywords.exists("TEMP") ) {
     parse("TEMP",temp);
@@ -357,7 +389,9 @@ double Action::getkBT() {
       warning("using TEMP=" + strt1 + " while MD engine uses " + strt2 + "\n");
     }
     kbt = kB*temp;
-    plumed_massert(kbt>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
+    if(!(kbt>0)) {
+      error("TEMP must be greater than zero");
+    }
     return kbt;
   }
   return kbt;
@@ -387,7 +421,7 @@ void Action::warning( const std::string & msg ) {
 void Action::calculateFromPDB( const PDB& pdb ) {
   activate();
   for(const auto & p : after) {
-    ActionWithValue*av=castToActionWithValue();
+    ActionWithValue*av=p->castToActionWithValue();
     if(av) {
       av->clearInputForces();
       av->clearDerivatives();

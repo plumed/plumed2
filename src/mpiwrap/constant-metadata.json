@@ -1,0 +1,1198 @@
+{
+  "schema_version": 1,
+  "constants": [
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_FLOAT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_FLOAT"
+      },
+      "semantic_test": "constant:MPI_FLOAT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_DOUBLE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_DOUBLE"
+      },
+      "semantic_test": "constant:MPI_DOUBLE",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_INT"
+      },
+      "semantic_test": "constant:MPI_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_CHAR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_CHAR"
+      },
+      "semantic_test": "constant:MPI_CHAR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_UNSIGNED",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNSIGNED"
+      },
+      "semantic_test": "constant:MPI_UNSIGNED",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_UNSIGNED_LONG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNSIGNED_LONG"
+      },
+      "semantic_test": "constant:MPI_UNSIGNED_LONG",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_UNSIGNED_LONG_LONG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNSIGNED_LONG_LONG"
+      },
+      "semantic_test": "constant:MPI_UNSIGNED_LONG_LONG",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG_DOUBLE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LONG_DOUBLE"
+      },
+      "semantic_test": "constant:MPI_LONG_DOUBLE",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_COMM_WORLD",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_COMM_WORLD"
+      },
+      "semantic_test": "constant:MPI_COMM_WORLD",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Comm"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_COMM_SELF",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_COMM_SELF (direct tMPI accessor, not standard-name macro)"
+      },
+      "semantic_test": "constant:MPI_COMM_SELF",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Comm"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_COMM_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-reviewed-translation",
+        "binding": null,
+        "binding_expression": "(tMPI_Comm)0"
+      },
+      "semantic_test": "constant:MPI_COMM_NULL",
+      "translation": "upstream TMPI_COMM_NULL expands to nullptr; typed null-pointer cast preserves the null communicator in C99 and C++98",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Comm"
+    },
+    {
+      "class": "buffer_sentinel",
+      "standard_api_name": "MPI_IN_PLACE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_IN_PLACE"
+      },
+      "semantic_test": "constant:MPI_IN_PLACE",
+      "translation": "recognize before buffer conversion; pass provider sentinel via accessor",
+      "native_adapter": "implemented",
+      "native_type": "void *"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_SUM",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_SUM"
+      },
+      "semantic_test": "constant:MPI_SUM",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_PROD",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_PROD"
+      },
+      "semantic_test": "constant:MPI_PROD",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_MAX",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_MAX"
+      },
+      "semantic_test": "constant:MPI_MAX",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_MIN",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_MIN"
+      },
+      "semantic_test": "constant:MPI_MIN",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "status_sentinel",
+      "standard_api_name": "MPI_STATUS_IGNORE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_STATUS_IGNORE"
+      },
+      "semantic_test": "constant:MPI_STATUS_IGNORE",
+      "translation": "provider-facing MPI_STATUS_IGNORE is normalized to null; adapter maps null to its native ignore sentinel before the call",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Status *"
+    },
+    {
+      "class": "status_array_sentinel",
+      "standard_api_name": "MPI_STATUSES_IGNORE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_STATUSES_IGNORE"
+      },
+      "semantic_test": "constant:MPI_STATUSES_IGNORE",
+      "translation": "provider-facing MPI_STATUSES_IGNORE is normalized to null; adapter maps null to its native ignore sentinel before the call",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Status *"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_GROUP_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-reviewed-translation",
+        "binding": null,
+        "binding_expression": "(tMPI_Group)0"
+      },
+      "semantic_test": "constant:MPI_GROUP_NULL",
+      "translation": "upstream TMPI_GROUP_NULL expands to nullptr; typed null-pointer cast preserves the null group in C99 and C++98",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Group"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_GROUP_EMPTY",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_GROUP_EMPTY"
+      },
+      "semantic_test": "constant:MPI_GROUP_EMPTY",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Group"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_REQUEST_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_REQUEST_NULL"
+      },
+      "semantic_test": "constant:MPI_REQUEST_NULL",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Request"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_DATATYPE_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-reviewed-translation",
+        "binding": null,
+        "binding_expression": "(tMPI_Datatype)0"
+      },
+      "semantic_test": "constant:MPI_DATATYPE_NULL",
+      "translation": "tMPI has no named null-datatype constant; its audited tMPI_Datatype pointer handle uses nullptr as the null handle",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_OP_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_OP_NULL",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_ERRHANDLER_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERRHANDLER_NULL",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Errhandler"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_ERRORS_ARE_FATAL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERRORS_ARE_FATAL"
+      },
+      "semantic_test": "constant:MPI_ERRORS_ARE_FATAL",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Errhandler"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_ERRORS_RETURN",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERRORS_RETURN"
+      },
+      "semantic_test": "constant:MPI_ERRORS_RETURN",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Errhandler"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_BYTE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_BYTE"
+      },
+      "semantic_test": "constant:MPI_BYTE",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_PACKED",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_PACKED",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_SHORT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_SHORT"
+      },
+      "semantic_test": "constant:MPI_SHORT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LONG"
+      },
+      "semantic_test": "constant:MPI_LONG",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_UNSIGNED_CHAR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNSIGNED_CHAR"
+      },
+      "semantic_test": "constant:MPI_UNSIGNED_CHAR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_UNSIGNED_SHORT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNSIGNED_SHORT"
+      },
+      "semantic_test": "constant:MPI_UNSIGNED_SHORT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG_LONG_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LONG_LONG_INT"
+      },
+      "semantic_test": "constant:MPI_LONG_LONG_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG_LONG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LONG_LONG"
+      },
+      "semantic_test": "constant:MPI_LONG_LONG",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_FLOAT_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_FLOAT_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_DOUBLE_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_DOUBLE_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_LONG_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_2INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_2INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_SHORT_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_SHORT_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LONG_DOUBLE_INT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_LONG_DOUBLE_INT",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_MAXLOC",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_MAXLOC",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_MINLOC",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_MINLOC",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LAND",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LAND"
+      },
+      "semantic_test": "constant:MPI_LAND",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_BAND",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_BAND"
+      },
+      "semantic_test": "constant:MPI_BAND",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LOR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LOR"
+      },
+      "semantic_test": "constant:MPI_LOR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_BOR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_BOR"
+      },
+      "semantic_test": "constant:MPI_BOR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_LXOR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_LXOR"
+      },
+      "semantic_test": "constant:MPI_LXOR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_BXOR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_BXOR"
+      },
+      "semantic_test": "constant:MPI_BXOR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Op"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_UNDEFINED",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNDEFINED"
+      },
+      "semantic_test": "constant:MPI_UNDEFINED",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ANY_SOURCE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ANY_SOURCE"
+      },
+      "semantic_test": "constant:MPI_ANY_SOURCE",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ANY_TAG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ANY_TAG"
+      },
+      "semantic_test": "constant:MPI_ANY_TAG",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_PROC_NULL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_PROC_NULL",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_IDENT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_IDENT"
+      },
+      "semantic_test": "constant:MPI_IDENT",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_CONGRUENT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_CONGRUENT"
+      },
+      "semantic_test": "constant:MPI_CONGRUENT",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_SIMILAR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_SIMILAR"
+      },
+      "semantic_test": "constant:MPI_SIMILAR",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_UNEQUAL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_UNEQUAL"
+      },
+      "semantic_test": "constant:MPI_UNEQUAL",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_CART",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_CART"
+      },
+      "semantic_test": "constant:MPI_CART",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_GRAPH",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_GRAPH"
+      },
+      "semantic_test": "constant:MPI_GRAPH",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_MAX_PROCESSOR_NAME",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_MAX_PROCESSOR_NAME"
+      },
+      "semantic_test": "constant:MPI_MAX_PROCESSOR_NAME",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_MAX_ERROR_STRING",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_MAX_ERROR_STRING"
+      },
+      "semantic_test": "constant:MPI_MAX_ERROR_STRING",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_BSEND_OVERHEAD",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_BSEND_OVERHEAD",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "compile_time_integer",
+      "standard_api_name": "MPI_SUCCESS",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_SUCCESS"
+      },
+      "semantic_test": "constant:MPI_SUCCESS",
+      "translation": "standard compile-time value; no provider lookup",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_BUFFER",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_BUFFER",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_COUNT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_COUNT",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_TYPE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_TYPE"
+      },
+      "semantic_test": "constant:MPI_ERR_TYPE",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_TAG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_TAG",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_COMM",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_COMM"
+      },
+      "semantic_test": "constant:MPI_ERR_COMM",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_RANK",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_RANK",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_REQUEST",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_REQUEST",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_ROOT",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_ROOT",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_GROUP",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_GROUP"
+      },
+      "semantic_test": "constant:MPI_ERR_GROUP",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_OP",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_OP",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_TOPOLOGY",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_TOPOLOGY",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_DIMS",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_DIMS"
+      },
+      "semantic_test": "constant:MPI_ERR_DIMS",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_ARG",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_ARG",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_UNKNOWN",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_UNKNOWN"
+      },
+      "semantic_test": "constant:MPI_ERR_UNKNOWN",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_TRUNCATE",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_TRUNCATE",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_OTHER",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_OTHER",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_INTERN",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_INTERN",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_PENDING",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_ERR_PENDING",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "buffer_sentinel",
+      "standard_api_name": "MPI_BOTTOM",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed value/handle/sentinel",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-unavailable; throw unless reviewed translation is provided",
+        "binding": null
+      },
+      "semantic_test": "constant:MPI_BOTTOM",
+      "translation": "recognize before buffer conversion; pass provider sentinel via accessor",
+      "native_adapter": "implemented",
+      "native_type": "void *"
+    },
+    {
+      "class": "provider_integer",
+      "standard_api_name": "MPI_ERR_IN_STATUS",
+      "mpi5_binding": "retained C constant; provider value is obtained from the native adapter",
+      "provider_value": "obtained lazily from selected provider; never assume its numeric value",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_ERR_IN_STATUS"
+      },
+      "semantic_test": "constant:MPI_ERR_IN_STATUS",
+      "translation": "checked numeric conversion using provider-reported native C int size/signedness",
+      "native_adapter": "implemented",
+      "native_type": "int32_t"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_SIGNED_CHAR",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed handle",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_SIGNED_CHAR"
+      },
+      "semantic_test": "constant:MPI_SIGNED_CHAR",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_C_BOOL",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed handle",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_C_BOOL"
+      },
+      "semantic_test": "constant:MPI_C_BOOL",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    },
+    {
+      "class": "provider_handle",
+      "standard_api_name": "MPI_INT64_T",
+      "mpi5_binding": "retained C constant; provider value is never assumed portable",
+      "provider_value": "obtained lazily from selected native adapter; transport as exact typed handle",
+      "thread_mpi_2026_4": {
+        "status": "stable-tmpi-mapped",
+        "binding": "TMPI_INT64_T"
+      },
+      "semantic_test": "constant:MPI_INT64_T",
+      "translation": "typed opaque handle bytes through accessor; never numeric-convert",
+      "native_adapter": "implemented",
+      "native_type": "MPI_Datatype"
+    }
+  ]
+}

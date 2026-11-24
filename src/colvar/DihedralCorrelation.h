@@ -79,6 +79,8 @@ DihedralCorrelation<T>::DihedralCorrelation(const ActionOptions&ao):
   }
   addValueWithDerivatives();
   setNotPeriodic();
+  requestAtoms(atoms);
+  checkRead();
 }
 
 template <typename T>
@@ -134,6 +136,9 @@ void DihedralCorrelation<T>::calculateCV( const ColvarInput<T>& cvin, ColvarOutp
   // Calculate value
   const T diff = phi2 - phi1;
   cvout.values[0] = 0.5*(1.+std::cos(diff));
+  if( cvin.noderiv ) {
+    return;
+  }
   // Derivatives wrt phi1
   const T dval = 0.5*std::sin(diff);
   dd10 *= dval;

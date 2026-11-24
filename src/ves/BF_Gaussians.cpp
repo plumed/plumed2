@@ -93,7 +93,7 @@ bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20
 Because it was not specified, the width of the Gaussians is by default
 set to the sub-intervall length, i.e.\ $\sigma=0.5$.
 To e.g. enhance the overlap between neighbouring basis functions, it can be
-specified explicitely:
+specified explicitly:
 
 ```plumed
 bfG: BF_GAUSSIANS MINIMUM=0.0 MAXIMUM=10.0 ORDER=20 WIDTH=0.7

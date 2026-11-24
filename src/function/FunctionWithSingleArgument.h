@@ -133,28 +133,36 @@ void FunctionWithSingleArgument<T>::calculate() {
 
 template <class T>
 void FunctionWithSingleArgument<T>::apply() {
-  if( !getPntrToComponent(0)->forcesWereAdded() ) {
+  // Forces may have been added to any of the components (e.g. only to label.moment-3)
+  bool hasforces=false;
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    if( getPntrToComponent(i)->forcesWereAdded() ) {
+      hasforces=true;
+      break;
+    }
+  }
+  if( !hasforces ) {
     return ;
   }
 
   Value* myarg = getPntrToArgument(0);
-  if( ismatrix ) {
-    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+  for(unsigned i=0; i<getNumberOfComponents(); ++i) {
+    const Value* myval = getPntrToComponent(i);
+    if( !myval->forcesWereAdded() ) {
+      continue;
+    }
+    double force = myval->getForce();
+    if( ismatrix ) {
       unsigned k=0;
-      const Value* myval = getPntrToComponent(i);
-      double force = myval->getForce();
       unsigned ncols = myarg->getNumberOfColumns();
       for(unsigned n=0; n<myarg->getShape()[0]; ++n) {
-        for(unsigned j=0; j<myarg->getRowLength(i); ++j) {
+        const unsigned rowlen = myarg->getRowLength(n);
+        for(unsigned j=0; j<rowlen; ++j) {
           myarg->addForce( n*ncols+j, force*myval->getDerivative(k), false );
           ++k;
         }
       }
-    }
-  } else {
-    for(unsigned i=0; i<getNumberOfComponents(); ++i) {
-      const Value* myval = getPntrToComponent(i);
-      double force = myval->getForce();
+    } else {
       for(unsigned j=0; j<myarg->getNumberOfStoredValues(); ++j) {
         myarg->addForce( j, force*myval->getDerivative(j) );
       }

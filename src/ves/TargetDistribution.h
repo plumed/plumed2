@@ -35,7 +35,7 @@ namespace PLMD {
 
 /**
 \ingroup INHERIT
-Abstract base class for implenting new target distributions.
+Abstract base class for implementing new target distributions.
 */
 
 class Action;

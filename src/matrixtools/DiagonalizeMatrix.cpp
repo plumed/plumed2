@@ -22,6 +22,8 @@
 #include "MatrixOperationBase.h"
 #include "core/ActionRegister.h"
 
+#include <algorithm>
+
 //+PLUMEDOC ANALYSIS DIAGONALIZE
 /*
 Calculate the eigenvalues and eigenvectors of a square matrix
@@ -57,6 +59,15 @@ private:
   Matrix<double> mymatrix;
   std::vector<double> eigvals;
   Matrix<double> eigvecs;
+/// For each requested eigenpair that has forces: the index of the eigenpair in eigvecs,
+/// the force on the eigenvalue and a vector used to compute the forces from the eigenvector
+  struct ForceTerm {
+    unsigned ncol;
+    double evalForce;
+    bool hasEvecForce;
+    std::vector<double> w;
+  };
+  std::vector<ForceTerm> forceTerms;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -69,6 +80,8 @@ public:
   void prepare() override ;
 ///
   void calculate() override ;
+/// Prepare the quantities needed to compute the forces on the matrix elements
+  void apply() override ;
 ///
   double getForceOnMatrixElement( const unsigned& jrow, const unsigned& krow ) const override;
 };
@@ -159,8 +172,16 @@ void DiagonalizeMatrix::calculate() {
 
   // Retrieve the matrix from input
   retrieveFullMatrix( mymatrix );
-  // Now diagonalize the matrix
-  diagMat( mymatrix, eigvals, eigvecs );
+  // Now diagonalize the matrix. The forces on an eigenvector depend on all the eigenvectors,
+  // so they are all computed when derivatives are needed. Otherwise only the eigenpairs from
+  // the smallest requested one to the largest eigenvalue are computed, which is faster
+  // when only a few of the largest eigenvalues are requested (e.g. VECTORS=1)
+  if( doNotCalculateDerivatives() ) {
+    const unsigned maxvec=*std::max_element( desired_vectors.begin(), desired_vectors.end() );
+    diagMatRange( mymatrix, nvals-maxvec, nvals-1, eigvals, eigvecs );
+  } else {
+    diagMat( mymatrix, eigvals, eigvecs );
+  }
   // And set the eigenvalues and eigenvectors
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
     getPntrToComponent(2*i)->set( eigvals[ mymatrix.ncols()-desired_vectors[i]] );
@@ -172,29 +193,57 @@ void DiagonalizeMatrix::calculate() {
   }
 }
 
-double DiagonalizeMatrix::getForceOnMatrixElement( const unsigned& jrow, const unsigned& kcol ) const {
-  double ff = 0;
+void DiagonalizeMatrix::apply() {
+  if( doNotCalculateDerivatives() ) {
+    return;
+  }
+  // The derivative of eigenvector c with respect to element (j,k) of the matrix is
+  //   d v_c[n] / d A(j,k) = sum_{m!=c} v_m[n] v_m[j] v_c[k] / (lambda_c-lambda_m)
+  // so the force on (j,k) from the forces f on v_c is v_c[k]*w[j], with
+  //   w[j] = sum_{m!=c} v_m[j] (v_m.f) / (lambda_c-lambda_m)
+  // computing w once here costs O(N^2), instead of O(N^2) for each matrix element
+  const unsigned nvals=eigvals.size();
+  forceTerms.clear();
   for(unsigned i=0; i<desired_vectors.size(); ++i) {
-    // Deal with forces on eigenvalues
-    if( getConstPntrToComponent(2*i)->forcesWereAdded() ) {
-      unsigned ncol = mymatrix.ncols()-desired_vectors[i];
-      ff += getConstPntrToComponent(2*i)->getForce(0)*eigvecs(ncol,jrow)*eigvecs(ncol,kcol);
-    }
-    // And forces on eigenvectors
-    if( !getConstPntrToComponent(2*i+1)->forcesWereAdded() ) {
+    const bool evalForce=getConstPntrToComponent(2*i)->forcesWereAdded();
+    const bool evecForce=getConstPntrToComponent(2*i+1)->forcesWereAdded();
+    if( !evalForce && !evecForce ) {
       continue;
     }
-
-    unsigned ncol = mymatrix.ncols()-desired_vectors[i];
-    for(unsigned n=0; n<mymatrix.nrows(); ++n) {
-      double tmp2 = 0;
-      for(unsigned m=0; m<mymatrix.nrows(); ++m) {
-        if( m==ncol ) {
+    ForceTerm ft;
+    ft.ncol=nvals-desired_vectors[i];
+    ft.evalForce=( evalForce ? getConstPntrToComponent(2*i)->getForce(0) : 0.0 );
+    ft.hasEvecForce=evecForce;
+    if( evecForce ) {
+      const Value* evec=getConstPntrToComponent(2*i+1);
+      ft.w.assign(nvals,0.0);
+      for(unsigned m=0; m<nvals; ++m) {
+        if( m==ft.ncol ) {
           continue;
         }
-        tmp2 += eigvecs(m,n)*eigvecs(m,jrow)*eigvecs(ncol,kcol) / (eigvals[ncol]-eigvals[m]);
+        double vf=0;
+        for(unsigned n=0; n<nvals; ++n) {
+          vf += eigvecs(m,n)*evec->getForce(n);
+        }
+        vf /= (eigvals[ft.ncol]-eigvals[m]);
+        for(unsigned j=0; j<nvals; ++j) {
+          ft.w[j] += vf*eigvecs(m,j);
+        }
       }
-      ff += getConstPntrToComponent(2*i+1)->getForce(n) * tmp2;
+    }
+    forceTerms.push_back(std::move(ft));
+  }
+  MatrixOperationBase::apply();
+}
+
+double DiagonalizeMatrix::getForceOnMatrixElement( const unsigned& jrow, const unsigned& kcol ) const {
+  double ff = 0;
+  for(const auto & ft : forceTerms) {
+    // Forces on eigenvalues
+    ff += ft.evalForce*eigvecs(ft.ncol,jrow)*eigvecs(ft.ncol,kcol);
+    // Forces on eigenvectors
+    if( ft.hasEvecForce ) {
+      ff += ft.w[jrow]*eigvecs(ft.ncol,kcol);
     }
   }
   return ff;

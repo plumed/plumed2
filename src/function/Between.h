@@ -42,24 +42,24 @@ struct Between {
                     bool noderiv,
                     const View<const double> args,
                     FunctionOutput& funcout );
-#ifdef __PLUMED_HAS_OPENACC
+#ifdef _OPENACC
   void toACCDevice() const {
 #pragma acc enter data copyin(this[0:1])
     hist.toACCDevice();
   }
   void removeFromACCDevice() const {
     hist.removeFromACCDevice();
-#pragma acc exit data delete(order, this[0:1])
+#pragma acc exit data delete(this[0:1])
   }
-#endif // __PLUMED_HAS_OPENACC
+#endif // _OPENACC
 };
 
 void Between::registerKeywords(Keywords& keys) {
   keys.add("compulsory","LOWER","the lower boundary for this particular bin");
   keys.add("compulsory","UPPER","the upper boundary for this particular bin");
-  keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
+  keys.add("compulsory","SMEAR","0.5","the amount to smear the Gaussian for each value in the distribution");
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous function defined above. "
-           "The following provides information on the \\ref histogrambead that are available. "
+           "The following provides information on the kernel functions that are available. "
            "When this keyword is present you no longer need the LOWER, UPPER, SMEAR and KERNEL keywords.");
   keys.setValueDescription("scalar/vector/matrix","a function that is one if the input falls within a particular range and zero otherwise");
 }
@@ -69,7 +69,7 @@ void Between::read( Between& func, ActionWithArguments* action, FunctionOptions&
   if( action->getNumberOfArguments()!=1 ) {
     ActionWithVector* av = dynamic_cast<ActionWithVector*>( action );
     if( !av || (av && action->getNumberOfArguments()-av->getNumberOfMasks()!=1) ) {
-      action->error("should only be one argument to less_than actions");
+      action->error("should only be one argument to this action");
     }
   }
 

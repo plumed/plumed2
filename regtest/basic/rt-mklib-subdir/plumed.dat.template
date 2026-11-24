@@ -1,0 +1,11 @@
+# library built by "plumed mklib ../code/Distance2.cpp ../code/Distance2b.cpp" in plumed_regtest_before
+LOAD FILE=./Distance3.__SOEXT__
+# compiled at runtime from a file in a subdirectory
+LOAD FILE=code/Distance4.cpp
+
+d2: DISTANCE2 ATOMS=1,2
+d4: DISTANCE4 ATOMS=1,2
+
+PRINT FILE=COLVAR ARG=d2,d4
+
+ENDPLUMED

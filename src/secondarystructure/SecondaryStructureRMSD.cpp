@@ -19,17 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "SecondaryStructureBase.h"
+#include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
-#include "tools/RMSD.h"
 
 //+PLUMEDOC MCOLVAR SECONDARY_STRUCTURE_RMSD
 /*
-Calclulate the RMSD between segments of a protein and a reference structure of interest
+Calculate the RMSD between segments of a protein and a reference structure of interest
 
 This action is used in the shortcuts [ALPHARMSD](ALPHARMSD.md), [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md).  It calculates a
-vector of [RMSD](RMSD.md) values between a single reference multiple configurations and the instantaneous
-positions of various groups of atoms.  For example, in the following input we define a single set of reference
+vector of [RMSD](RMSD.md) values between one or more reference configurations and the instantaneous
+positions of various groups of atoms.  For example, in the following input we define a single reference
 set of coordinates for 3 atoms.
 
 ```plumed
@@ -44,14 +43,32 @@ PRINT ARG=c1 FILE=colvar
 ```
 
 A four dimensional vector is then returned that contains the RMSD distances between the 4 sets of 3 atoms that were specified using the `SEGMENT` keywords
-and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the the number of vectors output
-is equal to the number of times the `STRUCTURE` keyword is used.  Further note that the indices specified to the SEGMENT keywords give the indices in the list
-of atoms specified by the ATOMS keyword.  `SEGMENT1=0,1,2` in the above input is measuring the distance between the instaneous positions of atoms 13, 14 and 15
-and the reference structure.
+and the reference coordinates.  Notice that you can use multiple instances of the `STRUCTURE` keyword.  In general the number of vectors output
+is equal to the number of times the `STRUCTURE` keyword is used: if there is more than one, the vectors are the components `struct-1`, `struct-2`, ...
+Further note that the indices specified to the SEGMENT keywords give the indices in the list
+of atoms specified by the ATOMS keyword.  `SEGMENT1=0,1,2` in the above input is measuring the distance between the instantaneous positions of atoms 13, 14 and 15
+and the reference structure. All the segments must contain the same number of atoms, which must be between 2 and 30.
+The coordinates in STRUCTURE are in Angstrom. TYPE selects the alignment that is used to compute the [RMSD](RMSD.md): OPTIMAL, OPTIMAL-FAST or SIMPLE.
 
 ## Periodic boundary conditions
 
-If you turn off periodic boundary conditions by using the NOPBC flag as shown below:
+Unless the NOPBC flag is used, each segment is made whole before computing its distance from the reference: the atoms are taken in the order given
+with SEGMENT, and each atom is moved to the periodic image that is closest to the previous one, as is done by [WHOLEMOLECULES](WHOLEMOLECULES.md).
+
+If the `ALIGN_STRANDS` flag is used the segments must contain 30 atoms, which are the two strands of a beta sheet of 15 atoms each
+(the atoms N, CA, CB, C and O of three residues).  The two strands are made whole separately, as the last atom of the first strand
+is not bonded to the first atom of the second strand. The second strand is then moved to the periodic image where its 7th atom
+(the 22nd of the segment, which is the CA of its central residue) is closest to the 7th atom of the first strand. In other words the 22nd atom is moved to
+
+$$
+\mathbf{x}_{22} = \mathbf{x}_7 + d_{\textrm{pbc}}( \mathbf{x}_{22} - \mathbf{x}_7 )
+$$
+
+where $d_{\textrm{pbc}}$ is the distance evaluated with the minimum image convention, and the atoms from the 16th to the 30th are translated by the same vector.
+This treatment is designed for making sure that the two strands of the [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md)
+sheets are not broken by the periodic boundaries.
+
+The periodic boundary conditions are not used at all if you use the NOPBC flag as shown below:
 
 ```plumed
 c1: SECONDARY_STRUCTURE_RMSD ...
@@ -64,27 +81,11 @@ c1: SECONDARY_STRUCTURE_RMSD ...
 PRINT ARG=c1 FILE=colvar
 ```
 
-the distances between in the instaneous structure are evaluated in a way that does not take the periodic boundary conditions
-into account.  Whenver this flag is __not__ present the distances in the instaneous structure are evaluated in a way that takes the periodic boundary conditions
-into account.
-
-If you use the `ALIGN_STRANDS` flag to evaluate the distances in a way that takes the periodic boundary conditions into accounts means that
-calculating the distance between the positions of the 7th and 22nd atoms ($\mathbf{x}_7$ and $\mathbf{x}_{22}$) of the instanenous structures
-using the periodic boundary conditions.  The 22 atom is the repositioned at:
-
-$$
-\mathbf{x}_{22} = \mathbf{x}_7 + ( \mathbf{x}_{22} - \mathbf{x}_7 )
-$$
-
-where the difference in the second term on the right of the equality sign is evaluated using the periodic boundary conditions. New positions are then determined
-for atoms 16 through 30 by adding the difference (evaluated without PBC) between the new position for atom 22 after the above transformation has been perfomed and the
-original position of this atom.  This treatment is designed for making sure that the two strands of the [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md)
-sheets are not broken by the periodic boundaries.
-
 ## Working with beta sheet like structures
 
-As discussed in the documentation for [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) using the STRANDS_KEYWORD cutoff can speed up the calculation
-dramatically.  The reason this keyword gives such dramatric speed ups is illustrated by the example input:
+As discussed in the documentation for [ANTIBETARMSD](ANTIBETARMSD.md) and [PARABETARMSD](PARABETARMSD.md) the STRANDS_CUTOFF keyword (1 nm by default) speeds up the calculation
+dramatically.  The reason it gives such dramatic speed ups is illustrated by the example input, which is the one that these shortcuts used before
+the number of segments was computed by a single action (the vectors below are still in the expanded input, and are computed if they are used):
 
 ```plumed
 ab_cut_dists: DISTANCE ...
@@ -103,17 +104,17 @@ ab_rmsd: SECONDARY_STRUCTURE_RMSD ...
    SEGMENT5=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59
    STRUCTURE1=2.263,-3.795,1.722,2.493,-2.426,2.263,3.847,-1.838,1.761,1.301,-1.517,1.921,0.852,-1.504,0.739,0.818,-0.738,2.917,-0.299,0.243,2.748,-1.421,-0.076,3.757,0.273,1.68,2.854,0.902,1.993,3.888,0.119,2.532,1.813,0.683,3.916,1.68,1.58,3.94,0.395,-0.394,5.011,1.63,-1.459,4.814,0.982,-2.962,3.559,-1.359,-2.439,2.526,-2.287,-1.189,3.006,-3.087,-2.081,1.231,-1.52,-1.524,1.324,-0.409,-2.326,0.037,-2.095,-1.858,-1.269,-1.554,-3.053,-2.199,-1.291,-0.869,-1.949,-2.512,-1.255,-2.07,-3.71,0.326,-2.363,-2.072,1.405,-2.992,-2.872,2.699,-2.129,-2.917,1.745,-4.399,-2.33,1.899,-4.545,-1.102
 ...
-ab_ltu: LESS_THAN ARG=ab_rmsd SWITCH={RATIONAL R_0=0.1 D_0=0.0 NN=8 MM=12} MASK=ab_cut
+ab_ltu: LESS_THAN ARG=ab_rmsd SWITCH={RATIONAL R_0=0.1 D_0=0.0 NN=8 MM=12 D_MAX=1.77828} MASK=ab_cut
 ab_lt: CUSTOM ARG=ab_ltu,ab_cut FUNC=x*y PERIODIC=NO
 ab: SUM ARG=ab_lt PERIODIC=NO
 PRINT ARG=ab FILE=colvar
 ```
 
 The input above illustrates the input that is used by the shortcut that computes the [ANTIBETARMSD](ANTIBETARMSD.md). You can see that the distances between the atoms on the two strands of the
-beta sheet are computed in a [DISTANCE](DISTANCE.md) action before we computed the SECONDARY_STRUCTURE_RMSD values.  These distances are then transformed by a Heavyside function that is 1 if
+beta sheet are computed in a [DISTANCE](DISTANCE.md) action before we computed the SECONDARY_STRUCTURE_RMSD values.  These distances are then transformed by a Heaviside function that is 1 if
 the distance is less than 1 nm and zero otherwise.  This vector of ones and zeros is then fed into the SECONDARY_STRUCTURE_RMSD action as a mask.  By doing this we ensure that SECONDARY_STRUCTURE_RMSD
-values are only computed for parts of the strand that are close together. This avoids performing unecessarily expensive calculations and is also a reasonable thing to do as if the two strands are more than
-1 nm appart the residues in question are not at all similar to a beta sheet structure.
+values are only computed for parts of the strand that are close together; the elements of the vector that are not computed are zero. This avoids performing unnecessarily expensive calculations and is also a reasonable thing to do as if the two strands are more than
+1 nm apart the residues in question are not at all similar to a beta sheet structure.
 
 */
 //+ENDPLUMEDOC
@@ -121,67 +122,15 @@ values are only computed for parts of the strand that are close together. This a
 namespace PLMD {
 namespace secondarystructure {
 
-class SecondaryStructureRMSDInput {
-/// The list of reference configurations
-  std::vector<RMSD> myrmsd;
-public:
-  static void registerKeywords( Keywords& keys ) {
-    keys.setDisplayName("SECONDARY_STRUCTURE_RMSD");
-  }
-  static constexpr bool needsType=true;
-/// The number of atoms
-  std::size_t natoms;
-/// The number of structures
-  std::size_t nstructures;
-/// The number of indices per task
-  std::size_t nindices_per_task;
-/// Are we operating without periodic boundary conditions
-  bool nopbc;
-/// Variables for strands cutoff
-  bool align_strands;
-/// The atoms involved in each of the secondary structure segments
-  Matrix<unsigned> colvar_atoms;
-//   void toACCDevice()const {
-// #pragma acc enter data copyin(this[0:1], myrmsd[0:nstructures],natoms,nstructures,nopbc,align_strands)
-//     colvar_atoms.toACCDevice();
-//   }
-//   void removeFromACCDevice() const {
-//     colvar_atoms.removeFromACCDevice();
-// #pragma acc exit data delete(align_strands,nopbc,nstructures,natoms,myrmsd[0:nstructures],this[0:1])
-
-//   }
-  static void calculateDistance( unsigned n, bool noderiv, const SecondaryStructureRMSDInput& actiondata, View<Vector> pos, ColvarOutput<double>& output );
-  void setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure );
-  SecondaryStructureRMSDInput& operator=( const SecondaryStructureRMSDInput& m ) {
-    natoms = m.natoms;
-    nstructures = m.nstructures;
-    nindices_per_task = m.nindices_per_task;
-    nopbc = m.nopbc;
-    align_strands = m.align_strands;
-    colvar_atoms=m.colvar_atoms;
-    for(unsigned i=0; i<m.myrmsd.size(); ++i) {
-      std::vector<Vector> mystruct( m.myrmsd[i].getReference() );
-      setReferenceStructure( m.myrmsd[i].getMethod(), 0.0, mystruct );
-    }
-    return *this;
-  }
-};
-
 typedef SecondaryStructureBase<SecondaryStructureRMSDInput> colv;
 PLUMED_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD")
-//_REGISTER_ACTION(colv,"SECONDARY_STRUCTURE_RMSD_CPU");
-//typedef AccelerableShortcut<colv> shortcut;
-//_REGISTER_ACTION(shortcut,"SECONDARY_STRUCTURE_RMSD");
 
 void SecondaryStructureRMSDInput::setReferenceStructure( const std::string& type, double bondlength, std::vector<Vector>& structure ) {
-  Vector center;
+  if( !myrmsd.empty() && structure.size()!=natoms ) {
+    plumed_merror("input structures have a different number of atoms");
+  }
+  // RMSD::set puts the center of the reference in the origin
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
-  for(unsigned i=0; i<structure.size(); ++i) {
-    center+=structure[i]*align[i];
-  }
-  for(unsigned i=0; i<structure.size(); ++i) {
-    structure[i] -= center;
-  }
   RMSD newrmsd;
   newrmsd.clear();
   newrmsd.set(align,displace,structure,type,true,true);
@@ -195,7 +144,10 @@ void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
     const SecondaryStructureRMSDInput& actiondata,
     const View<Vector> pos,
     ColvarOutput<double>& output ) {
-  std::vector<Vector> myderivs( actiondata.natoms );
+  // RMSD::calculate needs a std::vector for the derivatives: one per thread is reused,
+  // instead of allocating it for every segment and structure
+  thread_local std::vector<Vector> myderivs;
+  myderivs.resize( actiondata.natoms );
   output.values[n] = actiondata.myrmsd[n].calculate( pos, myderivs, false );
 
   if( noderiv ) {
@@ -205,7 +157,7 @@ void SecondaryStructureRMSDInput::calculateDistance( unsigned n,
   v.zero();
   for(unsigned j=0; j<pos.size(); ++j) {
     output.derivs[n][j] = myderivs[j];
-    v +=  (-1.0*Tensor( pos[j], myderivs[j] ));
+    v -= Tensor( pos[j], myderivs[j] );
   }
   output.virial.set( n, v );
 }

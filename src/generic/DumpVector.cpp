@@ -191,6 +191,7 @@ void DumpVector::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","FILE","density","the file on which to write the vetors");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.addFlag("PRINT_ONE_FILE",false,"output vectors one after the other in a single file");
+  keys.addFlag("DO_AFTER_FINAL_STEP",false,"output the vector at the end of the trajectory even if the trajectory has a length that is not a multiple of the stride");
 }
 
 DumpVector::DumpVector(const ActionOptions&ao):

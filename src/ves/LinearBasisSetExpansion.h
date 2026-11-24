@@ -104,9 +104,12 @@ private:
 public:
   ~LinearBasisSetExpansion();
   //
+  // Preserve the established by-value accessor contracts in this public API.
+  // cppcheck-suppress returnByReference
   std::vector<Value*> getPntrsToArguments() const {
     return args_pntrs_;
   }
+  // cppcheck-suppress returnByReference
   std::vector<BasisFunctions*> getPntrsToBasisFunctions() const {
     return basisf_pntrs_;
   }
@@ -120,6 +123,7 @@ public:
   unsigned int getNumberOfArguments() const {
     return nargs_;
   };
+  // cppcheck-suppress returnByReference
   std::vector<unsigned int> getNumberOfBasisFunctions() const {
     return nbasisf_;
   };
@@ -208,6 +212,7 @@ public:
   void writeTargetDistProjGridToFile(const std::vector<std::string>&, OFile&, const bool append=false) const;
   void writeTargetDistributionToFile(const std::string&) const;
   //
+  // cppcheck-suppress returnByReference
   std::vector<unsigned int> getGridBins() const {
     return grid_bins_;
   }

@@ -1,0 +1,29 @@
+type=driver
+arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
+export PLUMED_STACK_TRACE=no
+# Without a GPU, a correct input must stop with a clear error (not a crash or a
+# CUDA exception). The GPUs are hidden with CUDA_VISIBLE_DEVICES (HIP_VISIBLE_DEVICES for
+# the HIP build), so that the test
+# gives the same result on machines with and without GPUs (and without a driver).
+# Each line of the table below is: name|action|keywords
+
+plumed_regtest_after() {
+  rm -f errors
+  while IFS='|' read -r name action keywords ; do
+    printf 'LOAD FILE=../../../../CudaCoordination.so\ngpu: %s %s\nPRINT ARG=gpu FILE=colvar_%s\n' "$action" "$keywords" "$name" > nogpu_$name.dat
+    rc=0
+    CUDA_VISIBLE_DEVICES=-1 HIP_VISIBLE_DEVICES=-1 $plumed driver --plumed nogpu_$name.dat --ixyz traj-nopbc.xyz > nogpu_$name.out 2> nogpu_$name.err || rc=$?
+    if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "no GPU available" nogpu_$name.out nogpu_$name.err ; then
+      echo "$name: stopped with an error" >> errors
+    else
+      echo "$name: DID NOT STOP PROPERLY (exit code $rc)" >> errors
+    fi
+  done <<'EOT'
+self|CUDACOORDINATION|GROUPA=1-108 NOPBC R_0=1.1
+self_dmax|CUDACOORDINATION|GROUPA=1-108 NOPBC R_0=1.1 D_MAX=2.0 NL_CUTOFF=2.5
+dual|CUDACOORDINATION|GROUPA=1-10 GROUPB=11-108 NOPBC R_0=1.1
+pair|CUDACOORDINATION|GROUPA=1-10 GROUPB=11-20 PAIR NOPBC R_0=1.1
+float|CUDACOORDINATIONFLOAT|GROUPA=1-108 NOPBC R_0=1.1
+EOT
+}
+extra_files="../../trajectories/traj-nopbc.xyz"

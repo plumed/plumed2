@@ -1,0 +1,2 @@
+DUMPGRID at the end of the run of an instantaneous RDF: exit code 1
+ERROR in input to action DUMPGRID : the grid r was never calculated. With STRIDE=0 (the default) the grid is written at the end of the run, so it must be accumulated over the trajectory (e.g. HISTOGRAM, or RDF with CLEAR=0) or calculated at every step for another action. Use STRIDE to write an instantaneous grid 
