@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src/maketools"))
-from module_header import check_obsolete as check_obsolete, read_header
+from module_header import check_obsolete as check_obsolete, header_field as header_field, read_header
 
 
 def read_metadata(path):

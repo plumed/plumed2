@@ -31,8 +31,27 @@ needed; it is generated build support rather than a selectable module. Cycles
 among infrastructure modules are permitted. Use `use: []` for no dependencies.
 Makefiles still contain executable build rules and module-specific flags.
 
-For portable readers, both build fields have a deliberately restricted syntax:
-exactly one top-level line `type: VALUE` and one `use: [name, other-name]`, with
+Two optional fields say how a module is compiled and where it may be placed:
+
+```yaml
+toolchain: cuda
+placement: any
+```
+
+`toolchain` is `cxx` (the default: every source is compiled by the C++ compiler)
+or `cuda`: the `.cu` files are compiled by nvcc, or by hipcc for AMD GPUs when
+PLUMED is configured with `--enable-hip`, and the `.cpp` files by the C++
+compiler. Either way the library is linked by the C++ compiler, so such a module
+can go into the kernel. `placement` is `any` (the default: into the kernel with
+`--enable-modules`, or as an extension against an installed base) or `extension`
+(only as an extension). `--enable-modules=all` enables neither modules with a
+toolchain other than `cxx` nor `placement: extension` modules; a CUDA module is
+enabled only by name (`--enable-modules=+gpu_cuda_hip`), and only then does
+configure look for nvcc or hipcc. The CMake build never compiles them.
+
+For portable readers, the build fields have a deliberately restricted syntax:
+exactly one top-level line `type: VALUE` and one `use: [name, other-name]`, at
+most one `toolchain: VALUE` and one `placement: VALUE`, with
 one space after the colon and comma, no quotes, trailing comments, aliases or
 multiline forms. Dependency identifiers match `[a-z][a-z0-9_-]*`. The shared
 POSIX reader is `src/maketools/module-header`; Python and CMake enforce the same

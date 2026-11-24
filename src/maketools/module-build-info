@@ -22,7 +22,7 @@ build=$({
   # Generated config/version.h is excluded to avoid timestamps/git metadata.
   # Hash each file (name + content) in a few batched processes rather than
   # forking once per file: there are thousands of sources.
-  (cd ..; find . -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name Makefile \) \
+  (cd ..; find . -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name '*.cu' -o -name '*.cuh' -o -name Makefile \) \
       ! -path './config/version.h' -print0 | sort -z | xargs -0 $hash)
 } | $hash | awk '{print $1}')
 {
