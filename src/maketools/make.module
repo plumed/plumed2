@@ -80,7 +80,7 @@ clean:
 # build links for this module
 links: Makefile $(wildcard module.yml) ../maketools/module-header ../maketools/module-header.awk
 	@echo Verify modules and create links in $(CURDIR)
-	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
+	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir || exit 1 ; ../maketools/makelinks.sh $$dir || exit 1 ;  done
 
 .PHONY: cppcheck
 cppcheck:
