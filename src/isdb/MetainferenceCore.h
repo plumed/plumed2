@@ -106,7 +106,9 @@ public:
       first_=(first_+1)%buf_.size();
       if(max_<v) {
         max_=v;
-      } else if(old==max_) {
+      } else if(!(old<max_)) {
+        // Only a strictly smaller removed sample guarantees that the cached
+        // maximum remains in the buffer; otherwise rescan the stored values.
         recomputeMax();
       }
     } else {
@@ -126,7 +128,9 @@ public:
     buf_[first_]=v;
     if(n_<=1||max_<v) {
       max_=v;
-    } else if(old==max_) {
+    } else if(!(old<max_)) {
+      // The maximum is copied from a stored sample. A strictly smaller old
+      // value cannot remove it; otherwise rescan, without a tolerance test.
       recomputeMax();
     }
   }
