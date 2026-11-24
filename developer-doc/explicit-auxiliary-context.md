@@ -29,3 +29,7 @@ repeated full calculations at the same numerical step, keep their semantics.
 
 The host supplies context explicitly rather than inferring it from the numerical
 step: an existing caller can intentionally repeat full calculations at one step.
+
+External integrations that reject API versions above a fixed maximum need their
+accepted range updated to include 14. The maintained LAMMPS integration patch
+includes this change; its existing MD commands and MPI injection are unchanged.
