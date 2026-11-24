@@ -31,7 +31,9 @@ def read_header(path, text=None):
         elif re.fullmatch(r"placement: (any|extension)", line):
             value = line[11:]
         else:
-            raise ValueError(f"{path}: invalid type/use/toolchain/placement header syntax: {line}")
+            raise ValueError(
+                f"{path}: invalid type/use/toolchain/placement header syntax: {line}"
+            )
         if key in fields:
             raise ValueError(f"{path}: duplicate {key}")
         fields[key] = value

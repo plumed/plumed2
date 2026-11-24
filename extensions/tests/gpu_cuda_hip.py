@@ -30,9 +30,7 @@ registration = (prefix / "lib/plumed/plugins/gpu_cuda_hip.plumed").read_text()
 assert "variant cuda" + args.cuda_version + "\n" in registration
 for mode in ("autoload", "explicit"):
     env = dict(environment, PLUMED_AUTOLOAD="1" if mode == "autoload" else "0")
-    command = [program] + (
-        [] if mode == "autoload" else ["--load-module=gpu_cuda_hip"]
-    )
+    command = [program] + ([] if mode == "autoload" else ["--load-module=gpu_cuda_hip"])
     subprocess.run(
         [*command, "modules", "-q", "--has", "gpu_cuda_hip"],
         env=env,

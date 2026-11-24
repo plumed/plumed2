@@ -58,6 +58,7 @@ for name in modules:
     if name in builtin:
         parser.error(f"{name} is already built into the selected base")
 
+
 def closure(name, seen):
     if name in seen or name in builtin or name not in catalog["modules"]:
         return seen

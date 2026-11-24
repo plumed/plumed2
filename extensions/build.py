@@ -472,9 +472,7 @@ for name in order:
             ]
         )
     registration = work / f"{name}.plumed"
-    variant = (
-        f"variant {cuda_settings()['variant']}\n" if toolchain == "cuda" else ""
-    )
+    variant = f"variant {cuda_settings()['variant']}\n" if toolchain == "cuda" else ""
     registration.write_text(
         f"module {name}\nbuild {build_id}\n{variant}library ../../{library.name}\n"
         + "requires "
