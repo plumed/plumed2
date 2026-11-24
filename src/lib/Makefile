@@ -52,14 +52,16 @@ SRC_MAIN=../main/main.cpp
 
 # source for plumed kernel
 # everything else
-SRC_KERNEL := $(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
+# (and the .cu files of the modules with toolchain cuda)
+SRC_KERNEL := $(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; ls $$dir/*.cu 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
 
 # corresponding objects:
 OBJ_WRAPPER := ../wrapper/PlumedStatic.o
 OBJ_DYNAMIC_WRAPPER := ../wrapper/Plumed.o
 OBJ_MAIN := $(SRC_MAIN:.cpp=.o)
 XXX := $(SRC_KERNEL:.cpp=.o)
-OBJ_KERNEL := $(XXX:.c=.o)
+YYY := $(XXX:.cu=.o)
+OBJ_KERNEL := $(YYY:.c=.o)
 ALL_OBJ := $(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # when calling install-build, libraries in install should be built.
@@ -550,7 +552,7 @@ ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
 endif
 # $(notdir $@) is required to obtain the plain name (without `install/`)
-	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(KERNEL_LDFLAGS) $(DYNAMIC_LIBS)
 
 $(PLUMED_SHARED_OBJ): $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)

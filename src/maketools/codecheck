@@ -38,8 +38,8 @@ if [[ $do_modified = true ]]; then
   # and making the list working from anywhere
   files=$(
     git diff-index --diff-filter=ACMR "$baserev" |
-      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}
-           /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
+      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.cu|\.cuh|\.inc\.in)/{print basedir "/" $6}
+           /plugins.*(\.h|\.cpp|\.cu|\.cuh|\.inc\.in)/{print basedir "/" $6}'
   )
 elif [ $do_local == true ]; then
   # sadly *.{cpp,h,cu,cuh} brings errors if any combination is not present
@@ -47,6 +47,8 @@ elif [ $do_local == true ]; then
 else
   files="$(
    ls ./*/*.{h,cpp}
+   # the CUDA sources of the modules with toolchain cuda
+   ls ./*/*.{cu,cuh} 2>/dev/null
    ls ../plugins/*/src/*.{h,cpp,cu,cuh}
   )"
 fi

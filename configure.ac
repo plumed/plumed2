@@ -309,7 +309,11 @@ AC_ARG_ENABLE([modules],
        AC_MSG_NOTICE([Enabling all optional modules])
        rm -f src/*.off src/*.off
        for modules_file in src/*/module.yml; do
-         if test "$(src/maketools/module-header type "$modules_file")" = default-off; then
+         # modules compiled by another toolchain (e.g. nvcc) or built only as extensions
+         # are enabled only by name (+name)
+         if test "$(src/maketools/module-header type "$modules_file")" = default-off &&
+            test "$(src/maketools/module-header toolchain "$modules_file")" = cxx &&
+            test "$(src/maketools/module-header placement "$modules_file")" = any; then
            touch "${modules_file%/module.yml}.on"
          fi
        done ;;
@@ -439,6 +443,22 @@ dnl NB: -DACCEL is passed to KEnRef's CMake only when this variable is SET (see 
 dnl empty does not select a fixed tier -- it lets KEnRef auto-detect this machine's SIMD, as it does for
 dnl its own builds. Set it explicitly for a portable binary (e.g. KENREF_ACCEL=AVX2_256).
 AC_ARG_VAR([KENREF_ACCEL],[ACCEL/SIMD width to build the fetched kenref_core with (default: auto-detect this machine's SIMD)])
+
+# modules with "toolchain: cuda" in module.yml (e.g. --enable-modules=+gpu_cuda_hip)
+PLUMED_CONFIG_ENABLE([hip],[compile the modules with toolchain cuda with hipcc, for AMD GPUs, instead of nvcc],[no])
+AC_ARG_WITH([cudart],
+  AS_HELP_STRING([--with-cudart=static|shared],[CUDA runtime linked into the kernel when it contains modules with toolchain cuda (not with --enable-hip), default: static]),
+  [case "$withval" in
+   (static|shared) ;;
+   (*) AC_MSG_ERROR([wrong argument to --with-cudart: $withval (static or shared)]) ;;
+   esac],
+  [with_cudart=static])
+AC_ARG_VAR(NVCC,[CUDA compiler for the modules with toolchain cuda - default: nvcc])
+AC_ARG_VAR(NVCC_CCBIN,[host compiler given to nvcc with -ccbin - default: CXX without ccache])
+AC_ARG_VAR(HIPCC,[HIP compiler for the modules with toolchain cuda with --enable-hip - default: hipcc])
+AC_ARG_VAR(HIP_ARCHITECTURES,[GPU targets for hipcc, e.g. "gfx90a gfx942" - default: native (the GPUs of the machine that compiles)])
+AC_ARG_VAR(NVCCFLAGS,[additional flags for nvcc or hipcc, e.g. -arch=sm_80])
+AC_ARG_VAR(CUDA_LIBDIR,[directory of the CUDA runtime library - default: asked to nvcc; with --enable-hip, the directory of the HIP runtime - default: the lib directory beside the bin directory of hipcc])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -1436,6 +1456,152 @@ fi
 # this is necessary in many MPI implementations
 # I leave it by default, since it seems harmless
 AC_DEFINE([_REENTRANT])
+
+#### Modules with "toolchain: cuda" in module.yml ####
+# Only when such a module is enabled: their .cu files are compiled by nvcc (or hipcc with
+# --enable-hip); the kernel is still linked by the C++ compiler (LDSHARED), with the GPU runtime
+# library. No Python is needed. The flags of the C++ compiler are translated by src/maketools/cuda-flags.
+CUDA_COMPILER=
+CUDA_FLAGS=
+KERNEL_LDFLAGS=
+cuda_modules=
+for modules_file in src/*/module.yml; do
+  modules_dir=${modules_file%/module.yml}
+  modules_name=${modules_dir#src/}
+  case "$(src/maketools/module-header type "$modules_file")" in
+  (always) modules_enabled=yes ;;
+  (default-on) if test -f "$modules_dir.off" ; then modules_enabled=no ; else modules_enabled=yes ; fi ;;
+  (*) if test -f "$modules_dir.on" ; then modules_enabled=yes ; else modules_enabled=no ; fi ;;
+  esac
+  test "$modules_enabled" = yes || continue
+  if test "$(src/maketools/module-header placement "$modules_file")" = extension ; then
+    AC_MSG_ERROR([module $modules_name can only be built as an extension, against an installed base (--with-extension-base, see extensions/README.md)])
+  fi
+  if test "$(src/maketools/module-header toolchain "$modules_file")" = cuda ; then
+    cuda_modules="$cuda_modules $modules_name"
+  fi
+done
+
+if test -n "$cuda_modules" ; then
+  AC_MSG_NOTICE([Modules compiled with the cuda toolchain:$cuda_modules])
+  cuda_cxxflags=
+  for cuda_flag in $CXXFLAGS $OPENMP_CXXFLAGS ; do
+    cuda_cxxflags="$cuda_cxxflags $cuda_flag"
+  done
+  if test "$hip" = true ; then
+    test -n "$HIPCC" || HIPCC=hipcc
+    AC_MSG_CHECKING([for the HIP compiler])
+    cuda_path=`command -v "$HIPCC"`
+    if test -z "$cuda_path" ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([HIPCC=$HIPCC not found: it is needed by the modules$cuda_modules (set HIPCC, or disable them)])
+    fi
+    AC_MSG_RESULT([$cuda_path])
+    CUDA_COMPILER="$HIPCC"
+    test -n "$HIP_ARCHITECTURES" || HIP_ARCHITECTURES=native
+    CUDA_FLAGS="-x hip"
+    for cuda_flag in $HIP_ARCHITECTURES ; do
+      CUDA_FLAGS="$CUDA_FLAGS --offload-arch=$cuda_flag"
+    done
+    CUDA_FLAGS="$CUDA_FLAGS "`src/maketools/cuda-flags compile hipcc $cuda_cxxflags | tr '\n' ' '`
+    # hipcc does not use the C++ compiler, that may be an MPI wrapper
+    if grep -q __PLUMED_HAS_MPI confdefs.h ; then
+      cuda_mpi=`src/maketools/cuda-flags mpi-include $CXX` ||
+        AC_MSG_ERROR([cannot find the directory of mpi.h for hipcc])
+      CUDA_FLAGS="$CUDA_FLAGS $cuda_mpi"
+    fi
+    if test -z "$CUDA_LIBDIR" ; then
+      CUDA_LIBDIR=`dirname "$cuda_path"`
+      CUDA_LIBDIR=`cd "$CUDA_LIBDIR/../lib" 2>/dev/null && pwd`
+    fi
+    # the HIP runtime is a shared library
+    cuda_libs="-L$CUDA_LIBDIR -lamdhip64"
+    cuda_runtime="shared HIP runtime (amdhip64)"
+  else
+    test -n "$NVCC" || NVCC=nvcc
+    AC_MSG_CHECKING([for the CUDA compiler])
+    cuda_path=`command -v "$NVCC"`
+    if test -z "$cuda_path" ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([NVCC=$NVCC not found: it is needed by the modules$cuda_modules (set NVCC, use --enable-hip for AMD GPUs, or disable them)])
+    fi
+    AC_MSG_RESULT([$cuda_path])
+    CUDA_COMPILER="$NVCC"
+    test -n "$NVCC_CCBIN" || NVCC_CCBIN=`src/maketools/cuda-flags host-compiler $CXX`
+    CUDA_FLAGS="-ccbin $NVCC_CCBIN "`src/maketools/cuda-flags compile nvcc $cuda_cxxflags | tr '\n' ' '`
+    if test -z "$CUDA_LIBDIR" ; then
+      for cuda_dir in `src/maketools/cuda-flags libdirs $NVCC` ; do
+        if test -f "$cuda_dir/libcudart_static.a" || test -f "$cuda_dir/libcudart.so" ; then
+          CUDA_LIBDIR="$cuda_dir"
+          break
+        fi
+      done
+    fi
+    test -n "$CUDA_LIBDIR" || AC_MSG_ERROR([cannot find the CUDA runtime library: set CUDA_LIBDIR])
+    # The static runtime (the default, as nvcc does) lets the kernel load also on machines
+    # without the CUDA toolkit or a GPU: the driver is opened at the first use.
+    if test "$with_cudart" = static ; then
+      cuda_libs="-L$CUDA_LIBDIR -lcudart_static -ldl -lrt -lpthread"
+      cuda_runtime="static CUDA runtime"
+    else
+      cuda_libs="-L$CUDA_LIBDIR -lcudart"
+      cuda_runtime="shared CUDA runtime"
+    fi
+  fi
+  # no -L for the directories that the linker searches anyway
+  case "$CUDA_LIBDIR" in
+  (/usr/lib|/usr/lib/|/usr/lib64|/usr/lib64/|/lib|/lib64|/usr/lib/*-linux-gnu|/usr/lib/*-linux-gnu/)
+    cuda_libs=`echo "$cuda_libs" | sed "s|-L$CUDA_LIBDIR ||"` ;;
+  esac
+  CUDA_FLAGS=`echo $CUDA_FLAGS $NVCCFLAGS`
+  AC_MSG_NOTICE([Using CUDA_COMPILER='$CUDA_COMPILER'])
+  AC_MSG_NOTICE([Using CUDA_FLAGS='$CUDA_FLAGS'])
+  AC_MSG_CHECKING([whether $CUDA_COMPILER compiles and the C++ compiler links with the $cuda_runtime])
+  rm -f conftest*
+  cat > conftest_cuda.cu <<_PLUMED_CUDA_EOF
+#ifdef __HIP__
+#include <hip/hip_runtime.h>
+#define cudaGetDeviceCount hipGetDeviceCount
+#else
+#include <cuda_runtime.h>
+#endif
+__global__ void plumed_conftest_kernel(int*x) { *x = 1; }
+int plumed_conftest_cuda() {
+  int n = 0;
+  plumed_conftest_kernel<<<1, 1>>>(nullptr);
+  return static_cast<int>(cudaGetDeviceCount(&n));
+}
+_PLUMED_CUDA_EOF
+  cat > conftest_main.cpp <<_PLUMED_CUDA_EOF
+int plumed_conftest_cuda();
+int main() { return plumed_conftest_cuda(); }
+_PLUMED_CUDA_EOF
+  cuda_ok=no
+  if eval "$CUDA_COMPILER $CUDA_FLAGS $CPPFLAGS -c conftest_cuda.cu -o conftest_cuda.o" >conftest_cuda.log 2>&1 &&
+     eval "$CXX $CXXFLAGS $CPPFLAGS -c conftest_main.cpp -o conftest_main.o" >>conftest_cuda.log 2>&1 &&
+     eval "$CXX $CXXFLAGS conftest_main.o conftest_cuda.o -o conftest_cuda$EXEEXT $LDFLAGS $cuda_libs $LIBS" >>conftest_cuda.log 2>&1 ; then
+    cuda_ok=yes
+  fi
+  AC_MSG_RESULT([$cuda_ok])
+  if test "$cuda_ok" = no ; then
+    cat conftest_cuda.log >&AS_MESSAGE_LOG_FD
+    cat conftest_cuda.log
+    rm -f conftest*
+    AC_MSG_ERROR([cannot compile or link a CUDA file with $CUDA_COMPILER (see above), needed by the modules$cuda_modules])
+  fi
+  rm -f conftest*
+  LIBS="$LIBS $cuda_libs"
+  # When the kernel is loaded at runtime, the wrapper unloads it with dlclose when PLUMED is
+  # destroyed (PLUMED_LOAD_DLCLOSE). MD codes destroy PLUMED before freeing their own GPU memory,
+  # and unloading the kernel would finalize the GPU runtime it contains. With nodelete
+  # the kernel is never unloaded: the runtime is finalized at process exit.
+  if test "$(uname)" = Linux ; then
+    KERNEL_LDFLAGS="-Wl,-z,nodelete"
+  fi
+fi
+AC_SUBST(CUDA_COMPILER)
+AC_SUBST(CUDA_FLAGS)
+AC_SUBST(KERNEL_LDFLAGS)
 
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
