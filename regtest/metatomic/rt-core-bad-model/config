@@ -20,13 +20,14 @@ export PLUMED_STACK_TRACE=no
 function plumed_regtest_before(){
   printf 'd: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=colvar FMT=%%8.4f\n' > plumed.dat
 
+  # the `broken` option, passed through OPTIONS, picks the index that is out
+  # of range
   for variant in atom names ; do
-    cat bad_model.py > bad_$variant.py
-    echo "model = BrokenDistance(\"$variant\")" >> bad_$variant.py
     {
       echo "cv: METATOMIC ..."
       echo "    PLUGIN=python"
-      echo "    MODEL=bad_$variant.py"
+      echo "    MODEL=bad_model.py"
+      echo "    OPTIONS={broken=$variant}"
       echo "    SPECIES1=1"
       echo "    SPECIES2=2"
       echo "    SPECIES_TO_TYPES=8,1"

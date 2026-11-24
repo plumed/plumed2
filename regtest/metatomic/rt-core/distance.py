@@ -26,6 +26,14 @@ metatensor.register_external_data_wrapper(
 
 
 class TwoAtomDistance(NumpyModel):
+    # the `name` option checks that OPTIONS values can contain spaces (see config)
+    _name = "two-atom distance"
+
+    def set_options(self, options):
+        self._name = options.pop("name", self._name)
+        if len(options) != 0:
+            raise ValueError(f"unknown options: {', '.join(options)}")
+
     def capabilities(self):
         return ModelCapabilities(
             atomic_types=[1, 8],
@@ -44,7 +52,7 @@ class TwoAtomDistance(NumpyModel):
         )
 
     def metadata(self):
-        return ModelMetadata(name="two-atom distance")
+        return ModelMetadata(name=self._name)
 
     def requested_pair_lists(self, requested_outputs):
         return [PairListOptions(cutoff=CUTOFF, full_list=False)]

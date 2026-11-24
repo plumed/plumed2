@@ -25,11 +25,15 @@ metatensor.register_external_data_wrapper(
 
 
 class BrokenDistance(NumpyModel):
-    """The rt-core distance model, with one index deliberately out of range."""
+    """
+    The rt-core distance model, with one index deliberately out of range. The
+    `broken` option picks which one.
+    """
 
-    def __init__(self, broken):
-        super().__init__()
-        assert broken in ("atom", "names"), f"unknown variant {broken}"
+    def set_options(self, options):
+        broken = options.pop("broken")
+        if broken not in ("atom", "names") or len(options) != 0:
+            raise ValueError(f"unexpected options: broken={broken}, {options}")
         self._broken = broken
 
     def capabilities(self):
@@ -115,6 +119,5 @@ class BrokenDistance(NumpyModel):
 
         return [TensorMap(Labels.range("_", 1), [block])]
 
-# `bad_<variant>.py` is this file plus `model = BrokenDistance("<variant>")`,
-# written by the `config` of this test: the python plugin loads the module-level
-# `model` of the file it is given.
+
+model = BrokenDistance()

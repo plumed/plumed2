@@ -79,10 +79,17 @@ output with respect to `positions` and `strain` explicitly, see below.
 
 `METATOMIC` action also accepts the following options:
 
+- `OPTIONS` are given to the plugin that loads the model, as space-separated
+  `key=value` pairs, for example `OPTIONS={extensions_directory=extensions}`.
+  A value containing spaces is wrapped in braces, as in
+  `OPTIONS={extensions_directory={my extensions}}`.
+  Keys and values are strings, and each plugin defines the options it accepts:
+  the Python plugin passes them to the model's `set_options` method;
 - `EXTENSIONS_DIRECTORY` should be the path to a directory containing
   TorchScript extensions (as shared libraries) that are required to load and
   execute the model. This matches the `collect_extensions` argument to
-  `AtomisticModel.export` in Python.
+  `AtomisticModel.export` in Python, and is the same as
+  `OPTIONS={extensions_directory=...}`.
 - `DEVICE` can only be `cpu`, other devices are not supported yet;
 - `CHECK_CONSISTENCY` can be used to enable internal consistency checks;
 - `SELECTED_ATOMS` can be used to signal the metatomic models that it should
@@ -440,7 +447,8 @@ void MetatomicPlumedAction::registerKeywords(Keywords& keys) {
     ActionWithValue::registerKeywords(keys);
 
     keys.add("compulsory", "MODEL", "path to the exported TorchScript model, or model passed to the metatomic plugin");
-    keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load");
+    keys.add("optional", "OPTIONS", "options given to the metatomic plugin that loads the model, as space-separated key=value pairs. Wrap a value containing spaces in braces, as in OPTIONS={key={a value}}");
+    keys.add("optional", "EXTENSIONS_DIRECTORY", "path to the directory containing TorchScript extensions to load, same as OPTIONS={extensions_directory=...}");
     keys.add("optional", "DEVICE", "device to use for the calculations, only 'cpu' is supported");
 
     keys.add("numbered", "PLUGIN_LIBRARY", "shared library containing a metatomic-core plugin to register before loading the model");

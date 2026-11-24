@@ -29,6 +29,7 @@ along with the METATOMIC-PLUMED module. If not, see <http://www.gnu.org/licenses
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <map>
 #include <optional>
 #include <type_traits>
 
@@ -241,12 +242,36 @@ mta::ExternalModel loadModel(
         action.error("metatomic models only run on CPU in PLUMED, DEVICE=" + device + " is not supported");
     }
 
-    // only the metatomic-torch plugin (TorchScript models) has options
-    std::string extensions_directory;
-    action.parse("EXTENSIONS_DIRECTORY", extensions_directory);
+    // OPTIONS={key=value ...} is passed to the plugin, which checks the keys
+    std::string options_text;
+    action.parse("OPTIONS", options_text);
+    auto options_map = std::map<std::string, std::string>();
+    for (const auto& word: Tools::getWords(options_text)) {
+        auto equal = word.find('=');
+        if (equal == std::string::npos || equal == 0) {
+            action.error(
+                "OPTIONS should contain key=value pairs, got '" + word + "'. Wrap "
+                "a value containing spaces in braces, as in OPTIONS={key={a value}}"
+            );
+        }
+        if (!options_map.emplace(word.substr(0, equal), word.substr(equal + 1)).second) {
+            action.error("the option '" + word.substr(0, equal) + "' is given more than once in OPTIONS");
+        }
+    }
+
+    // keywords which are shortcuts for one of the options
+    auto shortcut = [&](const std::string& keyword, const std::string& name) {
+        std::string value;
+        action.parse(keyword, value);
+        if (!value.empty() && !options_map.emplace(name, value).second) {
+            action.error("give either " + keyword + " or OPTIONS={" + name + "=...}, not both");
+        }
+    };
+    shortcut("EXTENSIONS_DIRECTORY", "extensions_directory");
+
     auto options = std::optional<std::string>();
-    if (!extensions_directory.empty()) {
-        options = nlohmann::json{{"extensions_directory", extensions_directory}}.dump();
+    if (!options_map.empty()) {
+        options = nlohmann::json(options_map).dump();
     }
 
     if (plugin_libraries.empty()) {
