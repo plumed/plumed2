@@ -101,9 +101,9 @@ int main() {
     Engine metad("d: DISTANCE ATOMS=1,2 NOPBC\nm: METAD ARG=d SIGMA=1 HEIGHT=1 PACE=1 FILE=HILLS\n");
     near(metad.evaluate(0,2,"performCalc"),0);
     near(metad.evaluate(1,2,"performCalc"),0);
-    near(metad.evaluate(1,2,"performCalc"),1);
-    near(metad.evaluate(1,2,"performCalc"),2);
-    near(metad.evaluate(2,2,"performCalc"),3);
+    near(metad.evaluate(1,2,"performCalcNoUpdate"),1);
+    near(metad.evaluate(1,2,"performCalcNoUpdate"),1);
+    near(metad.evaluate(2,2,"performCalc"),1);
   }
   std::ifstream hills("HILLS");
   std::string line;
@@ -113,8 +113,16 @@ int main() {
       ++deposits;
     }
   }
-  if(deposits!=4) {
-    throw std::runtime_error("normal-mode repeated full calculations changed legacy semantics");
+  if(deposits!=2) {
+    throw std::runtime_error("normal no-update queries deposited hills");
+  }
+  {
+    // Mode 0 must not infer auxiliary context from an earlier update. This also
+    // avoids depending on whether duplicate update calls are allowed (PR1681).
+    Engine ordinary(guest);
+    near(ordinary.evaluate(0,2,"performCalc"),4);
+    near(ordinary.evaluate(0,1,"performCalcNoUpdate"),1);
+    near(ordinary.evaluate(1,2,"performCalc"),13);
   }
   std::ofstream("output")<<"Explicit auxiliary force queries preserve ABMD and nested forces; normal commands retain semantics: OK\n";
 }
