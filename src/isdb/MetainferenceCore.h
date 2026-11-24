@@ -120,7 +120,14 @@ public:
   /// replace the oldest value
   void setFirst(const double v) {
     buf_[first_]=v;
-    recomputeMax();
+    // The first entry is now v. Use it directly rather than reloading it
+    // through the ring accessor while updating the cached maximum.
+    max_=v;
+    for(unsigned k=1; k<n_; ++k) {
+      if(max_<get(k)) {
+        max_=get(k);
+      }
+    }
   }
   /// the maximum that push(v) would give, without changing the history
   double maxAfterPush(const double v) const {
