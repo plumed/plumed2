@@ -4,13 +4,14 @@ name: GPU modules and plugins
 # are run (loading, input errors, the error when there is no GPU). The kernels themselves need
 # a real GPU.
 #
-# The gpu_cuda_hip module (toolchain: cuda) is compiled with more than one version of the CUDA
-# toolkit, taken from conda-forge (no driver is needed to compile), in two ways: built into the
-# kernel (./configure --enable-modules=+gpu_cuda_hip), and as an extension built against an
-# installed kernel without CUDA (./configure --with-extension-base, the conda route). It is also
-# compiled into the kernel with HIP (AMD GPUs), with the oldest and the newest supported ROCm
-# versions, taken from the apt repository of AMD. The reactive Voronoi CUDA plugin is compiled
-# against the installed kernel.
+# The gpu_cuda_hip and gpu_voronoi modules (toolchain: cuda) are compiled with more than one
+# version of the CUDA toolkit, taken from conda-forge (no driver is needed to compile), in two
+# ways: built into the kernel (./configure --enable-modules=+gpu_cuda_hip+gpu_voronoi), and as
+# extensions built against an installed kernel without CUDA (./configure --with-extension-base,
+# the conda route). gpu_voronoi uses only the headers of gpu_cuda_hip (include: in module.yml):
+# its extension must not link gpu_cuda_hip, and it is also built into a kernel without
+# gpu_cuda_hip. Both are also compiled into the kernel with HIP (AMD GPUs), with the oldest and
+# the newest supported ROCm versions, taken from the apt repository of AMD.
 
 on:
   workflow_call:
@@ -86,7 +87,7 @@ jobs:
         done
         python3 -m pip install -r extensions/requirements.txt
 
-    - name: Build gpu_cuda_hip as an extension and run the tests that do not need a GPU
+    - name: Build gpu_cuda_hip and gpu_voronoi as extensions and run the tests that do not need a GPU
       run: |
         export PATH="$HOME/opt/bin:$PATH"
         export LD_LIBRARY_PATH="$HOME/opt/lib:${LD_LIBRARY_PATH:-}"
@@ -103,63 +104,77 @@ jobs:
             rm -rf _extensions "$HOME/ext-$v"
             # no GPU on the runner: an explicit architecture
             NVCCFLAGS=-arch=sm_80 ./configure --with-extension-base="$HOME/opt" \
-              --enable-extension-modules=gpu_cuda_hip --prefix="$HOME/ext-$v"
+              --enable-extension-modules=gpu_cuda_hip:gpu_voronoi --prefix="$HOME/ext-$v"
             make
             make install
           )
-          library="$HOME/ext-$v/lib/libplumed-ext-gpu_cuda_hip.so"
-          readelf -d "$library" | grep -E 'NEEDED|FLAGS'
-          readelf -d "$library" | grep -q 'NEEDED.*libcudart\.so'
-          readelf -d "$library" | grep -q 'NODELETE'
-          grep -qx "variant cuda$v" "$HOME/ext-$v/lib/plumed/plugins/gpu_cuda_hip.plumed"
+          for module in gpu_cuda_hip gpu_voronoi ; do
+            library="$HOME/ext-$v/lib/libplumed-ext-$module.so"
+            readelf -d "$library" | grep -E 'NEEDED|FLAGS'
+            readelf -d "$library" | grep -q 'NEEDED.*libcudart\.so'
+            readelf -d "$library" | grep -q 'NODELETE'
+            grep -qx "variant cuda$v" "$HOME/ext-$v/lib/plumed/plugins/$module.plumed"
+          done
+          # gpu_voronoi uses only the headers of gpu_cuda_hip: it neither links nor requires it
+          if readelf -d "$HOME/ext-$v/lib/libplumed-ext-gpu_voronoi.so" | grep -q 'gpu_cuda_hip' ; then exit 1 ; fi
+          grep -qx "requires " "$HOME/ext-$v/lib/plumed/plugins/gpu_voronoi.plumed"
           export PLUMED_PLUGIN_PATH="$HOME/ext-$v/lib/plumed/plugins"
-          plumed modules -q --has gpu_cuda_hip
+          plumed modules -q --has gpu_cuda_hip gpu_voronoi
           plumed modules --module gpu_cuda_hip --has-feature cuda -q
-          make -C regtest/gpu_cuda_hip clean
-          make -C regtest/gpu_cuda_hip
-          .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+          plumed modules --module gpu_voronoi --has-feature cuda -q
+          for module in gpu_cuda_hip gpu_voronoi ; do
+            make -C regtest/$module clean
+            make -C regtest/$module
+            .ci/check-nogpu-regtests regtest/$module
+          done
           unset PLUMED_PLUGIN_PATH
           echo "::endgroup::"
         done
 
-    - name: Build PLUMED with gpu_cuda_hip in the kernel and run the tests that do not need a GPU
+    - name: Build PLUMED with gpu_cuda_hip and gpu_voronoi in the kernel and run the tests that do not need a GPU
       run: |
         path0="$PATH"
         for v in $CUDA_VERSIONS ; do
           echo "::group::CUDA $v, in the kernel"
           export PATH="$HOME/cuda-$v/bin:$path0"
           ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
-            --enable-modules=+gpu_cuda_hip NVCCFLAGS=-arch=sm_80
+            --enable-modules=+gpu_cuda_hip+gpu_voronoi NVCCFLAGS=-arch=sm_80
           make -j 4
           # static CUDA runtime: the kernel does not need the CUDA libraries, and is never unloaded
+          # (a command negated with ! never stops the step, even when it fails: if ... exit 1 instead)
           readelf -d src/lib/libplumedKernel.so | grep -E 'NEEDED|FLAGS'
-          ! readelf -d src/lib/libplumedKernel.so | grep -q 'NEEDED.*libcudart'
+          if readelf -d src/lib/libplumedKernel.so | grep -q 'NEEDED.*libcudart' ; then exit 1 ; fi
           readelf -d src/lib/libplumedKernel.so | grep -q 'NODELETE'
           (
             source sourceme.sh
-            make -C regtest/gpu_cuda_hip clean
-            make -C regtest/gpu_cuda_hip
-            .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+            for module in gpu_cuda_hip gpu_voronoi ; do
+              make -C regtest/$module clean
+              make -C regtest/$module
+              .ci/check-nogpu-regtests regtest/$module
+            done
           )
           echo "::endgroup::"
         done
         ccache -s -M "$PLUMED_CCACHE_SIZE"
 
-    - name: Build and test the reactive Voronoi CUDA plugin
+    - name: Build PLUMED with gpu_voronoi alone in the kernel
+      # gpu_voronoi uses the headers of gpu_cuda_hip, that is not built: only the test that does
+      # not need a GPU runs (the GPU tests need gpu_cuda_hip, for plumed cuda-devices)
       run: |
-        export PATH="$HOME/opt/bin:$PATH"
-        export LD_LIBRARY_PATH="$HOME/opt/lib:${LD_LIBRARY_PATH:-}"
-        export PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so"
-        path0="$PATH"
-        for v in $CUDA_VERSIONS ; do
-          echo "::group::CUDA $v"
-          export PATH="$HOME/cuda-$v/bin:$path0"
-          make -C plugins/reactive-voronoi-cuda clean
-          # Voronoi uses shared cudart. Set an explicit architecture on the GPU-less runner.
-          LD_LIBRARY_PATH="$HOME/cuda-$v/lib:$HOME/cuda-$v/targets/x86_64-linux/lib:${LD_LIBRARY_PATH:-}" \
-            make -C plugins/reactive-voronoi-cuda CUDA_ARCH=sm_80 check-nogpu
-          echo "::endgroup::"
-        done
+        v=${CUDA_VERSIONS##* }
+        export PATH="$HOME/cuda-$v/bin:$PATH"
+        ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
+          --enable-modules=+gpu_voronoi NVCCFLAGS=-arch=sm_80
+        make -j 4
+        (
+          source sourceme.sh
+          plumed config module gpu_voronoi
+          if plumed config module gpu_cuda_hip ; then exit 1 ; fi
+          make -C regtest/gpu_voronoi/rt-nogpu-no-gpu clean
+          make -C regtest/gpu_voronoi/rt-nogpu-no-gpu
+          if grep -e FAILURE -e NOT_APPLICABLE -e "SKIP_ON_CI found!" regtest/gpu_voronoi/rt-nogpu-no-gpu/report.txt ; then exit 1 ; fi
+        )
+        ccache -s -M "$PLUMED_CCACHE_SIZE"
 
   gpu_cuda_hip-hip:
     runs-on: ubuntu-24.04
@@ -206,20 +221,22 @@ jobs:
         sudo apt-get install -y -q --no-install-recommends rocm-hip-runtime-dev rocthrust-dev rocprim-dev hipcub-dev
         /opt/rocm/bin/hipcc --version
 
-    - name: Build PLUMED with gpu_cuda_hip (HIP) in the kernel and run the tests that do not need a GPU
+    - name: Build PLUMED with gpu_cuda_hip and gpu_voronoi (HIP) in the kernel and run the tests that do not need a GPU
       run: |
         export PATH="/opt/rocm/bin:$PATH"
         export LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
         ccache -s -M "$PLUMED_CCACHE_SIZE"
         ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
-          --enable-modules=+gpu_cuda_hip --enable-hip --prefix="$HOME/opt"
+          --enable-modules=+gpu_cuda_hip+gpu_voronoi --enable-hip --prefix="$HOME/opt"
         make -j 4
         make install
         ccache -s -M "$PLUMED_CCACHE_SIZE"
         readelf -d src/lib/libplumedKernel.so | grep -E 'NEEDED|FLAGS'
         readelf -d src/lib/libplumedKernel.so | grep -q 'NEEDED.*libamdhip64'
         export PATH="$HOME/opt/bin:$PATH"
-        make -C regtest/gpu_cuda_hip
-        .ci/check-nogpu-regtests regtest/gpu_cuda_hip
+        for module in gpu_cuda_hip gpu_voronoi ; do
+          make -C regtest/$module
+          .ci/check-nogpu-regtests regtest/$module
+        done
         # the program of the GPU checks (plugins/openaccPTM/gpucheck) is only compiled: running it needs GPUs
         make -C plugins/openaccPTM/gpucheck USE_HIP=1 device_check
