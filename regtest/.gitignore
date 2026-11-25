@@ -35,6 +35,7 @@
 !/ves
 !/funnel
 !/gpu_cuda_hip
+!/gpu_voronoi
 !/opes
 !/tools
 !/sasa

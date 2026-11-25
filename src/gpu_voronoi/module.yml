@@ -1,0 +1,33 @@
+name: gpu_voronoi
+type: default-off
+use: [core, tools, colvar]
+# headers only (cuda_to_hip.cuh, cudaHelpers.cuh): gpu_cuda_hip is not enabled nor linked
+include: [gpu_cuda_hip]
+toolchain: cuda
+authors: Reactive Voronoi contributors
+description: GPU backend (CUDA and HIP) of the reactive Voronoi actions (BACKEND=CUDA in VORONOI_COORDINATION, VORONOI_DISTANCE and VORONOI_POSITION)
+dois: []
+nlessons: 0
+searchterm: voronoi
+
+# Packaging options: see conda/module-options.md.
+# Always an extension in conda (one package per CUDA version, on the GPU-independent base).
+# The recipe supplies compiler('cuda') in build, with the selected CUDA variant.
+conda:
+  requirements:
+    host:
+    - spec: cuda-cudart-dev
+      selector: linux
+    - spec: cuda-cccl
+      selector: linux
+    run:
+    - spec: cuda-cudart
+      selector: linux
+    test: [python]
+  platforms: [linux-64, linux-aarch64]
+  variants:
+    cuda_compiler: [cuda-nvcc]
+    cuda_compiler_version: ['12.9', '13.0']
+    cxx_compiler_version: ['14']
+    c_stdlib: [sysroot]
+    c_stdlib_version: ['2.28']

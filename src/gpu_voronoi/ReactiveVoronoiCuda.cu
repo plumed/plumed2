@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // FP64 streamed assignments with optional buffered center lists.
-#include "plumed/colvar/ReactiveVoronoiBackend.h"
-#include "plumed/tools/Pbc.h"
+#include "colvar/ReactiveVoronoiBackend.h"
+#include "tools/Pbc.h"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <climits>

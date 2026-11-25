@@ -47,7 +47,7 @@ On a node with GPUs, `plugins/openaccPTM/gpucheck` checks that the actions leave
 ## Code shared with other modules
 
 `cuda_to_hip.cuh` (the CUDA names mapped to HIP) and `cudaHelpers.cuh` (GPU choice, device guard, buffers, deterministic
-reductions) can also be used by other CUDA/HIP modules, which list
+reductions) are also used by other CUDA/HIP modules (e.g. [gpu_voronoi](module_gpu_voronoi.md)), which list
 `include: [gpu_cuda_hip]` in their `module.yml`: they use these headers without enabling or linking this module, so they
 must stay header-only (inline functions, templates and kernels, macros).
 
