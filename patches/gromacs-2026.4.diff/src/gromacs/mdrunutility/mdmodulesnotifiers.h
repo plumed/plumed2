@@ -320,7 +320,7 @@ struct PlumedInputFilename
  */
 struct PlumedGpuDevice
 {
-    //! The index of the GPU as CUDA numbers it, -1 if there is none or GROMACS does not use CUDA
+    //! The index of the GPU as CUDA or HIP number it, -1 if there is none or GROMACS uses neither
     int id_{ -1 };
 };
 

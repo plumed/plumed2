@@ -44,7 +44,11 @@ Exit code 0 only if every check passes.
 */
 #include "plumed/wrapper/Plumed.h"
 
+#ifdef __HIP__
+#include "cuda_to_hip.cuh"
+#else
 #include <cuda_runtime.h>
+#endif
 
 #include <cstdio>
 #include <fstream>

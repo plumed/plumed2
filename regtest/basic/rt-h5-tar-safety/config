@@ -1,0 +1,7 @@
+type=make
+plumed_needs="tools:libhdf5"
+plumed_src=main.cpp
+
+function plumed_regtest_after() {
+  python3 "$regtest_test_dir/check.py" $plumed_nompi > results
+}

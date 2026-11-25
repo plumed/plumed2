@@ -110,7 +110,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +#include "Tensor.h"
 +#include "Molecule.h"
 +#include "PatchData.h"
-+#if defined(NAMD_CUDA) && !defined(NAMD_HIP)
++#if defined(NAMD_CUDA) || defined(NAMD_HIP)
 +// the GPU used by NAMD is passed to PLUMED
 +#include "DeviceCUDA.h"
 +#ifdef WIN32
@@ -190,7 +190,7 @@ patch -u -l -b -F 5 -N --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +
 +    cmd("setLog",stdout);
 +
-+#if defined(NAMD_CUDA) && !defined(NAMD_HIP)
++#if defined(NAMD_CUDA) || defined(NAMD_HIP)
 +    // The PLUMED actions that run on a GPU (plugins) use the GPU of this PE,
 +    // the one that calls PLUMED, unless the user chooses otherwise
 +    int plumedApi=0;

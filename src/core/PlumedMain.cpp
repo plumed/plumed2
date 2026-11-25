@@ -1493,6 +1493,15 @@ void PlumedMain::prepareDependencies() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("1 Prepare dependencies");
 
+// When the MD engine writes its checkpoint at this step, the files are flushed before anything
+// of this step is written, so that at a restart from this step they are trimmed exactly at the
+// end of what was flushed (e.g. an archive of HDF5 tables at the end of a member, which is not rewritten).
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
 // Restore the checkpoint at the first step after a restart and write one when
 // requested: before anything of this step is computed, see Checkpointing.
   checkpointing.atStepStart(doCheckPoint);
@@ -1583,6 +1592,12 @@ void PlumedMain::performCalc() {
   plumed_massert(evaluationMode_==0,"auxiliary evaluation mode does not permit update; restore normal mode before performCalc");
 // In case the checkpointing signal arrived after prepareCalc() (2024 GROMACS patch);
 // does nothing if the checkpoint of this step was already written
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
   checkpointing.atStepStart(doCheckPoint);
   waitData();
   justCalculate();
@@ -1839,6 +1854,14 @@ void PlumedMain::update() {
     checkpointing.atStepEnd();
     return;
   }
+
+// Error if update() is called more than once within the same step: this most
+// likely leads to incorrect results (see issue #512)
+  if(lastUpdateStep==step) {
+    std::string message="update() called more than once at step "+std::to_string(step)+", this most likely leads to incorrect results";
+    plumed_merror(message);
+  }
+  lastUpdateStep=step;
 
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("6 Update");

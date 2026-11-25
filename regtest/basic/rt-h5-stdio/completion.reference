@@ -4,9 +4,12 @@ h5cat first file: OK
 h5cat second file: OK
 h5cat quoted filename: OK
 h5cat after delimiter: OK
+h5cat hpa filename: OK
+h5cat archive alias: OK
 h5convert input stream: OK
 h5convert output stream: OK
 h5convert input file: OK
+h5convert hpa filename: OK
 h5convert equals split: OK
 h5convert equals unsplit: OK
 h5convert equals stream: OK

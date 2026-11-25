@@ -52,7 +52,9 @@ struct Harness {
     p.cmd("setBox",box.data());
     p.cmd("setForces",f.data());
     p.cmd("setVirial",virial.data());
-    p.cmd("calc");
+    // Evaluate perturbed coordinates without updating state at this step.
+    p.cmd("prepareCalc");
+    p.cmd("performCalcNoUpdate");
     double bias=0;
     p.cmd("getBias",&bias);
     return bias;

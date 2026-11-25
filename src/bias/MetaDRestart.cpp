@@ -178,8 +178,8 @@ void readHillsAtStart(Action& action, MetaDWalkers& walkers, const std::vector<M
   // with text files, not with HDF5 tables
   if(walkers.n>1) {
     for(const auto & input : inputs) {
-      if(h5table::isH5(input.name)) {
-        action.error("the hills files of multiple walkers that share files (WALKERS_N) cannot be HDF5 tables (.h5): use WALKERS_MPI or text files");
+      if(h5table::isTable(input.name)) {
+        action.error("the hills files of multiple walkers that share files (WALKERS_N) cannot be HDF5 tables (.hpa or .h5): use WALKERS_MPI or text files");
       }
     }
   }

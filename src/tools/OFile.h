@@ -246,8 +246,6 @@ public:
   OFile();
 /// Destructor
   ~OFile() override;
-/// For an HDF5 table: the number of rows of every block written so far (on the writing process)
-  std::vector<unsigned long long> getH5Rows();
 /// Allows overloading of link
   using FileBase::link;
 /// Allows overloading of open
