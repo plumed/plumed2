@@ -66,6 +66,11 @@ endif
 # No relocatable device code: the object can be linked by the C++ compiler.
 %.o: %.cu
 	@echo "compiling " $*.cu
+# only when the object is built, so that the queries of the Makefile (e.g. show_used_modules)
+# work also when PLUMED was configured without the CUDA modules
+ifeq ($(CUDA_COMPILER),)
+	@echo "$(notdir $(CURDIR)) has CUDA sources, but PLUMED was configured without the modules with toolchain cuda: run ./configure --enable-modules=+$(notdir $(CURDIR))" ; exit 1
+endif
 ifneq ($(disable_dependency_tracking),yes)
 	@mkdir -p deps
 	$(AT)$(CUDA_COMPILER) $(CUDA_FLAGS) -MMD -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) \

@@ -32,11 +32,6 @@ OBJ=$(SRC:.cpp=.o) $(SRC_CU:.cu=.o)
 # dependency files for all c++ and CUDA sources
 DEP=$(addprefix deps/,$(SRC:.cpp=.d) $(SRC_CU:.cu=.d))
 
-ifneq ($(SRC_CU),)
-ifeq ($(CUDA_COMPILER),)
-$(error $(notdir $(CURDIR)) has CUDA sources, but PLUMED was configured without the modules with toolchain cuda: run ./configure --enable-modules=+$(notdir $(CURDIR)))
-endif
-endif
 
 .PHONY: all dirslinks obj lib install
 
