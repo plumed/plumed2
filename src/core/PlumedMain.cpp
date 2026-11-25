@@ -1152,6 +1152,12 @@ void PlumedMain::update() {
     return;
   }
 
+// Warn if update() is called more than once within the same step (see issue #512).
+  if(lastUpdateStep==step) {
+    log.printf("WARNING: update() called more than once at step %lld, this most likely leads to incorrect results; this will become an error in PLUMED 2.11.\n",step);
+  }
+  lastUpdateStep=step;
+
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("6 Update");
 
