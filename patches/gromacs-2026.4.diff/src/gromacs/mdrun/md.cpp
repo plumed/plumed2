@@ -1143,11 +1143,6 @@ void gmx::LegacySimulator::do_md()
             {
                 dd_collect_state(cr_->dd, state_, stateGlobal_);
             }
-            else
-            {
-                // Without domain decomposition the local state aliases the global state.
-                GMX_RELEASE_ASSERT(state_ == stateGlobal_, "HREX serial state must alias global state");
-            }
 
             if (isMainRank)
                 exchange_state(ms_, partner, stateGlobal_);
@@ -1234,7 +1229,7 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             }
-            plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
+            plumedForceProvider->cacheExchangeForeign(hrex_enerd.term[InteractionFunction::PotentialEnergy]);
 
             /* exchange back */
             if (haveDDAtomOrdering(*cr_))

@@ -694,7 +694,7 @@ void exchange_state(const gmx_multisim_t* ms, int b, t_state* state)
     exchange_rvecs(ms, b, state->v.rvec_array(), state->numAtoms());
 }
 
-void copy_state_serial(const t_state* src, t_state* dest)
+static void copy_state_serial(const t_state* src, t_state* dest)
 {
     if (dest != src)
     {
@@ -989,11 +989,6 @@ int plumed_hrex_partner(FILE* fplog, const t_commrec* cr, const gmx_multisim_t* 
     MPI_Bcast(&partner, 1, MPI_INT, 0, cr->commMyGroup.comm());
 #endif
     return partner;
-}
-
-void plumed_hrex_cache_foreign(PlumedForceProvider* provider, real* energy)
-{
-    provider->cacheExchangeForeign(*energy);
 }
 } // namespace gmx
 #endif

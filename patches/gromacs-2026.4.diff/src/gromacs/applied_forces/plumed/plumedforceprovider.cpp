@@ -139,8 +139,6 @@ void PlumedForceProvider::setEvaluationMode(int mode)
             }
             legacyShellWarningIssued_ = true;
         }
-        if (mode == 2)
-            GMX_THROW(InvalidInputError("PLUMED lambda trial energies require API >= 14"));
         return;
     }
     if (mode != evaluationMode_)
@@ -159,16 +157,8 @@ real PlumedForceProvider::lambdaTrialBias(int64_t step, int state, real physical
     plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
     plumed_->cmd("setEnergy", &context_.trialEnergy);
     setEvaluationMode(2);
-    try
-    {
-        plumed_->cmd("prepareCalc");
-        plumed_->cmd("performCalcNoForces");
-    }
-    catch (...)
-    {
-        setEvaluationMode(0);
-        throw;
-    }
+    plumed_->cmd("prepareCalc");
+    plumed_->cmd("performCalcNoForces");
     setEvaluationMode(0);
     real bias = 0;
     plumed_->cmd("getBias", &bias);
@@ -450,13 +440,11 @@ try
 }
 catch (const GromacsException&)
 {
-    setEvaluationMode(0);
     // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
     throw;
 }
 catch (const std::exception& ex)
 {
-    setEvaluationMode(0);
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }
@@ -599,13 +587,11 @@ try
 }
 catch (const GromacsException&)
 {
-    setEvaluationMode(0);
     // Keep the type and message of the errors raised on purpose, e.g. NotImplementedError
     throw;
 }
 catch (const std::exception& ex)
 {
-    setEvaluationMode(0);
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was calculating the forces\n:") + ex.what()));
 }
