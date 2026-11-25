@@ -40,7 +40,7 @@ plumed partial_tempering \$scale < processed.top > topol\$i.top
 WARNING: It's not very robust and there might be force-field dependent issues!
 A few tests are strongly suggested.
 
-WARNING: This script requires gawk to be available on your system.
+This script uses a POSIX awk (gawk, mawk, BSD/macOS awk).
 
 1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
 grompp -o topol-unscaled.tpr
@@ -71,7 +71,7 @@ if [ "$1" == --gromacs4 ] ; then
   shift
 fi
 
-gawk -v scale=$1 -v gromacs5=$gromacs5 '
+awk -v scale=$1 -v gromacs5=$gromacs5 '
 BEGIN{
   combrule=1;
 }
@@ -212,21 +212,21 @@ function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,tes
 
 # this is the case in which dihedrals are online:
      if(NF>5){
-       printf($1" "$2" "$3" "$4" "$5" ");
+       printf "%s", $1" "$2" "$3" "$4" "$5" ";
        if($5==1 || $5==4 || $5==9){
                                    if(NF!=8) error("dihedrals with type 1,4,9 should have 8 fields");
-                                   printf($6" "$7*sscale" "$8);
+                                   printf "%s", $6" "$7*sscale" "$8;
        } else if($5==2) {
                                    if(NF!=7) error("dihedrals with type 2 should have 7 fields");
-                                   printf($6" "$7*sscale);
+                                   printf "%s", $6" "$7*sscale;
        } else if($5==3) {
                                    if(NF!=11) error("dihedrals with type 3 should have 11 fields");
-                                   printf($6*sscale" "$7*sscale" "$8*sscale" "$9*sscale" "$10*sscale" "$11*sscale);
+                                   printf "%s", $6*sscale" "$7*sscale" "$8*sscale" "$9*sscale" "$10*sscale" "$11*sscale;
        } else if($5==5) {
                                    if(NF!=9) error("dihedrals with type 5 should have 9 fields");
-                                   printf($6*sscale" "$7*sscale" "$8*sscale" "$9*sscale);
+                                   printf "%s", $6*sscale" "$7*sscale" "$8*sscale" "$9*sscale;
        } else error("dihedrals with more than 5 fields should be 1,2,3,4,5 or 9");
-       printf(" "comments"\n");
+       printf "%s", " "comments"\n";
 # this is the case in which we have to search the database
      } else if(NF==5){
        param="";
@@ -243,7 +243,7 @@ function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,tes
     if($5!=9 && n!=2){
 # in case of multiple dihedrals !=9, all parameters should be the same, otherwise I suspect there is some problem
       for(i=3;i<=n;i++){
-        if((array[i]-array[2])**2>1e-20) error("multiple dihedrals !=9: parameters "array[i]" and "array[2]" are different\n");
+        if((array[i]-array[2])^2>1e-20) error("multiple dihedrals !=9: parameters "array[i]" and "array[2]" are different\n");
       }
 # then, I just take one of the instances
       param=array[1]":"array[2];
@@ -252,18 +252,18 @@ function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,tes
     
     printf("; parameters for types %s %s %s %s at LINE(%s)\n",atype[1],atype[2],atype[3],atype[4],array[1]);
     for(i=2;i<=n;i++){
-      printf($1" "$2" "$3" "$4" "$5" ");
+      printf "%s", $1" "$2" "$3" "$4" "$5" ";
       split(array[i],array1," ");
       if($5==1 || $5==4 || $5==9){
-                                  printf(array1[1]" "array1[2]*sscale" "array1[3]);
+                                  printf "%s", array1[1]" "array1[2]*sscale" "array1[3];
       } else if($5==2) {
-                                  printf(array1[1]" "array1[2]*sscale);
+                                  printf "%s", array1[1]" "array1[2]*sscale;
       } else if($5==3) {
-                                  printf(array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale" "array1[5]*sscale" "array1[6]*sscale);
+                                  printf "%s", array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale" "array1[5]*sscale" "array1[6]*sscale;
       } else if($5==5) {
-                                  printf(array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale);
+                                  printf "%s", array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale;
       } else error("dihedrals with more than 5 fields should be 1,2,3,4,5 or 9");
-      printf(comments);
+      printf "%s", comments;
       printf("\n");
     }
    } else error("dihedrals should have at least 5 fields");
@@ -290,11 +290,11 @@ function find_matching_torsion(params,atype, a1,a2,a3,a4,iswitch,progression,tes
   } else if(rec=="atomtypes" && NF>=4){
     scale2=1.0; # scaling for second to last column
     if(combrule==1) scale2=scale;
-    for(i=1;i<NF;i++)printf($i" "); print $NF,comments;
-    printf($1""suffix" "bondtype[$1]" ");
+    for(i=1;i<NF;i++)printf "%s", $i" "; print $NF,comments;
+    printf "%s", $1""suffix" "bondtype[$1]" ";
     from=3;
     if(NF==6) from=2; # GROMOS does not store bondtype by default, so we should add one column
-    for(i=from;i<NF-1;i++)printf($i" "); print scale2*$(NF-1),scale*$NF," ; scaled";
+    for(i=from;i<NF-1;i++)printf "%s", $i" "; print scale2*$(NF-1),scale*$NF," ; scaled";
 # ATOMTYPES (PAIRS)
   } else if((rec=="pairtypes" || rec=="nonbond_params") && NF>=5){
     scale2=1.0; # scaling for second to last column
