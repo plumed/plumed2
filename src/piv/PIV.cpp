@@ -786,7 +786,7 @@ PIV::PIV(const ActionOptions&ao):
 
 void PIV::calculate() {
   if(isGeometryTrial() && updatePIV!=1) {
-    error("Auxiliary PIV evaluations require UPDATEPIV=1; held values cannot safely follow replica or lambda trials");
+    error("Foreign-coordinate PIV evaluations require UPDATEPIV=1; held values cannot safely follow foreign geometry");
   }
 
   // Local variables
