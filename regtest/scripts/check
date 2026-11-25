@@ -3,6 +3,8 @@
 nerror=0
 nok=0
 notapp=0
+# not applicable also when all the tests are requested (PLUMED_ALL_TESTS=yes), see below
+notapp_expected=0
 deferred=0
 html=
 fail=
@@ -19,6 +21,22 @@ echo
 echo
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
+
+# A test may be not applicable also when all the tests are requested, if no build with
+# --enable-modules=all can run it: it needs a device that this machine does not have
+# (plumed_needs_device), or it belongs to a module that --enable-modules=all does not enable
+# (a module compiled by another toolchain, e.g. CUDA, or built only as an extension).
+# Its module is the first directory of its path, e.g. gpu_cuda_hip/rt-double-nopbc/.
+not_applicable_expected() {
+  local dir=$1 file=$2 module declaration
+  grep -q "^NOT_APPLICABLE (NO .* DEVICE AVAILABLE)" "$file" && return 0
+  module=${dir%%/*}
+  declaration=../src/$module/module.yml
+  test -f "$declaration" || return 1
+  grep -q "^NOT_APPLICABLE ($module MODULE NOT INSTALLED)" "$file" || return 1
+  test "$(../src/maketools/module-header toolchain "$declaration")" != cxx ||
+    test "$(../src/maketools/module-header placement "$declaration")" != any
+}
 
 dirs=$(
   ll=$(ls */Makefile)
@@ -43,6 +61,9 @@ do
   fi
   if grep -q NOT_APPLICABLE $file ; then
     ((notapp++));
+    if not_applicable_expected "$dir" "$file" ; then
+      ((notapp_expected++))
+    fi
     echo + test $dir NOT APPLICABLE >> $file1
     echo + check file $fullname for more information >> $file1
   elif grep -q '^DEFERRED (long test' $file ; then
@@ -77,7 +98,11 @@ fi
 fi
 
 if [ "$PLUMED_ALL_TESTS" = yes ] ; then
-  if (($notapp>0)) ; then
+  if ((notapp_expected>0)) ; then
+    echo "+ $notapp_expected of the tests not applicable cannot run in this build: they need a device"
+    echo "+ (e.g. a GPU) or a module that --enable-modules=all does not enable (e.g. gpu_cuda_hip)"
+  fi
+  if ((notapp>notapp_expected)) ; then
     echo "+ You are running with PLUMED_ALL_TESTS=yes and some tests are not applicable"
     echo "+ This is likely happening on the first job under TRAVIS-CI"
     echo "+ Please check that all modules have been properly enabled!"
