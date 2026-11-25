@@ -437,8 +437,8 @@ void Plumed::prepare() {
 void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   if(root) {
-    // A lambda trial can enable exchange dependencies during prepare(), then
-    // clear the foreign-coordinate flag before calculation. Forward that change.
+    // Forward the current exchange and auxiliary context to the guest before
+    // calculating; preparation already received the early evaluation mode.
     p.setExchangeStep(getExchangeStep());
     p.setEvaluationMode(plumed.getEvaluationMode());
     p.cmd("setStopFlag",&stop);
@@ -483,7 +483,7 @@ void Plumed::calculate() {
     p.cmd("shareData");
   }
   if(root) {
-    p.performCalcNoUpdate(isCalculationOnly(),plumed.areForcesRequested());
+    p.performCalcNoUpdate(plumed.areForcesRequested());
   }
 
   int s=forces.size();

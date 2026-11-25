@@ -104,9 +104,9 @@ public:
   void setExchangeStep(bool exchange);
 /// Evaluate a guest without updating it; no new public MD command is introduced.
 /// Loaded guests need API >= 4, or >= 9 for no-force auxiliary passes.
-/// Force-bearing auxiliary guests require API14 for explicit evaluation mode.
+/// Explicit auxiliary modes are forwarded separately through setEvaluationMode.
 /// These checks establish command availability, not the presence of action fixes.
-  void performCalcNoUpdate(bool calculationOnly, bool forcesRequested=false);
+  void performCalcNoUpdate(bool forcesRequested);
   void setEvaluationMode(int mode);
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;

@@ -456,7 +456,7 @@ public:
     Perform the calculation without update()
     Shortcut for: waitData() + justCalculate() + backwardPropagate()
   */
-  void performCalcNoUpdate(bool calculationOnly=false);
+  void performCalcNoUpdate();
   /**
     Perform the calculation without backpropagation nor update()
     Shortcut for: waitData() + justCalculate()

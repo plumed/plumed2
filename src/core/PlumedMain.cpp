@@ -1590,10 +1590,10 @@ void PlumedMain::shareData() {
   }
 }
 
-void PlumedMain::performCalcNoUpdate(bool calculationOnly) {
+void PlumedMain::performCalcNoUpdate() {
   plumed_massert(evaluationMode_!=2,"full auxiliary potential mode requires performCalcNoForces");
   waitData();
-  justCalculate(calculationOnly);
+  justCalculate();
   backwardPropagate();
   resetInputs();
 }

@@ -30,13 +30,15 @@ int main() {
       p.setExchangeStep(true);
     },api>=13);
     expect([&]() {
-      p.performCalcNoUpdate(false);
+      p.performCalcNoUpdate(true);
     },api>=4);
     expect([&]() {
-      p.performCalcNoUpdate(true);
+      p.performCalcNoUpdate(false);
     },api>=9);
     expect([&]() {
-      p.performCalcNoUpdate(true,true);
+      p.setEvaluationMode(1);
+      p.performCalcNoUpdate(true);
+      p.setEvaluationMode(0);
     },api>=14);
     expect([&]() {
       p.setEvaluationMode(2);
@@ -45,7 +47,7 @@ int main() {
     int modeCalls=0;
     p.cmd("getMockModeCalls",&modeCalls);
     if(modeCalls!=(api>=14 ? 4 : 0)) {
-      throw std::runtime_error("early mode guard or force context restore failed");
+      throw std::runtime_error("early mode guard or explicit context forwarding failed");
     }
     std::array<int,4> counts{};
     p.cmd("getMockCounts",counts.data());
@@ -68,7 +70,7 @@ int main() {
       assigned.setExchangeStep(true);
     },api>=13);
     expect([&]() {
-      assigned.performCalcNoUpdate(true);
+      assigned.performCalcNoUpdate(false);
     },api>=9);
     assigned.cmd("getMockApiQueries",&queries);
     assigned.cmd("getMockCounts",counts.data());

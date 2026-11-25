@@ -133,38 +133,24 @@ void PlumedHandle::setEvaluationMode(int mode) {
   }
 }
 
-void PlumedHandle::performCalcNoUpdate(bool calculationOnly, bool forcesRequested) {
+void PlumedHandle::performCalcNoUpdate(bool forcesRequested) {
   if(local) {
-    if(calculationOnly && !forcesRequested) {
-      local->performCalcNoForces();
+    if(forcesRequested) {
+      local->performCalcNoUpdate();
     } else {
-      local->performCalcNoUpdate(calculationOnly);
+      local->performCalcNoForces();
     }
   } else {
     const int api=loadedApiVersion();
     if(api<4) {
       plumed_error()<<"This loaded guest kernel does not support performCalcNoUpdate (requires API >= 4)";
     }
-    if(calculationOnly && !forcesRequested && api<9) {
+    if(!forcesRequested && api<9) {
       plumed_error()<<"This loaded guest kernel does not support performCalcNoForces (requires API >= 9)";
     }
+    // Context has already been forwarded before preparation/calculation.
     // API versions describe command availability, not the action state fixes.
-    // A backported guest retains its API version and must contain those fixes.
-    if(calculationOnly && forcesRequested) {
-      if(api<14) {
-        plumed_error()<<"This loaded guest kernel cannot evaluate auxiliary forces (requires API >= 14 for setEvaluationMode)";
-      }
-      setEvaluationMode(1);
-      try {
-        cmd("performCalcNoUpdate");
-      } catch(...) {
-        setEvaluationMode(0);
-        throw;
-      }
-      setEvaluationMode(0);
-    } else {
-      cmd(calculationOnly ? "performCalcNoForces" : "performCalcNoUpdate");
-    }
+    cmd(forcesRequested ? "performCalcNoUpdate" : "performCalcNoForces");
   }
 }
 
