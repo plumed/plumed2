@@ -64,3 +64,15 @@ make a genuinely coupled sampler or asynchronous shell solver supported; those
 need a coordinated evaluation algorithm. Older kernels use the documented
 legacy shell fallback; lambda MCMC requires the API14 protocol. Simultaneous
 expanded-ensemble sampling and replica exchange remain unsupported by the host.
+
+For PINES with PL_REFRESH=1, ordinary evaluations still request all candidate
+atoms and select pairs from the current coordinates. Refreshing only after
+foreign coordinates would restore the reproduced ordinary pair-crossing error.
+The solvated regtest/pines/rt-pines input (NaCl and 508 explicit waters,1526atoms)
+was benchmarked with five stationary500-step serial runs after20warmup steps.
+Compared with pre-fix832f9c9a1, the mean atom request rose780.5to1526(1.955x)
+and the median PINES evaluation rose0.277to0.410ms(1.478x). These are action
+evaluation/request measurements, not total MD runtime or network timings.
+Avoiding full requests safely needs a displacement-bound/candidate-validity
+scheme; reusing an arbitrary previous-frame list is insufficient. Local lambda
+trials can reuse initialized membership without this foreign-coordinate refresh.
