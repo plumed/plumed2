@@ -1,0 +1,17 @@
+type=driver
+plumed_modules="gpu_voronoi gpu_cuda_hip"
+# skipped on the CI where gpu_voronoi is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests).
+# gpu_cuda_hip is needed for its "plumed cuda-devices", which finds the GPU
+PLUMED_ALLOW_SKIP_ON_CI=yes
+plumed_needs_device=cuda
+arg="--plumed plumed.dat --ixyz half-box.xyz --box 4,4,4"
+extra_files="../common/compare.sh"
+
+plumed_regtest_after() {
+  {
+    bash compare.sh values 2
+    bash compare.sh derivatives 3
+    echo "actions on the GPU: $(grep -c "requested CUDA; selected CUDA" out)"
+  } > comparison
+}

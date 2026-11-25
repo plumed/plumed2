@@ -1,0 +1,32 @@
+type=driver
+plumed_modules="gpu_voronoi gpu_cuda_hip"
+# skipped on the CI where gpu_voronoi is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests).
+# gpu_cuda_hip is needed for its "plumed cuda-devices", which finds the GPU
+PLUMED_ALLOW_SKIP_ON_CI=yes
+plumed_needs_device=cuda
+arg="--plumed plumed.dat --ixyz frame.xyz --box 7,8,9"
+extra_files="../common/frame.xyz"
+export PLUMED_STACK_TRACE=no
+# Geometries that the GPU must reject, with the message (and the step and atoms) of the CPU.
+# Each line of the table below is: name|trajectory|box|expected message|action
+
+plumed_regtest_after() {
+  rm -f errors
+  while IFS='|' read -r name trajectory box text action ; do
+    printf 'q: %s\nPRINT ARG=q FILE=values_%s\n' "$action" "$name" > bad_$name.dat
+    rc=0
+    $plumed driver --plumed bad_$name.dat --ixyz $trajectory --box $box > bad_$name.out 2> bad_$name.err || rc=$?
+    if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: rejected" >> errors
+    else
+      echo "$name: NOT REJECTED PROPERLY (exit code $rc)" >> errors
+    fi
+  done <<'EOT'
+empty-nlist|frame.xyz|7,8,9|an ASSIGNED atom has no CENTER inside the candidate list|VORONOI_COORDINATION CENTERS=1,2,3,4 ASSIGNED=5,6,7,8,9,10 REFERENCE=1.5,1.2,1.1,2.2 KAPPA=5 NLIST NL_CUTOFF=0.02 NL_STRIDE=3 BACKEND=CUDA
+invalid-pair|pair.xyz|7,8,9|zero or near-zero CENTER-ASSIGNED distance step=1 center_atom=4 assigned_atom=2|VORONOI_COORDINATION CENTERS=4,1 ASSIGNED=3,2 KAPPA=1 REFERENCE=0 BACKEND=AUTO
+invalid-pair-nlist|pair.xyz|7,8,9|zero or near-zero CENTER-ASSIGNED distance step=1 center_atom=4 assigned_atom=2|VORONOI_COORDINATION CENTERS=4,1 ASSIGNED=3,2 KAPPA=1 REFERENCE=0 BACKEND=AUTO NLIST NL_CUTOFF=3 NL_STRIDE=1
+nonfinite-distance|far.xyz|7,8,9|non-finite CENTER-ASSIGNED distance step=0 center_atom=1 assigned_atom=2|VORONOI_COORDINATION CENTERS=1 ASSIGNED=2 REFERENCE=0 KAPPA=1 NOPBC BACKEND=CUDA
+overflow-score|two.xyz|7,8,9|non-finite KAPPA times CENTER-ASSIGNED distance step=0 center_atom=1 assigned_atom=2|VORONOI_COORDINATION CENTERS=1 ASSIGNED=2 REFERENCE=0 KAPPA=1e308 NOPBC BACKEND=CUDA
+EOT
+}

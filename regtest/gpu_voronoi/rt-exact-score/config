@@ -1,0 +1,15 @@
+type=driver
+plumed_modules="gpu_voronoi gpu_cuda_hip"
+# skipped on the CI where gpu_voronoi is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests).
+# gpu_cuda_hip is needed for its "plumed cuda-devices", which finds the GPU
+PLUMED_ALLOW_SKIP_ON_CI=yes
+plumed_needs_device=cuda
+arg="--plumed plumed.dat --ixyz frame-single.xyz --box 7,8,9"
+
+plumed_regtest_after() {
+  # the value must be exactly 1 and every derivative exactly 0 (also -0)
+  awk '!/^#/{if($2!=1) bad++} END{print (bad ? "value: NOT 1" : "value: 1")}' values > exact
+  awk '!/^#/{n++; if($3!=0) bad++} END{print (bad ? "derivatives: NOT 0" : "derivatives: " n " rows, all 0")}' derivatives >> exact
+  echo "actions on the GPU: $(grep -c "requested CUDA; selected CUDA" out)" >> exact
+}

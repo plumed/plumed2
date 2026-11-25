@@ -1,0 +1,30 @@
+type=driver
+plumed_modules="gpu_voronoi gpu_cuda_hip"
+# skipped on the CI where gpu_voronoi is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests).
+# gpu_cuda_hip is needed for its "plumed cuda-devices", which finds the GPU
+PLUMED_ALLOW_SKIP_ON_CI=yes
+plumed_needs_device=cuda
+arg="--plumed plumed.dat --ixyz rebuild.xyz --box 7,8,9"
+extra_files="../common/compare.sh"
+
+plumed_regtest_after() {
+  {
+    bash compare.sh values 2
+    bash compare.sh derivatives 3
+    echo "actions on the GPU: $(grep -c "requested CUDA; selected CUDA" out)"
+    # the GPU sums are done in a fixed order: a second run gives the same numbers
+    mkdir rerun
+    (cd rerun && cp ../*.xyz ../plumed.dat . && $plumed driver $arg > out 2> err)
+    if cmp -s values rerun/values && cmp -s derivatives rerun/derivatives ; then
+      echo "second run: identical"
+    else
+      echo "second run: DIFFERENT"
+    fi
+  } > comparison
+  if grep -q "NLIST assignment and assignment derivatives" out ; then
+    echo "NLIST on the GPU" >> comparison
+  else
+    echo "NLIST NOT on the GPU" >> comparison
+  fi
+}

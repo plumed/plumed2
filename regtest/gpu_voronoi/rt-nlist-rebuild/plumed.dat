@@ -1,0 +1,10 @@
+# The box is fixed. The second center is outside the initial candidate list and
+# enters the cutoff before the scheduled rebuild at step 10 (NL_SKIN triggers it);
+# the following frame moves less than half the skin and reuses the new list.
+# The CPU reference rebuilds the list at every step.
+cq: VORONOI_COORDINATION SELECT=1 POWER=2 CENTERS=1,2,3 ASSIGNED=4,5 REFERENCE=1 KAPPA=5 NLIST NL_CUTOFF=1.2 NL_STRIDE=1 NO_SHARE
+cd: VORONOI_DISTANCE GROUP1=1,2,3 CENTERS=1,2,3 ASSIGNED=4,5 REFERENCE=1 KAPPA=5 NLIST NL_CUTOFF=1.2 NL_STRIDE=1 NO_SHARE
+gq: VORONOI_COORDINATION SELECT=1 POWER=2 CENTERS=1,2,3 ASSIGNED=4,5 REFERENCE=1 KAPPA=5 NLIST NL_CUTOFF=1.2 NL_STRIDE=10 NL_SKIN=0.25 BACKEND=CUDA
+gd: VORONOI_DISTANCE GROUP1=1,2,3 CENTERS=1,2,3 ASSIGNED=4,5 REFERENCE=1 KAPPA=5 NLIST NL_CUTOFF=1.2 NL_STRIDE=10 NL_SKIN=0.25 BACKEND=CUDA
+PRINT ARG=cq,gq,cd,gd FILE=values FMT=%24.16e
+DUMPDERIVATIVES ARG=cq,gq,cd,gd FILE=derivatives FMT=%24.16e

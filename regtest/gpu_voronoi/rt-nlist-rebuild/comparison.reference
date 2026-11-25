@@ -1,0 +1,5 @@
+values: 4 rows, CPU and GPU agree
+derivatives: 96 rows, CPU and GPU agree
+actions on the GPU: 2
+second run: identical
+NLIST on the GPU

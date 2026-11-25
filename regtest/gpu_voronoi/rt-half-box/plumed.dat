@@ -1,0 +1,6 @@
+# At half the box length two images have the same distance but opposite
+# derivatives: the GPU must choose the image as the CPU
+c: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 SELECT=1 KAPPA=1 REFERENCE=0 POWER=1 NO_SHARE
+g: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 SELECT=1 KAPPA=1 REFERENCE=0 POWER=1 BACKEND=CUDA
+PRINT ARG=c,g FILE=values FMT=%24.16e
+DUMPDERIVATIVES ARG=c,g FILE=derivatives FMT=%24.16e

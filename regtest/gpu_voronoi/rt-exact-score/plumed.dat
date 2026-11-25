@@ -1,0 +1,6 @@
+# A single center has occupancy 1 and zero derivatives. With a large finite KAPPA,
+# fusing the score multiplication with the softmax shift could leave a large
+# residual even at the maximum
+v: VORONOI_COORDINATION CENTERS=1 ASSIGNED=2 KAPPA=1e308 REFERENCE=0 NOPBC BACKEND=CUDA
+PRINT ARG=v FILE=values FMT=%.17g
+DUMPDERIVATIVES ARG=v FILE=derivatives FMT=%.17g

@@ -1,0 +1,3 @@
+values: 5 rows, CPU and GPU agree
+derivatives: 90 rows, CPU and GPU agree
+actions on the GPU: 1

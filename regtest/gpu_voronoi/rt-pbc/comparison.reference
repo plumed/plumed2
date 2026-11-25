@@ -1,0 +1,4 @@
+values: 1 rows, CPU and GPU agree
+derivatives: 39 rows, CPU and GPU agree
+actions on the GPU: 11
+second run: identical
