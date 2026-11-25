@@ -19,95 +19,62 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-// FP64 streamed assignments with optional buffered center lists.
+// FP64 soft assignment of the reactive Voronoi actions on the GPU (CUDA or HIP),
+// with complete assignments or with the candidate list of NLIST.
 #include "colvar/ReactiveVoronoiBackend.h"
+#include "core/GpuDevice.h"
 #include "tools/Pbc.h"
-#include <cuda_runtime.h>
+#include "tools/Tools.h"
+#include "gpu_cuda_hip/cudaHelpers.cuh"
 #include <algorithm>
 #include <climits>
 #include <cmath>
-#include <cstdio>
-#include <new>
+#include <stdexcept>
+#include <vector>
 
+namespace PLMD {
+namespace gpu_voronoi {
 namespace {
+
+using CUDAHELPERS::cudaCheck;
+using CUDAHELPERS::deviceBuffer;
+using CUDAHELPERS::pinnedBuffer;
+using CUDAHELPERS::warpMask;
+
 constexpr int denseThreads=128;
 constexpr int neighborThreads=32;
 
-bool checkCuda(cudaError_t status) {
-  if(status==cudaSuccess) {
-    return true;
-  }
-  std::fprintf(stderr,"ReactiveVoronoi CUDA: %s\n",cudaGetErrorString(status));
-  return false;
-}
-
-/// Preserve the device context selected by the MD engine around every call.
-class DeviceScope {
-  int previous_=-1;
-  bool valid_=false;
-public:
-  explicit DeviceScope(int device) {
-    int current=-1;
-    if(!checkCuda(cudaGetDevice(&current))) {
-      return;
-    }
-    if(current!=device) {
-      if(!checkCuda(cudaSetDevice(device))) {
-        return;
-      }
-      previous_=current;
-    }
-    valid_=true;
-  }
-  ~DeviceScope() {
-    if(previous_>=0) {
-      cudaSetDevice(previous_);
-    }
-  }
-  DeviceScope(const DeviceScope&)=delete;
-  DeviceScope& operator=(const DeviceScope&)=delete;
-  bool valid() const {
-    return valid_;
-  }
-};
-
-struct State {
+/// What the kernels see: the device buffers and the parameters of the last forward pass
+struct Data {
   int numCenters=0;
   int numAssigned=0;
-  int device=-1;
-  double* positions=nullptr;
+  const double* positions=nullptr;
   double* occupancy=nullptr;
   double* maximum=nullptr;
   double* normalization=nullptr;
-  double* sensitivity=nullptr;
+  const double* sensitivity=nullptr;
   double* derivatives=nullptr;
   double* virial=nullptr;
   unsigned long long* invalid=nullptr;
-  // pinned host copies of occupancy and invalid, written by the queued forward pass
-  // (a copy to pageable memory would wait for the kernel)
-  double* hostOccupancy=nullptr;
-  unsigned long long* hostInvalid=nullptr;
-  int* offsets=nullptr;
-  int* candidateCenters=nullptr;
-  int candidateCapacity=0;
+  const int* offsets=nullptr;
+  const int* candidateCenters=nullptr;
   double cutoff=0;
-  bool useNeighbors=false;
   double box[3] {};
   double inverseBox[3] {};
   double kappa=0;
   bool pbc=false;
-  cudaStream_t stream=nullptr;
 };
 
 template<int threads>
 __device__ double reduce(double value, bool maximum, double* scratch) {
   const int thread=threadIdx.x;
   if constexpr(threads==neighborThreads) {
+    // a single warp of 32 threads (half a wavefront on AMD GPUs)
     for(int offset=threads/2; offset; offset/=2) {
-      const double other=__shfl_down_sync(0xffffffff,value,offset);
+      const double other=__shfl_down_sync(warpMask(),value,offset,32);
       value=maximum ? fmax(value,other) : value+other;
     }
-    return __shfl_sync(0xffffffff,value,0);
+    return __shfl_sync(warpMask(),value,0,32);
   }
   scratch[thread]=value;
   __syncthreads();
@@ -124,16 +91,16 @@ __device__ double reduce(double value, bool maximum, double* scratch) {
   return result;
 }
 
-__device__ double distance(const State state, int center, int assigned,
+__device__ double distance(const Data& data, int center, int assigned,
                            double* displacement) {
   double squared=0;
   for(int axis=0; axis<3; ++axis) {
-    displacement[axis]=state.positions[3*(state.numCenters+assigned)+axis]-
-                       state.positions[3*center+axis];
-    if(state.pbc) {
+    displacement[axis]=data.positions[3*(data.numCenters+assigned)+axis]-
+                       data.positions[3*center+axis];
+    if(data.pbc) {
       // Match Pbc::distance, including its choice of image at a half-box tie.
-      const double scaled=__dmul_rn(displacement[axis],state.inverseBox[axis]);
-      displacement[axis]=PLMD::Tools::pbc(scaled)*state.box[axis];
+      const double scaled=__dmul_rn(displacement[axis],data.inverseBox[axis]);
+      displacement[axis]=Tools::pbc(scaled)*data.box[axis];
     }
     squared+=displacement[axis]*displacement[axis];
   }
@@ -153,30 +120,30 @@ constexpr unsigned long long emptyList=noFailure-1;
 
 // Lower keys win, so every launch reports the same offending pair. The two
 // signed-int selection sizes leave room for the reason code and sentinels.
-__device__ void recordFailure(const State& state, int center, int assigned, PairFailure reason) {
-  const auto pair=static_cast<unsigned long long>(center)*state.numAssigned+assigned;
-  atomicMin(state.invalid,pair*failureKinds+reason);
+__device__ void recordFailure(const Data& data, int center, int assigned, PairFailure reason) {
+  const auto pair=static_cast<unsigned long long>(center)*data.numAssigned+assigned;
+  atomicMin(data.invalid,pair*failureKinds+reason);
 }
 
 template<int threads, bool useNeighbors>
-__global__ void forwardKernel(State state) {
+__global__ void forwardKernel(Data data) {
   __shared__ double scratch[threads];
   const int assigned=blockIdx.x;
   const int thread=threadIdx.x;
-  const int begin=useNeighbors ? state.offsets[assigned] : 0;
-  const int end=useNeighbors ? state.offsets[assigned+1] : state.numCenters;
+  const int begin=useNeighbors ? data.offsets[assigned] : 0;
+  const int end=useNeighbors ? data.offsets[assigned+1] : data.numCenters;
   double maximum=-INFINITY;
   for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? state.candidateCenters[entry] : entry;
+    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(state,center,assigned,displacement);
+    const double length=distance(data,center,assigned,displacement);
     if(!isfinite(length) || length<=2.220446049250313e-16) {
-      recordFailure(state,center,assigned,isfinite(length) ? zeroDistance : nonfiniteDistance);
+      recordFailure(data,center,assigned,isfinite(length) ? zeroDistance : nonfiniteDistance);
     }
-    if(!useNeighbors || length<=state.cutoff) {
-      const double score=assignmentScore(state.kappa,length);
+    if(!useNeighbors || length<=data.cutoff) {
+      const double score=assignmentScore(data.kappa,length);
       if(!isfinite(score)) {
-        recordFailure(state,center,assigned,nonfiniteScore);
+        recordFailure(data,center,assigned,nonfiniteScore);
       }
       maximum=fmax(maximum,score);
     }
@@ -184,71 +151,71 @@ __global__ void forwardKernel(State state) {
   maximum=reduce<threads>(maximum,true,scratch);
   if(useNeighbors && maximum==-INFINITY) {
     if(thread==0) {
-      atomicMin(state.invalid,emptyList);
+      atomicMin(data.invalid,emptyList);
     }
     return;
   }
   double normalization=0;
   for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? state.candidateCenters[entry] : entry;
+    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(state,center,assigned,displacement);
-    if(!useNeighbors || length<=state.cutoff) {
-      normalization+=exp(assignmentScore(state.kappa,length)-maximum);
+    const double length=distance(data,center,assigned,displacement);
+    if(!useNeighbors || length<=data.cutoff) {
+      normalization+=exp(assignmentScore(data.kappa,length)-maximum);
     }
   }
   normalization=reduce<threads>(normalization,false,scratch);
   if(thread==0) {
-    state.maximum[assigned]=maximum;
-    state.normalization[assigned]=normalization;
+    data.maximum[assigned]=maximum;
+    data.normalization[assigned]=normalization;
   }
   for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? state.candidateCenters[entry] : entry;
+    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(state,center,assigned,displacement);
-    if(useNeighbors && length>state.cutoff) {
+    const double length=distance(data,center,assigned,displacement);
+    if(useNeighbors && length>data.cutoff) {
       continue;
     }
-    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
-    atomicAdd(state.occupancy+center,weight);
+    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
+    atomicAdd(data.occupancy+center,weight);
   }
 }
 
 template<int threads, bool useNeighbors>
-__global__ void backwardKernel(State state) {
+__global__ void backwardKernel(Data data) {
   __shared__ double scratch[threads];
   const int assigned=blockIdx.x;
   const int thread=threadIdx.x;
-  const int begin=useNeighbors ? state.offsets[assigned] : 0;
-  const int end=useNeighbors ? state.offsets[assigned+1] : state.numCenters;
-  const double maximum=state.maximum[assigned];
-  const double normalization=state.normalization[assigned];
+  const int begin=useNeighbors ? data.offsets[assigned] : 0;
+  const int end=useNeighbors ? data.offsets[assigned+1] : data.numCenters;
+  const double maximum=data.maximum[assigned];
+  const double normalization=data.normalization[assigned];
   double mean=0;
   for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? state.candidateCenters[entry] : entry;
+    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(state,center,assigned,displacement);
-    if(useNeighbors && length>state.cutoff) {
+    const double length=distance(data,center,assigned,displacement);
+    if(useNeighbors && length>data.cutoff) {
       continue;
     }
-    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
-    mean+=weight*state.sensitivity[center];
+    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
+    mean+=weight*data.sensitivity[center];
   }
   mean=reduce<threads>(mean,false,scratch);
   double assignedDerivative[3]= {0,0,0};
   double virial[9]= {};
   for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? state.candidateCenters[entry] : entry;
+    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(state,center,assigned,displacement);
-    if(useNeighbors && length>state.cutoff) {
+    const double length=distance(data,center,assigned,displacement);
+    if(useNeighbors && length>data.cutoff) {
       continue;
     }
-    const double weight=exp(assignmentScore(state.kappa,length)-maximum)/normalization;
-    const double radial=-state.kappa*weight*(state.sensitivity[center]-mean)/length;
+    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
+    const double radial=-data.kappa*weight*(data.sensitivity[center]-mean)/length;
     for(int axis=0; axis<3; ++axis) {
       const double gradient=radial*displacement[axis];
-      atomicAdd(state.derivatives+3*center+axis,-gradient);
+      atomicAdd(data.derivatives+3*center+axis,-gradient);
       assignedDerivative[axis]+=gradient;
       for(int component=0; component<3; ++component) {
         virial[3*axis+component]-=gradient*displacement[component];
@@ -258,252 +225,208 @@ __global__ void backwardKernel(State state) {
   for(int axis=0; axis<3; ++axis) {
     const double value=reduce<threads>(assignedDerivative[axis],false,scratch);
     if(thread==0) {
-      state.derivatives[3*(state.numCenters+assigned)+axis]=value;
+      data.derivatives[3*(data.numCenters+assigned)+axis]=value;
     }
   }
   for(int component=0; component<9; ++component) {
     const double value=reduce<threads>(virial[component],false,scratch);
     if(thread==0) {
-      atomicAdd(state.virial+component,value);
+      atomicAdd(data.virial+component,value);
     }
   }
 }
 
-void release(State* state) {
-  if(!state) {
-    return;
-  }
-  DeviceScope scope(state->device);
-  if(scope.valid()) {
-    cudaFree(state->positions);
-    cudaFree(state->occupancy);
-    cudaFree(state->maximum);
-    cudaFree(state->normalization);
-    cudaFree(state->sensitivity);
-    cudaFree(state->derivatives);
-    cudaFree(state->virial);
-    cudaFree(state->invalid);
-    cudaFreeHost(state->hostOccupancy);
-    cudaFreeHost(state->hostInvalid);
-    cudaFree(state->offsets);
-    cudaFree(state->candidateCenters);
-    if(state->stream) {
-      cudaStreamDestroy(state->stream);
-    }
-  }
-  delete state;
-}
-
-State* createState(int numCenters, int numAssigned, int mdDevice) {
-  int deviceCount=0;
-  if(!checkCuda(cudaGetDeviceCount(&deviceCount)) || deviceCount==0) {
-    throw std::runtime_error("No CUDA device is available");
-  }
-  if(numCenters<=0 || numAssigned<=0 || mdDevice>=deviceCount) {
-    return nullptr;
-  }
-  int device=mdDevice;
-  if(device<0 && !checkCuda(cudaGetDevice(&device))) {
-    return nullptr;
-  }
-  DeviceScope scope(device);
-  if(!scope.valid()) {
-    return nullptr;
-  }
-  State* state=new(std::nothrow) State;
-  if(!state) {
-    return nullptr;
-  }
-  state->numCenters=numCenters;
-  state->numAssigned=numAssigned;
-  state->device=device;
-  const size_t numAtoms=static_cast<size_t>(numCenters)+numAssigned;
-  if(!checkCuda(cudaStreamCreateWithFlags(&state->stream,cudaStreamNonBlocking)) ||
-      !checkCuda(cudaMalloc(&state->positions,3*numAtoms*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->occupancy,numCenters*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->maximum,numAssigned*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->normalization,numAssigned*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->sensitivity,numCenters*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->derivatives,3*numAtoms*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->virial,9*sizeof(double))) ||
-      !checkCuda(cudaMalloc(&state->invalid,sizeof(*state->invalid))) ||
-      !checkCuda(cudaMallocHost(&state->hostOccupancy,numCenters*sizeof(double))) ||
-      !checkCuda(cudaMallocHost(&state->hostInvalid,sizeof(*state->hostInvalid)))) {
-    release(state);
-    return nullptr;
-  }
-  return state;
-}
-
-// queues the forward pass, finishForward waits for it
-int runForward(State& state, const double* positions, const PLMD::Pbc& box, bool pbc,
-               double kappa, bool useNeighbors, double cutoff,
-               const int* offsets, const int* centers, int count) {
-  DeviceScope scope(state.device);
-  if(!scope.valid()) {
-    return 1;
-  }
-  if(useNeighbors) {
-    if(offsets) {
-      if(count<0 || (count>0 && !centers)) {
-        return 1;
-      }
-      if(!state.offsets && !checkCuda(cudaMalloc(&state.offsets,
-                                      (static_cast<size_t>(state.numAssigned)+1)*sizeof(int)))) {
-        return 1;
-      }
-      if(count>state.candidateCapacity) {
-        int* replacement=nullptr;
-        if(!checkCuda(cudaMalloc(&replacement,static_cast<size_t>(count)*sizeof(int)))) {
-          return 1;
-        }
-        cudaFree(state.candidateCenters);
-        state.candidateCenters=replacement;
-        state.candidateCapacity=count;
-      }
-      if(!checkCuda(cudaMemcpyAsync(state.offsets,offsets,
-                                    (static_cast<size_t>(state.numAssigned)+1)*sizeof(int),
-                                    cudaMemcpyHostToDevice,state.stream)) ||
-          (count>0 && !checkCuda(cudaMemcpyAsync(state.candidateCenters,centers,
-                                 static_cast<size_t>(count)*sizeof(int),cudaMemcpyHostToDevice,state.stream)))) {
-        return 1;
-      }
-    } else if(!state.offsets) {
-      return 1;
-    }
-    state.cutoff=cutoff;
-  }
-  state.useNeighbors=useNeighbors;
-  state.pbc=pbc;
-  state.kappa=kappa;
-  for(int axis=0; axis<3; ++axis) {
-    state.box[axis]=box.getBox()(axis,axis);
-    state.inverseBox[axis]=box.getInvBox()(axis,axis);
-  }
-  const size_t numAtoms=static_cast<size_t>(state.numCenters)+state.numAssigned;
-  if(!checkCuda(cudaMemcpyAsync(state.positions,positions,3*numAtoms*sizeof(double),
-                                cudaMemcpyHostToDevice,state.stream)) ||
-      !checkCuda(cudaMemsetAsync(state.occupancy,0,state.numCenters*sizeof(double),state.stream)) ||
-      !checkCuda(cudaMemsetAsync(state.invalid,0xff,sizeof(*state.invalid),state.stream))) {
-    return 1;
-  }
-  if(useNeighbors) {
-    forwardKernel<neighborThreads,true><<<state.numAssigned,neighborThreads,0,state.stream>>>(state);
-  } else {
-    forwardKernel<denseThreads,false><<<state.numAssigned,denseThreads,0,state.stream>>>(state);
-  }
-  if(!checkCuda(cudaGetLastError()) ||
-      !checkCuda(cudaMemcpyAsync(state.hostOccupancy,state.occupancy,state.numCenters*sizeof(double),
-                                 cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaMemcpyAsync(state.hostInvalid,state.invalid,sizeof(*state.hostInvalid),
-                                 cudaMemcpyDeviceToHost,state.stream))) {
-    return 1;
-  }
-  return 0;
-}
-
-int waitForward(State& state, double* occupancy) {
-  DeviceScope scope(state.device);
-  if(!scope.valid() || !checkCuda(cudaStreamSynchronize(state.stream))) {
-    return 1;
-  }
-  std::copy(state.hostOccupancy,state.hostOccupancy+state.numCenters,occupancy);
-  const unsigned long long invalid=*state.hostInvalid;
-  if(invalid==noFailure) {
-    return 0;
-  }
-  if(invalid==emptyList) {
-    return 2;
-  }
-  const auto pair=invalid/failureKinds;
-  const char* reasons[]= {"non-finite CENTER-ASSIGNED distance", "zero or near-zero CENTER-ASSIGNED distance",
-                          "non-finite KAPPA times CENTER-ASSIGNED distance"
-                         };
-  throw PLMD::colvar::ReactiveVoronoiBackend::InvalidPair(pair/state.numAssigned,pair%state.numAssigned,
-      reasons[invalid%failureKinds]);
-}
-
-int runBackward(State& state, const double* sensitivity, double* derivatives, double* virial) {
-  DeviceScope scope(state.device);
-  if(!scope.valid()) {
-    return 1;
-  }
-  const size_t numAtoms=static_cast<size_t>(state.numCenters)+state.numAssigned;
-  if(!checkCuda(cudaMemcpyAsync(state.sensitivity,sensitivity,state.numCenters*sizeof(double),
-                                cudaMemcpyHostToDevice,state.stream)) ||
-      !checkCuda(cudaMemsetAsync(state.derivatives,0,3*numAtoms*sizeof(double),state.stream)) ||
-      !checkCuda(cudaMemsetAsync(state.virial,0,9*sizeof(double),state.stream))) {
-    return 1;
-  }
-  if(state.useNeighbors) {
-    backwardKernel<neighborThreads,true><<<state.numAssigned,neighborThreads,0,state.stream>>>(state);
-  } else {
-    backwardKernel<denseThreads,false><<<state.numAssigned,denseThreads,0,state.stream>>>(state);
-  }
-  if(!checkCuda(cudaGetLastError()) ||
-      !checkCuda(cudaMemcpyAsync(derivatives,state.derivatives,3*numAtoms*sizeof(double),
-                                 cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaMemcpyAsync(virial,state.virial,9*sizeof(double),
-                                 cudaMemcpyDeviceToHost,state.stream)) ||
-      !checkCuda(cudaStreamSynchronize(state.stream))) {
-    return 1;
-  }
-  return 0;
-}
-
-
-class ReactiveVoronoiCuda final : public PLMD::colvar::ReactiveVoronoiBackend {
-  std::unique_ptr<State,decltype(&release)> state_;
+class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
+  /// Declared first, so that it is destroyed last: the destructor enters it, so
+  /// that the buffers are freed on their GPU, and the GPU of the caller is given
+  /// back only after that
+  CUDAHELPERS::deviceGuard destructorGuard_;
+  int device_=-1;
+  int numCenters_=0;
+  int numAssigned_=0;
+  cudaStream_t stream_=nullptr;
+  deviceBuffer<double> positions_;
+  deviceBuffer<double> occupancy_;
+  deviceBuffer<double> maximum_;
+  deviceBuffer<double> normalization_;
+  deviceBuffer<double> sensitivity_;
+  deviceBuffer<double> derivatives_;
+  deviceBuffer<double> virial_;
+  deviceBuffer<unsigned long long> invalid_;
+  // pinned host copies of occupancy and invalid, written by the queued forward pass
+  // (a copy to pageable memory would wait for the kernel)
+  pinnedBuffer<double> hostOccupancy_;
+  pinnedBuffer<unsigned long long> hostInvalid_;
+  // the candidate list of NLIST: the centers of each assigned atom
+  deviceBuffer<int> offsets_;
+  deviceBuffer<int> candidateCenters_;
+  bool haveNeighbors_=false;
   unsigned long uploadedNeighborVersion_=0;
+  // the parameters of the last forward pass, used also by backward
+  Data data_;
+  bool useNeighbors_=false;
+
+  void allocate() {
+    CUDAHELPERS::deviceGuard guard(device_);
+    cudaCheck(cudaStreamCreateWithFlags(&stream_,cudaStreamNonBlocking),"cudaStreamCreateWithFlags");
+    const size_t numAtoms=static_cast<size_t>(numCenters_)+numAssigned_;
+    positions_.resize(3*numAtoms);
+    occupancy_.resize(numCenters_);
+    maximum_.resize(numAssigned_);
+    normalization_.resize(numAssigned_);
+    sensitivity_.resize(numCenters_);
+    derivatives_.resize(3*numAtoms);
+    virial_.resize(9);
+    invalid_.resize(1);
+    hostOccupancy_.resize(numCenters_);
+    hostInvalid_.resize(1);
+  }
+
+  // queues the forward pass, finishForward waits for it
+  void queueForward(const double* positions, const Pbc& box, bool pbc, double kappa) {
+    data_.numCenters=numCenters_;
+    data_.numAssigned=numAssigned_;
+    data_.positions=positions_.data();
+    data_.occupancy=occupancy_.data();
+    data_.maximum=maximum_.data();
+    data_.normalization=normalization_.data();
+    data_.sensitivity=sensitivity_.data();
+    data_.derivatives=derivatives_.data();
+    data_.virial=virial_.data();
+    data_.invalid=invalid_.data();
+    data_.offsets=offsets_.data();
+    data_.candidateCenters=candidateCenters_.data();
+    data_.pbc=pbc;
+    data_.kappa=kappa;
+    for(int axis=0; axis<3; ++axis) {
+      data_.box[axis]=box.getBox()(axis,axis);
+      data_.inverseBox[axis]=box.getInvBox()(axis,axis);
+    }
+    const size_t numAtoms=static_cast<size_t>(numCenters_)+numAssigned_;
+    cudaCheck(cudaMemcpyAsync(positions_.data(),positions,3*numAtoms*sizeof(double),
+                              cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+    cudaCheck(cudaMemsetAsync(occupancy_.data(),0,numCenters_*sizeof(double),stream_),"cudaMemsetAsync");
+    cudaCheck(cudaMemsetAsync(invalid_.data(),0xff,sizeof(unsigned long long),stream_),"cudaMemsetAsync");
+    if(useNeighbors_) {
+      forwardKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+    } else {
+      forwardKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
+    }
+    cudaCheck(cudaGetLastError(),"forwardKernel");
+    cudaCheck(cudaMemcpyAsync(hostOccupancy_.data(),occupancy_.data(),numCenters_*sizeof(double),
+                              cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
+    cudaCheck(cudaMemcpyAsync(hostInvalid_.data(),invalid_.data(),sizeof(unsigned long long),
+                              cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
+  }
 
 public:
-  ReactiveVoronoiCuda(int centers, int assigned, int device):
-    state_(createState(centers,assigned,device),release) {
-    if(!state_) {
-      throw std::runtime_error("CUDA backend context creation failed on the requested or current device");
+  ReactiveVoronoiCuda(int centers, int assigned, int mdDevice):
+    numCenters_(centers),
+    numAssigned_(assigned) {
+    if(centers<=0 || assigned<=0) {
+      throw std::runtime_error("the GPU backend needs at least one CENTER and one ASSIGNED atom");
+    }
+    device_=CUDAHELPERS::chooseGPU(mdDevice).id;
+    if(device_<0) {
+      throw std::runtime_error("No CUDA device is available");
+    }
+    try {
+      allocate();
+    } catch(...) {
+      // the members allocated so far are freed on their GPU (see destructorGuard_)
+      destructorGuard_.enter(device_);
+      if(stream_) {
+        cudaStreamDestroy(stream_);
+      }
+      throw;
     }
   }
+
+  ~ReactiveVoronoiCuda() override {
+    destructorGuard_.enter(device_);
+    // wait for any pending work before releasing the resources
+    cudaStreamSynchronize(stream_);
+    cudaStreamDestroy(stream_);
+  }
+
+  ReactiveVoronoiCuda(const ReactiveVoronoiCuda&)=delete;
+  ReactiveVoronoiCuda& operator=(const ReactiveVoronoiCuda&)=delete;
 
   int device() const override {
-    return state_->device;
+    return device_;
   }
 
-  void forward(const double* positions, const PLMD::Pbc& box, bool pbc, double kappa) override {
-    if(runForward(*state_,positions,box,pbc,kappa,false,0,nullptr,nullptr,0)!=0) {
-      throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
-    }
+  void forward(const double* positions, const Pbc& box, bool pbc, double kappa) override {
+    CUDAHELPERS::deviceGuard guard(device_);
+    useNeighbors_=false;
+    queueForward(positions,box,pbc,kappa);
   }
 
-  void forwardNeighbors(const double* positions, const PLMD::Pbc& box, bool pbc, double kappa,
+  void forwardNeighbors(const double* positions, const Pbc& box, bool pbc, double kappa,
                         double cutoff, const std::vector<int>& offsets, const std::vector<int>& centers,
                         unsigned long version) override {
-    const bool upload=uploadedNeighborVersion_!=version;
-    if(runForward(*state_,positions,box,pbc,kappa,true,cutoff,
-                  upload ? offsets.data() : nullptr,
-                  upload ? centers.data() : nullptr,
-                  upload ? static_cast<int>(centers.size()) : 0)!=0) {
-      throw std::runtime_error("CUDA reactive Voronoi NLIST forward failed; check geometry and CUDA diagnostics");
+    CUDAHELPERS::deviceGuard guard(device_);
+    if(!haveNeighbors_ || uploadedNeighborVersion_!=version) {
+      plumed_assert(offsets.size()==static_cast<size_t>(numAssigned_)+1);
+      offsets_.resize(offsets.size());
+      // at least one element, so that the kernels never get a null list
+      candidateCenters_.resize(std::max<size_t>(centers.size(),1));
+      cudaCheck(cudaMemcpyAsync(offsets_.data(),offsets.data(),offsets.size()*sizeof(int),
+                                cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+      if(!centers.empty()) {
+        cudaCheck(cudaMemcpyAsync(candidateCenters_.data(),centers.data(),centers.size()*sizeof(int),
+                                  cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+      }
+      haveNeighbors_=true;
+      uploadedNeighborVersion_=version;
     }
-    uploadedNeighborVersion_=version;
+    useNeighbors_=true;
+    data_.cutoff=cutoff;
+    queueForward(positions,box,pbc,kappa);
   }
 
   void finishForward(double* occupancy) override {
-    const int status=waitForward(*state_,occupancy);
-    if(status==2) {
+    CUDAHELPERS::deviceGuard guard(device_);
+    cudaCheck(cudaStreamSynchronize(stream_),"cudaStreamSynchronize");
+    std::copy(hostOccupancy_.begin(),hostOccupancy_.end(),occupancy);
+    const unsigned long long invalid=hostInvalid_[0];
+    if(invalid==noFailure) {
+      return;
+    }
+    if(invalid==emptyList) {
       throw std::runtime_error("an ASSIGNED atom has no CENTER inside the candidate list");
     }
-    if(status!=0) {
-      throw std::runtime_error("CUDA reactive Voronoi forward failed; check geometry and CUDA diagnostics");
-    }
+    const auto pair=invalid/failureKinds;
+    const char* reasons[]= {"non-finite CENTER-ASSIGNED distance", "zero or near-zero CENTER-ASSIGNED distance",
+                            "non-finite KAPPA times CENTER-ASSIGNED distance"
+                           };
+    throw colvar::ReactiveVoronoiBackend::InvalidPair(pair/numAssigned_,pair%numAssigned_,
+        reasons[invalid%failureKinds]);
   }
 
   void backward(const double* sensitivity, double* derivatives, double* virial) override {
-    if(runBackward(*state_,sensitivity,derivatives,virial)!=0) {
-      throw std::runtime_error("CUDA reactive Voronoi backward failed");
+    CUDAHELPERS::deviceGuard guard(device_);
+    const size_t numAtoms=static_cast<size_t>(numCenters_)+numAssigned_;
+    cudaCheck(cudaMemcpyAsync(sensitivity_.data(),sensitivity,numCenters_*sizeof(double),
+                              cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+    cudaCheck(cudaMemsetAsync(derivatives_.data(),0,3*numAtoms*sizeof(double),stream_),"cudaMemsetAsync");
+    cudaCheck(cudaMemsetAsync(virial_.data(),0,9*sizeof(double),stream_),"cudaMemsetAsync");
+    if(useNeighbors_) {
+      backwardKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+    } else {
+      backwardKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
     }
+    cudaCheck(cudaGetLastError(),"backwardKernel");
+    cudaCheck(cudaMemcpyAsync(derivatives,derivatives_.data(),3*numAtoms*sizeof(double),
+                              cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
+    cudaCheck(cudaMemcpyAsync(virial,virial_.data(),9*sizeof(double),
+                              cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
+    cudaCheck(cudaStreamSynchronize(stream_),"cudaStreamSynchronize");
   }
 };
 
-PLMD::colvar::ReactiveVoronoiBackendRegistration<ReactiveVoronoiCuda> registration("CUDA");
+colvar::ReactiveVoronoiBackendRegistration<ReactiveVoronoiCuda> registration("CUDA");
 
-}
+} // namespace
+} // namespace gpu_voronoi
+} // namespace PLMD

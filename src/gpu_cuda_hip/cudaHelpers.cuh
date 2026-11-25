@@ -48,28 +48,50 @@ inline void cudaCheck (cudaError_t const err, const char *what) {
   }
 }
 
+/// @brief what the runtime of this module sees, for PLMD::GpuDevice::choose
+/// (with HIP the runtime is a shared library, the same one the MD code uses: its
+/// current GPU is the GPU the MD code is using)
+/// @return false if there is no GPU
+inline bool gpuRuntime (PLMD::GpuDevice::Runtime &runtime) {
+  if (cudaGetDeviceCount (&runtime.ndevices) != cudaSuccess || runtime.ndevices <= 0) {
+    return false;
+  }
+#ifdef __HIP__
+  cudaCheck (cudaGetDevice (&runtime.callerDevice), "cudaGetDevice");
+#else
+  // before the runtime of the module is used in this thread
+  runtime.callerDevice = PLMD::GpuDevice::callerCudaDevice();
+#endif
+  cudaCheck (cudaGetDevice (&runtime.runtimeDevice), "cudaGetDevice");
+  return true;
+}
+
 /// @brief chooses the GPU of an action and writes it in its log. The choice is
 /// made by PLUMED (PLMD::GpuDevice in core/GpuDevice.h), as for the openaccPTM
 /// plugin: the GPU assigned to PLUMED by the MD code (cmd "setGpuDeviceId"),
 /// otherwise the GPU the MD code is using, otherwise, with several GPUs, the rank
 /// of the process in its node modulo the number of GPUs, otherwise the current
 /// one of the CUDA runtime (by default the first one).
-/// With HIP the runtime is a shared library, the same one the MD code uses: its
-/// current GPU is the GPU the MD code is using, so the rank is never used
+/// With HIP the rank is never used (see gpuRuntime)
 /// @return the GPU, -1 if there is none
 inline int chooseGPU (const PLMD::Action &action) {
   PLMD::GpuDevice::Runtime runtime;
-  if (cudaGetDeviceCount (&runtime.ndevices) != cudaSuccess || runtime.ndevices <= 0) {
+  if (!gpuRuntime (runtime)) {
     return -1;
   }
-#ifdef __HIP__
-  cudaCheck (cudaGetDevice (&runtime.callerDevice), "cudaGetDevice");
-#else
-  // before the runtime of the plugin is used in this thread
-  runtime.callerDevice = PLMD::GpuDevice::callerCudaDevice();
-#endif
-  cudaCheck (cudaGetDevice (&runtime.runtimeDevice), "cudaGetDevice");
   return PLMD::GpuDevice::choose (action, runtime);
+}
+
+/// @brief the same choice, for code that is not an action (nothing is written in the log)
+/// @param mdDevice the GPU assigned to PLUMED by the MD code (PlumedMain::getGpuDeviceId()),
+/// negative if none
+/// @return the GPU (id -1 if there is none) and how it was chosen
+inline PLMD::GpuDevice chooseGPU (int const mdDevice) {
+  PLMD::GpuDevice::Runtime runtime;
+  if (!gpuRuntime (runtime)) {
+    return {};
+  }
+  return PLMD::GpuDevice::choose (mdDevice, runtime);
 }
 
 /// @brief makes a GPU the current one, and then gives back to the caller (the MD

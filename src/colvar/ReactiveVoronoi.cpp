@@ -876,7 +876,7 @@ std::shared_ptr<ReactiveVoronoiBackend> SoftVoronoiBase::cudaContext() {
       const auto& images=plumed.getLoadedLibraryHandles();
       const auto& registry=reactiveVoronoiBackendRegister();
       if(!registry.check(images,"CUDA")) {
-        throw std::runtime_error("No CUDA Voronoi backend is available. Build the reactive-voronoi-cuda plugin and LOAD it before the action.");
+        throw std::runtime_error("No CUDA Voronoi backend is available: it is in the gpu_voronoi module (--enable-modules=+gpu_voronoi, or the extension).");
       }
       const auto create=registry.get(images,"CUDA");
       context=create(centers_.size(),assigned_.size(),plumed.getGpuDeviceId());
@@ -1648,9 +1648,10 @@ geometry and, for equal KAPPA, weights and occupancies. NO_SHARE selects an
 independent CPU reference. Consumer-specific selections and reductions retain
 their own meanings.
 
-Load the optional CUDA plugin with [LOAD](LOAD.md) before the CV.
-BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the loaded
-backend supports the calculation and otherwise uses CPU. The log shows the
+The CUDA backend (for NVIDIA GPUs, and for AMD GPUs through HIP) is in the optional
+[gpu_voronoi](module_gpu_voronoi.md) module.
+BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the
+backend is available and supports the calculation, and otherwise uses CPU. The log shows the
 selected backend. CUDA supports a single MPI rank with axis-aligned
 orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
 applies the same cutoff at each evaluation. OPES, scalar reductions and direct
@@ -1660,7 +1661,7 @@ GPU is started in advance, so that it can overlap with the work of other actions
 (see PLUMED\_LAUNCH in [the page on actions](actions.md)); its derivatives are
 computed when the action is reached.
 
-The plugin README describes compilation, device selection and examples.
+The page of the module describes compilation and device selection.
 Choose a backend using matched numerical checks and workload timings.
 
 ## CPU parallelism and practical scaling

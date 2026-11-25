@@ -65,7 +65,9 @@
 #define cudaMemcpy                       hipMemcpy
 #define cudaMemcpyAsync                  hipMemcpyAsync
 #define cudaMemset                       hipMemset
+#define cudaMemsetAsync                  hipMemsetAsync
 #define cudaSetDevice                    hipSetDevice
+#define cudaStreamCreateWithFlags        hipStreamCreateWithFlags
 #define cudaStreamCreateWithPriority     hipStreamCreateWithPriority
 #define cudaStreamDestroy                hipStreamDestroy
 #define cudaStreamSynchronize            hipStreamSynchronize
