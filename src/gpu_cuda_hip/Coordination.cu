@@ -1051,10 +1051,12 @@ class CudaCoordination : public Colvar {
   bool firstNLUpdate{true};
   /// if true the lists are also updated when an atom moves more than half the skin
   bool checkDisplacement{false};
-  /// (half the skin)^2, where the skin is NL_CUTOFF-D_MAX
-  double maxDisplacementSQ{0.0};
+  /// the skin, NL_CUTOFF-D_MAX
+  double skin{0.0};
   /// the positions at the last update of the neighbor lists
   std::vector<Vector> positionsAtLastUpdate;
+  /// the box at the last update of the neighbor lists
+  Tensor boxAtLastUpdate;
 
   std::unique_ptr<worker<calculateFloat>> runner=nullptr;
 
@@ -1287,15 +1289,33 @@ bool CudaCoordination<calculateFloat>::needsListUpdate() {
   if (!update && checkDisplacement) {
     //same condition on all the MPI processes, so the Bcast is safe
     if (mpiActive) {
+      // A pair at distance r through the periodic image n (each component -1, 0 or 1
+      // for a cutoff smaller than half the box) was at most at
+      // r + |dx_i| + |dx_j| + |n.dB| <= r + 2 max|dx| + sum_k |dB_k| at the last update,
+      // where dx are the displacements of the atoms and dB_k the changes of the box
+      // vectors (e.g. with pressure coupling): the lists, built with NL_CUTOFF = D_MAX + skin,
+      // are exact as long as max|dx| < (skin - sum_k |dB_k|)/2.
+      double boxChange = 0.0;
+      if (pbc) {
+        const Tensor & box = getPbc().getBox();
+        for (unsigned k = 0; k < 3; ++k) {
+          boxChange += (box.getRow(k) - boxAtLastUpdate.getRow(k)).modulo();
+        }
+      }
+      const double maxDisplacement = 0.5 * (skin - boxChange);
+      const double maxDisplacementSQ = maxDisplacement * maxDisplacement;
+      if (maxDisplacement <= 0.0) {
+        update = 1;
+      }
       // The cheap raw displacement is checked first; an atom that has been
       // wrapped in the box by the MD code (at its neighbour search steps) has
       // a large raw displacement but a small physical one: only for those few
       // atoms the minimum image displacement is computed, so that the wrapping
       // does not trigger an update at every neighbour search step of the MD code.
       // The lists are exact as long as the physical displacements are smaller
-      // than half the skin, so the minimum image criterion is as rigorous.
+      // than maxDisplacement, so the minimum image criterion is as rigorous.
       const auto & positions = getPositions();
-      for (unsigned i = 0; i < nat; ++i) {
+      for (unsigned i = 0; i < nat && !update; ++i) {
         const Vector d = delta(positionsAtLastUpdate[i],positions[i]);
         if (d.modulo2() > maxDisplacementSQ) {
           if (!pbc || pbcDistance(positionsAtLastUpdate[i],positions[i]).modulo2() > maxDisplacementSQ) {
@@ -1366,6 +1386,9 @@ void CudaCoordination<calculateFloat>::updateNeighborLists() {
   if (checkDisplacement) {
     const auto & positions = getPositions();
     std::copy(positions.begin(), positions.end(), positionsAtLastUpdate.begin());
+    if (pbc) {
+      boxAtLastUpdate = getPbc().getBox();
+    }
   }
 }
 
@@ -1757,12 +1780,12 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
     // without a skin a list is valid only at the step it was built
     error("You must setup manually the cutoff of the neigbor list to be higher than DMAX if you want to setup manually the stride");
   }
-  const double skin = NL.cutoff - dmax;
+  skin = NL.cutoff - dmax;
   if (skin > 0.0) {
     //with a skin the lists are exact as long as no atom moves more than skin/2
-    //since the last update: we check that, so that the lists are always valid
+    //since the last update (less if the box changed, see needsListUpdate()):
+    //we check that, so that the lists are always valid
     checkDisplacement = true;
-    maxDisplacementSQ = 0.25 * skin * skin;
     if (NL.stride < 0) {
       NL.stride = std::numeric_limits<int>::max();
       log << "  (the neighbor list will be updated only when an atom moves more than half the skin, "
