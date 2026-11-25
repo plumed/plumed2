@@ -1825,6 +1825,14 @@ void PlumedMain::update() {
     return;
   }
 
+// Error if update() is called more than once within the same step: this most
+// likely leads to incorrect results (see issue #512)
+  if(lastUpdateStep==step) {
+    std::string message="update() called more than once at step "+std::to_string(step)+", this most likely leads to incorrect results";
+    plumed_merror(message);
+  }
+  lastUpdateStep=step;
+
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("6 Update");
 
