@@ -417,6 +417,18 @@ Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) 
 pushes the documentation adds special information to remove from search engine results pages from
 unofficial or unsupported branch (see .ci/push script).
 
+To mark a release branch as unsupported, add the following marker to its own
+`CHANGES/v2.N.md` file, together with the visible "Not maintained" warning:
+
+```html
+<!-- plumednotmaintained: used by .ci/push to disable search indexing. -->
+```
+
+The publisher checks only the CHANGES file matching the branch being published.
+Keep this machine-readable marker when editing or converting the change log;
+the visible warning alone does not disable search indexing.
+
+
 Bottom line: manual will always be updated after a commit that can pass the tests.
 Twenty minutes or so after your push the manual should be up to date, remember to double check on the web
 and to revert the commit if there are errors!
