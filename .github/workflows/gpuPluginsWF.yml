@@ -115,7 +115,7 @@ jobs:
           export PLUMED_PLUGIN_PATH="$HOME/ext-$v/lib/plumed/plugins"
           plumed modules -q --has gpu_cuda_hip
           plumed modules --module gpu_cuda_hip --has-feature cuda -q
-          make -C regtest testclean
+          make -C regtest/gpu_cuda_hip clean
           make -C regtest/gpu_cuda_hip
           .ci/check-nogpu-regtests regtest/gpu_cuda_hip
           unset PLUMED_PLUGIN_PATH
@@ -137,7 +137,7 @@ jobs:
           readelf -d src/lib/libplumedKernel.so | grep -q 'NODELETE'
           (
             source sourceme.sh
-            make -C regtest testclean
+            make -C regtest/gpu_cuda_hip clean
             make -C regtest/gpu_cuda_hip
             .ci/check-nogpu-regtests regtest/gpu_cuda_hip
           )
