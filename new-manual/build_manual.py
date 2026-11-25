@@ -84,7 +84,9 @@ def getActionDocumentationFromPlumed(syntax):
     docs = {}
     tags = {}
     run_action_page = functools.partial(getActionDocumentation, syntax=syntax)
-    files = glob.glob("../src/*/*.cpp")
+    # .cu: the sources of the modules compiled with the cuda toolchain (e.g. gpu_cuda_hip);
+    # their pages are made when the module is in the build of the manual
+    files = sorted(glob.glob("../src/*/*.cpp") + glob.glob("../src/*/*.cu"))
     if sys_platform == "wasi" or sys_platform == "ios":
         # multiprocessing is not avaiable on WASI or iOS
         # https://docs.python.org/3/library/multiprocessing.html
