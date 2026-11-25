@@ -4,7 +4,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src/maketools"))
-from module_header import check_obsolete as check_obsolete, read_header
+from module_header import check_obsolete, header_field, read_header
+
+# check_obsolete and header_field are re-exported for the inventory and the manual
+__all__ = ["check_obsolete", "header_field", "read_header", "read_metadata"]
 
 
 def read_metadata(path):

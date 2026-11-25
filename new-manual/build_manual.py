@@ -17,7 +17,7 @@ from multiprocessing import Pool, cpu_count
 import functools
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "extensions"))
-from metadata import read_header, read_metadata
+from metadata import header_field, read_header, read_metadata
 
 PLUMED = "plumed"
 
@@ -84,7 +84,9 @@ def getActionDocumentationFromPlumed(syntax):
     docs = {}
     tags = {}
     run_action_page = functools.partial(getActionDocumentation, syntax=syntax)
-    files = glob.glob("../src/*/*.cpp")
+    # .cu: the sources of the modules compiled with the cuda toolchain (e.g. gpu_cuda_hip);
+    # their pages are made when the module is in the build of the manual
+    files = sorted(glob.glob("../src/*/*.cpp") + glob.glob("../src/*/*.cu"))
     if sys_platform == "wasi" or sys_platform == "ios":
         # multiprocessing is not avaiable on WASI or iOS
         # https://docs.python.org/3/library/multiprocessing.html
@@ -946,9 +948,15 @@ def createPluginPage(
     plumedtags,
     tagdictionary,
     broken_inputs,
+    kind="plugin",
+    docfile=None,
 ):
-    with open("plugin_" + plugname + ".md", "w") as f:
-        f.write("# [Plugin](modules.md): " + plugname + "\n\n")
+    # kind="module": the page of a module that is not in the build of the manual,
+    # made from its module.md (docfile) as the page of a plugin is made from its README
+    if docfile is None:
+        docfile = "../../plugins/" + plugname + "/README.md"
+    with open(kind + "_" + plugname + ".md", "w") as f:
+        f.write("# [" + kind.capitalize() + "](modules.md): " + plugname + "\n\n")
         f.write("| Description    | Usage |\n")
         f.write("|:--------|:--------:|\n")
         f.write(
@@ -992,13 +1000,13 @@ def createPluginPage(
             )
         f.write("|\n\n")
         f.write("## Details \n")
-        if os.path.exists("../../plugins/" + plugname + "/README.md"):
-            with open("../../plugins/" + plugname + "/README.md") as iff:
+        if os.path.exists(docfile):
+            with open(docfile) as iff:
                 docs = iff.read()
             actions = set()
             _, nf = processMarkdownString(
                 docs,
-                "plugins_" + plugname + ".md",
+                kind + "s_" + plugname + ".md",
                 (PLUMED,),
                 (version,),
                 actions,
@@ -1779,6 +1787,40 @@ if (
         ):
             nodocs.append(
                 ['<a href="../module_' + module + '">' + module + "</a>", "module"]
+            )
+
+    # Modules compiled with another toolchain (e.g. toolchain: cuda in module.yml) are
+    # not in the build of the manual: their page is made from their module.md alone
+    for file in sorted(glob.glob("../src/*/module.yml")):
+        module = Path(file).parent.name
+        if module in modules or header_field(read_header(file), "toolchain") == "cxx":
+            continue
+        mlink = '<a href="../module_' + module + '">' + module + "</a>"
+        print("Building module page", module, "(not compiled in this build)")
+        with cd("docs"):
+            mod_dict = getModuleDictionary(module)
+            moduletabledata.append(
+                [
+                    mlink,
+                    mod_dict["description"],
+                    mod_dict["authors"],
+                    getModuleType(module),
+                    formatModuleRequirements(module, modules),
+                ]
+            )
+            createPluginPage(
+                version,
+                module,
+                mod_dict,
+                0,
+                int(mod_dict.get("nlessons", 0)),
+                mod_dict.get("searchterm", module),
+                plumed_syntax,
+                plumedtags,
+                tagdictionary,
+                broken_inputs,
+                kind="module",
+                docfile="../../src/" + module + "/module.md",
             )
 
     # And create a page for each plugin

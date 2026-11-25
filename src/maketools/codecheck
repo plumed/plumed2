@@ -38,8 +38,8 @@ if [[ $do_modified = true ]]; then
   # and making the list working from anywhere
   files=$(
     git diff-index --diff-filter=ACMR "$baserev" |
-      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}
-           /plugins.*(\.h|\.cpp|\.inc\.in)/{print basedir "/" $6}'
+      awk -v basedir="$basedir" '/src.*(\.h|\.cpp|\.cu|\.cuh|\.inc\.in)/{print basedir "/" $6}
+           /plugins.*(\.h|\.cpp|\.cu|\.cuh|\.inc\.in)/{print basedir "/" $6}'
   )
 elif [ $do_local == true ]; then
   # sadly *.{cpp,h,cu,cuh} brings errors if any combination is not present
@@ -47,7 +47,10 @@ elif [ $do_local == true ]; then
 else
   files="$(
    ls ./*/*.{h,cpp}
-   ls ../plugins/*/src/*.{h,cpp,cu,cuh}
+   # the CUDA sources of the modules with toolchain cuda, and the sources of the plugins:
+   # find, since not every kind of file is present (ls would fail, and stop the script with set -e)
+   find ./*/ -maxdepth 1 \( -name '*.cu' -o -name '*.cuh' \) | sort
+   find ../plugins/*/src -maxdepth 1 \( -name '*.h' -o -name '*.cpp' -o -name '*.cu' -o -name '*.cuh' \) | sort
   )"
 fi
 
@@ -147,9 +150,18 @@ fi
     # list for plumedcheck. Included headers remain visible to cppcheck.
     cppfiles=$(grep -E -v '/(lapack|blas|lepton|asmjit|xdrfile|small_vector|thread_mpi)/' <<< "$files" || true)
     srcfiles=$(grep -E -v -s '/plugins/' <<< "$cppfiles" || true)
+    # The CUDA sources of the modules with toolchain cuda are not compiled by the usual builds
+    # (e.g. --enable-modules=all), so their module may have no links to the headers of the
+    # other modules: they are checked on their own, finding those headers in src.
+    cudafiles=$(grep -E '\.cuh?$' <<< "$srcfiles" || true)
+    srcfiles=$(grep -E -v '\.cuh?$' <<< "$srcfiles" || true)
     if [[ -n $srcfiles ]];then
      # shellcheck disable=SC2086
       docheck "${builddir_src[@]}" $srcfiles
+    fi
+    if [[ -n $cudafiles ]];then
+     # shellcheck disable=SC2086
+      docheck "${builddir_src[@]}" -I "${basedir}/src" $cudafiles
     fi
     pluginfiles=$(grep -E '/plugins/' <<< "$cppfiles" || true)
     if [[ -n $pluginfiles ]];then

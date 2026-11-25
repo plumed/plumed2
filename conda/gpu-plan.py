@@ -14,7 +14,7 @@ read_policy = importlib.import_module("conda_policy").read_policy
 
 
 def variants():
-    cuda = read_policy(source / "plugins/cudaCoord")
+    cuda = read_policy(source / "src/gpu_cuda_hip")
     openacc = read_policy(source / "plugins/openaccPTM")
     result = []
     for entry in cuda["variants"]["cuda_compiler_version"]:

@@ -104,8 +104,8 @@ identity translation unit and registration file before the plugin's own build:
 
 ```sh
 python3 extensions/register.py --plumed /path/to/base/bin/plumed \
-  --module cuda_coordination --variant cuda13.0 --features CUDA \
-  --library ../../CudaCoordination.so --output plugin-registration
+  --module openacc_ptm --variant nvhpc25.11 --features OPENACC \
+  --library ../../plumedOpenACC.so --output plugin-registration
 ```
 
 Compile `plugin-registration/module_identity.cpp` into the plugin library, link
@@ -218,16 +218,36 @@ symbols. It is not registered as a module: `plumed modules --list` shows only
 Its package tests run the existing Python-hosted suite and numerical driver
 fixtures for both autoloading and explicit module loading.
 
-### CUDA coordination plugin
+### Modules compiled with CUDA (`toolchain: cuda`)
 
-`plumed-ext-cuda-coordination` has CUDA 12.9 and 13.0 builds on Linux. Select one
+The modules with `toolchain: cuda` in their `module.yml` (`gpu_cuda_hip`) are built
+against an installed base like the other modules. Their `.cu` files are compiled
+by nvcc (`NVCC`, or `CUDACXX`, default `nvcc`), or by hipcc with `--enable-hip`
+(`HIPCC`, `HIP_ARCHITECTURES`), with the compiler flags of the base translated by
+`src/maketools/cuda-flags`, the same script used by the native configure.
+`NVCCFLAGS` adds flags (e.g. `-gencode` options). The library is linked by the C++
+compiler with the shared CUDA runtime (`--with-cudart=static` for the static one)
+or the HIP runtime, and with `-z nodelete`. The registration declares the variant
+`cuda<version of nvcc>` (or `rocm<version>`), and the library exports the feature
+`cuda` (or `hip`). Such modules are built only when named: `--enable-extension-modules=all`
+skips them.
+
+```sh
+./configure --with-extension-base=/path/to/base \
+  --enable-extension-modules=gpu_cuda_hip --prefix=/path/to/extensions
+make
+make install
+```
+
+`plumed-ext-gpu-cuda-hip` has CUDA 12.9 and 13.0 builds on Linux. Select one
 with `cuda-version=12.9` or `cuda-version=13.0`; they are variants of the same
 package, so conda installs one at a time. Each links to the exact main `plumed`
 version/build and the shared CUDA runtime. The kernel has no CUDA compiler or
 runtime dependency. Compiler tools and CCCL headers are build requirements only.
+Up to PLUMED 2.10 these actions were in the `cudaCoord` plugin.
 
-The plugin autoloads as `cuda_coordination`. With autoloading disabled use
-`LOAD MODULE=cuda_coordination` or `plumed --load-module=cuda_coordination ...`.
+The module autoloads as `gpu_cuda_hip`. With autoloading disabled use
+`LOAD MODULE=gpu_cuda_hip` or `plumed --load-module=gpu_cuda_hip ...`.
 The loader rejects multiple variants exposed through `PLUMED_PLUGIN_PATH`,
 including variants outside the active conda prefix.
 
@@ -235,7 +255,7 @@ Package tests without a GPU verify native loading, both action registrations,
 feature exports and explicit loading. The install/remove harness switches CUDA
 variants and checks that the main kernel bytes stay unchanged. Driver metadata
 is overridden only for those CPU-only CI checks. Actual GPU numerical validation
-can be requested with `python extensions/tests/cuda_coordination.py --prefix
+can be requested with `python extensions/tests/gpu_cuda_hip.py --prefix
 "$CONDA_PREFIX" --cuda-version 12.9 --gpu`; it runs existing double/float value
 and derivative fixtures in autoload and explicit module modes and rejects skips.
 Passing loading checks alone does not validate GPU calculations.

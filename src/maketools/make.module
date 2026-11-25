@@ -23,11 +23,15 @@ ifdef GCCDEP
 # source for plumed kernel
 SRC=$(wildcard *.cpp)
 
-# corresponding objects:
-OBJ=$(SRC:.cpp=.o)
+# CUDA sources, compiled with $(CUDA_COMPILER) (modules with toolchain cuda in module.yml)
+SRC_CU=$(wildcard *.cu)
 
-# dependency files for all c++ sources
-DEP=$(addprefix deps/,$(SRC:.cpp=.d))
+# corresponding objects:
+OBJ=$(SRC:.cpp=.o) $(SRC_CU:.cu=.o)
+
+# dependency files for all c++ and CUDA sources
+DEP=$(addprefix deps/,$(SRC:.cpp=.d) $(SRC_CU:.cu=.d))
+
 
 .PHONY: all dirslinks obj lib install
 

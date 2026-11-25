@@ -3,21 +3,32 @@
 set -e
 set -x
 
-cd "$(mktemp -dt plumed.XXXXXX)"
+version=${1:?usage: .ci/install.autoconf VERSION, e.g. 2.69}
+dir=autoconf-$version
 
-dir=autoconf-$1
+cd "$(mktemp -dt plumed.XXXXXX)"
 
 # Use an independent mirror before the redirector, which can send us back to
 # ftp.gnu.org. Bound each attempt and overwrite any partial download on retry.
-wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz" ||
-wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://mirrors.kernel.org/gnu/autoconf/$dir.tar.gz" ||
-wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftpmirror.gnu.org/autoconf/$dir.tar.gz"
+if wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz" ||
+  wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://mirrors.kernel.org/gnu/autoconf/$dir.tar.gz" ||
+  wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftpmirror.gnu.org/autoconf/$dir.tar.gz"; then
+  tar xzf "$dir.tar.gz"
+  cd "$dir"
+  ./configure --prefix "$HOME/opt"
+  make
+  make install
+  exit 0
+fi
 
-tar xzf $dir.tar.gz
-
-cd $dir
-
-./configure --prefix "$HOME/opt"
-make
-make install
-
+# Otherwise the same version packaged by Ubuntu (universe), whose commands have the
+# version as suffix (autoconf2.69, ...): they are linked in $HOME/opt/bin with the usual names.
+# For PLUMED's configure.ac it gives the same configure as the GNU source.
+sudo apt-get install -y "autoconf$version"
+mkdir -p "$HOME/opt/bin"
+for tool in autoconf autoheader autom4te autoreconf autoscan autoupdate ifnames; do
+  if test -x "/usr/bin/$tool$version"; then
+    ln -sf "/usr/bin/$tool$version" "$HOME/opt/bin/$tool"
+  fi
+done
+"$HOME/opt/bin/autoconf" --version | head -n 1 | grep -q " $version\$"

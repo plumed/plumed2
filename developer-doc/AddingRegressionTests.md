@@ -64,6 +64,14 @@ the PLUMED library and run the resulting executible.
 - The third line - the one containing the string plumed_modules=adjmat - tells PLUMED that this regtest needs the optional module adjmat to be installed in 
 order for it to be run.  Before trying to run this test PLUMED will thus check whether or not the module is installed.  If it is not installed then it will 
 abandon the attempt without running the test.  <b> You must incorporate a line like this if you are testing some feature that is included in an optional module </b>
+A test that needs a device at runtime, e.g. a GPU for the actions of the gpu_cuda_hip module, adds `plumed_needs_device=cuda`:
+the test is then run only if `plumed cuda-devices -q` (more generally `plumed <device>-devices -q`, a command provided by
+the module) finds one, in a separate process; otherwise it is reported as not applicable. Unlike the features
+checked with `plumed_needs`, that are compiled in, the device is checked when the test runs. The tests that check what happens
+without a device should hide the devices themselves (e.g. with `CUDA_VISIBLE_DEVICES=-1`), so that they run everywhere.
+CI jobs that must run all the tests (`PLUMED_ALL_TESTS=yes`, e.g. coverage) fail when a test is not applicable. A test that such
+a job cannot run (it needs a device, or a module that `--enable-modules=all` does not enable, such as gpu_cuda_hip) sets
+`PLUMED_ALLOW_SKIP_ON_CI=yes` in its config: on the CI (GitHub Actions) it is then skipped with `SKIP_ON_CI found!` in its report.
 
 - The fourth line specifies the command line arguments that need to be passed to the PLUMED tool.  In the above example the final command the test will 
 run is thus as follows:

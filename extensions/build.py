@@ -42,6 +42,10 @@ current_id = subprocess.check_output(
 if current_id != build_id:
     raise SystemExit("The installed base changed: configure the extensions again")
 soext = config["SOEXT"]
+# Modules with "toolchain: cuda": see extensions/configure.py and src/maketools/cuda-flags
+cuda_backend = config.get("EXTENSION_CUDA_BACKEND", "nvcc")
+cuda_compiler = shlex.split(config.get("EXTENSION_CUDA_COMPILER", "")) or [cuda_backend]
+cudart = config.get("EXTENSION_CUDART", "shared")
 
 # Installed kernel headers are immutable, but an installed older extension must
 # not hide the source headers of another extension being rebuilt in this tree.
@@ -139,7 +143,13 @@ def run(command):
 
 header_hash = hashlib.sha256()
 for header in sorted((root / "src").rglob("*")):
-    if not header.is_file() or header.suffix not in (".h", ".hpp", ".inl", ".tpp"):
+    if not header.is_file() or header.suffix not in (
+        ".h",
+        ".hpp",
+        ".inl",
+        ".tpp",
+        ".cuh",
+    ):
         continue
     header_hash.update(str(header.relative_to(root / "src")).encode())
     header_hash.update(header.read_bytes())
@@ -216,16 +226,94 @@ def numeric_link_flags(objects):
     return selected, needed
 
 
+def cuda_flags(*arguments):
+    """The only copy of the flag rules for nvcc and hipcc, shared with configure."""
+    output = subprocess.check_output(
+        [str(root / "src/maketools/cuda-flags"), *map(str, arguments)], text=True
+    )
+    return output.splitlines()
+
+
+cuda_toolchain = {}
+
+
+def cuda_settings():
+    """Compiler flags, link flags and registration variant of the cuda toolchain."""
+    if cuda_toolchain:
+        return cuda_toolchain
+    extra = shlex.split(config.get("EXTENSION_NVCCFLAGS", ""))
+    libdir = config.get("EXTENSION_CUDA_LIBDIR", "")
+    if cuda_backend == "hipcc":
+        hipcc = shutil.which(cuda_compiler[0])
+        if not hipcc:
+            raise SystemExit(f"{cuda_compiler[0]} not found")
+        targets = config.get("EXTENSION_HIP_ARCHITECTURES") or "native"
+        flags_ = ["-x", "hip"] + [
+            "--offload-arch=" + target for target in targets.split()
+        ]
+        if any(flag.startswith("-D__PLUMED_HAS_MPI") for flag in cppflags):
+            flags_ += cuda_flags("mpi-include", *compiler)
+        if not libdir:
+            libdir = str(Path(hipcc).resolve().parent.parent / "lib")
+        libraries = ["-lamdhip64"]
+        version = subprocess.check_output(
+            [str(Path(hipcc).parent / "hipconfig"), "--version"], text=True
+        )
+        variant = "rocm" + ".".join(version.strip().split(".")[:2])
+        macro = "-D__PLUMED_HAS_HIP=1"
+    else:
+        flags_ = ["-ccbin", *cuda_flags("host-compiler", *compiler)]
+        if not libdir:
+            for directory in cuda_flags("libdirs", *cuda_compiler):
+                if (Path(directory) / f"libcudart.{soext}").exists() or (
+                    Path(directory) / "libcudart_static.a"
+                ).exists():
+                    libdir = directory
+                    break
+            else:
+                raise SystemExit(
+                    "cannot find the CUDA runtime library: set CUDA_LIBDIR"
+                )
+        libraries = (
+            ["-lcudart"]
+            if cudart == "shared"
+            else ["-lcudart_static", "-ldl", "-lrt", "-lpthread"]
+        )
+        version = subprocess.check_output([*cuda_compiler, "--version"], text=True)
+        release = re.search(r"release ([0-9]+\.[0-9]+)", version)
+        if not release:
+            raise SystemExit(f"cannot read the CUDA version from {cuda_compiler[0]}")
+        variant = "cuda" + release[1]
+        macro = "-D__PLUMED_HAS_CUDA=1"
+    # The GPU runtime belongs to this library: never unload it while an MD code
+    # may still hold GPU memory (PLUMED unloads libraries when it is destroyed).
+    nodelete = [] if soext == "dylib" else ["-Wl,-z,nodelete"]
+    cuda_toolchain.update(
+        flags=flags_,
+        extra=extra,
+        link=["-L" + libdir, *libraries, *nodelete],
+        variant=os.environ.get("PLUMED_EXTENSION_VARIANT", variant),
+        macro=macro,
+    )
+    return cuda_toolchain
+
+
 for name in order:
     directory = work / name
     directory.mkdir(exist_ok=True)
     sources = sorted((root / "src" / name).glob("*.cpp"))
+    toolchain = catalog["modules"][name].get("toolchain", "cxx")
+    cuda_sources = (
+        sorted((root / "src" / name).glob("*.cu")) if toolchain == "cuda" else []
+    )
     identity = directory / "module_identity.cpp"
     policy = catalog["modules"][name]["conda"] if conda_build else {}
     module_env = build_environment(
         policy, dict(os.environ, CPPFLAGS="", CXXFLAGS="", LDFLAGS="")
     )
     module_cppflags = cppflags + shlex.split(module_env.get("CPPFLAGS", ""))
+    if toolchain == "cuda":
+        module_cppflags.append(cuda_settings()["macro"])
     module_cxxflags = cxxflags + shlex.split(module_env.get("CXXFLAGS", ""))
     module_ldflags = flags("LDFLAGS") + shlex.split(module_env.get("LDFLAGS", ""))
     module_probes = probes
@@ -262,18 +350,27 @@ for name in order:
     )
     objects = []
     tasks = []
-    for source in [*sources, identity]:
+    for source in [*sources, *cuda_sources, identity]:
         obj = directory / (source.stem + ".o")
         objects.append(obj)
+        if source.suffix == ".cu":
+            settings = cuda_settings()
+            language = [
+                *cuda_compiler,
+                *settings["flags"],
+                *module_cppflags,
+                *cuda_flags("compile", cuda_backend, *module_cxxflags),
+                *settings["extra"],
+            ]
+        else:
+            language = [*compiler, *module_cppflags, *module_cxxflags]
         # The installed base and its headers are immutable for this build ID.
         # Included module headers can change locally, so never reuse objects
         # solely based on the translation unit's timestamp.
         tasks.append(
             (
                 [
-                    *compiler,
-                    *module_cppflags,
-                    *module_cxxflags,
+                    *language,
                     *feature_flags,
                     "-I" + str(module_headers),
                     "-I" + str(base / "include/plumed"),
@@ -356,6 +453,7 @@ for name in order:
             ],
             *native_flags,
             *numeric_flags,
+            *(cuda_settings()["link"] if toolchain == "cuda" else []),
         ]
     )
     if soext == "dylib":
@@ -374,8 +472,9 @@ for name in order:
             ]
         )
     registration = work / f"{name}.plumed"
+    variant = f"variant {cuda_settings()['variant']}\n" if toolchain == "cuda" else ""
     registration.write_text(
-        f"module {name}\nbuild {build_id}\nlibrary ../../{library.name}\n"
+        f"module {name}\nbuild {build_id}\n{variant}library ../../{library.name}\n"
         + "requires "
         + " ".join(dependencies(name))
         + "\n"
@@ -396,6 +495,7 @@ for name in order:
                 ".hpp",
                 ".inl",
                 ".tpp",
+                ".cuh",
             ):
                 continue
             relative = header.relative_to(root / "src")

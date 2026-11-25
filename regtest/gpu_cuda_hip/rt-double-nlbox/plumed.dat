@@ -1,0 +1,21 @@
+# The neighbor lists must follow the changes of the box, not only the displacements of the atoms.
+# The two atoms do not move, and only the x side L of the box shrinks: their distance through
+# the periodic image is L-5. The skin is NL_CUTOFF-D_MAX=1: the lists are kept while the box
+# vectors changed by less than the skin since the last update (the atoms do not move).
+#  frame  L     distance  box change   lists
+#  0      9.5   4.5       -            built (the pair is beyond NL_CUTOFF: not in them)
+#  1      9.0   4.0       0.5          kept
+#  2      7.9   2.9       1.6          built (the pair is in them)
+#  3      7.1   2.1       0.8          kept
+#  4      6.95  1.95      0.95         kept: the pair is within D_MAX
+#  5      6.3   1.3       1.6          built
+# With lists that follow only the displacements of the atoms they would never be built again,
+# and the GPU would miss the pair at the last two frames.
+gpu:  CUDACOORDINATION GROUPA=1-2 R_0=1.0 D_MAX=2.0 NL_CUTOFF=3.0
+gpud: CUDACOORDINATION GROUPA=1 GROUPB=2 R_0=1.0 D_MAX=2.0 NL_CUTOFF=3.0
+cpu:  COORDINATION GROUPA=1-2 SWITCH={RATIONAL R_0=1.0 D_MAX=2.0}
+
+diff:  CUSTOM ARG=gpu,cpu FUNC=y-x PERIODIC=NO
+diffd: CUSTOM ARG=gpud,cpu FUNC=y-x PERIODIC=NO
+
+PRINT ARG=cpu,diff,diffd FILE=colvar FMT=%10.6f STRIDE=1

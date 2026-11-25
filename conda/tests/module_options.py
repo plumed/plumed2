@@ -135,7 +135,8 @@ class ModuleOptions(unittest.TestCase):
         for action, module in (
             ("EMMIVOX", "isdb-pytorch"),
             ("DRR", "drr"),
-            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("CUDACOORDINATION", "gpu_cuda_hip"),
+            ("cuda-devices", "gpu_cuda_hip"),
             ("PYCVINTERFACE", "plugins/pycv"),
             ("PYFUNCTION", "plugins/pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
@@ -342,7 +343,7 @@ class ModuleOptions(unittest.TestCase):
         self.assertEqual(
             [
                 v["spec"]
-                for v in catalog["plugins"]["cuda_coordination"]["conda"]["variants"][
+                for v in catalog["modules"]["gpu_cuda_hip"]["conda"]["variants"][
                     "cuda_compiler_version"
                 ]
             ],
@@ -382,7 +383,7 @@ class ModuleOptions(unittest.TestCase):
             source / "src/maketools/module_header.py",
             tree / "src/maketools/module_header.py",
         )
-        for plugin in ("pycv", "cudaCoord", "openaccPTM"):
+        for plugin in ("pycv", "openaccPTM"):
             (tree / "plugins" / plugin / "src").mkdir(parents=True)
         for module, kind in (
             ("tools", "always"),

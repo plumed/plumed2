@@ -73,19 +73,19 @@ for the actual atom selections and length units.
 
 ## Using CUDA Voronoi with other actions and force fields
 
-The existing cudaCoord plugin and the CUDA Voronoi backend can run in the
-same PLUMED input. Load both plugins and select the Voronoi backend on
-the Voronoi action.
+The actions of the gpu_cuda_hip module (built into PLUMED with
+`--enable-modules=+gpu_cuda_hip`, or installed as an extension) and the CUDA Voronoi
+backend can run in the same PLUMED input. Load the plugin and select the Voronoi
+backend on the Voronoi action.
 
 ~~~plumed
-LOAD FILE=./CudaCoordination.so
 LOAD FILE=./libReactiveVoronoiCuda.so
 c: CUDACOORDINATION GROUPA=1,2 GROUPB=3,4 R_0=0.32 D_MAX=1.25
 q: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3,4 KAPPA=5 REFERENCE=1 POWER=2 BACKEND=CUDA
 PRINT ARG=c,q FILE=COLVAR
 ~~~
 
-The example uses PLUMED's default length unit (nm). The two plugins keep
+The example uses PLUMED's default length unit (nm). The module and the plugin keep
 their own GPU data and can use the same device. The MD engine can also use
 that device for the potential, as in the single-GPU DeePMD examples. The CV's backend is chosen independently of
 the potential. For a CPU force field, the default shared CPU CV requires no
@@ -135,8 +135,8 @@ virial contributions execute on CPU. Full-pool VORONOI_DISTANCE therefore
 includes a CPU center-pair reduction. The current host MD interface supplies
 host coordinates and receives host forces.
 
-The official cudaCoord plugin registers CUDACOORDINATION and
-CUDACOORDINATIONFLOAT after LOAD. The openaccPTM plugin adds USEGPU selection
+The gpu_cuda_hip module provides CUDACOORDINATION and
+CUDACOORDINATIONFLOAT without LOAD. The openaccPTM plugin adds USEGPU selection
 to its supported actions after LOAD. The Voronoi plugin registers its assignment
 backend after LOAD. Its BACKEND keyword belongs to the three Voronoi actions.
 
