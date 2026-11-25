@@ -33,6 +33,7 @@
 #include <map>
 #include <atomic>
 #include <cstdint>
+#include <optional>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -192,9 +193,11 @@ private:
   long long int step=0;
 
 /// Step at which update() was last called.
-/// Used to raise an error when update() is called more than once within the
-/// same step, which most likely leads to incorrect results (see issue #512).
-  long long int lastUpdateStep=-1;
+/// Repeated updates warn on the first update step for MD startup compatibility,
+/// and raise an error on subsequent steps (see issues #512 and #1690).
+  std::optional<long long int> lastUpdateStep;
+/// Cleared permanently once an update is performed at a different step.
+  bool firstUpdateStep=true;
 
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
