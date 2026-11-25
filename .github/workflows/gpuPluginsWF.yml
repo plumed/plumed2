@@ -62,14 +62,26 @@ jobs:
 
     - name: Install the CUDA toolkits
       # only the compiler, the runtime and CCCL (thrust, cub)
+      # micromamba sometimes aborts while downloading ("Unexpected error 9 on netlink descriptor",
+      # a failed DNS lookup during the parallel downloads): each environment is tried up to three
+      # times. The packages already downloaded stay in the package cache, so a retry is quick.
       run: |
         mkdir -p "$HOME/micromamba"
-        curl -fsSL "https://conda.anaconda.org/conda-forge/linux-64/micromamba-${MICROMAMBA_VERSION}-0.tar.bz2" \
+        curl -fsSL --retry 5 --retry-all-errors \
+          "https://conda.anaconda.org/conda-forge/linux-64/micromamba-${MICROMAMBA_VERSION}-0.tar.bz2" \
           | tar -xj -C "$HOME/micromamba" bin/micromamba
         export MAMBA_ROOT_PREFIX="$HOME/micromamba/root"
         for v in $CUDA_VERSIONS ; do
-          "$HOME/micromamba/bin/micromamba" create -y -q -p "$HOME/cuda-$v" -c conda-forge \
-            cuda-version=$v cuda-nvcc-impl cuda-cudart-dev cuda-cccl
+          for attempt in 1 2 3 ; do
+            if "$HOME/micromamba/bin/micromamba" create -y -q -p "$HOME/cuda-$v" -c conda-forge \
+              cuda-version=$v cuda-nvcc-impl cuda-cudart-dev cuda-cccl ; then
+              break
+            fi
+            echo "::warning::micromamba failed for CUDA $v (attempt $attempt)"
+            rm -rf "$HOME/cuda-$v"
+            test "$attempt" = 3 && exit 1
+            sleep 10
+          done
           "$HOME/cuda-$v/bin/nvcc" --version
         done
         python3 -m pip install -r extensions/requirements.txt
