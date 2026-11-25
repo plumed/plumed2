@@ -31,7 +31,10 @@ independently, and force-bearing loaded guests require the new command.
 
 The 2026 GROMACS patch uses mode 1 for repeated force calls at the same step
 (shell relaxation), and mode 2 for lambda MCMC candidates. Older kernels reject
-these specific features with a clear message. Ordinary MD and common bias
+lambda MCMC with a clear message. Shell forces retain the legacy call sequence
+with one main-rank GROMACS warning per provider: the old kernel cannot protect
+adaptive state or check unsafe inter-replica communication during these calls.
+Ordinary MD and common bias
 exchange/HREX do not require the new command. Command API 14 identifies an actual
 new capability, not the presence of the action fixes: maintenance backports of
 those fixes retain their API numbers. Existing normal-mode calls, including

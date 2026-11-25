@@ -183,6 +183,8 @@ private:
     bool repeatedCall_ = false;
     //! Last mode sent to the kernel; normal mode needs no additional commands.
     int evaluationMode_ = 0;
+    //! Warn once when an older kernel must retain legacy shell force semantics.
+    bool legacyShellWarningIssued_ = false;
 };
 
 } // namespace gmx

@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/vec.h"
@@ -125,21 +126,29 @@ void PlumedForceProvider::prepareExchange()
 
 void PlumedForceProvider::setEvaluationMode(int mode)
 {
+    if (plumedAPIversion_ < 14)
+    {
+        if (mode == 1 && !legacyShellWarningIssued_)
+        {
+            if (context_.mainRank)
+            {
+                gmx_warning("This PLUMED kernel lacks API 14 auxiliary force context. "
+                             "Shell relaxation uses the legacy evaluation sequence; repeated "
+                            "force calls can change adaptive bias state or mismatch inter-replica "
+                            "collectives. Upgrade PLUMED for protected shell evaluations.");
+            }
+            legacyShellWarningIssued_ = true;
+        }
+        if (mode == 2)
+            GMX_THROW(InvalidInputError("PLUMED lambda trial energies require API >= 14"));
+        return;
+    }
     if (mode == 1 && multiSimulation_)
     {
         GMX_THROW(InvalidInputError(
                 "Repeated PLUMED force evaluations with multiple simulations are unsupported: "
                 "different shell iteration counts can misalign replica-collective evaluations. "
                 "Use one simulation for shell relaxation."));
-    }
-    if (plumedAPIversion_ < 14)
-    {
-        if (mode != 0)
-            GMX_THROW(InvalidInputError(
-                    "Auxiliary PLUMED force evaluations (shell relaxation) require API >= 14 "
-                    "for early auxiliary evaluation context; ordinary MD and replica exchange "
-                    "can use older kernels."));
-        return;
     }
     if (mode != evaluationMode_)
     {
