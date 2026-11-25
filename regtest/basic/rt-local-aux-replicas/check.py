@@ -13,12 +13,15 @@ launcher = (
 for mode in (1, 2):
     command = launcher + ["./exe", "-n", "4", str(mode)]
     result = subprocess.run(
-        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=60
+        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60
     )
-    Path(f"negative-mode{mode}.log").write_text(result.stdout)
+    # Abort handlers and MPI runtimes may emit bytes that are not UTF-8.
+    # Preserve the complete output, and check the required ASCII diagnostic
+    # without decoding unrelated runtime/backtrace output.
+    Path(f"negative-mode{mode}.log").write_bytes(result.stdout)
     if (
         result.returncode == 0
-        or "action ensemble (ENSEMBLE) communicates between replicas"
+        or b"action ensemble (ENSEMBLE) communicates between replicas"
         not in result.stdout
     ):
         raise RuntimeError(f"mode {mode}: missing coupled-action diagnostic")
