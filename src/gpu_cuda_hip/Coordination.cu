@@ -816,16 +816,20 @@ public:
   }
 
   void getSelfAttr(cudaFuncAttributes& attr) override {
-    cudaFuncGetAttributes (&attr, &getCoord<self,precision>);
+    CUDAHELPERS::cudaCheck (cudaFuncGetAttributes (&attr, &getCoord<self,precision>),
+                            "cudaFuncGetAttributes");
   }
   void getDualAttr(cudaFuncAttributes& attr)override {
-    cudaFuncGetAttributes (&attr, &getCoord<dual,precision>);
+    CUDAHELPERS::cudaCheck (cudaFuncGetAttributes (&attr, &getCoord<dual,precision>),
+                            "cudaFuncGetAttributes");
   }
   void getDualDevAttr(cudaFuncAttributes& attr) override {
-    cudaFuncGetAttributes (&attr, &getDualDev<pbc,function,precision>);
+    CUDAHELPERS::cudaCheck (cudaFuncGetAttributes (&attr, &getDualDev<pbc,function,precision>),
+                            "cudaFuncGetAttributes");
   }
   void getPairAttr(cudaFuncAttributes& attr) override {
-    cudaFuncGetAttributes (&attr, &getCoordPair<pbc,function,precision>);
+    CUDAHELPERS::cudaCheck (cudaFuncGetAttributes (&attr, &getCoordPair<pbc,function,precision>),
+                            "cudaFuncGetAttributes");
   }
 };
 
@@ -1841,7 +1845,6 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   comm.Bcast (switchingParameters.nn,0);
   comm.Bcast (switchingParameters.mm,0);
 
-  runner = make_worker(pbc,switchingParameters);
   nat = getPositions().size();
   if (checkDisplacement) {
     positionsAtLastUpdate.resize(nat);
@@ -1854,6 +1857,8 @@ CudaCoordination<calculateFloat>::CudaCoordination (const ActionOptions &ao)
   int register_dv=0;
   int streamPriority=0;
   if (mpiActive) {
+    // only the process that owns the GPU runs the kernels and queries their attributes
+    runner = make_worker(pbc,switchingParameters);
     //non blocking streams with the highest priority:
     // - they do not synchronize implicitly with the legacy default stream
     // - our (small) kernels get scheduled as soon as possible even if the GPU
