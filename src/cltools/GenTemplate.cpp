@@ -60,8 +60,8 @@ PLUMED_REGISTER_CLTOOL(GenTemplate,"gentemplate")
 
 void GenTemplate::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("optional","--action","print the template for this particular action");
-  keys.addFlag("--list",false,"print a list of the available actions");
+  keys.add("optional","--action/-a","print the template for this particular action");
+  keys.addFlag("--list/-l",false,"print a list of the available actions");
   keys.addFlag("--include-optional",false,"also print optional modifiers");
 }
 

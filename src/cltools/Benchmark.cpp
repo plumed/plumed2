@@ -373,7 +373,7 @@ PLUMED_REGISTER_CLTOOL(Benchmark,"benchmark")
 
 void Benchmark::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--plumed","plumed.dat","colon separated path(s) to the input file(s)");
+  keys.add("compulsory","--plumed/-p","plumed.dat","colon separated path(s) to the input file(s)");
   keys.add("compulsory","--kernel","this","colon separated path(s) to kernel(s)");
   keys.add("compulsory","--natoms","100000","the number of atoms to use for the simulation");
   // Maybe "--natoms" can be more clear when calling --help if we use reset_style to "atoms"

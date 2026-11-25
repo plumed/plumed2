@@ -51,6 +51,14 @@ for archive in ("preferred.hpa", "legacy.h5.tar"):
     success("h5convert", "--input", "input", "--output", archive)
     assert success("h5cat", archive) == expected
 print("preferred and alias archive extensions: OK")
+success("h5convert", "-i", "-", "-o=short options.h5", input=text)
+assert success("h5convert", "-i=short options.h5", "-o", "-") == expected
+success("h5convert", "--input", "input", "-o", "mixed.h5")
+assert success("h5convert", "-i", "mixed.h5", "--output=-") == expected
+for archive in ("short options.hpa", "short options.h5.tar"):
+    success("h5convert", "-i", "-", "-o", archive, "--batch-size", "1", input=text)
+    assert success("h5convert", "-i", archive, "-o", "-") == expected
+print("short and mixed aliases with streams and spaced filenames: OK")
 
 assert success("h5convert", "--input", "first.h5", "--output", "-") == expected
 assert not Path("-").exists()

@@ -44,17 +44,23 @@ CLTool::CLTool(const CLToolOptions& co ):
   name(co.line[0]),
   keywords(co.keys),
   inputdata(inputType::unset) {
+  for(const auto& key : keywords.getKeys()) {
+    for(const auto& alias : Tools::getWords(key,"/")) {
+      plumed_massert(optionKeywords.emplace(alias,key).second,
+                     "duplicate command-line option " + alias);
+    }
+  }
+}
+
+const std::string& CLTool::registeredKeyword(const std::string& key) const {
+  const auto it=optionKeywords.find(key);
+  plumed_massert(it!=optionKeywords.end(),"keyword " + key + " has not been registered");
+  return it->second;
 }
 
 CLTool::Completion CLTool::complete(const std::vector<std::string>& arguments) const {
   Completion result;
-  // Expand aliases while retaining the canonical keyword and its argument kind.
-  std::map<std::string,std::string> options;
-  for(const auto& key : keywords.getKeys()) {
-    for(const auto& alias : Tools::getWords(key,"/")) {
-      options[alias]=key;
-    }
-  }
+  const auto& options=optionKeywords;
   std::string pending;
   bool positional=false;
   for(std::size_t i=0; i+1<arguments.size(); ++i) {
@@ -83,7 +89,7 @@ CLTool::Completion CLTool::complete(const std::vector<std::string>& arguments) c
       }
     }
   }
-  result.option=pending;
+  result.option=canonicalKeyword(pending);
   result.files=positional || !pending.empty() || current.empty() || current[0]!='-';
   if(!result.files) {
     for(const auto& option : options) {
@@ -93,9 +99,10 @@ CLTool::Completion CLTool::complete(const std::vector<std::string>& arguments) c
   return result;
 }
 
-void CLTool::parseFlag( const std::string&key, bool&t ) {
-  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert(keywords.style(key,"flag"),"keyword " + key + " has not been registered as a flag");
+void CLTool::parseFlag( const std::string&option, bool&t ) {
+  const auto& registered=registeredKeyword(option);
+  const auto key=canonicalKeyword(registered);
+  plumed_massert(keywords.style(registered,"flag"),"keyword " + key + " has not been registered as a flag");
   plumed_assert(inputData.count(key)>0);
   if( inputData[key]=="true") {
     t=true;
@@ -126,8 +133,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
 
   // Set all flags to default false
   for(unsigned k=0; k<keywords.size(); ++k) {
-    thiskey=keywords.getKeyword(k);
-    if( keywords.style(thiskey,"flag") ) {
+    const auto registered=keywords.getKeyword(k);
+    thiskey=canonicalKeyword(registered);
+    if( keywords.style(registered,"flag") ) {
       inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
     }
   }
@@ -136,6 +144,13 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
   bool printhelp=false;
   for(int i=1; i<argc; i++) {
     a=prefix+argv[i];
+    if(prefix.empty()) {
+      const auto equal=a.find('=');
+      const auto it=optionKeywords.find(a.substr(0,equal));
+      if(it!=optionKeywords.end()) {
+        a=canonicalKeyword(it->second)+(equal==std::string::npos ? "" : a.substr(equal));
+      }
+    }
     if(a.length()==0) {
       continue;
     }
@@ -144,8 +159,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
     } else {
       bool found=false;
       for(unsigned k=0; k<keywords.size(); ++k) {
-        thiskey=keywords.getKeyword(k);
-        if( keywords.style(thiskey,"flag") ) {
+        const auto registered=keywords.getKeyword(k);
+        thiskey=canonicalKeyword(registered);
+        if( keywords.style(registered,"flag") ) {
           if( a==thiskey ) {
             found=true;
             inputData[thiskey]="true";
@@ -166,6 +182,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
             }
           }
         }
+        if(found) {
+          break;
+        }
       }
       if(!found) {
         std::fprintf(stderr,"ERROR in input for command line tool %s : %s option is unknown \n\n", name.c_str(), a.c_str() );
@@ -181,6 +200,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
   }
 
   if(!printhelp) {
+    if(!prefix.empty()) {
+      error("missing value for option " + prefix.substr(0,prefix.size()-1));
+    }
     setRemainingToDefault(out);
   }
 
@@ -195,10 +217,11 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ) {
 void CLTool::setRemainingToDefault(FILE* out) {
   std::string def, thiskey;
   for(unsigned k=0; k<keywords.size(); ++k) {
-    thiskey=keywords.getKeyword(k);
-    if( keywords.style(thiskey,"compulsory") ) {
+    const auto registered=keywords.getKeyword(k);
+    thiskey=canonicalKeyword(registered);
+    if( keywords.style(registered,"compulsory") ) {
       if( inputData.count(thiskey)==0 ) {
-        if( keywords.getDefaultValue(thiskey,def) ) {
+        if( keywords.getDefaultValue(registered,def) ) {
           plumed_assert( def.length()>0 );
           inputData.insert(std::pair<std::string,std::string>(thiskey,def));
         } else {

@@ -66,7 +66,7 @@ PLUMED_REGISTER_CLTOOL(Manual,"manual")
 
 void Manual::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--action","print the manual for this particular action");
+  keys.add("compulsory","--action/-a","print the manual for this particular action");
   keys.addFlag("--vim",false,"print the keywords in vim syntax");
   keys.addFlag("--spelling",false,"print a list of the keywords and component names for the spell checker");
 }

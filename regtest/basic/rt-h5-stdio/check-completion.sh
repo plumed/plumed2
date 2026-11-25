@@ -37,3 +37,11 @@ h5_complete_case 'h5convert equals split' 'plumed h5convert --input=fir' first.h
 h5_complete_case 'h5convert equals unsplit' 'plumed h5convert --input=fir' --input=first.h5 h5convert --input=fir
 h5_complete_case 'h5convert equals stream' 'plumed h5convert --output=-' - h5convert --output = -
 h5_complete_case 'h5convert equals stream unsplit' 'plumed h5convert --output=-' --output=- h5convert --output=-
+
+h5_complete_case 'h5convert short input stream' 'plumed h5convert -i -' - h5convert -i -
+h5_complete_case 'h5convert short output stream' 'plumed h5convert -i first.h5 -o -' - h5convert -i first.h5 -o -
+h5_complete_case 'h5convert short input file' 'plumed h5convert -i fir' first.h5 h5convert -i fir
+h5_complete_case 'h5convert short equals split' 'plumed h5convert -i=fir' first.h5 h5convert -i = fir
+h5_complete_case 'h5convert short equals unsplit' 'plumed h5convert -i=fir' -i=first.h5 h5convert -i=fir
+h5_complete_case 'h5convert short equals stream' 'plumed h5convert -o=-' - h5convert -o = -
+h5_complete_case 'h5convert short equals stream unsplit' 'plumed h5convert -o=-' -o=- h5convert -o=-

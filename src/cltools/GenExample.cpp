@@ -84,8 +84,8 @@ PLUMED_REGISTER_CLTOOL(GenExample,"gen_example")
 
 void GenExample::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--plumed","plumed.dat","convert the input in this file to the html manual");
-  keys.add("compulsory","--out","example.html","the file on which to output the example in html");
+  keys.add("compulsory","--plumed/-p","plumed.dat","convert the input in this file to the html manual");
+  keys.add("compulsory","--out/-o","example.html","the file on which to output the example in html");
   keys.add("compulsory","--name","ppp","the name to use for this particular input");
   keys.add("compulsory","--status","nobadge","whether or not the input file works");
   keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs MPI)");

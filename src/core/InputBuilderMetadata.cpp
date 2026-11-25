@@ -100,7 +100,8 @@ std::string unqualifiedName(const std::string& registered) {
 
 /// Serialize a keyword while preserving legacy fields and exact numbering.
 void writeKeyword(std::ostream& output, const std::string& key,
-                  const Keywords& keys, const std::string& indent) {
+                  const Keywords& keys, const std::string& indent,
+                  const std::string& spelling="") {
   std::string description=keys.getKeywordDescription(key);
   std::string defaultValue;
   if(description.find("default=")!=std::string::npos) {
@@ -115,7 +116,7 @@ void writeKeyword(std::ostream& output, const std::string& key,
   }
 
   output << indent;
-  writeString(output,key);
+  writeString(output,spelling.empty() ? key : spelling);
   output << " : { \"type\": ";
   writeString(output,keys.getStyle(key));
   output << ", \"description\": ";
@@ -136,9 +137,13 @@ void writeKeyword(std::ostream& output, const std::string& key,
   if(!argumentType.empty()) {
     output << ", \"argtype\": ";
     writeString(output,argumentType);
-  } else if(!defaultValue.empty()) {
+  } else if(!defaultValue.empty() && (spelling.empty() || spelling==key.substr(0,key.find('/')))) {
     output << ", \"default\": ";
     writeString(output,defaultValue);
+  }
+  if(!spelling.empty() && spelling!=key.substr(0,key.find('/'))) {
+    output << ", \"aliasof\": ";
+    writeString(output,key.substr(0,key.find('/')));
   }
   output << " }";
 }
@@ -366,10 +371,19 @@ void writeInputBuilderJSON(std::ostream& output,
     }
     output << "      \"syntax\" : {\n";
     const Keywords& keys=cltoolRegister().get(images,toolName).keys;
+    bool first=true;
     for(unsigned j=0; j<keys.size(); ++j) {
-      writeKeyword(output,keys.getKeyword(j),keys,"        ");
-      output << (j+1==keys.size() ? "\n" : ",\n");
+      const auto registered=keys.getKeyword(j);
+      // Syntax consumers look up the actual CLI spelling, not an alias pair.
+      for(const auto& spelling : Tools::getWords(registered,"/")) {
+        if(!first) {
+          output << ",\n";
+        }
+        writeKeyword(output,registered,keys,"        ",spelling);
+        first=false;
+      }
     }
+    output << "\n";
     output << "      }\n    }" << (i+1==cltoolNames.size() ? "\n" : ",\n");
   }
   output << "  }\n}\n";

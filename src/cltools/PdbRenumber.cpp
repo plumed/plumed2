@@ -119,8 +119,8 @@ PLUMED_REGISTER_CLTOOL(PdbRenumber,"pdbrenumber")
 
 void PdbRenumber::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--ipdb","specify the name of the input PDB file");
-  keys.add("compulsory","--opdb","specify the name of the output PDB file");
+  keys.add("compulsory","--ipdb/-i","specify the name of the input PDB file");
+  keys.add("compulsory","--opdb/-o","specify the name of the output PDB file");
   keys.add("optional","--firstatomnumber","specify the desired serial number of the first atom of the output file");
   keys.add("optional","--atomnumbers","specify the desired serial numbers of the atoms of the output file using a separate list");
 }

@@ -61,8 +61,8 @@ PLUMED_REGISTER_CLTOOL(kt,"kt")
 
 void kt::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--temp","the temperature in kelvin");
-  keys.add("compulsory","--units","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
+  keys.add("compulsory","--temp/-t","the temperature in kelvin");
+  keys.add("compulsory","--units/-u","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
 }
 
 kt::kt(const CLToolOptions& co ):
