@@ -1825,11 +1825,17 @@ void PlumedMain::update() {
     return;
   }
 
-// Error if update() is called more than once within the same step: this most
-// likely leads to incorrect results (see issue #512)
-  if(lastUpdateStep==step) {
+// Some MD engines repeat the first force evaluation during startup (see #1690).
+// Warn on that step, retaining the error for repeated updates after advancing.
+  if(lastUpdateStep && *lastUpdateStep==step) {
     std::string message="update() called more than once at step "+std::to_string(step)+", this most likely leads to incorrect results";
-    plumed_merror(message);
+    if(firstUpdateStep) {
+      log<<"WARNING: "<<message<<"\n";
+    } else {
+      plumed_merror(message);
+    }
+  } else if(lastUpdateStep) {
+    firstUpdateStep=false;
   }
   lastUpdateStep=step;
 
