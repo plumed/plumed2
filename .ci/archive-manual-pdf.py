@@ -42,8 +42,12 @@ def archive_manual(root):
             return match[1] + href + match[3]
 
         original = page.read_text(encoding="utf-8")
-        updated = re.sub(r"(\bhref\s*=\s*[\"'])([^\"']+)([\"'])",
-                         update_link, original, flags=re.IGNORECASE)
+        updated = re.sub(
+            r"(\bhref\s*=\s*[\"'])([^\"']+)([\"'])",
+            update_link,
+            original,
+            flags=re.IGNORECASE,
+        )
         if updated != original:
             page.write_text(updated, encoding="utf-8")
     pdf.unlink()
