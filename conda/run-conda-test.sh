@@ -9,6 +9,7 @@ bash run-hdf5-variant-test.sh
 bash run-mklib-test.sh
 bash run-pycv-test.sh
 bash run-gpu-cuda-hip-test.sh
+bash run-gpu-voronoi-test.sh
 
 task=$(mktemp -d "${TMPDIR:-/tmp}/plumed-conda-packaging.XXXXXX")
 trap 'rm -rf "$task"' EXIT
