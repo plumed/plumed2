@@ -1,3 +1,6 @@
+# Module overrides. Unlisted modules follow their current module.yml defaults.
+PLUMED_MODULE_ENABLED=@PLUMED_MODULE_ENABLED@
+PLUMED_MODULE_DISABLED=@PLUMED_MODULE_DISABLED@
 CC=@CC@
 FC=@FC@
 LDF90=@FC@

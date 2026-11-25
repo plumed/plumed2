@@ -1,19 +1,5 @@
-#! /usr/bin/env bash
-
-cd ../
-maketools/module-header check-obsolete . || exit 1
-for dir in *
-do
-  
-  if test -f "$dir/module.yml"
-  then
-    kind=$(maketools/module-header type "$dir/module.yml") || exit 1
-    case "$kind" in
-    (always) echo $dir ;;
-    (default-on) test -f $dir.off || echo $dir ;;
-    (default-off) test -f $dir.on && echo $dir ;;
-    esac
-  fi
-done
-
-exit 0
+#!/bin/sh
+# Defaults remain live: modules added after configuration follow module.yml.
+set -e
+src=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
+exec "$src/maketools/module-selection" "$src" --config "$src/../Makefile.conf"

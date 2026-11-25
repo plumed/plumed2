@@ -10,13 +10,13 @@ wrapper/ contains the wrappers for MD codes
 
 All the other directories are "modules". Modules are of three type:
 * always compiled (necessary for plumed to properly link)
-* default on, can be switched off touching a file modulename.off in the src/ directory
-* default off, can be switched on touching a file modulename.on in the src/ directory
-Notice that these .on and .off files are not to be distributed/included in git,
-as they reflect local wishes!
+* default on, can be disabled with ./configure --enable-modules=-modulename
+* default off, can be enabled with ./configure --enable-modules=+modulename
 
-Users can control the addition of these files by using the --enable-modules option
-of configure.
+Configure stores module overrides in the PLUMED_MODULE_ENABLED and PLUMED_MODULE_DISABLED variables in
+../Makefile.conf. Unlisted modules follow their current module.yml default,
+including modules added after configuration. Required dependencies are enabled
+during configuration. Legacy modulename.on and modulename.off files are ignored.
 
 The type and native dependencies are declared in module.yml (see core/module.yml).
 See ../conda/module-options.md for the shared declaration format.

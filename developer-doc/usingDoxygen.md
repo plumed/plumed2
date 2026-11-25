@@ -417,6 +417,33 @@ Notice that to solve [this issue](https://github.com/plumed/plumed2/issues/239) 
 pushes the documentation adds special information to remove from search engine results pages from
 unofficial or unsupported branch (see .ci/push script).
 
+To mark a release branch as unsupported, add the following marker to its own
+`CHANGES/v2.N.md` file, together with the visible "Not maintained" warning:
+
+```html
+<!-- plumednotmaintained: used by .ci/push to disable search indexing. -->
+```
+
+The publisher checks only the CHANGES file matching the branch being published.
+Keep this machine-readable marker when editing or converting the change log;
+the visible warning alone does not disable search indexing.
+
+When a prepared publication tree contains a legacy PDF manual, the publisher
+also replaces it for unsupported, unofficial, and development manuals:
+`user-doc/manual.pdf` becomes `user-doc/manual.pdf.zip`, and local HTML download
+links are updated. HTML noindex tags do not protect PDFs, and GitHub Pages does not support
+custom HTTP headers such as `X-Robots-Tag`. The ZIP preserves the offline manual
+without exposing its contents as a directly indexable PDF. Supported release
+manuals retain the ordinary PDF download. The current MkDocs publication tree
+does not include that legacy PDF, so its content layout is unchanged.
+
+To apply the same change once to an already published unsupported manual, run
+`python3 /path/to/plumed/.ci/archive-manual-pdf.py /path/to/doc-v2.N` in a checkout
+of its `gh-pages` branch. Review and commit the resulting PDF removal, ZIP addition,
+and HTML link updates together. The old PDF URL will return 404 after publication;
+existing search results disappear when search engines recrawl it.
+
+
 Bottom line: manual will always be updated after a commit that can pass the tests.
 Twenty minutes or so after your push the manual should be up to date, remember to double check on the web
 and to revert the commit if there are errors!

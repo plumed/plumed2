@@ -3,9 +3,9 @@
 import os
 import shlex
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
-import subprocess
 
 
 def check_bash(shell, program, root, env):
@@ -228,6 +228,7 @@ def check_installation(shell, program, root, env):
             "src/lib/Makefile",
             "src/lib/bash.completion",
             "src/maketools/find_modules.sh",
+            "src/maketools/module-selection",
             "src/maketools/module-header",
             "src/maketools/module-header.awk",
             "src/maketools/make.rules",
@@ -238,7 +239,7 @@ def check_installation(shell, program, root, env):
             shutil.copy2(source / relative, target)
         (fixture / "scripts").mkdir()
         (fixture / "Makefile.conf").write_text(
-            "GCCDEP=c++\n"
+            "PLUMED_MODULE_ENABLED=\nPLUMED_MODULE_DISABLED=\nGCCDEP=c++\n"
             "SOEXT=" + env["TEST_SOEXT"] + "\n"
             "bindir=/prefix/bin\nlibdir=/prefix/lib\n"
             "includedir=/prefix/include\nhtmldir=/prefix/share/doc/plumed\n"

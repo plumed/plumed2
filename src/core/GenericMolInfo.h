@@ -75,6 +75,10 @@ public:
   std::string getChainID(AtomNumber a)const;
   Vector getPosition(AtomNumber a)const;
   bool isWhole() const;
+/// Read-only structure metadata, including insertion codes and TER boundaries.
+  const PDB& getPDB() const {
+    return pdb;
+  }
   unsigned getPDBsize()const ;
   std::string getResidueName(AtomNumber a)const;
   void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms );

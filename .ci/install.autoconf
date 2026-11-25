@@ -7,10 +7,11 @@ cd "$(mktemp -dt plumed.XXXXXX)"
 
 dir=autoconf-$1
 
-# Fall back to a mirror: when ftp.gnu.org is down, a bare wget here ends the
-# job under set -e and every pull request goes red.
-wget https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz ||
-wget https://ftpmirror.gnu.org/autoconf/$dir.tar.gz
+# Use an independent mirror before the redirector, which can send us back to
+# ftp.gnu.org. Bound each attempt and overwrite any partial download on retry.
+wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz" ||
+wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://mirrors.kernel.org/gnu/autoconf/$dir.tar.gz" ||
+wget --timeout=30 --tries=2 -O "$dir.tar.gz" "https://ftpmirror.gnu.org/autoconf/$dir.tar.gz"
 
 tar xzf $dir.tar.gz
 
