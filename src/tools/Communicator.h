@@ -25,6 +25,7 @@
 #include "../mpiwrap/mpi-types.h"
 #endif
 #include <cstdlib>
+#include <functional>
 #include "Exception.h"
 #include "TypesafePtr.h"
 #include <vector>
@@ -59,6 +60,9 @@ class Communicator {
 /// True if this process holds the communicator only as a stand-in.
 /// See setStandIn().
   bool standIn=false;
+/// Optional owner policy, copied to derived communicators. Metadata queries remain allowed.
+  std::function<void()> communicationCheck_;
+  void checkCommunication()const;
 /// In debug builds, raise an error if this communicator is a stand-in.
   void checkNotStandIn()const;
 /// Function returning the MPI type.
@@ -191,6 +195,9 @@ public:
     MPI_Request r;
     void wait(Status&s=StatusIgnore);
   };
+/// Set an owner policy checked before communication, including copied/split handles.
+/// Native MPI calls made through Get_comm() are outside this policy.
+  void setCommunicationCheck(std::function<void()> check);
 /// Default constructor
   Communicator();
 /// Copy constructor.

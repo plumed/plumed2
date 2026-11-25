@@ -47,12 +47,20 @@ External integrations that reject API versions above a fixed maximum need their
 accepted range updated to include 14. The maintained LAMMPS integration patch
 includes this change; its existing MD commands and MPI injection are unchanged.
 
-The GROMACS implementation restricts lambda MCMC and repeated shell forces to
-one simulation per invocation (which can contain multiple ranks). Simultaneously
-changing each replica's candidate does not evaluate the one-replica conditional
-potential of a coupled model. Unequal shell iteration counts can mismatch
-inter-replica collective calls. Ordinary multi-simulation MD and common exchange
-are unaffected. This conservative host restriction also rejects independent
-multi-simulation MCMC/shell runs: arbitrary custom bias couplings cannot be
-reliably inferred. Such independent runs can use separate mdrun invocations.
-A general coupled sampler or synchronized shell solver needs a distinct protocol.
+Local auxiliary modes 1/2 permit independent simulations and models whose
+inter-replica communication occurs only in update(), such as multiple-walker
+metadynamics and MAXENT. While an action executes prepare(), calculate() or
+apply(), the kernel rejects communication through its multi_sim_comm (including
+PLMD::Communicator copies/splits) in these modes and names the action. This
+prevents wrong conditional lambda energies and unmatched shell collectives.
+The diagnostic is written directly to stderr, then the local MPI job is aborted:
+throwing on replica leaders alone could strand other ranks before host error
+handling. Metadata rank/size queries remain allowed. GREX's synchronized mode-0
+evaluations, ordinary updates and checkpoint communication remain supported.
+
+Actions/plugins calling raw MPI through Get_comm() bypass this check and must
+not communicate across replicas in local auxiliary modes. The check does not
+make a genuinely coupled sampler or asynchronous shell solver supported; those
+need a coordinated evaluation algorithm. Older kernels use the documented
+legacy shell fallback; lambda MCMC requires the API14 protocol. Simultaneous
+expanded-ensemble sampling and replica exchange remain unsupported by the host.

@@ -476,6 +476,22 @@ PlumedMain::PlumedMain():
   increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  multi_sim_comm.setCommunicationCheck([this]() {
+    // GREX uses synchronized mode-0 passes and remains supported. Only the
+    // independently scheduled local shell/lambda protocol needs this guard.
+    if(evaluationMode_!=0 && nReplicas>1 && currentAction_) {
+      std::fprintf(stderr,
+                   "\nPLUMED: ERROR: action %s (%s) communicates between replicas and cannot "
+                   "be evaluated in local auxiliary mode %d (shell forces/lambda trials).\n",
+                   currentAction_->getLabel().c_str(),currentAction_->getName().c_str(),evaluationMode_);
+      std::fflush(stderr);
+      // Throwing on replica leaders alone can strand their other ranks in an
+      // intra-replica collective before the exception reaches the host. Abort
+      // without attempting any further communication or collective logging.
+      comm.Abort(1);
+    }
+  });
+
   // this is at last so as to avoid inconsistencies if an exception is thrown
   CountInstances::increase(); // noexcept
 }
@@ -1727,6 +1743,7 @@ void PlumedMain::justCalculate(bool calculationOnly, bool forcesRequested) {
     iaction++;
     Action* p(pp.get());
     plumed_assert(p);
+    ActionScope actionScope(*this,p);
     try {
       if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
@@ -1824,6 +1841,7 @@ void PlumedMain::backwardPropagate() {
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
     if(p->isActive()) {
+      ActionScope actionScope(*this,p);
 
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.

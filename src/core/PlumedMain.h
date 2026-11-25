@@ -51,6 +51,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////
 
 namespace PLMD {
+class Action;
 
 
 
@@ -304,6 +305,22 @@ private:
   bool calculationOnly_=false;
 /// Explicit early context: 0 normal, 1 auxiliary forces, 2 full auxiliary potential.
   int evaluationMode_=0;
+/// Action executing prepare/calculate/apply, including recursive preparation.
+  Action* currentAction_=nullptr;
+  class ActionScope {
+    Action*& slot_;
+    Action* previous_;
+  public:
+    ActionScope(PlumedMain& main,Action* action): slot_(main.currentAction_),previous_(slot_) {
+      slot_=action;
+    }
+    ~ActionScope() {
+      slot_=previous_;
+    }
+    ActionScope(const ActionScope&)=delete;
+    ActionScope& operator=(const ActionScope&)=delete;
+  };
+
 /// State freezing and force propagation are independent for shell iterations.
   bool forcesRequested_=true;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated

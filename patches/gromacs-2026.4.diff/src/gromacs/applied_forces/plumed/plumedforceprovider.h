@@ -156,8 +156,6 @@ private:
     bool                          replex_;
     //! Whether lambda is supplied for expanded-ensemble MCMC.
     bool                          expanded_ = false;
-    //! Whether multiple simulations share this mdrun invocation.
-    bool                          multiSimulation_ = false;
     //! Whether each atom is a virtual site, empty if there are none
     std::vector<bool>             isVirtualSite_;
 

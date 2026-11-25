@@ -1,0 +1,7 @@
+type=make
+mpiprocs=4
+plumed_mpi_harness=yes
+extra_files="${extra_files} ../../scripts/mpi-test.h check.py"
+function plumed_regtest_after() {
+  PLUMED_TEST_MPI="$mpi" PLUMED_TEST_INTERNAL="$plumed_internal_launch" python3 check.py
+}

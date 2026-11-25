@@ -284,6 +284,7 @@ void Action::activate() {
 // accessing to a virtual atom), this is done just before dependencies are
 // activated
   if(!active) {
+    PlumedMain::ActionScope actionScope(plumed,this);
     this->unlockRequests();
     prepare();
     this->lockRequests();
