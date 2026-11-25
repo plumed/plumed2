@@ -28,7 +28,8 @@ try:
                 default_modules | {"isdb-pytorch", "colvar"},
                 set(),
             ),
-            ("all:-isdb-pytorch", {"isdb", "ves"}, {"isdb-pytorch"}),
+            # modules compiled by another toolchain are never selected by all
+            ("all:-isdb-pytorch", {"isdb", "ves"}, {"isdb-pytorch", "gpu_cuda_hip"}),
             ("none+ves-isdb", {"ves"}, {"isdb", "isdb-pytorch"}),
             ("none:ves", {"ves", "bias", "cltools"}, {"colvar"}),
             (
@@ -92,6 +93,25 @@ try:
                 result.stderr
             )
             assert "enabling module" not in result.stderr
+        # nor can they be named (another toolchain, or extension only)
+        result = subprocess.run(
+            [
+                os.environ.get("CMAKE", "cmake"),
+                "-S",
+                str(source),
+                "-B",
+                directory,
+                "-DPLUMED_MODULES=none:+gpu_cuda_hip",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        assert result.returncode != 0
+        assert "not supported by the CMake build" in " ".join(result.stderr.split()), (
+            result.stderr
+        )
 
         # Exercise the graph boundary cases without altering source metadata.
         fixture = Path(directory) / "module-fixture"
