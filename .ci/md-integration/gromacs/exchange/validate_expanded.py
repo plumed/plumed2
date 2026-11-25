@@ -368,6 +368,7 @@ def main():
             # Restart replays the checkpoint step, just as PLUMED truncates its
             # ordinary output there. Keep raw debug files but exclude that
             # discarded first-segment tail from the combined trial oracle.
+            # Thread-MPI debug writes can prefix markers with other debug text.
             debug_segments = []
             for path in sorted(directory.glob("*.debug")):
                 lines = path.read_text().splitlines()
@@ -375,7 +376,7 @@ def main():
                     lines = [
                         line
                         for line in lines
-                        if not (match := re.match(r"PLUMED_LAMBDA.* step=(\d+)", line))
+                        if not (match := re.search(r"PLUMED_LAMBDA.* step=(\d+)", line))
                         or int(match.group(1)) < case["restartAt"]
                     ]
                 debug_segments.append("\n".join(lines))
@@ -428,12 +429,12 @@ def main():
                 trials_by_step.setdefault(step, []).append((current, state))
             if trials_by_step.keys() != {check["step"] for check in checks}:
                 raise AssertionError("Missing MCMC evaluation-order diagnostics")
-            for evaluations in trials_by_step.values():
+            for step, evaluations in trials_by_step.items():
                 if sorted(state for _, state in evaluations) != list(
                     range(len(model["lambdas"]))
                 ):
                     raise AssertionError(
-                        "MCMC must evaluate each lambda state exactly once"
+                        f"MCMC step {step}: expected each lambda state exactly once, got {evaluations}"
                     )
                 if evaluations[-1][1] != evaluations[-1][0]:
                     raise AssertionError(
