@@ -268,13 +268,24 @@ for modules_file in src/*/module.yml; do
     AC_MSG_ERROR([invalid module declaration $modules_file])
 done
 
-AC_MSG_NOTICE([Optional modules are disabled by default])
-rm -f src/*.on src/*.off
+# These are overrides, not a snapshot: new modules retain their live defaults.
+PLUMED_MODULE_ENABLED=" "
+PLUMED_MODULE_DISABLED=" "
+modules_excluded=" "
+plumed_module_enable() {
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $[]1 / /g"`
+  PLUMED_MODULE_ENABLED="$PLUMED_MODULE_ENABLED$[]1 "
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $[]1 / /g"`
+}
+plumed_module_disable() {
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $[]1 / /g"`
+  PLUMED_MODULE_DISABLED="$PLUMED_MODULE_DISABLED$[]1 "
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $[]1 / /g"`
+}
 
 AC_ARG_ENABLE([modules],
-  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
+  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-ves default: reset; missing dependencies are enabled with warnings, explicit exclusions are errors]),
   [
-   rm -f src/*.on src/*.off
    if test "${enableval}" = yes ; then
      enableval=reset
    fi
@@ -297,25 +308,20 @@ AC_ARG_ENABLE([modules],
    for modules_mod in $modules_words
    do
      case "$modules_mod" in
-     (none)
-       AC_MSG_NOTICE([Disabling all optional modules])
-       rm -f src/*.off src/*.on
+     (none|all|reset)
+       modules_excluded=" "
+       PLUMED_MODULE_ENABLED=" "
+       PLUMED_MODULE_DISABLED=" "
+       AC_MSG_NOTICE([Setting modules to ${modules_mod}])
        for modules_file in src/*/module.yml; do
-         if test "$(src/maketools/module-header type "$modules_file")" = default-on; then
-           touch "${modules_file%/module.yml}.off"
-         fi
+         modules_kind=$(src/maketools/module-header type "$modules_file")
+         modules_name=${modules_file%/module.yml}
+         modules_name=${modules_name#src/}
+         case "$modules_mod:$modules_kind" in
+           (none:default-on) plumed_module_disable "$modules_name" ;;
+           (all:default-off) plumed_module_enable "$modules_name" ;;
+         esac
        done ;;
-     (all)
-       AC_MSG_NOTICE([Enabling all optional modules])
-       rm -f src/*.off src/*.off
-       for modules_file in src/*/module.yml; do
-         if test "$(src/maketools/module-header type "$modules_file")" = default-off; then
-           touch "${modules_file%/module.yml}.on"
-         fi
-       done ;;
-     (reset)
-        AC_MSG_NOTICE([Resetting modules to default])
-        rm -f src/*.on src/*.off ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
        if test ! -f src/$modules_mod/module.yml ; then
@@ -324,30 +330,60 @@ AC_ARG_ENABLE([modules],
        if test "$(src/maketools/module-header type "src/$modules_mod/module.yml")" = always ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which is always enabled])
        fi
+       case "$modules_excluded" in
+         (*" $modules_mod "*) ;;
+         (*) modules_excluded="$modules_excluded$modules_mod " ;;
+       esac
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
-       rm -f src/$modules_mod.on
-       touch src/$modules_mod.off ;;
+       plumed_module_disable "$modules_mod" ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
        if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      (*)
        if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      esac
    done
   ]
   ,
   []
 )
+
+
+# Evaluate dependencies only after the complete ordered selection expression.
+# The resolver checks conflicts before printing any automatic additions.
+plumed_resolve_modules() {
+modules_added=$(src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded") ||
+  AC_MSG_ERROR([cannot satisfy module dependencies])
+if test -n "$modules_added"; then
+  while read -r modules_mod modules_reason; do
+    AC_MSG_WARN([enabling module $modules_mod required by $modules_reason])
+    plumed_module_enable "$modules_mod"
+  done <<_PLUMED_MODULES
+$modules_added
+_PLUMED_MODULES
+fi
+}
+# Autoconf has already parsed enable_kenref; include this alternate module
+# entry point before compiler/library probes, too.
+if test "$enable_kenref" = yes; then
+  case "$modules_excluded" in
+    (*" kenref "*) AC_MSG_ERROR([kenref is explicitly disabled but --enable-kenref was given]) ;;
+  esac
+  plumed_module_enable kenref
+fi
+plumed_resolve_modules
+AC_MSG_NOTICE([Module overrides: PLUMED_MODULE_ENABLED=$PLUMED_MODULE_ENABLED PLUMED_MODULE_DISABLED=$PLUMED_MODULE_DISABLED])
+
 
 
 # set enable flags for ./configure
@@ -1095,8 +1131,8 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
 # pathway: passing EITHER one enables the whole KEnRef feature (the `kenref`
 # module is compiled AND the KEnRef core library is located & linked); passing
 # NEITHER disables it entirely (no dependency, module not built). Because the
-# module's on/off marker (src/kenref.on) is consumed at make time (globbed), we
-# can flip it here so whichever switch the user chose converges to one result.
+# module overrides are stored in Makefile.conf; both entry points converge to
+# the same configured module and library selection.
 # ==============================================================================
 KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref_core (keep in lockstep
                                   # with KEnRef's CMake project(VERSION); v2.0.0 = model-abstraction restructure)
@@ -1108,7 +1144,11 @@ KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref
 AC_SUBST([KENREF_PLUMED_INCLUDE], [""])
 
 kenref_module_on=no
-test -f src/kenref.on && kenref_module_on=yes
+kenref_modules=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  AC_MSG_ERROR([invalid module selection])
+case " $(echo "$kenref_modules" | tr '\n' ' ') " in
+  (*" kenref "*) kenref_module_on=yes ;;
+esac
 
 # Is the LIBRARY required, or merely welcome?
 #
@@ -1141,8 +1181,7 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
   # (a) make sure the module gets compiled — covers `--enable-kenref` given without +kenref (idempotent).
   if test "$kenref_module_on" = no ; then
     AC_MSG_NOTICE([KEnRef: --enable-kenref implies the 'kenref' module -> enabling it])
-    rm -f src/kenref.off
-    touch src/kenref.on
+    plumed_module_enable kenref
   fi
   # (b) FIND OR FETCH+BUILD the core library, so `--enable-kenref` ALONE is self-sufficient (no build.sh
   #     needed). A plain pkg-config pre-check (NOT PKG_CHECK_MODULES, to dodge autoconf's result caching):
@@ -1158,8 +1197,7 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
     # Enabled only by --enable-modules=all/+kenref, and no library present. Do not download anything and
     # do not fail: switch the module back off and continue, as an unavailable optional dependency should.
     AC_MSG_NOTICE([KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module])
-    rm -f src/kenref.on
-    touch src/kenref.off
+    plumed_module_disable kenref
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
@@ -1214,8 +1252,7 @@ if test "$kenref_skipped" != yes && ( test "$kenref" = true || test "$kenref_mod
   if test "$HAVE_KENREF" != yes ; then
     if test "$kenref_required" = no ; then
       AC_MSG_NOTICE([KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module])
-      rm -f src/kenref.on
-      touch src/kenref.off
+      plumed_module_disable kenref
       kenref_skipped=yes
     else
       AC_MSG_ERROR([KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
@@ -1986,6 +2023,20 @@ AC_SUBST(build_dir)
 build_dir=`pwd`
 
 
+
+# Library probes can remove modules; never silently re-enable unavailable ones.
+src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded" check ||
+  AC_MSG_ERROR([module dependencies are not satisfied after feature checks])
+modules_final=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  AC_MSG_ERROR([cannot report enabled modules])
+modules_final=$(echo "$modules_final" | tr '\n' ' ')
+AC_MSG_NOTICE([Enabled modules: $modules_final])
+
+# Normalize the two persistent override lists; no module state files are written.
+PLUMED_MODULE_ENABLED=$(echo "$PLUMED_MODULE_ENABLED" | xargs)
+PLUMED_MODULE_DISABLED=$(echo "$PLUMED_MODULE_DISABLED" | xargs)
+AC_SUBST([PLUMED_MODULE_ENABLED])
+AC_SUBST([PLUMED_MODULE_DISABLED])
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

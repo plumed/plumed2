@@ -34,6 +34,22 @@ class TestVimMake(unittest.TestCase):
                 shutil.copy2(ROOT / "vim" / name, vim / name)
             shutil.copytree(ROOT / "vim" / "templates", vim / "templates")
             (root / "sourceme.sh").write_text("")
+            tools = root / "src/maketools"
+            tools.mkdir(parents=True)
+            for name in (
+                "find_modules.sh",
+                "module-selection",
+                "module-header",
+                "module-header.awk",
+            ):
+                shutil.copy2(ROOT / "src/maketools" / name, tools / name)
+            (root / "src/cltools").mkdir()
+            shutil.copy2(
+                ROOT / "src/cltools/module.yml", root / "src/cltools/module.yml"
+            )
+            (root / "Makefile.conf").write_text(
+                "PLUMED_MODULE_ENABLED=cltools\nPLUMED_MODULE_DISABLED=\n"
+            )
             binary = root / "src" / "lib" / "plumed"
             binary.parent.mkdir(parents=True)
             binary.write_text("#!/bin/sh\n: > invoked\nexit 19\n")

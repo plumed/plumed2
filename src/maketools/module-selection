@@ -1,0 +1,68 @@
+#!/bin/sh
+# Evaluate live module defaults plus configured overrides, without executing Make.
+set -e
+src=$1
+shift
+case "$1" in
+  --config)
+    settings=$(awk '
+      /^(PLUMED_MODULE_ENABLED|PLUMED_MODULE_DISABLED)[ \t]*[:?+]?=/ {
+        key=$0; sub(/[ \t]*[:?+]?=.*/, "", key)
+        if ($0 !~ /^(PLUMED_MODULE_ENABLED|PLUMED_MODULE_DISABLED)=/ || ++count[key] != 1) bad=1
+        value=$0; sub(/^[^=]*=/, "", value)
+        values[key]=value
+      }
+      END {
+        if (count["PLUMED_MODULE_ENABLED"] != 1 || count["PLUMED_MODULE_DISABLED"] != 1 || bad) {
+          print "Missing or invalid PLUMED_MODULE_ENABLED/PLUMED_MODULE_DISABLED in Makefile.conf; rerun ./configure" > "/dev/stderr"
+          exit 1
+        }
+        print values["PLUMED_MODULE_ENABLED"]; print values["PLUMED_MODULE_DISABLED"]
+      }' "$2")
+    enabled=$(printf '%s\n' "$settings" | sed -n '1p')
+    disabled=$(printf '%s\n' "$settings" | sed -n '2p')
+    shift 2 ;;
+  --overrides) enabled=$2; disabled=$3; shift 3 ;;
+  *) echo "usage: module-selection src --config FILE | --overrides PLUMED_MODULE_ENABLED PLUMED_MODULE_DISABLED [table]" >&2; exit 1 ;;
+esac
+mode=${1:-selected}
+reader=$(dirname "$0")/module-header
+"$reader" check-obsolete "$src"
+# A failed declaration reader must not be hidden by the selection filter.
+# Use an OS temporary file: Make can run independent module queries in parallel.
+table=$(mktemp "${TMPDIR:-/tmp}/plumed-modules.XXXXXX")
+trap 'rm -f "$table"' 0
+if test "$mode" = single; then
+  set -- "$src/$2/module.yml"
+else
+  set -- "$src"/*/module.yml
+fi
+for declaration do
+  test -f "$declaration" || continue
+  name=${declaration%/module.yml}; name=${name##*/}
+  kind=$("$reader" type "$declaration")
+  use=""
+  if test "$mode" = table; then use=$("$reader" use "$declaration"); fi
+  printf '%s %s %s\n' "$name" "$kind" "$use"
+done > "$table"
+awk -v enabled="$enabled" -v disabled="$disabled" -v mode="$mode" '
+  BEGIN {
+    n=split(enabled, words, " ")
+    for (i=1;i<=n;i++) if (words[i] != "") on[words[i]]=1
+    n=split(disabled, words, " ")
+    for (i=1;i<=n;i++) if (words[i] != "") off[words[i]]=1
+    for (name in on) if (name !~ /^[a-z][a-z0-9_-]*$/ || name in off) bad=1
+    for (name in off) if (name !~ /^[a-z][a-z0-9_-]*$/) bad=1
+    if (bad) { print "Invalid or conflicting PLUMED_MODULE_ENABLED/PLUMED_MODULE_DISABLED module lists" > "/dev/stderr"; exit 1 }
+  }
+  {
+    active=($2 == "always" || ($1 in on) || ($2 == "default-on" && !($1 in off)))
+    if ($2 == "always" && $1 in off) {
+      print "Always-enabled module " $1 " is disabled; rerun ./configure" > "/dev/stderr"; exit 1
+    }
+    if (mode == "table") {
+      printf "%s %s", $1, active
+      for (i=3;i<=NF;i++) printf " %s", $i
+      print ""
+    } else if (active) print $1
+  }' "$table"

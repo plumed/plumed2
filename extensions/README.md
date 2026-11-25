@@ -21,6 +21,9 @@ install a kernel. Python 3 is needed for this build interface, not at runtime.
 The installed base supplies its compiler flags and public headers. An explicitly
 set CXX/CXXFLAGS/CPPFLAGS can adapt paths/toolchain activation for a package build;
 it remains the builder's responsibility to preserve C++ ABI compatibility.
+When using Make, pass overrides as command-line assignments, for example
+`make CXX=/path/to/compatible-c++ install`. Assignments in `Makefile.conf` take
+precedence over ordinary shell environment variables.
 Available optional native features are detected with compile/link probes against
 this installation, independently of the base's feature macros. For this loading
 proof of concept every selected module is built even when an optional library

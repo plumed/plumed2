@@ -620,6 +620,8 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PLUMED_MODULE_DISABLED
+PLUMED_MODULE_ENABLED
 build_dir
 program_name
 pkgconfig_bin
@@ -1400,7 +1402,9 @@ Optional Features:
                           colon-separated extension modules (requires
                           --with-extension-base)
   --enable-modules        all/none/reset or : separated list such as
-                          +crystallization:-bias default: reset
+                          +crystallization:-ves default: reset; missing
+                          dependencies are enabled with warnings, explicit
+                          exclusions are errors
   --enable-libsearch      enable search for libraries, default: yes
   --enable-static-patch   enable allow statically linking plumed, default: yes
   --enable-doc            enable documentation, default: yes
@@ -2437,14 +2441,24 @@ for modules_file in src/*/module.yml; do
     as_fn_error $? "invalid module declaration $modules_file" "$LINENO" 5
 done
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Optional modules are disabled by default" >&5
-$as_echo "$as_me: Optional modules are disabled by default" >&6;}
-rm -f src/*.on src/*.off
+# These are overrides, not a snapshot: new modules retain their live defaults.
+PLUMED_MODULE_ENABLED=" "
+PLUMED_MODULE_DISABLED=" "
+modules_excluded=" "
+plumed_module_enable() {
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $1 / /g"`
+  PLUMED_MODULE_ENABLED="$PLUMED_MODULE_ENABLED$1 "
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $1 / /g"`
+}
+plumed_module_disable() {
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $1 / /g"`
+  PLUMED_MODULE_DISABLED="$PLUMED_MODULE_DISABLED$1 "
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $1 / /g"`
+}
 
 # Check whether --enable-modules was given.
 if test "${enable_modules+set}" = set; then :
   enableval=$enable_modules;
-   rm -f src/*.on src/*.off
    if test "${enableval}" = yes ; then
      enableval=reset
    fi
@@ -2467,28 +2481,21 @@ if test "${enable_modules+set}" = set; then :
    for modules_mod in $modules_words
    do
      case "$modules_mod" in
-     (none)
-       { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling all optional modules" >&5
-$as_echo "$as_me: Disabling all optional modules" >&6;}
-       rm -f src/*.off src/*.on
+     (none|all|reset)
+       modules_excluded=" "
+       PLUMED_MODULE_ENABLED=" "
+       PLUMED_MODULE_DISABLED=" "
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Setting modules to ${modules_mod}" >&5
+$as_echo "$as_me: Setting modules to ${modules_mod}" >&6;}
        for modules_file in src/*/module.yml; do
-         if test "$(src/maketools/module-header type "$modules_file")" = default-on; then
-           touch "${modules_file%/module.yml}.off"
-         fi
+         modules_kind=$(src/maketools/module-header type "$modules_file")
+         modules_name=${modules_file%/module.yml}
+         modules_name=${modules_name#src/}
+         case "$modules_mod:$modules_kind" in
+           (none:default-on) plumed_module_disable "$modules_name" ;;
+           (all:default-off) plumed_module_enable "$modules_name" ;;
+         esac
        done ;;
-     (all)
-       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling all optional modules" >&5
-$as_echo "$as_me: Enabling all optional modules" >&6;}
-       rm -f src/*.off src/*.off
-       for modules_file in src/*/module.yml; do
-         if test "$(src/maketools/module-header type "$modules_file")" = default-off; then
-           touch "${modules_file%/module.yml}.on"
-         fi
-       done ;;
-     (reset)
-        { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
-$as_echo "$as_me: Resetting modules to default" >&6;}
-        rm -f src/*.on src/*.off ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
        if test ! -f src/$modules_mod/module.yml ; then
@@ -2497,32 +2504,64 @@ $as_echo "$as_me: Resetting modules to default" >&6;}
        if test "$(src/maketools/module-header type "src/$modules_mod/module.yml")" = always ; then
          as_fn_error $? "trying to remove module $modules_mod which is always enabled" "$LINENO" 5
        fi
+       case "$modules_excluded" in
+         (*" $modules_mod "*) ;;
+         (*) modules_excluded="$modules_excluded$modules_mod " ;;
+       esac
        { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
 $as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.on
-       touch src/$modules_mod.off ;;
+       plumed_module_disable "$modules_mod" ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
        if test ! -f src/$modules_mod/module.yml ; then
          as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      (*)
        if test ! -f src/$modules_mod/module.yml ; then
          as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
 $as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      esac
    done
 
 
 fi
+
+
+
+# Evaluate dependencies only after the complete ordered selection expression.
+# The resolver checks conflicts before printing any automatic additions.
+plumed_resolve_modules() {
+modules_added=$(src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded") ||
+  as_fn_error $? "cannot satisfy module dependencies" "$LINENO" 5
+if test -n "$modules_added"; then
+  while read -r modules_mod modules_reason; do
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: enabling module $modules_mod required by $modules_reason" >&5
+$as_echo "$as_me: WARNING: enabling module $modules_mod required by $modules_reason" >&2;}
+    plumed_module_enable "$modules_mod"
+  done <<_PLUMED_MODULES
+$modules_added
+_PLUMED_MODULES
+fi
+}
+# Autoconf has already parsed enable_kenref; include this alternate module
+# entry point before compiler/library probes, too.
+if test "$enable_kenref" = yes; then
+  case "$modules_excluded" in
+    (*" kenref "*) as_fn_error $? "kenref is explicitly disabled but --enable-kenref was given" "$LINENO" 5 ;;
+  esac
+  plumed_module_enable kenref
+fi
+plumed_resolve_modules
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Module overrides: PLUMED_MODULE_ENABLED=$PLUMED_MODULE_ENABLED PLUMED_MODULE_DISABLED=$PLUMED_MODULE_DISABLED" >&5
+$as_echo "$as_me: Module overrides: PLUMED_MODULE_ENABLED=$PLUMED_MODULE_ENABLED PLUMED_MODULE_DISABLED=$PLUMED_MODULE_DISABLED" >&6;}
 
 
 
@@ -9010,8 +9049,8 @@ fi
 # pathway: passing EITHER one enables the whole KEnRef feature (the `kenref`
 # module is compiled AND the KEnRef core library is located & linked); passing
 # NEITHER disables it entirely (no dependency, module not built). Because the
-# module's on/off marker (src/kenref.on) is consumed at make time (globbed), we
-# can flip it here so whichever switch the user chose converges to one result.
+# module overrides are stored in Makefile.conf; both entry points converge to
+# the same configured module and library selection.
 # ==============================================================================
 KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref_core (keep in lockstep
                                   # with KEnRef's CMake project(VERSION); v2.0.0 = model-abstraction restructure)
@@ -9024,7 +9063,11 @@ KENREF_PLUMED_INCLUDE=""
 
 
 kenref_module_on=no
-test -f src/kenref.on && kenref_module_on=yes
+kenref_modules=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  as_fn_error $? "invalid module selection" "$LINENO" 5
+case " $(echo "$kenref_modules" | tr '\n' ' ') " in
+  (*" kenref "*) kenref_module_on=yes ;;
+esac
 
 # Is the LIBRARY required, or merely welcome?
 #
@@ -9059,8 +9102,7 @@ $as_echo "$as_me: KEnRef: enabling rpath by default so the binaries are self-con
   if test "$kenref_module_on" = no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: --enable-kenref implies the 'kenref' module -> enabling it" >&5
 $as_echo "$as_me: KEnRef: --enable-kenref implies the 'kenref' module -> enabling it" >&6;}
-    rm -f src/kenref.off
-    touch src/kenref.on
+    plumed_module_enable kenref
   fi
   # (b) FIND OR FETCH+BUILD the core library, so `--enable-kenref` ALONE is self-sufficient (no build.sh
   #     needed). A plain pkg-config pre-check (NOT PKG_CHECK_MODULES, to dodge autoconf's result caching):
@@ -9078,8 +9120,7 @@ $as_echo "$as_me: KEnRef: found an installed kenref_core >= $KENREF_MIN_VERSION 
     # do not fail: switch the module back off and continue, as an unavailable optional dependency should.
     { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module" >&5
 $as_echo "$as_me: KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module" >&6;}
-    rm -f src/kenref.on
-    touch src/kenref.off
+    plumed_module_disable kenref
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
@@ -9207,8 +9248,7 @@ $as_echo "$as_me: KEnRef: using $kenref_flavor" >&6;}
     if test "$kenref_required" = no ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module" >&5
 $as_echo "$as_me: KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module" >&6;}
-      rm -f src/kenref.on
-      touch src/kenref.off
+      plumed_module_disable kenref
       kenref_skipped=yes
     else
       as_fn_error $? "KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
@@ -11140,6 +11180,21 @@ fi
 
 
 build_dir=`pwd`
+
+
+
+# Library probes can remove modules; never silently re-enable unavailable ones.
+src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded" check ||
+  as_fn_error $? "module dependencies are not satisfied after feature checks" "$LINENO" 5
+modules_final=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  as_fn_error $? "cannot report enabled modules" "$LINENO" 5
+modules_final=$(echo "$modules_final" | tr '\n' ' ')
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Enabled modules: $modules_final" >&5
+$as_echo "$as_me: Enabled modules: $modules_final" >&6;}
+
+# Normalize the two persistent override lists; no module state files are written.
+PLUMED_MODULE_ENABLED=$(echo "$PLUMED_MODULE_ENABLED" | xargs)
+PLUMED_MODULE_DISABLED=$(echo "$PLUMED_MODULE_DISABLED" | xargs)
 
 
 
