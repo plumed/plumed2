@@ -1567,10 +1567,10 @@ int Mdrunner::mdrunner()
     /* PLUMED */
     {
         /* The PLUMED actions that run on a GPU (they are in PLUMED plugins) use the GPU of this
-           rank, unless the user chooses otherwise. PLUMED numbers the GPUs as CUDA does, so the
-           GPU is passed only when GROMACS uses CUDA. */
+           rank, unless the user chooses otherwise. PLUMED numbers the GPUs as CUDA and HIP do, so the
+           GPU is passed only when GROMACS uses CUDA or HIP. */
         gmx::PlumedGpuDevice plumedGpuDevice;
-        if (GMX_GPU_CUDA && deviceInfo != nullptr)
+        if ((GMX_GPU_CUDA || GMX_GPU_HIP) && deviceInfo != nullptr)
         {
             plumedGpuDevice.id_ = deviceInfo->id;
         }

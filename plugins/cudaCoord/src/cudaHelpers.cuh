@@ -21,12 +21,15 @@
 #ifndef __PLUMED_cuda_helpers_cuh
 #define __PLUMED_cuda_helpers_cuh
 
+#include "cuda_to_hip.cuh"
 #include "plumed/core/GpuDevice.h"
 #include "plumed/tools/Tensor.h"
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/View.h"
 #include "plumed/tools/Exception.h"
+#ifndef __HIP__
 #include <cub/block/block_reduce.cuh>
+#endif
 #include <thrust/device_vector.h>
 #include <algorithm>
 #include <string>
@@ -45,15 +48,21 @@ inline void cudaCheck (cudaError_t const err, const char *what) {
 /// plugin: the GPU assigned to PLUMED by the MD code (cmd "setGpuDeviceId"),
 /// otherwise the GPU the MD code is using, otherwise, with several GPUs, the rank
 /// of the process in its node modulo the number of GPUs, otherwise the current
-/// one of the CUDA runtime (by default the first one)
+/// one of the CUDA runtime (by default the first one).
+/// With HIP the runtime is a shared library, the same one the MD code uses: its
+/// current GPU is the GPU the MD code is using, so the rank is never used
 /// @return the GPU, -1 if there is none
 inline int chooseGPU (const PLMD::Action &action) {
   PLMD::GpuDevice::Runtime runtime;
   if (cudaGetDeviceCount (&runtime.ndevices) != cudaSuccess || runtime.ndevices <= 0) {
     return -1;
   }
+#ifdef __HIP__
+  cudaCheck (cudaGetDevice (&runtime.callerDevice), "cudaGetDevice");
+#else
   // before the runtime of the plugin is used in this thread
   runtime.callerDevice = PLMD::GpuDevice::callerCudaDevice();
+#endif
   cudaCheck (cudaGetDevice (&runtime.runtimeDevice), "cudaGetDevice");
   return PLMD::GpuDevice::choose (action, runtime);
 }
@@ -241,7 +250,7 @@ __device__ __forceinline__ void blockReduceToPartials (const T (&vals)[N],
     T v = vals[k];
 #pragma unroll
     for (unsigned offset = 16; offset > 0; offset /= 2) {
-      v += __shfl_down_sync (0xffffffffu, v, offset);
+      v += __shfl_down_sync (warpMask(), v, offset, 32);
     }
     if (lane == 0) {
       smem[warp * N + k] = v;

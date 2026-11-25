@@ -69,7 +69,7 @@ struct PlumedOptions
     StartingBehavior    startingBehavior_{};
     bool                active_{ false };
     bool                replex_{ false };
-    //! The GPU used by this rank (as CUDA numbers it), -1 if none
+    //! The GPU used by this rank (as CUDA or HIP number it), -1 if none
     int gpuDeviceId_{ -1 };
     //! The input record, for the step from which a restarted simulation continues
     const t_inputrec*     inputrec_{ nullptr };
@@ -100,7 +100,7 @@ public:
     //PATCH:: set the replex flag
     void setReplex(bool replex);
     /*! @brief Sets the GPU used by this rank
-     * @param gpuDeviceId the index of the GPU as CUDA numbers it, -1 if none
+     * @param gpuDeviceId the index of the GPU as CUDA or HIP number it, -1 if none
      */
     void setGpuDeviceId(int gpuDeviceId);
     /*! @brief Sets the address of the input record
