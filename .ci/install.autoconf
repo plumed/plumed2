@@ -3,20 +3,31 @@
 set -e
 set -x
 
+version=${1:?usage: .ci/install.autoconf VERSION, e.g. 2.69}
+dir=autoconf-$version
+
 cd "$(mktemp -dt plumed.XXXXXX)"
 
-dir=autoconf-$1
+# The source from GNU, with short timeouts: ftp.gnu.org is sometimes down, and
+# ftpmirror.gnu.org may redirect to it.
+if wget --timeout=30 --tries=2 https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz ||
+  wget --timeout=30 --tries=2 https://ftpmirror.gnu.org/autoconf/$dir.tar.gz; then
+  tar xzf $dir.tar.gz
+  cd $dir
+  ./configure --prefix "$HOME/opt"
+  make
+  make install
+  exit 0
+fi
 
-# Fall back to a mirror: when ftp.gnu.org is down, a bare wget here ends the
-# job under set -e and every pull request goes red.
-wget https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz ||
-wget https://ftpmirror.gnu.org/autoconf/$dir.tar.gz
-
-tar xzf $dir.tar.gz
-
-cd $dir
-
-./configure --prefix "$HOME/opt"
-make
-make install
-
+# Otherwise the same version packaged by Ubuntu (universe), whose commands have the
+# version as suffix (autoconf2.69, ...): they are linked in $HOME/opt/bin with the usual names.
+# For PLUMED's configure.ac it gives the same configure as the GNU source.
+sudo apt-get install -y "autoconf$version"
+mkdir -p "$HOME/opt/bin"
+for tool in autoconf autoheader autom4te autoreconf autoscan autoupdate ifnames; do
+  if test -x "/usr/bin/$tool$version"; then
+    ln -sf "/usr/bin/$tool$version" "$HOME/opt/bin/$tool"
+  fi
+done
+"$HOME/opt/bin/autoconf" --version | head -n 1 | grep -q " $version\$"
