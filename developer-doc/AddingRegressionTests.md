@@ -69,6 +69,9 @@ the test is then run only if `plumed cuda-devices -q` (more generally `plumed <d
 the module) finds one, in a separate process; otherwise it is reported as not applicable. Unlike the features
 checked with `plumed_needs`, that are compiled in, the device is checked when the test runs. The tests that check what happens
 without a device should hide the devices themselves (e.g. with `CUDA_VISIBLE_DEVICES=-1`), so that they run everywhere.
+CI jobs that must run all the tests (`PLUMED_ALL_TESTS=yes`, e.g. coverage) fail when a test is not applicable. A test that such
+a job cannot run (it needs a device, or a module that `--enable-modules=all` does not enable, such as gpu_cuda_hip) sets
+`PLUMED_ALLOW_SKIP_ON_CI=yes` in its config: on the CI (GitHub Actions) it is then skipped with `SKIP_ON_CI found!` in its report.
 
 - The fourth line specifies the command line arguments that need to be passed to the PLUMED tool.  In the above example the final command the test will 
 run is thus as follows:

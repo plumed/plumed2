@@ -1,5 +1,8 @@
 type=driver
 plumed_modules=gpu_cuda_hip
+# skipped on the CI where gpu_cuda_hip is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests)
+PLUMED_ALLOW_SKIP_ON_CI=yes
 arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
 export PLUMED_STACK_TRACE=no
 # Without a GPU, a correct input must stop with a clear error (not a crash or a

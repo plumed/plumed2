@@ -172,10 +172,10 @@ elif [[ "$has_thread_mpi" = yes ]]; then
   fi
 elif [[ "$has_mpi" = no ]]; then
   if [ "$GITHUB_ACTIONS" = true ] ; then
-    if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+    if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
       echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
     else
-      echo "SKIP_ON_TRAVIS found!"
+      echo "SKIP_ON_CI found!"
     fi
   else
     echo "NOT_APPLICABLE (MPI NOT INSTALLED)"
@@ -192,10 +192,10 @@ fi
 if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
 then
     if [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
         echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
       else
-        echo "SKIP_ON_TRAVIS found!"
+        echo "SKIP_ON_CI found!"
       fi
     else
       echo "NOT_APPLICABLE (MPI cannot be used with valgrind)"
@@ -216,10 +216,10 @@ do
   if ! plumed_check_feature "$need"
   then
     if [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
         echo "NOT_APPLICABLE ($need NOT ENABLED)"
       else
-        echo "SKIP_ON_TRAVIS found!"
+        echo "SKIP_ON_CI found!"
       fi
     else
       echo "NOT_APPLICABLE ($need NOT ENABLED)"
@@ -234,10 +234,10 @@ do
   if ! plumed_check_module "$module"
   then
     if [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
         echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
       else
-        echo "SKIP_ON_TRAVIS found!"
+        echo "SKIP_ON_CI found!"
       fi
     else
       echo "NOT_APPLICABLE ($module MODULE NOT INSTALLED)"
@@ -252,10 +252,10 @@ do
   if ! plumed_check_device "$device"
   then
     if [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
         echo "NOT_APPLICABLE (NO $device DEVICE AVAILABLE)"
       else
-        echo "SKIP_ON_TRAVIS found!"
+        echo "SKIP_ON_CI found!"
       fi
     else
       echo "NOT_APPLICABLE (NO $device DEVICE AVAILABLE)"
@@ -269,10 +269,10 @@ fi
 if type -t plumed_custom_skip 1>/dev/null ; then
   if plumed_custom_skip ; then
     if [ "$GITHUB_ACTIONS" = true ] ; then
-      if [ -z "$PLUMED_ALLOW_SKIP_ON_TRAVIS" ] ; then
+      if [ -z "$PLUMED_ALLOW_SKIP_ON_CI" ] ; then
         echo "NOT_APPLICABLE (plumed_custom_skip)"
       else
-        echo "SKIP_ON_TRAVIS found!"
+        echo "SKIP_ON_CI found!"
       fi
     else
       echo "NOT_APPLICABLE (plumed_custom_skip)"

@@ -106,7 +106,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-pycv-tests-") as scratch:
                         "FAILURE",
                         "NOT_APPLICABLE",
                         "DEFERRED",
-                        "SKIP_ON_TRAVIS",
+                        "SKIP_ON_CI",
                     )
                 )
             ):
