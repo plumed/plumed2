@@ -21,6 +21,12 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 // FP64 soft assignment of the reactive Voronoi actions on the GPU (CUDA or HIP),
 // with complete assignments or with the candidate list of NLIST.
+//
+// Every sum is done in a fixed order, without floating-point atomics, so that the
+// results are the same at every run: the sums over the centers of an assigned atom
+// are done by a block for each assigned atom, the sums over the assigned atoms of
+// a center (occupancy, derivatives of the centers) by a block for each center, and
+// the virial by block partials and CUDAHELPERS::reducePartials.
 #include "colvar/ReactiveVoronoiBackend.h"
 #include "core/GpuDevice.h"
 #include "tools/Pbc.h"
@@ -53,11 +59,18 @@ struct Data {
   double* maximum=nullptr;
   double* normalization=nullptr;
   const double* sensitivity=nullptr;
+  // the mean sensitivity of each assigned atom
+  double* mean=nullptr;
   double* derivatives=nullptr;
-  double* virial=nullptr;
+  // the virial of each assigned atom, component k in virialPartials[k*numAssigned+a]
+  double* virialPartials=nullptr;
   unsigned long long* invalid=nullptr;
+  // NLIST: the candidate centers of each assigned atom (offsets[a] to offsets[a+1])
   const int* offsets=nullptr;
   const int* candidateCenters=nullptr;
+  // and the same list by center: the assigned atoms of each center, in increasing order
+  const int* centerOffsets=nullptr;
+  const int* candidateAssigned=nullptr;
   double cutoff=0;
   double box[3] {};
   double inverseBox[3] {};
@@ -125,13 +138,38 @@ __device__ void recordFailure(const Data& data, int center, int assigned, PairFa
   atomicMin(data.invalid,pair*failureKinds+reason);
 }
 
+// the range of the candidates of an assigned atom (useNeighbors) or of a center (byCenter)
+template<bool useNeighbors>
+__device__ void candidates(const Data& data, bool byCenter, int index, int& begin, int& end) {
+  if(useNeighbors) {
+    const int* offsets=byCenter ? data.centerOffsets : data.offsets;
+    begin=offsets[index];
+    end=offsets[index+1];
+  } else {
+    begin=0;
+    end=byCenter ? data.numAssigned : data.numCenters;
+  }
+}
+
+/// The weight of a center in the assignment of an assigned atom
+/// (0 for a center beyond the cutoff of NLIST)
+template<bool useNeighbors>
+__device__ double weight(const Data& data, int center, int assigned, double* displacement, double& length) {
+  length=distance(data,center,assigned,displacement);
+  if(useNeighbors && length>data.cutoff) {
+    return 0;
+  }
+  return exp(assignmentScore(data.kappa,length)-data.maximum[assigned])/data.normalization[assigned];
+}
+
+/// One block for each assigned atom: the maximum score and the normalization
 template<int threads, bool useNeighbors>
-__global__ void forwardKernel(Data data) {
+__global__ void assignmentKernel(Data data) {
   __shared__ double scratch[threads];
   const int assigned=blockIdx.x;
   const int thread=threadIdx.x;
-  const int begin=useNeighbors ? data.offsets[assigned] : 0;
-  const int end=useNeighbors ? data.offsets[assigned+1] : data.numCenters;
+  int begin, end;
+  candidates<useNeighbors>(data,false,assigned,begin,end);
   double maximum=-INFINITY;
   for(int entry=begin+thread; entry<end; entry+=threads) {
     const int center=useNeighbors ? data.candidateCenters[entry] : entry;
@@ -152,6 +190,9 @@ __global__ void forwardKernel(Data data) {
   if(useNeighbors && maximum==-INFINITY) {
     if(thread==0) {
       atomicMin(data.invalid,emptyList);
+      // no weights for this atom (finishForward reports the error)
+      data.maximum[assigned]=0;
+      data.normalization[assigned]=INFINITY;
     }
     return;
   }
@@ -169,56 +210,77 @@ __global__ void forwardKernel(Data data) {
     data.maximum[assigned]=maximum;
     data.normalization[assigned]=normalization;
   }
-  for(int entry=begin+thread; entry<end; entry+=threads) {
-    const int center=useNeighbors ? data.candidateCenters[entry] : entry;
+}
+
+/// One block for each center: its occupancy, the sum of its weights
+template<int threads, bool useNeighbors>
+__global__ void occupancyKernel(Data data) {
+  __shared__ double scratch[threads];
+  const int center=blockIdx.x;
+  int begin, end;
+  candidates<useNeighbors>(data,true,center,begin,end);
+  double occupancy=0;
+  for(int entry=begin+threadIdx.x; entry<end; entry+=threads) {
+    const int assigned=useNeighbors ? data.candidateAssigned[entry] : entry;
     double displacement[3];
-    const double length=distance(data,center,assigned,displacement);
-    if(useNeighbors && length>data.cutoff) {
-      continue;
-    }
-    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
-    atomicAdd(data.occupancy+center,weight);
+    double length;
+    occupancy+=weight<useNeighbors>(data,center,assigned,displacement,length);
+  }
+  occupancy=reduce<threads>(occupancy,false,scratch);
+  if(threadIdx.x==0) {
+    data.occupancy[center]=occupancy;
   }
 }
 
+/// The derivative of the assignment with respect to the position of the
+/// assigned atom, for the pair; the center gets the opposite one
+template<bool useNeighbors>
+__device__ void pairGradient(const Data& data, int center, int assigned, double* gradient, double* displacement) {
+  double length;
+  const double w=weight<useNeighbors>(data,center,assigned,displacement,length);
+  // w is 0 beyond the cutoff, and length is never 0 (checked by assignmentKernel)
+  const double radial=-data.kappa*w*(data.sensitivity[center]-data.mean[assigned])/length;
+  for(int axis=0; axis<3; ++axis) {
+    gradient[axis]=radial*displacement[axis];
+  }
+}
+
+/// One block for each assigned atom: the mean sensitivity, the derivatives of
+/// the assigned atom and its contribution to the virial
 template<int threads, bool useNeighbors>
-__global__ void backwardKernel(Data data) {
+__global__ void backwardAssignedKernel(Data data) {
   __shared__ double scratch[threads];
   const int assigned=blockIdx.x;
   const int thread=threadIdx.x;
-  const int begin=useNeighbors ? data.offsets[assigned] : 0;
-  const int end=useNeighbors ? data.offsets[assigned+1] : data.numCenters;
-  const double maximum=data.maximum[assigned];
-  const double normalization=data.normalization[assigned];
+  int begin, end;
+  candidates<useNeighbors>(data,false,assigned,begin,end);
   double mean=0;
   for(int entry=begin+thread; entry<end; entry+=threads) {
     const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(data,center,assigned,displacement);
-    if(useNeighbors && length>data.cutoff) {
-      continue;
-    }
-    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
-    mean+=weight*data.sensitivity[center];
+    double length;
+    mean+=weight<useNeighbors>(data,center,assigned,displacement,length)*data.sensitivity[center];
   }
   mean=reduce<threads>(mean,false,scratch);
+  if(thread==0) {
+    data.mean[assigned]=mean;
+  }
   double assignedDerivative[3]= {0,0,0};
   double virial[9]= {};
   for(int entry=begin+thread; entry<end; entry+=threads) {
     const int center=useNeighbors ? data.candidateCenters[entry] : entry;
     double displacement[3];
-    const double length=distance(data,center,assigned,displacement);
-    if(useNeighbors && length>data.cutoff) {
-      continue;
-    }
-    const double weight=exp(assignmentScore(data.kappa,length)-maximum)/normalization;
-    const double radial=-data.kappa*weight*(data.sensitivity[center]-mean)/length;
+    double gradient[3];
+    double length;
+    const double w=weight<useNeighbors>(data,center,assigned,displacement,length);
+    const double radial=-data.kappa*w*(data.sensitivity[center]-mean)/length;
     for(int axis=0; axis<3; ++axis) {
-      const double gradient=radial*displacement[axis];
-      atomicAdd(data.derivatives+3*center+axis,-gradient);
-      assignedDerivative[axis]+=gradient;
+      gradient[axis]=radial*displacement[axis];
+      assignedDerivative[axis]+=gradient[axis];
+    }
+    for(int axis=0; axis<3; ++axis) {
       for(int component=0; component<3; ++component) {
-        virial[3*axis+component]-=gradient*displacement[component];
+        virial[3*axis+component]-=gradient[axis]*displacement[component];
       }
     }
   }
@@ -231,7 +293,32 @@ __global__ void backwardKernel(Data data) {
   for(int component=0; component<9; ++component) {
     const double value=reduce<threads>(virial[component],false,scratch);
     if(thread==0) {
-      atomicAdd(data.virial+component,value);
+      data.virialPartials[component*data.numAssigned+assigned]=value;
+    }
+  }
+}
+
+/// One block for each center: its derivatives (after backwardAssignedKernel, for the means)
+template<int threads, bool useNeighbors>
+__global__ void backwardCenterKernel(Data data) {
+  __shared__ double scratch[threads];
+  const int center=blockIdx.x;
+  int begin, end;
+  candidates<useNeighbors>(data,true,center,begin,end);
+  double derivative[3]= {0,0,0};
+  for(int entry=begin+threadIdx.x; entry<end; entry+=threads) {
+    const int assigned=useNeighbors ? data.candidateAssigned[entry] : entry;
+    double displacement[3];
+    double gradient[3];
+    pairGradient<useNeighbors>(data,center,assigned,gradient,displacement);
+    for(int axis=0; axis<3; ++axis) {
+      derivative[axis]-=gradient[axis];
+    }
+  }
+  for(int axis=0; axis<3; ++axis) {
+    const double value=reduce<threads>(derivative[axis],false,scratch);
+    if(threadIdx.x==0) {
+      data.derivatives[3*center+axis]=value;
     }
   }
 }
@@ -250,7 +337,9 @@ class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
   deviceBuffer<double> maximum_;
   deviceBuffer<double> normalization_;
   deviceBuffer<double> sensitivity_;
+  deviceBuffer<double> mean_;
   deviceBuffer<double> derivatives_;
+  deviceBuffer<double> virialPartials_;
   deviceBuffer<double> virial_;
   deviceBuffer<unsigned long long> invalid_;
   // pinned host copies of occupancy and invalid, written by the queued forward pass
@@ -260,6 +349,11 @@ class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
   // the candidate list of NLIST: the centers of each assigned atom
   deviceBuffer<int> offsets_;
   deviceBuffer<int> candidateCenters_;
+  // and the same list by center, built on the host
+  std::vector<int> hostCenterOffsets_;
+  std::vector<int> hostCandidateAssigned_;
+  deviceBuffer<int> centerOffsets_;
+  deviceBuffer<int> candidateAssigned_;
   bool haveNeighbors_=false;
   unsigned long uploadedNeighborVersion_=0;
   // the parameters of the last forward pass, used also by backward
@@ -275,7 +369,9 @@ class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
     maximum_.resize(numAssigned_);
     normalization_.resize(numAssigned_);
     sensitivity_.resize(numCenters_);
+    mean_.resize(numAssigned_);
     derivatives_.resize(3*numAtoms);
+    virialPartials_.resize(9*static_cast<size_t>(numAssigned_));
     virial_.resize(9);
     invalid_.resize(1);
     hostOccupancy_.resize(numCenters_);
@@ -291,11 +387,14 @@ class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
     data_.maximum=maximum_.data();
     data_.normalization=normalization_.data();
     data_.sensitivity=sensitivity_.data();
+    data_.mean=mean_.data();
     data_.derivatives=derivatives_.data();
-    data_.virial=virial_.data();
+    data_.virialPartials=virialPartials_.data();
     data_.invalid=invalid_.data();
     data_.offsets=offsets_.data();
     data_.candidateCenters=candidateCenters_.data();
+    data_.centerOffsets=centerOffsets_.data();
+    data_.candidateAssigned=candidateAssigned_.data();
     data_.pbc=pbc;
     data_.kappa=kappa;
     for(int axis=0; axis<3; ++axis) {
@@ -305,14 +404,15 @@ class ReactiveVoronoiCuda final : public colvar::ReactiveVoronoiBackend {
     const size_t numAtoms=static_cast<size_t>(numCenters_)+numAssigned_;
     cudaCheck(cudaMemcpyAsync(positions_.data(),positions,3*numAtoms*sizeof(double),
                               cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
-    cudaCheck(cudaMemsetAsync(occupancy_.data(),0,numCenters_*sizeof(double),stream_),"cudaMemsetAsync");
     cudaCheck(cudaMemsetAsync(invalid_.data(),0xff,sizeof(unsigned long long),stream_),"cudaMemsetAsync");
     if(useNeighbors_) {
-      forwardKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+      assignmentKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+      occupancyKernel<neighborThreads,true><<<numCenters_,neighborThreads,0,stream_>>>(data_);
     } else {
-      forwardKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
+      assignmentKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
+      occupancyKernel<denseThreads,false><<<numCenters_,denseThreads,0,stream_>>>(data_);
     }
-    cudaCheck(cudaGetLastError(),"forwardKernel");
+    cudaCheck(cudaGetLastError(),"forward kernels");
     cudaCheck(cudaMemcpyAsync(hostOccupancy_.data(),occupancy_.data(),numCenters_*sizeof(double),
                               cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
     cudaCheck(cudaMemcpyAsync(hostInvalid_.data(),invalid_.data(),sizeof(unsigned long long),
@@ -377,6 +477,30 @@ public:
         cudaCheck(cudaMemcpyAsync(candidateCenters_.data(),centers.data(),centers.size()*sizeof(int),
                                   cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
       }
+      // the same list by center, with the assigned atoms in increasing order
+      hostCenterOffsets_.assign(static_cast<size_t>(numCenters_)+1,0);
+      for(const int center : centers) {
+        plumed_assert(center>=0 && center<numCenters_);
+        ++hostCenterOffsets_[center+1];
+      }
+      for(int center=0; center<numCenters_; ++center) {
+        hostCenterOffsets_[center+1]+=hostCenterOffsets_[center];
+      }
+      hostCandidateAssigned_.resize(centers.size());
+      std::vector<int> next(hostCenterOffsets_.begin(),hostCenterOffsets_.end()-1);
+      for(int assigned=0; assigned<numAssigned_; ++assigned) {
+        for(int entry=offsets[assigned]; entry<offsets[assigned+1]; ++entry) {
+          hostCandidateAssigned_[next[centers[entry]]++]=assigned;
+        }
+      }
+      centerOffsets_.resize(hostCenterOffsets_.size());
+      candidateAssigned_.resize(std::max<size_t>(centers.size(),1));
+      cudaCheck(cudaMemcpyAsync(centerOffsets_.data(),hostCenterOffsets_.data(),hostCenterOffsets_.size()*sizeof(int),
+                                cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+      if(!centers.empty()) {
+        cudaCheck(cudaMemcpyAsync(candidateAssigned_.data(),hostCandidateAssigned_.data(),centers.size()*sizeof(int),
+                                  cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
+      }
       haveNeighbors_=true;
       uploadedNeighborVersion_=version;
     }
@@ -409,14 +533,17 @@ public:
     const size_t numAtoms=static_cast<size_t>(numCenters_)+numAssigned_;
     cudaCheck(cudaMemcpyAsync(sensitivity_.data(),sensitivity,numCenters_*sizeof(double),
                               cudaMemcpyHostToDevice,stream_),"cudaMemcpyAsync");
-    cudaCheck(cudaMemsetAsync(derivatives_.data(),0,3*numAtoms*sizeof(double),stream_),"cudaMemsetAsync");
-    cudaCheck(cudaMemsetAsync(virial_.data(),0,9*sizeof(double),stream_),"cudaMemsetAsync");
+    // every derivative and component of the virial is written by the kernels
     if(useNeighbors_) {
-      backwardKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+      backwardAssignedKernel<neighborThreads,true><<<numAssigned_,neighborThreads,0,stream_>>>(data_);
+      backwardCenterKernel<neighborThreads,true><<<numCenters_,neighborThreads,0,stream_>>>(data_);
     } else {
-      backwardKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
+      backwardAssignedKernel<denseThreads,false><<<numAssigned_,denseThreads,0,stream_>>>(data_);
+      backwardCenterKernel<denseThreads,false><<<numCenters_,denseThreads,0,stream_>>>(data_);
     }
-    cudaCheck(cudaGetLastError(),"backwardKernel");
+    CUDAHELPERS::reducePartials<double><<<9,CUDAHELPERS::reducePartialsThreads,0,stream_>>>(
+      virialPartials_.data(),numAssigned_,virial_.data());
+    cudaCheck(cudaGetLastError(),"backward kernels");
     cudaCheck(cudaMemcpyAsync(derivatives,derivatives_.data(),3*numAtoms*sizeof(double),
                               cudaMemcpyDeviceToHost,stream_),"cudaMemcpyAsync");
     cudaCheck(cudaMemcpyAsync(virial,virial_.data(),9*sizeof(double),

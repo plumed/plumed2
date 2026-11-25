@@ -1655,8 +1655,9 @@ backend is available and supports the calculation, and otherwise uses CPU. The l
 selected backend. CUDA supports a single MPI rank with axis-aligned
 orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
 applies the same cutoff at each evaluation. OPES, scalar reductions and direct
-distance/position terms execute on CPU. Floating-point CUDA reductions may
-differ in the last digits between runs. With CUDA or AUTO the assignment on the
+distance/position terms execute on CPU. The CUDA sums are done in a fixed order,
+so the results are the same at every run, but they can differ from the CPU ones
+in the last digits. With CUDA or AUTO the assignment on the
 GPU is started in advance, so that it can overlap with the work of other actions
 (see PLUMED\_LAUNCH in [the page on actions](actions.md)); its derivatives are
 computed when the action is reached.
