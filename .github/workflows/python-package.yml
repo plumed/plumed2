@@ -6,7 +6,7 @@ on:
       - "v*"
   pull_request:
     branches:
-      - v2.9
+      - v2.10
   workflow_dispatch:
     inputs:
       publish_to_testpypi:

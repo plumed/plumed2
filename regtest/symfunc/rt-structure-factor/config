@@ -1,0 +1,4 @@
+type=driver
+plumed_modules="symfunc adjmat"
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz Na-250.xyz --length-units A --dump-forces forces --dump-forces-fmt=%8.4f" # --debug-forces forces.num"

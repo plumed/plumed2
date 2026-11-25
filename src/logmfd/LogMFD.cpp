@@ -371,8 +371,7 @@ replica.out.1
 
 #include "bias/Bias.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
-#include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 
 #include <iostream>
 
@@ -464,7 +463,7 @@ void LogMFD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","INTERVAL",
-           "Period of MD steps (\\f$N_m\\f$) to update fictitious dynamical variables." );
+           "Period of MD steps (N_m) to update fictitious dynamical variables." );
   keys.add("compulsory","DELTA_T",
            "Time step for the fictitious dynamical variables (DELTA_T=1 often works)." );
   keys.add("compulsory","THERMOSTAT",
@@ -514,17 +513,17 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "If not provided, it will be taken as 0." );
   keys.add("optional","META",
            "Mass of eta variable. "
-           "If not provided, it will be taken as \\f$N*kb*T*100*100\\f$." );
+           "If not provided, it will be taken as N*kb*T*100*100." );
 
   keys.add("compulsory","FLOG",
            "The initial free energy value in the LogMFD/PD run."
            "The origin of the free energy profile is adjusted by FLOG to "
-           "realize \\f$F({\\bf X}(t)) > 0\\f$ at any \\f${\\bf X}(t)\\f$, "
+           "realize F({X}(t)) > 0 at any X(t), "
            "resulting in enhanced barrier-crossing. "
-           "(The value of \\f$H_{\\rm log}\\f$ is automatically "
+           "(The value of H_log is automatically "
            "set according to FLOG). "
-           "In fact, \\f$F({\\bf X}(t))\\f$ is correctly "
-           "estimated in PLUMED even when \\f$F({\\bf X}(t)) < 0\\f$ in "
+           "In fact, F({X}(t)) is correctly "
+           "estimated in PLUMED even when F({X}(t)) < 0 in "
            "the LogMFD/PD run." );
 
   keys.add("optional","WORK",
@@ -538,7 +537,6 @@ void LogMFD::registerKeywords(Keywords& keys) {
            "temperature of the MD system, while TEMP may be (in principle) different from it. "
            "If not provided, TEMPPD is set to be the same value as TEMP." );
 
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("_fict","default",
                           "For example, the fictitious collective variable for LogMFD is specified as "
                           "ARG=dist12 and LABEL=logmfd in LOGMFD section in Plumed input file, "
@@ -600,7 +598,7 @@ LogMFD::LogMFD( const ActionOptions& ao ):
   parse("INTERVAL",interval);
   parse("DELTA_T",delta_t);
   parse("THERMOSTAT",thermostat);
-  parse("TEMP",kbt); // read as temperature
+  kbt = getkBT(); // read as temperature
   parse("TEMPPD",kbtpd); // read as temperature
 
   parse("TAMD",TAMD);
@@ -631,14 +629,8 @@ LogMFD::LogMFD( const ActionOptions& ao ):
     work = 0.0;
   }
 
-  if( kbt>=0.0 ) {
-    kbt *= plumed.getAtoms().getKBoltzmann();
-  } else {
-    kbt = plumed.getAtoms().getKbT();
-  }
-
   if( kbtpd>=0.0 ) {
-    kbtpd *= plumed.getAtoms().getKBoltzmann();
+    kbtpd *= getKBoltzmann();
   } else {
     kbtpd = kbt;
   }
@@ -958,7 +950,7 @@ void LogMFD::update() {
   // record log for fictitious variables
   if( multi_sim_comm.Get_rank()==0 && comm.Get_rank()==0 ) {
     const double ekin = calcEkin();
-    const double temp = 2.0*ekin/getNumberOfArguments()/plumed.getAtoms().getKBoltzmann();
+    const double temp = 2.0*ekin/getNumberOfArguments()/getKBoltzmann();
 
     FILE *outlog = std::fopen("logmfd.out", "a");
     if (!outlog) {

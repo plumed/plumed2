@@ -1,0 +1,36 @@
+c: COORDINATIONNUMBER SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN 
+DUMPATOMS ARG=c ATOMS=c FILE=coordination.xyz PRECISION=4
+
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MM=24
+
+q6n_rmn-[-6]: CUSTOM ARG=q6_sp.rm-n6,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[-5]: CUSTOM ARG=q6_sp.rm-n5,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[-4]: CUSTOM ARG=q6_sp.rm-n4,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[-3]: CUSTOM ARG=q6_sp.rm-n3,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[-2]: CUSTOM ARG=q6_sp.rm-n2,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[-1]: CUSTOM ARG=q6_sp.rm-n1,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[0]: CUSTOM ARG=q6_sp.rm-0,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[1]: CUSTOM ARG=q6_sp.rm-p1,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[2]: CUSTOM ARG=q6_sp.rm-p2,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[3]: CUSTOM ARG=q6_sp.rm-p3,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[4]: CUSTOM ARG=q6_sp.rm-p4,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[5]: CUSTOM ARG=q6_sp.rm-p5,q6_norm FUNC=x/y PERIODIC=NO
+q6n_rmn-[6]: CUSTOM ARG=q6_sp.rm-p6,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-6]: CUSTOM ARG=q6_sp.im-n6,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-5]: CUSTOM ARG=q6_sp.im-n5,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-4]: CUSTOM ARG=q6_sp.im-n4,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-3]: CUSTOM ARG=q6_sp.im-n3,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-2]: CUSTOM ARG=q6_sp.im-n2,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[-1]: CUSTOM ARG=q6_sp.im-n1,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[0]: CUSTOM ARG=q6_sp.im-0,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[1]: CUSTOM ARG=q6_sp.im-p1,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[2]: CUSTOM ARG=q6_sp.im-p2,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[3]: CUSTOM ARG=q6_sp.im-p3,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[4]: CUSTOM ARG=q6_sp.im-p4,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[5]: CUSTOM ARG=q6_sp.im-p5,q6_norm FUNC=x/y PERIODIC=NO
+q6n_imn-[6]: CUSTOM ARG=q6_sp.im-p6,q6_norm FUNC=x/y PERIODIC=NO
+
+DUMPATOMS ATOMS=q6 ARG=q6,q6n_rmn-[-6],q6n_rmn-[-5],q6n_rmn-[-4],q6n_rmn-[-3],q6n_rmn-[-2],q6n_rmn-[-1],q6n_rmn-[0],q6n_rmn-[1],q6n_rmn-[2],q6n_rmn-[3],q6n_rmn-[4],q6n_rmn-[5],q6n_rmn-[6],q6n_imn-[-6],q6n_imn-[-5],q6n_imn-[-4],q6n_imn-[-3],q6n_imn-[-2],q6n_imn-[-1],q6n_imn-[0],q6n_imn-[1],q6n_imn-[2],q6n_imn-[3],q6n_imn-[4],q6n_imn-[5],q6n_imn-[6] FILE=q6.xyz PRECISION=4
+
+w6: LOCAL_Q6 SPECIES=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5} MEAN 
+DUMPATOMS ARG=w6_av ATOMS=q6 FILE=w6.xyz PRECISION=4

@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SecondaryStructureRMSD.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
 
 namespace PLMD {
 namespace secondarystructure {
@@ -87,7 +87,7 @@ hh: PARABETARMSD RESIDUES=all TYPE=OPTIMAL R_0=0.1  STRANDS_CUTOFF=1
 */
 //+ENDPLUMEDOC
 
-class ParabetaRMSD : public SecondaryStructureRMSD {
+class ParabetaRMSD : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ParabetaRMSD(const ActionOptions&);
@@ -97,38 +97,47 @@ PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
 void ParabetaRMSD::registerKeywords( Keywords& keys ) {
   SecondaryStructureRMSD::registerKeywords( keys );
+  keys.remove("ATOMS");
+  keys.remove("SEGMENT");
+  keys.remove("BONDLENGTH");
+  keys.remove("NO_ACTION_LOG");
+  keys.remove("CUTOFF_ATOMS");
+  keys.remove("STRUCTURE");
   keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
            "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
            "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
            "only sheet-like configurations involving a single chain are counted");
-  keys.use("STRANDS_CUTOFF");
+  keys.needsAction("LOWEST");
 }
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   Action(ao),
-  SecondaryStructureRMSD(ao) {
+  ActionShortcut(ao) {
+  // Read in the input and create a string that describes how to compute the less than
+  std::string ltmap;
+  bool uselessthan=SecondaryStructureRMSD::readShortcutWords( ltmap, this );
   // read in the backbone atoms
   std::vector<unsigned> chains;
-  readBackboneAtoms( "protein", chains );
+  std::string atoms;
+  SecondaryStructureRMSD::readBackboneAtoms( this, plumed, "protein", chains, atoms );
 
   bool intra_chain(false), inter_chain(false);
+  std::string seglist;
   std::string style;
   parse("STYLE",style);
-  if( style=="all" ) {
+  unsigned jjkk=1;
+  if( Tools::caseInSensStringCompare(style, "all") ) {
     intra_chain=true;
     inter_chain=true;
-  } else if( style=="inter") {
+  } else if( Tools::caseInSensStringCompare(style, "inter") ) {
     intra_chain=false;
     inter_chain=true;
-  } else if( style=="intra") {
+  } else if( Tools::caseInSensStringCompare(style, "intra") ) {
     intra_chain=true;
     inter_chain=false;
   } else {
     error( style + " is not a valid directive for the STYLE keyword");
   }
-
-  // Align the atoms based on the positions of these two atoms
-  setAtomsFromStrands( 6, 21 );
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ) {
@@ -149,7 +158,15 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
             nlist[k]=nprevious + ires*5+k;
             nlist[k+15]=nprevious + jres*5+k;
           }
-          addColvar( nlist );
+          std::string nlstr, num;
+          Tools::convert( nlist[0], nlstr );
+          Tools::convert(jjkk, num);
+          jjkk++;
+          seglist += " SEGMENT" + num + "=" + nlstr;
+          for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+            Tools::convert( nlist[kk], nlstr );
+            seglist += "," + nlstr;
+          }
         }
       }
       nprevious+=chains[i];
@@ -157,7 +174,7 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   }
   // This constructs all conceivable sections of antibeta sheet that form between chains
   if( inter_chain ) {
-    if( chains.size()==1 && style!="all" ) {
+    if( chains.size()==1 && !Tools::caseInSensStringCompare(style, "all") ) {
       error("there is only one chain defined so cannot use inter_chain option");
     }
     std::vector<unsigned> nlist(30);
@@ -185,7 +202,15 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
               nlist[k]=iprev + ires*5+k;
               nlist[k+15]=jprev + jres*5+k;
             }
-            addColvar( nlist );
+            std::string nlstr, num;
+            Tools::convert( nlist[0], nlstr );
+            Tools::convert(jjkk, num);
+            jjkk++;
+            seglist += " SEGMENT" + num + "=" + nlstr;
+            for(unsigned kk=1; kk<nlist.size(); ++kk ) {
+              Tools::convert( nlist[kk], nlstr );
+              seglist += "," + nlstr;
+            }
           }
         }
       }
@@ -225,7 +250,17 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[28]=Vector(-0.229,  4.791,  1.038); // C
   reference[29]=Vector( 0.523,  5.771,  0.996); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  std::string ref0, ref1, ref2;
+  Tools::convert(  reference[0][0], ref0 );
+  Tools::convert(  reference[0][1], ref1 );
+  Tools::convert(  reference[0][2], ref2 );
+  std::string structure=" STRUCTURE1=" + ref0 + "," + ref1 + "," + ref2;
+  for(unsigned i=1; i<30; ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
+  }
 
   reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
   reference[1]=Vector(-0.816, -3.803, -1.013); // CA
@@ -258,7 +293,44 @@ ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
   reference[28]=Vector( 1.684,  4.331, -0.148); // C
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
+  Tools::convert(  reference[0][0], ref0 );
+  Tools::convert(  reference[0][1], ref1 );
+  Tools::convert(  reference[0][2], ref2 );
+  structure +=" STRUCTURE2=" + ref0 + "," + ref1 + "," + ref2;
+  for(unsigned i=1; i<30; ++i) {
+    for(unsigned k=0; k<3; ++k) {
+      Tools::convert( reference[i][k], ref0 );
+      structure += "," + ref0;
+    }
+  }
+
+  std::string strands_cutoff;
+  parse("STRANDS_CUTOFF",strands_cutoff);
+  std::string nopbcstr="";
+  bool nopbc;
+  parseFlag("NOPBC",nopbc);
+  if( nopbc ) {
+    nopbcstr = " NOPBC";
+  }
+  if( strands_cutoff.length()>0 ) {
+    strands_cutoff=" CUTOFF_ATOMS=6,21 STRANDS_CUTOFF="+strands_cutoff;
+  }
+  std::string type;
+  parse("TYPE",type);
+  std::string lab = getShortcutLabel() + "_low";
+  if( uselessthan ) {
+    lab = getShortcutLabel();
+  }
+  if( seglist.length()==0 ) {
+    error("no segments to investigate");
+  }
+  readInputLine( getShortcutLabel() + "_both: SECONDARY_STRUCTURE_RMSD BONDLENGTH=0.17" + seglist + structure + " " + atoms + " TYPE=" + type + strands_cutoff + nopbcstr );
+  if( ltmap.length()>0 ) {
+    // Create the lowest line
+    readInputLine( lab + ": LOWEST ARG=" + getShortcutLabel() + "_both.struct-1," + getShortcutLabel() + "_both.struct-2" );
+    // Create the less than object
+    SecondaryStructureRMSD::expandShortcut( uselessthan, getShortcutLabel(), lab, ltmap, this );
+  }
 }
 
 }

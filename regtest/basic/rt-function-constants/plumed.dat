@@ -1,0 +1,10 @@
+c: CONSTANT VALUE=3
+q: CONSTANT VALUE=2
+fixed: STATS ARG=c,q PARAMETERS=0,0 SQDEVSUM
+fixed_components: STATS ARG=c,q PARAMETERS=0,0 SQDEV
+constant_custom: CUSTOM ARG=c,q FUNC=x*y PERIODIC=NO
+d: DISTANCE ATOMS=1,2 NOPBC
+mixed: STATS ARG=c,d PARAMETERS=0,0 SQDEVSUM
+mixed_custom: CUSTOM ARG=c,d FUNC=x*y PERIODIC=NO
+BIASVALUE ARG=mixed.sqdevsum,mixed_custom
+PRINT ARG=fixed.sqdevsum,fixed_components.sqd-0,fixed_components.sqd-1,constant_custom,mixed.sqdevsum,mixed_custom FILE=COLVAR FMT=%8.3f

@@ -9,7 +9,7 @@ VERSION = $(shell if test -f ../VERSION.txt ; then grep -v \\\# ../VERSION.txt ;
 
 plumed_compiled := $(wildcard ../src/lib/plumed)
 
-ifdef python_bin
+ifdef plumed_found_cython
 
 all:
 	@echo Building python interface for PLUMED 

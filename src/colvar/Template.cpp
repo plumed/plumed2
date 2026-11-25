@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace colvar {
@@ -64,6 +64,7 @@ void Template::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TEMPLATE_COMPULSORY","all compulsory keywords should be added like this with a description here");
   keys.add("optional","TEMPLATE_OPTIONAL","all optional keywords that have input should be added like a description here");
   keys.add("atoms","ATOMS","the keyword with which you specify what atoms to use should be added like this");
+  keys.setValueDescription("a description of the value that is computed by this colvar should be included here");
 }
 
 Template::Template(const ActionOptions&ao):

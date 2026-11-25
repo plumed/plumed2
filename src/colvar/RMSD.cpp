@@ -21,28 +21,33 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
+#include "tools/RMSD.h"
 #include "tools/PDB.h"
-#include "reference/RMSDBase.h"
-#include "reference/MetricRegister.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
 
 class RMSD : public Colvar {
 
-  MultiValue myvals;
-  ReferenceValuePack mypack;
-  std::unique_ptr<PLMD::RMSDBase> rmsd;
   bool squared;
   bool nopbc;
-
+  PLMD::RMSD myrmsd;
+  std::vector<Vector> der;
 public:
   explicit RMSD(const ActionOptions&);
   void calculate() override;
   static void registerKeywords(Keywords& keys);
 };
+
+//+PLUMEDOC DCOLVAR RMSD_SCALAR
+/*
+Calculate the RMSD with respect to a reference structure.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 //+PLUMEDOC DCOLVAR RMSD
 /*
@@ -159,19 +164,19 @@ END
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(RMSD,"RMSD")
+PLUMED_REGISTER_ACTION(RMSD,"RMSD_SCALAR")
 
 void RMSD::registerKeywords(Keywords& keys) {
   Colvar::registerKeywords(keys);
+  keys.setDisplayName("RMSD");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be set if you want mean squared displacement instead of RMSD ");
+  keys.setValueDescription("the RMSD between the instantaneous structure and the reference structure that was input");
 }
 
 RMSD::RMSD(const ActionOptions&ao):
   PLUMED_COLVAR_INIT(ao),
-  myvals(1,0),
-  mypack(0,0,myvals),
   squared(false),
   nopbc(false) {
   std::string reference;
@@ -181,32 +186,21 @@ RMSD::RMSD(const ActionOptions&ao):
   parse("TYPE",type);
   parseFlag("SQUARED",squared);
   parseFlag("NOPBC",nopbc);
-
   checkRead();
-
 
   addValueWithDerivatives();
   setNotPeriodic();
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + reference );
   }
+  myrmsd.set( pdb, type, true, true );
 
-  rmsd=metricRegister().create<RMSDBase>(type,pdb);
-
-  std::vector<AtomNumber> atoms;
-  rmsd->getAtomRequests( atoms );
-//  rmsd->setNumberOfAtoms( atoms.size() );
+  std::vector<AtomNumber> atoms( pdb.getAtomNumbers() );
   requestAtoms( atoms );
-
-  // Setup the derivative pack
-  myvals.resize( 1, 3*atoms.size()+9 );
-  mypack.resize( 0, atoms.size() );
-  for(unsigned i=0; i<atoms.size(); ++i) {
-    mypack.setAtomIndex( i, i );
-  }
+  der.resize( atoms.size() );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
@@ -235,15 +229,12 @@ void RMSD::calculate() {
   if(!nopbc) {
     makeWhole();
   }
-  double r=rmsd->calculate( getPositions(), mypack, squared );
+  double r=myrmsd.calculate( getPositions(), der, squared );
 
   setValue(r);
   for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
+    setAtomsDerivatives( i, der[i] );
   }
-
-  Tensor virial;
-  plumed_dbg_assert( !mypack.virialWasSet() );
   setBoxDerivativesNoPbc();
 }
 

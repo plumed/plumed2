@@ -1,0 +1,11 @@
+LOAD FILE=@pycvpath@
+
+fPY: ...
+PYFUNCTION
+IMPORT=unitTest
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+

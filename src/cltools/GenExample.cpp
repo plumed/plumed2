@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
@@ -29,6 +29,7 @@
 #include "core/ActionShortcut.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
+#include "tools/Communicator.h"
 #include "tools/IFile.h"
 #include <cstdio>
 #include <string>
@@ -173,8 +174,10 @@ int GenExample::main(FILE* in, FILE*out,Communicator& pc) {
     ofile<<"with-LOAD-yellow";
   } else if(status=="incomplete") {
     ofile<<version<<"-incomplete-yellow";
+  } else if ( status=="nobadge" ) {
+    ofile<<"nobadge-36454F";
   } else {
-    error("unknown status");
+    error("unknown status: "+status);
   }
   ofile<<".svg\" alt=\"tested on "<<version<<"\" /></div>";
   ofile.flush();
@@ -463,7 +466,7 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
         ofile<<"<span style=\"display:none;\" id=\""<<egname<<lab<<"\">";
         ofile<<"The "<<interpreted[0]<<" action with label <b>"<<lab<<"</b>";
         myplumed.readInputLine( myinputline );
-        ActionWithValue* av=dynamic_cast<ActionWithValue*>( myplumed.getActionSet().selectWithLabel<Action*>(lab) );
+        ActionWithValue* av=myplumed.getActionSet().selectWithLabel<ActionWithValue*>(lab);
         if( av ) {
           if( av->getNumberOfComponents()==1 ) {
             ofile<<" calculates a single scalar value";
@@ -476,26 +479,12 @@ void GenExample::printExampleInput( const std::vector<std::vector<std::string> >
               std::string myname = av->copyOutput(k)->getName();
               std::size_t dot=myname.find_first_of(".");
               std::string tname=myname.substr(dot+1);
-              std::size_t und=tname.find_last_of("_");
-              std::size_t hyph=tname.find_first_of("-");
-              if( und!=std::string::npos && hyph!=std::string::npos ) {
-                plumed_merror("cannot use underscore and hyphen in name");
-              }
-              ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>";
-              if( und!=std::string::npos ) {
-                ofile<<keys.getOutputComponentDescription(tname.substr(und))<<" This particular component measures this quantity for the input CV named ";
-                ofile<<tname.substr(0,und);
-              } else if( hyph!=std::string::npos ) {
-                ofile<<keys.getOutputComponentDescription(tname.substr(0,hyph))<<"  This is the "<<tname.substr(hyph+1)<<"th of these quantities";
-              } else {
-                ofile<<keys.getOutputComponentDescription(tname);
-              }
-              ofile<<"</td></tr>"<<std::endl;
+              ofile<<"<tr><td width=\"5%%\">"<<myname<<"</td><td>"<<av->getOutputComponentDescription(tname,keys)<<"</td></tr>"<<std::endl;
             }
             ofile<<"</table>"<<std::endl;
           }
         } else {
-          ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>( myplumed.getActionSet().selectWithLabel<Action*>(lab) );
+          ActionWithVirtualAtom* avv=myplumed.getActionSet().selectWithLabel<ActionWithVirtualAtom*>(lab);
           if( avv ) {
             ofile<<" calculates the position of a virtual atom";
           } else if( interpreted[0]=="GROUP" ) {

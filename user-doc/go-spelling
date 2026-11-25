@@ -23,7 +23,7 @@ cat spelling/keywords spelling/allkeys spelling_words.dict >> spelling/allwords.
 git_version="$(../src/lib/plumed --no-mpi info --git-version)"
 
 # This is everything we have done thus far
-for file in *PP.md automatic/*.txt ../CHANGES/*.md tutorials/*.txt tutorials/*.site tutorials/others/*.txt ; do
+for file in *PP.md automatic/*.txt ../CHANGES/*.md ; do
     # echo Checking spelling for file $file
     splits=`echo $file | sed -e 's/\// /g'`
     nf=`echo $splits | awk '{print NF}'`

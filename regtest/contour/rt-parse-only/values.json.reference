@@ -1,0 +1,135 @@
+{ 
+"timestep" : { 
+"action" : "PUT", 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"action" : "PUT", 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"action" : "PUT", 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"action" : "PUT", 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"action" : "PUT", 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"action" : "PUT", 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"action" : "PBC", 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_grp" : { 
+"action" : "GROUP", 
+"fcc_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"fcc_mat" : { 
+"action" : "CONTACT_MATRIX", 
+"fcc_mat.w" : { "type": "matrix", "desciption": "" }
+"fcc_mat.x" : { "type": "matrix", "desciption": "" }
+"fcc_mat.y" : { "type": "matrix", "desciption": "" }
+"fcc_mat.z" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_vfunc" : { 
+"action" : "FCCUBIC_FUNC", 
+"fcc_vfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_wvfunc" : { 
+"action" : "CUSTOM", 
+"fcc_wvfunc" : { "type": "matrix", "desciption": "" }
+}, 
+"fcc_ones" : { 
+"action" : "CONSTANT", 
+"fcc_ones" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_fcc_ones" : { 
+"action" : "ONES", 
+"fcc_ones" : { "type": "vector", "desciption": "" }
+}, 
+"fcc" : { 
+"action" : "MATRIX_VECTOR_PRODUCT", 
+"fcc" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_denom" : { 
+"action" : "MATRIX_VECTOR_PRODUCT", 
+"fcc_denom" : { "type": "vector", "desciption": "" }
+}, 
+"fcc_n" : { 
+"action" : "CUSTOM", 
+"fcc_n" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_fcc" : { 
+"action" : "FCCUBIC", 
+"fcc" : { "type": "vector", "desciption": "" }
+}, 
+"dens_dist" : { 
+"action" : "DISTANCE", 
+"dens_dist.x" : { "type": "vector", "desciption": "" }
+"dens_dist.y" : { "type": "vector", "desciption": "" }
+"dens_dist.z" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_dens_dist" : { 
+"action" : "DISTANCES", 
+"dens_dist.x" : { "type": "vector", "desciption": "" }
+"dens_dist.y" : { "type": "vector", "desciption": "" }
+"dens_dist.z" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_sigma" : { 
+"action" : "CONSTANT", 
+"dens_numer_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_cov" : { 
+"action" : "CUSTOM", 
+"dens_numer_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer_icov" : { 
+"action" : "CUSTOM", 
+"dens_numer_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_numer" : { 
+"action" : "KDE", 
+"dens_numer" : { "type": "grid", "desciption": "" }
+}, 
+"ones" : { 
+"action" : "CONSTANT", 
+"ones" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_ones" : { 
+"action" : "ONES", 
+"ones" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_sigma" : { 
+"action" : "CONSTANT", 
+"dens_denom_sigma" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_cov" : { 
+"action" : "CUSTOM", 
+"dens_denom_cov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom_icov" : { 
+"action" : "CUSTOM", 
+"dens_denom_icov" : { "type": "vector", "desciption": "" }
+}, 
+"dens_denom" : { 
+"action" : "KDE", 
+"dens_denom" : { "type": "grid", "desciption": "" }
+}, 
+"dens" : { 
+"action" : "CUSTOM", 
+"dens" : { "type": "grid", "desciption": "" }
+}, 
+"cont" : { 
+"action" : "FIND_CONTOUR", 
+"cont.dens_dist.x" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.x direction" }, 
+"cont.dens_dist.y" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.y direction" }, 
+"cont.dens_dist.z" : { "type": "vector", "description": "a vector of coordinates for the contour along the dens_dist.z direction" } 
+} 
+} 

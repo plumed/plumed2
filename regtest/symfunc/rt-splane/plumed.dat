@@ -1,0 +1,44 @@
+m3: PLANES ...
+ATOMS1=9,10,11
+ATOMS2=89,90,91
+ATOMS3=473,474,475
+ATOMS4=1161,1162,1163
+ATOMS5=1521,1522,1523
+ATOMS6=1593,1594,1595 
+ATOMS7=1601,1602,1603
+ATOMS8=2201,2202,2203
+VMEAN
+... 
+
+DUMPDERIVATIVES ARG=m3_vmean FILE=deriv2 FMT=%8.4f
+
+s2: SMAC SPECIES=m3 KERNEL1={GAUSSIAN CENTER=0 SIGMA=0.480} KERNEL2={GAUSSIAN CENTER=pi SIGMA=0.480} SWITCH={RATIONAL R_0=0.6} MORE_THAN={RATIONAL R_0=0.7} SWITCH_COORD={EXP R_0=3.0}
+ 
+PRINT ARG=s2.* FILE=colv FMT=%8.4f
+
+BIASVALUE ARG=s2.*
+
+# Normalize vectors for planes
+m3_norm2: COMBINE ARG=m3.x,m3.y,m3.z POWERS=2,2,2 PERIODIC=NO
+m3_norm: CUSTOM ARG=m3_norm2 FUNC=sqrt(x) PERIODIC=NO
+nn_x: CUSTOM ARG=m3.x,m3_norm FUNC=x/y PERIODIC=NO 
+nn_y: CUSTOM ARG=m3.y,m3_norm FUNC=x/y PERIODIC=NO 
+nn_z: CUSTOM ARG=m3.z,m3_norm FUNC=x/y PERIODIC=NO
+
+# Compute required function of matrices
+data: VSTACK ARG=nn_x,nn_y,nn_z
+dataT: TRANSPOSE ARG=data
+con: CONTACT_MATRIX GROUP=m3 SWITCH={RATIONAL R_0=0.6}
+dd: MATRIX_PRODUCT ARG=data,dataT 
+prod: CUSTOM ARG=con,dd FUNC=x*(3*y-1)/2 PERIODIC=NO
+# Calculate row sums of matrix
+ones: ONES SIZE=8 
+coord: MATRIX_VECTOR_PRODUCT ARG=prod,ones
+# Now calculate average over columns
+denom: MATRIX_VECTOR_PRODUCT ARG=con,ones
+pa: CUSTOM ARG=coord,denom FUNC=x/y PERIODIC=NO
+# And final value of function
+s3: MEAN ARG=pa PERIODIC=NO
+
+r: RESTRAINT ARG=s3 AT=3 KAPPA=10
+PRINT ARG=s3.* FILE=colv2 FMT=%8.4f 

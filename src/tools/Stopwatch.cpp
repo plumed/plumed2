@@ -61,7 +61,7 @@ std::ostream& Stopwatch::log(std::ostream&os)const {
 
   std::vector<std::string> names;
   for(const auto & it : watches) {
-    names.push_back(it.first);
+    names.emplace_back(it.first);
   }
   std::sort(names.begin(),names.end());
 

@@ -1,4 +1,4 @@
-USE=core reference vesselbase
+USE=core tools
 
 # generic makefile
 include ../maketools/make.module

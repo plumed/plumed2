@@ -1,0 +1,4 @@
+plumed_modules="symfunc volumes"
+type=driver
+arg="--timestep 0.002 --trajectory-stride 500 --dump-forces forces_bias_lambdav.out --mf_xtc some_frames.xtc --dump-forces-fmt %8.4f"
+extra_files="../../trajectories/some_frames.xtc"

@@ -1,0 +1,23 @@
+q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
+
+norm_q1_rm-n1: CUSTOM ARG=q1_sp.rm-n1,q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_im-n1: CUSTOM ARG=q1_sp.im-n1,q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_rm-0: CUSTOM ARG=q1_sp.rm-0,q1_norm FUNC=x/y PERIODIC=NO 
+norm_q1_im-0: CUSTOM ARG=q1_sp.im-0,q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_rm-p1: CUSTOM ARG=q1_sp.rm-p1,q1_norm FUNC=x/y PERIODIC=NO
+norm_q1_im-p1: CUSTOM ARG=q1_sp.im-p1,q1_norm FUNC=x/y PERIODIC=NO
+
+dd: VSTACK ARG=norm_q1_rm-n1,norm_q1_im-n1,norm_q1_rm-0,norm_q1_im-0,norm_q1_rm-p1,norm_q1_im-p1
+
+ddT: TRANSPOSE ARG=dd
+
+con: CONTACT_MATRIX GROUP=q1 SWITCH={RATIONAL R_0=4}
+dot: MATRIX_PRODUCT ARG=dd,ddT
+
+mm: CUSTOM ARG=con,dot FUNC=x*y PERIODIC=NO
+
+ones: ONES SIZE=2
+cc: MATRIX_VECTOR_PRODUCT ARG=mm,ones
+ff: SUM ARG=cc PERIODIC=NO
+BIASVALUE ARG=ff 
+PRINT ARG=ff FILE=colvar FMT=%8.4f 

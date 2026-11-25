@@ -1,0 +1,4 @@
+tmp/
+report.txt
+#this is a symlink here
+/scripts

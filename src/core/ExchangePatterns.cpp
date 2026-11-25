@@ -48,7 +48,7 @@ void ExchangePatterns::setSeed(const int seed) {
 }
 
 void ExchangePatterns::getList(const TypesafePtr & ind) {
-  auto iind=ind.get<int*>(NumberOfReplicas);
+  auto iind=ind.get<int*>({NumberOfReplicas});
   switch(PatternFlag) {
   case RANDOM:
     for(int i=0; i<NumberOfReplicas; i++) {

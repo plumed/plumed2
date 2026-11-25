@@ -1,0 +1,5 @@
+LOAD FILE=@pycvpath@
+
+cvdist: PYFUNCTION IMPORT=pyhelp
+
+#PRINT FILE=colvar.out ARG=*

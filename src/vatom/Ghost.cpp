@@ -20,9 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/Exception.h"
+#include <array>
 
 namespace PLMD {
 namespace vatom {
@@ -33,6 +34,17 @@ Calculate the absolute position of a ghost atom with fixed coordinates in the lo
 
 The computed ghost atom is stored as a virtual atom that can be accessed in
  an atom list through the the label for the GHOST action that creates it.
+
+When running with periodic boundary conditions, the atoms should be
+in the proper periodic image. This is done automatically since PLUMED 2.10,
+by considering the ordered list of atoms and rebuilding the molecule using a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED.
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
 
 \par Examples
 
@@ -52,6 +64,8 @@ PRINT ARG=d1
 class Ghost:
   public ActionWithVirtualAtom {
   std::vector<double> coord;
+  std::vector<Tensor> deriv;
+  bool nopbc=false;
 public:
   explicit Ghost(const ActionOptions&ao);
   void calculate() override;
@@ -63,6 +77,7 @@ PLUMED_REGISTER_ACTION(Ghost,"GHOST")
 void Ghost::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("atoms","COORDINATES","coordinates of the ghost atom in the local reference frame");
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 Ghost::Ghost(const ActionOptions&ao):
@@ -79,23 +94,36 @@ Ghost::Ghost(const ActionOptions&ao):
     error("COORDINATES should be a list of three real numbers");
   }
 
+  parseFlag("NOPBC",nopbc);
+
   checkRead();
   log.printf("  of atoms");
   for(unsigned i=0; i<atoms.size(); ++i) {
     log.printf(" %d",atoms[i].serial());
   }
   log.printf("\n");
+
+  if(nopbc) {
+    log<<"  PBC will be ignored\n";
+  } else {
+    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+  }
   requestAtoms(atoms);
 }
 
 void Ghost::calculate() {
+
+  if(!nopbc) {
+    makeWhole();
+  }
+
   Vector pos;
-  std::vector<Tensor> deriv(getNumberOfAtoms());
-  std::vector<Vector> n;
+  deriv.resize(getNumberOfAtoms());
+  std::array<Vector,3> n;
 
 // first versor
   Vector n01 = delta(getPosition(0), getPosition(1));
-  n.push_back(n01/n01.modulo());
+  n[0]=n01/n01.modulo();
 
 // auxiliary vector
   Vector n02 = delta(getPosition(0), getPosition(2));
@@ -103,10 +131,10 @@ void Ghost::calculate() {
 // second versor
   Vector n03 = crossProduct(n[0],n02);
   double n03_norm = n03.modulo();
-  n.push_back(n03/n03_norm);
+  n[1]=n03/n03_norm;
 
 // third versor
-  n.push_back(crossProduct(n[0],n[1]));
+  n[2]=crossProduct(n[0],n[1]);
 
 // origin of the reference system
   pos = getPosition(0);

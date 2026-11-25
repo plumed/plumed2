@@ -1,0 +1,12 @@
+type=driver
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz traj-nopbc.xyz"
+
+plumed_regtest_after() {
+  {
+    #I'm giving some space to the floating point precision
+    echo '#! FIELDS time parameter cpu-gpu'
+    awk 'function abs(v) {return v < 0 ? -v : v} NR>1{print $1, $2, (abs($4-$3) < 0.0001)  ? 0 : $4-$3 } ' <deriv
+  } >deriv_delta
+}
+extra_files="../../trajectories/traj-nopbc.xyz"

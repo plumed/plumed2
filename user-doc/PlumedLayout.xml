@@ -28,7 +28,7 @@
       <tab type="user" visible="yes" url="degub.html" title="Debugging the code"/>
       <tab type="user" visible="yes" url="misc.html" title="Frequently used tools"/>
     </tab> 
-    <tab type="user" visible="yes" url="tutorials.html" title="Tutorials"/>
+    <tab type="user" visible="yes" url="https://plumed-school.github.io" title="Tutorials"/>
     <tab type="user" visible="yes" url="citelist.html" title="Bibliography"/>
     <tab type="user" visible="yes" url="glossary.html" title="Index"/>
     <tab type="pages" visible="no" title="" intro=""/>

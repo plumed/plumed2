@@ -1,0 +1,15 @@
+LOAD FILE=@pycvpath@
+
+cvPY: ...
+PYCVINTERFACE
+ATOMS=2,4
+IMPORT=unitTest
+CALCULATE=mypytest
+INIT=myInit
+PREPARE=myPrepare
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+

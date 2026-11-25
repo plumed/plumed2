@@ -8,65 +8,65 @@ fi
 cd ../
 
 
-for file in ./tutorials/*.txt ; do
-
-   check=`grep additional-files: $file | wc -l`
-   if [ $check -gt 1 ] ; then
-        echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
-   elif [ $check -gt 0 ] ; then
-      resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
-     for addfile in $resources; do 
-        if test -d tutorials/$addfile; then
-          cd tutorials
-          tar czf ../html/tutorial-resources/$addfile.tar.gz $addfile
-          cd -
-        else
-          cp tutorials/$addfile html/tutorial-resources
-        fi
-     done
-   fi
-
-done
-
-for file in ./tutorials/others/*.txt ; do
-
-   check=`grep additional-files: $file | wc -l`
-   if [ $check -gt 1 ] ; then
-        echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
-   elif [ $check -gt 0 ] ; then
-      resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
-     for addfile in $resources; do 
-        if test -d tutorials/others/$addfile; then
-          cd tutorials
-          tar czf ../html/tutorial-resources/$addfile.tar.gz others/$addfile
-          cd -
-        else
-          cp tutorials/others/$addfile html/tutorial-resources
-        fi
-     done
-   fi
-
-done
-
-for file in ./tutorials/old_tutorials/*.txt ; do
-
-   check=`grep additional-files: $file | wc -l`
-   if [ $check -gt 1 ] ; then
-        echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
-   elif [ $check -gt 0 ] ; then
-      resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
-     for addfile in $resources; do 
-        if test -d tutorials/old_tutorials/$addfile; then
-          cd tutorials
-          tar czf ../html/tutorial-resources/$addfile.tar.gz old_tutorials/$addfile
-          cd -
-        else
-          cp tutorials/old_tutorials/$addfile html/tutorial-resources
-        fi
-     done
-   fi
-
-done
+# for file in ./tutorials/*.txt ; do
+# 
+#    check=`grep additional-files: $file | wc -l`
+#    if [ $check -gt 1 ] ; then
+#         echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
+#    elif [ $check -gt 0 ] ; then
+#       resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
+#      for addfile in $resources; do 
+#         if test -d tutorials/$addfile; then
+#           cd tutorials
+#           tar czf ../html/tutorial-resources/$addfile.tar.gz $addfile
+#           cd -
+#         else
+#           cp tutorials/$addfile html/tutorial-resources
+#         fi
+#      done
+#    fi
+# 
+# done
+# 
+# for file in ./tutorials/others/*.txt ; do
+# 
+#    check=`grep additional-files: $file | wc -l`
+#    if [ $check -gt 1 ] ; then
+#         echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
+#    elif [ $check -gt 0 ] ; then
+#       resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
+#      for addfile in $resources; do 
+#         if test -d tutorials/others/$addfile; then
+#           cd tutorials
+#           tar czf ../html/tutorial-resources/$addfile.tar.gz others/$addfile
+#           cd -
+#         else
+#           cp tutorials/others/$addfile html/tutorial-resources
+#         fi
+#      done
+#    fi
+# 
+# done
+# 
+# for file in ./tutorials/old_tutorials/*.txt ; do
+# 
+#    check=`grep additional-files: $file | wc -l`
+#    if [ $check -gt 1 ] ; then
+#         echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
+#    elif [ $check -gt 0 ] ; then
+#       resources=`grep additional-files: $file | sed -e 's/additional-files: //'`
+#      for addfile in $resources; do 
+#         if test -d tutorials/old_tutorials/$addfile; then
+#           cd tutorials
+#           tar czf ../html/tutorial-resources/$addfile.tar.gz old_tutorials/$addfile
+#           cd -
+#         else
+#           cp tutorials/old_tutorials/$addfile html/tutorial-resources
+#         fi
+#      done
+#    fi
+# 
+# done
 
 nerrors=`wc -l errors | awk '{print NF}'`
 if [ $nerrors -eq 0 ] ; then

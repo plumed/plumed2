@@ -20,13 +20,22 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include <cmath>
+#include <limits>
 
 namespace PLMD {
 namespace vatom {
+
+//+PLUMEDOC VATOM CENTER_FAST
+/*
+Calculate the center for a group of atoms, with arbitrary weights.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 //+PLUMEDOC VATOM CENTER
 /*
@@ -121,8 +130,7 @@ class Center:
   std::vector<double> weights;
   std::vector<Tensor> dcenter_sin;
   std::vector<Tensor> dcenter_cos;
-  double charge_;
-  double mass_;
+  std::vector<Tensor> deriv;
   bool isChargeSet_;
   bool isMassSet_;
   bool weight_mass;
@@ -135,11 +143,14 @@ public:
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(Center,"CENTER")
+PLUMED_REGISTER_ACTION(Center,"CENTER_FAST")
 PLUMED_REGISTER_ACTION(Center,"COM")
 
 void Center::registerKeywords(Keywords& keys) {
   ActionWithVirtualAtom::registerKeywords(keys);
+  if( keys.getDisplayName()!="COM" ) {
+    keys.setDisplayName("CENTER");
+  }
   keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
   keys.add("optional","SET_CHARGE","Set the charge of the virtual atom to a given value.");
   keys.add("optional","SET_MASS","Set the mass of the virtual atom to a given value.");
@@ -151,8 +162,6 @@ void Center::registerKeywords(Keywords& keys) {
 Center::Center(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao),
-  charge_(nan("")),
-  mass_(-1),
   isChargeSet_(false),
   isMassSet_(false),
   weight_mass(false),
@@ -168,11 +177,15 @@ Center::Center(const ActionOptions&ao):
   parseFlag("MASS",weight_mass);
   parseFlag("NOPBC",nopbc);
   parseFlag("PHASES",phases);
+  double charge_=std::numeric_limits<double>::lowest();
   parse("SET_CHARGE",charge_);
-  if(!std::isnan(charge_)) {
+  setCharge(charge_);
+  if(charge_!=std::numeric_limits<double>::lowest()) {
     isChargeSet_=true;
   }
+  double mass_=-1;
   parse("SET_MASS",mass_);
+  setMass(mass_);
   if(mass_>0.) {
     isMassSet_=true;
   }
@@ -229,44 +242,58 @@ Center::Center(const ActionOptions&ao):
 
 void Center::calculate() {
   Vector pos;
-  double mass(0.0);
   const bool dophases=(getPbc().isSet() ? phases : false);
 
   if(!nopbc && !dophases) {
     makeWhole();
   }
 
-  if( first && weight_mass) {
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      if(std::isnan(getMass(i))) {
-        error(
-          "You are trying to compute a CENTER or COM but masses are not known.\n"
-          "        If you are using plumed driver, please use the --mc option"
-        );
+  if( first ) {
+    if( weight_mass ) {
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        if(std::isnan(getMass(i))) {
+          error(
+            "You are trying to compute a CENTER or COM but masses are not known.\n"
+            "        If you are using plumed driver, please use the --mc option"
+          );
+        }
       }
     }
-    first=false;
+    double mass(0.0);
+    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+      mass+=getMass(i);
+    }
+    if( chargesWereSet && !isChargeSet_) {
+      double charge(0.0);
+      for(unsigned i=0; i<getNumberOfAtoms(); i++) {
+        charge+=getCharge(i);
+      }
+      setCharge(charge);
+    } else if( !isChargeSet_ ) {
+      setCharge(0.0);
+    }
+    if(!isMassSet_) {
+      setMass(mass);
+    }
+
+    if( weight_mass ) {
+      weights.resize( getNumberOfAtoms() );
+      for(unsigned i=0; i<weights.size(); i++) {
+        weights[i] = getMass(i) / mass;
+      }
+    } else {
+      double wtot=0.0;
+      for(unsigned i=0; i<weights.size(); i++) {
+        wtot+=weights[i];
+      }
+      for(unsigned i=0; i<weights.size(); i++) {
+        weights[i]=weights[i]/wtot;
+      }
+      first=false;
+    }
   }
 
-  std::vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    mass+=getMass(i);
-  }
-  if( plumed.getAtoms().chargesWereSet() && !isChargeSet_) {
-    double charge(0.0);
-    for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      charge+=getCharge(i);
-    }
-    setCharge(charge);
-  } else if(isChargeSet_) {
-    setCharge(charge_);
-  } else {
-    setCharge(0.0);
-  }
-  double wtot=0.0;
-  for(unsigned i=0; i<weights.size(); i++) {
-    wtot+=weights[i];
-  }
+  deriv.resize(getNumberOfAtoms());
 
   if(dophases) {
     dcenter_sin.resize(getNumberOfAtoms());
@@ -276,12 +303,7 @@ void Center::calculate() {
     Tensor invbox2pi=2*pi*getPbc().getInvBox();
     Tensor box2pi=getPbc().getBox() / (2*pi);
     for(unsigned i=0; i<getNumberOfAtoms(); ++i) {
-      double w=0;
-      if(weight_mass) {
-        w=getMass(i)/mass;
-      } else {
-        w=weights[i]/wtot;
-      }
+      double w=weights[i];
 
       // real to scaled
       const Vector scaled=matmul(getPosition(i),invbox2pi);
@@ -329,31 +351,16 @@ void Center::calculate() {
       // scaled to real
       deriv[i]=matmul(dd,box2pi);
     }
-    if(!isMassSet_) {
-      setMass(mass);
-    } else {
-      setMass(mass_);
-    }
     setAtomsDerivatives(deriv);
     // scaled to real
     setPosition(matmul(c,box2pi));
   } else {
     for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-      double w=0;
-      if(weight_mass) {
-        w=getMass(i)/mass;
-      } else {
-        w=weights[i]/wtot;
-      }
+      double w=weights[i];
       pos+=w*getPosition(i);
       deriv[i]=w*Tensor::identity();
     }
     setPosition(pos);
-    if(!isMassSet_) {
-      setMass(mass);
-    } else {
-      setMass(mass_);
-    }
     setAtomsDerivatives(deriv);
   }
 }

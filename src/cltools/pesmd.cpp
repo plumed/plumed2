@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
@@ -211,9 +211,9 @@ public:
     if(Communicator::initialized()) {
       plumed->cmd("setMPIComm",&pc.Get_comm());
     }
-    plumed->cmd("setNoVirial");
     int natoms=( std::floor(dim/3) +  2 );
     plumed->cmd("setNatoms",&natoms);
+    plumed->cmd("setNoVirial");
     plumed->cmd("setMDEngine","pesmd");
     plumed->cmd("setTimestep",&tstep);
     plumed->cmd("setPlumedDat",plumedin.c_str());
@@ -264,7 +264,6 @@ public:
     }
     plumed->cmd("setPositions",&positions[0][0]);
     plumed->cmd("calc");
-
 
     double therm_eng=0;
     FILE* fp=fopen("stats.out","w+");

@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=gridtools
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%10.4f --debug-forces forces.num" 
+extra_files="../../trajectories/trajectory.xyz"

@@ -507,7 +507,14 @@ endif
 
 
 $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
+ifeq ($(PLUMED_INSTALL),Install)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(LD_MAIN_RUNPATH)
+ifeq ($(use_loader_path),yes)
+	install_name_tool -add_rpath "@loader_path/.." $@
+endif
+else
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
+endif
 
 ifeq ($(PLUMED_INSTALL),Install)
 

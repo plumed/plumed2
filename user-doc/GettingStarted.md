@@ -2,7 +2,7 @@
 
 To run PLUMED you need to provide one input file. 
 
-You can follow the \ref masterclass-21-1 to learn more about it.
+You can follow the <a href="https://plumed-school.github.io/lessons/21/001/data/NAVIGATION.html">first PLUMED masterclass</a> to learn more about it.
 
 In this input file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
@@ -55,8 +55,7 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.
 
-Actions can be referred also with POSIX regular expressions (see \ref Regex) if regex library is available on your system
-and detected at configure time.
+Actions can be referred also with POSIX regular expressions (see \ref Regex).
 You can also add \ref comments to the input or set up your input over multiple files and then create a composite input by
 \ref includes.
 

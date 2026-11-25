@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "colvar/Colvar.h"
-#include "colvar/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Pbc.h"
 
@@ -96,6 +96,7 @@ void FretEfficiency::registerKeywords( Keywords& keys ) {
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.add("compulsory","R0","The value of the Forster radius.");
+  keys.setValueDescription("the fret efficiency between the input pair of atoms");
 }
 
 FretEfficiency::FretEfficiency(const ActionOptions&ao):

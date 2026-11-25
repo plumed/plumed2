@@ -20,11 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
+#include "core/ActionWithVirtualAtom.h"
 #include "core/ActionShortcut.h"
 #include "tools/Communicator.h"
 #include "tools/Random.h"
@@ -234,6 +235,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation)");
   keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation)");
   keys.add("optional","--shortcut-ofile","the name of the file to output info on the way shortcuts have been expanded.  If there are no shortcuts in your input file nothing is output");
+  keys.add("optional","--valuedict-ofile","output a dictionary giving information about each value in the input file");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--mass-units","units for mass in pdb and mc file, either as a string or a number");
   keys.add("optional","--charge-units","units for charge in pdb and mc file, either as a string or a number");
@@ -298,6 +300,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   parseFlag("--parse-only",parseOnly);
   std::string full_outputfile;
   parse("--shortcut-ofile",full_outputfile);
+  std::string valuedict_file;
+  parse("--valuedict-ofile",valuedict_file);
   bool restart;
   parseFlag("--restart",restart);
 
@@ -379,7 +383,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   int  grex_stride=0;
   FILE*grex_log=NULL;
 // call fclose when fp goes out of scope
-  auto deleter=[](FILE* f) {
+  auto deleter=[](auto f) {
     if(f) {
       std::fclose(f);
     }
@@ -656,7 +660,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
   std::unique_ptr<FILE,decltype(deleter)> fp_deleter(fp,deleter);
   std::unique_ptr<FILE,decltype(deleter)> fp_forces_deleter(fp_forces,deleter);
 
-  auto xdr_deleter=[](xdrfile::XDRFILE* xd) {
+  auto xdr_deleter=[](auto xd) {
     if(xd) {
       xdrfile::xdrfile_close(xd);
     }
@@ -864,28 +868,32 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
         ifile.open(plumedFile);
         std::vector<std::string> words;
         while( Tools::getParsedLine(ifile,words) && !p.getEndPlumed() ) {
-          p.readInputWords(words);
+          p.readInputWords(words,false);
           Action* aa=p.getActionSet()[p.getActionSet().size()-1].get();
-          ActionWithValue* av=dynamic_cast<ActionWithValue*>(aa);
+          plumed_assert(aa); // needed for following calls, see #1046
+          ActionWithValue* av=aa->castToActionWithValue();
           if( av && aa->getDefaultString().length()>0 ) {
             std::vector<std::string> def;
             def.push_back( "defaults " + aa->getDefaultString() );
             data[ aa->getLabel() ] = def;
           }
-          ActionShortcut* as=dynamic_cast<ActionShortcut*>( aa );
+          ActionShortcut* as=aa->castToActionShortcut();
           if( as ) {
             if( aa->getDefaultString().length()>0 ) {
               std::vector<std::string> def;
               def.push_back( "defaults " + aa->getDefaultString() );
               data[ as->getShortcutLabel() ] = def;
             }
+            std::vector<std::string> shortcut_commands = as->getSavedInputLines();
+            if( shortcut_commands.size()==0 ) {
+              continue;
+            }
             if( data.find( as->getShortcutLabel() )!=data.end() ) {
-              std::vector<std::string> shortcut_commands = as->getSavedInputLines();
               for(unsigned i=0; i<shortcut_commands.size(); ++i) {
                 data[ as->getShortcutLabel() ].push_back( shortcut_commands[i] );
               }
             } else {
-              data[ as->getShortcutLabel() ] = as->getSavedInputLines();
+              data[ as->getShortcutLabel() ] = shortcut_commands;
             }
           }
         }
@@ -924,6 +932,116 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           long_file.printf("   }\n}\n");
           long_file.close();
         }
+      }
+      if( valuedict_file.length()>0 ) {
+        OFile valuefile;
+        valuefile.open( valuedict_file );
+        valuefile.printf("{\n");
+        bool firsta=true;
+        for(const auto & pp : p.getActionSet()) {
+          if( pp.get()->getName()=="CENTER" ) {
+            continue ;
+          }
+          ActionWithVirtualAtom* avv=dynamic_cast<ActionWithVirtualAtom*>(pp.get());
+          if( avv ||  pp.get()->getName()=="GROUP" || pp.get()->getName()=="DENSITY" ) {
+            Action* p(pp.get());
+            if( firsta ) {
+              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() );
+              firsta=false;
+            } else {
+              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", p->getLabel().c_str(), p->getName().c_str() );
+            }
+            if( avv ) {
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"virtual atom calculated by %s action\" }", avv->getLabel().c_str(), avv->getName().c_str() );
+            } else {
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"atoms\", \"description\": \"indices of atoms specified in GROUP\" }", p->getLabel().c_str() );
+            }
+            valuefile.printf("\n  }");
+            continue;
+          }
+          ActionWithValue* av=dynamic_cast<ActionWithValue*>(pp.get());
+          if( av && av->getNumberOfComponents()>0 ) {
+            Keywords keys;
+            p.getKeywordsForAction( av->getName(), keys );
+            if( firsta ) {
+              valuefile.printf("  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
+              firsta=false;
+            } else {
+              valuefile.printf(",\n  \"%s\" : {\n    \"action\" : \"%s\"", av->getLabel().c_str(), keys.getDisplayName().c_str() );
+            }
+            for(unsigned i=0; i<av->getNumberOfComponents(); ++i) {
+              Value* myval = av->copyOutput(i);
+              std::string compname = myval->getName(), description;
+              if( av->getLabel()==compname ) {
+                description = keys.getOutputComponentDescription(".#!value");
+              } else {
+                std::size_t dot=compname.find(av->getLabel() + ".");
+                std::string cname = compname.substr(dot + av->getLabel().length() + 1);
+                description = av->getOutputComponentDescription( cname, keys );
+              }
+              if( description.find("\\")!=std::string::npos ) {
+                error("found invalid backslash character in documentation for component " + compname + " in action " + av->getName() + " with label " + av->getLabel() );
+              }
+              valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+            }
+            valuefile.printf("\n  }");
+          }
+          ActionShortcut* as=pp->castToActionShortcut();
+          if( as ) {
+            std::vector<std::string> cnames( as->getSavedOutputs() );
+            if( cnames.size()==0 ) {
+              continue ;
+            }
+
+            if( firsta ) {
+              valuefile.printf("  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() );
+              firsta=false;
+            } else {
+              valuefile.printf(",\n  \"shortcut_%s\" : {\n    \"action\" : \"%s\"", as->getShortcutLabel().c_str(), as->getName().c_str() );
+            }
+            Keywords keys;
+            p.getKeywordsForAction( as->getName(), keys );
+            for(unsigned i=0; i<cnames.size(); ++i) {
+              ActionWithValue* av2=p.getActionSet().selectWithLabel<ActionWithValue*>( cnames[i] );
+              if( !av2 ) {
+                plumed_merror("could not find value created by shortcut with name " + cnames[i] );
+              }
+              if( av2->getNumberOfComponents()==1 ) {
+                Value* myval = av2->copyOutput(0);
+                std::string compname = myval->getName(), description;
+                if( compname==as->getShortcutLabel() ) {
+                  description = keys.getOutputComponentDescription(".#!value");
+                } else {
+                  std::size_t pp=compname.find(as->getShortcutLabel());
+                  description = keys.getOutputComponentDescription( compname.substr(pp+as->getShortcutLabel().length()+1) );
+                }
+                if( description.find("\\")!=std::string::npos ) {
+                  error("found invalid backslash character in documentation for component " + compname + " in action " + as->getName() + " with label " + as->getLabel() );
+                }
+                valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+              } else {
+                for(unsigned j=0; j<av2->getNumberOfComponents(); ++j) {
+                  Value* myval = av2->copyOutput(j);
+                  std::string compname = myval->getName(), description;
+                  if( av2->getLabel()==compname ) {
+                    plumed_merror("should not be outputting description of value from action when using shortcuts");
+                  } else {
+                    std::size_t dot=compname.find(av2->getLabel() + ".");
+                    std::string cname = compname.substr(dot+av2->getLabel().length() + 1);
+                    description = av2->getOutputComponentDescription( cname, keys );
+                  }
+                  if( description.find("\\")!=std::string::npos ) {
+                    error("found invalid backslash character in documentation for component " + compname + " in action " + av2->getName() + " with label " + av2->getLabel() );
+                  }
+                  valuefile.printf(",\n    \"%s\" : { \"type\": \"%s\", \"description\": \"%s\" }", myval->getName().c_str(), myval->getValueType().c_str(), description.c_str() );
+                }
+              }
+            }
+            valuefile.printf("\n  }");
+          }
+        }
+        valuefile.printf("\n}\n");
+        valuefile.close();
       }
       if(parseOnly) {
         break;
@@ -1003,7 +1121,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           std::fprintf(out,"\nDRIVER: Reassigning domain decomposition\n");
         }
         p.cmd("setAtomsNlocal",dd_nlocal);
-        p.cmd("setAtomsGatindex",&dd_gatindex[0],dd_nlocal);
+        p.cmd("setAtomsGatindex",&dd_gatindex[0], {dd_nlocal});
       }
     }
 
@@ -1100,12 +1218,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
             std::vector<std::string> words;
             words=Tools::getWords(line);
             if(words.size()==3) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[4]);
+              Tools::convert(words[2],celld[8]);
             } else if(words.size()==9) {
-              std::sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
-                          &celld[0], &celld[1], &celld[2],
-                          &celld[3], &celld[4], &celld[5],
-                          &celld[6], &celld[7], &celld[8]);
+              Tools::convert(words[0],celld[0]);
+              Tools::convert(words[1],celld[1]);
+              Tools::convert(words[2],celld[2]);
+              Tools::convert(words[3],celld[3]);
+              Tools::convert(words[4],celld[4]);
+              Tools::convert(words[5],celld[5]);
+              Tools::convert(words[6],celld[6]);
+              Tools::convert(words[7],celld[7]);
+              Tools::convert(words[8],celld[8]);
             } else {
               error("needed box in second line of xyz file");
             }
@@ -1255,22 +1380,22 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc) {
           dd_coordinates[3*i+1]=coordinates[3*kk+1];
           dd_coordinates[3*i+2]=coordinates[3*kk+2];
         }
-        p.cmd("setForces",&dd_forces[0],3*dd_nlocal);
-        p.cmd("setPositions",&dd_coordinates[0],3*dd_nlocal);
-        p.cmd("setMasses",&dd_masses[0],dd_nlocal);
-        p.cmd("setCharges",&dd_charges[0],dd_nlocal);
+        p.cmd("setForces",&dd_forces[0], {dd_nlocal,3});
+        p.cmd("setPositions",&dd_coordinates[0], {dd_nlocal,3});
+        p.cmd("setMasses",&dd_masses[0], {dd_nlocal});
+        p.cmd("setCharges",&dd_charges[0], {dd_nlocal});
       } else {
 // this is required to avoid troubles when the last domain
 // contains zero atoms
 // Basically, for empty domains we pass null pointers
 #define fix_pd(xx) (pd_nlocal!=0?&xx:NULL)
-        p.cmd("setForces",fix_pd(forces[3*pd_start]),3*pd_nlocal);
-        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]),3*pd_nlocal);
-        p.cmd("setMasses",fix_pd(masses[pd_start]),pd_nlocal);
-        p.cmd("setCharges",fix_pd(charges[pd_start]),pd_nlocal);
+        p.cmd("setForces",fix_pd(forces[3*pd_start]), {pd_nlocal,3});
+        p.cmd("setPositions",fix_pd(coordinates[3*pd_start]), {pd_nlocal,3});
+        p.cmd("setMasses",fix_pd(masses[pd_start]), {pd_nlocal});
+        p.cmd("setCharges",fix_pd(charges[pd_start]), {pd_nlocal});
       }
-      p.cmd("setBox",cell.data(),9);
-      p.cmd("setVirial",virial.data(),9);
+      p.cmd("setBox",cell.data(), {3,3});
+      p.cmd("setVirial",virial.data(), {3,3});
     } else {
       p.cmd("setStepLongLong",step);
       p.cmd("setStopFlag",&plumedStopCondition);
@@ -1405,12 +1530,12 @@ void Driver<real>::evaluateNumericalDerivatives( const long long int& step, Plum
     for(unsigned j=0; j<3; ++j) {
       pos[i][j]=pos[i][j]+delta;
       p.cmd("setStepLongLong",step);
-      p.cmd("setPositions",&pos[0][0],3*natoms);
-      p.cmd("setForces",&fake_forces[0],3*natoms);
-      p.cmd("setMasses",&masses[0],natoms);
-      p.cmd("setCharges",&charges[0],natoms);
-      p.cmd("setBox",&cell[0],9);
-      p.cmd("setVirial",&fake_virial[0],9);
+      p.cmd("setPositions",&pos[0][0], {natoms,3});
+      p.cmd("setForces",&fake_forces[0], {natoms,3});
+      p.cmd("setMasses",&masses[0], {natoms});
+      p.cmd("setCharges",&charges[0], {natoms});
+      p.cmd("setBox",&cell[0], {3,3});
+      p.cmd("setVirial",&fake_virial[0], {3,3});
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);
@@ -1437,12 +1562,12 @@ void Driver<real>::evaluateNumericalDerivatives( const long long int& step, Plum
         pos[j]=pbc.scaledToReal( pos[j] );
       }
       p.cmd("setStepLongLong",step);
-      p.cmd("setPositions",&pos[0][0],3*natoms);
-      p.cmd("setForces",&fake_forces[0],3*natoms);
-      p.cmd("setMasses",&masses[0],natoms);
-      p.cmd("setCharges",&charges[0],natoms);
-      p.cmd("setBox",&cell[0],9);
-      p.cmd("setVirial",&fake_virial[0],9);
+      p.cmd("setPositions",&pos[0][0], {natoms,3});
+      p.cmd("setForces",&fake_forces[0], {natoms,3});
+      p.cmd("setMasses",&masses[0], {natoms});
+      p.cmd("setCharges",&charges[0], {natoms});
+      p.cmd("setBox",&cell[0], {3,3});
+      p.cmd("setVirial",&fake_virial[0], {3,3});
       p.cmd("prepareCalc");
       p.cmd("performCalcNoUpdate");
       p.cmd("getBias",&bias);

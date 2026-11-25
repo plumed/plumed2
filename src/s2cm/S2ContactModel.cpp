@@ -96,6 +96,7 @@ void S2ContactModel::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","OFFSET_C","the offset, c in the equation");
   keys.add("compulsory","N_I"," n_i in the equation");
   keys.add("optional","R_SHIFT","shift all distances by given amount");
+  keys.setValueDescription("the value of the CV");
 }
 
 S2ContactModel::S2ContactModel(const ActionOptions&ao):

@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <string_view>
 #include "WithCmd.h"
 #include "tools/ForwardDecl.h"
 
@@ -92,7 +93,7 @@ public:
   /**
   Send messages to the CLToolMain.
   */
-  void cmd(const std::string& key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val=nullptr) override;
 };
 
 }

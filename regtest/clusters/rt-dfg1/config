@@ -1,0 +1,5 @@
+mpiprocs=4
+type=driver
+plumed_modules="adjmat clusters"
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz config.xyz --dump-forces forces --dump-forces-fmt %8.4f"

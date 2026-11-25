@@ -1,0 +1,114 @@
+flowchart TB 
+MD(positions from MD)
+Box("label=Box 
+ PBC 
+")
+Pb("label=Pb 
+ GROUP 
+")
+I("label=I 
+ GROUP 
+")
+cn("label=cn 
+ GROUP 
+")
+ones64(["label=ones64 
+ CONSTANT 
+"])
+Box -- Box --> cm_cncn
+linkStyle 0 stroke:red,color:red;
+MD --> cm_cncn
+linkStyle 1 stroke:violet,color:violet;
+subgraph subcm_cncn [cm_cncn]
+subgraph subcm_cncn_mat [cm_cncn]
+cm_cncn(["label=cm_cncn 
+ CONTACT_MATRIX 
+"])
+cc_cncn(["label=cc_cncn 
+ MATRIX_VECTOR_PRODUCT 
+"])
+end
+style subcm_cncn_mat fill:lightblue
+mt_cncn(["label=mt_cncn 
+ MORE_THAN 
+"])
+subgraph subcm_cnpb_mat [cm_cnpb]
+cm_cnpb(["label=cm_cnpb 
+ CONTACT_MATRIX 
+"])
+cc_cnpb(["label=cc_cnpb 
+ MATRIX_VECTOR_PRODUCT 
+"])
+end
+style subcm_cnpb_mat fill:lightblue
+mt_cnpb(["label=mt_cnpb 
+ MORE_THAN 
+"])
+subgraph subcm_cnI_mat [cm_cnI]
+cm_cnI(["label=cm_cnI 
+ CONTACT_MATRIX 
+"])
+cc_cnI(["label=cc_cnI 
+ MATRIX_VECTOR_PRODUCT 
+"])
+end
+style subcm_cnI_mat fill:lightblue
+mt_cnI(["label=mt_cnI 
+ MORE_THAN 
+"])
+mm(["label=mm 
+ CUSTOM
+FUNC=x*y*z 
+"])
+ff(["label=ff 
+ SUM 
+"])
+end
+cm_cncn -- cm_cncn --> cc_cncn
+linkStyle 2 stroke:red,color:red;
+ones64 -- ones64 --> cc_cncn
+linkStyle 3 stroke:blue,color:blue;
+cc_cncn -- cc_cncn --> mt_cncn
+linkStyle 4 stroke:blue,color:blue;
+Box -- Box --> cm_cnpb
+linkStyle 5 stroke:red,color:red;
+MD --> cm_cnpb
+linkStyle 6 stroke:violet,color:violet;
+cm_cnpb -- cm_cnpb --> cc_cnpb
+linkStyle 7 stroke:red,color:red;
+ones64 -- ones64 --> cc_cnpb
+linkStyle 8 stroke:blue,color:blue;
+cc_cnpb -- cc_cnpb --> mt_cnpb
+linkStyle 9 stroke:blue,color:blue;
+ones192(["label=ones192 
+ CONSTANT 
+"])
+Box -- Box --> cm_cnI
+linkStyle 10 stroke:red,color:red;
+MD --> cm_cnI
+linkStyle 11 stroke:violet,color:violet;
+cm_cnI -- cm_cnI --> cc_cnI
+linkStyle 12 stroke:red,color:red;
+ones192 -- ones192 --> cc_cnI
+linkStyle 13 stroke:blue,color:blue;
+cc_cnI -- cc_cnI --> mt_cnI
+linkStyle 14 stroke:blue,color:blue;
+mt_cncn -- mt_cncn --> mm
+linkStyle 15 stroke:blue,color:blue;
+mt_cnpb -- mt_cnpb --> mm
+linkStyle 16 stroke:blue,color:blue;
+mt_cnI -- mt_cnI --> mm
+linkStyle 17 stroke:blue,color:blue;
+mm -- mm --> ff
+linkStyle 18 stroke:blue,color:blue;
+ff -- ff --> rr
+rr(["label=rr 
+ RESTRAINT 
+"])
+ff -- ff --> 28
+rr -- rr.bias --> 28
+rr -- rr.force2 --> 28
+28("label=#64;28 
+ PRINT
+FILE=colvar 
+")

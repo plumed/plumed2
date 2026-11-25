@@ -36,7 +36,6 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   ActionAtomistic::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.addFlag("DOSCORE",false,"activate metainference");
   keys.addFlag("NOENSEMBLE",false,"don't perform any replica-averaging");
@@ -400,13 +399,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   parse("MC_STEPS",MCsteps_);
   parse("MC_CHUNKSIZE", MCchunksize_);
   // get temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_=getkBT();
   if(kbt_==0.0&&doscore_) {
     error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
   }
@@ -1784,4 +1777,3 @@ void MetainferenceBase::writeStatus() {
 
 }
 }
-

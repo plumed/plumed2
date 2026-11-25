@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Function.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace function {
@@ -225,7 +225,6 @@ void FuncPathMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
 }
@@ -242,7 +241,7 @@ FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
   log.printf("  lambda is %f\n",lambda);
   // list the action involved and check the type
   std::string myname=getPntrToArgument(0)->getPntrToAction()->getName();
-  if(myname!="RMSD"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") {
+  if(myname!="RMSD_SCALAR"&&myname!="CONTACTMAP"&&myname!="DISTANCE"&&myname!="PIV") {
     error("One or more of your arguments is not of RMSD/CONTACTMAP/DISTANCE/PIV type!!!");
   }
   for(unsigned i=1; i<getNumberOfArguments(); i++) {

@@ -4,6 +4,7 @@
 #include "plumed/tools/Stopwatch.h"
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 using namespace PLMD;
 

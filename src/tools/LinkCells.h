@@ -65,6 +65,8 @@ public:
   double getCutoff() const ;
 /// Get the total number of link cells
   unsigned getNumberOfCells() const ;
+/// Get the nuumber of atoms in the cell that contains the most atoms
+  unsigned getMaxInCell() const ;
 /// Build the link cell lists
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
 /// Take three indices and return the index of the corresponding cell

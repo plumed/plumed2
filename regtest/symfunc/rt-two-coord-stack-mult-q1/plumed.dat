@@ -1,0 +1,21 @@
+q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
+
+q1_rmn-n1: CUSTOM ARG=q1_sp.rm-n1,q1_denom FUNC=x/y PERIODIC=NO
+q1_imn-n1: CUSTOM ARG=q1_sp.im-n1,q1_denom FUNC=x/y PERIODIC=NO
+q1_rmn-0: CUSTOM ARG=q1_sp.rm-0,q1_denom FUNC=x/y PERIODIC=NO
+q1_imn-0: CUSTOM ARG=q1_sp.im-0,q1_denom FUNC=x/y PERIODIC=NO
+q1_rmn-p1: CUSTOM ARG=q1_sp.rm-p1,q1_denom FUNC=x/y PERIODIC=NO
+q1_imn-p1: CUSTOM ARG=q1_sp.im-p1,q1_denom FUNC=x/y PERIODIC=NO
+
+w1_vstack: VSTACK ARG=q1_rmn-n1,q1_imn-n1,q1_rmn-0,q1_imn-0,q1_rmn-p1,q1_imn-p1
+cmat: CONTACT_MATRIX GROUP=1,2 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+
+w1_prod: MATRIX_PRODUCT ARG=cmat,w1_vstack
+w1_prod2: CUSTOM ARG=w1_prod FUNC=x*x PERIODIC=NO
+ones: ONES SIZE=6
+w12: MATRIX_VECTOR_PRODUCT ARG=w1_prod2,ones 
+w1: CUSTOM ARG=w12 FUNC=sqrt(x) PERIODIC=NO
+ss: SUM ARG=w1 PERIODIC=NO
+
+PRINT ARG=ss FILE=colvar FMT=%8.4f
+BIASVALUE ARG=ss

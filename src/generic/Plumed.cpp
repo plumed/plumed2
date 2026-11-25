@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "tools/Tools.h"
 #include "tools/PlumedHandle.h"
+#include "tools/Communicator.h"
 #include "core/PlumedMain.h"
 #include <cstring>
 #ifdef __PLUMED_HAS_DLOPEN
@@ -63,24 +64,24 @@ In particular, an empty `KERNEL` (default) implies that the guest PLUMED instanc
 On the other hand, `KERNEL=/path/to/libplumedKernel.so` will allow specifying a library to be loaded for the
 guest instance.
 In addition to those mentioned above, this feature has limitations mostly related to
-clashes in the symbols defined in the different instances of the PLUMED library:
-- On OSX, if you load a KERNEL with version >=2.5 there should be no problem thanks to the use
-  of two-level namespaces.
-- On OSX, if you load a KERNEL with version <=2.4 there should be clashes in symbol resolution.
-  The only possible workarounds are:
-  - If you are are using PLUMED with an MD code, it should be patched with `--runtime` and you should
-    `export PLUMED_LOAD_NAMESPACE=LOCAL` before starting the MD engine.
-  - If you are using PLUMED driver, you should launch the `plumed-runtime` executable (contained in the
-    `prefix/lib/plumed/` directory), export `PLUMED_KERNEL` equal to the path of the host kernel library
-   (as usual in runtime loading) and `export PLUMED_LOAD_NAMESPACE=LOCAL` before launching `plumed-runtime driver`.
+clashes in the symbols defined in the different instances of the PLUMED library.
+Clashes might be due by synonymous symbols from the PLUMED library or synonymous symbols
+from libraries linked to PLUMED, and would differ depending on the operating system you
+are using:
+- On OSX:
+  - Symbols from the PLUMED library would clash. The only way to avoid is to load PLUMED dynamically:
+    - If you are are using PLUMED with an MD code, it should be patched with `--runtime`.
+    - If you are using PLUMED driver, you should launch the `plumed-runtime` executable (contained in the
+      `prefix/lib/plumed/` directory) and export `PLUMED_KERNEL` equal to the path of the host kernel library
+     (as usual in runtime loading). Notice that as of PLUMED 2.10 we load kernels with RTLD_LOCAL by default.
+    - Symbols from dependent libraries should not clash since, as of version 2.5, we are using
+      two-level namespace. Problems when loading previous versions should anyway be solved using runtime
+      mode as explained above.
 - On Linux, any `KERNEL` should in principle work correctly. To achieve namespace separation we are loading
   the guest kernel with `RTLD_DEEPBIND`. However, this might create difficult to track problems in other linked libraries.
 - On Unix systems where `RTLD_DEEPBIND` is not available kernels will not load correctly.
 - In general, there might be unexpected crashes. Particularly difficult are situations where different
   kernels were compiled with different libraries.
-
-A possible solution for the symbol clashes (not tested) could be to recompile the alternative PLUMED
-versions using separate C++ namespaces (e.g. `./configure CPPFLAGS=-DPLMD=PLMD_2_3`).
 
 \todo
 - Add support for multiple time stepping (`STRIDE` different from 1).
@@ -166,6 +167,9 @@ public:
   unsigned getNumberOfDerivatives() override {
     return 0;
   }
+  bool actionHasForces() override {
+    return true;
+  }
 };
 
 PLUMED_REGISTER_ACTION(Plumed,"PLUMED")
@@ -244,7 +248,7 @@ API([&]() {
     }
   }
 
-  int natoms=plumed.getAtoms().getNatoms();
+  int natoms=getTotAtoms();
 
   plumed_assert(getStride()==1) << "currently only supports STRIDE=1";
 
@@ -285,31 +289,31 @@ API([&]() {
     p.cmd("setMDEngine","plumed");
   }
 
-  double engunits=plumed.getAtoms().getUnits().getEnergy();
+  double engunits=getUnits().getEnergy();
   if(root) {
     p.cmd("setMDEnergyUnits",&engunits);
   }
 
-  double lenunits=plumed.getAtoms().getUnits().getLength();
+  double lenunits=getUnits().getLength();
   if(root) {
     p.cmd("setMDLengthUnits",&lenunits);
   }
 
-  double timunits=plumed.getAtoms().getUnits().getTime();
+  double timunits=getUnits().getTime();
   if(root) {
     p.cmd("setMDTimeUnits",&timunits);
   }
 
-  double chaunits=plumed.getAtoms().getUnits().getCharge();
+  double chaunits=getUnits().getCharge();
   if(root) {
     p.cmd("setMDChargeUnits",&chaunits);
   }
-  double masunits=plumed.getAtoms().getUnits().getMass();
+  double masunits=getUnits().getMass();
   if(root) {
     p.cmd("setMDMassUnits",&masunits);
   }
 
-  double kbt=plumed.getAtoms().getKbT();
+  double kbt=getkBT();
   if(root) {
     p.cmd("setKbT",&kbt);
   }
@@ -391,7 +395,7 @@ void Plumed::prepare() {
       index[i]=pointer[i];
     };
     p.cmd("setAtomsNlocal",&n);
-    p.cmd("setAtomsGatindex",index.data(),index.size());
+    p.cmd("setAtomsGatindex",index.data(), {index.size()});
   }
   if(root) {
     p.cmd("clearFullList");
@@ -423,9 +427,8 @@ void Plumed::calculate() {
     p.cmd("setStopFlag",&stop);
   }
   Tensor box=getPbc().getBox();
-  if(root) {
-    p.cmd("setBox",&box[0][0],9);
-  }
+  if(root)
+    p.cmd("setBox",&box[0][0], {3,3});
 
   virial.zero();
   for(int i=0; i<forces.size(); i++) {
@@ -438,21 +441,17 @@ void Plumed::calculate() {
     charges[i]=getCharge(i);
   }
 
-  if(root) {
-    p.cmd("setMasses",masses.data(),masses.size());
-  }
-  if(root) {
-    p.cmd("setCharges",charges.data(),charges.size());
-  }
-  if(root) {
-    p.cmd("setPositions",positions.data(),positions.size());
-  }
+  if(root)
+    p.cmd("setMasses",masses.data(), {masses.size()});
+  if(root)
+    p.cmd("setCharges",charges.data(), {charges.size()});
+  if(root)
+    p.cmd("setPositions",positions.data(), {masses.size(),3});
   if(root) {
     p.cmd("setForces",forces.data(),forces.size());
   }
-  if(root) {
-    p.cmd("setVirial",&virial[0][0],9);
-  }
+  if(root)
+    p.cmd("setVirial",&virial[0][0], {3,3});
 
 
   if(root)
@@ -487,14 +486,16 @@ void Plumed::calculate() {
 
 void Plumed::apply() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
-  auto & f(modifyForces());
-  for(unsigned i=0; i<getNumberOfAtoms(); i++) {
-    f[i][0]+=forces[3*i+0];
-    f[i][1]+=forces[3*i+1];
-    f[i][2]+=forces[3*i+2];
+  std::vector<double> fforces( forces.size() + 9, 0 );
+  for(unsigned i=0; i<forces.size(); i++) {
+    fforces[i] += forces[i];
   }
-  auto & v(modifyVirial());
-  v+=virial;
+  for(unsigned i=0; i<3; ++i)
+    for(unsigned j=0; j<3; ++j) {
+      fforces[forces.size()+3*i+j] = virial[i][j];
+    }
+  unsigned ind=0;
+  setForcesOnAtoms( fforces, ind );
 }
 
 void Plumed::update() {

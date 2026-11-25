@@ -1,0 +1,7 @@
+ATOM      2  O   ALA     2      -0.926  -2.447  -0.497  1.00  1.00      DIA  O
+ATOM      4  HNT ALA     2       0.533  -0.396   1.184  1.00  1.00      DIA  H
+ATOM      6  HT1 ALA     2      -0.216  -2.590   1.371  1.00  1.00      DIA  H
+ATOM      7  HT2 ALA     2      -0.309  -1.255   2.315  1.00  1.00      DIA  H
+ATOM      8  HT3 ALA     2      -1.480  -1.560   1.212  1.00  1.00      DIA  H
+ATOM      9  CAY ALA     2      -0.096   2.144  -0.669  1.00  1.00      DIA  C
+ATOM     10  HY1 ALA     2       0.871   2.385  -0.588  1.00  1.00      DIA  H

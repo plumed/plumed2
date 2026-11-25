@@ -55,6 +55,7 @@ namespace PLMD {
 
 class ActionAtomistic;
 class ActionPilot;
+class ActionForInterface;
 class Log;
 class Atoms;
 class ActionSet;
@@ -64,9 +65,11 @@ class Stopwatch;
 class Citations;
 class ExchangePatterns;
 class FileBase;
-class DataFetchingObject;
 class TypesafePtr;
 class IFile;
+class Units;
+class Keywords;
+class DataPassingTools;
 
 /**
 Main plumed object.
@@ -91,9 +94,32 @@ public:
   Communicator&comm=*comm_fwd;
 
 private:
+  class DeprecatedAtoms {
+  private:
+    PlumedMain & plumed;
+  public:
+    explicit DeprecatedAtoms(PlumedMain& p): plumed(p) {}
+    [[deprecated("Use Action::getKBoltzmann().")]]
+    double getKBoltzmann() const ;
+    [[deprecated("Use Action::getkBT() N.B. this function also reads the TEMP keyword from the input for you.")]]
+    double getKbT() const ;
+    [[deprecated]]
+    int getNatoms() const ;
+    [[deprecated("Use Action::usingNaturalUnits().")]]
+    bool usingNaturalUnits() const ;
+    [[deprecated]]
+    void setCollectEnergy(bool b) const;
+    [[deprecated]]
+    double getEnergy() const ;
+  };
+/// Forward declaration.
+  ForwardDecl<DeprecatedAtoms> datoms_fwd;
+/// Object containing old bits of atoms that are used by many folks
+  DeprecatedAtoms&    datoms=*datoms_fwd;
 /// Forward declaration.
   ForwardDecl<Communicator> multi_sim_comm_fwd;
 public:
+  DeprecatedAtoms& getAtoms();
 /// Communicator between replicas.
 /// Valid only on process 0 of comm; MPI_COMM_SELF elsewhere.
 /// See Action::multi_sim_comm.
@@ -123,9 +149,9 @@ private:
 
   std::unique_ptr<WithCmd> grex;
 /// Flag to avoid double initialization
-  bool  initialized;
+  bool  initialized=false;
 /// Name of MD engine
-  std::string MDEngine;
+  std::string MDEngine{"mdcode"};
 
 /// Forward declaration.
   ForwardDecl<Log> log_fwd;
@@ -143,7 +169,7 @@ private:
   Citations& citations=*citations_fwd;
 
 /// Present step number.
-  long long int step;
+  long long int step=0;
 
 /// Step at which update() was last called (see issue #512).
   long long int lastUpdateStep=-1;
@@ -151,27 +177,25 @@ private:
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
 /// If at least one Action requires some work, this variable is set to true.
-  bool active;
+  bool active=false;
 
 /// Name of the input file
   std::string plumedDat;
 
-/// Object containing data we would like to grab and pass back
-  std::unique_ptr<DataFetchingObject> mydatafetcher;
-
 /// End of input file.
 /// Set to true to terminate reading
-  bool endPlumed;
-
-/// Forward declaration.
-  ForwardDecl<Atoms> atoms_fwd;
-/// Object containing information about atoms (such as positions,...).
-  Atoms&    atoms=*atoms_fwd;           // atomic coordinates
+  bool endPlumed=false;
 
 /// Forward declaration.
   ForwardDecl<ActionSet> actionSet_fwd;
 /// Set of actions found in plumed.dat file
   ActionSet& actionSet=*actionSet_fwd;
+
+/// These are tools to pass data to PLUMED
+  std::unique_ptr<DataPassingTools> passtools;
+
+/// Vector of actions that are passed data from the MD code
+  std::vector<ActionForInterface*> inputs;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
@@ -181,11 +205,11 @@ private:
   std::string suffix;
 
 /// The total bias (=total energy of the restraints)
-  double bias;
+  double bias=0.0;
 
 /// The total work.
 /// This computed by accumulating the change in external potentials.
-  double work;
+  double work=0.0;
 
 /// Forward declaration.
   ForwardDecl<ExchangePatterns> exchangePatterns_fwd;
@@ -193,16 +217,26 @@ private:
   ExchangePatterns& exchangePatterns=*exchangePatterns_fwd;
 
 /// Set to true if on an exchange step
-  bool exchangeStep;
+  bool exchangeStep=false;
 
 /// Flag for restart
-  bool restart;
+  bool restart=false;
 
 /// Flag for checkpointig
-  bool doCheckPoint;
+  bool doCheckPoint=false;
+
+/// A string that holds the name of the action that gets the energy from the MD
+/// code.  Set empty if energy is not used.
+  std::string name_of_energy{""};
+
+/// This sets up the values that are set from the MD code
+  void startStep();
+
+/// This sets up the vector that contains the interface to the MD code
+  void setupInterfaceActions();
 
 /// Flag for parse only mode -- basically just forces restart to turn off
-  bool doParseOnly;
+  bool doParseOnly=false;
 
 private:
 /// Forward declaration.
@@ -210,21 +244,33 @@ private:
 public:
 /// Stuff to make plumed stop the MD code cleanly
   TypesafePtr& stopFlag=*stopFlag_fwd;
-  bool stopNow;
+  bool stopNow=false;
 
 /// Stack for update flags.
 /// Store information used in class \ref generic::UpdateIf
   std::stack<bool> updateFlags;
 
 public:
+/// This determines if the user has created a value to hold the quantity that is being passed
+  bool valueExists( const std::string& name ) const ;
+
+/// This sets the the value with a particular name to the pointer to the data in the MD code
+  void setInputValue( const std::string& name, const unsigned& start, const unsigned& stride, const TypesafePtr & val );
+
+/// This sets the the forces with a particular name to the pointer to the data in the MD code
+  void setInputForce( const std::string& name, const TypesafePtr & val );
+
+/// This updates the units of the input quantities
+  void setUnits( const bool& natural, const Units& u );
+
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
-  bool novirial;
+  bool novirial=false;
 
 /// Flag to switch on detailed timers
-  bool detailedTimers;
+  bool detailedTimers=false;
 
 /// GpuDevice Identifier
-  int gpuDeviceId;
+  int gpuDeviceId=-1;
 
 /// Generic map string -> double
 /// intended to pass information across Actions
@@ -258,7 +304,7 @@ public:
    and an MD engine, this is the right place
    Notice that this interface should always keep retro-compatibility
   */
-  void cmd(const std::string&key,const TypesafePtr & val=nullptr) override;
+  void cmd(std::string_view key,const TypesafePtr & val) override;
   ~PlumedMain();
   /**
     Turn on parse only mode to deactivate restart in all actions.
@@ -283,14 +329,14 @@ public:
     Read an input string.
     \param str name of the string
   */
-  void readInputWords(const std::vector<std::string> &  str);
+  void readInputWords(const std::vector<std::string> &  str, const bool& before_init);
 
   /**
     Read an input string.
     \param str name of the string
     At variance with readInputWords(), this is splitting the string into words
   */
-  void readInputLine(const std::string & str);
+  void readInputLine(const std::string & str, const bool& before_init=false);
 
   /**
     Read an input buffer.
@@ -318,6 +364,11 @@ public:
     the atoms needed at this step.
   */
   void prepareDependencies();
+  /**
+    Ensure that all the atoms are shared.
+    This is used in GREX to ensure that we transfer all the positions from the MD code to PLUMED.
+  */
+  void shareAll();
   /**
     Share the needed atoms.
     In asynchronous implementations, this method sends the required atoms to all the plumed processes,
@@ -374,9 +425,12 @@ public:
     If there are calculations that need to be done at the very end of the calculations this
     makes sures they are done
   */
+  /**
+    This function does clearInputForces for the list of atoms that have a force on them. This
+    is an optimisation to prevent calling std::fill over a large array
+  */
+  void resetInputs();
   void runJobsAtEndOfCalculation();
-/// Reference to atoms object
-  Atoms& getAtoms();
 /// Reference to the list of Action's
   const ActionSet & getActionSet()const;
 /// Referenge to the log stream
@@ -470,6 +524,26 @@ public:
   bool getNestedExceptions()const {
     return nestedExceptions;
   }
+/// Check if there is active input in the action set
+  bool inputsAreActive() const ;
+/// Transfer information from input MD code
+  void writeBinary(std::ostream&)const;
+  void readBinary(std::istream&);
+/// Used to set the name of the action that holds the energy
+  void setEnergyValue( const std::string& name );
+/// Get the real preicision
+  int getRealPrecision() const;
+/// Are we using natural units
+  bool usingNaturalUnits() const ;
+/// Get the units that are being used
+  const Units& getUnits();
+/// Take an energy that is calculated by PLUMED and pass it to a typesafe pointer
+/// that the MD code can access.
+  void plumedQuantityToMD( const std::string& unit, const double& eng, const TypesafePtr & m) const ;
+/// Take a typesafe pointer from the MD code and convert it to a double
+  double MDQuantityToPLUMED( const std::string& unit, const TypesafePtr & m) const ;
+/// Get the keywords for a particular action
+  void getKeywordsForAction( const std::string& action, Keywords& keys ) const ;
 };
 
 /////
@@ -478,11 +552,6 @@ public:
 inline
 const ActionSet & PlumedMain::getActionSet()const {
   return actionSet;
-}
-
-inline
-Atoms& PlumedMain::getAtoms() {
-  return atoms;
 }
 
 inline

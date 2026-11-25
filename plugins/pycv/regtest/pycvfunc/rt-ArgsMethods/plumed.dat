@@ -1,0 +1,15 @@
+LOAD FILE=@pycvpath@
+
+d12c: DISTANCE ATOMS=1,2 COMPONENTS
+
+dz: COMBINE ARG=d12c.z PERIODIC=0.0,1.3
+
+fPY: ...
+PYFUNCTION
+IMPORT=unitTest
+INIT=initForF
+CALCULATE=function
+ARG=dz
+...
+
+PRINT FILE=colvar.out ARG=fPY.py-difference,fPY.py-bringBackInPbc,dz

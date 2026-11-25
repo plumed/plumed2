@@ -1,0 +1,11 @@
+METATOMIC-PLUMED module is covered under the GNU LESSER GENERAL PUBLIC LICENSE
+(see COPYING.LESSER in PLUMED2 root directory). This license applies to all the
+source code in this directory, except from where explicitly indicated.
+
+Authors of this software are:
+
+- Guillaume Fraux (Github: @Luthaf)
+
+The following people have contributed to this software:
+
+- Gareth Tribello (Github: @gtribello)

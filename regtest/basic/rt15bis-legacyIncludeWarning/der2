@@ -1,0 +1,2 @@
+works like rt15, but emulates an old include statement style for ActionRegister.h
+Distance2.cpp reference is set up because mklib should NOT change the inputfile

@@ -1,0 +1,12 @@
+LOAD FILE=@pycvpath@
+
+cvPY: ...
+PYCVINTERFACE
+ATOMS=2,4
+IMPORT=unitTest
+CALCULATE=mypytest
+INIT=myInit
+...
+
+#I am returnin booleans
+PRINT FILE=colvar.out ARG=* FMT=%1.0f

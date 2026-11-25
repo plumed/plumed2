@@ -213,6 +213,10 @@ void Keywords::use( const std::string & k ) {
 
 void Keywords::reset_style( const std::string & k, const std::string & style ) {
   plumed_massert( exists(k) || reserved(k), "no " + k + " keyword" );
+  if( style=="numbered" ) {
+    allowmultiple[k]=true;
+    return;
+  }
   (types.find(k)->second).setStyle(style);
   if( (types.find(k)->second).isVessel() ) {
     allowmultiple[k]=true;
@@ -294,6 +298,12 @@ void Keywords::remove( const std::string & k ) {
   allowmultiple.erase(k);
   booldefs.erase(k);
   numdefs.erase(k);
+  // Remove any output comonents that this keyword creates
+  for(const auto& dkey : ckey ) {
+    if( dkey.second==k ) {
+      removeOutputComponent( dkey.first );
+    }
+  }
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
@@ -760,7 +770,8 @@ void Keywords::setComponentsIntroduction( const std::string& instr ) {
 }
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ) {
-  plumed_assert( !outputComponentExists( name, false ) );
+  plumed_assert( !outputComponentExists(name) );
+  plumed_massert( name!=".#!value", name + " is reserved for storing description of value" );
   plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
 
   std::size_t num2=name.find_first_of("_");
@@ -769,14 +780,45 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
     plumed_massert( std::count(name.begin(),name.end(), uu)==1, "underscore is reserved character in component names and there should only be one");
     plumed_massert( num2==0, "underscore is reserved character in component names that has special meaning");
   }
+  if( key=="default" ) {
+    cstring = "By default this Action calculates the following quantities. These quantities can "
+              "be referenced elsewhere in the input by using this Action's label followed by a "
+              "dot and the name of the quantity required from the list below.";
+  }
 
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
   cnames.push_back(name);
 }
 
-bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
-  if( custom && cstring.find("customize")!=std::string::npos ) {
+void Keywords::removeOutputComponent( const std::string& name ) {
+  unsigned j=0;
+  while(true) {
+    for(j=0; j<cnames.size(); j++)
+      if(cnames[j]==name) {
+        break;
+      }
+    if(j<cnames.size()) {
+      cnames.erase(cnames.begin()+j);
+    } else {
+      break;
+    }
+  }
+  cdocs.erase(name);
+}
+
+void Keywords::setValueDescription( const std::string& descr ) {
+  if( !outputComponentExists(".#!value") ) {
+    ckey.insert( std::pair<std::string,std::string>(".#!value","default") );
+    cdocs.insert( std::pair<std::string,std::string>(".#!value",descr) );
+    cnames.push_back(".#!value");
+  } else {
+    cdocs[".#!value"] = descr;
+  }
+}
+
+bool Keywords::outputComponentExists( const std::string& name ) const {
+  if( cstring.find("customize")!=std::string::npos ) {
     return true;
   }
 
@@ -805,20 +847,28 @@ std::string Keywords::getOutputComponentFlag( const std::string& name ) const {
 }
 
 std::string Keywords::getOutputComponentDescription( const std::string& name ) const {
-  if( cstring.find("customized")!=std::string::npos ) {
-    return "the label of this action is set by user in the input. See documentation above.";
+  std::string checkname = name;
+  std::size_t hyp=name.find_first_of("-");
+  if( hyp!=std::string::npos ) {
+    checkname = name.substr(0,hyp);
   }
 
   bool found=false;
   for(unsigned i=0; i<cnames.size(); ++i) {
-    if( name==cnames[i] ) {
+    if( checkname==cnames[i] ) {
       found=true;
     }
   }
   if( !found ) {
+    if( name==".#!value" ) {
+      return "the value calculated by this action";
+    }
+    if( outputComponentExists( name ) ) {
+      plumed_merror("cannot find description for component " + name + " that allegedly exists. Gareth Tribello might know what the fuck that is about.");
+    }
     plumed_merror("could not find output component named " + name );
   }
-  return cdocs.find(name)->second;
+  return cdocs.find(checkname)->second;
 }
 
 void Keywords::removeComponent( const std::string& name ) {
@@ -850,6 +900,32 @@ std::vector<std::string> Keywords::getOutputComponents() const {
 std::string Keywords::getKeywordDescription( const std::string& key ) const {
   plumed_assert( exists( key ) );
   return documentation.find(key)->second;
+}
+
+void Keywords::needsAction( const std::string& name ) {
+  if( std::find(neededActions.begin(), neededActions.end(), name )!=neededActions.end() ) {
+    return;
+  }
+  neededActions.push_back( name );
+}
+
+const std::vector<std::string>& Keywords::getNeededKeywords() const {
+  return neededActions;
+}
+
+void Keywords::addActionNameSuffix( const std::string& suffix ) {
+  if( std::find(actionNameSuffixes.begin(), actionNameSuffixes.end(), suffix )!=actionNameSuffixes.end() ) {
+    return;
+  }
+  actionNameSuffixes.push_back( suffix );
+}
+
+void Keywords::setDisplayName( const std::string& name ) {
+  thisactname = name;
+}
+
+std::string Keywords::getDisplayName() const {
+  return thisactname;
 }
 
 }

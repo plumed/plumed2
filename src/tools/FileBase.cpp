@@ -80,7 +80,7 @@ bool FileBase::FileExist(const std::string& path) {
   // first try with suffix
   FILE *ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
 // call fclose when ff goes out of scope
-  auto deleter=[](FILE* f) {
+  auto deleter=[](auto f) {
     if(f) {
       std::fclose(f);
     }

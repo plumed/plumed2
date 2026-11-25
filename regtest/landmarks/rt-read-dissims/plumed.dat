@@ -1,0 +1,5 @@
+r1: CONSTANT FILE=mymatrix.dat 
+DUMPVECTOR ARG=r1 FILE=mymatrix_out.dat FMT=%8.4f
+
+l1: LANDMARK_SELECT_STRIDE DISSIMILARITIES=r1 NLANDMARKS=5
+DUMPVECTOR ARG=l1_sqrdissims FILE=mymatrix_stride.dat FMT=%8.4f

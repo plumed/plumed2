@@ -1,0 +1,3 @@
+plumed_modules=mapping
+type=driver
+arg="--plumed path_test.dat --noatoms --timestep 2"

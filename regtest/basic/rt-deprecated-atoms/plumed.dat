@@ -1,0 +1,3 @@
+LOAD FILE=TestDepreciatedAtoms.cpp
+
+TEST_DEPRECIATED_ATOMS

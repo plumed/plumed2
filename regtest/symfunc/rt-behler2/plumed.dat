@@ -1,0 +1,22 @@
+UNITS LENGTH=Bohr 
+
+cmat_hh: CONTACT_MATRIX GROUP=2,3,5,6 SWITCH={CUSTOM R_0=10.0 D_MAX=10 FUNC=tanh(1-x)^3} COMPONENTS
+cmat_rh: CUSTOM ARG=cmat_hh.x,cmat_hh.y,cmat_hh.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fh: CUSTOM ARG=cmat_rh,cmat_hh.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+ones4: ONES SIZE=4
+beh_hh: MATRIX_VECTOR_PRODUCT ARG=cmat_fh,ones4
+ 
+cmat_oo: CONTACT_MATRIX GROUP=1,4 SWITCH={CUSTOM R_0=10.0 D_MAX=10 FUNC=tanh(1-x)^3} COMPONENTS
+cmat_or: CUSTOM ARG=cmat_oo.x,cmat_oo.y,cmat_oo.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+cmat_fo: CUSTOM ARG=cmat_or,cmat_oo.w FUNC=y*exp(-0.01*x*x) PERIODIC=NO
+ones2: ONES SIZE=2
+beh_oo: MATRIX_VECTOR_PRODUCT ARG=cmat_fo,ones2
+
+cmat_oh: CONTACT_MATRIX GROUPA=1,4 GROUPB=2,3,5,6 SWITCH={CUSTOM R_0=10.0 D_MAX=10 FUNC=tanh(1-x)^3} COMPONENTS
+beh_oh: GSYMFUNC_THREEBODY WEIGHT=cmat_oh.w ARG=cmat_oh.x,cmat_oh.y,cmat_oh.z FUNCTION1={FUNC=((tanh(1-sqrt(rjk)/10))^3)*exp(-0.001*(rij+rik+rjk))*(1+cos(ajik)) LABEL=g4} 
+
+DUMPATOMS ARG=beh_hh ATOMS=2,3,5,6 PRECISION=4 FILE=gfunc_h.xyz
+DUMPATOMS ARG=beh_oo,beh_oh.g4 ATOMS=1,4 PRECISION=4 FILE=gfunc_o.xyz
+
+comb_hh: SUM ARG=beh_hh PERIODIC=NO
+BIASVALUE ARG=comb_hh

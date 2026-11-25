@@ -20,9 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "core/Atoms.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
@@ -132,7 +131,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  if( !pdb.read(f_average,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
+  if( !pdb.read(f_average,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + f_average );
   }
 
@@ -195,7 +194,7 @@ PCARMSD::PCARMSD(const ActionOptions&ao):
     while (do_read) {
       PDB mypdb;
       // check the units for reading this file: how can they make sense?
-      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+      do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
       if(do_read) {
         neigenvects++;
         if(mypdb.getAtomNumbers().size()==0) {

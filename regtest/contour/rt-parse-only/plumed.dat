@@ -1,0 +1,9 @@
+fcc: FCCUBIC SPECIES=1-5184 SWITCH={CUBIC D_0=1.2 D_MAX=1.5} ALPHA=27  
+
+dens_dist: DISTANCES ORIGIN=1 ATOMS=fcc COMPONENTS
+dens_numer: KDE HEIGHTS=fcc_n ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 BANDWIDTH=1.0,1.0,1.0 
+ones: ONES SIZE=5184
+dens_denom: KDE ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=14,14,28 HEIGHTS=ones BANDWIDTH=1.0,1.0,1.0 
+dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
+
+cont: FIND_CONTOUR ARG=dens CONTOUR=0.42

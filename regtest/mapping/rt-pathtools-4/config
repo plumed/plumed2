@@ -1,2 +1,3 @@
+plumed_modules=mapping
 type=plumed
-arg="pathtools --path epath.pdb --metric EUCLIDEAN --out epath-out.pdb --arg-fmt %8.4f" 
+arg="pathtools --path epath.pdb --metric EUCLIDEAN --arg=t1,t2 --out epath-out.pdb --arg-fmt %8.4f" 

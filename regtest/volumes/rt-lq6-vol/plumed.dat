@@ -1,0 +1,26 @@
+# Water oxygens: atoms 1-N with stride 4 (TIP4P geometry)
+ow: GROUP ATOMS=1-16500:4
+
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=2.5,2.5,2.5
+
+# Calculates q_{l,m}(i)
+q6: Q6 SPECIES=ow SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} 
+
+# Calculates local q6 parameter
+qbar6: LOCAL_Q6 SPECIES=q6 SWITCH={GAUSSIAN D_0=0.32 R_0=0.01 D_MAX=0.34} 
+
+# Probe volume
+sphere: INSPHERE ATOMS=q6 CENTER=center RADIUS={GAUSSIAN D_0=0.5 R_0=0.01 D_MAX=0.52} 
+prod: MATHEVAL ARG=qbar6,sphere FUNC=x*y PERIODIC=NO
+sphere_sum: SUM ARG=prod PERIODIC=NO
+
+# DUMPDERIVATIVES ARG=sphere_sum FILE=deriv FMT=%8.4f
+
+# Renormalize
+lambdav: CUSTOM ARG=sphere_sum FUNC=1.732125*x PERIODIC=NO
+
+# Bias the mean value of the OP in the sphere
+restraint: RESTRAINT ARG=lambdav AT=0.5 KAPPA=1000.0 SLOPE=0.0
+
+print: PRINT ARG=lambdav,restraint.bias FILE=bias_lambdav_plumed.out FMT=%8.4f

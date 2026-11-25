@@ -1,0 +1,28 @@
+dist: DISTANCE ATOMS=1,2 
+
+ff1: COLLECT_FRAMES ATOMS=1-5 STRIDE=1 
+ff1_dataT: TRANSPOSE ARG=ff1_data
+ss1: DISSIMILARITIES ARG=ff1_data,ff1_dataT
+
+ff2: COLLECT_FRAMES ARG=dist STRIDE=1 
+ff2_dataT: TRANSPOSE ARG=ff2_data
+ss2: DISSIMILARITIES ARG=ff2_data,ff2_dataT
+
+mask: CREATE_MASK ARG=ff2_logweights TYPE=stride NZEROS=2
+l2: SELECT_WITH_MASK ARG=ff2_data ROW_MASK=mask
+
+allweights: CUSTOM ARG=ff1_logweights FUNC=exp(x) PERIODIC=NO
+rmask: CREATE_MASK ARG=ff2_logweights TYPE=nomask
+rectdist: SELECT_WITH_MASK ARG=ss1 COLUMN_MASK=mask ROW_MASK=rmask
+voro: VORONOI ARG=rectdist
+allweightsT: TRANSPOSE ARG=allweights
+weightsT: MATRIX_PRODUCT ARG=allweightsT,voro
+weights: TRANSPOSE ARG=weightsT
+
+DUMPVECTOR ARG=l2,weights FILE=data FMT=%8.4f
+
+l1_mat: SELECT_WITH_MASK ARG=ss1 ROW_MASK=mask COLUMN_MASK=mask
+DUMPVECTOR ARG=l1_mat FILE=mymatrix1.dat FMT=%8.4f
+
+l2_mat: SELECT_WITH_MASK ARG=ss2 ROW_MASK=mask COLUMN_MASK=mask
+DUMPVECTOR ARG=l2_mat FILE=mymatrix.dat FMT=%8.4f

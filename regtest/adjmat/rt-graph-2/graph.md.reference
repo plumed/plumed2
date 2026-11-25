@@ -1,0 +1,42 @@
+flowchart BT 
+12(["label=#64;12 
+ BIASVALUE 
+"])
+12 -- s --> s
+subgraph subc1 [c1]
+subgraph subc1_mat [c1]
+c1(["label=c1 
+ CONTACT_MATRIX 
+"])
+cc(["label=cc 
+ MATRIX_VECTOR_PRODUCT 
+"])
+end
+style subc1_mat fill:lightblue
+c1 -. c1 .-> cc
+linkStyle 1 stroke:red,color:red;
+mtc(["label=mtc 
+ MORE_THAN 
+"])
+cc -. cc .-> mtc
+linkStyle 2 stroke:blue,color:blue;
+s(["label=s 
+ SUM 
+"])
+mtc -. mtc .-> s
+linkStyle 3 stroke:blue,color:blue;
+end
+s == s ==> c1
+s == s ==> cc
+subgraph subc1 [c1]
+end
+cc -- ones --> ones
+linkStyle 6 stroke:blue,color:blue;
+Box("label=Box 
+ PBC 
+")
+c1 -- Box --> Box
+linkStyle 7 stroke:red,color:red;
+c1 --> MD
+linkStyle 8 stroke:violet,color:violet;
+MD(positions from MD)

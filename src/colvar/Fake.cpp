@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace colvar {
@@ -43,6 +43,9 @@ class ColvarFake : public Colvar {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ColvarFake(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override {
+    plumed_error();
+  }
 // active methods:
   void calculate() override;
 };

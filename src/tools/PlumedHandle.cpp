@@ -71,9 +71,9 @@ PlumedHandle PlumedHandle::dlopen(const char* path) {
   return PlumedHandle(path);
 }
 
-void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
+void PlumedHandle::cmd(std::string_view key,const TypesafePtr & ptr) {
   if(local) {
-    local->cmd(key.c_str(),ptr);
+    local->cmd(key,ptr);
   } else if(loaded) {
     plumed_safeptr safe;
     safe.ptr=ptr.getRaw();
@@ -81,7 +81,33 @@ void PlumedHandle::cmd(const std::string & key,const TypesafePtr & ptr) {
     safe.shape=const_cast<std::size_t*>(ptr.getShape());
     safe.flags=ptr.getFlags();
     safe.opt=nullptr;
-    plumed_cmd(plumed_v2c(loaded),key.c_str(),safe);
+
+    // String must be null terminated.
+    // This is to ensure null termination without the penalty of dynamic allocation.
+    // It's a tiny optimization: it just removes one extra allocation when cmd() is called with a key
+    // longer than the buffer for SSO (typically 15 chars)
+    // It's included here only because PlumedHandle is used in benchmarks.
+    constexpr unsigned key_buffer_size=64;
+    // no allocation - on stack
+    char key_buffer_char[key_buffer_size];
+    std::string key_buffer_string;
+    const char* key_buffer=nullptr;
+
+    if(key.length()<key_buffer_size) {
+      // in this case, the string_view fits in the local buffer
+      std::size_t nchars=key.copy(key_buffer_char,key_buffer_size-1);
+      key_buffer_char[nchars]='\0'; // ensure null termination
+      key_buffer=key_buffer_char;
+    } else {
+      // in this case, the string_view does not fit in the local buffer
+      // hence we allocate a new std::string
+      key_buffer_string=key;
+      key_buffer=key_buffer_string.c_str();
+    }
+    // in both cases, key_buffer is pointing to a proper null terminated copy
+
+    plumed_cmd(plumed_v2c(loaded),key_buffer,safe);
+
   } else {
     plumed_error() << "should never arrive here (either one or the other should work)";
   }

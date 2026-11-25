@@ -1,0 +1,30 @@
+soap: METATOMIC ...
+      MODEL=soap_cv.pt
+      EXTENSIONS_DIRECTORY=extensions
+
+      SPECIES1=1-26
+      SPECIES2=27-62
+      SPECIES3=63-76
+      SPECIES_TO_TYPES=6,1,8
+...
+
+soap_selected: METATOMIC ...
+      MODEL=soap_cv.pt
+      EXTENSIONS_DIRECTORY=extensions
+
+      SPECIES1=1-26
+      SPECIES2=27-62
+      SPECIES3=63-76
+      SPECIES_TO_TYPES=6,1,8
+
+      # select out of order to make sure this is respected in the output
+      SELECTED_ATOMS=2,3,1
+...
+
+
+scalar: SUM ARG=soap PERIODIC=NO
+BIASVALUE ARG=scalar
+
+
+PRINT ARG=soap FILE=soap_data STRIDE=1 FMT=%8.4f
+PRINT ARG=soap_selected FILE=soap_selected_data STRIDE=1 FMT=%8.4f

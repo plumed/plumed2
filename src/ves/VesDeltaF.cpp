@@ -23,7 +23,6 @@
 #include "bias/Bias.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
-#include "core/Atoms.h"
 #include "tools/Communicator.h"
 #include "tools/Grid.h"
 #include "tools/File.h"
@@ -211,7 +210,6 @@ void VesDeltaF::registerKeywords(Keywords& keys) {
   keys.use("RESTART");
 
 //output components
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("rct","default","the reweighting factor c(t)");
   keys.addOutputComponent("work","default","the work done by the bias in one AV_STRIDE");
 }
@@ -224,14 +222,9 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
   , av_counter_(0)
   , work_(0) {
 //set beta
-  const double Kb=plumed.getAtoms().getKBoltzmann();
-  double temp=0;
-  parse("TEMP",temp);
-  double KbT=Kb*temp;
-  if(KbT==0) {
-    KbT=plumed.getAtoms().getKbT();
-    plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
-  }
+  const double Kb=getKBoltzmann();
+  double KbT=getkBT();
+  plumed_massert(KbT>0,"your MD engine does not pass the temperature to plumed, you must specify it using TEMP");
   beta_=1.0/KbT;
 
 //initialize probability grids using local free energies
@@ -255,6 +248,7 @@ VesDeltaF::VesDeltaF(const ActionOptions&ao)
 // if this throws, g is deleted
     plumed_assert(gg);
 // release ownership in order to transfer it to emplaced pointer
+// cppcheck-suppress ignoredReturnValue
     g.release();
     grid_p_.emplace_back(gg);
   }

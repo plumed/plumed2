@@ -20,10 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Random.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace bias {
@@ -135,7 +134,6 @@ void ExtendedLagrangian::registerKeywords(Keywords& keys) {
   keys.add("compulsory","TAU","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
   keys.add("compulsory","FRICTION","0.0","add a friction to the variable");
   keys.add("optional","TEMP","the system temperature - needed when FRICTION is present. If not provided will be taken from MD code (if available)");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("_fict","default","one or multiple instances of this quantity can be referenced elsewhere in the input file. "
                           "These quantities will named with the arguments of the bias followed by "
                           "the character string _tilde. It is possible to add forces on these variable.");
@@ -160,13 +158,7 @@ ExtendedLagrangian::ExtendedLagrangian(const ActionOptions&ao):
   parseVector("TAU",tau);
   parseVector("FRICTION",friction);
   parseVector("KAPPA",kappa);
-  double temp=-1.0;
-  parse("TEMP",temp);
-  if(temp>=0.0) {
-    kbt=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt=plumed.getAtoms().getKbT();
-  }
+  kbt=getkBT();
   checkRead();
 
   log.printf("  with harmonic force constant");

@@ -1,0 +1,6 @@
+plumed_needs=python
+plumed_modules="symfunc adjmat"
+# this is to test a different name
+type=python
+arg="./python-script.py"
+extra_files="../../trajectories/trajectory.xyz"

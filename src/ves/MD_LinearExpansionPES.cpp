@@ -27,7 +27,7 @@
 #include "GridProjWeights.h"
 
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
 #include "tools/Grid.h"
@@ -557,9 +557,9 @@ int MD_LinearExpansionPES::main( FILE* in, FILE* out, PLMD::Communicator& pc) {
   }
 
   if(plumed) {
-    plumed->cmd("setNoVirial");
     int natoms=1;
     plumed->cmd("setNatoms",&natoms);
+    plumed->cmd("setNoVirial");
     plumed->cmd("setMDEngine","mdrunner_linearexpansion");
     plumed->cmd("setTimestep",&tstep);
     plumed->cmd("setPlumedDat",plumed_input.c_str());

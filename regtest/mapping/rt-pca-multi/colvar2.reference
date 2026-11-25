@@ -1,4 +1,4 @@
-#! FIELDS time pca2.eig-1 pca2.eig-2 pca2.residual
+#! FIELDS time pcof.1 pcof.2 resid2
  0.000000   0.0472   0.0739   0.8562
  1.000000   0.0477   0.0738   0.8568
  2.000000   0.0503   0.0751   0.8654

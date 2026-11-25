@@ -17,7 +17,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_BOOST_SERIALIZATION
 #include "cltools/CLTool.h"
-#include "cltools/CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "config/Config.h"
 #include "core/ActionRegister.h"
 #include "DRR.h"
@@ -77,7 +77,7 @@ public:
   int main(FILE *in, FILE *out, Communicator &pc);
   void extractdrr(const vector<string> &filename);
   void mergewindows(const vector<string> &filename, string outputname);
-  void calcDivergence(const vector<string> &filename);
+  void calcDivergence(const vector<string> &filename, const string &fmt);
   string description() const {
     return "Extract or merge the drrstate files.";
   }
@@ -96,6 +96,7 @@ void drrtool::registerKeywords(Keywords &keys) {
   keys.add("optional", "--merge", "Merge eABF windows");
   keys.add("optional", "--merge_output", "The output filename of the merged result");
   keys.add("optional", "--divergence", "Calculate divergence of gradient field (experimental)");
+  keys.add("optional","--dump-fmt","( default=%%f ) the format to use to dump the output");
   keys.add("compulsory","--units","kj/mol","the units of energy can be kj/mol, kcal/mol, j/mol, eV or the conversion factor from kj/mol");
   keys.addFlag("-v", false, "Verbose output");
 }
@@ -111,6 +112,8 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   string unitname;
   parse("--units",unitname);
   units.setEnergy( unitname );
+  std::string dumpFmt("%.9f");;
+  parse("--dump-fmt", dumpFmt);
   bool doextract = parseVector("--extract", stateFilesToExtract);
   if (doextract) {
     extractdrr(stateFilesToExtract);
@@ -125,7 +128,7 @@ int drrtool::main(FILE *in, FILE *out, Communicator &pc) {
   vector<string> stateFilesToDivergence;
   bool dodivergence = parseVector("--divergence", stateFilesToDivergence);
   if (dodivergence) {
-    calcDivergence(stateFilesToDivergence);
+    calcDivergence(stateFilesToDivergence, dumpFmt);
   }
   return 0;
 }
@@ -212,7 +215,7 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
     // Generate new file name for merged grad and count
     vector<string> tmp_name = filename;
     std::transform(std::begin(tmp_name), std::end(tmp_name), std::begin(tmp_name),
-    [&](string s) {
+    [&](const string & s) {
       return s.substr(0, s.find(suffix));
     });
     outputname = std::accumulate(std::begin(tmp_name), std::end(tmp_name), string(""),
@@ -229,7 +232,7 @@ void drrtool::mergewindows(const vector<string> &filename, string outputname) {
   amerged.writeAll(outputname);
 }
 
-void drrtool::calcDivergence(const vector<string> &filename) {
+void drrtool::calcDivergence(const vector<string> &filename, const string &dumpFmt) {
   #pragma omp parallel for
   for (size_t j = 0; j < filename.size(); ++j) {
     std::ifstream in;
@@ -262,8 +265,8 @@ void drrtool::calcDivergence(const vector<string> &filename) {
     }
     string outputname(filename[j]);
     outputname.resize(outputname.length() - suffix.length());
-    abfgrid.writeDivergence(outputname);
-    czarestimator.writeDivergence(outputname);
+    abfgrid.writeDivergence(outputname, dumpFmt);
+    czarestimator.writeDivergence(outputname, dumpFmt);
   }
 }
 

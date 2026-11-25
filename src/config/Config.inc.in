@@ -24,6 +24,9 @@
 #include "version.h"
 #include <cstdlib>
 #include <cstring>
+#ifdef __PLUMED_HAS_DLOPEN
+#include <dlfcn.h>
+#endif
 
 namespace PLMD {
 namespace config {
@@ -170,14 +173,6 @@ bool hasDlopen() {
 #endif
 }
 
-bool hasCregex() {
-#ifdef __PLUMED_HAS_CREGEX
-  return true;
-#else
-  return false;
-#endif
-}
-
 bool hasMolfile() {
 #ifdef __PLUMED_HAS_MOLFILE_PLUGINS
   return true;
@@ -208,6 +203,19 @@ std::string getCompilationDate() {
 
 std::string getCompilationTime() {
   return __TIME__;
+}
+
+std::string getLibraryPath() {
+#ifdef __PLUMED_HAS_DLADDR
+  Dl_info info;
+  if(dladdr((void*)getLibraryPath,&info)) {
+    return info.dli_fname;
+  } else {
+    return "";
+  }
+#else
+  return "";
+#endif
 }
 
 

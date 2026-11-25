@@ -1,0 +1,26 @@
+d1: DISTANCE ATOMS=1,2 
+d2: DISTANCE ATOMS=3,4
+
+c_args: COLLECT_FRAMES STRIDE=1 ARG=d1,d2 
+c_atoms: COLLECT_FRAMES STRIDE=1 ATOMS=1-20
+c_args_dataT: TRANSPOSE ARG=c_args_data
+r1: DISSIMILARITIES ARG=c_args_data,c_args_dataT
+
+c_allweights: CUSTOM ARG=c_args_logweights FUNC=exp(x) PERIODIC=NO
+
+# Create a mask and get the positions we need to output
+mask: CREATE_MASK ARG=c_allweights TYPE=stride NZEROS=5
+land_atoms: SELECT_WITH_MASK ARG=c_atoms_data ROW_MASK=mask
+land_args: SELECT_WITH_MASK ARG=c_args_data ROW_MASK=mask
+
+# Get the distances for voronoi analysis
+rmask: CREATE_MASK ARG=c_allweights TYPE=nomask
+rectdissims: SELECT_WITH_MASK ARG=r1 COLUMN_MASK=mask ROW_MASK=rmask
+
+# Now work out the weights
+voronoi: VORONOI ARG=rectdissims
+c_allweightsT: TRANSPOSE ARG=c_allweights
+weightsT: MATRIX_PRODUCT ARG=c_allweightsT,voronoi
+weights: TRANSPOSE ARG=weightsT
+
+DUMPPDB ATOMS=land_atoms ATOM_INDICES=1-20 ARG=land_args,weights FILE=configs-stride.pdb FMT=%8.4f

@@ -46,7 +46,7 @@ Below you find the status on [GitHub Actions](https://github.com/plumed/plumed2/
 | Branch   |      Status   | First stable release (year) | Still supported |
 |:--------:|:-------------:|:--------:|:------:|
 | master   | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/plumed/plumed2/actions/workflows/ci.yml) | 2026 (expected) | / |
-| v2.10b   | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.10)](https://github.com/plumed/plumed2/actions/workflows/ci.yml)| 2025 | yes |
+| v2.10    | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.10)](https://github.com/plumed/plumed2/actions/workflows/ci.yml)| 2025 | yes |
 | v2.9     | [![CI](https://github.com/plumed/plumed2/actions/workflows/ci.yml/badge.svg?branch=v2.9)](https://github.com/plumed/plumed2/actions/workflows/ci.yml)   | 2023 | yes |
 | v2.8     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.8)](https://github.com/plumed/plumed2/actions) | 2022 | no |
 | v2.7     | [![CI](https://github.com/plumed/plumed2/workflows/CI/badge.svg?branch=v2.7)](https://github.com/plumed/plumed2/actions) | 2020 | no |
@@ -93,9 +93,8 @@ Required software
 Required software:
 
 * GNU make.
-* C/c++ compiler (c++11 support is required as of version 2.4).
+* C/c++ compiler (c++17 support is required as of version 2.10).
 * A modern version of the `patch` command line tool.
-* Support for POSIX library `dirent.h`.
 
 Suggested software (libraries are checked by `./configure` and enabled if available):
 

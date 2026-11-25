@@ -26,6 +26,7 @@
 #include <set>
 #include "tools/Keywords.h"
 #include "tools/Tools.h"
+#include "tools/Units.h"
 #include "tools/Log.h"
 
 namespace PLMD {
@@ -34,6 +35,15 @@ class PDB;
 class PlumedMain;
 class Communicator;
 class ActionWithValue;
+class ActionWithArguments;
+class ActionAtomistic;
+class ActionWithVirtualAtom;
+class PbcAction;
+class ActionToGetData;
+class ActionToPutData;
+class DomainDecomposition;
+class ActionForInterface;
+class ActionShortcut;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is
@@ -48,10 +58,14 @@ class ActionOptions {
 /// The documentation for this action
   const Keywords& keys;
   static Keywords emptyKeys;
+  std::string fullPath;
 public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
   ActionOptions(const ActionOptions&,const Keywords& keys);
+  void setFullPath(const std::string & fullPath) {
+    this->fullPath=fullPath;
+  }
 };
 
 /// Base class for all the input Actions.
@@ -77,6 +91,16 @@ class Action {
 /// Update only until this time.
   double update_until;
 
+/// Save the timestep here
+  double timestep;
+
+protected:
+/// Get the units that we are operating in
+  const Units& getUnits() const;
+/// Are we using natural units
+  bool usingNaturalUnits()const;
+/// Get the value of Boltzmann's constant
+  double getKBoltzmann()const;
 public:
 
 /// Check if action should be updated.
@@ -99,6 +123,8 @@ private:
 
   bool doCheckPoint;
 
+  bool never_activate;
+
 /// The set of default arguments that we are using
   std::string defaults;
 public:
@@ -112,8 +138,16 @@ public:
 /// Specify that this Action depends on another one
   void addDependency(Action*);
 
+/// Check that this action does not depend on the action in the argument
+  bool checkForDependency(Action*);
+
 /// Clear the dependence list for this Action
   void clearDependencies();
+
+/// Get the value of kBT by either reading the TEMP keyword
+/// and multiplying the temperature by Boltzmann's constant
+/// or get it fro the MD code
+  double getkBT();
 
 /// Return the present timestep
   long long int getStep()const;
@@ -181,9 +215,14 @@ public:
 /// a final Action has been initialized
   void checkRead();
 
+/// This calculates any values that are constant and ensures
+/// that we don't calculate these actions on every timestep
+  void setupConstantValues( const bool& have_atoms );
+
 /// Communicator of this replica: all the MPI processes running this PLUMED
 /// instance (set by the MD code with setMPIComm). It is valid on every process.
   Communicator& comm;
+
 /// Communicator between replicas, in multiple-replica simulations.
 /// It holds one process per replica, namely process 0 of comm (set with
 /// GREX setMPIIntercomm or setMPImultiSimComm).
@@ -318,6 +357,43 @@ public:
 
 /// Get the defaults
   std::string getDefaultString() const ;
+
+/// Set the timestep that is stored in the action to the correct value
+  void resetStoredTimestep();
+
+/// Get the info on what to calculate
+  virtual std::string writeInGraph() const ;
+/// Specialized casts, to make PlumedMain run faster
+  virtual ActionWithValue* castToActionWithValue() noexcept {
+    return nullptr;
+  }
+  virtual ActionWithArguments* castToActionWithArguments() noexcept {
+    return nullptr;
+  }
+  virtual ActionAtomistic* castToActionAtomistic() noexcept {
+    return nullptr;
+  }
+  virtual ActionWithVirtualAtom* castToActionWithVirtualAtom() noexcept {
+    return nullptr;
+  }
+  virtual PbcAction* castToPbcAction() noexcept {
+    return nullptr;
+  }
+  virtual ActionToPutData* castToActionToPutData() noexcept {
+    return nullptr;
+  }
+  virtual ActionToGetData* castToActionToGetData() noexcept {
+    return nullptr;
+  }
+  virtual DomainDecomposition* castToDomainDecomposition() noexcept {
+    return nullptr;
+  }
+  virtual ActionForInterface* castToActionForInterface() noexcept {
+    return nullptr;
+  }
+  virtual ActionShortcut* castToActionShortcut() noexcept {
+    return nullptr;
+  }
 };
 
 /////////////////////

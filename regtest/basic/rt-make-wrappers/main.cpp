@@ -1,3 +1,8 @@
+// we here keep a the basic version which do not
+// allow shape detection. this is mostly to
+// test that the implementation < 2.10 continues to
+// work correctly
+#define __PLUMED_WRAPPER_CXX_DETECT_SHAPES 0
 #include "plumed/wrapper/Plumed.h"
 #include "plumed/tools/Exception.h"
 #include <fstream>
@@ -166,10 +171,11 @@ void testmecpp(PLMD::Plumed p){
   p.cmd((char*)"readInputLine",(char*)"PRINT ARG=d FILE=COLVAR RESTART=YES");
   int step=1;
   p.cmd((char*)"setStep",&step);
-  p.cmd((char*)"setPositions",&positions[0]);
-  p.cmd((char*)"setMasses",&masses[0]);
-  p.cmd((char*)"setForces",&forces[0]);
-  p.cmd((char*)"setVirial",&virial[0]);
+  // here we test for shapes passed with initializer lists:
+  p.cmd((char*)"setPositions",&positions[0],{(unsigned)natoms,3});
+  p.cmd((char*)"setMasses",&masses[0],{(unsigned)natoms});
+  p.cmd((char*)"setForces",&forces[0],{(unsigned)natoms,3});
+  p.cmd((char*)"setVirial",&virial[0],{3,3});
   p.cmd((char*)"calc",NULL);
 //plumed_forget_ptr(p,&masses[0]);
 }

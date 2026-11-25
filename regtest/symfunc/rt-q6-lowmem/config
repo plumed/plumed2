@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=symfunc
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz 64.xyz"
+extra_files="../../trajectories/64.xyz"

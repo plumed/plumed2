@@ -1,0 +1,60 @@
+MOLINFO MOLTYPE=protein STRUCTURE=M1d.pdb
+
+# These are the reference positions
+ref_psi: CONSTANT VALUES=2.25029540E+0000
+ref_phi: CONSTANT VALUES=-1.91983118E+0000 
+# This is the covariance matrix
+covar: CONSTANT NROWS=2 NCOLS=2 VALUES=2.45960237E-0001,-1.30615381E-0001,-1.30615381E-0001,2.40239117E-0001
+# So this is the variance
+var: SELECT_COMPONENTS ARG=covar COMPONENTS=1.1,2.2
+
+TORSIONS ...
+   ATOMS1=@psi-2
+   ATOMS2=@psi-3
+   ATOMS3=@psi-4
+   LABEL=psi
+... TORSIONS
+
+TORSIONS ...
+   ATOMS1=@phi-2
+   ATOMS2=@phi-3
+   ATOMS3=@phi-4
+   LABEL=phi
+... TORSIONS
+
+# Test everything for Euclidean distance
+psi2: SELECT_COMPONENTS ARG=psi COMPONENTS=1
+phi2: SELECT_COMPONENTS ARG=phi COMPONENTS=1
+ed1: EUCLIDEAN_DISTANCE ARG1=psi2,phi2 ARG2=ref_psi,ref_phi
+psi3: SELECT_COMPONENTS ARG=psi COMPONENTS=2
+phi3: SELECT_COMPONENTS ARG=phi COMPONENTS=2
+ed2: EUCLIDEAN_DISTANCE ARG1=psi3,phi3 ARG2=ref_psi,ref_phi
+psi4: SELECT_COMPONENTS ARG=psi COMPONENTS=3
+phi4: SELECT_COMPONENTS ARG=phi COMPONENTS=3
+ed3: EUCLIDEAN_DISTANCE ARG1=psi4,phi4 ARG2=ref_psi,ref_phi
+edv: EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi
+PRINT ARG=ed1,ed2,ed3,edv FILE=ed_distance_vals FMT=%8.4f
+
+# Test everything for Normalized Euclidean distance
+diag_met: CUSTOM ARG=var FUNC=1/x PERIODIC=NO
+ned1: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi2,phi2 ARG2=ref_psi,ref_phi METRIC=diag_met
+ned2: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi3,phi3 ARG2=ref_psi,ref_phi METRIC=diag_met
+ned3: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi4,phi4 ARG2=ref_psi,ref_phi METRIC=diag_met
+nedv: NORMALIZED_EUCLIDEAN_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=diag_met
+PRINT ARG=ned1,ned2,ned3,nedv FILE=ned_distance_vals FMT=%8.4f
+
+# And for Mahalanobis distance
+met: INVERT_MATRIX ARG=covar  
+m1: MAHALANOBIS_DISTANCE ARG1=psi2,phi2 ARG2=ref_psi,ref_phi METRIC=met
+m2: MAHALANOBIS_DISTANCE ARG1=psi3,phi3 ARG2=ref_psi,ref_phi METRIC=met
+m3: MAHALANOBIS_DISTANCE ARG1=psi4,phi4 ARG2=ref_psi,ref_phi METRIC=met
+mv: MAHALANOBIS_DISTANCE ARG1=psi,phi ARG2=ref_psi,ref_phi METRIC=met
+PRINT ARG=m1,m2,m3,mv FILE=m_distance_vals FMT=%8.4f
+
+# # And add some bias to these things to test if the derivatives are OK
+ed_sum: SUM ARG=edv PERIODIC=NO
+BIASVALUE ARG=ed_sum
+ned_sum: SUM ARG=nedv PERIODIC=NO
+BIASVALUE ARG=ned_sum
+m_sum: SUM ARG=mv PERIODIC=NO
+BIASVALUE ARG=m_sum

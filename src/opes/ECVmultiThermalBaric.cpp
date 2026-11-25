@@ -18,8 +18,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExpansionCVs.h"
 #include "core/ActionRegister.h"
-#include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace opes {
@@ -111,7 +109,7 @@ PLUMED_REGISTER_ACTION(ECVmultiThermalBaric,"ECV_MULTITHERMAL_MULTIBARIC")
 void ECVmultiThermalBaric::registerKeywords(Keywords& keys) {
   ExpansionCVs::registerKeywords(keys);
   keys.remove("ARG");
-  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with \\ref ENERGY and \\ref VOLUME respectively");
+  keys.add("compulsory","ARG","the labels of the potential energy and of the volume of the system. You can calculate them with ENERGY and VOLUME respectively");
 //temperature
   keys.add("optional","TEMP_MIN","the minimum of the temperature range");
   keys.add("optional","TEMP_MAX","the maximum of the temperature range");
@@ -140,7 +138,7 @@ ECVmultiThermalBaric::ECVmultiThermalBaric(const ActionOptions&ao)
   plumed_massert(getNumberOfArguments()==2,"ENERGY and VOLUME should be given as ARG");
 
 //set temp0
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   const double temp0=kbt_/kB;
 
 //parse temp range
@@ -384,7 +382,7 @@ std::vector<std::string> ECVmultiThermalBaric::getLambdas() const {
 
   plumed_massert(!todoAutomatic_beta_ && !todoAutomatic_pres_,"cannot access lambdas before initializing them");
   std::vector<std::string> lambdas;
-  const double kB=plumed.getAtoms().getKBoltzmann();
+  const double kB=getKBoltzmann();
   for(unsigned k=0; k<derECVs_beta_.size(); k++) {
     const double kB_temp_k=kbt_/(derECVs_beta_[k]*kbt_+1);
     const double line_k=coeff_*(kB_temp_k-kB_temp_low_)+pres_low_;

@@ -1,2 +1,2 @@
 type=simplemd
-plumed_modules=dimred
+plumed_modules="dimred symfunc landmarks"

@@ -1,0 +1,4 @@
+type=driver
+plumed_modules=crystdistrib
+arg="--plumed plumed.dat --mf_xtc em.xtc --mc mcfile --timestep=0.001 --trajectory-stride=25"
+extra_files="../../trajectories/em.xtc"

@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace bias {
@@ -107,7 +107,13 @@ class MovingRestraint : public Bias {
   std::vector<double> oldf;
   std::vector<std::string> verse;
   std::vector<double> work;
+  std::vector<double> kk,aa,f,dpotdk;
   double tot_work;
+  std::vector<Value*> valueCntr;
+  std::vector<Value*> valueWork;
+  std::vector<Value*> valueKappa;
+  Value* valueTotWork=nullptr;
+  Value* valueForce2=nullptr;
 public:
   explicit MovingRestraint(const ActionOptions&);
   void calculate() override;
@@ -121,16 +127,16 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
   keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
            "the restraint or whether it is acting on both sides (B)");
-  keys.add("numbered","STEP","This keyword appears multiple times as STEP\\f$x\\f$ with x=0,1,2,...,n. Each value given represents "
-           "the MD step at which the restraint parameters take the values KAPPA\\f$x\\f$ and AT\\f$x\\f$.");
+  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "
+           "the MD step at which the restraint parameters take the values KAPPAx and ATx.");
   keys.reset_style("STEP","compulsory");
-  keys.add("numbered","AT","AT\\f$x\\f$ is equal to the position of the restraint at time STEP\\f$x\\f$. For intermediate times this parameter "
-           "is linearly interpolated. If no AT\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of AT are kept constant "
-           "during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
+  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx. For intermediate times this parameter "
+           "is linearly interpolated. If no ATx is specified for STEPx then the values of AT are kept constant "
+           "during the interval of time between STEP(x-1) and STEPx.");
   keys.reset_style("AT","compulsory");
-  keys.add("numbered","KAPPA","KAPPA\\f$x\\f$ is equal to the value of the force constants at time STEP\\f$x\\f$. For intermediate times this "
-           "parameter is linearly interpolated.  If no KAPPA\\f$x\\f$ is specified for STEP\\f$x\\f$ then the values of KAPPA\\f$x\\f$ "
-           "are kept constant during the interval of time between STEP\\f$x-1\\f$ and STEP\\f$x\\f$.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx. For intermediate times this "
+           "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
+           "are kept constant during the interval of time between STEP(x-1) and STEPx.");
   keys.reset_style("KAPPA","compulsory");
   keys.addOutputComponent("work","default","the total work performed changing this restraint");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
@@ -149,7 +155,11 @@ void MovingRestraint::registerKeywords( Keywords& keys ) {
 
 MovingRestraint::MovingRestraint(const ActionOptions&ao):
   PLUMED_BIAS_INIT(ao),
-  verse(getNumberOfArguments()) {
+  verse(getNumberOfArguments()),
+  kk(getNumberOfArguments()),
+  aa(getNumberOfArguments()),
+  f(getNumberOfArguments()),
+  dpotdk(getNumberOfArguments()) {
   parseVector("VERSE",verse);
   std::vector<long long int> ss(1);
   ss[0]=-1;
@@ -196,6 +206,7 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
 
   addComponent("force2");
   componentIsNotPeriodic("force2");
+  valueForce2=getPntrToComponent("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
 
@@ -204,16 +215,20 @@ MovingRestraint::MovingRestraint(const ActionOptions&ao):
     comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueCntr.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueWork.push_back(getPntrToComponent(comp));
     comp=getPntrToArgument(i)->getName()+"_kappa"; // each spring has its own kappa
     addComponent(comp);
     componentIsNotPeriodic(comp);
+    valueKappa.push_back(getPntrToComponent(comp));
     work.push_back(0.); // initialize the work value
   }
   addComponent("work");
   componentIsNotPeriodic("work");
+  valueTotWork=getPntrToComponent("work");
   tot_work=0.0;
 
   log<<"  Bibliography ";
@@ -227,7 +242,6 @@ void MovingRestraint::calculate() {
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   long long int now=getStep();
-  std::vector<double> kk(narg),aa(narg),f(narg),dpotdk(narg);
   if(now<=step[0]) {
     kk=kappa[0];
     aa=at[0];
@@ -258,7 +272,7 @@ void MovingRestraint::calculate() {
   tot_work=0.0;
   for(unsigned i=0; i<narg; ++i) {
     const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_cntr")->set(aa[i]);
+    valueCntr[i]->set(aa[i]);
     const double k=kk[i];
     f[i]=-k*cv;
     if(verse[i]=="U" && cv<0) {
@@ -272,20 +286,20 @@ void MovingRestraint::calculate() {
     if(oldaa.size()==aa.size() && oldf.size()==f.size()) {
       work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     }
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]);
-    getPntrToComponent(getPntrToArgument(i)->getName()+"_kappa")->set(kk[i]);
+    valueWork[i]->set(work[i]);
+    valueKappa[i]->set(kk[i]);
     tot_work+=work[i];
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
     totf2+=f[i]*f[i];
   };
-  getPntrToComponent("work")->set(tot_work);
+  valueTotWork->set(tot_work);
   oldf=f;
   oldaa=aa;
   oldk=kk;
   olddpotdk=dpotdk;
   setBias(ene);
-  getPntrToComponent("force2")->set(totf2);
+  valueForce2->set(totf2);
 }
 
 }

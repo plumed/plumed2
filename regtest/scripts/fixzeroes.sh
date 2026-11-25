@@ -9,7 +9,7 @@ fi
 
 grep -q -E '[^[:print:][:space:]]' "$file" 2> /dev/null && exit 0
 
-awk '
+sed -E 's/-nan/nan/g' "$file" | awk '
   function normalize_line(line, result, i, j, separator, token, start) {
     result=""
     i=1
@@ -35,8 +35,9 @@ awk '
     return result
   }
   {
+    if($1=="#!" && $2=="FIELDS") gsub("@[1-9][0-9]*","@___")
     print normalize_line($0)
   }
-' "$file" > "$file.$$.tmp"
+' > "$file.$$.tmp"
 mv "$file.$$.tmp" "$file"
 

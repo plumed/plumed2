@@ -1,0 +1,15 @@
+q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
+
+ddA: VSTACK ARG=q1_sp.rm-n1,q1_sp.im-n1,q1_sp.rm-0,q1_sp.im-0,q1_sp.rm-p1,q1_sp.im-p1
+
+ddT: TRANSPOSE ARG=ddA
+
+con: CONTACT_MATRIX GROUP=q1 SWITCH={RATIONAL R_0=4}
+dd: MATRIX_PRODUCT ARG=ddA,ddT
+mm: MATHEVAL ARG=con,dd FUNC=x*y PERIODIC=NO
+
+ones: ONES SIZE=2
+cc: MATRIX_VECTOR_PRODUCT ARG=mm,ones
+ff: SUM ARG=cc PERIODIC=NO
+BIASVALUE ARG=ff 
+PRINT ARG=ff FILE=colvar FMT=%8.4f 

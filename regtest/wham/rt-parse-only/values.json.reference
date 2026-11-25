@@ -1,0 +1,67 @@
+{ 
+"timestep" : { 
+"action" : "PUT", 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"action" : "PUT", 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"action" : "PUT", 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"action" : "PUT", 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"action" : "PUT", 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"action" : "PUT", 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"action" : "PBC", 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"phi" : { 
+"action" : "TORSION", 
+"phi" : { "type": "scalar", "desciption": "" }
+}, 
+"rp" : { 
+"action" : "RESTRAINT", 
+"rp.bias" : { "type": "scalar", "desciption": "" }
+"rp.force2" : { "type": "scalar", "desciption": "" }
+}, 
+"hh_gather" : { 
+"action" : "GATHER_REPLICAS", 
+"hh_gather.rep-1" : { "type": "scalar", "desciption": "" }
+}, 
+"hh_gatherv" : { 
+"action" : "CONCATENATE", 
+"hh_gatherv" : { "type": "vector", "desciption": "" }
+}, 
+"hh_collect" : { 
+"action" : "COLLECT", 
+"hh_collect" : { "type": "vector", "desciption": "" }
+}, 
+"hh_wham" : { 
+"action" : "WHAM", 
+"hh_wham" : { "type": "vector", "desciption": "" }
+}, 
+"hh_data_phi" : { 
+"action" : "COLLECT", 
+"hh_data_phi" : { "type": "vector", "desciption": "" }
+}, 
+"hh" : { 
+"action" : "KDE", 
+"hh" : { "type": "grid", "desciption": "" }
+}, 
+"shortcut_hh" : { 
+"action" : "WHAM_HISTOGRAM", 
+"hh" : { "type": "grid", "desciption": "" }
+} 
+} 

@@ -1,4 +1,4 @@
-USE=core tools vesselbase
+USE=core tools function lepton 
 
 #generic makefile
 include ../maketools/make.module

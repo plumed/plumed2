@@ -96,7 +96,7 @@ public:
 /// Move assignment.
   PlumedHandle & operator=(PlumedHandle && other) noexcept;
 /// Execute cmd.
-  void cmd(const std::string & key,const TypesafePtr & ptr=nullptr);
+  void cmd(std::string_view key,const TypesafePtr & ptr) override;
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;
 };

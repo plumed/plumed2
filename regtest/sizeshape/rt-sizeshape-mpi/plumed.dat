@@ -1,0 +1,14 @@
+# units
+UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
+
+# make a group of atoms
+GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
+
+# ld1
+ld1: SIZESHAPE_POSITION_LINEAR_PROJ REFERENCE=global_avg.txt PRECISION=global_precision.txt COEFFS=ld1_scalings.txt GROUP=ga_list 
+
+#print
+PRINT ARG=ld1 STRIDE=1 FILE=COLVAR FMT=%8.8f
+
+# dump derivatives
+DUMPDERIVATIVES ARG=ld1 STRIDE=1 FILE=deriv FMT=%8.3f

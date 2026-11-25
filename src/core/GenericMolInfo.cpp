@@ -20,12 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GenericMolInfo.h"
-#include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "PlumedMain.h"
 #include "tools/MolDataClass.h"
 #include "tools/PDB.h"
+#include "tools/Communicator.h"
 #include "config/Config.h"
 
 namespace PLMD {
@@ -89,7 +89,7 @@ GenericMolInfo::GenericMolInfo( const ActionOptions&ao ):
   if( read_backbone.size()==0 ) {
     parse("STRUCTURE",reference);
 
-    if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength())) {
+    if( ! pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength())) {
       plumed_merror("missing input file " + reference );
     }
 

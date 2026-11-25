@@ -1,0 +1,14 @@
+q1: Q1 SPECIESA=1,2 SPECIESB=1-64 D_0=3.0 R_0=1.5 NN=12 SUM
+
+ddAu: VSTACK ARG=q1_sp.rm-n1,q1_sp.im-n1,q1_sp.rm-0,q1_sp.im-0,q1_sp.rm-p1,q1_sp.im-p1
+
+tlo: ONES SIZE=6
+nsta: OUTER_PRODUCT ARG=q1_norm,tlo
+ddA: CUSTOM ARG=ddAu,nsta FUNC=x/y PERIODIC=NO
+
+PRINT ARG=ddAu FILE=stack 
+PRINT ARG=q1_norm FILE=norms
+ss: SUM ARG=ddA PERIODIC=NO
+PRINT ARG=ss FILE=colvar FMT=%8.4f
+DUMPDERIVATIVES ARG=ss FILE=deriv FMT=%8.4f
+BIASVALUE ARG=ss

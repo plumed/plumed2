@@ -9,7 +9,7 @@ COMBINE ARG=b.lessthan,p.lessthan PERIODIC=NO LABEL=sum
 
 RESTRAINT ARG=b.*,brf.*,br.*,p.*,prf.*,pr.*,sum KAPPA=1.,1.,1.,1,1,1,1 AT=0,0,0,0,0,0,0 SLOPE=0,0,0,0,0,0,0
 
-DUMPFORCES ARG=* FILE=forces STRIDE=1
+DUMPFORCES ARG=b.lessthan,brf.lessthan,br.lessthan,p.lessthan,prf.lessthan,pr.lessthan,sum,@45.* FILE=forces STRIDE=1
 
 PRINT ARG=b.*,brf.*,br.*,p.*,prf.*,pr.*,sum STRIDE=1 FILE=colvar FMT=%8.4f
 

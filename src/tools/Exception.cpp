@@ -65,7 +65,7 @@ std::string simplify(const std::string & path) {
 
   // forming the ans
   bool first=true;
-  for (auto i : v) {
+  for (const auto & i : v) {
     if(!first) {
       ans += "/";
     }

@@ -28,7 +28,6 @@ LIST="
  RegexPP.md
  FilesPP.md
  ModulesPP.md
- TutorialsPP.md
  PerformancesPP.md
  GlossaryPP.md
  automatic"
@@ -73,7 +72,7 @@ gawk -v version="$version" '{
     print
   } else if(match($0,"<span>Related&#160;Pages</span>")){
     print "      <li><a href=\"_syntax.html\"><span>Getting&#160;Started</span></a></li>"
-    print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
+    print "      <li><a href=\"https://plumed-school.github.io\"><span>Tutorials</span></a></li>"
     print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
   } else if(match($0,"<link href=\"doxygen.css\"")){
     print 
@@ -124,7 +123,7 @@ var menudata={children:[
 {text:'Home ($version)',url:'index.html'},
 {text:'Getting Started',url:'_syntax.html'},
 {text:'Performances',url:'_performances.html'},
-{text:'Tutorials',url:'tutorials.html'},
+{text:'Tutorials',url:'https://plumed-school.github.io'},
 {text:'Index of Actions',url:'glossary.html'}]}
 EOF
 # end of DOXYGEN >=1.8.12

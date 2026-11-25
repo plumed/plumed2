@@ -27,10 +27,9 @@
 
 #include "Colvar.h"
 #include "core/PlumedMain.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/ERMSD.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace colvar {
@@ -122,7 +121,7 @@ void ERMSD::registerKeywords(Keywords& keys) {
   keys.add("compulsory","CUTOFF","2.4","only pairs of atoms closer than CUTOFF are considered in the calculation.");
   keys.add("atoms","ATOMS","the list of atoms (use lcs)");
   keys.add("optional","PAIRS","List of pairs considered. All pairs are considered if this value is not specified.");
-
+  keys.setValueDescription("the eRMSD between the instantaneous structure and the reference structure that was input");
 }
 
 ERMSD::ERMSD(const ActionOptions&ao):
@@ -165,7 +164,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) ) {
+  if( !pdb.read(reference,usingNaturalUnits(),0.1/getUnits().getLength()) ) {
     error("missing input file " + reference );
   }
   // store target_ distance
@@ -184,7 +183,7 @@ ERMSD::ERMSD(const ActionOptions&ao):
     pairs_[i]--;
   }
 
-  ermsd.setReference(reference_positions,pairs_,cutoff/atoms.getUnits().getLength());
+  ermsd.setReference(reference_positions,pairs_,cutoff/getUnits().getLength());
 
   requestAtoms(atoms_);
   derivs.resize(natoms);
@@ -212,7 +211,7 @@ void ERMSD::calculate() {
 // Notice that this might have problems when having 2 RNA molecules (hybridization).
 
   ermsdist=ermsd.calculate(getPositions(),fake_pbc,derivs,virial);
-  const double scale=atoms.getUnits().getLength();
+  const double scale=getUnits().getLength();
   setValue(ermsdist*scale);
 
   for(unsigned i=0; i<derivs.size(); ++i) {

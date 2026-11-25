@@ -20,8 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
+#include "ActionWithArguments.h"
+#include "ActionAtomistic.h"
 #include "tools/Exception.h"
 #include "tools/OpenMP.h"
+#include "tools/Communicator.h"
 
 namespace PLMD {
 
@@ -40,13 +43,10 @@ void ActionWithValue::noAnalyticalDerivatives(Keywords& keys) {
   keys.addFlag("NUMERICAL_DERIVATIVES",false,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
-void ActionWithValue::componentsAreNotOptional(Keywords& keys) {
-  keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quantities can "
-                                 "be referenced elsewhere in the input by using this Action's label followed by a "
-                                 "dot and the name of the quantity required from the list below.");
-}
-
 void ActionWithValue::useCustomisableComponents(Keywords& keys) {
+  if( !keys.outputComponentExists(".#!custom") ) {
+    keys.addOutputComponent(".#!custom","default","the names of the output components for this action depend on the actions input file see the example inputs below for details");
+  }
   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
                                  "actions input file.  However, in addition to the components that can be customized the "
                                  "following quantities will always be output");
@@ -54,12 +54,13 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys) {
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
+  firststep(true),
   noderiv(true),
   numericalDerivatives(false) {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) {
     parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   }
-  if(numericalDerivatives) {
+  if(!keywords.exists("NO_ACTION_LOG") && numericalDerivatives) {
     log.printf("  using numerical derivatives\n");
   }
 }
@@ -68,13 +69,13 @@ ActionWithValue::~ActionWithValue() {
 // empty destructor to delete unique_ptr
 }
 
-void ActionWithValue::clearInputForces() {
+void ActionWithValue::clearInputForces( const bool& force ) {
   for(unsigned i=0; i<values.size(); i++) {
     values[i]->clearInputForce();
   }
 }
 
-void ActionWithValue::clearDerivatives() {
+void ActionWithValue::clearDerivatives( const bool& force ) {
   unsigned nt = OpenMP::getNumThreads();
   #pragma omp parallel num_threads(nt)
   {
@@ -96,6 +97,17 @@ bool ActionWithValue::exists( const std::string& name ) const {
   return false;
 }
 
+void ActionWithValue::getMatrixColumnTitles( std::vector<std::string>& argnames ) const {
+  plumed_assert( getNumberOfComponents()==1 && getConstPntrToComponent(0)->getRank()==2 );
+  unsigned nargs = getConstPntrToComponent(0)->getShape()[1];
+  std::string aname = getConstPntrToComponent(0)->getName();
+  for(unsigned j=0; j<nargs; ++j) {
+    std::string nn;
+    Tools::convert( j+1, nn );
+    argnames.push_back( aname + "." + nn );
+  }
+}
+
 Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0; i<values.size(); ++i) {
     if (values[i]->name==name) {
@@ -112,14 +124,20 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
-void ActionWithValue::addValue() {
+void ActionWithValue::addValue( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value") ) {
+    warning("documentation for the value calculated by this action has not been included");
+  }
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), false, shape ) );
 }
 
-void ActionWithValue::addValueWithDerivatives() {
+void ActionWithValue::addValueWithDerivatives( const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(".#!value") ) {
+    warning("documentation for the value calculated by this action has not been included");
+  }
   plumed_massert(values.empty(),"You have already added the default value for this action");
-  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,getLabel(), true, shape ) );
 }
 
 void ActionWithValue::setNotPeriodic() {
@@ -136,16 +154,10 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
   values[0]->setDomain( min, max );
 }
 
-Value* ActionWithValue::getPntrToValue() {
-  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
-  return values[0].get();
-}
-
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
-void ActionWithValue::addComponent( const std::string& name ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+void ActionWithValue::addComponent( const std::string& name, const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer docs.");
   }
@@ -157,13 +169,13 @@ void ActionWithValue::addComponent( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponent(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, false ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, false, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
 }
 
-void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
-  if( !keywords.outputComponentExists(name,true) ) {
+void ActionWithValue::addComponentWithDerivatives( const std::string& name, const std::vector<unsigned>& shape ) {
+  if( !keywords.outputComponentExists(name) ) {
     plumed_merror("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
                   "registerKeywords as described in the developer doc.");
   }
@@ -175,9 +187,25 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ) {
     plumed_massert(values[i]->name!=thename&&name!="bias","Since PLUMED 2.3 the component 'bias' is automatically added to all biases by the general constructor!\n"
                    "Remove the line addComponentWithDerivatives(\"bias\") from your bias.");
   }
-  values.emplace_back(Tools::make_unique<Value>(this,thename, true ) );
+  values.emplace_back(Tools::make_unique<Value>(this,thename, true, shape ) );
   std::string msg="  added component to this action:  "+thename+" \n";
   log.printf(msg.c_str());
+}
+
+std::string ActionWithValue::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  if( keys.outputComponentExists(".#!custom") ) {
+    return "a quantity calculated by the action " + getName() + " with label " + getLabel();
+  }
+  std::size_t und=cname.find_last_of("_");
+  std::size_t hyph=cname.find_first_of("-");
+  if( und!=std::string::npos ) {
+    return keys.getOutputComponentDescription(cname.substr(und)) + " This particular component measures this quantity for the input CV named " + cname.substr(0,und);
+  }
+  if( hyph!=std::string::npos ) {
+    return keys.getOutputComponentDescription(cname.substr(0,hyph)) + "  This is the " + cname.substr(hyph+1) + "th of these quantities";
+  }
+  plumed_massert( keys.outputComponentExists(cname), "component " + cname + " does not exist in " + keys.getDisplayName() + " if the component names are customizable then you should override this function" );
+  return keys.getOutputComponentDescription( cname );
 }
 
 int ActionWithValue::getComponent( const std::string& name ) const {
@@ -222,8 +250,23 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
 
 void ActionWithValue::setGradientsIfNeeded() {
   if(isOptionOn("GRADIENTS")) {
-    for(unsigned i=0; i<values.size(); i++) {
-      values[i]->setGradients();
+    ActionAtomistic* aa=castToActionAtomistic();
+    if(aa) {
+      for(unsigned i=0; i<values.size(); i++) {
+        unsigned start=0;
+        values[i]->gradients.clear();
+        values[i]->setGradients( aa, start );
+      }
+    } else {
+      ActionWithArguments* aarg = castToActionWithArguments();
+      if( !aarg ) {
+        plumed_merror( "failing in " + getLabel() );
+      }
+      for(unsigned i=0; i<values.size(); i++) {
+        unsigned start=0;
+        values[i]->gradients.clear();
+        aarg->setGradients( values[i].get(), start );
+      }
     }
   }
 }
@@ -237,7 +280,7 @@ void ActionWithValue::turnOnDerivatives() {
   }
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0; i<getDependencies().size(); ++i) {
-    ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
+    ActionWithValue* vv=getDependencies()[i]->castToActionWithValue();
     if(vv) {
       vv->turnOnDerivatives();
     }
@@ -249,9 +292,114 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ) {
   return values[kk].get();
 }
 
+const Value* ActionWithValue::getConstPntrToComponent(int n) const {
+  plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
+  return values[n].get();
+}
+
 Value* ActionWithValue::getPntrToComponent( int n ) {
   plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n].get();
+}
+
+bool ActionWithValue::calculateOnUpdate() {
+  if( firststep ) {
+    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>(this);
+    if(aa) {
+      const std::vector<Value*> & args(aa->getArguments());
+      for(const auto & p : args ) {
+        if( p->calculateOnUpdate() ) {
+          for(unsigned i=0; i<values.size(); ++i) {
+            values[i]->setValType("calcFromAverage");
+          }
+          break;
+        }
+      }
+    }
+    firststep=false;
+  }
+  for(unsigned i=0; i<values.size(); ++i) {
+    if( values[i]->calculateOnUpdate() ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ActionWithValue::checkForForces() {
+  const unsigned    ncp=getNumberOfComponents();
+  unsigned    nder=getNumberOfDerivatives();
+  if( ncp==0 || nder==0 ) {
+    return false;
+  }
+
+  unsigned nvalsWithForce=0;
+  valsToForce.resize(ncp);
+  for(unsigned i=0; i<ncp; ++i) {
+    if( values[i]->hasForce && !values[i]->isConstant() ) {
+      valsToForce[nvalsWithForce]=i;
+      nvalsWithForce++;
+    }
+  }
+  if( nvalsWithForce==0 ) {
+    return false;
+  }
+
+  // Make sure forces to apply is empty of forces
+  if( forcesForApply.size()!=nder ) {
+    forcesForApply.resize( nder );
+  }
+  std::fill(forcesForApply.begin(),forcesForApply.end(),0);
+
+  unsigned stride=1;
+  unsigned rank=0;
+  if(ncp>4*comm.Get_size()) {
+    stride=comm.Get_size();
+    rank=comm.Get_rank();
+  }
+
+  unsigned nt=OpenMP::getNumThreads();
+  if(nt>ncp/(4*stride)) {
+    nt=1;
+  }
+
+  // Note: plain loops are used here on purpose instead of BLAS daxpy.
+  // An external multithreaded BLAS (e.g. OpenBLAS, MKL) would spawn its own
+  // threads for long vectors (nder>~10000), ignoring the number of threads
+  // set by the MD engine and oversubscribing the cores (see issue #1121).
+  #pragma omp parallel num_threads(nt)
+  {
+    std::vector<double> omp_f;
+    if( nt>1 ) {
+      omp_f.resize(nder,0);
+    }
+    double* const dest = ( nt>1 ? omp_f.data() : forcesForApply.data() );
+    #pragma omp for
+    for(unsigned i=rank; i<nvalsWithForce; i+=stride) {
+      const double ff=values[valsToForce[i]]->inputForce[0];
+      const double* const thisderiv = values[valsToForce[i]]->data.data()+1;
+      #pragma omp simd
+      for(unsigned j=0; j<nder; ++j) {
+        dest[j] += ff*thisderiv[j];
+      }
+    }
+    if( nt>1 ) {
+      #pragma omp critical
+      {
+        double* const f = forcesForApply.data();
+        const double* const src = omp_f.data();
+        #pragma omp simd
+        for(unsigned j=0; j<nder; ++j) {
+          f[j] += src[j];
+        }
+      }
+    }
+  }
+
+  if(ncp>4*comm.Get_size()) {
+    comm.Sum(&forcesForApply[0],nder);
+  }
+  return true;
 }
 
 }

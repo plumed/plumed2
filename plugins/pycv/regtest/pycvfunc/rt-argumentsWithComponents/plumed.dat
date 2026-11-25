@@ -1,0 +1,20 @@
+LOAD FILE=@pycvpath@
+
+dc: DISTANCE ATOMS=1,2 COMPONENTS 
+d: DISTANCE ATOMS=1,2
+
+
+fPY: ...
+PYFUNCTION
+IMPORT=unitTest
+INIT=initForF
+CALCULATE=function
+ARG=dc.x,dc.y,dc.z,d
+...
+
+
+
+PRINT FILE=colvar.out ARG=fPY
+
+
+

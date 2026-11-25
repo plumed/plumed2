@@ -1,0 +1,11 @@
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=3,4
+d3: DISTANCE ATOMS=5,6
+
+pca: PCAVARS ARG=d1,d2,d3 REFERENCE=epath.pdb
+PRINT ARG=pca_eig,pca_residual FILE=colvar FMT=%8.4f
+BIASVALUE ARG=pca_eig 
+
+d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+pca2: PCAVARS ARG=d REFERENCE=epath2.pdb
+PRINT ARG=pca2_eig,pca2_residual FILE=colvar2 FMT=%8.4f

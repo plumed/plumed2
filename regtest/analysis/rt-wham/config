@@ -1,3 +1,0 @@
-mpiprocs=6
-type=driver
-arg="--mf_xtc alltraj.xtc --multi 6" 

@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/ActionRegister.h"
 #include "core/ActionWithValue.h"
 #include "tools/Communicator.h"
@@ -164,7 +163,6 @@ PLUMED_REGISTER_ACTION(MaxEnt,"MAXENT")
 
 void MaxEnt::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
-  componentsAreNotOptional(keys);
   keys.use("ARG");
   keys.add("compulsory","KAPPA","0.0","specifies the initial value for the learning rate");
   keys.add("compulsory","TAU","Specify the dumping time for the learning rate.");
@@ -275,13 +273,7 @@ MaxEnt::MaxEnt(const ActionOptions&ao):
   if(stride_<=0 ) {
     error("frequency for Lagrangian multipliers printing (STRIDE) is nonsensical");
   }
-  simtemp=0.;
-  parse("TEMP",simtemp);
-  if(simtemp>0) {
-    simtemp*=plumed.getAtoms().getKBoltzmann();
-  } else {
-    simtemp=plumed.getAtoms().getKbT();
-  }
+  simtemp=getkBT();
   parseFlag("REWEIGHT",reweight);
   if(simtemp<=0 && reweight) {
     error("Set the temperature (TEMP) if you want to do reweighting.");

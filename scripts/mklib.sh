@@ -1,56 +1,198 @@
 #! /usr/bin/env bash
 
 if [ "$1" = --description ] ; then
-  echo "compile a .cpp file into a shared library"
+  echo "compile one or more *.cpp files into a shared library"
   exit 0
 fi
 
-if [ "$1" = --options ] ; then
-  echo "--description --options"
-  exit 0
-fi
+MANUAL='Compile one or more *.cpp files into a shared library.
 
-source "$PLUMED_ROOT"/src/config/compile_options.sh
+Usage:
 
-if [ $# != 1 ] || [[ "$1" != *.cpp ]] ;
+  plumed mklib [options] files1.cpp [file2.cpp ...]
+
+Options:
+  -h, --help
+                         Print this help and exit
+  -o LIBNAME, --out LIBNAME
+                         Name of the output library. If missing, the name
+                         of the first input file will me used, with its
+                         suffix properly adjusted.
+  -n                     Reuse a library newer than all input files.
+                         Otherwise build a replacement, keeping the old library
+                         available until linking succeeds. If another builder
+                         publishes an up-to-date library, keep that result.
+
+Environment variables:
+  PLUMED_MKLIB_CFLAGS    Extra compile time flags to be used
+  PLUMED_MKLIB_LDFLAGS   Extra link time flags (and libraries) to be used
+'
+
+OPTIONS="--description --options -h --help -o --out -n"
+
+if [ $# == 0 ]
 then
   echo "ERROR"
-  echo "type 'plumed mklib file.cpp'"
+  echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
   exit 1
 fi
 
+prefix=""
+lib=""
+no_clobber=""
+files=() # empty array
+for opt
+do
+  prefixopt="$prefix$opt"
+  prefix=""
+  case "$prefixopt" in
+    (-o|--out) prefix="--out=";;
+    (-h|--help) echo "$MANUAL" ; exit ;;
+    (--options) echo "$OPTIONS" ; exit ;;
+    (--out=*) lib="${prefixopt#--out=}";;
+    (-n) no_clobber=yes;;
+    (-*)
+      echo "ERROR: Unknown option $opt. Use --help for help."
+      exit 1 ;;
+    (*)
+      files+=("${prefixopt}");;
+  esac
+done
 
-file="$1"
-obj="${file%%.cpp}".o
-lib="${file%%.cpp}".$soext
+if [ ${#files[@]} = 0 ] ; then
+  echo ERROR
+  echo "pass at least one file"
+  exit 1
+fi
 
-if [ ! -f "$file" ]
+# Compiler settings are needed only when building a library, not for metadata
+# and completion queries handled above.
+source "$PLUMED_ROOT"/src/config/compile_options.sh || exit 1
+
+if [ -z "$lib" ]
 then
-  echo "ERROR: I cannot find file $file"
-  exit 1
+  firstfile="${files[0]}"
+  lib="${firstfile%%.cpp}".$soext
 fi
 
-# Compile and link beside the destination, then publish only a complete library.
-tmpdir=$(mktemp -d "$(dirname "$lib")/plumed_mklib.XXXXXX") || exit 1
-cleanup() {
-  rm -rf "$tmpdir"
+recompile=no
+for file in "${files[@]}"
+do
+  if ! test "$lib" -nt "$file" ;
+  then
+    recompile=yes
+  fi
+done
+
+if test -z "$no_clobber" ; then
+  recompile=yes
+fi
+
+if test $recompile = no ; then
+  echo "$lib is already up to date"
+  exit 0
+fi
+
+toRemove=""
+remover() {
+  #if compilation fails or crashes the trap will delete the temporary files
+  for f in $toRemove; do
+    rm -rf "${f}"
+  done
 }
-trap cleanup EXIT
+trap "remover" EXIT
+objs=""
+nobj=0
 
-if test "$PLUMED_IS_INSTALLED" = yes ; then
+tmpdir=$(mktemp -d "$(dirname "$lib")/plumed_mklib.XXXXXX") || exit 1
+tmp_lib="$tmpdir/$(basename "$lib")"
+
+toRemove="${toRemove} $tmpdir"
+
+for file in "${files[@]}"
+do
+
+  if [[ "$file" != *.cpp ]] ;
+  then
+    echo "ERROR"
+    echo "type 'plumed mklib file1.cpp [file2.cpp etc]'"
+    exit 1
+  fi
+
+  # objects are written in $tmpdir under their file name only (with a counter,
+  # so that files with the same name in different directories do not collide):
+  # $file can contain a directory (e.g. ../code/X.cpp), which does not exist in $tmpdir
+  nobj=$((nobj+1))
+  obj="${nobj}_$(basename "${file%%.cpp}").o"
+  
+  if [ ! -f "$file" ]
+  then
+    echo "ERROR: I cannot find file $file"
+    exit 1
+  fi
+  #adding a simple tmpfile, to preprocess "in place" the input file,
+  #this assumes the user has write permission in the current directory
+  #which should be true since we are going to compile and output something here
+  tmpfile=$(mktemp "${file%.cpp}.XXXXXX")
+  mv "${tmpfile}" "${tmpfile}.cpp"
+  tmpfile=${tmpfile}.cpp
+  cp "${file}" "${tmpfile}"
+  toRemove="${toRemove} ${tmpfile} ${tmpfile}.bak"
+  #this deprecates the shortcut to action register
+  if grep -q '^#include "\(bias\|colvar\|function\|sasa\|vatom\)\/ActionRegister.h"' "${tmpfile}"; then
+     >&2 echo 'WARNING: using a legacy ActionRegister.h include path, please use <<#include "core/ActionRegister.h">>'
+     sed -i.bak 's%^#include ".*/ActionRegister.h"%#include "core/ActionRegister.h"%g' "${tmpfile}"
+  fi
+  #this deprecates the shortcut to CLtoolregister
+  if grep -q '^#include "\(cltools\)\/CLToolRegister.h"' "${tmpfile}"; then
+     >&2  echo 'WARNING: using a legacy  CLToolRegister.h include path, please use <<#include "core/CLToolRegister.h">>'
+     sed -i.bak 's%^#include ".*/CLToolRegister.h"%#include "core/CLToolRegister.h"%g' "${tmpfile}"
+  fi
+  #this removes "#include "core/Atoms.h" and makes the compilation failing on the calls of Atoms
+  #instead of on the include
+  if grep -q '^#include\s*"core/Atoms.h"' "${tmpfile}"; then
+     #\s match anly type of white space
+     >&2  echo 'WARNING: "core/Atoms.h" does not exist anymore in  version >=2.10, you should change your code.'
+     sed -i.bak '/^#include\s*"core\/Atoms.h"/d' "${tmpfile}"
+  fi
+  rm -f "$tmpdir/$obj"
+
+  eval "$compile" "$PLUMED_MKLIB_CFLAGS" -o "$tmpdir/$obj" "$tmpfile" || {
+    echo "ERROR: compiling $file"
+    exit 1
+  }
+
+  objs="$objs $tmpdir/$obj"
+
+done
+
+link_libs="$link_libs_uninstalled"
+
+if test "$PLUMED_IS_INSTALLED" = yes; then
   link_libs="$link_libs_installed"
-else
-  link_libs="$link_libs_uninstalled"
 fi
 
-tmpobj="$tmpdir/$(basename "$obj")"
-tmplib="$tmpdir/$(basename "$lib")"
-if eval "$compile" "$tmpobj" "$file" && eval "$link_shared" "$tmpobj" "$link_libs" -o "$tmplib" ; then
-  mv "$tmplib" "$lib"
-else
-  echo "ERROR: compiling or linking $file" >&2
-  exit 1
+# The libraries (PLUMED_MKLIB_LDFLAGS, the kernel and its dependencies) follow the objects:
+# linkers using --as-needed (the default on some distributions, e.g. Ubuntu) drop the
+# libraries listed before the objects using them. The kernel would then not be recorded
+# as a dependency, and LOAD would fail with undefined symbols when the kernel was loaded
+# with RTLD_LOCAL (as done by the python interface).
+eval "$link_shared" $objs "$PLUMED_MKLIB_LDFLAGS" "$link_libs" -o "$tmp_lib" || exit 1
+
+if test -n "$no_clobber" ; then
+  # Another caller may have finished compiling these inputs while we linked.
+  recompile=no
+  for file in "${files[@]}" ; do
+    if ! test "$lib" -nt "$file" ; then
+      recompile=yes
+    fi
+  done
+  if test "$recompile" = no ; then
+    exit 0
+  fi
 fi
 
-
-
+# Keep the previous library available until its replacement is complete.
+# The temporary directory is on the destination filesystem, so rename publishes
+# the complete library atomically even when another rank is loading it.
+mv "$tmp_lib" "$lib"

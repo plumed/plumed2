@@ -1,0 +1,18 @@
+type=driver
+arg="--plumed plumed.dat --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+
+# Scan two torsions over their full periodic domain, see issue #658
+function plumed_regtest_before() {
+    awk 'BEGIN{
+      for(k=0;k<32;k++){
+        phi=-3.1+0.2*k
+        print 5
+        print "100 100 100"
+        print "C 1 0 0"
+        print "C 0 0 0"
+        print "C 0 0 1"
+        printf "C %.10f %.10f 1\n",cos(phi),sin(phi)
+        printf "C %.10f %.10f 1\n",cos(phi+1.5),sin(phi+1.5)
+      }
+    }' > trajectory.xyz
+}

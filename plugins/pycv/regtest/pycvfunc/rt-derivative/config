@@ -1,0 +1,39 @@
+
+type=driver
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+plumed_regtest_after() {
+  {
+    head -1 deriv | awk '{printf "%s %s %s %s %s-%s\n" , $1, $2,$3,$4,$5,$6 }'
+    #I'm giving some(a LOT OF) space to the floating point precision
+    awk 'function abs(v) {return v < 0 ? -v : v} NR>1{print $1, $2, 0.0001 < abs($3-$4) } ' <deriv
+  } >deriv_delta
+}
+
+plumed_regtest_before() {
+    if [[ -z $PLUMED_PYTHON_BIN ]]; then
+        PLUMED_PYTHON_BIN=python
+    fi
+    pycvpath=$($PLUMED_PYTHON_BIN -m pycv)
+    sed -i.bak "s%@pycvpath@%${pycvpath}%g" plumed.dat
+}
+
+plumed_custom_skip() {
+    if test -n "$PLUMED_PYTHON_SELECT"; then
+        export PLUMED_PYTHON_BIN="$PLUMED_PYTHON_SELECT"
+        if $PLUMED_PYTHON_BIN -c "import pycv"; then
+            return 1
+        fi
+
+        return 0
+    fi
+    for python_bin in python python3 python3.12 python3.11 python3.10 python3.9 python3.8 python3.7; do
+        if $python_bin -c "import pycv" 2>/dev/null; then
+            if [ $python_bin != python ]; then
+                export PLUMED_PYTHON_BIN=$python_bin
+            fi
+            return 1
+        fi
+    done
+    return 0
+}

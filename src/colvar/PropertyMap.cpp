@@ -92,6 +92,7 @@ class PropertyMap : public PathMSDBase {
 public:
   explicit PropertyMap(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
 };
 
 PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
@@ -99,8 +100,8 @@ PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
 void PropertyMap::registerKeywords(Keywords& keys) {
   PathMSDBase::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
-  ActionWithValue::useCustomisableComponents(keys);
   keys.addOutputComponent("zzz","default","the minimum distance from the reference points");
+  ActionWithValue::useCustomisableComponents(keys);
 }
 
 PropertyMap::PropertyMap(const ActionOptions&ao):
@@ -131,9 +132,9 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
       // now look for X=1.34555 Y=5.6677
       std::vector<double> labelvals;
       for(unsigned j=0; j<labels.size(); j++) {
-        double val;
+        std::vector<double> val(1);
         if( pdbv[i].getArgumentValue(labels[j],val) ) {
-          labelvals.push_back(val);
+          labelvals.push_back(val[0]);
         } else {
           const std::size_t buflen=500;
           char buf[buflen];
@@ -146,6 +147,10 @@ PropertyMap::PropertyMap(const ActionOptions&ao):
   }
   requestAtoms(pdbv[0].getAtomNumbers());
 
+}
+
+std::string PropertyMap::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  return "the projection of the instanenous position in CV space on the coordinate " + cname + " that is defined in the reference file";
 }
 
 }

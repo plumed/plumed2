@@ -225,8 +225,6 @@ void OptimizerBias::registerKeywords(Keywords& keys) {
                 MEMETIC_SAMPLING"
   );
 
-  componentsAreNotOptional(keys);
-
   keys.addOutputComponent(
     "force2",
     "default",

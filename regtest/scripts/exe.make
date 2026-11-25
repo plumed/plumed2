@@ -1,7 +1,12 @@
+ifeq ($(CXX_SRC),)
+  CXX_SRC := *.cpp
+endif
+
+CXX_OBJ := $(CXX_SRC:.cpp=.o)
 
 exe:
-	$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) *.cpp
-	$(LD) *.o -o $@ $(PLUMED_LOAD)
+	$(CXX) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CXXFLAGS) $(CXX_SRC)
+	$(LD) $(CXX_OBJ) -o $@ $(PLUMED_LOAD)
 
 exe-c:
 	$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) *.c
@@ -13,16 +18,20 @@ test-c11:
 	@echo "SUCCESS=YES"
 
 exe-fortran:
-	$(FC) -c $(PLUMED_FORTRAN) *.f90
-	$(FC) *.o -o exe $(PLUMED_LOAD)
+	$(FC) $(PLUMED_FORTRAN_FLAGS) -c $(PLUMED_FORTRAN) *.f90
+	$(FC) $(PLUMED_FORTRAN_FLAGS) *.o -o exe $(PLUMED_LOAD)
 
 exe-fortran08:
-	$(FC) -c $(PLUMED_FORTRAN08) *.f90
-	$(FC) *.o -o exe $(PLUMED_LOAD)
+	$(FC) $(PLUMED_FORTRAN_FLAGS) -c $(PLUMED_FORTRAN08) *.f90
+	$(FC) $(PLUMED_FORTRAN_FLAGS) *.o -o exe $(PLUMED_LOAD)
 
 test-fortran08:
-	$(FC) -c __test_fortran08.f90
+	$(FC) $(PLUMED_FORTRAN_FLAGS) -c __test_fortran08.f90
 	rm -f __test_fortran08*
+	@echo "SUCCESS=YES"
+
+test-fortran-arg-mismatch:
+	$(FC) $(PLUMED_FORTRAN_FLAGS) -c __test_fortran_arg_mismatch.f90
 	@echo "SUCCESS=YES"
 
 print-fortran:

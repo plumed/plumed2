@@ -1,4 +1,4 @@
-USE=core tools xdrfile
+USE=core tools xdrfile 
 
 #generic makefile
 include ../maketools/make.module

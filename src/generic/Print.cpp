@@ -84,6 +84,7 @@ class Print :
 public:
   void calculate() override {}
   void prepare() override;
+  std::string writeInGraph() const override;
   explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply() override {}
@@ -127,6 +128,7 @@ Print::Print(const ActionOptions&ao):
   log.printf("  with format %s\n",fmt.c_str());
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     ofile.setupPrintValue( getPntrToArgument(i) );
+    getPntrToArgument(i)->buildDataStore(true);
   }
 /////////////////////////////////////////
 // these are crazy things just for debug:
@@ -144,6 +146,10 @@ Print::Print(const ActionOptions&ao):
   }
 /////////////////////////////////////////
   checkRead();
+}
+
+std::string Print::writeInGraph() const {
+  return getName() + "\n" + "FILE=" + file;
 }
 
 void Print::prepare() {
@@ -168,7 +174,7 @@ void Print::update() {
   ofile.printField("time",getTime());
   for(unsigned i=0; i<getNumberOfArguments(); i++) {
     ofile.fmtField(fmt);
-    ofile.printField( getPntrToArgument(i), getArgument(i) );
+    getPntrToArgument(i)->print( ofile );
   }
   ofile.printField();
 }

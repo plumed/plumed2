@@ -21,9 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CoordinationBase.h"
 #include "tools/SwitchingFunction.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "tools/IFile.h"
 
 #include <iostream>
@@ -93,6 +92,7 @@ void GHBFIX::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","D_MAX","the value of D_MAX in the switching function");
   keys.add("compulsory","D_0","the value of D_0 in the switching function");
   keys.add("compulsory","C","the value of C in the switching function");
+  keys.setValueDescription("the GHBFIX interaction energy between the atoms in GROUPA and GROUPB");
 }
 
 GHBFIX::GHBFIX(const ActionOptions&ao):
@@ -161,7 +161,7 @@ GHBFIX::GHBFIX(const ActionOptions&ao):
     Units units;
     units.setEnergy(energy_units);
     for(auto i=0; i<etas.size(); i++) {
-      etas[i]*=units.getEnergy()/atoms.getUnits().getEnergy();
+      etas[i]*=units.getEnergy()/getUnits().getEnergy();
     }
   }
 

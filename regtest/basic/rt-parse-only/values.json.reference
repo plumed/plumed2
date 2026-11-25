@@ -1,0 +1,44 @@
+{ 
+"timestep" : { 
+"action" : "PUT", 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"action" : "PUT", 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"action" : "PUT", 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"action" : "PUT", 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"action" : "PUT", 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"action" : "PUT", 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"action" : "PBC", 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"phi" : { 
+"action" : "TORSION", 
+"phi" : { "type": "scalar", "desciption": "" }
+}, 
+"r1" : { 
+"action" : "READ", 
+"r1.X" : { "type": "scalar", "description": "values from the column labelled p2.X in the file named input_colvar" } 
+}, 
+"r2" : { 
+"action" : "READ", 
+"r2.X" : { "type": "scalar", "description": "values from the column labelled p3.X in the file named input_colvar" }, 
+"r2.Y" : { "type": "scalar", "description": "values from the column labelled p3.Y in the file named input_colvar" }, 
+"r2.zzz" : { "type": "scalar", "description": "values from the column labelled p3.zzz in the file named input_colvar" } 
+} 
+} 

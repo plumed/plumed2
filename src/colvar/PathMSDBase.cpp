@@ -21,12 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PathMSDBase.h"
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
+#include "tools/Communicator.h"
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"
+
+#include <algorithm>
 
 namespace PLMD {
 namespace colvar {
@@ -76,7 +78,7 @@ PathMSDBase::PathMSDBase(const ActionOptions&ao):
     while (do_read) {
       PDB mypdb;
       RMSD mymsd;
-      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+      do_read=mypdb.readFromFilepointer(fp,usingNaturalUnits(),0.1/getUnits().getLength());
       if(do_read) {
         nframes++;
         if(mypdb.getAtomNumbers().size()==0) {
@@ -173,7 +175,8 @@ void PathMSDBase::calculate() {
   // resize the list to full
   if(imgVec.empty()) { // this is the signal that means: recalculate all
     imgVec.resize(nframes);
-    #pragma omp simd
+    // No `omp simd` here: ImagePath::property is a std::vector<double>, so this body performs a
+    // vector copy-assignment, i.e. it allocates. There is nothing for a SIMD unit to do.
     for(unsigned i=0; i<nframes; i++) {
       imgVec[i].property=indexvec[i];
       imgVec[i].index=i;
@@ -231,20 +234,14 @@ void PathMSDBase::calculate() {
       for(unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calc_Rot(getPositions(), tmp_derivs, tmp_rotationRefClose[imgVec[i].index], true);
         plumed_assert(tmp_derivs.size()==nat);
-        #pragma omp simd
-        for(unsigned j=0; j<nat; j++) {
-          tmp_derivs2[i*nat+j]=tmp_derivs[j];
-        }
+        std::copy_n(tmp_derivs.begin(), nat, tmp_derivs2.begin()+i*nat);
       }
     } else {
       //approximate distance with saved rotation matrices
       for(unsigned i=rank; i<imgVec.size(); i+=stride) {
         tmp_distances[i] = msdv[imgVec[i].index].calculateWithCloseStructure(getPositions(), tmp_derivs, rotationPosClose, rotationRefClose[imgVec[i].index], drotationPosCloseDrr01, true);
         plumed_assert(tmp_derivs.size()==nat);
-        #pragma omp simd
-        for(unsigned j=0; j<nat; j++) {
-          tmp_derivs2[i*nat+j]=tmp_derivs[j];
-        }
+        std::copy_n(tmp_derivs.begin(), nat, tmp_derivs2.begin()+i*nat);
         if (debugClose) {
           double withclose = tmp_distances[i];
           RMSD opt;
@@ -263,10 +260,7 @@ void PathMSDBase::calculate() {
     for(unsigned i=rank; i<imgVec.size(); i+=stride) {
       tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
       plumed_assert(tmp_derivs.size()==nat);
-      #pragma omp simd
-      for(unsigned j=0; j<nat; j++) {
-        tmp_derivs2[i*nat+j]=tmp_derivs[j];
-      }
+      std::copy_n(tmp_derivs.begin(), nat, tmp_derivs2.begin()+i*nat);
     }
   }
 
@@ -301,14 +295,16 @@ void PathMSDBase::calculate() {
   for(unsigned i=0; i<s_path.size(); i++) {
     s_path[i]=0.;
   }
-  double partition=0.;
-  double tmp;
-
-  // clean vector
-  Tools::set_to_zero(derivs_z);
-
+  double min_distance=1e10;
   for(auto & it : imgVec) {
-    it.similarity=std::exp(-lambda*(it.distance));
+    if(it.distance < min_distance) {
+      min_distance=it.distance;
+    }
+  }
+
+  double partition=0.;
+  for(auto & it : imgVec) {
+    it.similarity=std::exp(-lambda*(it.distance - min_distance));
     for(unsigned i=0; i<s_path.size(); i++) {
       s_path[i]+=(it.property[i])*it.similarity;
     }
@@ -318,7 +314,11 @@ void PathMSDBase::calculate() {
     s_path[i]/=partition;
     val_s_path[i]->set(s_path[i]) ;
   }
-  val_z_path->set(-(1./lambda)*std::log(partition));
+  val_z_path->set(-(1./lambda)*std::log(partition) + min_distance);
+
+  // clean vector
+  Tools::set_to_zero(derivs_z);
+  double tmp;
   for(unsigned j=0; j<s_path.size(); j++) {
     // clean up
     Tools::set_to_zero(derivs_s);

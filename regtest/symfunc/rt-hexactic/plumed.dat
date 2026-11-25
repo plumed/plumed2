@@ -1,0 +1,18 @@
+hex: HEXACTIC_PARAMETER SPECIES=1-400 PLANE=xy SWITCH={RATIONAL D_0=1.4 R_0=0.2} MEAN
+bb: BIASVALUE ARG=hex.mean
+PRINT ARG=hex.mean,bb.* FILE=colvar FMT=%8.4f 
+
+# This checks against what is done in LAMMPS
+dmat: DISTANCE_MATRIX GROUP=1-400 CUTOFF=3.0 COMPONENTS
+neigh: NEIGHBORS ARG=dmat.w NLOWEST=6
+harm: CYLINDRICAL_HARMONIC DEGREE=6 ARG=dmat.x,dmat.y
+rprod: CUSTOM ARG=neigh,harm.rm FUNC=x*y PERIODIC=NO
+iprod: CUSTOM ARG=neigh,harm.im FUNC=x*y PERIODIC=NO
+hex2_ones: ONES SIZE=400
+hex2_denom: MATRIX_VECTOR_PRODUCT ARG=neigh,hex2_ones
+harm_rm: MATRIX_VECTOR_PRODUCT ARG=rprod,hex2_ones
+harm_im: MATRIX_VECTOR_PRODUCT ARG=iprod,hex2_ones
+hex2_rmn: CUSTOM ARG=harm_rm,hex2_denom FUNC=x/y PERIODIC=NO
+hex2_imn: CUSTOM ARG=harm_im,hex2_denom FUNC=x/y PERIODIC=NO
+
+DUMPATOMS ATOMS=1-400 ARG=hex2_rmn,hex2_imn,hex2_denom PRECISION=4 FILE=hexparam.xyz

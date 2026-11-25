@@ -81,6 +81,7 @@ void ReweightBias::registerKeywords(Keywords& keys ) {
   ReweightBase::registerKeywords( keys );
   keys.remove("ARG");
   keys.add("compulsory","ARG","*.bias","the biases that must be taken into account when reweighting");
+  keys.setValueDescription("the weight to use for this frame to negate the effect the bias");
 }
 
 ReweightBias::ReweightBias(const ActionOptions&ao):

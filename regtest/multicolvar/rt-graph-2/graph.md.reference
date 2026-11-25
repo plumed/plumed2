@@ -1,0 +1,46 @@
+flowchart BT 
+11(["label=#64;11 
+ BIASVALUE 
+"])
+11 -- b --> b
+10(["label=#64;10 
+ BIASVALUE 
+"])
+10 -- d1c --> d1c
+subgraph subd1 [d1]
+d1(["label=d1 
+ DISTANCE 
+"])
+d1l(["label=d1l 
+ LESS_THAN 
+"])
+d1 -. d1 .-> d1l
+linkStyle 2 stroke:blue,color:blue;
+d1b(["label=d1b 
+ BETWEEN 
+"])
+d1 -. d1 .-> d1b
+linkStyle 3 stroke:blue,color:blue;
+b(["label=b 
+ SUM 
+"])
+d1b -. d1b .-> b
+linkStyle 4 stroke:blue,color:blue;
+d1c(["label=d1c 
+ SUM 
+"])
+d1l -. d1l .-> d1c
+linkStyle 5 stroke:blue,color:blue;
+end
+d1c == d1c ==> d1
+subgraph subd1 [d1]
+end
+b == b ==> d1
+Box("label=Box 
+ PBC 
+")
+d1 -- Box --> Box
+linkStyle 8 stroke:red,color:red;
+d1 --> MD
+linkStyle 9 stroke:violet,color:violet;
+MD(positions from MD)

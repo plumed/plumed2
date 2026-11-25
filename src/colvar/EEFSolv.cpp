@@ -23,10 +23,11 @@
 /* This class was originally written by Thomas Loehr */
 
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
 #include "core/GenericMolInfo.h"
+#include "tools/Communicator.h"
 #include "tools/OpenMP.h"
 #include <initializer_list>
 
@@ -108,6 +109,7 @@ void EEFSolv::registerKeywords(Keywords& keys) {
   keys.add("compulsory", "NL_STRIDE", "40", "The frequency with which the neighbor list is updated.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.addFlag("TEMP_CORRECTION", false, "Correct free energy of solvation constants for temperatures different from 298.15 K");
+  keys.setValueDescription("the EEF1 solvation free energy for the input atoms");
 }
 
 EEFSolv::EEFSolv(const ActionOptions&ao):
@@ -407,7 +409,7 @@ void EEFSolv::setupConstants(const std::vector<AtomNumber> &atoms, std::vector<s
         const double delta_h_ref_t0 = parameter_temp[i][3];
         const double delta_cp = parameter_temp[i][4];
         const double delta_s_ref_t0 = (delta_h_ref_t0 - delta_g_ref_t0) / t0;
-        const double t = plumed.getAtoms().getKbT() / plumed.getAtoms().getKBoltzmann();
+        const double t = getkBT() / getKBoltzmann();
         parameter_temp[i][1] -= delta_s_ref_t0 * (t - t0) - delta_cp * t * std::log(t / t0) + delta_cp * (t - t0);
         parameter_temp[i][2] *= parameter_temp[i][1] / delta_g_ref_t0;
       }

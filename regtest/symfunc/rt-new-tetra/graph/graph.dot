@@ -1,0 +1,120 @@
+digraph G { 
+     timestep [style=filled fillcolor=lightseagreen label="timestep: \n TIMESTEP "] 
+     posx [style=filled fillcolor=lightseagreen label="posx: \n PUT "] 
+     n39 [label="@39: \n PRINT"] 
+     posx -> n39 [label="posx", color=blue, fontcolor=blue]; 
+     posx -> acv_mat [label="posx", color=blue, fontcolor=blue]; 
+     posx -> cv1_mat [label="posx", color=blue, fontcolor=blue]; 
+     posx -> cv_mat [label="posx", color=blue, fontcolor=blue]; 
+     posy [style=filled fillcolor=lightseagreen label="posy: \n PUT "] 
+     posy -> n39 [label="posy", color=blue, fontcolor=blue]; 
+     posy -> acv_mat [label="posy", color=blue, fontcolor=blue]; 
+     posy -> cv1_mat [label="posy", color=blue, fontcolor=blue]; 
+     posy -> cv_mat [label="posy", color=blue, fontcolor=blue]; 
+     posz [style=filled fillcolor=lightseagreen label="posz: \n PUT "] 
+     posz -> n39 [label="posz", color=blue, fontcolor=blue]; 
+     posz -> acv_mat [label="posz", color=blue, fontcolor=blue]; 
+     posz -> cv1_mat [label="posz", color=blue, fontcolor=blue]; 
+     posz -> cv_mat [label="posz", color=blue, fontcolor=blue]; 
+     Masses [style=filled fillcolor=lightgrey label="Masses: \n PUT "] 
+     Masses -> n39 [label="Masses", color=blue, fontcolor=blue]; 
+     Masses -> acv_mat [label="Masses", color=blue, fontcolor=blue]; 
+     Masses -> cv1_mat [label="Masses", color=blue, fontcolor=blue]; 
+     Masses -> cv_mat [label="Masses", color=blue, fontcolor=blue]; 
+     Charges [style=filled fillcolor=lightgrey label="Charges: \n PUT "] 
+     Charges -> n39 [label="Charges", color=blue, fontcolor=blue]; 
+     Charges -> acv_mat [label="Charges", color=blue, fontcolor=blue]; 
+     Charges -> cv1_mat [label="Charges", color=blue, fontcolor=blue]; 
+     Charges -> cv_mat [label="Charges", color=blue, fontcolor=blue]; 
+     Box [style=filled fillcolor=lightseagreen label="Box: \n PBC "] 
+     show_graph [label="show_graph: \n DOMAIN_DECOMPOSITION "] 
+   subgraph cluster9 { 
+      penwidth=3;
+      color=black;
+     cv_mat [label="1 \n cv_mat: \n DISTANCE_MATRIX "] 
+     cv_mat -> cv_near4 [label="cv_mat.w", color=red, fontcolor=red]; 
+     cv_mat -> cv_neigh [label="cv_mat.w", color=red, fontcolor=red]; 
+     cv_neigh [label="2 \n cv_neigh: \n NEIGHBORS "] 
+     cv_neigh -> cv_near4 [label="cv_neigh", color=red, fontcolor=red]; 
+     cv_near4 [label="3 \n cv_near4: \n MATHEVAL\nFUNC=x*y "] 
+     cv_near4 -> cv_near4_2 [label="cv_near4", color=red, fontcolor=red]; 
+     cv_near4 -> cv_sum4 [label="cv_near4", color=red, fontcolor=red]; 
+     cv_sum4 [label="4 \n cv_sum4: \n DOT "] 
+     cv_sum4 -> cv [label="cv_sum4", color=blue, fontcolor=blue]; 
+     cv_sum4 -> cv_meanr [label="cv_sum4", color=blue, fontcolor=blue]; 
+     cv_near4_2 [label="5 \n cv_near4_2: \n MATHEVAL\nFUNC=x*x "] 
+     cv_near4_2 -> cv_sum4_2 [label="cv_near4_2", color=red, fontcolor=red]; 
+     cv_sum4_2 [label="6 \n cv_sum4_2: \n DOT "] 
+     cv_sum4_2 -> cv [label="cv_sum4_2", color=blue, fontcolor=blue]; 
+     cv_meanr [label="7 \n cv_meanr: \n MATHEVAL\nFUNC=0.25*x "] 
+     cv_meanr -> cv [label="cv_meanr", color=blue, fontcolor=blue]; 
+     cv [label="8 \n cv: \n MATHEVAL\nFUNC=(1-(y-x*z)/(12*z*z)) "] 
+     cv -> cv_mean [label="cv", color=blue, fontcolor=blue]; 
+     cv -> cv_sum [label="cv", color=blue, fontcolor=blue]; 
+     cv_sum [label="9 \n cv_sum: \n SUM "] 
+     cv_mean [label="10 \n cv_mean: \n MEAN "] 
+   }
+     cv -> n39 [label="cv", color=blue, fontcolor=blue]; 
+     n40 [label="@40: \n PRINT"] 
+     cv_sum -> n40 [label="cv_sum", color=orange, fontcolor=orange]; 
+     cv_sum -> n41 [label="cv_sum", color=orange, fontcolor=orange]; 
+     cv_mean -> n40 [label="cv_mean", color=orange, fontcolor=orange]; 
+     cv_sum4_ones [style=filled fillcolor=lightgrey label="cv_sum4_ones: \n CONSTANT_VALUE "] 
+     cv_sum4_ones -> cv_sum4 [label="cv_sum4_ones", color=blue, fontcolor=blue]; 
+     cv_sum4_2_ones [style=filled fillcolor=lightgrey label="cv_sum4_2_ones: \n CONSTANT_VALUE "] 
+     cv_sum4_2_ones -> cv_sum4_2 [label="cv_sum4_2_ones", color=blue, fontcolor=blue]; 
+   subgraph cluster22 { 
+      penwidth=3;
+      color=black;
+     acv_mat [label="1 \n acv_mat: \n DISTANCE_MATRIX "] 
+     acv_mat -> acv_neigh [label="acv_mat.w", color=red, fontcolor=red]; 
+     acv_mat -> acv_g8 [label="acv_mat.x", color=red, fontcolor=red]; 
+     acv_mat -> acv_g8 [label="acv_mat.y", color=red, fontcolor=red]; 
+     acv_mat -> acv_g8 [label="acv_mat.z", color=red, fontcolor=red]; 
+     acv_neigh [label="2 \n acv_neigh: \n NEIGHBORS "] 
+     acv_neigh -> acv_g8 [label="acv_neigh", color=red, fontcolor=red]; 
+     acv_g8 [label="3 \n acv_g8: \n GSYMFUNC_THREEBODY "] 
+     acv_g8 -> acv [label="acv_g8.g8", color=blue, fontcolor=blue]; 
+     acv [label="4 \n acv: \n MATHEVAL\nFUNC=(1-(3*x/8)) "] 
+     acv -> acv_mean [label="acv", color=blue, fontcolor=blue]; 
+     acv -> acv_sum [label="acv", color=blue, fontcolor=blue]; 
+     acv_sum [label="5 \n acv_sum: \n SUM "] 
+     acv_mean [label="6 \n acv_mean: \n MEAN "] 
+   }
+     acv -> n39 [label="acv", color=blue, fontcolor=blue]; 
+     acv_sum -> n40 [label="acv_sum", color=orange, fontcolor=orange]; 
+     acv_sum -> n62 [label="acv_sum", color=orange, fontcolor=orange]; 
+     acv_mean -> n40 [label="acv_mean", color=orange, fontcolor=orange]; 
+     n41 [label="@41: \n BIASVALUE "] 
+   subgraph cluster29 { 
+      penwidth=3;
+      color=black;
+     cv1_mat [label="1 \n cv1_mat: \n DISTANCE_MATRIX "] 
+     cv1_mat -> cv1_near4 [label="cv1_mat.w", color=red, fontcolor=red]; 
+     cv1_mat -> cv1_neigh [label="cv1_mat.w", color=red, fontcolor=red]; 
+     cv1_neigh [label="2 \n cv1_neigh: \n NEIGHBORS "] 
+     cv1_neigh -> cv1_near4 [label="cv1_neigh", color=red, fontcolor=red]; 
+     cv1_near4 [label="3 \n cv1_near4: \n MATHEVAL\nFUNC=x*y "] 
+     cv1_near4 -> cv1_near4_2 [label="cv1_near4", color=red, fontcolor=red]; 
+     cv1_near4 -> cv1_sum4 [label="cv1_near4", color=red, fontcolor=red]; 
+     cv1_sum4 [label="4 \n cv1_sum4: \n DOT "] 
+     cv1_sum4 -> cv1 [label="cv1_sum4", color=blue, fontcolor=blue]; 
+     cv1_sum4 -> cv1_meanr [label="cv1_sum4", color=blue, fontcolor=blue]; 
+     cv1_near4_2 [label="5 \n cv1_near4_2: \n MATHEVAL\nFUNC=x*x "] 
+     cv1_near4_2 -> cv1_sum4_2 [label="cv1_near4_2", color=red, fontcolor=red]; 
+     cv1_sum4_2 [label="6 \n cv1_sum4_2: \n DOT "] 
+     cv1_sum4_2 -> cv1 [label="cv1_sum4_2", color=blue, fontcolor=blue]; 
+     cv1_meanr [label="7 \n cv1_meanr: \n MATHEVAL\nFUNC=0.25*x "] 
+     cv1_meanr -> cv1 [label="cv1_meanr", color=blue, fontcolor=blue]; 
+     cv1 [label="8 \n cv1: \n MATHEVAL\nFUNC=(1-(y-x*z)/(12*z*z)) "] 
+     cv1 -> cv1_sum [label="cv1", color=blue, fontcolor=blue]; 
+     cv1_sum [label="9 \n cv1_sum: \n SUM "] 
+   }
+     cv1_sum -> n61 [label="cv1_sum", color=orange, fontcolor=orange]; 
+     cv1_sum4_ones [style=filled fillcolor=lightgrey label="cv1_sum4_ones: \n CONSTANT_VALUE "] 
+     cv1_sum4_ones -> cv1_sum4 [label="cv1_sum4_ones", color=blue, fontcolor=blue]; 
+     cv1_sum4_2_ones [style=filled fillcolor=lightgrey label="cv1_sum4_2_ones: \n CONSTANT_VALUE "] 
+     cv1_sum4_2_ones -> cv1_sum4_2 [label="cv1_sum4_2_ones", color=blue, fontcolor=blue]; 
+     n61 [label="@61: \n BIASVALUE "] 
+     n62 [label="@62: \n BIASVALUE "] 
+} 

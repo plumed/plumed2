@@ -99,13 +99,18 @@ bool hasDlopen();
 
 bool isInstalled();
 
-bool hasCregex();
+/// This will always return true for backward compatibility
+constexpr bool hasCregex() {
+  return true;
+}
 
 bool hasMolfile();
 
 bool hasExternalMolfile();
 
 bool hasZlib();
+
+std::string getLibraryPath();
 
 }
 }

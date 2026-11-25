@@ -1,0 +1,4 @@
+type=driver
+plumed_modules=adjmat
+# this is to test a different name
+arg="--ixyz model_nacl64.xyz --length-units A --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.debug"

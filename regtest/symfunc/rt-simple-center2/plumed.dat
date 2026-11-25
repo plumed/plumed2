@@ -1,0 +1,21 @@
+# Compute a gyration tensor with weights computed by PLUMED
+c12: COORDINATIONNUMBER SPECIESA=2,3,11 SPECIESB=1-512 SWITCH={EXP D_0=4.0 R_0=0.5}
+cf2: MORE_THAN ARG=c12 SWITCH={RATIONAL D_0=7.0 R_0=1.0}
+cf2s: SUM ARG=cf2 PERIODIC=NO
+cc: CENTER ATOMS=2,3,11 WEIGHTS=cf2 PHASES
+dd: DISTANCE ATOMS1=cc,2 ATOMS2=cc,3 ATOMS3=cc,11 COMPONENTS
+dds: VSTACK ARG=dd.x,dd.y,dd.z
+ddlm: CUSTOM ARG=dds FUNC=x*x PERIODIC=NO
+dd_ones: ONES SIZE=3 
+ddl2: MATRIX_VECTOR_PRODUCT ARG=ddlm,dd_ones 
+#ddl2: COMBINE ARG1=dd.x ARG2=dd.y ARG3=dd.z POWERS=2,2,2 PERIODIC=NO
+ddl: CUSTOM ARG=ddl2 FUNC=sqrt(x) PERIODIC=NO 
+wd: CUSTOM ARG=ddl,cf2 FUNC=x*y PERIODIC=NO
+ss: SUM ARG=wd PERIODIC=NO 
+ssa: CUSTOM ARG=ss,cf2s FUNC=x/y PERIODIC=NO
+
+# These two numbers should be the same
+PRINT ARG=ssa FILE=colv FMT=%8.3f
+
+# Add a bias to the gyration tensor 
+BIASVALUE ARG=ssa

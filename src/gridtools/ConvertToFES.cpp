@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2015-2023 The plumed team
+   Copyright (c) 2015-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -20,13 +20,12 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
+#include "core/ActionShortcut.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
-#include "ActionWithInputGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS CONVERT_TO_FES
 /*
-Convert a histogram, H(x), to a free energy surface using F(x) = -k_B T ln H(x).
+Convert a histogram to a free energy surface.
 
 This action allows you to take a free energy surface that was calculated using the \ref HISTOGRAM
 action and to convert it to a free energy surface.  This transformation performed by doing:
@@ -59,127 +58,56 @@ DUMPGRID GRID=ff FILE=fes.dat
 namespace PLMD {
 namespace gridtools {
 
-class ConvertToFES : public ActionWithInputGrid {
-private:
-  double simtemp;
-  bool activated;
-  bool mintozero;
+class ConvertToFES : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit ConvertToFES(const ActionOptions&ao);
-  unsigned getNumberOfQuantities() const override;
-  bool ignoreNormalization() const override {
-    return true;
-  }
-  void prepare() override {
-    activated=true;
-  }
-  void prepareForAveraging() override {
-    ActionWithInputGrid::prepareForAveraging();
-    activated=false;
-  }
-  void compute( const unsigned& current, MultiValue& myvals ) const override;
-  void finishComputations( const std::vector<double>& buffer ) override;
-  bool isPeriodic() override {
-    return false;
-  }
-  bool onStep() const override {
-    return activated;
-  }
-  void runFinalJobs() override;
 };
 
 PLUMED_REGISTER_ACTION(ConvertToFES,"CONVERT_TO_FES")
 
 void ConvertToFES::registerKeywords( Keywords& keys ) {
-  ActionWithInputGrid::registerKeywords( keys );
+  ActionShortcut::registerKeywords( keys );
+  keys.add("optional","GRID","the histogram that you would like to convert into a free energy surface (old syntax)");
+  keys.add("compulsory","ARG","the histogram that you would like to convert into a free energy surface");
   keys.add("optional","TEMP","the temperature at which you are operating");
-  keys.addFlag("MINTOZERO",false,"set the minimum in the free energy to be equal to zero");
-  keys.remove("STRIDE");
-  keys.remove("KERNEL");
-  keys.remove("BANDWIDTH");
-  keys.remove("LOGWEIGHTS");
-  keys.remove("CLEAR");
-  keys.remove("NORMALIZATION");
+  keys.addFlag("MINTOZERO",false,"use the conjugate gradient algorithm and interpolation to find the minimum in the free energy and set the value found to be the zero of energy. "
+               "If a minimum in the free energy cannot be found use the lowest value of the free energy of the grid as the zero of energy instead");
+  keys.setValueDescription("the free energy surface");
+  keys.needsAction("FIND_GRID_MINIMUM");
+  keys.needsAction("CUSTOM");
 }
 
 ConvertToFES::ConvertToFES(const ActionOptions&ao):
   Action(ao),
-  ActionWithInputGrid(ao),
-  activated(false) {
-  plumed_assert( ingrid->getNumberOfComponents()==1 );
-
-  // Create a grid
-  auto grid=createGrid( "grid", "COMPONENTS=" + getLabel() + " " + ingrid->getInputString() );
-  if( ingrid->noDerivatives() ) {
-    grid->setNoDerivatives();
-  }
-  std::vector<double> fspacing;
-  grid->setBounds( ingrid->getMin(), ingrid->getMax(), ingrid->getNbin(), fspacing);
-  setAveragingAction( std::move(grid), true );
-
-  simtemp=0.;
-  parse("TEMP",simtemp);
-  parseFlag("MINTOZERO",mintozero);
-  if(simtemp>0) {
-    simtemp*=plumed.getAtoms().getKBoltzmann();
-  } else {
-    simtemp=plumed.getAtoms().getKbT();
-  }
+  ActionShortcut(ao) {
+  bool minzero=false;
+  parseFlag("MINTOZERO",minzero);
+  double simtemp=getkBT();
   if( simtemp==0 ) {
     error("TEMP not set - use keyword TEMP");
   }
 
-  // Now create task list
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-    addTaskToList(i);
+  std::vector<std::string> argv;
+  parseVector("GRID",argv);
+  if( argv.size()==0 ) {
+    parseVector("ARG",argv);
   }
-  // And activate all tasks
-  deactivateAllTasks();
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-    taskFlags[i]=1;
-  }
-  lockContributors();
-}
-
-unsigned ConvertToFES::getNumberOfQuantities() const {
-  if( mygrid->noDerivatives() ) {
-    return 2;
-  }
-  return 2 + mygrid->getDimension();
-}
-
-void ConvertToFES::compute( const unsigned& current, MultiValue& myvals ) const {
-  double val=getFunctionValue( current );
-  myvals.setValue(1, -simtemp*std::log(val) );
-  if( !mygrid->noDerivatives() && val>0 ) {
-    for(unsigned i=0; i<mygrid->getDimension(); ++i) {
-      myvals.setValue( 2+i, -(simtemp/val)*ingrid->getGridElement(current,i+1) );
-    }
-  }
-}
-
-void ConvertToFES::finishComputations( const std::vector<double>& buffer ) {
-  ActionWithVessel::finishComputations( buffer );
-  if(!mintozero) {
-    return;
+  if( argv.size()!=1 ) {
+    error("should only have one argument");
   }
 
-  double optval = mygrid->getGridElement( 0, 0 );
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-    double tval = mygrid->getGridElement( i, 0 );
-    if( tval<optval || std::isnan(optval) ) {
-      optval=tval;
-    }
+  std::string str_temp;
+  Tools::convert( simtemp, str_temp );
+  std::string flab="";
+  if( minzero ) {
+    flab="_unz";
   }
-  for(unsigned i=0; i<mygrid->getNumberOfPoints(); ++i) {
-    mygrid->addToGridElement( i, 0, -optval );
+  readInputLine( getShortcutLabel() + flab + ": CUSTOM ARG=" + argv[0] + " FUNC=-" + str_temp + "*log(x) PERIODIC=NO");
+  if( minzero ) {
+    readInputLine( getShortcutLabel() + "_min: FIND_GRID_MINIMUM ARG=" + getShortcutLabel() + "_unz ");
+    readInputLine( getShortcutLabel() + ": CUSTOM ARG=" + getShortcutLabel() + "_unz," + getShortcutLabel() + "_min.optval FUNC=x-y PERIODIC=NO");
   }
-}
-
-void ConvertToFES::runFinalJobs() {
-  activated=true;
-  update();
 }
 
 }

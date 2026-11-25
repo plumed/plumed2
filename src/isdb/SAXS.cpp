@@ -25,6 +25,7 @@
  Extension for the middleman algorithm (now removed) by Max Muehlbauer
  Refactoring for hySAXS Martini form factors for Nucleic Acids by Cristina Paissoni
  Refactoring for hySAS OneBead form factors with solvent correction by Federico Ballabio and Riccardo Capelli
+ Resolution function by Henrique Musseli Cezar
 */
 
 #include "MetainferenceBase.h"
@@ -35,6 +36,8 @@
 #include "tools/Communicator.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"
+#include "tools/Tools.h"
+#include "tools/IFile.h"
 
 #include <map>
 #include <iterator>
@@ -85,15 +88,19 @@ solvent accessible beads only: the form factors of the amino acids / phosphate g
 nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
 electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
 with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
-SOLVATION_STRIDE, which is set to 100 steps by default.
+SOLVATION_STRIDE, which is set to 10 steps by default.
 ONEBEAD requires an additional PDB file to perform mapping conversion, which must be provided via TEMPLATE
 keyword. This PDB file should only include the atoms for which the SAXS intensity will be computed.
 The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
-Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
+Three additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
 - 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by
 "5", e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 5'-phosphorylated end with an additional hydroxyl moiety at P (the residue name in the PDB must be followed by
+"T", e.g., DCT or CT for cytosine in DNA and RNA, respectively);
 - 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by
 "3", e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+An additional bead type is available for proteins:
+- Cysteine residue involved in disulfide bridge (the residue in the PDB must be named CYX).
 
 Experimental reference intensities can be added using the EXPINT keywords. All these values must be normalised
 to the SAXS intensity at q = 0. To facilitate this operation, the SCALE_EXPINT keyword can be used to provide
@@ -101,6 +108,9 @@ the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
 The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
 The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
 using the SOLVDENS keyword.
+
+The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
+the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on
 a GPU if the ARRAYFIRE libraries are installed and correctly linked.
@@ -149,7 +159,8 @@ PRINT ARG=(SAXS\.q-.*),(SAXS\.exp-.*) FILE=saxsdata STRIDE=1
 Calculates SANS intensity.
 
 SANS intensities are calculated for a set of scattering vectors using QVALUE keywords numbered from 1.
-Form factors are automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file or, alternatively,
+Form factors are automatically assigned to atoms using the ATOMISTIC flag by reading a PDB file, by reading
+the scattering lengths with the PARAMETERS keyword from input or with the PARAMETERSFILE keyword or, alternatively,
 a ONEBEAD coarse-grained implementation is available.
 
 Both for ATOMISTIC and ONEBEAD the user must provide an all-atom PDB file via MOLINFO before the SANS instruction.
@@ -157,12 +168,12 @@ Both for ATOMISTIC and ONEBEAD the user must provide an all-atom PDB file via MO
 ONEBEAD scheme consists in a single-bead per amino acid residue or three-bead for nucleic acid residue (one for
 the phosphate group, one for the pentose sugar, one for the nucleobase). PLUMED creates a virtual bead on which
 the SANS calculations are performed, centred on the COM of all atoms belonging to the bead. It is possible to
-account for the contribution of the solvation layer to the SAXS intensity by adding a correction term for the
+account for the contribution of the solvation layer to the SANS intensity by adding a correction term for the
 solvent accessible beads only: the form factors of the amino acids / phosphate groups / pentose sugars /
 nucleobases with a SASA (computed via LCPO algorithm) greater than a threshold are corrected according to an
 electron density term. Both the surface cut-off threshold and the electron density term can be set by the user
 with the SASA_CUTOFF and SOLVATION_CORRECTION keywords. Moreover, SASA stride calculation can be modified using
-SOLVATION_STRIDE, which is set to 100 steps by default. The deuteration of the solvent-exposed residues is chosen
+SOLVATION_STRIDE, which is set to 10 steps by default. The deuteration of the solvent-exposed residues is chosen
 with a probability equal to the deuterium concentration in the buffer. The deuterated residues are updated with a
 stride equal to SOLVATION_STRIDE. The fraction of deuterated water can be set with DEUTER_CONC, the default value
 is 0.
@@ -172,8 +183,12 @@ The AMBER OL3 (RNA) and OL15 (DNA) naming is required for nucleic acids.
 Two additional bead types are available for DNA and RNA besides phosphate group, pentose sugar, and nucleobase:
 - 5'-end pentose sugar capped with an hydroxyl moiety at C5' (the residue name in the PDB must be followed by "5",
 e.g., DC5 or C5 for cytosine in DNA and RNA, respectively);
+- 5'-phosphorylated end with an additional hydroxyl moiety at P (the residue name in the PDB must be followed by
+"T", e.g., DCT or CT for cytosine in DNA and RNA, respectively);
 - 3'-end pentose sugar capped with an hydroxyl moiety at C3' (the residue name in the PDB must be followed by "3",
 e.g., DC3 or C3 for cytosine in DNA and RNA, respectively).
+An additional bead type is available for proteins:
+- Cysteine residue involved in disulfide bridge (the residue in the PDB must be named CYX).
 
 PLEASE NOTE: at the moment, we DO NOT explicitly take into account deuterated residues in the ATOMISTIC
 representation, but we correct the solvent contribution via the DEUTER_CONC keyword.
@@ -184,6 +199,9 @@ the intensity at q = 0. Each EXPINT is divided by SCALE_EXPINT.
 The maximum QVALUE for ONEBEAD is set to 0.3 inverse angstroms.
 The solvent density, that by default is set to 0.334 electrons per cubic angstrom (bulk water), can be modified
 using the SOLVDENS keyword.
+
+The ABSOLUTE flag can be used in order to calculate intensities in the absolute scale. It is only available for
+the ATOMISTIC scheme and cannot be used with SCALE_EXPINT.
 
 By default SANS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a
 GPU if the ARRAYFIRE libraries are installed and correctly linked.
@@ -240,18 +258,57 @@ private:
          DG_3TE, DG_5TE, DG_TE3, DG_TE5, DT_BB1, DT_BB2, DT_BB3, DT_SC1, DT_SC2, DT_SC3, DT_3TE,
          DT_5TE, DT_TE3, DT_TE5, NMARTINI
        };
-  enum { TRP, TYR, PHE, HIS, HIP, ARG, LYS, CYS, ASP, GLU, ILE, LEU, MET, ASN, PRO, GLN, SER, THR, VAL, ALA, GLY,
-         BASE_A, BASE_C, BASE_T, BASE_G, BASE_U,
-         BB_DNA, BB_DNA_5, BB_DNA_3,
-         BB_RNA, BB_RNA_5, BB_RNA_3,
+  enum { TRP,
+         TYR,
+         PHE,
+         HIS,
+         HIP,
+         ARG,
+         LYS,
+         CYS,
+         CYX,
+         ASP,
+         GLU,
+         ILE,
+         LEU,
+         MET,
+         ASN,
+         PRO,
+         GLN,
+         SER,
+         THR,
+         VAL,
+         ALA,
+         GLY,
          BB_PO2,
+         BB_PO3,
+         BB_DNA,
+         BB_DNA_5,
+         BB_DNA_3,
+         BB_RNA,
+         BB_RNA_5,
+         BB_RNA_3,
+         BASE_A,
+         BASE_C,
+         BASE_T,
+         BASE_G,
+         BASE_U,
          NONEBEAD
        };
+  struct SplineCoeffs {
+    double a;
+    double b;
+    double c;
+    double d;
+    double x;
+  };
   bool saxs;
+  bool absolute;
   bool pbc;
   bool serial;
   bool gpu;
   bool onebead;
+  bool resolution;
   bool isFirstStep;
   int  deviceid;
   unsigned nres;
@@ -289,11 +346,77 @@ private:
   std::vector<double> Iq0_mix_H;
   std::vector<double> Iq0_vac_D;
   std::vector<double> Iq0_mix_D;
+  unsigned int Nj;
+  std::vector<std::vector<double> > qj_list;
+  std::vector<std::vector<double> > Rij;
+  std::vector<double> sigma_res;
+
+  // Chebyshev polynomial coefficients for i0e(x) used for resolution function
+  // values taken from cephes library
+  const std::vector<double> A = {
+    -4.41534164647933937950E-18,
+      3.33079451882223809783E-17,
+      -2.43127984654795469359E-16,
+      1.71539128555513303061E-15,
+      -1.16853328779934516808E-14,
+      7.67618549860493561688E-14,
+      -4.85644678311192946090E-13,
+      2.95505266312963983461E-12,
+      -1.72682629144155570723E-11,
+      9.67580903537323691224E-11,
+      -5.18979560163526290666E-10,
+      2.65982372468238665035E-9,
+      -1.30002500998624804212E-8,
+      6.04699502254191894932E-8,
+      -2.67079385394061173391E-7,
+      1.11738753912010371815E-6,
+      -4.41673835845875056359E-6,
+      1.64484480707288970893E-5,
+      -5.75419501008210370398E-5,
+      1.88502885095841655729E-4,
+      -5.76375574538582365885E-4,
+      1.63947561694133579842E-3,
+      -4.32430999505057594430E-3,
+      1.05464603945949983183E-2,
+      -2.37374148058994688156E-2,
+      4.93052842396707084878E-2,
+      -9.49010970480476444210E-2,
+      1.71620901522208775349E-1,
+      -3.04682672343198398683E-1,
+      6.76795274409476084995E-1
+    };
+  const std::vector<double> B = {
+    -7.23318048787475395456E-18,
+      -4.83050448594418207126E-18,
+      4.46562142029675999901E-17,
+      3.46122286769746109310E-17,
+      -2.82762398051658348494E-16,
+      -3.42548561967721913462E-16,
+      1.77256013305652638360E-15,
+      3.81168066935262242075E-15,
+      -9.55484669882830764870E-15,
+      -4.15056934728722208663E-14,
+      1.54008621752140982691E-14,
+      3.85277838274214270114E-13,
+      7.18012445138366623367E-13,
+      -1.79417853150680611778E-12,
+      -1.32158118404477131188E-11,
+      -3.14991652796324136454E-11,
+      1.18891471078464383424E-11,
+      4.94060238822496958910E-10,
+      3.39623202570838634515E-9,
+      2.26666899049817806459E-8,
+      2.04891858946906374183E-7,
+      2.89137052083475648297E-6,
+      6.88975834691682398426E-5,
+      3.36911647825569408990E-3,
+      8.04490411014108831608E-1
+    };
 
   void calculate_gpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv);
   void getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter);
-  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom);
+  void getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atom);
   unsigned getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &atoms);
   double calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double rho);
   std::map<std::string, std::vector<double> > setupLCPOparam();
@@ -304,6 +427,11 @@ private:
   void getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_H, std::vector<std::vector<long double> > &parameter_mix_H, std::vector<std::vector<long double> > &parameter_solv_H);
   void getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac_D, std::vector<std::vector<long double> > &parameter_mix_D);
   double calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &FF_tmp, const double deuter_conc);
+  void resolution_function();
+  std::vector<SplineCoeffs> spline_coeffs(std::vector<double> &x, std::vector<double> &y);
+  inline double interpolation(std::vector<SplineCoeffs> &coeffs, double x);
+  inline double i0e(double x);
+  double chbevl(double x, const std::vector<double> &coeffs);
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -316,33 +444,37 @@ PLUMED_REGISTER_ACTION(SAXS,"SAXS")
 PLUMED_REGISTER_ACTION(SAXS,"SANS")
 
 void SAXS::registerKeywords(Keywords& keys) {
-  componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.addFlag("NOPBC",false,"Ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("compulsory","DEVICEID","-1","Identifier of the GPU to be used");
-  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
-  keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
-  keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
+  keys.addFlag("GPU",false,"Calculate SAXS using ARRAYFIRE on an accelerator device");
+  keys.addFlag("ABSOLUTE",false,"Absolute intensity: the intensities for each q-value are not normalised for the intensity at q=0.");
+  keys.addFlag("ATOMISTIC",false,"Calculate SAXS for an atomistic model");
+  keys.addFlag("MARTINI",false,"Calculate SAXS for a Martini model");
   keys.addFlag("ONEBEAD",false,"calculate SAXS for a single bead model");
   keys.add("compulsory","TEMPLATE","template.pdb","A PDB file is required for ONEBEAD mapping");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein");
   keys.add("numbered","QVALUE","Selected scattering lengths in inverse angstroms are given as QVALUE1, QVALUE2, ...");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the form factor for the \\f$i\\f$th atom/bead");
+  keys.add("optional","PARAMETERSFILE","Read the PARAMETERS from a file");
   keys.add("compulsory","DEUTER_CONC","0.","Fraction of deuterated solvent");
   keys.add("compulsory","SOLVDENS","0.334","Density of the solvent to be used for the correction of atomistic form factors");
-  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Hydration layer electron density correction (ONEBEAD only)");
+  keys.add("compulsory","SOLVATION_CORRECTION","0.0","Solvation layer electron density correction (ONEBEAD only)");
   keys.add("compulsory","SASA_CUTOFF","1.0","SASA value to consider a residue as exposed to the solvent (ONEBEAD only)");
   keys.add("numbered","EXPINT","Add an experimental value for each q value");
-  keys.add("compulsory","SOLVATION_STRIDE","100","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
+  keys.add("numbered","SIGMARES","Variance of Gaussian distribution describing the deviation in the scattering angle for each q value");
+  keys.add("compulsory","N","10","Number of points in the resolution function integral");
+  keys.add("compulsory","SOLVATION_STRIDE","10","Number of steps between every new residues solvation estimation via LCPO (ONEBEAD only)");
   keys.add("compulsory","SCALE_EXPINT","1.0","Scaling value for experimental data normalization");
-  keys.addOutputComponent("q","default","the # SAXS of q");
-  keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
+  keys.addOutputComponent("q","default","The # SAXS of q");
+  keys.addOutputComponent("exp","EXPINT","The # experimental intensity");
 }
 
 SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   saxs(true),
+  absolute(false),
   pbc(true),
   serial(false),
   gpu(false),
@@ -414,6 +546,16 @@ SAXS::SAXS(const ActionOptions&ao):
   if(onebead) {
     log.printf("  using ONEBEAD form factors\n");
   }
+  bool fromfile=false;
+  std::string parametersfile;
+  parse("PARAMETERSFILE",parametersfile);
+  if (parametersfile.length() != 0) {
+    fromfile=true;
+  }
+  if(fromfile) {
+    log.printf("  will read form factors from file\n");
+  }
+  parseFlag("ABSOLUTE",absolute);
 
   if(martini&&atomistic) {
     error("You cannot use MARTINI and ATOMISTIC at the same time");
@@ -427,8 +569,8 @@ SAXS::SAXS(const ActionOptions&ao):
   if((martini)&&(!saxs)) {
     error("MARTINI cannot be used with SANS");
   }
-  if((!atomistic)&&(!martini)&&(!onebead)&&(!saxs)) {
-    error("External PARAMETERS cannot be used with SANS");
+  if((fromfile)&&((atomistic)||(martini)||(onebead))) {
+    error("You cannot read parameters from file and use ATOMISTIC/MARTINI/ONEBEAD");
   }
 
   unsigned ntarget=0;
@@ -465,17 +607,24 @@ SAXS::SAXS(const ActionOptions&ao):
   double scale_expint=1.;
   parse("SCALE_EXPINT",scale_expint);
 
+  if((!atomistic&&absolute)||(absolute&&scale_expint!=1)) {
+    error("ABSOLUTE can be used only combined with ATOMISTIC without SCALE_EXPINT");
+  }
+  if(atomistic) {
+    log.printf("  Scale for intensities: %s\n", absolute ? "absolute" : "normalised");
+  }
+
   double correction = 0.00;
   parse("SOLVATION_CORRECTION", correction);
   rho_corr=rho-correction;
   if(onebead) {
     log.printf("  Solvation density contribution: %lf\n", correction);
   }
-  if((atomistic||martini)&&(rho_corr!=rho)) {
+  if((atomistic||martini||fromfile)&&(rho_corr!=rho)) {
     log.printf("  Solvation density contribution is taken into account in ONEBEAD only\n");
   }
 
-  solv_stride = 100;
+  solv_stride = 10;
   parse("SOLVATION_STRIDE", solv_stride);
   if(solv_stride < 1.) {
     error("SOLVATION_STRIDE must be greater than 0");
@@ -492,6 +641,9 @@ SAXS::SAXS(const ActionOptions&ao):
 
   deuter_conc = 0.;
   parse("DEUTER_CONC", deuter_conc);
+  if ((deuter_conc)&&(fromfile)) {
+    error("DEUTER_CONC cannot be used with PARAMETERSFILE");
+  }
   if(deuter_conc < 0. || deuter_conc > 1.) {
     error("DEUTER_CONC must be in 0-1 range");
   }
@@ -504,12 +656,12 @@ SAXS::SAXS(const ActionOptions&ao):
     std::string template_name;
     parse("TEMPLATE",template_name);
     log.printf("  Template for ONEBEAD mapping conversion: %s\n", template_name.c_str());
-    if( !pdb.read(template_name,plumed.getAtoms().usingNaturalUnits(),1.) ) {
+    if( !pdb.read(template_name,usingNaturalUnits(),1.) ) {
       plumed_merror("missing input file " + template_name);
     }
   }
 
-  // Here we perform the preliminary mapping for onebead representation
+  // preliminary mapping for onebead representation
   if(onebead) {
     LCPOparam.resize(size);
     nres = getOnebeadMapping(pdb, atoms);
@@ -534,7 +686,6 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > FF_tmp_vac;
   std::vector<std::vector<long double> > FF_tmp_mix;
   std::vector<std::vector<long double> > FF_tmp_solv;
-  std::vector<std::vector<long double> > parameter;
   // SANS
   std::vector<std::vector<long double> > FF_tmp_vac_H;
   std::vector<std::vector<long double> > FF_tmp_mix_H;
@@ -544,42 +695,152 @@ SAXS::SAXS(const ActionOptions&ao):
   std::vector<std::vector<long double> > parameter_H;
   std::vector<std::vector<long double> > parameter_D;
 
-  if(!atomistic&&!martini&&!onebead) {
-    // read in parameter std::vector
-    parameter.resize(size);
-    ntarget=0;
-    for(unsigned i=0; i<size; ++i) {
-      if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) {
-        break;
+  if(!atomistic&&!martini&&!onebead&&!fromfile) { // read PARAMETERS from PLUMED file
+    if (saxs) {
+      // read in parameter std::vector
+      std::vector<std::vector<long double> > parameter;
+      parameter.resize(size);
+      ntarget=0;
+      for(unsigned i=0; i<size; ++i) {
+        if( !parseNumberedVector( "PARAMETERS", i+1, parameter[i]) ) {
+          break;
+        }
+        ntarget++;
       }
-      ntarget++;
-    }
-    if( ntarget!=size ) {
-      error("found wrong number of parameter std::vectors");
-    }
-    FF_tmp.resize(numq,std::vector<long double>(size));
-    for(unsigned i=0; i<size; ++i) {
-      atoi[i]=i;
-      for(unsigned k=0; k<numq; ++k) {
-        for(unsigned j=0; j<parameter[i].size(); ++j) {
-          FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+      if( ntarget!=size ) {
+        error("found wrong number of parameter std::vectors");
+      }
+      FF_tmp.resize(numq,std::vector<long double>(size));
+      for(unsigned i=0; i<size; ++i) {
+        atoi[i]=i;
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter[i].size(); ++j) {
+            FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
         }
       }
+      for(unsigned i=0; i<size; ++i) {
+        Iq0+=parameter[i][0];
+      }
+      Iq0 *= Iq0;
+    } else { // SANS
+      std::vector<long double> parameter;
+      parameter.resize(size);
+      ntarget=0;
+      for(unsigned i=0; i<size; ++i) {
+        if( !parseNumbered( "PARAMETERS", i+1, parameter[i]) ) {
+          break;
+        }
+        ntarget++;
+      }
+      if( ntarget!=size ) {
+        error("found wrong number of parameter std::vectors");
+      }
+      FF_tmp.resize(numq,std::vector<long double>(size));
+      for(unsigned i=0; i<size; ++i) {
+        atoi[i]=i;
+        for(unsigned k=0; k<numq; ++k) {
+          FF_tmp[k][i]+= parameter[i];
+        }
+      }
+      for(unsigned i=0; i<size; ++i) {
+        Iq0+=parameter[i];
+      }
+      Iq0 *= Iq0;
     }
-    for(unsigned i=0; i<size; ++i) {
-      Iq0+=parameter[i][0];
+  } else if (fromfile) { // read PARAMETERS from user-provided file
+    log.printf("  Reading PARAMETERS from file: %s\n", parametersfile.c_str());
+    if (saxs) {
+      FF_tmp.resize(numq,std::vector<long double>(size));
+      std::vector<std::vector<long double> > parameter;
+      parameter.resize(size);
+
+      IFile ifile;
+      ifile.open(parametersfile);
+      std::string line;
+
+      ntarget=0;
+      while(ifile.getline(line)) {
+        Tools::ltrim(line);
+        Tools::trimComments(line);
+        if (line.empty()) {
+          continue;
+        }
+        if (ntarget > size) {
+          error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
+        }
+        std::string num;
+        Tools::convert(ntarget+1,num);
+        std::vector<std::string> lineread{line};
+        if (!Tools::parseVector(lineread, "PARAMETERS"+num, parameter[ntarget], -1)) {
+          error("Missing PARAMETERS or PARAMETERS not sorted");
+        }
+        ntarget++;
+      }
+      if( ntarget!=size ) {
+        error("found wrong number of PARAMETERS in file");
+      }
+
+      for(unsigned i=0; i<size; ++i) {
+        atoi[i]=i;
+        for(unsigned k=0; k<numq; ++k) {
+          for(unsigned j=0; j<parameter[i].size(); ++j) {
+            FF_tmp[k][i]+= parameter[i][j]*std::pow(static_cast<long double>(q_list[k]),j);
+          }
+        }
+      }
+      for(unsigned i=0; i<size; ++i) {
+        Iq0+=parameter[i][0];
+      }
+      Iq0 *= Iq0;
+    } else { // SANS
+      FF_tmp.resize(numq,std::vector<long double>(size));
+
+      IFile ifile;
+      ifile.open(parametersfile);
+      std::string line;
+
+      ntarget=0;
+      while(ifile.getline(line)) {
+        Tools::ltrim(line);
+        Tools::trimComments(line);
+        if (line.empty()) {
+          continue;
+        }
+        if (ntarget > size) {
+          error("PARAMETERSFILE has more PARAMETERS than there are scattering centers");
+        }
+        std::string num;
+        Tools::convert(ntarget+1,num);
+        std::vector<std::string> lineread{line};
+        long double scatlen;
+        atoi[ntarget]=ntarget;
+        if (!Tools::parse(lineread, "PARAMETERS"+num, scatlen, -1)) {
+          error("Missing PARAMETERS or PARAMETERS not sorted");
+        }
+        for(unsigned k=0; k<numq; ++k) {
+          FF_tmp[k][ntarget] = scatlen;
+        }
+        ntarget++;
+      }
+      if( ntarget!=size ) {
+        error("found wrong number of PARAMETERS in file");
+      }
+      for(unsigned i=0; i<size; ++i) {
+        Iq0+=FF_tmp[0][i];
+      }
+      Iq0 *= Iq0;
     }
-    Iq0 *= Iq0;
   } else if(onebead) {
     if(saxs) {
-      // read in parameter std::vector
+      // read built-in ONEBEAD parameters
       FF_tmp_vac.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv.resize(numq,std::vector<long double>(NONEBEAD));
       std::vector<std::vector<long double> > parameter_vac(NONEBEAD);
       std::vector<std::vector<long double> > parameter_mix(NONEBEAD);
       std::vector<std::vector<long double> > parameter_solv(NONEBEAD);
-      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv,residue_atom);
+      getOnebeadparam(pdb, atoms, parameter_vac, parameter_mix, parameter_solv, residue_atom);
       for(unsigned i=0; i<NONEBEAD; ++i) {
         for(unsigned k=0; k<numq; ++k) {
           for(unsigned j=0; j<parameter_vac[i].size(); ++j) {
@@ -599,7 +860,7 @@ SAXS::SAXS(const ActionOptions&ao):
         Iq0_solv[i]=parameter_solv[atoi[i]][0];
       }
     } else { // SANS
-      // read in parameter std::vector
+      // read built-in ONEBEAD parameters
       FF_tmp_vac_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_mix_H.resize(numq,std::vector<long double>(NONEBEAD));
       FF_tmp_solv_H.resize(numq,std::vector<long double>(NONEBEAD));
@@ -636,8 +897,9 @@ SAXS::SAXS(const ActionOptions&ao):
       }
     }
   } else if(martini) {
-    // read in parameter std::vector
+    // read built-in MARTINI parameters
     FF_tmp.resize(numq,std::vector<long double>(NMARTINI));
+    std::vector<std::vector<long double> > parameter;
     parameter.resize(NMARTINI);
     getMartiniFFparam(atoms, parameter);
     for(unsigned i=0; i<NMARTINI; ++i) {
@@ -661,6 +923,7 @@ SAXS::SAXS(const ActionOptions&ao):
     Iq0 *= Iq0;
   }
 
+
   std::vector<double> expint;
   expint.resize( numq );
   ntarget=0;
@@ -682,6 +945,35 @@ SAXS::SAXS(const ActionOptions&ao):
   }
   if(getDoScore()&&!exp) {
     error("with DOSCORE you need to set the EXPINT values");
+  }
+
+  sigma_res.resize( numq );
+  resolution=false;
+  ntarget=0;
+  for(unsigned i=0; i<numq; ++i) {
+    if( !parseNumbered( "SIGMARES", i+1, sigma_res[i] ) ) {
+      break;
+    }
+    ntarget++;
+  }
+  if(ntarget!=numq && ntarget!=0) {
+    error("found wrong number of SIGMARES values");
+  }
+  if(ntarget==numq) {
+    resolution=true;
+  }
+
+  if(gpu && resolution) {
+    error("Resolution function is not supported in GPUs");
+  }
+
+  Nj = 10;
+  parse("N", Nj);
+  if (Nj < 2) {
+    error("N should be larger than 1");
+  }
+  if (resolution) {
+    log.printf("  Resolution function with N: %d\n", Nj);
   }
 
   if(!gpu) {
@@ -811,15 +1103,33 @@ SAXS::SAXS(const ActionOptions&ao):
   // convert units to nm^-1
   for(unsigned i=0; i<numq; ++i) {
     q_list[i]=q_list[i]*10.0;    // factor 10 to convert from A^-1 to nm^-1
+    if (resolution) {
+      sigma_res[i]=sigma_res[i]*10.0;
+    }
   }
+
+  // compute resolution function after converting units
+  if (resolution) {
+    qj_list.resize(numq, std::vector<double>(Nj));
+    Rij.resize(numq, std::vector<double>(Nj));
+    // compute Rij and qj_list
+    resolution_function();
+  }
+
   log<<"  Bibliography ";
+  if(onebead) {
+    log<<plumed.cite("Ballabio, Paissoni, Bollati, de Rosa, Capelli, Camilloni, J. Chem. Theory Comput., 19, 22, 8401-8413 (2023)");
+  }
   if(martini) {
-    log<<plumed.cite("Niebling, Björling, Westenhoff, J Appl Crystallogr 47, 1190–1198 (2014).");
-    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J Appl Crystallogr 52, 394-402 (2019).");
+    log<<plumed.cite("Niebling, Björling, Westenhoff, J. Appl. Crystallogr., 47, 1190–1198 (2014)");
+    log<<plumed.cite("Paissoni, Jussupow, Camilloni, J. Appl. Crystallogr., 52, 394-402 (2019)");
   }
   if(atomistic) {
-    log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978).");
-    log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography C, 554–595 (International Union of Crystallography, 2006).");
+    log<<plumed.cite("Fraser, MacRae, Suzuki, J. Appl. Crystallogr., 11, 693–694 (1978)");
+    log<<plumed.cite("Brown, Fox, Maslen, O'Keefe, Willis, International Tables for Crystallography, C, 554–595 (International Union of Crystallography, 2006)");
+  }
+  if(resolution) {
+    log<<plumed.cite("Pedersen, Posselt, Mortensen, J. Appl. Crystallogr., 23, 321–333 (1990)");
   }
 
   log<< plumed.cite("Bonomi, Camilloni, Bioinformatics, 33, 3999 (2017)");
@@ -861,9 +1171,13 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
   std::vector<std::vector<int> > Nlist(natoms);
   calcNlist(Nlist);
   std::vector<double> sasares(nres, 0.);
-  for(unsigned i = 0; i < natoms; ++i) {
-    if(LCPOparam[i].size()>1) {
-      if(LCPOparam[i][1]>0.0) {
+
+  #pragma omp parallel num_threads(OpenMP::getNumThreads())
+  {
+    std::vector<double> private_sasares(nres, 0.);
+    #pragma omp for
+    for (unsigned i = 0; i < natoms; ++i) {
+      if (LCPOparam[i].size() > 1 && LCPOparam[i][1] > 0.0) {
         double Aij = 0.0;
         double Aijk = 0.0;
         double Ajk = 0.0;
@@ -887,13 +1201,20 @@ void SAXS::sasa_calculate(std::vector<bool> &solv_res) {
           Ajk += Ajkt;
         }
         double sasai = (LCPOparam[i][1]*S1+LCPOparam[i][2]*Aij+LCPOparam[i][3]*Ajk+LCPOparam[i][4]*Aijk);
-        if (sasai > 0 ) {
-          sasares[residue_atom[i]] += sasai/100.;
+        if (sasai > 0) {
+          private_sasares[residue_atom[i]] += sasai / 100.0;
         }
       }
     }
+    #pragma omp critical
+    {
+      // combining private_sasares into sasares
+      for (unsigned i = 0; i < nres; ++i) {
+        sasares[i] += private_sasares[i];
+      }
+    }
   }
-  for(unsigned i=0; i<nres; ++i) {
+  for(unsigned i=0; i<nres; ++i) { // updating solv_res based on sasares
     if(sasares[i]>sasa_cutoff) {
       solv_res[i] = 1;
     } else {
@@ -1086,6 +1407,62 @@ void SAXS::calculate_cpu(std::vector<Vector> &pos, std::vector<Vector> &deriv) {
   if(!serial) {
     comm.Sum(&deriv[0][0], 3*deriv.size());
     comm.Sum(&sum[0], numq);
+  }
+
+  if (resolution) {
+    // get spline for scatering curve
+    std::vector<SplineCoeffs> scatt_coeffs = spline_coeffs(q_list, sum);
+
+    // get spline for the derivatives
+    // copy the deriv to a new vector and zero deriv
+    std::vector<Vector> old_deriv(deriv);
+    memset(&deriv[0][0], 0.0, deriv.size() * sizeof deriv[0]);
+
+    unsigned nt=OpenMP::getNumThreads();
+    for (unsigned i=rank; i<size; i+=stride) {
+      std::vector<double> deriv_i_x(numq);
+      std::vector<double> deriv_i_y(numq);
+      std::vector<double> deriv_i_z(numq);
+
+      std::vector<SplineCoeffs> deriv_coeffs_x;
+      std::vector<SplineCoeffs> deriv_coeffs_y;
+      std::vector<SplineCoeffs> deriv_coeffs_z;
+      for (unsigned k=0; k<numq; k++) {
+        unsigned kdx = k*size;
+        deriv_i_x[k] = old_deriv[kdx+i][0];
+        deriv_i_y[k] = old_deriv[kdx+i][1];
+        deriv_i_z[k] = old_deriv[kdx+i][2];
+      }
+      deriv_coeffs_x = spline_coeffs(q_list, deriv_i_x);
+      deriv_coeffs_y = spline_coeffs(q_list, deriv_i_y);
+      deriv_coeffs_z = spline_coeffs(q_list, deriv_i_z);
+
+      // compute derivative with the smearing using the resolution function
+      #pragma omp parallel for num_threads(nt)
+      for (unsigned k=0; k<numq; k++) {
+        unsigned kdx = k*size;
+        double dq = qj_list[k][1] - qj_list[k][0];
+        for (unsigned j=0; j<Nj; j++) {
+          deriv[kdx+i][0] += Rij[k][j] * interpolation(deriv_coeffs_x, qj_list[k][j]) * dq;
+          deriv[kdx+i][1] += Rij[k][j] * interpolation(deriv_coeffs_y, qj_list[k][j]) * dq;
+          deriv[kdx+i][2] += Rij[k][j] * interpolation(deriv_coeffs_z, qj_list[k][j]) * dq;
+        }
+      }
+    }
+
+    if(!serial) {
+      comm.Sum(&deriv[0][0], 3*deriv.size());
+    }
+
+    // compute the smeared spectra using the resolution function
+    #pragma omp parallel for num_threads(nt)
+    for (unsigned i=0; i<numq; i++) {
+      sum[i] = 0.;
+      double dq = qj_list[i][1] - qj_list[i][0];
+      for (unsigned j=0; j<Nj; j++) {
+        sum[i] += Rij[i][j] * interpolation(scatt_coeffs, qj_list[i][j]) * dq;
+      }
+    }
   }
 
   for (unsigned k=0; k<numq; ++k) {
@@ -1333,9 +1710,6 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
   pdb.getChainNames( chains );
   std::vector<std::vector<std::string> > AtomResidueName;
 
-  atoms_masses.resize(atoms.size());
-  residue_atom.resize(atoms.size());
-
   // cycle over chains
   for(unsigned i=0; i<chains.size(); ++i) {
     unsigned start, end;
@@ -1347,9 +1721,8 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
       std::string Rname = pdb.getResidueName(res, chains[i]);
       Rname.erase(std::remove_if(Rname.begin(), Rname.end(), ::isspace),Rname.end());
       std::vector<AtomNumber> res_atoms = pdb.getAtomsInResidue(res, chains[i]);
-      unsigned first_time=1;
-      std::vector<std::vector<unsigned> > tmp_residue_atom;
-      tmp_residue_atom.resize(3);
+      std::vector<unsigned> tmp_residue_atom;
+      tmp_residue_atom.resize(3,0);
       // cycle over atoms
       for(unsigned a=0; a<res_atoms.size(); a++) {
         // operations shared among all beads
@@ -1366,26 +1739,22 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
           type = Aname.at(1);
         }
         if (type == 'H') {
-          atoms_masses[res_atoms[a].index()] = 1.008;
+          atoms_masses.push_back(1.008);
         } else if(type == 'C') {
-          atoms_masses[res_atoms[a].index()] = 12.011;
+          atoms_masses.push_back(12.011);
         } else if(type == 'N') {
-          atoms_masses[res_atoms[a].index()] = 14.007;
+          atoms_masses.push_back(14.007);
         } else if(type == 'O') {
-          atoms_masses[res_atoms[a].index()] = 15.999;
+          atoms_masses.push_back(15.999);
         } else if(type == 'S') {
-          atoms_masses[res_atoms[a].index()] = 32.065;
+          atoms_masses.push_back(32.065);
         } else if(type == 'P') {
-          atoms_masses[res_atoms[a].index()] = 30.974;
+          atoms_masses.push_back(30.974);
         } else {
           error("Unknown element in mass extraction\n");
         }
         if(pdb.allowedResidue("protein",Rname)) {
-          if(first_time) {
-            atoms_per_bead.push_back(res_atoms.size());
-            first_time = 0;
-          }
-          residue_atom[res_atoms[a].index()] = atoms_per_bead.size()-1;
+          residue_atom.push_back(atoms_per_bead.size());
         } else {
           // check for nucleic acids
           // Pentose bead
@@ -1395,7 +1764,8 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
               Aname=="H2'2" || Aname=="H1'"  || Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" ||
               Aname=="H5'1" || Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T"  ||
               Aname=="H3T" ) {
-            tmp_residue_atom[0].push_back(res_atoms[a].index());
+            residue_atom.push_back(atoms_per_bead.size()+0);
+            tmp_residue_atom[0]++;
           }
           // Nucleobase bead
           else if(Aname=="N1"  || Aname=="N2"  || Aname=="N3"  || Aname=="N4"  || Aname=="N6"  ||
@@ -1405,12 +1775,14 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
                   Aname=="H6"  || Aname=="H8"  || Aname=="H21" || Aname=="H22" || Aname=="H41" ||
                   Aname=="H42" || Aname=="H61" || Aname=="H62" || Aname=="H71" || Aname=="H72" ||
                   Aname=="H73" ) {
-            tmp_residue_atom[1].push_back(res_atoms[a].index());
+            residue_atom.push_back(atoms_per_bead.size()+1);
+            tmp_residue_atom[1]++;
           }
-          // PO2 bead
+          // PO bead
           else if(Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" || Aname=="O1P" ||
-                  Aname=="O2P" || Aname=="O3P" ) {
-            tmp_residue_atom[2].push_back(res_atoms[a].index());
+                  Aname=="O2P" || Aname=="O3P" || Aname=="HP"  || Aname=="HOP3" ) {
+            residue_atom.push_back(atoms_per_bead.size()+2);
+            tmp_residue_atom[2]++;
           }
           // error
           else {
@@ -1418,20 +1790,13 @@ unsigned SAXS::getOnebeadMapping(const PDB &pdb, const std::vector<AtomNumber> &
           }
         }
       }
-      if(!pdb.allowedResidue("protein",Rname)) {
-        atoms_per_bead.push_back(tmp_residue_atom[0].size());
-        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[0].size(); tmp_i++) {
-          residue_atom[tmp_residue_atom[0][tmp_i]]=atoms_per_bead.size()-1;
-        }
-        atoms_per_bead.push_back(tmp_residue_atom[1].size());
-        for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[1].size(); tmp_i++) {
-          residue_atom[tmp_residue_atom[1][tmp_i]]=atoms_per_bead.size()-1;
-        }
-        if(tmp_residue_atom[2].size()>0) {
-          atoms_per_bead.push_back(tmp_residue_atom[2].size());
-          for(unsigned tmp_i=0; tmp_i<tmp_residue_atom[2].size(); tmp_i++) {
-            residue_atom[tmp_residue_atom[2][tmp_i]]=atoms_per_bead.size()-1;
-          }
+      if(pdb.allowedResidue("protein",Rname)) {
+        atoms_per_bead.push_back(res_atoms.size());
+      } else {
+        atoms_per_bead.push_back(tmp_residue_atom[0]);
+        atoms_per_bead.push_back(tmp_residue_atom[1]);
+        if(tmp_residue_atom[2]>0) {
+          atoms_per_bead.push_back(tmp_residue_atom[2]);
         }
       }
     }
@@ -2897,7 +3262,7 @@ void SAXS::getMartiniFFparam(const std::vector<AtomNumber> &atoms, std::vector<s
   }
 }
 
-void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, std::vector<unsigned> residue_atom) {
+void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms, std::vector<std::vector<long double> > &parameter_vac, std::vector<std::vector<long double> > &parameter_mix, std::vector<std::vector<long double> > &parameter_solv, const std::vector<unsigned> & residue_atom) {
 
   parameter_solv[TRP].push_back(60737.60249988003);
   parameter_solv[TRP].push_back(-77.75716755173752);
@@ -2954,6 +3319,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_solv[CYS].push_back(38559.10376731146);
   parameter_solv[CYS].push_back(-27885.23426006181);
   parameter_solv[CYS].push_back(6280.15058191397);
+
+  parameter_solv[CYX].push_back(10281.960000119348);
+  parameter_solv[CYX].push_back(-42.315998754511);
+  parameter_solv[CYX].push_back(-19328.174487327480);
+  parameter_solv[CYX].push_back(-5523.191775626829);
+  parameter_solv[CYX].push_back(38185.463172673335);
+  parameter_solv[CYX].push_back(-28940.174693042034);
+  parameter_solv[CYX].push_back(6925.390014187676);
 
   parameter_solv[ASP].push_back(13511.73760011933);
   parameter_solv[ASP].push_back(-59.929111107656595);
@@ -3123,6 +3496,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_mix[CYS].push_back(-18024.826330595406);
   parameter_mix[CYS].push_back(3551.2207387570024);
 
+  parameter_mix[CYX].push_back(10746.617793719070);
+  parameter_mix[CYX].push_back(-37.082746200650);
+  parameter_mix[CYX].push_back(-17871.552278655203);
+  parameter_mix[CYX].push_back(-4512.203184574789);
+  parameter_mix[CYX].push_back(30605.726711712588);
+  parameter_mix[CYX].push_back(-21530.684072275839);
+  parameter_mix[CYX].push_back(4694.601090758420);
+
   parameter_mix[ASP].push_back(13713.858501879382);
   parameter_mix[ASP].push_back(-51.33286241257164);
   parameter_mix[ASP].push_back(-23807.8549764091);
@@ -3291,6 +3672,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_vac[CYS].push_back(-2537.87137720241);
   parameter_vac[CYS].push_back(381.52870758240016);
 
+  parameter_vac[CYX].push_back(2808.068549348085);
+  parameter_vac[CYX].push_back(-7.372260063948);
+  parameter_vac[CYX].push_back(-4017.492317531980);
+  parameter_vac[CYX].push_back(-840.151815748375);
+  parameter_vac[CYX].push_back(5800.074437790741);
+  parameter_vac[CYX].push_back(-3637.868824045027);
+  parameter_vac[CYX].push_back(659.528934122407);
+
   parameter_vac[ASP].push_back(3479.750728224898);
   parameter_vac[ASP].push_back(-10.33897891836596);
   parameter_vac[ASP].push_back(-5382.628188436401);
@@ -3404,6 +3793,13 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_vac[HIS].push_back(4780.831414992477);
 
   // NUCLEIC ACIDS
+  parameter_solv[BB_PO3].push_back(1464.5929001192262);
+  parameter_solv[BB_PO3].push_back(-2.316908934494931);
+  parameter_solv[BB_PO3].push_back(-1882.4844584696532);
+  parameter_solv[BB_PO3].push_back(-258.8660305554736);
+  parameter_solv[BB_PO3].push_back(2007.5216385943972);
+  parameter_solv[BB_PO3].push_back(-1087.6423562424877);
+  parameter_solv[BB_PO3].push_back(154.89236486681165);
 
   parameter_solv[BB_PO2].push_back(575.5201001192197);
   parameter_solv[BB_PO2].push_back(-0.6126595489733868);
@@ -3501,6 +3897,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_solv[BASE_U].push_back(-26475.631627167604);
   parameter_solv[BASE_U].push_back(5808.201015156168);
 
+  parameter_mix[BB_PO3].push_back(3061.4050527391964);
+  parameter_mix[BB_PO3].push_back(-2.022452986623699);
+  parameter_mix[BB_PO3].push_back(-2998.2603666141363);
+  parameter_mix[BB_PO3].push_back(-218.44256405859076);
+  parameter_mix[BB_PO3].push_back(2113.3633950628328);
+  parameter_mix[BB_PO3].push_back(-868.4021757095805);
+  parameter_mix[BB_PO3].push_back(52.19052064107954);
+
   parameter_mix[BB_PO2].push_back(1487.2888381188868);
   parameter_mix[BB_PO2].push_back(-0.6155376265599789);
   parameter_mix[BB_PO2].push_back(-1181.5076027691764);
@@ -3596,6 +4000,14 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
   parameter_mix[BASE_U].push_back(27663.625106762345);
   parameter_mix[BASE_U].push_back(-17577.387831701515);
   parameter_mix[BASE_U].push_back(3273.183903219142);
+
+  parameter_vac[BB_PO3].push_back(1599.7962466063982);
+  parameter_vac[BB_PO3].push_back(-0.2734304923675441);
+  parameter_vac[BB_PO3].push_back(-1023.9448073303214);
+  parameter_vac[BB_PO3].push_back(-28.78655166266909);
+  parameter_vac[BB_PO3].push_back(426.4382937268249);
+  parameter_vac[BB_PO3].push_back(-109.57771615730755);
+  parameter_vac[BB_PO3].push_back(-10.244595559424265);
 
   parameter_vac[BB_PO2].push_back(960.8822037291127);
   parameter_vac[BB_PO2].push_back(-0.09312135742159174);
@@ -3707,6 +4119,8 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -3755,8 +4169,8 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
     // nucleobases are not automatically populated as an additional check on the health of the PDB.
     // RNA - G
     else if(Rname=="G") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -3810,10 +4224,30 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - GT
+    } else if(Rname=="GT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - U
     } else if(Rname=="U") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -3864,10 +4298,29 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - UT
+    } else if(Rname=="UT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - A
     } else if(Rname=="A") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -3921,10 +4374,30 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - AT
+    } else if(Rname=="AT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - C
     } else if(Rname=="C") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -3975,10 +4448,29 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - CT
+    } else if(Rname=="CT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - G
     } else if(Rname=="DG") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -4032,10 +4524,30 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - GT
+    } else if(Rname=="DGT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - T
     } else if(Rname=="DT") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -4089,10 +4601,30 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - TT
+    } else if(Rname=="DTT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - A
     } else if(Rname=="DA") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -4146,10 +4678,30 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - AT
+    } else if(Rname=="DAT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - C
     } else if(Rname=="DC") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -4193,6 +4745,25 @@ void SAXS::getOnebeadparam(const PDB &pdb, const std::vector<AtomNumber> &atoms,
           Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
           Aname=="H5T" ) {
         atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
+      // DNA - CT
+    } else if(Rname=="DCT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
       } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
                 Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
                 Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
@@ -4262,6 +4833,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_solv_H[CYS].push_back(38559.09602816144);
   parameter_solv_H[CYS].push_back(-27885.22747486708);
   parameter_solv_H[CYS].push_back(6280.148346561226);
+
+  parameter_solv_H[CYX].push_back(10281.960000119348);
+  parameter_solv_H[CYX].push_back(-42.315998754511);
+  parameter_solv_H[CYX].push_back(-19328.174487327480);
+  parameter_solv_H[CYX].push_back(-5523.191775626829);
+  parameter_solv_H[CYX].push_back(38185.463172673335);
+  parameter_solv_H[CYX].push_back(-28940.174693042034);
+  parameter_solv_H[CYX].push_back(6925.390014187676);
 
   parameter_solv_H[ASP].push_back(13511.73760011933);
   parameter_solv_H[ASP].push_back(-59.92934247210642);
@@ -4431,6 +5010,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_H[CYS].push_back(-407.87897719750896);
   parameter_mix_H[CYS].push_back(76.50541508448237);
 
+  parameter_mix_H[CYX].push_back(466.237200119199);
+  parameter_mix_H[CYX].push_back(-1.302082362010);
+  parameter_mix_H[CYX].push_back(-667.565738985901);
+  parameter_mix_H[CYX].push_back(-159.506437978088);
+  parameter_mix_H[CYX].push_back(1085.648159448292);
+  parameter_mix_H[CYX].push_back(-767.622943338598);
+  parameter_mix_H[CYX].push_back(170.157274620163);
+
   parameter_mix_H[ASP].push_back(893.6531201192147);
   parameter_mix_H[ASP].push_back(-3.0756255172248874);
   parameter_mix_H[ASP].push_back(-1453.1760425275006);
@@ -4542,6 +5129,7 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_H[HIS].push_back(5821.6258431396);
   parameter_mix_H[HIS].push_back(-4415.32722209556);
   parameter_mix_H[HIS].push_back(1044.7044029209756);
+
   parameter_vac_H[TRP].push_back(36.42122511920832);
   parameter_vac_H[TRP].push_back(-0.36925500341767903);
   parameter_vac_H[TRP].push_back(-51.34228792835503);
@@ -4597,6 +5185,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_vac_H[CYS].push_back(-3.716408071089366);
   parameter_vac_H[CYS].push_back(2.3947518943233117);
   parameter_vac_H[CYS].push_back(-0.40204949737133333);
+
+  parameter_vac_H[CYX].push_back(5.285401118868);
+  parameter_vac_H[CYX].push_back(-0.006119528779);
+  parameter_vac_H[CYX].push_back(-3.091212256902);
+  parameter_vac_H[CYX].push_back(-0.679948780910);
+  parameter_vac_H[CYX].push_back(4.495837313271);
+  parameter_vac_H[CYX].push_back(-2.827133444940);
+  parameter_vac_H[CYX].push_back(0.494583310914);
 
   parameter_vac_H[ASP].push_back(14.776336119209605);
   parameter_vac_H[ASP].push_back(-0.037351220316916435);
@@ -4712,7 +5308,15 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
 
   // NUCLEIC ACIDS
 
-  // BB_PO2 H and D parameters are identical as there is no H or D in the bead.
+  // BB_PO2-BB_PO3 H and D parameters are identical as there is no H or D in the bead.
+  parameter_solv_H[BB_PO3].push_back(1464.5929001192262);
+  parameter_solv_H[BB_PO3].push_back(-2.316908934494931);
+  parameter_solv_H[BB_PO3].push_back(-1882.4844584696532);
+  parameter_solv_H[BB_PO3].push_back(-258.8660305554736);
+  parameter_solv_H[BB_PO3].push_back(2007.5216385943972);
+  parameter_solv_H[BB_PO3].push_back(-1087.6423562424877);
+  parameter_solv_H[BB_PO3].push_back(154.89236486681165);
+
   parameter_solv_H[BB_PO2].push_back(575.5201001192197);
   parameter_solv_H[BB_PO2].push_back(-0.6126595489733864);
   parameter_solv_H[BB_PO2].push_back(-623.3371092254899);
@@ -4809,6 +5413,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_solv_H[BASE_U].push_back(-26475.631627167604);
   parameter_solv_H[BASE_U].push_back(5808.201015156168);
 
+  parameter_mix_H[BB_PO3].push_back(143.5890401192106);
+  parameter_mix_H[BB_PO3].push_back(-0.0679405156108208);
+  parameter_mix_H[BB_PO3].push_back(-131.78648321068806);
+  parameter_mix_H[BB_PO3].push_back(-7.222980065241985);
+  parameter_mix_H[BB_PO3].push_back(79.67309464590994);
+  parameter_mix_H[BB_PO3].push_back(-27.950095608460042);
+  parameter_mix_H[BB_PO3].push_back(0.12790403369995257);
+
   parameter_mix_H[BB_PO2].push_back(80.12660011920252);
   parameter_mix_H[BB_PO2].push_back(-0.0278885551982023);
   parameter_mix_H[BB_PO2].push_back(-60.532194918222984);
@@ -4904,6 +5516,14 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_H[BASE_U].push_back(1459.0789258833893);
   parameter_mix_H[BASE_U].push_back(-810.0763075080915);
   parameter_mix_H[BASE_U].push_back(119.81810290248339);
+
+  parameter_vac_H[BB_PO3].push_back(3.519375907888525);
+  parameter_vac_H[BB_PO3].push_back(7.742660056553524e-05);
+  parameter_vac_H[BB_PO3].push_back(-1.3856562746347367);
+  parameter_vac_H[BB_PO3].push_back(0.00821183249969174);
+  parameter_vac_H[BB_PO3].push_back(0.21213096729728745);
+  parameter_vac_H[BB_PO3].push_back(0.032592855104331325);
+  parameter_vac_H[BB_PO3].push_back(-0.02236149538438434);
 
   parameter_vac_H[BB_PO2].push_back(2.7889001116093275);
   parameter_vac_H[BB_PO2].push_back(-0.00011178884266113128);
@@ -5015,6 +5635,8 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -5063,8 +5685,8 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
     // nucleobases are not automatically populated as an additional check on the health of the PDB.
     // RNA - G
     else if(Rname=="G") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -5118,10 +5740,30 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - GT
+    } else if(Rname=="GT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - U
     } else if(Rname=="U") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -5172,10 +5814,29 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - UT
+    } else if(Rname=="UT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - A
     } else if(Rname=="A") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -5229,10 +5890,30 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - AT
+    } else if(Rname=="AT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - C
     } else if(Rname=="C") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -5283,10 +5964,29 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - CT
+    } else if(Rname=="CT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - G
     } else if(Rname=="DG") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -5340,10 +6040,30 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - GT
+    } else if(Rname=="DGT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - T
     } else if(Rname=="DT") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -5397,10 +6117,30 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - TT
+    } else if(Rname=="DTT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - A
     } else if(Rname=="DA") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -5454,10 +6194,30 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - AT
+    } else if(Rname=="DAT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - C
     } else if(Rname=="DC") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -5501,6 +6261,25 @@ void SAXS::getOnebeadparam_sansH(const PDB &pdb, const std::vector<AtomNumber> &
           Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
           Aname=="H5T" ) {
         atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
+      // DNA - CT
+    } else if(Rname=="DCT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
       } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
                 Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
                 Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
@@ -5571,6 +6350,14 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_D[CYS].push_back(2969.5412742839258);
   parameter_mix_D[CYS].push_back(-1798.3157146799638);
   parameter_mix_D[CYS].push_back(314.568167888235);
+
+  parameter_mix_D[CYX].push_back(1310.696400119220);
+  parameter_mix_D[CYX].push_back(-2.919852579787);
+  parameter_mix_D[CYX].push_back(-1902.283026713150);
+  parameter_mix_D[CYX].push_back(-340.431267947190);
+  parameter_mix_D[CYX].push_back(2480.025274590502);
+  parameter_mix_D[CYX].push_back(-1529.188197179144);
+  parameter_mix_D[CYX].push_back(278.926068515295);
 
   parameter_mix_D[ASP].push_back(1861.6998401191709);
   parameter_mix_D[ASP].push_back(-5.349780637260551);
@@ -5740,6 +6527,14 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_vac_D[CYS].push_back(-17.248208429078456);
   parameter_vac_D[CYS].push_back(1.0736187172140528);
 
+  parameter_vac_D[CYX].push_back(41.770369115535);
+  parameter_vac_D[CYX].push_back(-0.019277246931);
+  parameter_vac_D[CYX].push_back(-40.006821199463);
+  parameter_vac_D[CYX].push_back(-2.056736901533);
+  parameter_vac_D[CYX].push_back(23.707430747544);
+  parameter_vac_D[CYX].push_back(-8.010813092204);
+  parameter_vac_D[CYX].push_back(-0.023482540763);
+
   parameter_vac_D[ASP].push_back(64.12806411920792);
   parameter_vac_D[ASP].push_back(-0.08245818875074411);
   parameter_vac_D[ASP].push_back(-78.95500211069523);
@@ -5853,6 +6648,13 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_vac_D[HIS].push_back(132.17357375729733);
 
   // NUCLEIC ACIDS
+  parameter_mix_D[BB_PO3].push_back(223.2671801192072);
+  parameter_mix_D[BB_PO3].push_back(-0.14452515213607267);
+  parameter_mix_D[BB_PO3].push_back(-219.64134852678032);
+  parameter_mix_D[BB_PO3].push_back(-15.527993497328728);
+  parameter_mix_D[BB_PO3].push_back(153.27197635784856);
+  parameter_mix_D[BB_PO3].push_back(-61.17793915482464);
+  parameter_mix_D[BB_PO3].push_back(2.92608540200577);
 
   parameter_mix_D[BB_PO2].push_back(80.12660011920252);
   parameter_mix_D[BB_PO2].push_back(-0.02788855519820236);
@@ -5949,6 +6751,14 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
   parameter_mix_D[BASE_U].push_back(3220.4418252803644);
   parameter_mix_D[BASE_U].push_back(-1944.2515577994325);
   parameter_mix_D[BASE_U].push_back(332.9259542628691);
+
+  parameter_vac_D[BB_PO3].push_back(8.508889119209273);
+  parameter_vac_D[BB_PO3].push_back(-0.0010408625482164885);
+  parameter_vac_D[BB_PO3].push_back(-5.656130990440752);
+  parameter_vac_D[BB_PO3].push_back(-0.10748040057053611);
+  parameter_vac_D[BB_PO3].push_back(2.1441246977168227);
+  parameter_vac_D[BB_PO3].push_back(-0.3967083127147655);
+  parameter_vac_D[BB_PO3].push_back(-0.10110003105909898);
 
   parameter_vac_D[BB_PO2].push_back(2.7889001116093284);
   parameter_vac_D[BB_PO2].push_back(-0.00011178884266113128);
@@ -6060,6 +6870,8 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       atoi[residue_atom[i]]=ASP;
     } else if(Rname=="CYS") {
       atoi[residue_atom[i]]=CYS;
+    } else if(Rname=="CYX") {
+      atoi[residue_atom[i]]=CYX;
     } else if(Rname=="GLN") {
       atoi[residue_atom[i]]=GLN;
     } else if(Rname=="GLU") {
@@ -6108,8 +6920,8 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
     // nucleobases are not automatically populated as an additional check on the health of the PDB.
     // RNA - G
     else if(Rname=="G") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -6163,10 +6975,30 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - GT
+    } else if(Rname=="GT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                 Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                 Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - U
     } else if(Rname=="U") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -6217,10 +7049,29 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - UT
+    } else if(Rname=="UT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if( Aname=="N1" || Aname=="C2"  || Aname=="O2" || Aname=="N3" ||
+                 Aname=="C4" || Aname=="O4"  || Aname=="C5" || Aname=="C6" ||
+                 Aname=="H3" || Aname=="H5"  || Aname=="H6") {
+        atoi[residue_atom[i]]=BASE_U;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - A
     } else if(Rname=="A") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -6274,10 +7125,30 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - AT
+    } else if(Rname=="AT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // RNA - C
     } else if(Rname=="C") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
@@ -6328,10 +7199,29 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // RNA - CT
+    } else if(Rname=="CT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="O2'"  || Aname=="C2'"  ||
+                Aname=="C1'"  || Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  ||
+                Aname=="H3'"  || Aname=="H2'"  || Aname=="H1'"  || Aname=="H3T"  ||
+                Aname=="HO5'" || Aname=="HO3'" || Aname=="HO2'" || Aname=="H5'1" ||
+                Aname=="H5'2" || Aname=="HO'2" || Aname=="H2'1" || Aname=="H5T" ) {
+        atoi[residue_atom[i]]=BB_RNA;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - G
     } else if(Rname=="DG") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -6385,10 +7275,30 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - GT
+    } else if(Rname=="DGT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1" || Aname=="C2"  || Aname=="N2" || Aname=="N3" ||
+                Aname=="C4" || Aname=="C5"  || Aname=="C6" || Aname=="O6" ||
+                Aname=="N7" || Aname=="C8"  || Aname=="N9" || Aname=="H1" ||
+                Aname=="H8" || Aname=="H21" || Aname=="H22" ) {
+        atoi[residue_atom[i]]=BASE_G;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - T
     } else if(Rname=="DT") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -6442,10 +7352,30 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - TT
+    } else if(Rname=="DTT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2"  || Aname=="O2"  || Aname=="N3"  ||
+                Aname=="C4"  || Aname=="O4"  || Aname=="C5"  || Aname=="C6"  ||
+                Aname=="C7"  || Aname=="H3"  || Aname=="H6"  || Aname=="H71" ||
+                Aname=="H72" || Aname=="H73" ) {
+        atoi[residue_atom[i]]=BASE_T;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - A
     } else if(Rname=="DA") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -6499,10 +7429,30 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
       } else {
         error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
       }
+      // DNA - AT
+    } else if(Rname=="DAT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
+      } else if(Aname=="N1"  || Aname=="C2" || Aname=="N3" || Aname=="C4" ||
+                Aname=="C5"  || Aname=="C6" || Aname=="N6" || Aname=="N7" ||
+                Aname=="C8"  || Aname=="N9" || Aname=="H2" || Aname=="H8" ||
+                Aname=="H61" || Aname=="H62" ) {
+        atoi[residue_atom[i]]=BASE_A;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
       // DNA - C
     } else if(Rname=="DC") {
-      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3" ||
-          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" ) {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="HP" ||
+          Aname=="O1P" || Aname=="O2P"  ) {
         atoi [residue_atom[i]]=BB_PO2;
       } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
                 Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
@@ -6546,6 +7496,25 @@ void SAXS::getOnebeadparam_sansD(const PDB &pdb, const std::vector<AtomNumber> &
           Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" || Aname=="H2'2" ||
           Aname=="H5T" ) {
         atoi[residue_atom[i]]=BB_DNA_5;
+      } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
+                Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
+                Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
+        atoi[residue_atom[i]]=BASE_C;
+      } else {
+        error("Atom name "+Aname+" is not defined for residue "+Rname+". Check the PDB.");
+      }
+      // DNA - CT
+    } else if(Rname=="DCT") {
+      if( Aname=="P"   || Aname=="OP1" || Aname=="OP2" || Aname=="OP3"  ||
+          Aname=="O1P" || Aname=="O2P" || Aname=="O3P" || Aname=="HOP3" ) {
+        atoi [residue_atom[i]]=BB_PO3;
+      } else if(Aname=="O5'"  || Aname=="C5'"  || Aname=="O4'"  || Aname=="C4'"  ||
+                Aname=="O3'"  || Aname=="C3'"  || Aname=="C2'"  || Aname=="C1'"  ||
+                Aname=="H5'"  || Aname=="H5''" || Aname=="H4'"  || Aname=="H3'"  ||
+                Aname=="H2'"  || Aname=="H2''" || Aname=="H1'"  || Aname=="HO5'" ||
+                Aname=="HO3'" || Aname=="H5'1" || Aname=="H5'2" || Aname=="H2'1" ||
+                Aname=="H2'2" || Aname=="H5T"  || Aname=="H3T" ) {
+        atoi[residue_atom[i]]=BB_DNA;
       } else if(Aname=="N1" || Aname=="C2" || Aname=="O2"  || Aname=="N3" ||
                 Aname=="C4" || Aname=="N4" || Aname=="C5"  || Aname=="C6" ||
                 Aname=="H5" || Aname=="H6" || Aname=="H41" || Aname=="H42" ) {
@@ -6705,6 +7674,9 @@ double SAXS::calculateAFF(const std::vector<AtomNumber> &atoms, std::vector<std:
   } else {
     error("MOLINFO DATA not found\n");
   }
+  if(absolute) {
+    Iq0 = 1;
+  }
 
   return Iq0;
 }
@@ -6780,6 +7752,9 @@ double SAXS::calculateAFFsans(const std::vector<AtomNumber> &atoms, std::vector<
     }
   } else {
     error("MOLINFO DATA not found\n");
+  }
+  if(absolute) {
+    Iq0 = 1;
   }
 
   return Iq0;
@@ -6857,6 +7832,18 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["CYS_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
   lcpomap["CYS_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["CYS_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+
+  lcpomap["CYX_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
+  lcpomap["CYX_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
+  lcpomap["CYX_C"] = { 1.7,  0.070344,  -0.019015,  -2.2009e-05,  1.6875e-05};
+  lcpomap["CYX_O"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_CB"] = { 1.7,  0.56482,  -0.19608,  -0.0010219,  0.0002658};
+  lcpomap["CYX_SG"] = { 1.9,  0.54581,  -0.19477,  -0.0012873,  0.00029247};
+  lcpomap["CYX_OC1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYX_OC2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_OT1"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
+  lcpomap["CYX_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
+  lcpomap["CYX_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
   lcpomap["GLU_N"] = { 1.65,  0.41102,  -0.12254,  -7.5448e-05,  0.00011804};
   lcpomap["GLU_CA"] = { 1.7,  0.23348,  -0.072627,  -0.00020079,  7.967e-05};
@@ -7160,7 +8147,7 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["VAL_OT2"] = { 1.6,  0.68563,  -0.1868,  -0.00135573,  0.00023743};
   lcpomap["VAL_OXT"] = { 1.6,  0.88857,  -0.33421,  -0.0018683,  0.00049372};
 
-  // nucleic acids - WARNING: ONLY AMBER (OL3-rna/ol15-dna) FORMAT
+  // nucleic acids - WARNING: ONLY AMBER (OL3-rna/OL15-dna) FORMAT
 
   lcpomap["A3_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["A3_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
@@ -7210,11 +8197,36 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["A5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["A5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["A5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["A5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["A5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["A5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["A5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["A5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["AT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["AT_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["AT_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["AT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["AT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["AT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["AT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["AT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["AT_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["AT_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["AT_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["AT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["AT_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["AT_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["AT_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["AT_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["AT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["AT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["AT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["AT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["AT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["AT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["AT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["AT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["AT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["AT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["A_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["A_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
@@ -7287,11 +8299,34 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["C5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["C5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["C5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["C5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["C5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["C5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["C5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["C5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["CT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["CT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["CT_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["CT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["CT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["CT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["CT_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["CT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["CT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["CT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["CT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["CT_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["CT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["CT_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["CT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["CT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["CT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["CT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["CT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["CT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["CT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["CT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["CT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["CT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["C_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["C_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7364,11 +8399,35 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DA5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["DA5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DA5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DA5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DA5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DA5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DA5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DA5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DAT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DAT_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DAT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DAT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DAT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DAT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DAT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DAT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DAT_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DAT_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DAT_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DAT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DAT_N6"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DAT_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DAT_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DAT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DAT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DAT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DAT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DAT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DAT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DAT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DAT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DAT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DAT_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DA_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["DA_C2"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
@@ -7438,11 +8497,33 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DC5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["DC5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DC5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DC5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DC5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DC5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DC5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DC5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DCT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DCT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05};
+  lcpomap["DCT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DCT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DCT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05};
+  lcpomap["DCT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DCT_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DCT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DCT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DCT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05};
+  lcpomap["DCT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DCT_N4"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DCT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DCT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DCT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DCT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DCT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DCT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DCT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DCT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DCT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DCT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DCT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DC_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["DC_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7516,11 +8597,36 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DG5_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
   lcpomap["DG5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DG5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DG5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DG5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DG5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DG5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DG5_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DGT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DGT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DGT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DGT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DGT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DGT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DGT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DGT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DGT_C6"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DGT_C8"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DGT_N1"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DGT_N2"]  = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["DGT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DGT_N7"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DGT_N9"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DGT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DGT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DGT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DGT_O6"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DGT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DGT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DGT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DGT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DGT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DGT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DGT_P"]   = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DG_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["DG_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7593,11 +8699,34 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["DT5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["DT5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DT5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DT5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DT5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["DT5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["DT5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["DT5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["DTT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DTT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DTT_C2'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DTT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DTT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DTT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["DTT_C5"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["DTT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["DTT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["DTT_C7"]  = { 1.7,  0.77887, -0.28063, -1.2968e-03, 3.9328e-04 };
+  lcpomap["DTT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["DTT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["DTT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DTT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DTT_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["DTT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DTT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["DTT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DTT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DTT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DTT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["DTT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DTT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["DTT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["DT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["DT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7674,11 +8803,37 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["G5_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
   lcpomap["G5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["G5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["G5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["G5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["G5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["G5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["G5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["GT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["GT_C2"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["GT_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["GT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["GT_C4"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["GT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["GT_C5"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["GT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["GT_C6"] = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["GT_C8"] = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["GT_N1"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["GT_N2"] = { 1.65,  0.73511, -0.22116, -8.9148e-04, 2.523e-04 };
+  lcpomap["GT_N3"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["GT_N7"] = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["GT_N9"] = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["GT_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["GT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["GT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["GT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["GT_O6"] = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["GT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["GT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["GT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["GT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["GT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["GT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["GT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["G_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["G_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7752,11 +8907,34 @@ std::map<std::string, std::vector<double> > SAXS::setupLCPOparam() {
   lcpomap["U5_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
   lcpomap["U5_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["U5_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["U5_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U5_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
   lcpomap["U5_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
-  lcpomap["U5_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
   lcpomap["U5_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
+
+  lcpomap["UT_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["UT_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["UT_C2'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["UT_C3'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["UT_C4"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
+  lcpomap["UT_C4'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
+  lcpomap["UT_C5"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["UT_C5'"] = { 1.7,  0.56482, -0.19608, -1.0219e-03, 2.658e-04 };
+  lcpomap["UT_C6"]  = { 1.7,  0.51245, -0.15966, -1.9781e-04, 1.6392e-04 };
+  lcpomap["UT_N1"]  = { 1.65,  0.062577, -0.017874, -8.312e-05, 1.9849e-05 };
+  lcpomap["UT_N3"]  = { 1.65,  0.41102, -0.12254, -7.5448e-05, 1.1804e-04 };
+  lcpomap["UT_O2"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["UT_O2'"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["UT_O3'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["UT_O4"]  = { 1.6,  0.68563, -0.1868, -1.35573e-03, 2.3743e-04 };
+  lcpomap["UT_O4'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["UT_O5'"] = { 1.6,  0.49392, -0.16038, -1.5512e-04, 1.6453e-04 };
+  lcpomap["UT_OP1"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["UT_OP2"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["UT_OP3"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["UT_O1P"] = { 1.6,  0.77914, -0.25262, -1.6056e-03, 3.5071e-04 };
+  lcpomap["UT_O2P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["UT_O3P"] = { 1.6,  0.88857, -0.33421, -1.8683e-03, 4.9372e-04 };
+  lcpomap["UT_P"] = { 1.9,  0.03873,  -0.0089339, 8.3582e-06,  3.0381e-06};
 
   lcpomap["U_C1'"] = { 1.7,  0.23348, -0.072627, -2.0079e-04, 7.967e-05 };
   lcpomap["U_C2"]  = { 1.7,  0.070344, -0.019015, -2.2009e-05, 1.6875e-05 };
@@ -7825,6 +9003,125 @@ void SAXS::readLCPOparam(const std::vector<std::vector<std::string> > &AtomResid
     LCPOparam[natoms-1][3] = -1.8683e-03;
     LCPOparam[natoms-1][4] = 4.9372e-04;
   }
+}
+
+void SAXS::resolution_function() {
+  const unsigned numq = q_list.size();
+
+  // only OpenMP because numq might be smaller than the number of ranks
+  #pragma omp parallel for num_threads(OpenMP::getNumThreads())
+  for (unsigned i=0; i<numq; i++) {
+    double qi = q_list[i];
+    double dq = 6*sigma_res[i]/(Nj-1);
+    double sigma_sq = sigma_res[i]*sigma_res[i];
+    double qstart = qi - 3*sigma_res[i];
+    for (unsigned j=0; j<Nj; j++) {
+      double qj = qstart + j*dq;
+      double I0exp = i0e(qj*qi/sigma_sq);
+
+      qj_list[i][j] = qj;
+      Rij[i][j] = (qj/sigma_sq)*std::exp(-0.5*(qj - qi)*(qj - qi)/sigma_sq)*I0exp;
+    }
+  }
+}
+
+// i0e function from cephes
+// compute I0(x) * exp (-x), with I0 being the modified Bessel function
+// of first kind and zeroth order.
+inline double SAXS::i0e(double x) {
+  double y = 0.0;
+
+  if (x < 0) {
+    x = -x;
+  }
+  if (x <= 8.0) {
+    y = (x/2.0) - 2.0;
+    return chbevl(y, A);
+  }
+
+  return chbevl(32.0/x - 2.0, B) / sqrt(x);
+}
+
+double SAXS::chbevl(double x, const std::vector<double> &coeffs) {
+  double b0, b1, b2;
+  unsigned n = coeffs.size();
+
+  b0 = coeffs[0];
+  b1 = 0.0;
+  b2 = 0.0;
+
+  for (unsigned i = 1; i < n; i++) {
+    b2 = b1;
+    b1 = b0;
+    b0 = x * b1 - b2 + coeffs[i];
+  }
+  return 0.5 * (b0 - b2);
+}
+
+inline double SAXS::interpolation(std::vector<SplineCoeffs> &coeffs, double x) {
+  unsigned s = 0;
+  while ((x >= q_list[s+1]) && (s+1 < q_list.size()-1)) {
+    s++;
+  }
+
+  double dx = x - coeffs[s].x;
+  return coeffs[s].a + coeffs[s].b*dx + coeffs[s].c*dx*dx + coeffs[s].d*dx*dx*dx;
+}
+
+// natural bc cubic spline implementation from the Wikipedia algorithm
+// modified from https://stackoverflow.com/a/19216702/3254658
+std::vector<SAXS::SplineCoeffs> SAXS::spline_coeffs(std::vector<double> &x, std::vector<double> &y) {
+  unsigned n = x.size()-1;
+  std::vector<double> a;
+  a.insert(a.begin(), y.begin(), y.end());
+  std::vector<double> b(n);
+  std::vector<double> d(n);
+  std::vector<double> h;
+
+  for(unsigned i=0; i<n; i++) {
+    h.push_back(x[i+1]-x[i]);
+  }
+
+  std::vector<double> alpha;
+  alpha.push_back(0);
+  for(unsigned i=1; i<n; i++) {
+    alpha.push_back( 3*(a[i+1]-a[i])/h[i] - 3*(a[i]-a[i-1])/h[i-1]  );
+  }
+
+  std::vector<double> c(n+1);
+  std::vector<double> l(n+1);
+  std::vector<double> mu(n+1);
+  std::vector<double> z(n+1);
+  l[0] = 1;
+  mu[0] = 0;
+  z[0] = 0;
+
+  for(unsigned i=1; i<n; i++) {
+    l[i] = 2 *(x[i+1]-x[i-1])-h[i-1]*mu[i-1];
+    mu[i] = h[i]/l[i];
+    z[i] = (alpha[i]-h[i-1]*z[i-1])/l[i];
+  }
+
+  l[n] = 1;
+  z[n] = 0;
+  c[n] = 0;
+
+  for(int j=n-1; j>=0; j--) {
+    c[j] = z[j] - mu[j] * c[j+1];
+    b[j] = (a[j+1]-a[j])/h[j]-h[j]*(c[j+1]+2*c[j])/3;
+    d[j] = (c[j+1]-c[j])/3/h[j];
+  }
+
+  std::vector<SplineCoeffs> output_set(n);
+  for(unsigned i=0; i<n; i++) {
+    output_set[i].a = a[i];
+    output_set[i].b = b[i];
+    output_set[i].c = c[i];
+    output_set[i].d = d[i];
+    output_set[i].x = x[i];
+  }
+
+  return output_set;
 }
 
 

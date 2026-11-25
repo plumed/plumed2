@@ -126,7 +126,7 @@ fi
 
 for need in $plumed_needs
 do
-  echo "Checking for $need"
+  echo "Checking for $need dependency"
   if ! $plumed_nompi config -q has $need
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
@@ -144,7 +144,7 @@ done
 
 for module in $plumed_modules
 do
-  echo "Checking for $module"
+  echo "Checking for $module module"
   if ! $plumed_nompi config -q module $module
   then
     if [ "$TRAVIS" = true ] || [ "$GITHUB_ACTIONS" = true ] ; then
@@ -183,7 +183,7 @@ else
   export PLUMED_LIB="$root/src/lib/libplumed.$($plumed_nompi info --soext)"
 fi
 if type -t plumed_regtest_before 1>/dev/null ; then
-  plumed_regtest_before
+  plumed_regtest_before || exit 1
 fi
 
 case "$type" in
@@ -202,18 +202,41 @@ case "$type" in
  ;;
 (make)
   $plumed_nompi --is-installed || ln -s "$root/src" plumed
-  if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c ; then
-    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make > Makefile 
+  rm Makefile
+  if test -n "$plumed_src" ; then
+    echo "CXX_SRC=$plumed_src" > Makefile
+  fi
+  if test "$plumed_link" = runtime ; then
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.runtime" ../../../scripts/exe.make >> Makefile
+  elif test "$plumed_language" = fortran || test "$plumed_language" = fortran08 || test "$plumed_language" = c || test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 || test "$plumed_link" = shared ; then
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.shared" ../../../scripts/exe.make >> Makefile
   else
-    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make > Makefile 
+    cat <($plumed_nompi info --configuration) "$root/src/lib/Plumed.inc.static" ../../../scripts/exe.make >> Makefile
   fi
   if test "$plumed_language" = fortran || test "$plumed_language" = fortran08 ; then
     if make print-fortran | grep "FC=$" 1>/dev/null ; then
       echo "NOT_APPLICABLE (FC NOT FOUND)"
       exit 0
-    else
-      if test "$plumed_language" = fortran08 ; then
-        cat > __test_fortran08.f90 << EOF
+    fi
+
+    cat > __test_fortran_arg_mismatch.f90 << EOF
+subroutine a()
+  call b(10)
+  call b(10.0)
+end subroutine a
+EOF
+    if ! make test-fortran-arg-mismatch 2>err | grep SUCCESS=YES 1> /dev/null ; then
+      export PLUMED_FORTRAN_FLAGS=-fallow-argument-mismatch
+      if ! make test-fortran-arg-mismatch 2>err| grep SUCCESS=YES 1> /dev/null ; then
+        PLUMED_FORTRAN_FLAGS=""
+      fi
+    fi
+
+    rm -f __test_fortran_arg_mismatch.f90
+    rm -f __test_fortran_arg_mismatch.o
+
+    if test "$plumed_language" = fortran08 ; then
+      cat > __test_fortran08.f90 << EOF
 module test_fortran08_a
 implicit none
 type b
@@ -230,15 +253,14 @@ contains
   end subroutine sub
 end module test_fortran08_a
 EOF
-        if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
-          make exe-fortran08 1>out 2>err
-        else
-          echo "NOT_APPLICABLE (FC does not support f2008)"
-          exit 0
-        fi
+      if make test-fortran08 2>err | grep SUCCESS=YES 1> /dev/null ; then
+        make exe-fortran08 1>out 2>err
       else
-        make exe-fortran 1>out 2> err
+        echo "NOT_APPLICABLE (FC does not support f2008)"
+        exit 0
       fi
+    else
+      make exe-fortran 1>out 2> err
     fi
   elif test "$plumed_language" = c || test "$plumed_language" = c11 ; then
     if test "$plumed_language" = c11 ; then
@@ -267,6 +289,10 @@ EOF
     else
       make exe-c 1>out 2> err
     fi
+  elif test "$plumed_language" = c++98 || test "$plumed_language" = c++11 || test "$plumed_language" = c++14 ; then
+    sed "s/-std=c++[0-9][0-9]/-std=$plumed_language/g" Makefile > __Makefile.tmp
+    mv __Makefile.tmp Makefile
+    make exe 1>out 2> err
   else
     make exe 1>out 2> err
   fi

@@ -1,0 +1,92 @@
+{ 
+"timestep" : { 
+"action" : "PUT", 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"action" : "PUT", 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"action" : "PUT", 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"action" : "PUT", 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"action" : "PUT", 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"action" : "PUT", 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"action" : "PBC", 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_grp" : { 
+"action" : "GROUP", 
+"q1_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"q1_mat" : { 
+"action" : "CONTACT_MATRIX", 
+"q1_mat.w" : { "type": "matrix", "desciption": "" }
+"q1_mat.x" : { "type": "matrix", "desciption": "" }
+"q1_mat.y" : { "type": "matrix", "desciption": "" }
+"q1_mat.z" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_sh" : { 
+"action" : "SPHERICAL_HARMONIC", 
+"q1_sh.rm-n1" : { "type": "matrix", "desciption": "" }
+"q1_sh.rm-0" : { "type": "matrix", "desciption": "" }
+"q1_sh.rm-p1" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-n1" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-0" : { "type": "matrix", "desciption": "" }
+"q1_sh.im-p1" : { "type": "matrix", "desciption": "" }
+}, 
+"q1_denom_ones" : { 
+"action" : "CONSTANT", 
+"q1_denom_ones" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_q1_denom_ones" : { 
+"action" : "ONES", 
+"q1_denom_ones" : { "type": "vector", "desciption": "" }
+}, 
+"q1_denom" : { 
+"action" : "MATRIX_VECTOR_PRODUCT", 
+"q1_denom" : { "type": "vector", "desciption": "" }
+}, 
+"q1_sp" : { 
+"action" : "MATRIX_VECTOR_PRODUCT", 
+"q1_sp.rm-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
+"q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-0 and the vector q1_denom_ones" }, 
+"q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-p1 and the vector q1_denom_ones" }, 
+"q1_sp.im-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }, 
+"q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-0 and the vector q1_denom_ones" }, 
+"q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-p1 and the vector q1_denom_ones" } 
+}, 
+"q1_norm2" : { 
+"action" : "COMBINE", 
+"q1_norm2" : { "type": "vector", "desciption": "" }
+}, 
+"q1_norm" : { 
+"action" : "CUSTOM", 
+"q1_norm" : { "type": "vector", "desciption": "" }
+}, 
+"q1" : { 
+"action" : "CUSTOM", 
+"q1" : { "type": "vector", "desciption": "" }
+}, 
+"shortcut_q1" : { 
+"action" : "Q1", 
+"q1" : { "type": "vector", "desciption": "" }
+}, 
+"gg" : { 
+"action" : "GSYMFUNC_THREEBODY", 
+"gg.g6" : { "type": "vector", "description": "the function defined by the FUNCTION1 keyword" }, 
+"gg.g7" : { "type": "vector", "description": "the function defined by the FUNCTION2 keyword" } 
+} 
+} 

@@ -8,11 +8,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest , macos-latest]
-        branch: [v2.6, v2.7, master]
+        os: [ubuntu-latest , macos-14]
+        branch: [v2.9, v2.10, master]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
       with:
         ref: ${{ matrix.branch }}
     - name: Install conda

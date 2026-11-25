@@ -1,0 +1,4 @@
+type=make
+
+export PLUMED_NUM_THREADS=4
+export PLUMED_CACHELINE_SIZE=128

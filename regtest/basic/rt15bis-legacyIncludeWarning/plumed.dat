@@ -1,0 +1,8 @@
+# This is loading a collective variable on the fly:
+LOAD FILE=Distance2.cpp
+
+d2: DISTANCE2 ATOMS=1,2
+
+PRINT FILE=COLVAR ARG=d2
+
+ENDPLUMED

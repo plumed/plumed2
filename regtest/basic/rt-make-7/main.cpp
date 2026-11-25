@@ -7,6 +7,12 @@
 
 using namespace PLMD;
 
+// This is to test the possibility to have a Plumed object
+// initialized during static object initialization
+class StaticObject {
+  PLMD::Plumed p;
+} staticObject;
+
 class A{
   const int a;
 public:
@@ -120,9 +126,9 @@ void test_xyz() {
   p.cmd("readInputLine","c: COM ATOMS=@mdatoms");
   p.cmd("readInputLine","p: POSITION ATOM=c");
   p.cmd("readInputLine","RESTRAINT ARG=p.x,p.y,p.z AT=0.0,0.0,0.0 KAPPA=0.0,0.0,0.0 SLOPE=1.0,2.0,3.0");
-  p.cmd("setBox",cell);
   p.cmd("setStep",0);
-  p.cmd("setVirial",virial);
+  p.cmd("setVirial",&virial[0],{3,3});
+  p.cmd("setBox",&cell[0],{3,3});
   p.cmd("setMasses",masses.data());
   p.cmd("setPositionsX",posx.data());
   p.cmd("setPositionsY",posy.data());
@@ -152,8 +158,11 @@ int main(){
   for(unsigned i=0;i<natoms;i++) positions[i]=i/10.0;
   std::vector<double> masses(natoms,1.0);
   std::vector<double> forces(3*natoms,0.0);
-  std::vector<double> box(9,0.0);
-  std::vector<double> virial(9,0.0);
+  //std::array<std::array<double,3>,3> box;
+  const double box[3][3]={{0,0,0},{0,0,0},{0,0,0}};
+  //double box[9];
+  std::array<double,9> virial;
+  for(unsigned i=0;i<9;i++) virial[i]=0.0;
 
   try {
     double dnatoms=natoms;
@@ -181,11 +190,11 @@ int main(){
 
   for(int step=0;step<10;step++){
     plumed->cmd("setStep",&step);
-    plumed->cmd("setPositions",&positions[0],{natoms,3});
-    plumed->cmd("setBox",&box[0],{3,3});
+    plumed->cmd("setPositions",positions.data(),{natoms,3});
+    plumed->cmd("setVirial",&virial[0],{3,3});
+    plumed->cmd("setBox",box);
     plumed->cmd("setForces",&forces[0],forces.size());
-    plumed->cmd("setVirial",&virial[0],9);
-    plumed->cmd("setMasses",&masses[0],masses.size());
+    plumed->cmd("setMasses",masses.data(),{natoms});
 // first compute using modified positions:
     positions[0]=0.05;
     plumed->cmd("prepareCalc");

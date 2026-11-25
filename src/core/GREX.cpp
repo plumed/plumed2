@@ -22,18 +22,16 @@
 #include "GREX.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Atoms.h"
+#include "DomainDecomposition.h"
 #include "tools/Tools.h"
 #include "tools/Communicator.h"
 #include <sstream>
-#include <unordered_map>
 
 namespace PLMD {
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
   plumedMain(p),
-  atoms(p.getAtoms()),
   partner(-1), // = unset
   localDeltaBias(0),
   foreignDeltaBias(0),
@@ -47,22 +45,23 @@ GREX::~GREX() {
 // empty destructor to delete unique_ptr
 }
 
-#define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
-#define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
-#define CHECK_NOTNULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
+#define CHECK_INIT(ini,word) plumed_assert(ini) << "cmd(\"" << word <<"\") should be only used after GREX initialization"
+#define CHECK_NOTINIT(ini,word) plumed_assert(!(ini)) << "cmd(\"" << word <<"\") should be only used before GREX initialization"
+#define CHECK_NOTNULL(val,word) plumed_assert(val) << "NULL pointer received in cmd(\"GREX " << word << "\")"
 
-void GREX::cmd(const std::string&key,const TypesafePtr & val) {
+void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 // Enumerate all possible commands:
   enum {
 #include "GREXEnum.inc"
   };
 
 // Static object (initialized once) containing the map of commands:
-  const static std::unordered_map<std::string, int> word_map = {
+  const static Tools::FastStringUnorderedMap<int> word_map = {
 #include "GREXMap.inc"
   };
 
-  std::vector<std::string> words=Tools::getWords(key);
+  gch::small_vector<std::string_view> words;
+  Tools::getWordsSimple(words,key);
   unsigned nw=words.size();
   if(nw==0) {
     // do nothing
@@ -134,15 +133,13 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
     case cmd_getLocalDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      plumedMain.plumedQuantityToMD("energy",localDeltaBias,val);
       break;
     case cmd_cacheLocalUNow:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
       {
-        double x;
-        atoms.MD2double(val,x);
-        localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUNow=plumedMain.MDQuantityToPLUMED("energy",val);
         intracomm.Sum(localUNow);
       }
       break;
@@ -159,16 +156,14 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
         }
       }
       {
-        double x;
-        atoms.MD2double(val,x);
-        localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        localUSwap=plumedMain.MDQuantityToPLUMED("energy",val);
         intracomm.Sum(localUSwap);
       }
       break;
     case cmd_getForeignDeltaBias:
       CHECK_INIT(initialized,key);
       CHECK_NOTNULL(val,key);
-      atoms.double2MD(foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy()),val);
+      plumedMain.plumedQuantityToMD("energy",foreignDeltaBias,val);
       break;
     case cmd_shareAllDeltaBias:
       CHECK_INIT(initialized,key);
@@ -187,14 +182,13 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
                      "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
       {
         unsigned rep;
-        Tools::convert(words[1],rep);
+        Tools::convert(std::string(words[1]),rep);
         plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
-        double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-        atoms.double2MD(d,val);
+        plumedMain.plumedQuantityToMD("energy",allDeltaBias[rep],val);
       }
       break;
     default:
-      plumed_merror("cannot interpret cmd(\" GREX" + key + "\"). check plumed developers manual to see the available commands.");
+      plumed_error() << "cannot interpret cmd(\" GREX" << key << "\"). check plumed developers manual to see the available commands.";
       break;
     }
   }
@@ -203,10 +197,18 @@ void GREX::cmd(const std::string&key,const TypesafePtr & val) {
 void GREX::savePositions() {
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
-  atoms.shareAll();
+  plumedMain.shareAll();
   plumedMain.waitData();
+  // shareAll() also starts the exchange of the domain decomposition when no action needs atoms on this
+  // step, but waitData() only completes the exchanges of the active inputs. Complete it here, or the
+  // next exchange waits for messages that were never received (with asynchronous sharing).
+  for(const auto & dd : plumedMain.getActionSet().select<DomainDecomposition*>()) {
+    if(!dd->isActive() && dd->hasBeenSet()) {
+      dd->wait();
+    }
+  }
   std::ostringstream o;
-  atoms.writeBinary(o);
+  plumedMain.writeBinary(o);
   buffer=o.str();
 }
 
@@ -221,7 +223,7 @@ void GREX::calculate() {
   }
   intracomm.Bcast(rbuf,0);
   std::istringstream i(std::string(&rbuf[0],rbuf.size()));
-  atoms.readBinary(i);
+  plumedMain.readBinary(i);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();

@@ -21,13 +21,13 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "bias/Bias.h"
-#include "bias/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/Value.h"
 #include "tools/File.h"
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
+#include "tools/Communicator.h"
 #include <chrono>
 #include <numeric>
 
@@ -318,7 +318,7 @@ void Metainference::registerKeywords(Keywords& keys) {
   keys.add("optional","MC_STEPS","number of MC steps");
   keys.add("optional","MC_CHUNKSIZE","MC chunksize");
   keys.add("optional","STATUS_FILE","write a file with all the data useful for restart/continuation of Metainference");
-  keys.add("optional","FMT","specify format for STATUS files (useful for decrease the number of digits in regtests)");
+  keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("compulsory","WRITE_STRIDE","10000","write the status to a file every N steps, this can be used for restart/continuation");
   keys.add("optional","SELECTOR","name of selector");
   keys.add("optional","NSELECT","range of values for selector [0, N-1]");
@@ -689,13 +689,7 @@ Metainference::Metainference(const ActionOptions&ao):
   parse("MC_STEPS",MCsteps_);
   parse("MC_CHUNKSIZE", MCchunksize_);
   // get temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_ = getkBT();
   if(kbt_==0.0) {
     error("Unless the MD engine passes the temperature to plumed, you must specify it using TEMP");
   }

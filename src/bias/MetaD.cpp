@@ -20,10 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
@@ -31,11 +30,9 @@
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include "tools/File.h"
+#include "tools/Communicator.h"
 #include <ctime>
 #include <numeric>
-#if defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
 
 namespace PLMD {
 namespace bias {
@@ -99,8 +96,8 @@ variant of metadynamics the heights of the Gaussian hills are scaled at each ste
 given by:
 
 \f[
-V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta T} \exp\left(
--\sum_{i=1}^{d} \frac{(s_i({q})-s_i({q}(t'))^2}{2\sigma_i^2}
+V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t'))/\Delta T} \exp\left(
+-\sum_{i=1}^{d} \frac{(s_i({q})-s_i({q}(t')))^2}{2\sigma_i^2}
 \right),
 \f]
 
@@ -528,7 +525,7 @@ void MetaD::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
   keys.addOutputComponent("rbias","CALC_RCT","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-rct]."
                           "This component can be used to obtain a reweighted histogram.");
-  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor \\f$c(t)\\f$.");
+  keys.addOutputComponent("rct","CALC_RCT","the reweighting factor c(t).");
   keys.addOutputComponent("work","CALC_WORK","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.addOutputComponent("maxbias", "CALC_MAX_BIAS", "the maximum of the metadynamics V(s, t)");
@@ -554,8 +551,8 @@ void MetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","TAU","in well tempered metadynamics, sets height to (k_B Delta T*pace*timestep)/tau");
   keys.addFlag("CALC_RCT",false,"calculate the c(t) reweighting factor and use that to obtain the normalized bias [rbias=bias-rct]."
                "This method is not compatible with metadynamics not on a grid.");
-  keys.add("optional","RCT_USTRIDE","the update stride for calculating the \\f$c(t)\\f$ reweighting factor."
-           "The default 1, so \\f$c(t)\\f$ is updated every time the bias is updated.");
+  keys.add("optional","RCT_USTRIDE","the update stride for calculating the c(t) reweighting factor."
+           "The default 1, so c(t) is updated every time the bias is updated.");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -730,13 +727,7 @@ MetaD::MetaD(const ActionOptions& ao):
     error("well tempered bias factor is nonsensical");
   }
   parse("DAMPFACTOR",dampfactor_);
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_=getkBT();
   if(biasf_>=1.0) {
     if(kbt_==0.0) {
       error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
@@ -1367,12 +1358,9 @@ MetaD::MetaD(const ActionOptions& ao):
       }
     } else {
       // read the grid in input, find the keys
-#ifdef __PLUMED_HAS_GETCWD
       if(walkers_mpi_&&gridreadfilename_.at(0)!='/') {
         //if possible the root replica will share its current folder so that all walkers will read the same file
-        char cwd[4096]= {0};
-        const char* ret=getcwd(cwd,4096);
-        plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+        const std::string ret = std::filesystem::current_path().string();
         gridreadfilename_ = "/" + gridreadfilename_;
         gridreadfilename_ = ret + gridreadfilename_;
         if(comm.Get_rank()==0) {
@@ -1380,7 +1368,6 @@ MetaD::MetaD(const ActionOptions& ao):
         }
         comm.Bcast(gridreadfilename_,0);
       }
-#endif
       IFile gridfile;
       gridfile.link(*this);
       if(gridfile.FileExist(gridreadfilename_)) {
@@ -1425,12 +1412,9 @@ MetaD::MetaD(const ActionOptions& ao):
     }
   }
 
-#ifdef __PLUMED_HAS_GETCWD
   if(walkers_mpi_&&mw_dir_==""&&hillsfname.at(0)!='/') {
     //if possible the root replica will share its current folder so that all walkers will read the same file
-    char cwd[4096]= {0};
-    const char* ret=getcwd(cwd,4096);
-    plumed_assert(ret)<<"Name of current directory too long, increase buffer size";
+    const std::string ret = std::filesystem::current_path().string();
     mw_dir_ = ret;
     mw_dir_ = mw_dir_ + "/";
     if(comm.Get_rank()==0) {
@@ -1438,7 +1422,6 @@ MetaD::MetaD(const ActionOptions& ao):
     }
     comm.Bcast(mw_dir_,0);
   }
-#endif
 
   // creating std::vector of ifile* for hills reading
   // open all files at the beginning and read Gaussians if restarting

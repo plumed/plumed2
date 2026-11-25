@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-cat ../*/*/*cpp |
+cat ../*/*/*.cpp |
 awk '{
      if(inside && NF>0 && $1!="/*" && $1!="*/") { 
         printf "%s\n", $0 

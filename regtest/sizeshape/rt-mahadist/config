@@ -1,0 +1,3 @@
+type=driver
+plumed_modules=sizeshape
+arg="--plumed plumed.dat --itrr test_traj.trr"

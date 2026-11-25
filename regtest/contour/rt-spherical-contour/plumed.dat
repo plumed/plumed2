@@ -1,0 +1,17 @@
+ones: ONES SIZE=512
+# Calculate contact matrix
+c1_mat: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+# Calculate coordination numbers
+c1: MATRIX_VECTOR_PRODUCT ARG=c1_mat,ones
+# Select coordination numbers that are more than 2.0
+cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1}
+# Find largest cluster
+dfs: DFSCLUSTERING ARG=c1_mat 
+clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1 
+com: CENTER ATOMS=1-512 WEIGHTS=clust1 PHASES 
+# Filtered coordination numbers for atoms in largest cluster
+ff: CUSTOM ARG=clust1,cf FUNC=x*y PERIODIC=NO
+
+# Now do the multicolvar surface
+dd: DISTANCE_FROM_SPHERICAL_CONTOUR ARG=ff POSITIONS=1-512 ATOM=513 ORIGIN=com BANDWIDTH=1.0,1.0,1.0 CONTOUR=0.5 
+PRINT ARG=dd.* FILE=colvar FMT=%8.4f 

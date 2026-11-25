@@ -1,0 +1,11 @@
+LOAD FILE=@pycvpath@
+
+cvPY: ...
+PYCVINTERFACE 
+GROUPA=1,1,1 GROUPB=2,3,4 
+IMPORT=pydistancegetAtPos 
+CALCULATE=pydistInPair 
+PAIR
+...
+
+PRINT FILE=colvar.out ARG=*

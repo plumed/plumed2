@@ -1,0 +1,76 @@
+# Now calculate vectors for centers distances
+CONTACT_MATRIX ...
+GROUP=1-6981:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_centers
+... CONTACT_MATRIX
+
+# Now normalize the orientation vectors
+dd_centers_len2: COMBINE ARG=dd_centers.x,dd_centers.y,dd_centers.z POWERS=2,2,2 PERIODIC=NO
+dd_centers_len: CUSTOM ARG=dd_centers_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_x: CUSTOM ARG=dd_centers.x,dd_centers_len FUNC=x/y PERIODIC=NO
+bonds_y: CUSTOM ARG=dd_centers.y,dd_centers_len FUNC=x/y PERIODIC=NO
+bonds_z: CUSTOM ARG=dd_centers.z,dd_centers_len FUNC=x/y PERIODIC=NO
+
+# Now calculate vectors for OO distances
+CONTACT_MATRIX ...
+#LOWMEM
+GROUPA=19-6999:20
+GROUPB=20-7000:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_OO
+... CONTACT_MATRIX
+
+# Now normalize the vectors
+bonds_OO_len2: COMBINE ARG=dd_OO.x,dd_OO.y,dd_OO.z POWERS=2,2,2 PERIODIC=NO
+bonds_OO_len: CUSTOM ARG=bonds_OO_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_OO_x: CUSTOM ARG=dd_OO.x,bonds_OO_len FUNC=x/y PERIODIC=NO
+bonds_OO_y: CUSTOM ARG=dd_OO.y,bonds_OO_len FUNC=x/y PERIODIC=NO
+bonds_OO_z: CUSTOM ARG=dd_OO.z,bonds_OO_len FUNC=x/y PERIODIC=NO
+
+# Now calculate vectors for ON distances
+CONTACT_MATRIX ...
+#LOWMEM
+GROUPA=19-6999:20
+GROUPB=18-6998:20
+SWITCH={RATIONAL R_0=0.08 D_0=0.85 NN=10 MM=20 D_MAX=1.05}
+COMPONENTS 
+LABEL=dd_ON
+... CONTACT_MATRIX
+
+# Calculate matrix in which element i,j tells you if atoms i and j are both within the sphere 
+spmat_1: OUTER_PRODUCT ARG=sp,sp
+spmat_2: OUTER_PRODUCT ARG=sp,sp
+spmat_3: OUTER_PRODUCT ARG=sp,sp
+# Calculate matrix in which element i,j tells you if atoms i and j have both coord num higher than the threshold
+coordmat_1: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
+coordmat_2: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
+coordmat_3: OUTER_PRODUCT ARG=coord_morethan,coord_morethan
+
+# Now normalize the vectors
+bonds_ON_len2: COMBINE ARG=dd_ON.x,dd_ON.y,dd_ON.z POWERS=2,2,2 PERIODIC=NO
+bonds_ON_len: CUSTOM ARG=bonds_ON_len2 FUNC=sqrt(x) PERIODIC=NO
+bonds_ON_x: CUSTOM ARG=dd_ON.x,bonds_ON_len FUNC=x/y PERIODIC=NO
+bonds_ON_y: CUSTOM ARG=dd_ON.y,bonds_ON_len FUNC=x/y PERIODIC=NO
+bonds_ON_z: CUSTOM ARG=dd_ON.z,bonds_ON_len FUNC=x/y PERIODIC=NO
+
+# Building correct weight matrices by element wise multiplication of all weigths
+#test: MATHEVAL ARG1=spmat_1 ARG2=coordmat_2 FUNC=x*y PERIODIC=NO
+w_centers: MATHEVAL ARG=dd_centers.w,coordmat_1,spmat_1 FUNC=x*y*z PERIODIC=NO
+w_centers_sum: SUM ARG=w_centers PERIODIC=NO
+w_OO: MATHEVAL ARG=dd_OO.w,coordmat_2,spmat_2 FUNC=x*y*z PERIODIC=NO
+w_OO_sum: SUM ARG=w_OO PERIODIC=NO
+w_ON: MATHEVAL ARG=dd_ON.w,coordmat_3,spmat_3 FUNC=x*y*z PERIODIC=NO
+w_ON_sum: SUM ARG=w_ON PERIODIC=NO
+# Now construct the instantaneous histograms 
+Sppos_u: SPHERICAL_KDE ARG=bonds_x,bonds_y,bonds_z HEIGHTS=w_centers GRID_BIN=400 CONCENTRATION=100.0
+Sppos: CUSTOM ARG=Sppos_u,w_centers_sum FUNC=x/y PERIODIC=NO
+Sppos_OO_u: SPHERICAL_KDE ARG=bonds_OO_x,bonds_OO_y,bonds_OO_z HEIGHTS=w_OO GRID_BIN=400 CONCENTRATION=100.0
+Sppos_OO: CUSTOM ARG=Sppos_OO_u,w_OO_sum FUNC=x/y PERIODIC=NO
+Sppos_ON_u: SPHERICAL_KDE ARG=bonds_ON_x,bonds_ON_y,bonds_ON_z HEIGHTS=w_ON GRID_BIN=400 CONCENTRATION=100.0
+Sppos_ON: CUSTOM ARG=Sppos_ON_u,w_ON_sum FUNC=x/y PERIODIC=NO
+#Sppos: SPHERICAL_KDE ARG1=bonds.x ARG2=bonds.y ARG3=bonds.z HEIGHTS=dd_centers.w GRID_BIN=400 CONCENTRATION=100.0
+#Sppos_OO: SPHERICAL_KDE ARG1=bonds_OO.x ARG2=bonds_OO.y ARG3=bonds_OO.z HEIGHTS=dd_OO.w GRID_BIN=400 CONCENTRATION=100.0
+#Sppos_ON: SPHERICAL_KDE ARG1=bonds_ON.x ARG2=bonds_ON.y ARG3=bonds_ON.z HEIGHTS=dd_ON.w GRID_BIN=400 CONCENTRATION=100.0

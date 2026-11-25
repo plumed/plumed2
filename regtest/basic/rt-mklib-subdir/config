@@ -1,0 +1,23 @@
+type=driver
+plumed_needs="dlopen"
+arg="--plumed plumed.dat --trajectory-stride 10 --timestep 0.005 --ixyz trajectory.xyz"
+
+# plumed mklib and LOAD with source files in another directory
+# (the objects used to be written to plumed_mklib.XXXXXX/../code/, which does not exist)
+function plumed_regtest_before(){
+  plumed="${PLUMED_PROGRAM_NAME:-plumed} --no-mpi"
+
+  root=$(eval $plumed info --root)
+  source "$root"/src/config/compile_options.sh
+
+  sed "s/__SOEXT__/$soext/g" plumed.dat.template > plumed.dat
+
+  # subdirectories are not copied by the test script: create them here
+  mkdir -p code run
+  mv Distance2.cpp Distance2b.cpp Distance4.cpp code/
+
+  # build from another directory, with relative paths containing a directory
+  ( cd run && eval $plumed mklib ../code/Distance2.cpp ../code/Distance2b.cpp )
+  # the library is named after the first file, in the same directory
+  mv code/Distance2.$soext Distance3.$soext
+}

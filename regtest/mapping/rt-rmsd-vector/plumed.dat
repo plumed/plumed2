@@ -1,0 +1,13 @@
+# rmsd0: RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
+# rmsd1: RMSD TYPE=OPTIMAL REFERENCE=test1.pdb
+# rmsd2: RMSD TYPE=OPTIMAL REFERENCE=test2.pdb
+# rmsd3: RMSD TYPE=OPTIMAL REFERENCE=test3.pdb
+# rmsd4: RMSD TYPE=OPTIMAL REFERENCE=test4.pdb
+# 
+# ss: COMBINE ARG=rmsd0,rmsd1,rmsd2,rmsd3,rmsd4 PERIODIC=NO
+# PRINT ARG=rmsd0,rmsd1,rmsd2,rmsd3,rmsd4,ss FILE=colvar FMT=%8.4f
+
+rmsd: RMSD TYPE=OPTIMAL REFERENCE=allframes.pdb
+ss: SUM ARG=rmsd PERIODIC=NO
+PRINT ARG=rmsd,ss FILE=colvar FMT=%8.4f
+BIASVALUE ARG=ss

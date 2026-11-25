@@ -25,6 +25,7 @@
 #include "AtomNumber.h"
 #include "Vector.h"
 #include "Tensor.h"
+#include "small_vector/small_vector.h"
 #include <vector>
 #include <string>
 #include <cctype>
@@ -37,6 +38,11 @@
 #include <cstddef>
 #include <queue>
 #include <mutex>
+#include <filesystem>
+#include <utility>
+#include <unordered_map>
+#include <map>
+#include <condition_variable>
 
 namespace PLMD {
 
@@ -44,20 +50,20 @@ class IFile;
 
 /// \ingroup TOOLBOX
 /// Very small non-zero number
-const double epsilon(std::numeric_limits<double>::epsilon());
+constexpr double epsilon(std::numeric_limits<double>::epsilon());
 
 /// \ingroup TOOLBOX
 /// Boltzman constant in kj/K
-const double kBoltzmann(0.0083144621);
+constexpr double kBoltzmann(0.0083144621);
 
 /// \ingroup TOOLBOX
 /// PI
-const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
+constexpr double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
-const double dp2cutoff(6.25);
+constexpr double dp2cutoff(6.25);
 
-const double dp2cutoffA=1.00193418799744762399; // 1.0/(1-std::exp(-dp2cutoff));
-const double dp2cutoffB=-.00193418799744762399; // -std::exp(-dp2cutoff)/(1-std::exp(-dp2cutoff));
+constexpr double dp2cutoffA=1.00193418799744762399; // 1.0/(1-std::exp(-dp2cutoff));
+constexpr double dp2cutoffB=-.00193418799744762399; // -std::exp(-dp2cutoff)/(1-std::exp(-dp2cutoff));
 
 inline static bool dp2cutoffNoStretch() {
   static const auto* res=std::getenv("PLUMED_DP2CUTOFF_NOSTRETCH");
@@ -77,13 +83,19 @@ class Tools {
 /// class to convert a string to a int type T
   template<class T>
   static bool convertToInt(const std::string & str,T &t);
+/// @brief the  recursive part of the template fastpow implementation
+  template <int exp, typename T=double, std::enable_if_t< (exp >=0), bool> = true>
+  static inline /*consteval*/ T fastpow_rec(T base, T result);
 public:
 /// Split the line in words using separators.
 /// It also take into account parenthesis. Outer parenthesis found are removed from
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
+  static std::vector<std::string> getWords(std::string_view line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{", const bool& delete_parenthesis=true);
+/// Faster version
+/// This version does not parse parenthesis and operates on a preallocated small_vector of string_view's
+  static void getWordsSimple(gch::small_vector<std::string_view> & words,std::string_view line);
 /// Get a line from the file pointer ifile
   static bool getline(FILE*,std::string & line);
 /// Get a parsed line from the file pointer ifile
@@ -120,6 +132,8 @@ public:
 /// Convert anything into anything, throwing an exception in case there is an error
 /// Remove trailing blanks
   static void trim(std::string & s);
+/// Remove leading blanks
+  static void ltrim(std::string & s);
 /// Remove trailing comments
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
@@ -165,6 +179,9 @@ public:
   static std::string extension(const std::string&);
 /// Fast int power
   static double fastpow(double base,int exp);
+/// Fast int power for power known at compile time
+  template <int exp, typename T=double>
+  static inline /*consteval*/ T fastpow(T base);
 /// Modified 0th-order Bessel function of the first kind
   static double bessel0(const double& val);
 /// Check if a string full starts with string start.
@@ -208,36 +225,16 @@ public:
 /// In case system calls to change dir are not available it throws an exception.
 /// \warning By construction, changing directory breaks thread safety! Use with care.
   class DirectoryChanger {
-    static const std::size_t buffersize=4096;
-    char cwd[buffersize]= {0};
+    const std::filesystem::path path;
   public:
     explicit DirectoryChanger(const char*path);
     ~DirectoryChanger();
   };
-/// Mimic C++14 std::make_unique
-  template<class T> struct _Unique_if {
-    typedef std::unique_ptr<T> _Single_object;
-  };
-  template<class T> struct _Unique_if<T[]> {
-    typedef std::unique_ptr<T[]> _Unknown_bound;
-  };
-  template<class T, std::size_t N> struct _Unique_if<T[N]> {
-    typedef void _Known_bound;
-  };
+
   template<class T, class... Args>
-  static typename _Unique_if<T>::_Single_object
-  make_unique(Args&&... args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  static auto make_unique(Args&&... args) {
+    return std::make_unique<T>(std::forward<Args>(args)...);
   }
-  template<class T>
-  static typename _Unique_if<T>::_Unknown_bound
-  make_unique(std::size_t n) {
-    typedef typename std::remove_extent<T>::type U;
-    return std::unique_ptr<T>(new U[n]());
-  }
-  template<class T, class... Args>
-  static typename _Unique_if<T>::_Known_bound
-  make_unique(Args&&...) = delete;
 
   static void set_to_zero(double*ptr,unsigned n) {
     for(unsigned i=0; i<n; i++) {
@@ -263,122 +260,139 @@ public:
     set_to_zero(&vec[0](0,0),s*n*m);
   }
 
-
-
-
-  /// Merge sorted vectors.
-  /// Takes a vector of pointers to containers and merge them.
-  /// Containers should be already sorted.
-  /// The content is appended to the result vector.
-  /// Optionally, uses a priority_queue implementation.
-  template<class C>
-  static void mergeSortedVectors(const std::vector<C*> & vecs, std::vector<typename C::value_type> & result,bool priority_queue=false) {
-
-    /// local class storing the range of remaining objects to be pushed
-    struct Entry {
-      typename C::const_iterator fwdIt,endIt;
-
-      explicit Entry(C const& v) : fwdIt(v.begin()), endIt(v.end()) {}
-      /// check if this vector still contains something to be pushed
-      explicit operator bool () const {
-        return fwdIt != endIt;
-      }
-      /// to allow using a priority_queu, which selects the highest element.
-      /// we here (counterintuitively) define < as >
-      bool operator< (Entry const& rhs) const {
-        return *fwdIt > *rhs.fwdIt;
-      }
-    };
-
-    if(priority_queue) {
-      std::priority_queue<Entry> queue;
-      // note: queue does not have reserve() method
-
-      // add vectors to the queue
-      {
-        std::size_t maxsize=0;
-        for(unsigned i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) {
-            maxsize=vecs[i]->size();
-          }
-          if(!vecs[i]->empty()) {
-            queue.push(Entry(*vecs[i]));
-          }
-        }
-        // this is just to save multiple reallocations on push_back
-        result.reserve(maxsize);
-      }
-
-      // first iteration (to avoid a if in the main loop)
-      if(queue.empty()) {
-        return;
-      }
-      auto tmp=queue.top();
-      queue.pop();
-      result.push_back(*tmp.fwdIt);
-      tmp.fwdIt++;
-      if(tmp) {
-        queue.push(tmp);
-      }
-
-      // main loop
-      while(!queue.empty()) {
-        auto tmp=queue.top();
-        queue.pop();
-        if(result.back() < *tmp.fwdIt) {
-          result.push_back(*tmp.fwdIt);
-        }
-        tmp.fwdIt++;
-        if(tmp) {
-          queue.push(tmp);
-        }
-      }
-    } else {
-
-      std::vector<Entry> entries;
-      entries.reserve(vecs.size());
-
-      {
-        std::size_t maxsize=0;
-        for(int i=0; i<vecs.size(); i++) {
-          if(vecs[i]->size()>maxsize) {
-            maxsize=vecs[i]->size();
-          }
-          if(!vecs[i]->empty()) {
-            entries.push_back(Entry(*vecs[i]));
-          }
-        }
-        // this is just to save multiple reallocations on push_back
-        result.reserve(maxsize);
-      }
-
-      while(!entries.empty()) {
-        // find smallest pending element
-        // we use max_element instead of min_element because we are defining < as > (see above)
-        const auto minval=*std::max_element(entries.begin(),entries.end())->fwdIt;
-
-        // push it
-        result.push_back(minval);
-
-        // fast forward vectors with elements equal to minval (to avoid duplicates)
-        for(auto & e : entries)
-          while(e && *e.fwdIt==minval) {
-            ++e.fwdIt;
-          }
-
-        // remove from the entries vector all exhausted vectors
-        auto erase=std::remove_if(entries.begin(),entries.end(),[](const Entry & e) {
-          return !e;
-        });
-        entries.erase(erase,entries.end());
-      }
-    }
-
-  }
   static std::unique_ptr<std::lock_guard<std::mutex>> molfile_lock();
   /// Build a concatenated exception message.
   /// Should be called with an in-flight exception.
   static std::string concatenateExceptionMessages();
+
+
+  /// Tiny class implementing faster std::string_view access to an unordered_map
+  /// It exposes a limited number of methods of std::unordered_map. Others could be added.
+  /// Importantly, when it is accessed via a std::string_view, the access does not
+  /// require constructing a std::string and is thus faster.
+  /// Deletion would be slower instead. It's not even implemented yet.
+  template<class T>
+  class FastStringUnorderedMap {
+    std::unordered_map<std::string_view,T> map;
+    std::vector<std::unique_ptr<const char[]>> keys;
+
+    // see https://stackoverflow.com/questions/34596768/stdunordered-mapfind-using-a-type-different-than-the-key-type
+    std::unique_ptr<const char[]> conv(std::string_view str) {
+      auto p=std::make_unique<char[]>(str.size()+1);
+      std::memcpy(p.get(), str.data(), str.size()+1);
+      return p;
+    }
+
+  public:
+
+    FastStringUnorderedMap() = default;
+    FastStringUnorderedMap(std::initializer_list<std::pair<const std::string_view,T>> init) {
+      for(const auto & c : init) {
+        (*this)[c.first]=c.second;
+      }
+    }
+
+    T& operator[]( const std::string_view & key ) {
+      auto f=map.find(key);
+      if(f!=map.end()) {
+        return f->second;
+      }
+      keys.push_back(conv(key));
+      return map[keys.back().get()];
+    }
+
+    auto begin() {
+      return map.begin();
+    }
+    auto end() {
+      return map.end();
+    }
+    auto begin() const {
+      return map.begin();
+    }
+    auto end() const {
+      return map.end();
+    }
+    auto find(const std::string_view & key) {
+      return map.find(key);
+    }
+    auto find(const std::string_view & key) const {
+      return map.find(key);
+    }
+  };
+
+  /// Utility to create named critical sections
+  /// Key should be usable in a std::map
+  template<class Key>
+  class CriticalSectionWithKey {
+    std::mutex mutex;
+    std::condition_variable notify;
+    std::map<Key, int> in_progress;
+  public:
+    void start(const Key & key) {
+      std::unique_lock<std::mutex> lock(mutex);
+      while (in_progress[key] > 0) {
+        // Wait if this command is already in progress.
+        notify.wait(lock);
+      }
+      // Mark this command as in progress.
+      in_progress[key]++;
+    }
+    void stop(const Key & key) {
+      std::unique_lock<std::mutex> lock(mutex);
+      // Mark this command as completed.
+      in_progress[key]--;
+      // Notify other threads that may be waiting for this command to complete.
+      notify.notify_all();
+    }
+    class Handler {
+      CriticalSectionWithKey* section{nullptr};
+      Key key;
+      Handler(CriticalSectionWithKey* section,const Key& key):
+        section(section),
+        key(key) {
+        section->start(key);
+      }
+      friend class CriticalSectionWithKey;
+    public:
+      /// Default constructor
+      Handler() = default;
+      /// Default copy constructor is deleted (not copyable)
+      Handler(const Handler & handler) = delete;
+      /// Default copy assignment is deleted (not copyable)
+      Handler & operator=(const Handler & handler) = delete;
+      /// Move constructor.
+      Handler(Handler && handler) noexcept :
+        section(handler.section),
+        key(std::move(handler.key)) {
+        handler.section=nullptr;
+      };
+      /// Move assignment.
+      Handler & operator=(Handler && handler) noexcept {
+        if(this!=&handler) {
+          if(section) {
+            section->stop(key);
+          }
+          section=handler.section;
+          key=std::move(handler.key);
+        }
+        handler.section=nullptr;
+        return *this;
+      }
+      /// Destructor
+      ~Handler() {
+        if(section) {
+          section->stop(key);
+        }
+      }
+    };
+
+    Handler startStop(const Key & key) {
+      return Handler(this,key);
+    }
+
+  };
+
 };
 
 template <class T>
@@ -449,15 +463,15 @@ double Tools::pbc(double x) {
   }
   return x;
 #else
-  if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
-    const double offset=100.0;
+  if constexpr (std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    constexpr double offset=100.0;
     const double y=x+offset;
     if(y>=0) {
       return y-int(y+0.5);
     } else {
       return y-int(y-0.5);
     }
-  } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
+  } else if constexpr (std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else {
     return x-floor(x+0.5);
@@ -491,6 +505,26 @@ double Tools::fastpow(double base, int exp) {
   return result;
 }
 
+template <int exp, typename T, std::enable_if_t< (exp >=0), bool>>
+inline T Tools::fastpow_rec(T const base, T result) {
+  if constexpr (exp == 0) {
+    return result;
+  }
+  if constexpr (exp & 1) {
+    result *= base;
+  }
+  return fastpow_rec<(exp>>1),T> (base*base, result);
+}
+
+template <int exp, typename T>
+inline T Tools::fastpow(T const base) {
+  if constexpr (exp<0) {
+    return  fastpow_rec<-exp,T>(1.0/base,1.0);
+  } else {
+    return fastpow_rec<exp,T>(base, 1.0);
+  }
+}
+
 template<typename T>
 std::vector<T*> Tools::unique2raw(const std::vector<std::unique_ptr<T>> & x) {
   std::vector<T*> v(x.size());
@@ -512,4 +546,3 @@ std::vector<const T*> Tools::unique2raw(const std::vector<std::unique_ptr<const 
 }
 
 #endif
-

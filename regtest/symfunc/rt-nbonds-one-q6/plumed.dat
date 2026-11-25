@@ -1,0 +1,17 @@
+q6: Q6 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN 
+
+# Create a normalising matrix
+q6_uones: ONES SIZE=26
+q6_nmat: OUTER_PRODUCT ARG=q6_norm,q6_uones
+udata6: VSTACK ARG=q6_sp.*
+data6: CUSTOM ARG=udata6,q6_nmat FUNC=x/y PERIODIC=NO
+data6T: TRANSPOSE ARG=data6 
+
+con6: CONTACT_MATRIX GROUP=q6 SWITCH={RATIONAL D_0=3.0 R_0=1.5}
+dot6: MATRIX_PRODUCT ARG=data6,data6T
+ww6: CUSTOM ARG=con6,dot6 FUNC=x*y PERIODIC=NO
+w6: SUM ARG=ww6 PERIODIC=NO
+
+PRINT ARG=w6 FILE=colv1 FMT=%8.4f 
+
+RESTRAINT ARG=w6 AT=30 KAPPA=1 

@@ -1,0 +1,21 @@
+d1: READ FILE=colv_in VALUES=data
+
+ff: COLLECT_FRAMES ARG=d1 STRIDE=1 
+
+ff_dataT: TRANSPOSE ARG=ff_data
+
+ss1: DISSIMILARITIES ARG=ff_data,ff_dataT 
+DUMPVECTOR ARG=ss1 FILE=mymatrix.dat FMT=%8.4f
+
+ll1: LANDMARK_SELECT_STRIDE ARG=ff NLANDMARKS=5 DISSIMILARITIES=ss1
+
+DUMPPDB ARG=ll1_weights,ll1_logweights,ll1_data FILE=output-stride.pdb
+DUMPVECTOR ARG=ll1_sqrdissims FILE=mymatrix2.dat FMT=%8.4f
+
+ll2: LANDMARK_SELECT_FPS ARG=ff DISSIMILARITIES=ss1 NLANDMARKS=3 
+DUMPPDB ARG=ll2_weights,ll2_logweights,ll2_data FILE=output-fps.pdb
+
+ff2: COLLECT_FRAMES ARG=d1 CLEAR=6 STRIDE=1
+ff2T: TRANSPOSE ARG=ff2_data
+ss3: DISSIMILARITIES ARG=ff2_data,ff2T
+DUMPVECTOR ARG=ss3 FILE=mymatrix3.dat STRIDE=6 FMT=%8.4f 

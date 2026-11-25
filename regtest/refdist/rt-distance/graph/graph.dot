@@ -1,0 +1,74 @@
+digraph G { 
+     posx [label="posx: \n PUT "] 
+     posy [label="posy: \n PUT "] 
+     posz [label="posz: \n PUT "] 
+     Box [label="Box: \n PUT "] 
+     Energy [label="Energy: \n PUT "] 
+     Masses [label="Masses: \n PUT "] 
+     Charges [label="Charges: \n PUT "] 
+   subgraph cluster7 { 
+      node [style=filled,fillcolor=lightgrey];
+      penwidth=3;
+      color=black;
+     d1 [label="1 \n d1: \n DISTANCE "] 
+     d1 -> disp [label="d1", color=blue, fontcolor=blue]; 
+     d1 -> ed_diff [label="d1", color=blue, fontcolor=blue]; 
+     d1 -> nd_diff [label="d1", color=blue, fontcolor=blue]; 
+     d1 -> md_diff [label="d1", color=blue, fontcolor=blue]; 
+     disp [label="2 \n disp: \n DIFFERENCE "] 
+     ed_diff [label="3 \n ed_diff: \n DIFFERENCE "] 
+     nd_diff [label="4 \n nd_diff: \n DIFFERENCE "] 
+     md_diff [label="5 \n md_diff: \n DIFFERENCE "] 
+   }
+     15 [label="@15: \n PRINT"] 
+     d1 -> 15 [label="d1", color=blue, fontcolor=blue]; 
+     d1 -> clust [label="d1", color=blue, fontcolor=blue]; 
+     d1 -> clust [label="d1", color=blue, fontcolor=blue]; 
+     51 [label="@51: \n PRINT"] 
+     disp -> 51 [label="disp", color=blue, fontcolor=blue]; 
+     ed_diff -> ed_diffT [label="ed_diff", color=blue, fontcolor=blue]; 
+     ed_diff -> ed_2 [label="ed_diff", color=blue, fontcolor=blue]; 
+     nd_diff -> nd_diffT [label="nd_diff", color=blue, fontcolor=blue]; 
+     nd_diff -> nd_sdiff [label="nd_diff", color=blue, fontcolor=blue]; 
+     md_diff -> md_diffT [label="md_diff", color=blue, fontcolor=blue]; 
+     md_diff -> md_matvec [label="md_diff", color=blue, fontcolor=blue]; 
+     md_diff -> md_vdot [label="md_diff", color=blue, fontcolor=blue]; 
+     clust [label="clust: \n READ_CLUSTER "] 
+     clust -> disp [label="clust.center", color=blue, fontcolor=blue]; 
+     clust -> ed_diff [label="clust.center", color=blue, fontcolor=blue]; 
+     clust -> nd_diff [label="clust.center", color=blue, fontcolor=blue]; 
+     clust -> md_diff [label="clust.center", color=blue, fontcolor=blue]; 
+     met [label="met: \n CALCULATE_REFERENCE "] 
+     met -> diag [label="met", color=red, fontcolor=red]; 
+     met -> md_matvec [label="met", color=red, fontcolor=red]; 
+     diag [label="diag: \n SELECT_COMPONENTS "] 
+     diag -> nd_sdiff [label="diag", color=blue, fontcolor=blue]; 
+     ed_diffT [label="ed_diffT: \n TRANSPOSE "] 
+     ed_diffT -> ed_2 [label="ed_diffT", color=red, fontcolor=red]; 
+     ed_2 [label="ed_2: \n DOT "] 
+     ed_2 -> ed [label="ed_2", color=orange, fontcolor=orange]; 
+     ed [label="ed: \n MATHEVAL\nFUNC=sqrt(x) "] 
+     ed -> 51 [label="ed", color=orange, fontcolor=orange]; 
+     ed -> 52 [label="ed", color=orange, fontcolor=orange]; 
+     nd_diffT [label="nd_diffT: \n TRANSPOSE "] 
+     nd_diffT -> nd_2 [label="nd_diffT", color=red, fontcolor=red]; 
+     nd_sdiff [label="nd_sdiff: \n MATHEVAL\nFUNC=x*y "] 
+     nd_sdiff -> nd_2 [label="nd_sdiff", color=blue, fontcolor=blue]; 
+     nd_2 [label="nd_2: \n DOT "] 
+     nd_2 -> nd [label="nd_2", color=orange, fontcolor=orange]; 
+     nd [label="nd: \n MATHEVAL\nFUNC=sqrt(x) "] 
+     nd -> 51 [label="nd", color=orange, fontcolor=orange]; 
+     nd -> 53 [label="nd", color=orange, fontcolor=orange]; 
+     md_diffT [label="md_diffT: \n TRANSPOSE "] 
+     md_diffT -> md_2 [label="md_diffT", color=red, fontcolor=red]; 
+     md_matvec [label="md_matvec: \n DOT "] 
+     md_matvec -> md_vdot [label="md_matvec", color=blue, fontcolor=blue]; 
+     md_matvec -> md_2 [label="md_matvec", color=blue, fontcolor=blue]; 
+     md_vdot [label="md_vdot: \n DOT "] 
+     md_2 [label="md_2: \n DOT "] 
+     md_2 -> md [label="md_2", color=orange, fontcolor=orange]; 
+     md [label="md: \n MATHEVAL\nFUNC=sqrt(x) "] 
+     md -> 51 [label="md", color=orange, fontcolor=orange]; 
+     52 [label="@52: \n BIASVALUE "] 
+     53 [label="@53: \n BIASVALUE "] 
+} 

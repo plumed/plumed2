@@ -1,0 +1,119 @@
+{ 
+"timestep" : { 
+"action" : "PUT", 
+"timestep" : { "type": "scalar", "desciption": "" }
+}, 
+"posx" : { 
+"action" : "PUT", 
+"posx" : { "type": "vector", "desciption": "" }
+}, 
+"posy" : { 
+"action" : "PUT", 
+"posy" : { "type": "vector", "desciption": "" }
+}, 
+"posz" : { 
+"action" : "PUT", 
+"posz" : { "type": "vector", "desciption": "" }
+}, 
+"Masses" : { 
+"action" : "PUT", 
+"Masses" : { "type": "vector", "desciption": "" }
+}, 
+"Charges" : { 
+"action" : "PUT", 
+"Charges" : { "type": "vector", "desciption": "" }
+}, 
+"Box" : { 
+"action" : "PBC", 
+"Box" : { "type": "matrix", "desciption": "" }
+}, 
+"d1" : { 
+"action" : "DISTANCE", 
+"d1" : { "type": "scalar", "desciption": "" }
+}, 
+"d2" : { 
+"action" : "DISTANCE", 
+"d2" : { "type": "scalar", "desciption": "" }
+}, 
+"d3" : { 
+"action" : "DISTANCE", 
+"d3" : { "type": "scalar", "desciption": "" }
+}, 
+"ss" : { 
+"action" : "SORT", 
+"ss.1" : { "type": "scalar", "desciption": "1th" }
+"ss.2" : { "type": "scalar", "desciption": "2th" }
+"ss.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dall" : { 
+"action" : "DISTANCE", 
+"dall" : { "type": "vector", "desciption": "" }
+}, 
+"ssall" : { 
+"action" : "SORT", 
+"ssall.1" : { "type": "scalar", "desciption": "1th" }
+"ssall.2" : { "type": "scalar", "desciption": "2th" }
+"ssall.3" : { "type": "scalar", "desciption": "3th" }
+}, 
+"dallt" : { 
+"action" : "DISTANCE", 
+"dallt" : { "type": "vector", "desciption": "" }
+}, 
+"sfinal" : { 
+"action" : "SORT", 
+"sfinal.1" : { "type": "scalar", "desciption": "1th" }
+"sfinal.2" : { "type": "scalar", "desciption": "2th" }
+}, 
+"dallk_vatom1" : { 
+"action" : "CENTER_FAST", 
+"dallk_vatom1" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_vatom2" : { 
+"action" : "CENTER_FAST", 
+"dallk_vatom2" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_vatom3" : { 
+"action" : "CENTER_FAST", 
+"dallk_vatom3" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk_grp" : { 
+"action" : "GROUP", 
+"dallk_grp" : { "type": "atoms", "desciption": "" }
+}, 
+"dallk" : { 
+"action" : "DISTANCE", 
+"dallk" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lt1" : { 
+"action" : "LESS_THAN", 
+"dallk_lt1" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lessthan-1" : { 
+"action" : "SUM", 
+"dallk_lessthan-1" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_lt2" : { 
+"action" : "LESS_THAN", 
+"dallk_lt2" : { "type": "vector", "desciption": "" }
+}, 
+"dallk_lessthan-2" : { 
+"action" : "SUM", 
+"dallk_lessthan-2" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_lowest" : { 
+"action" : "LOWEST", 
+"dallk_lowest" : { "type": "scalar", "desciption": "" }
+}, 
+"dallk_mean" : { 
+"action" : "MEAN", 
+"dallk_mean" : { "type": "scalar", "desciption": "" }
+}, 
+"shortcut_dallk" : { 
+"action" : "DISTANCES", 
+"dallk" : { "type": "vector", "desciption": "" }
+"dallk_lessthan-1" : { "type": "scalar", "desciption": "" }
+"dallk_lessthan-2" : { "type": "scalar", "desciption": "" }
+"dallk_lowest" : { "type": "scalar", "desciption": "" }
+"dallk_mean" : { "type": "scalar", "desciption": "" }
+} 
+} 

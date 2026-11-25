@@ -22,46 +22,50 @@
 #ifndef __PLUMED_core_CLToolRegister_h
 #define __PLUMED_core_CLToolRegister_h
 
-#include <string>
-#include <map>
-#include <set>
-#include <vector>
-#include <iosfwd>
+#include "RegisterBase.h"
 #include "tools/Keywords.h"
-#include <memory>
 
 namespace PLMD {
 
 class CLTool;
 class CLToolOptions;
 
-/// Same as ActionRegister, but for CLTools
-class CLToolRegister {
-/// Write on a stream the list of registered directives
-  friend std::ostream &operator<<(std::ostream &,const CLToolRegister&);
+struct CLToolRegisterPointers {
 /// Pointer to a function which, given the options, create an CLTool
   typedef std::unique_ptr<CLTool>(*creator_pointer)(const CLToolOptions&);
 /// Pointer to a function which, returns the keywords allowed
   typedef void(*keywords_pointer)(Keywords&);
-/// Map cltool to a function which creates the related object
-  std::map<std::string,creator_pointer> m;
-/// Map cltool name to the keywords for this function
-  std::map<std::string,Keywords> mk;
-/// Set of disabled cltools (which were registered more than once)
-  std::set<std::string> disabled;
+  creator_pointer create;
+  Keywords keys;
+};
+
+
+/// Same as ActionRegister, but for CLTools
+class CLToolRegister :
+  public RegisterBase<CLToolRegisterPointers> {
+  typedef CLToolRegisterPointers::creator_pointer creator_pointer;
+  typedef CLToolRegisterPointers::keywords_pointer keywords_pointer;
+  typedef CLToolRegisterPointers Pointers;
+
+  // this is necessary to avoid warnings on getKeys overload.
+  // notice that RegisterBase<CLToolRegisterPointers>::getKeys returns
+  // the list of keys (here: CLTools). conversely
+  // CLToolRegister::getKeys(std::string name) returns the options
+  // associated to CLTool name.
+  // We hide the former here, which is actually implemented by list()
+  // not to break existing code.
+  using RegisterBase<CLToolRegisterPointers>::getKeys;
+
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param cp  A pointer to a function which creates an object of that class
 /// \param kp  A pointer to a function which returns the allowed keywords
-  void add(std::string key,creator_pointer cp,keywords_pointer kp);
-/// Verify if a directive is present in the register
-  bool check(const std::string & cltool)const;
+  ID add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Create an CLTool of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   std::unique_ptr<CLTool> create(const CLToolOptions&ao);
-  void remove(creator_pointer);
-  ~CLToolRegister();
+  std::unique_ptr<CLTool> create(const std::vector<void*> & images,const CLToolOptions&ao);
 /// Returns a list of the allowed CLTools
   std::vector<std::string> list()const;
 /// Print out the instructions for using the tool in html ready for input into the manual
@@ -77,8 +81,6 @@ public:
 /// In this manner, it is always initialized before it's used
 CLToolRegister& cltoolRegister();
 
-std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
-
 }
 
 
@@ -90,10 +92,15 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_CLTOOL(classname,directive) \
   namespace { class classname##RegisterMe{ \
-    static std::unique_ptr<PLMD::CLTool> create(const PLMD::CLToolOptions&ao){return PLMD::Tools::make_unique<classname>(ao);} \
+    CLToolRegister::ID id; \
+    static std::unique_ptr<CLTool> create(const CLToolOptions&ao) { \
+      return std::make_unique<classname>(ao); \
+    } \
   public: \
-    classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);} \
-    ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);} \
+    classname##RegisterMe() : \
+      id(PLMD::cltoolRegister().add(directive,create,classname::registerKeywords)) \
+    {} \
+    ~classname##RegisterMe(){PLMD::cltoolRegister().remove(id);} \
   } classname##RegisterMeObject; }
 
 

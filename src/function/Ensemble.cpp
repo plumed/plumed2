@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "ActionRegister.h"
+#include "tools/Communicator.h"
+#include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 
 namespace PLMD {
 namespace function {
@@ -62,6 +62,7 @@ class Ensemble :
   double   power;
 public:
   explicit Ensemble(const ActionOptions&);
+  std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
   void     calculate() override;
   static void registerKeywords(Keywords& keys);
 };
@@ -91,17 +92,14 @@ Ensemble::Ensemble(const ActionOptions&ao):
   moment(0),
   power(0) {
   parseFlag("REWEIGHT", do_reweight);
-  double temp=0.0;
-  parse("TEMP",temp);
   if(do_reweight) {
-    if(temp>0.0) {
-      kbt=plumed.getAtoms().getKBoltzmann()*temp;
-    } else {
-      kbt=plumed.getAtoms().getKbT();
-    }
+    kbt=getkBT();
     if(kbt==0.0) {
       error("Unless the MD engine passes the temperature to plumed, with REWEIGHT you must specify TEMP");
     }
+  } else {
+    double temp=0.0;
+    parse("TEMP",temp);
   }
 
   parse("MOMENT",moment);
@@ -123,8 +121,6 @@ Ensemble::Ensemble(const ActionOptions&ao):
   if(power!=0) {
     do_powers=true;
   }
-
-  checkRead();
 
   master = (comm.Get_rank()==0);
   ens_dim=0;
@@ -160,6 +156,10 @@ Ensemble::Ensemble(const ActionOptions&ao):
     }
   }
 
+  // checkRead() may calculate constant arguments immediately.
+  // All state and output components must be ready first.
+  checkRead();
+
   log.printf("  averaging over %u replicas.\n", ens_dim);
   if(do_reweight) {
     log.printf("  doing simple REWEIGHT using the latest ARGUMENT as energy.\n");
@@ -174,6 +174,20 @@ Ensemble::Ensemble(const ActionOptions&ao):
     log.printf("  calculating the %lf power of the mean (and moment)\n", power);
   }
 }
+
+std::string Ensemble::getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const {
+  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
+    if( cname==getPntrToArgument(i)->getName() ) {
+      return "the average for argument " + cname;
+    }
+    if( cname==getPntrToArgument(i)->getName() + "_m" ) {
+      return "the moment for argument " + cname;
+    }
+  }
+  plumed_error();
+  return "";
+}
+
 
 void Ensemble::calculate() {
   double norm = 0.0;

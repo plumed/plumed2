@@ -1,4 +1,4 @@
 type=driver
-plumed_modules=pamm
+plumed_modules="pamm symfunc"
 # this is to test a different name
-arg="--plumed plumed.dat --ixyz ncub.xyz"
+arg="--plumed plumed.dat --ixyz ncub.xyz --dump-forces forces --dump-forces-fmt %8.4f" # --debug-forces forces.num"

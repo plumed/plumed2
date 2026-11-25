@@ -1,0 +1,5 @@
+type=driver
+plumed_modules=symfunc
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz 64.xyz --dump-forces-fmt=%8.4f --dump-forces=forces" # --debug-forces=forces.num"
+extra_files="../../trajectories/64.xyz"

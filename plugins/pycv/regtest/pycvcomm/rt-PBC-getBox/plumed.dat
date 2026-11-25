@@ -1,0 +1,10 @@
+LOAD FILE=@pycvpath@
+
+cvPY: ...
+  PYCVINTERFACE 
+  ATOMS=1
+  IMPORT=pyGetBoxes
+  CALCULATE=pyBox
+...
+
+PRINT FILE=colvar.out ARG=*

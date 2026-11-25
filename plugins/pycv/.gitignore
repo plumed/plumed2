@@ -1,0 +1,7 @@
+/Makefile.conf
+*.o
+*.so
+/env*/
+/build*/
+/dist*/
+*.whl

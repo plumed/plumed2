@@ -1,0 +1,5 @@
+type=driver
+plumed_modules="symfunc adjmat"
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz forgareth.xyz --length-units=A --box=70.0,70.0,70.0 --dump-forces=forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/forgareth.xyz"

@@ -1,0 +1,3 @@
+after setNumOMPthreads(3): 3
+after setNumOMPthreads(5): 5
+after setNumOMPthreads(0): 1

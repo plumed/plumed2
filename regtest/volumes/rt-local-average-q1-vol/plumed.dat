@@ -1,0 +1,16 @@
+# Fixed virtual atom which serves as the probe volume's center (pos. in nm)
+center: FIXEDATOM AT=0,0,0
+
+# Calculates q_{l,m}(i)
+q1: Q1 SPECIES=1-64 SWITCH={RATIONAL D_0=3.0 R_0=1.5} 
+
+# Calculates local q1 parameter
+qbar1: LOCAL_AVERAGE SPECIES=q1 SWITCH={RATIONAL D_0=3.0 R_0=1.5} 
+
+# Probe volume
+sphere: INSPHERE ATOMS=1-64 CENTER=center RADIUS={GAUSSIAN R_0=2.0 D_MAX=3.0} 
+prod: MATHEVAL ARG=qbar1,sphere FUNC=x*y PERIODIC=NO
+sphere_sum: SUM ARG=prod PERIODIC=NO
+
+PRINT ARG=sphere_sum FILE=colvar FMT=%8.4f
+BIASVALUE ARG=sphere_sum

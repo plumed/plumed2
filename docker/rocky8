@@ -1,29 +1,43 @@
 FROM rockylinux/rockylinux:8
 
-# NOTE: numpy==1.19 is the last version compatible with python 3.6
-# NOTE: pillow==8.4.0 leads to an error while installing on centos7
 RUN yum -y update \
  && yum -y install dnf-plugins-core \
  && dnf config-manager --set-enabled powertools \
  && yum -y group install "Development Tools" \
  && yum -y install environment-modules gawk vim wget \
-                   lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
-                   python3 python3-devel python3-pip \
- && pip3 install pillow==8.3.2 \
- && pip3 install numpy==1.19 \
- && pip3 install "cython<3" numpy pandas mdtraj \
- && pip3 install MDAnalysis==1.0.0
+ lapack-devel blas-devel zlib-devel gsl-devel fftw-devel openmpi-devel boost-devel \
+ openssl-devel libffi-devel 
 
 RUN useradd -ms /bin/bash plumed
+#These are needed for installing python
+
 USER plumed
 WORKDIR /home/plumed
+
+#Install python with --embedded enabled
+RUN PYVERSION="3.9.16" \
+ && curl -LO https://www.python.org/ftp/python/${PYVERSION}/Python-${PYVERSION}.tgz \
+ && tar xzf Python-${PYVERSION}.tgz \
+ && cd Python-${PYVERSION} \
+ && ./configure --enable-shared --prefix=$HOME/.local \
+ && make -j 4 \
+ && make install \
+ && echo "export LD_LIBRARY_PATH=$HOME/.local/lib/${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}" >> "$HOME/.bashrc"
+
+RUN . ./.bashrc \                
+ && pip3 install --user -U pip \
+ && pip3 install --user pillow \
+ && pip3 install --user Cython \
+ && pip3 install --user pandas \
+ && pip3 install --user mdtraj     \
+ && pip3 install --user MDAnalysis
 
 # import plumed code.
 # assumes a file plumed2.tgz is present in the Dockerfile directory
 COPY plumed2.tgz /home/plumed
 
 # build and test plumed (no install)
-RUN . /etc/bashrc \
+RUN . ./.bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
  && export OMPI_MCA_btl_base_verbose=0 \
@@ -42,4 +56,3 @@ RUN . /etc/bashrc \
  && ./configure --enable-modules=all --enable-boost_serialization \
  && make -j 4 \
  && make check
-

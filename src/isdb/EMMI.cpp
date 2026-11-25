@@ -25,6 +25,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Matrix.h"
+#include "tools/Communicator.h"
 #include "core/GenericMolInfo.h"
 #include "core/ActionSet.h"
 #include "tools/File.h"
@@ -229,7 +230,7 @@ private:
 // calculate model GMM weights and covariances
   std::vector<double> get_GMM_m(std::vector<AtomNumber> &atoms);
 // read data GMM file
-  void get_GMM_d(std::string gmm_file);
+  void get_GMM_d(const std::string & gmm_file);
 // check GMM data
   void check_GMM_d(const VectorGeneric<6> &cov, double w);
 // auxiliary method
@@ -359,9 +360,10 @@ void EMMI::apply() {
     }
   }
   if( wasforced ) {
-    addForcesOnArguments( forcesToApply );
+    unsigned ind=0;
+    addForcesOnArguments( 0, forcesToApply, ind, getLabel() );
     if( getNumberOfAtoms()>0 ) {
-      setForcesOnAtoms( forcesToApply, getNumberOfArguments() );
+      setForcesOnAtoms( forcesToApply, ind );
     }
   }
 }
@@ -432,7 +434,6 @@ void EMMI::registerKeywords( Keywords& keys ) {
   keys.add("optional","AVERAGING", "Averaging window for weights");
   keys.addFlag("NO_AVER",false,"don't do ensemble averaging in multi-replica mode");
   keys.addFlag("REWEIGHT",false,"simple REWEIGHT using the ARG as energy");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("scoreb","default","Bayesian score");
   keys.addOutputComponent("acc",   "NOISETYPE","MC acceptance for uncertainty");
   keys.addOutputComponent("scale", "REGRESSION","scale factor");
@@ -535,14 +536,7 @@ EMMI::EMMI(const ActionOptions&ao):
   parse("NORM_DENSITY", norm_d);
 
   // temperature
-  double temp=0.0;
-  parse("TEMP",temp);
-  // convert temp to kbt
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_ = getkBT();
 
   // exponent of uncertainty prior
   parse("PRIOR",prior_);
@@ -1174,7 +1168,7 @@ void EMMI::check_GMM_d(const VectorGeneric<6> &cov, double w) {
 }
 
 // read GMM data file in PLUMED format:
-void EMMI::get_GMM_d(std::string GMM_file) {
+void EMMI::get_GMM_d(const std::string & GMM_file) {
   VectorGeneric<6> cov;
 
 // open file

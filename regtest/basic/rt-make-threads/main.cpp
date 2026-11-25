@@ -78,7 +78,7 @@ int main(){
     { // write plumed file
       std::sprintf(buffer,"plumed%d.dat",n);
       auto fp=std::fopen(buffer,"w");
-      std::fprintf(fp,"DUMPATOMS ATOMS=1 FILE=test%d.xyz PRECISION=2\n",n);
+      std::fprintf(fp,"DUMPATOMS ATOMS=1 FILE=test%d.xyz PRECISION=3\n",n);
       std::fclose(fp);
     }
     { // run

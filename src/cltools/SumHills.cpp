@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "tools/Tools.h"
 #include "core/Action.h"
 #include "core/ActionRegister.h"
@@ -411,7 +411,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 //  for(unsigned i=0;i< actioninput.size();i++){
 //    cerr<<"AA "<<actioninput[i]<<endl;
 //  }
-      plumed.readInputWords(actioninput);
+      plumed.readInputWords(actioninput,false);
     }
 
   }
@@ -598,7 +598,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc) {
 //  for(unsigned i=0;i< actioninput.size();i++){
 //   cerr<<"AA "<<actioninput[i]<<endl;
 //  }
-  plumed.readInputWords(actioninput);
+  plumed.readInputWords(actioninput,false);
   // if not a grid, then set it up automatically
   return 0;
 }

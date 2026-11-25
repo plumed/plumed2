@@ -1,0 +1,11 @@
+Plumed reads "PLUMED_CACHELINE_SIZE" correctly: true
+Plumed reads "PLUMED_NUM_THREADS": correctly: true
+Checking getGoodNumThreads
+std::vector version:
+getGoodNumThreads with a small vector returns 1: true
+getGoodNumThreads with returns "PLUMED_NUM_THREADS": true
+Pointer version:
+getGoodNumThreads(pointer) with a small vector returns 1: true
+getGoodNumThreads(pointer) with returns "PLUMED_NUM_THREADS": true
+After setting the number of threads to 3:
+getNumThreads reaturns 3: true

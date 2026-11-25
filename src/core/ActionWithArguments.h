@@ -39,6 +39,8 @@ This is used in PLMD::Function and PLMD::Bias
  when you use parseArgumentList.
 */
 
+class ActionSet;
+
 class ActionWithArguments:
   public virtual Action {
   std::vector<Value*> arguments;
@@ -54,7 +56,7 @@ public:
 /// Returns the value of an argument
   double getArgument( const unsigned n ) const;
 /// Return a pointer to specific argument
-  Value* getPntrToArgument( const unsigned n );
+  Value* getPntrToArgument( const unsigned n ) const;
 /// Returns the number of arguments
   virtual unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
@@ -69,7 +71,7 @@ public:
   void requestArguments(const std::vector<Value*> &arg);
   void requestExtraDependencies(const std::vector<Value*> &extra);
 /// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const std::vector<double>& forces );
+  void addForcesOnArguments( const unsigned& argstart, const std::vector<double>& forces, unsigned& ind, const std::string& c );
 public:
   explicit ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments() {}
@@ -82,12 +84,19 @@ public:
 /// Returns an array of pointers to the arguments
   virtual const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
-  void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
+  static void interpretArgumentList(const std::vector<std::string>& c, const ActionSet& as, Action* action, std::vector<Value*>&arg);
+/// Used to calculate constant values in startup
+  virtual bool calculateConstantValues( const bool& have_atoms );
+/// Get the gradient for this action
+  void setGradients( Value* myval, unsigned& start ) const ;
+  ActionWithArguments* castToActionWithArguments() noexcept final {
+    return this;
+  }
 };
 
 
 inline
-Value* ActionWithArguments::getPntrToArgument( const unsigned n ) {
+Value* ActionWithArguments::getPntrToArgument( const unsigned n ) const {
   return arguments[n];
 }
 

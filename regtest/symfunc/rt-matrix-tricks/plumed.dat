@@ -1,0 +1,52 @@
+q4: Q4 SPECIES=1-64 D_0=3.0 R_0=1.5 NN=12 MEAN
+
+nq4_rm-n4: CUSTOM ARG=q4_sp.rm-n4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n4: CUSTOM ARG=q4_sp.im-n4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n3: CUSTOM ARG=q4_sp.rm-n3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n3: CUSTOM ARG=q4_sp.im-n3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n2: CUSTOM ARG=q4_sp.rm-n2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n2: CUSTOM ARG=q4_sp.im-n2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-n1: CUSTOM ARG=q4_sp.rm-n1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-n1: CUSTOM ARG=q4_sp.im-n1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-0: CUSTOM ARG=q4_sp.rm-0,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-0: CUSTOM ARG=q4_sp.im-0,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p1: CUSTOM ARG=q4_sp.rm-p1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p1: CUSTOM ARG=q4_sp.im-p1,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p2: CUSTOM ARG=q4_sp.rm-p2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p2: CUSTOM ARG=q4_sp.im-p2,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p3: CUSTOM ARG=q4_sp.rm-p3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p3: CUSTOM ARG=q4_sp.im-p3,q4_norm FUNC=x/y PERIODIC=NO
+nq4_rm-p4: CUSTOM ARG=q4_sp.rm-p4,q4_norm FUNC=x/y PERIODIC=NO
+nq4_im-p4: CUSTOM ARG=q4_sp.im-p4,q4_norm FUNC=x/y PERIODIC=NO
+
+data4: VSTACK ARG=nq4_rm-n4,nq4_im-n4,nq4_rm-n3,nq4_im-n3,nq4_rm-n2,nq4_im-n2,nq4_rm-n1,nq4_im-n1,nq4_rm-0,nq4_im-0,nq4_rm-p1,nq4_im-p1,nq4_rm-p2,nq4_im-p2,nq4_rm-p3,nq4_im-p3,nq4_rm-p4,nq4_im-p4
+
+mask: CONSTANT VALUES=1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+# Multiply Q4 matrix by the mask
+data4T: TRANSPOSE ARG=data4
+glob: MATRIX_VECTOR_PRODUCT ARG=data4T,mask
+
+P: SELECT_COMPONENTS ARG=glob COMPONENTS=16,17,18
+
+# And three vectors for Q
+QM1: SELECT_COMPONENTS ARG=glob COMPONENTS=1,2,3,4,5,6
+QM2: SELECT_COMPONENTS ARG=glob COMPONENTS=7,8,9,10,11,12
+QM3: SELECT_COMPONENTS ARG=glob COMPONENTS=13,14,15,16,17,18
+# And make a matrix by joining the three vectors together
+Q: VSTACK ARG=QM1,QM2,QM3
+
+# And compute O
+O: MATRIX_VECTOR_PRODUCT ARG=Q,P
+
+# And create an eigenvector
+eig: CONSTANT VALUES=1,1,1,1,1,1
+
+# And calculate the CV
+cv_prod: CUSTOM ARG=O,eig FUNC=x*y PERIODIC=NO
+cv: SUM ARG=cv_prod PERIODIC=NO
+
+# Add a force
+BIASVALUE ARG=cv
+
+PRINT ARG=cv FILE=colvar STRIDE=1

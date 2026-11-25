@@ -1,0 +1,58 @@
+flowchart TB 
+MD(positions from MD)
+Box("label=Box 
+ PBC 
+")
+Box -- Box --> c1
+linkStyle 0 stroke:red,color:red;
+MD --> c1
+linkStyle 1 stroke:violet,color:violet;
+subgraph subc1 [c1]
+subgraph subc1_mat [c1]
+c1(["label=c1 
+ CONTACT_MATRIX 
+"])
+cc(["label=cc 
+ MATRIX_VECTOR_PRODUCT 
+"])
+end
+style subc1_mat fill:lightblue
+mtc(["label=mtc 
+ MORE_THAN 
+"])
+s(["label=s 
+ SUM 
+"])
+end
+c1 -- c1 --> 2
+linkStyle 2 stroke:red,color:red;
+2("label=#64;2 
+ PRINT
+FILE=colvar 
+")
+ones(["label=ones 
+ CONSTANT 
+"])
+c1 -- c1 --> cc
+linkStyle 3 stroke:red,color:red;
+ones -- ones --> cc
+linkStyle 4 stroke:blue,color:blue;
+cc -- cc --> 6
+linkStyle 5 stroke:blue,color:blue;
+6("label=#64;6 
+ PRINT
+FILE=coords 
+")
+cc -- cc --> mtc
+linkStyle 6 stroke:blue,color:blue;
+mtc -- mtc --> s
+linkStyle 7 stroke:blue,color:blue;
+s -- s --> 11
+11("label=#64;11 
+ PRINT
+FILE=fcolvar 
+")
+s -- s --> 12
+12(["label=#64;12 
+ BIASVALUE 
+"])

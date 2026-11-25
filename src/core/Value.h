@@ -32,7 +32,9 @@
 
 namespace PLMD {
 
+class OFile;
 class ActionWithValue;
+class ActionAtomistic;
 
 /// \ingroup TOOLBOX
 /// A class for holding the value of a function together with its derivatives.
@@ -45,34 +47,50 @@ class ActionWithValue;
 /// you are implementing please feel free to use it.
 class Value {
   friend class ActionWithValue;
-/// This copies the contents of a value into a second value (just the derivatives and value)
-  friend void copy( const Value& val1, Value& val2 );
-/// This copies the contents of a value into a second value (but second value is a pointer)
-  friend void copy( const Value& val, Value* val2 );
-/// This adds some derivatives onto the value
-  friend void add( const Value& val1, Value* valout );
-/// This calculates val1*val2 and sorts out the derivatives
-  friend void product( const Value& val1, const Value& val2, Value& valout );
-/// This calculates va1/val2 and sorts out the derivatives
-  friend void quotient( const Value& val1, const Value& val2, Value* valout );
+  friend class ActionWithVector;
+  friend class ActionAtomistic;
+  friend class ActionWithArguments;
+  friend class ActionWithVirtualAtom;
+  friend class DomainDecomposition;
+  template<typename T>
+  friend class DataPassingObjectTyped;
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
 /// Had the value been set
   bool value_set;
 /// The value of the quantity
-  double value;
+  std::vector<double> data;
 /// The force acting on this quantity
-  double inputForce;
+  std::vector<double> inputForce;
 /// A flag telling us we have a force acting on this quantity
   bool hasForce;
+/// The way this value is used in the code
+/// normal = regular value that is determined during calculate
+/// constant = constnt value that is determined during startup and that doesn't change during simulation
+/// average = value that is averaged/collected over multiple steps of trajectory
+/// calcFromAverage = value that is calculated from an average value
+  enum {normal,constant,average,calcFromAverage} valtype=normal;
+/// This is used by ActionWithValue to set the valtype
+  void setValType( const std::string& vtype );
+/// This is used by ActionWithValue to determine if we need to calculate on update
+  bool calculateOnUpdate() const ;
 /// The derivatives of the quantity stored in value
-  std::vector<double> derivatives;
   std::map<AtomNumber,Vector> gradients;
 /// The name of this quantiy
   std::string name;
+/// Are we storing the data for this value if it is vector or matrix
+  bool storedata;
+/// What is the shape of the value (0 dimensional=scalar, n dimensional with derivatives=grid, 1 dimensional no derivatives=vector, 2 dimensional no derivatives=matrix)
+  std::vector<unsigned> shape;
 /// Does this quanity have derivatives
   bool hasDeriv;
+/// Variables for storing data
+  unsigned bufstart, streampos, matpos, ngrid_der, ncols, book_start;
+/// If we are storing a matrix is it symmetric?
+  bool symmetric;
+/// This is a bookeeping array that holds the non-zero elements of the "sparse" matrix
+  std::vector<unsigned> matrix_bookeeping;
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
@@ -80,23 +98,33 @@ private:
   double min,max;
   double max_minus_min;
   double inv_max_minus_min;
+/// Is the derivative of this quantity zero when the value is zero
+  bool derivativeIsZeroWhenValueIsZero;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 // bring value within PBCs
-  void applyPeriodicity();
+  void applyPeriodicity( const unsigned& ival );
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
 /// A constructor that can be used to make Vectors of named values
   explicit Value(const std::string& name);
 /// A constructor that is used throughout the code to setup the value poiters
-  Value(ActionWithValue* av, const std::string& name, const bool withderiv);
+  Value(ActionWithValue* av, const std::string& name, const bool withderiv,const std::vector<unsigned>&ss=std::vector<unsigned>());
+/// Set the shape of the Value
+  void setShape( const std::vector<unsigned>&ss );
 /// Set the value of the function
   void set(double);
+/// Set the value of the stored data
+  void set(const std::size_t& n, const double& v );
 /// Add something to the value of the function
   void add(double);
+/// Add something to the ith element of the data array
+  void add(const std::size_t& n, const double& v );
+/// Get the location of this element of in the store
+  std::size_t getIndexInStore( const std::size_t& ival ) const ;
 /// Get the value of the function
-  double get() const;
+  double get( const std::size_t& ival=0, const bool trueind=true ) const;
 /// Find out if the value has been set
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
@@ -118,21 +146,25 @@ public:
 /// Set the number of derivatives
   void resizeDerivatives(int n);
 /// Set all the derivatives to zero
-  void clearDerivatives();
+  void clearDerivatives( const bool force=false );
 /// Add some derivative to the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void addDerivative(unsigned i,double d);
 /// Set the value of the ith component of the derivatives array
+/// Derivative writes to constant scalars are ignored.
   void setDerivative(unsigned i, double d);
-/// Apply the chain rule to the derivatives
-  void chainRule(double df);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
   void clearInputForce();
+/// Special method for clearing forces on variables used by DataPassingObject
+  void clearInputForce( const std::vector<AtomNumber>& index );
 /// Add some force on this value
-  void  addForce(double f);
+  void addForce(double f);
+/// Add some force on the ival th component of this value
+  void addForce( const std::size_t& ival, double f, const bool trueind=true );
 /// Get the value of the force on this colvar
-  double getForce() const ;
+  double getForce( const std::size_t& ival=0 ) const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false)
   bool applyForce( std::vector<double>& forces ) const ;
 /// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
@@ -146,74 +178,109 @@ public:
 /// Get the difference between max and minimum of domain
   double getMaxMinusMin()const;
 /// This sets up the gradients
-  void setGradients();
+  void setGradients( ActionAtomistic* aa, unsigned& start );
+/// This passes gradients from one action to another
+  void passGradients( const double& der, std::map<AtomNumber,Vector>& g ) const ;
   static double projection(const Value&,const Value&);
+/// Get the rank of the object that is contained in this value
+  unsigned getRank() const ;
+/// Get the shape of the object that is contained in this value
+  const std::vector<unsigned>& getShape() const ;
+/// This turns on storing of vectors/matrices
+  void buildDataStore( const bool forprint=false );
+/// Reshape the storage for sparse matrices
+  void reshapeMatrixStore( const unsigned& n );
+/// Set the symmetric flag equal true for this matrix
+  void setSymmetric( const bool& sym );
+/// Get the total number of scalars that are stored here
+  unsigned getNumberOfValues() const ;
+/// Get the number of values that are actually stored here once sparse matrices are taken into account
+  unsigned getNumberOfStoredValues() const ;
+/// Get the number of threads to use when assigning this value
+  unsigned getGoodNumThreads( const unsigned& j, const unsigned& k ) const ;
+/// These are used for passing around the data in this value when we are doing replica exchange
+  void writeBinary(std::ostream&o) const ;
+  void readBinary(std::istream&i);
+/// These are used for making constant values
+  bool isConstant() const ;
+  void setConstant();
+/// Check if forces have been added on this value
+  bool forcesWereAdded() const ;
+/// Set a bool that tells us if the derivative is zero when the value is zero true
+  void setDerivativeIsZeroWhenValueIsZero();
+/// Return a bool that tells us if the derivative is zero when the value is zero
+  bool isDerivativeZeroWhenValueIsZero() const ;
+///
+  unsigned getPositionInStream() const ;
+/// This stuff handles where to look for the start of the row that contains the row of the matrix
+  void setPositionInMatrixStash( const unsigned& p );
+  unsigned getPositionInMatrixStash() const ;
+/// This stuff handles where to keep the bookeeping stuff for storing the sparse matrix
+  void setMatrixBookeepingStart( const unsigned& b );
+  unsigned getMatrixBookeepingStart() const ;
+/// Convert the input index to its corresponding indices
+  void convertIndexToindices(const std::size_t& index, std::vector<unsigned>& indices ) const ;
+/// Print out all the values in this Value
+  void print( OFile& ofile ) const ;
+/// Are we to ignore the stored value
+  bool ignoreStoredValue(const std::string& n) const ;
+/// Set a matrix element to be non zero
+  void setMatrixBookeepingElement( const unsigned& i, const unsigned& n );
+///
+  unsigned getRowLength( const unsigned& irow ) const ;
+///
+  unsigned getRowIndex( const unsigned& irow, const unsigned& jind ) const ;
+/// Are we storing this value
+  bool valueIsStored() const ;
+///
+  unsigned getNumberOfColumns() const ;
+///
+  bool isSymmetric() const ;
+/// Retrieve the non-zero edges in a matrix
+  void retrieveEdgeList( unsigned& nedge, std::vector<std::pair<unsigned,unsigned> >& active, std::vector<double>& elems );
+/// Get the number of derivatives that the grid has
+  unsigned getNumberOfGridDerivatives() const ;
+/// get the derivative of a grid at a point n with resepct to argument j
+  double getGridDerivative(const unsigned& n, const unsigned& j ) const ;
+/// Add the derivatives of the grid to the corner
+  void addGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
+///
+  void setGridDerivatives( const unsigned& n, const unsigned& j, const double& val );
+/// Add another value to the end of the data vector held by this value.  This is used in COLLECT
+  void push_back( const double& val );
+/// Get the type of value that is stored here
+  std::string getValueType() const ;
 };
 
-void copy( const Value& val1, Value& val2 );
-void copy( const Value& val1, Value* val2 );
-void add( const Value& val1, Value* valout );
-
 inline
-void Value::applyPeriodicity() {
+void Value::applyPeriodicity(const unsigned& ival) {
   if(periodicity==periodic) {
-    value=min+difference(min,value);
-    if(value<min) {
-      value+=max_minus_min;
+    data[ival]=min+difference(min,data[ival]);
+    if(data[ival]<min) {
+      data[ival]+=max_minus_min;
     }
   }
 }
 
 inline
-void product( const Value& val1, const Value& val2, Value& valout ) {
-  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout.derivatives.size()!=val1.derivatives.size() ) {
-    valout.resizeDerivatives( val1.derivatives.size() );
-  }
-  valout.value_set=false;
-  valout.clearDerivatives();
-  double u=val1.value;
-  double v=val2.value;
-  for(unsigned i=0; i<val1.derivatives.size(); ++i) {
-    valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
-  }
-  valout.set( u*v );
-}
-
-inline
-void quotient( const Value& val1, const Value& val2, Value* valout ) {
-  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
-  if( valout->derivatives.size()!=val1.derivatives.size() ) {
-    valout->resizeDerivatives( val1.derivatives.size() );
-  }
-  valout->value_set=false;
-  valout->clearDerivatives();
-  double u=val1.get();
-  double v=val2.get();
-  for(unsigned i=0; i<val1.getNumberOfDerivatives(); ++i) {
-    valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
-  }
-  valout->chainRule( 1/(v*v) );
-  valout->set( u / v );
-}
-
-inline
 void Value::set(double v) {
   value_set=true;
-  value=v;
-  applyPeriodicity();
+  data[0]=v;
+  applyPeriodicity(0);
 }
 
 inline
 void Value::add(double v) {
   value_set=true;
-  value+=v;
-  applyPeriodicity();
+  data[0]+=v;
+  applyPeriodicity(0);
 }
 
 inline
-double Value::get()const {
-  return value;
+void Value::add(const std::size_t& n, const double& v ) {
+  value_set=true;
+  data[n]+=v;
+  applyPeriodicity(n);
 }
 
 inline
@@ -229,13 +296,16 @@ const std::string& Value::getName()const {
 inline
 unsigned Value::getNumberOfDerivatives() const {
   plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
-  return derivatives.size();
+  if( shape.size()>0 ) {
+    return shape.size();
+  }
+  return data.size() - 1;
 }
 
 inline
 double Value::getDerivative(const unsigned n) const {
-  plumed_dbg_massert(n<derivatives.size(),"you are asking for a derivative that is out of bounds");
-  return derivatives[n];
+  plumed_dbg_massert(n<getNumberOfDerivatives(),"you are asking for a derivative that is out of bounds");
+  return data[1+n];
 }
 
 inline
@@ -245,53 +315,85 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n) {
+  if( shape.size()>0 ) {
+    return;
+  }
   if(hasDeriv) {
-    derivatives.resize(n);
+    data.resize(1+n);
   }
 }
 
 inline
 void Value::addDerivative(unsigned i,double d) {
-  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
-  derivatives[i]+=d;
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
+    return;
+  }
+  plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
+  data[1+i]+=d;
 }
 
 inline
 void Value::setDerivative(unsigned i, double d) {
-  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
-  derivatives[i]=d;
-}
-
-inline
-void Value::chainRule(double df) {
-  for(unsigned i=0; i<derivatives.size(); ++i) {
-    derivatives[i]*=df;
+  plumed_dbg_assert( shape.empty() );
+  // Constant scalars store only their value, without derivative storage.
+  if(valtype==constant) {
+    return;
   }
+  plumed_dbg_massert(i<getNumberOfDerivatives(),"derivative is out of bounds");
+  data[1+i]=d;
 }
 
 inline
 void Value::clearInputForce() {
+  if( !hasForce ) {
+    return;
+  }
   hasForce=false;
-  inputForce=0.0;
+  std::fill(inputForce.begin(),inputForce.end(),0);
 }
 
 inline
-void Value::clearDerivatives() {
+void Value::clearInputForce( const std::vector<AtomNumber>& index ) {
+  if( !hasForce ) {
+    return;
+  }
+  hasForce=false;
+  for(const auto & p : index) {
+    inputForce[p.index()]=0;
+  }
+}
+
+inline
+void Value::clearDerivatives( const bool force ) {
+  if( !force && (valtype==constant || valtype==average) ) {
+    return;
+  }
+
   value_set=false;
-  std::fill(derivatives.begin(), derivatives.end(), 0);
+  if( data.size()>1 ) {
+    std::fill(data.begin()+1, data.end(), 0);
+  }
 }
 
 inline
 void Value::addForce(double f) {
-  plumed_dbg_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   hasForce=true;
-  inputForce+=f;
+  inputForce[0]+=f;
 }
 
 inline
-double Value::getForce() const {
-  return inputForce;
+bool Value::forcesWereAdded() const {
+  return hasForce;
 }
+
+inline
+double Value::getForce( const std::size_t& ival ) const {
+  plumed_dbg_assert( ival<inputForce.size() );
+  return inputForce[ival];
+}
+
 /// d2-d1
 inline
 double Value::difference(double d1,double d2)const {
@@ -323,7 +425,124 @@ double Value::getMaxMinusMin()const {
   return max_minus_min;
 }
 
+inline
+unsigned Value::getRank() const {
+  return shape.size();
 }
 
+inline
+const std::vector<unsigned>& Value::getShape() const {
+  return shape;
+}
+
+inline
+unsigned Value::getNumberOfValues() const {
+  unsigned size=1;
+  for(unsigned i=0; i<shape.size(); ++i) {
+    size *= shape[i];
+  }
+  return size;
+}
+
+inline
+unsigned Value::getNumberOfStoredValues() const {
+  if( getRank()==2 && !hasDeriv ) {
+    return shape[0]*ncols;
+  }
+  return getNumberOfValues();
+}
+
+inline
+bool Value::isConstant() const {
+  return valtype==constant;
+}
+
+inline
+void Value::setDerivativeIsZeroWhenValueIsZero() {
+  derivativeIsZeroWhenValueIsZero=true;
+}
+
+inline
+bool Value::isDerivativeZeroWhenValueIsZero() const {
+  return derivativeIsZeroWhenValueIsZero;
+}
+
+inline
+unsigned Value::getPositionInStream() const {
+  return streampos;
+}
+
+inline
+unsigned Value::getPositionInMatrixStash() const {
+  return matpos;
+}
+
+inline
+void Value::setMatrixBookeepingStart( const unsigned& b ) {
+  book_start = b;
+}
+
+inline
+unsigned Value::getMatrixBookeepingStart() const {
+  return book_start;
+}
+
+inline
+void Value::setMatrixBookeepingElement( const unsigned& i, const unsigned& n ) {
+  plumed_dbg_assert( i<matrix_bookeeping.size() );
+  matrix_bookeeping[i]=n;
+}
+
+inline
+bool Value::valueIsStored() const {
+  return storedata;
+}
+
+inline
+unsigned Value::getRowLength( const unsigned& irow ) const {
+  plumed_dbg_assert( (1+ncols)*irow<matrix_bookeeping.size() );
+  return matrix_bookeeping[(1+ncols)*irow];
+}
+
+inline
+unsigned Value::getRowIndex( const unsigned& irow, const unsigned& jind ) const {
+  plumed_dbg_assert( (1+ncols)*irow+1+jind<matrix_bookeeping.size() && jind<matrix_bookeeping[(1+ncols)*irow] );
+  return matrix_bookeeping[(1+ncols)*irow+1+jind];
+}
+
+inline
+unsigned Value::getNumberOfColumns() const {
+  return ncols;
+}
+
+inline
+bool Value::isSymmetric() const {
+  return symmetric;
+}
+
+inline
+unsigned Value::getNumberOfGridDerivatives() const {
+  return ngrid_der;
+}
+
+inline
+double Value::getGridDerivative(const unsigned& n, const unsigned& j ) const {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  return data[n*(1+ngrid_der) + 1 + j];
+}
+
+inline
+void Value::addGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  data[n*(1+ngrid_der) + 1 + j] += val;
+}
+
+inline
+void Value::setGridDerivatives( const unsigned& n, const unsigned& j, const double& val ) {
+  plumed_dbg_assert( hasDeriv && n*(1+ngrid_der) + 1 + j < data.size() );
+  data[n*(1+ngrid_der) + 1 + j] = val;
+}
+
+}
 #endif
 

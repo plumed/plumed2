@@ -52,7 +52,6 @@ void Bias::registerKeywords( Keywords& keys ) {
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
@@ -67,9 +66,8 @@ void Bias::apply() {
     }
   }
 
-  // additional forces on the bias component
-  std::vector<double> f(noa,0.0);
-  std::vector<double> forces(noa);
+  f.assign(noa,0.0);
+  forces.resize(noa);
 
   bool at_least_one_forced=false;
   for(unsigned i=0; i<ncp; ++i) {

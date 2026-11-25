@@ -1,0 +1,3 @@
+q1: Q1 SPECIES=1-10 SWITCH={RATIONAL R_0=1}
+
+gg: GSYMFUNC_THREEBODY WEIGHT=q1_mat.w ARG=q1_mat.x,q1_mat.y,q1_mat.z FUNCTION1={FUNC=0.125*(1+6.6*cos(ajik))^4 LABEL=g6} FUNCTION2={FUNC=sin(3.0*(ajik-1)) LABEL=g7}

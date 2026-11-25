@@ -1,0 +1,5 @@
+type=make
+# this is needed since we check the error messages in the report
+export PLUMED_STACK_TRACE=no
+# this is because we run many times
+export PLUMED_MAXBACKUP=-1

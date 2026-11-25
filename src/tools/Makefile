@@ -1,4 +1,4 @@
-USE=core lapack lepton
+USE=core lapack lepton small_vector
 
 # generic makefile
 include ../maketools/make.module

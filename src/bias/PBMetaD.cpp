@@ -20,10 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "core/ActionSet.h"
 #include "core/PlumedMain.h"
-#include "core/Atoms.h"
 #include "core/FlexibleBin.h"
 #include "tools/Exception.h"
 #include "tools/Grid.h"
@@ -31,11 +30,9 @@
 #include "tools/OpenMP.h"
 #include "tools/Random.h"
 #include "tools/File.h"
+#include "tools/Communicator.h"
 #include <ctime>
 #include <numeric>
-#if defined(__PLUMED_HAS_GETCWD)
-#include <unistd.h>
-#endif
 
 namespace PLMD {
 namespace bias {
@@ -359,7 +356,7 @@ void PBMetaD::registerKeywords(Keywords& keys) {
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
-  keys.add("numbered","PF", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF”");
+  keys.add("numbered","PF", "specify which CVs belong in a partitioned family. Once a PF is specified, all CVs in ARG must be placed in a PF even if there is one CV per PF");
   keys.add("optional","SELECTOR", "add forces and do update based on the value of SELECTOR");
   keys.add("optional","SELECTOR_ID", "value of SELECTOR");
   keys.add("optional","WALKERS_ID", "walker id");
@@ -532,13 +529,7 @@ PBMetaD::PBMetaD(const ActionOptions& ao):
   if( biasf_<1.0 ) {
     error("well tempered bias factor is nonsensical");
   }
-  double temp=0.0;
-  parse("TEMP",temp);
-  if(temp>0.0) {
-    kbt_=plumed.getAtoms().getKBoltzmann()*temp;
-  } else {
-    kbt_=plumed.getAtoms().getKbT();
-  }
+  kbt_=getkBT();
   if(biasf_>1.0) {
     if(kbt_==0.0) {
       error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");

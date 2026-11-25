@@ -1,0 +1,7 @@
+type=driver
+plumed_modules=symfunc
+# this is to test automatic sizing  
+arg="--parse-only --natoms 10000 --shortcut-ofile shortcuts.json --valuedict-ofile values_pre.json"
+function plumed_regtest_after(){
+  cat values_pre.json | awk '{ for(i=1;i<=NF;++i){ if(!match($1,/gg\./) && !match($1,/_sp\.[r,i]m-/) && $i=="\"description\":") { printf("\"desciption\": \"\" }"); break; } printf "%s ", $i }; printf("\n");}' > values.json
+}

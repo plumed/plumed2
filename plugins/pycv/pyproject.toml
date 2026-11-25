@@ -1,0 +1,64 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.10.3,<=2.11.1", "numpy"]
+build-backend = "scikit_build_core.build"
+
+
+[project]
+name = "pycv"
+dependencies = [
+  "numpy",
+  "pybind11>=2.10.3,<=2.11.1"
+]
+version = "0.0.1"
+description="PyCV support module for plumed"
+readme = "README.md"
+authors = [
+  { name = "Toni Giorgino", email = "toni.giorgino@gmail.com" },
+  { name = "Daniele Rapetti", email = "daniele.rapetti@sissa.it" },
+]
+requires-python = ">=3.9"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "plumed"]
+
+[project.scripts]
+pycv = "pycv:main"
+
+[tool.scikit-build]
+wheel.expand-macos-universal-tags = true
+minimum-version = "build-system.requires"
+
+# Uncomment this if you are developing pycv
+#[tool.scikit-build.cmake.define]
+#CMAKE_CXX_COMPILER_LAUNCHER="ccache"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+log_cli_level = "INFO"
+filterwarnings = [
+  "error",
+  "ignore::pytest.PytestCacheWarning",
+]
+testpaths = ["pythontests"]
+
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+test-command = "pytest {project}/pythontests"
+test-extras = ["test"]
+
+[tool.cibuildwheel.pyodide]
+build-frontend = {name = "build", args = ["--exports", "whole_archive"]}
+

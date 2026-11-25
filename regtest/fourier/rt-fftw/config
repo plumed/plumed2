@@ -1,0 +1,5 @@
+type=driver
+plumed_needs="fftw"
+plumed_modules="symfunc fourier"
+# this is to test a different name
+arg="--plumed plumed.dat --ixyz trajectory.xyz"

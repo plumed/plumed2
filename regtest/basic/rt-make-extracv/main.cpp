@@ -30,6 +30,13 @@ int main(){
   plumed->cmd("readInputLine","PRINT ARG=e3 FILE=extra3 STRIDE=3");
 
   std::ofstream ofs("output");
+  long int rank=-1; plumed->cmd("getDataRank d",&rank,1 ); 
+  ofs<<"distance rank "<<rank<<"\n";
+  std::vector<long int> shape(rank); plumed->cmd("getDataShape d", &shape[0],rank);
+  ofs<<"distance shape "<<shape[0]; int nvals = shape[0];
+  for(unsigned i=1;i<shape.size(); ++i) { nvals*=shape[i]; ofs<<" "<<shape[i]; }
+  ofs<<" totalvals "<<nvals<<"\n";
+  std::vector<double> dmem(nvals); plumed->cmd("setMemoryForData d", &dmem[0],nvals);
 
   for(int step=0;step<10;step++){
     double extracv=step;
@@ -101,6 +108,7 @@ int main(){
     for(auto & f:forces) ofs<<" "<<f;
     ofs<<"\n";
     plumed->cmd("update");
+    ofs<<"distance value: "<<dmem[0]<<"\n";
   }
 
   delete plumed;

@@ -6,7 +6,32 @@ authors: Max Bonomi and Carlo Camilloni
 reference: \cite Bonomi:2017cc 
 -->
 
-Here are listed the collective variables, functions and biases originally developed for the Integrative Structural and Dynamical Biology module of PLUMED. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
+\section Overview
+
+The ISDB module contains collective variables, functions and biases originally developed for Integrative Structural and Dynamical Biology. They are related but not limited to the interpretation and modelling of experimental data in molecular modelling.
+
+Some of the functionalities implemented in the ISDB module require the PyTorch C++ APIs (LibTorch) to be linked against PLUMED.
+Currently, these include:
+
+- \ref EMMIVOX 
+
+To activate these functionalities, please follow the installation instructions below.
+
+\section Installation
+
+To compile PLUMED with LibTorch support, please look at the installation instruction about \ref installation-libtorch. 
+It is highly recommened to install the CUDA version of LibTorch to calculate \ref EMMIVOX efficiently on the GPU.
+
+Once LibTorch has been downloaded and the relevant environment variables are set, one can configure PLUMED with the following options:
+
+\verbatim
+> ./configure --enable-libtorch
+\endverbatim
+
+\warning 
+Libtorch APIs are still in beta phase regarding stability, so there might be breaking changes in newer versions. Currently, versions of LibTorch between 1.8.* and 2.0.0 have been tested.
+
+\section Usage
 
 - \subpage ISDBColvar
 - \subpage ISDBFunction

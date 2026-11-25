@@ -7,7 +7,7 @@
    Users are free to download, adapt and use the code as long as it is not for commercial purposes.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "bias/Bias.h"
-#include "bias/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/Exception.h"
 #include "tools/File.h"

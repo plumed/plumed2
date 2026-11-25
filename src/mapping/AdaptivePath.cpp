@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2016-2023 The plumed team
+   Copyright (c) 2016-2020 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed.org for more information.
@@ -19,14 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Mapping.h"
-#include "TrigonometricPathVessel.h"
-#include "PathReparameterization.h"
-#include "reference/Direction.h"
+#include "core/ActionShortcut.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "core/ActionSet.h"
-#include "core/GenericMolInfo.h"
+#include "tools/PDB.h"
+#include "Path.h"
 
 //+PLUMEDOC COLVAR ADAPTIVE_PATH
 /*
@@ -81,48 +78,7 @@ REMARK ARG=d1.x,d1.y d1.x=.47 d1.y=.15
 END
 \endauxfile
 
-Notice that one can also use RMSD frames in place of arguments like those above.  In the input below, for example,
-the nodes of the path are configurations of a set of atoms and the distance between the instantaneous configuration and
-each node is computed using the \ref RMSD after optimal alignment.  The path is updated every 1000 steps and written
-to the file out-path.pdb every 5000 steps.  The first and the last node of the path are kept fixed.
-
-\plumedfile
-p1: ADAPTIVE_PATH TYPE=OPTIMAL FIXED=1,3 UPDATE=1000 WFILE=out-path.pdb WSTRIDE=5000 REFERENCE=myrmsdpath.pdb
-RESTRAINT ARG=p1.gzpath AT=0.0 KAPPA=300
-PRINT ARG=p1.gspath,p1.gzpath FILE=colvar
-\endplumedfile
-
-The reference path (myrmsdpath.pdb) then contains one set of atomic positions for each node of the path. Each set
-of positions is terminated by an END line as shown in the extract below:
-
-\auxfile{myrmsdpath.pdb}
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-ATOM      6  OL  ALA     1      -1.177  -0.889   2.401  1.00  1.00
-ATOM      7  NL  ALA     1      -1.313   0.341   0.529  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -3.068   0.887   1.837  1.00  1.00
-ATOM      5  CLP ALA     1      -1.881   0.231   1.548  1.00  1.00
-ATOM      6  OL  ALA     1      -1.282  -0.462   2.358  1.00  1.00
-ATOM      7  NL  ALA     1      -1.268   0.420   0.392  1.00  1.00
-END
-ATOM      1  CL  ALA     1      -3.144   1.457   1.417  1.00  1.00
-ATOM      5  CLP ALA     1      -1.943   0.587   1.450  1.00  1.00
-ATOM      6  OL  ALA     1      -1.390  -0.040   2.340  1.00  1.00
-ATOM      7  NL  ALA     1      -1.226   0.497   0.252  1.00  1.00
-END
-\endauxfile
-
-As usual for \ref RMSD, the occupancy and beta columns of the reference file contain the weights used for the alignment and
-for the calculation of the displacement, respectively.  These weights are kept unchanged when the path is updated.
-The displacement between configurations can only be computed for some of the metrics that are available.  You can thus use
-ADAPTIVE_PATH with frames that contain arguments (e.g. TYPE=EUCLIDEAN) or atomic positions with TYPE=OPTIMAL or TYPE=SIMPLE,
-but not, for example, with TYPE=DRMSD or with any of the MULTI- types.
-
-Every WSTRIDE steps the full path is appended to the WFILE file after a line that starts with "# PATH AT STEP".
-Each node is written in PDB format, using the same units that are used to read the REFERENCE file, followed by an END line.
-You can thus use the last set of nodes in this file
-(i.e. the lines following the last "# PATH AT STEP" line) as the REFERENCE for a subsequent simulation.
+Notice that one can also use RMSD frames in place of arguments like those above.
 
 */
 //+ENDPLUMEDOC
@@ -130,234 +86,157 @@ You can thus use the last set of nodes in this file
 namespace PLMD {
 namespace mapping {
 
-class AdaptivePath : public Mapping {
-private:
-  OFile pathfile;
-  std::string ofmt;
-  double fadefact, tolerance;
-  unsigned update_str, wstride;
-/// Accumulate the displacement of the current configuration from the path for one of the two closest nodes
-  void accumulateDisplacement( const unsigned& inode, const unsigned& jnode, const double& t, const double& weight );
-  std::vector<unsigned> fixedn;
-  TrigonometricPathVessel* mypathv;
-  std::vector<double> wsum;
-  Direction displacement,displacement2;
-  std::vector<Direction> pdisplacements;
+class AdaptivePath : public ActionShortcut {
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdaptivePath(const ActionOptions&);
-  void calculate() override;
-  void performTask( const unsigned&, const unsigned&, MultiValue& ) const override;
-  double getLambda() override {
-    return 0.0;
-  }
-  double transformHD( const double& dist, double& df ) const override;
-  void update() override;
 };
 
 PLUMED_REGISTER_ACTION(AdaptivePath,"ADAPTIVE_PATH")
 
 void AdaptivePath::registerKeywords( Keywords& keys ) {
-  Mapping::registerKeywords( keys );
-  keys.remove("PROPERTY");
+  ActionShortcut::registerKeywords( keys );
+  Path::registerInputFileKeywords( keys );
+  keys.add("optional","PROPERTY","read in path coordinates by finding option with this label in remark of pdb frames");
   keys.add("compulsory","FIXED","the positions in the list of input frames of the two path nodes whose positions remain fixed during the path optimization");
-  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50% in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
+  keys.add("compulsory","HALFLIFE","-1","the number of MD steps after which a previously measured path distance weighs only 50 percent in the average. This option may increase convergence by allowing to forget the memory of a bad initial guess path. The default is to set this to infinity");
   keys.add("compulsory","UPDATE","the frequency with which the path should be updated");
-  keys.add("compulsory","TOLERANCE","1E-6","the tolerance to use for the path updating algorithm that makes all frames equidistant");
+  keys.add("compulsory","TOLERANCE","1E-4","the tolerance to use for the path updating algorithm that makes all frames equidistant");
   keys.add("optional","WFILE","file on which to write out the path");
   keys.add("compulsory","FMT","%f","the format to use for output files");
-  keys.add("optional","WSTRIDE","frequency with which to write out the path");
+  keys.add("compulsory","WSTRIDE","0,","frequency with which to write out the path");
+  keys.setValueDescription("the position along and from the adaptive path");
+  keys.needsAction("GEOMETRIC_PATH");
+  keys.needsAction("AVERAGE_PATH_DISPLACEMENT");
+  keys.needsAction("REPARAMETERIZE_PATH");
+  keys.needsAction("DUMPPDB");
+  keys.needsAction("PDB2CONSTANT");
+  keys.needsAction("DISPLACEMENT");
+  keys.needsAction("CONSTANT");
 }
 
 AdaptivePath::AdaptivePath(const ActionOptions& ao):
   Action(ao),
-  Mapping(ao),
-  tolerance(1E-6),
-  update_str(0),
-  wstride(0),
-  fixedn(2),
-  displacement(ReferenceConfigurationOptions("DIRECTION")),
-  displacement2(ReferenceConfigurationOptions("DIRECTION")) {
-  setLowMemOption( true );
-  parseVector("FIXED",fixedn);
-  if( fixedn[0]<1 || fixedn[1]>getNumberOfReferencePoints() ) {
-    error("fixed nodes must be in range from 0 to number of nodes");
-  }
-  if( fixedn[0]>=fixedn[1] ) {
-    error("invalid selection for fixed nodes first index provided must be smaller than second index");
-  }
-  log.printf("  fixing position of frames numbered %u and %u \n",fixedn[0],fixedn[1]);
-  fixedn[0]--;
-  fixedn[1]--;   // Set fixed notes with c++ indexing starting from zero
-  parse("UPDATE",update_str);
-  if( update_str<1 ) {
-    error("update frequency for path should be greater than or equal to one");
-  }
-  log.printf("  updating path every %u MD steps \n",update_str);
-  parse("TOLERANCE",tolerance);
-  log.printf("  tolerance for path reparameterization is %g \n",tolerance);
-
-  double halflife;
-  parse("HALFLIFE",halflife);
-  if( halflife<0 ) {
-    fadefact=1.0;
-  } else {
-    fadefact = exp( -0.693147180559945 / static_cast<double>(halflife) );
-    log.printf("  weight of contribution to frame halves every %f steps \n",halflife);
-  }
-
-  // Check that the metric used allows us to compute and apply displacements between configurations
-  for(unsigned i=0; i<getNumberOfReferencePoints(); ++i) {
-    std::string mtype = getReferenceConfiguration(i)->getName();
-    if( mtype.find("MULTI")!=std::string::npos || !getReferenceConfiguration(i)->pcaIsEnabledForThisReference() ) {
-      error("cannot use ADAPTIVE_PATH with metric of type " + mtype + ". Displacements between configurations cannot be computed with this metric");
-    }
-  }
-
-  // Create the list of tasks (and reset projections of frames)
+  ActionShortcut(ao) {
+  // Read in the arguments
+  std::vector<std::string> argnames;
+  parseVector("ARG",argnames);
+  std::string reference_data, metric, mtype;
+  parse("TYPE", mtype);
+  std::string reference;
+  parse("REFERENCE",reference);
+  FILE* fp=std::fopen(reference.c_str(),"r");
   PDB mypdb;
-  mypdb.setAtomNumbers( getAbsoluteIndexes() );
-  mypdb.addBlockEnd( getAbsoluteIndexes().size() );
-  std::vector<std::string> argument_names( getNumberOfArguments() );
-  for(unsigned i=0; i<getNumberOfArguments(); ++i) {
-    argument_names[i] = getPntrToArgument(i)->getName();
+  if(!fp) {
+    error("could not open reference file " + reference );
   }
-  if( argument_names.size()>0 ) {
-    mypdb.setArgumentNames( argument_names );
+  bool do_read=mypdb.readFromFilepointer(fp,false,0.1);
+  if( !do_read ) {
+    error("missing file " + reference );
   }
-  displacement.read( mypdb );
-  displacement2.read( mypdb );
-  for(int i=0; i<getNumberOfReferencePoints(); ++i) {
-    addTaskToList( i );
-    pdisplacements.push_back( Direction(ReferenceConfigurationOptions("DIRECTION")) );
-    property.find("spath")->second[i] = static_cast<double>( i - static_cast<int>(fixedn[0]) ) / static_cast<double>( fixedn[1] - fixedn[0] );
-    pdisplacements[i].read( mypdb );
-    wsum.push_back( 0.0 );
+  // Create list of reference configurations that PLUMED will use
+  Path::readInputFrames( reference, mtype, argnames, true, this, reference_data );
+  // Now get coordinates on spath
+  std::vector<std::string> pnames;
+  parseVector("PROPERTY",pnames);
+  Path::readPropertyInformation( pnames, getShortcutLabel(), reference, this );
+  // Create action that computes the geometric path variablesa
+  std::string propstr = getShortcutLabel() + "_ind";
+  if( pnames.size()>0 ) {
+    propstr = pnames[0] + "_ref";
   }
-  plumed_assert( getPropertyValue( fixedn[0], "spath" )==0.0 && getPropertyValue( fixedn[1], "spath" )==1.0 );
-  // And activate them all
-  deactivateAllTasks();
-  for(unsigned i=0; i<getFullNumberOfTasks(); ++i) {
-    taskFlags[i]=1;
+  if( argnames.size()>0 ) {
+    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data " + " PROPERTY=" + propstr + " REFERENCE=" + reference_data + " METRIC={DIFFERENCE}");
+  } else {
+    std::string num, align_str, displace_str;
+    Tools::convert( mypdb.getOccupancy()[0], align_str );
+    Tools::convert( mypdb.getBeta()[0], displace_str );
+    for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
+      Tools::convert( mypdb.getOccupancy()[j], num );
+      align_str += "," + num;
+      Tools::convert( mypdb.getBeta()[j], num );
+      displace_str += "," + num;
+    }
+    metric = "RMSD_VECTOR DISPLACEMENT TYPE=" + mtype + " ALIGN=" + align_str + " DISPLACE=" + displace_str;
+    readInputLine( getShortcutLabel() + ": GEOMETRIC_PATH ARG=" + getShortcutLabel() + "_data.disp " + " PROPERTY=" +  propstr + " REFERENCE=" + reference_data + " METRIC={" + metric + "} METRIC_COMPONENT=disp");
   }
-  lockContributors();
+  // Create the object to accumulate the average path displacements
+  std::string update, halflife;
+  parse("HALFLIFE",halflife);
+  parse("UPDATE",update);
+  std::string refframes = " REFERENCE=" + getShortcutLabel() + "_pos";
+  if( argnames.size()>0 ) {
+    readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={DIFFERENCE} REFERENCE=" + reference_data );
+  } else {
+    readInputLine( getShortcutLabel() + "_disp: AVERAGE_PATH_DISPLACEMENT ARG=" + getShortcutLabel() + "_data.disp HALFLIFE=" + halflife + " CLEAR=" + update + " METRIC={" + metric + "} METRIC_COMPONENT=disp REFERENCE=" + reference_data );
+  }
 
-  // Setup the vessel to hold the trig path
-  std::string input;
-  addVessel("GPATH", input, -1 );
-  readVesselKeywords();
-  // Check that there is only one vessel - the one holding the trig path
-  plumed_dbg_assert( getNumberOfVessels()==1 );
-  // Retrieve the path vessel
-  mypathv = dynamic_cast<TrigonometricPathVessel*>( getPntrToVessel(0) );
-  plumed_assert( mypathv );
+  // Create the object to update the path
+  std::string fixedn, tolerance;
+  parse("FIXED",fixedn);
+  parse("TOLERANCE",tolerance);
+  std::string component="METRIC_COMPONENT=disp";
+  if( argnames.size()>0 ) {
+    metric="DIFFERENCE";
+    component="";
+  }
+  readInputLine("REPARAMETERIZE_PATH DISPLACE_FRAMES=" + getShortcutLabel() + "_disp FIXED=" + fixedn + " STRIDE=" + update + " TOL=" + tolerance + " METRIC={" + metric + "} " + component + " REFERENCE=" + reference_data );
 
   // Information for write out
   std::string wfilename;
   parse("WFILE",wfilename);
   if( wfilename.length()>0 ) {
-    wstride=0;
-    parse("WSTRIDE",wstride);
-    parse("FMT",ofmt);
-    pathfile.link(*this);
-    pathfile.open( wfilename );
-    pathfile.setHeavyFlush();
-    if( wstride<update_str ) {
-      error("makes no sense to write out path more frequently than update stride");
-    }
-    log.printf("  writing path out every %u steps to file named %s with format %s \n",wstride,wfilename.c_str(),ofmt.c_str());
-  }
-  log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
-}
-
-void AdaptivePath::calculate() {
-  runAllTasks();
-}
-
-void AdaptivePath::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
-  // This builds a pack to hold the derivatives
-  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals );
-  finishPackSetup( current, mypack );
-  // Calculate the distance from the frame
-  double val=calculateDistanceFunction( current, mypack, true );
-  // Put the element value in element zero
-  myvals.setValue( 0, val );
-  myvals.setValue( 1, 1.0 );
-  return;
-}
-
-double AdaptivePath::transformHD( const double& dist, double& df ) const {
-  df=1.0;
-  return dist;
-}
-
-void AdaptivePath::accumulateDisplacement( const unsigned& inode, const unsigned& jnode, const double& t, const double& weight ) {
-  // The point on the path that is closest to the instantaneous configuration, x, is r_i + t*(r_j - r_i), where
-  // r_i is the position of node inode and r_j is the position of node jnode.
-  // The displacement of x from this point is thus (x - r_i) - t*(r_j - r_i).  We compute both vectors here using node inode
-  // as reference so that, when RMSD is used, the displacement is expressed in the frame of reference of the node that is
-  // going to be displaced.
-  ReferenceConfiguration* myref = getReferenceConfiguration( inode );
-  ReferenceConfiguration* oref = getReferenceConfiguration( jnode );
-  myref->extractDisplacementVector( getPositions(), getArguments(), mypathv->cargs, false, displacement );
-  myref->extractDisplacementVector( oref->getReferencePositions(), getArguments(), oref->getReferenceArguments(), false, displacement2 );
-  displacement.addDirection( -t, displacement2 );
-  pdisplacements[inode].addDirection( weight, displacement );
-}
-
-void AdaptivePath::update() {
-  double weight2 = -1.*mypathv->dx;
-  double weight1 = 1.0 + mypathv->dx;
-  if( weight1>1.0 ) {
-    weight1=1.0;
-    weight2=0.0;
-  } else if( weight2>1.0 ) {
-    weight1=0.0;
-    weight2=1.0;
-  }
-  // Add projections to displacement accumulators.  The closest point on the path is at
-  // r_1 - dx*(r_2 - r_1) = r_2 + (1+dx)*(r_1 - r_2)
-  accumulateDisplacement( mypathv->iclose1, mypathv->iclose2, -mypathv->dx, weight1 );
-  accumulateDisplacement( mypathv->iclose2, mypathv->iclose1, 1.0 + mypathv->dx, weight2 );
-  // Update weight accumulators
-  wsum[mypathv->iclose1] *= fadefact;
-  wsum[mypathv->iclose2] *= fadefact;
-  wsum[mypathv->iclose1] += weight1;
-  wsum[mypathv->iclose2] += weight2;
-
-  // This does the update of the path if it is time to
-  if( (getStep()>0) && (getStep()%update_str==0) ) {
-    wsum[fixedn[0]]=wsum[fixedn[1]]=0.;
-    pdisplacements[fixedn[0]].zeroDirection();
-    pdisplacements[fixedn[1]].zeroDirection();
-    for(unsigned inode=0; inode<getNumberOfReferencePoints(); ++inode) {
-      if( wsum[inode]>0 ) {
-        // First displace the node by the weighted direction
-        ReferenceConfiguration* myref = getReferenceConfiguration( inode );
-        myref->displaceReferenceConfiguration( 1./wsum[inode], pdisplacements[inode] );
-        // And reset the reference configuration so that, if this is a configuration of atoms, the center is removed
-        // and the internal data that is used to calculate the RMSD is updated
-        myref->read( referenceConfigurationToPDB( *myref ) );
-        // Reset the displacement
-        pdisplacements[inode].zeroDirection();
+    // This just gets the atom numbers for output
+    std::string atomstr;
+    if( argnames.size()==0 ) {
+      FILE* fp=std::fopen(reference.c_str(),"r");
+      double fake_unit=0.1;
+      PDB mypdb;
+      bool do_read=mypdb.readFromFilepointer(fp,false,fake_unit);
+      std::string num;
+      Tools::convert( mypdb.getAtomNumbers()[0].serial(), atomstr );
+      for(unsigned j=1; j<mypdb.getAtomNumbers().size(); ++j ) {
+        Tools::convert( mypdb.getAtomNumbers()[j].serial(), num );
+        atomstr += "," + num;
+      }
+      Tools::convert( mypdb.getResidueNumber( mypdb.getAtomNumbers()[0] ), num );
+      atomstr += " RESIDUE_INDICES=" + num;
+      for(unsigned i=1; i<mypdb.getAtomNumbers().size(); ++i ) {
+        Tools::convert( mypdb.getResidueNumber( mypdb.getAtomNumbers()[i] ), num );
+        atomstr += "," + num;
+      }
+      std::string anum, dnum;
+      Tools::convert( mypdb.getOccupancy()[0], anum );
+      Tools::convert( mypdb.getBeta()[0], dnum );
+      atomstr += " OCCUPANCY=" + anum;
+      for(unsigned i=1; i<mypdb.getOccupancy().size(); ++i) {
+        Tools::convert( mypdb.getOccupancy()[i], anum );
+        atomstr += "," + anum;
+      }
+      atomstr += " BETA=" + dnum;
+      for(unsigned i=1; i<mypdb.getBeta().size(); ++i) {
+        Tools::convert( mypdb.getBeta()[i], dnum );
+        atomstr += "," + dnum;
       }
     }
-    // Now ensure all the nodes of the path are equally spaced
-    PathReparameterization myspacings( getPbc(), getArguments(), getAllReferenceConfigurations() );
-    myspacings.reparameterize( fixedn[0], fixedn[1], tolerance );
-  }
-  if( wstride>0 && (getStep()>0) && (getStep()%wstride==0) ) {
-    pathfile<<"# PATH AT STEP "<<getStep();
-    pathfile.printf(" TIME %f \n",getTime());
-    std::vector<std::unique_ptr<ReferenceConfiguration>>& myconfs=getAllReferenceConfigurations();
-    auto* mymoldat=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
-    for(unsigned i=0; i<myconfs.size(); ++i) {
-      pathfile.printf("REMARK TYPE=%s\n", myconfs[i]->getName().c_str() );
-      PDB mypdb( referenceConfigurationToPDB( *myconfs[i] ) );
-      mypdb.print( atoms.getUnits().getLength()/0.1, mymoldat, pathfile, ofmt );
+
+    if( wfilename.find(".pdb")==std::string::npos ) {
+      error("output must be to a pdb file");
     }
-    pathfile.flush();
+    std::string ofmt, pframes, wstride;
+    parse("WSTRIDE",wstride);
+    parse("FMT",ofmt);
+    if( argnames.size()>0 ) {
+      std::string argstr = argnames[0];
+      for(unsigned i=1; i<argnames.size(); ++i) {
+        argstr += "," + argnames[i];
+      }
+      readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ARG=" + reference_data );
+    } else {
+      readInputLine("DUMPPDB DESCRIPTION=PATH STRIDE=" + wstride + " FMT=" + ofmt + " FILE=" + wfilename + " ATOMS=" + reference_data + " ATOM_INDICES=" + atomstr );
+    }
   }
+  log<<"  Bibliography "<<plumed.cite("Diaz Leines and Ensing, Phys. Rev. Lett. 109, 020601 (2012)")<<"\n";
 }
 
 }

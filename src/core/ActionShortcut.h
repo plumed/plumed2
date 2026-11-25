@@ -32,22 +32,40 @@ Action used to create a command that expands to multiple PLMD::Action commands w
 */
 class ActionShortcut :
   public virtual Action {
+  friend class ActionSet;
 private:
   std::string shortcutlabel;
   std::vector<std::string> savedInputLines;
+  std::vector<std::string> savedOutputs;
+  void addToSavedInputLines( const std::string& line );
+protected:
+  std::string getUpdateLimits() const ;
 public:
   const std::string & getShortcutLabel() const ;
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
+/// Read keywords
+  void readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap );
 /// Read a line of input and create appropriate actions
-  void readInputLine( const std::string& input );
+  void readInputLine( const std::string& input, bool saveline=true );
+/// Add a comment to your shortcut output
+  void addCommentToShortcutOutput( const std::string& input );
 /// Do nothing.
   void calculate() override {}
 /// Do nothing.
   void apply() override {}
 /// Get the lines of the shortcut that were read in
   std::vector<std::string> getSavedInputLines() const ;
+/// Get the labels of the actions that this creates
+  std::vector<std::string> getSavedOutputs() const ;
+/// Take everything that was input to this action and convert it to a string
+  std::string convertInputLineToString();
+/// This sorts out the reading of arguments from shortcuts
+  void interpretDataLabel( const std::string& mystr, Action* myuser, std::vector<Value*>& args ) const ;
+  ActionShortcut* castToActionShortcut() noexcept final {
+    return this;
+  }
 };
 
 }

@@ -1,0 +1,15 @@
+# units
+UNITS LENGTH=A TIME=ps ENERGY=kcal/mol
+
+# make a group of atoms
+GROUP ATOMS=18,20,22,31,33,35,44,46,48,57,59,61,70,72,74,83,85,87,96,98,100,109,111 LABEL=ga_list
+
+# mahadist
+d: SIZESHAPE_POSITION_MAHA_DIST REFERENCE=global_avg.txt PRECISION=global_precision.txt GROUP=ga_list
+
+#print
+PRINT ARG=d STRIDE=1 FILE=output FMT=%8.8f
+
+# dump derivatives
+DUMPDERIVATIVES ARG=d STRIDE=1 FILE=deriv FMT=%8.3f
+

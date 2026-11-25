@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
-#include "CLToolRegister.h"
+#include "core/CLToolRegister.h"
 #include "core/PlumedMain.h"
 #include "tools/Vector.h"
 #include "tools/Random.h"
@@ -76,7 +76,7 @@ plumed simplemd --help
 // simple static function to close a file
 // defined once here since it's used in many places in this file
 // in addition, this seems the only way to use it in the write_statistics_fp_deleter member
-static void (*deleter)(FILE* f) = [](FILE* f) {
+static void (*deleter)(FILE* f) = [](auto f) {
   if(f) {
     std::fclose(f);
   }
@@ -544,8 +544,8 @@ private:
     randomize_velocities(natoms,ndim,temperature,masses,velocities,random);
 
     if(plumed) {
-      plumed->cmd("setNoVirial");
       plumed->cmd("setNatoms",natoms);
+      plumed->cmd("setNoVirial");
       plumed->cmd("setMDEngine","simpleMD");
       plumed->cmd("setTimestep",tstep);
       plumed->cmd("setPlumedDat","plumed.dat");

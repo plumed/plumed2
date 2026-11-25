@@ -7,7 +7,10 @@ cd "$(mktemp -dt plumed.XXXXXX)"
 
 dir=autoconf-$1
 
-wget https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz
+# Fall back to a mirror: when ftp.gnu.org is down, a bare wget here ends the
+# job under set -e and every pull request goes red.
+wget https://ftp.gnu.org/gnu/autoconf/$dir.tar.gz ||
+wget https://ftpmirror.gnu.org/autoconf/$dir.tar.gz
 
 tar xzf $dir.tar.gz
 

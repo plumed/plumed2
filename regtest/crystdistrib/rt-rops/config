@@ -1,0 +1,3 @@
+type=driver
+plumed_modules="adjmat crystdistrib volumes"
+arg="--plumed plumed.dat --mf_xtc em.xtc --pdb sfd.pdb --timestep=0.001 --trajectory-stride=25"

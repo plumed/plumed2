@@ -1,0 +1,35 @@
+# Calculate coordination numbers
+c1: COORDINATIONNUMBER SPECIES=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0} 
+# Select coordination numbers that are more than 2.0
+cf: MORE_THAN ARG=c1 SWITCH={RATIONAL D_0=2.0 R_0=0.1} 
+# Build a dot product matrix
+c1_mat2: CONTACT_MATRIX GROUP=1-512 SWITCH={EXP D_0=4.0 R_0=0.5 D_MAX=6.0}
+dp_mat: OUTER_PRODUCT ARG=cf,cf
+# Build the final matrix
+mat: CUSTOM ARG=c1_mat2,dp_mat FUNC=x*y PERIODIC=NO
+# Find largest cluster
+dfs: DFSCLUSTERING ARG=mat 
+clust1: CLUSTER_WEIGHTS CLUSTERS=dfs CLUSTER=1 
+nat: CLUSTER_NATOMS CLUSTERS=dfs CLUSTER=1
+
+# Print out the size of the cluster and the atoms
+PRINT ARG=nat FILE=colvar
+DUMPATOMS ATOMS=c1 ARG=cf,c1 FILE=myatoms.xyz PRECISION=4
+
+# Find center of largest cluster
+trans1: CUSTOM ARG=cf,clust1 FUNC=x*x*y PERIODIC=NO 
+cent: CENTER ATOMS=1-512 WEIGHTS=trans1 PHASES
+
+# Dumpmulticolvar with origin at center 
+DUMPATOMS ATOMS=c1 ARG=clust1 FILE=multicolvar.xyz GREATER_THAN_OR_EQUAL=0.001 UNITS=A PRECISION=4   # ORIGIN=cent
+ 
+# Calculate the density of the dnesity of the multicolvar
+dens_dist: DISTANCES ORIGIN=cent ATOMS=c1 COMPONENTS 
+dens_numer: KDE VOLUMES=trans1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
+dens_denom: KDE VOLUMES=clust1 ARG=dens_dist.x,dens_dist.y,dens_dist.z GRID_BIN=30,30,30 BANDWIDTH=2.0,2.0,2.0 
+dens: CUSTOM ARG=dens_numer,dens_denom FUNC=x/y PERIODIC=NO
+
+# Print the cube and find a contour
+DUMPGRID ARG=dens FILE=dens.grid FMT=%8.4f STRIDE=1
+sc: FIND_SPHERICAL_CONTOUR ARG=dens CONTOUR=0.85 INNER_RADIUS=10.0 OUTER_RADIUS=40.0 NPOINTS=100
+DUMPGRID ARG=sc PRINT_XYZ FILE=mysurface.xyz FMT=%8.4f STRIDE=1 

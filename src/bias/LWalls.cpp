@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace bias {
@@ -69,7 +69,8 @@ PRINT ARG=uwall.bias,lwall.bias
 
 If an argument is periodic (e.g. a \ref TORSION), the wall acts on the value of the argument in its periodic domain
 and periodic boundary conditions are __not__ applied to the difference \f$x_i-a_i\f$. The value of AT must thus be within the
-periodic domain of the argument. The following input restrains a torsion within the interval \f$[-2,2]\f$:
+periodic domain of the argument. This is the case both when the arguments are scalars and when they are vectors.
+The following input restrains a torsion within the interval \f$[-2,2]\f$:
 \plumedfile
 t: TORSION ATOMS=1,2,3,4
 uwall: UPPER_WALLS ARG=t AT=2.0 KAPPA=150.0
@@ -87,6 +88,16 @@ periodic domain, and the region left free by an upper and a lower wall is smalle
 */
 //+ENDPLUMEDOC
 
+//+PLUMEDOC BIAS LOWER_WALLS_SCALAR
+/*
+Defines a wall for the value of one or more collective variables,
+ which limits the region of the phase space accessible during the simulation.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 class LWalls : public Bias {
   std::vector<double> at;
   std::vector<double> kappa;
@@ -99,11 +110,13 @@ public:
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS")
+PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS_SCALAR")
 
 void LWalls::registerKeywords(Keywords& keys) {
   Bias::registerKeywords(keys);
+  keys.setDisplayName("LOWER_WALLS");
   keys.use("ARG");
+  keys.add("hidden","NO_ACTION_LOG","suppresses printing from action on the log");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");

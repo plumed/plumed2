@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace colvar {
@@ -96,7 +96,6 @@ void Cell::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  componentsAreNotOptional(keys);
   keys.addOutputComponent("ax","default","the ax component of the cell matrix");
   keys.addOutputComponent("ay","default","the ay component of the cell matrix");
   keys.addOutputComponent("az","default","the az component of the cell matrix");

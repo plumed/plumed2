@@ -1,0 +1,38 @@
+cmat: CONTACT_MATRIX GROUP=1-64 SWITCH={CUSTOM R_0=4.5 D_MAX=4.5 FUNC=0.5*(cos(pi*x)+1)} COMPONENTS
+cmatr: CUSTOM ARG=cmat.x,cmat.y,cmat.z FUNC=sqrt(x*x+y*y+z*z) PERIODIC=NO
+g2_f: CUSTOM ARG=cmatr,cmat.w FUNC=y*exp(-(x-3)^2) PERIODIC=NO
+g3_f: CUSTOM ARG=cmatr,cmat.w FUNC=y*cos(x) PERIODIC=NO 
+beh2_g1_ones: ONES SIZE=64
+beh2_g1: MATRIX_VECTOR_PRODUCT ARG=cmat.w,beh2_g1_ones 
+beh2_g2: MATRIX_VECTOR_PRODUCT ARG=g2_f,beh2_g1_ones
+beh2_g3: MATRIX_VECTOR_PRODUCT ARG=g3_f,beh2_g1_ones
+
+g1m: MEAN ARG=beh2_g1 PERIODIC=NO 
+g2m: MEAN ARG=beh2_g2 PERIODIC=NO
+g3m: MEAN ARG=beh2_g3 PERIODIC=NO
+ 
+RESTRAINT ARG=g1m,g2m,g3m AT=1.5,1.4,-1.5 KAPPA=10,10,10
+
+DUMPATOMS ATOMS=1-64 ARG=beh2_g1,beh2_g2,beh2_g3 FILE=symmetry-functions.xyz PRECISION=4
+
+beh3: GSYMFUNC_THREEBODY ...
+    WEIGHT=cmat.w ARG=cmat.x,cmat.y,cmat.z 
+    FUNCTION1={FUNC=0.25*(cos(pi*sqrt(rjk)/4.5)+1)*exp(-0.1*(rij+rik+rjk))*(1+2*cos(ajik))^2 LABEL=g4}
+    FUNCTION2={FUNC=0.25*exp(-0.1*(rij+rik))*(1+3.5*cos(ajik))^3 LABEL=g5}
+    FUNCTION3={FUNC=0.125*(1+6.6*cos(ajik))^4 LABEL=g6} 
+    FUNCTION4={FUNC=sin(3.0*(ajik-1)) LABEL=g7}
+...
+
+DUMPATOMS ATOMS=1-64 ARG=beh3.g4,beh3.g5,beh3.g6,beh3.g7 FILE=threebody-symmetry-functions.xyz PRECISION=4
+ 
+g4m: SUM ARG=beh3.g4 PERIODIC=NO
+BIASVALUE ARG=g4m 
+
+g6m: SUM ARG=beh3.g6 PERIODIC=NO
+BIASVALUE ARG=g6m 
+
+g5m: SUM ARG=beh3.g5 PERIODIC=NO
+BIASVALUE ARG=g5m
+
+g7m: SUM ARG=beh3.g7 PERIODIC=NO
+BIASVALUE ARG=g7m
