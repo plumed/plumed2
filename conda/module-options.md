@@ -49,9 +49,27 @@ toolchain other than `cxx` nor `placement: extension` modules; a CUDA module is
 enabled only by name (`--enable-modules=+gpu_cuda_hip`), and only then does
 configure look for nvcc or hipcc. The CMake build never compiles them.
 
+A module that uses only the headers of another module lists it in `include`:
+
+```yaml
+use: [core, tools, colvar]
+include: [gpu_cuda_hip]
+```
+
+`include` makes the headers of the listed modules visible to the sources of the
+module, and nothing else: unlike `use`, an included module is not enabled, linked or
+required at runtime. So `--enable-modules=+gpu_voronoi` puts only gpu_voronoi into
+the kernel, `libplumed-ext-gpu_voronoi` does not link `libplumed-ext-gpu_cuda_hip`, and
+its conda package does not depend on that of gpu_cuda_hip. This works only if the
+included headers are self-contained: everything in them must be inline, templates
+(including CUDA kernels) or macros, so that no object of the included module is ever
+needed, and they can include only headers of modules that the including module
+uses. The headers of gpu_cuda_hip used in this way (`cuda_to_hip.cuh` and
+`cudaHelpers.cuh`) follow this rule.
+
 For portable readers, the build fields have a deliberately restricted syntax:
 exactly one top-level line `type: VALUE` and one `use: [name, other-name]`, at
-most one `toolchain: VALUE` and one `placement: VALUE`, with
+most one `toolchain: VALUE`, one `placement: VALUE` and one `include: [name]`, with
 one space after the colon and comma, no quotes, trailing comments, aliases or
 multiline forms. Dependency identifiers match `[a-z][a-z0-9_-]*`. The shared
 POSIX reader is `src/maketools/module-header`; Python and CMake enforce the same

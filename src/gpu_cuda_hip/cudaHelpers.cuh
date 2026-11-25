@@ -21,6 +21,11 @@
 #ifndef __PLUMED_cuda_helpers_cuh
 #define __PLUMED_cuda_helpers_cuh
 
+// HEADER-ONLY: other modules use this header and cuda_to_hip.cuh with
+// "include: [gpu_cuda_hip]" in their module.yml, which does not link gpu_cuda_hip
+// (see conda/module-options.md). Everything here must stay inline, a template
+// (kernels included) or a macro, and may include only core and tools headers.
+
 #include "cuda_to_hip.cuh"
 #include "core/GpuDevice.h"
 #include "tools/Tensor.h"

@@ -16,8 +16,10 @@ mkdir -p $dir
 
 echo "This file indicates this is a temporary directory" >  $dir/.tmpdir
 
-for file in ../$dir/*.h
+# .cuh: the CUDA headers of the modules with toolchain cuda
+for file in ../$dir/*.h ../$dir/*.cuh
 do
+  test -f "$file" || continue
   name="${file##*/}"
   text="#include \"../../$dir/$name\""
 # files are replaces only if changed
@@ -27,8 +29,9 @@ do
 done
 
 # then erase not existent files
-for file in $dir/*.h
+for file in $dir/*.h $dir/*.cuh
 do
+  test -f "$file" || continue
   name="${file##*/}"
   test -f "../$dir/$name" || rm $file
 done

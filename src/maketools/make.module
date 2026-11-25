@@ -4,6 +4,8 @@ USE := $(shell ../maketools/module-header use module.yml || echo __INVALID_MODUL
 ifneq ($(filter __INVALID_MODULE_HEADER__,$(USE)),)
 $(error Invalid module.yml; see the diagnostic above)
 endif
+# modules whose headers are used, but that are neither enabled nor linked (include: in module.yml)
+INCLUDE := $(shell ../maketools/module-header include module.yml)
 endif
 
 #
@@ -85,6 +87,9 @@ clean:
 links: Makefile $(wildcard module.yml) ../maketools/module-header ../maketools/module-header.awk
 	@echo Verify modules and create links in $(CURDIR)
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir || exit 1 ; ../maketools/makelinks.sh $$dir || exit 1 ;  done
+# an included module is not checked (it can be disabled), but it gets its own links:
+# its headers include those of the modules it uses, which are searched from its directory
+	@for dir in $(INCLUDE) ; do test -f ../$$dir/module.yml || { echo "ERROR: this module includes $$dir, which does not exist" ; exit 1 ; } ; ../maketools/makelinks.sh $$dir || exit 1 ; $(MAKE) -C ../$$dir links || exit 1 ; done
 
 .PHONY: cppcheck
 cppcheck:
@@ -105,7 +110,7 @@ astyle:
 
 .PHONY: show_used_modules
 show_used_modules:
-	@echo used_modules $(USE)
+	@echo used_modules $(USE) $(INCLUDE)
 
 
 

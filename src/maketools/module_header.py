@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 # Optional build fields and their defaults (absent from the returned header).
-DEFAULTS = {"toolchain": "cxx", "placement": "any"}
+DEFAULTS = {"toolchain": "cxx", "placement": "any", "include": []}
 
 
 def check_obsolete(source):
@@ -15,11 +15,13 @@ def check_obsolete(source):
 def read_header(path, text=None):
     """Read the restricted top-level YAML fields, preserving USE order.
 
-    type and use are required; toolchain and placement are optional and are
-    returned only when present (see DEFAULTS)."""
+    type and use are required; toolchain, placement and include are optional
+    and are returned only when present (see DEFAULTS)."""
     fields = {}
     for line in (Path(path).read_text() if text is None else text).splitlines():
-        if not re.match(r"""^["']?(type|use|toolchain|placement)["']?\s*:""", line):
+        if not re.match(
+            r"""^["']?(type|use|toolchain|placement|include)["']?\s*:""", line
+        ):
             continue
         key = line.split(":", 1)[0]
         if re.fullmatch(r"type: (always|default-on|default-off)", line):
@@ -30,9 +32,13 @@ def read_header(path, text=None):
             value = line[11:]
         elif re.fullmatch(r"placement: (any|extension)", line):
             value = line[11:]
+        elif re.fullmatch(
+            r"include: \[([a-z][a-z0-9_-]*(, [a-z][a-z0-9_-]*)*)?\]", line
+        ):
+            value = line[10:-1].split(", ") if line[10:-1] else []
         else:
             raise ValueError(
-                f"{path}: invalid type/use/toolchain/placement header syntax: {line}"
+                f"{path}: invalid type/use/toolchain/placement/include header syntax: {line}"
             )
         if key in fields:
             raise ValueError(f"{path}: duplicate {key}")
@@ -44,4 +50,6 @@ def read_header(path, text=None):
 
 def header_field(header, key):
     """A field of read_header, with the default of the optional fields."""
-    return header.get(key, DEFAULTS.get(key))
+    value = header.get(key, DEFAULTS.get(key))
+    # a copy, so that callers cannot change DEFAULTS
+    return list(value) if isinstance(value, list) else value

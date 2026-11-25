@@ -44,6 +44,13 @@ The tests are in `regtest/gpu_cuda_hip`. The tests in `nogpu` (input errors, the
 the module is compiled; the others need a GPU, and are reported as not applicable where `plumed cuda-devices` finds none.
 On a node with GPUs, `plugins/openaccPTM/gpucheck` checks that the actions leave the GPU of the MD code alone.
 
+## Code shared with other modules
+
+`cuda_to_hip.cuh` (the CUDA names mapped to HIP) and `cudaHelpers.cuh` (GPU choice, device guard, buffers, deterministic
+reductions) can also be used by other CUDA/HIP modules, which list
+`include: [gpu_cuda_hip]` in their `module.yml`: they use these headers without enabling or linking this module, so they
+must stay header-only (inline functions, templates and kernels, macros).
+
 ## Limitations
 
 `CUDACOORDINATION` and `CUDACOORDINATIONFLOAT` work as [COORDINATION](COORDINATION.md),

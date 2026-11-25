@@ -24,6 +24,7 @@
 // The CUDA runtime names used by the plugin (and by ../openaccPTM/gpucheck),
 // mapped to HIP when the plugin is compiled for AMD GPUs (USE_HIP=1 in the
 // Makefile); with nvcc this only includes the CUDA runtime.
+// HEADER-ONLY, as cudaHelpers.cuh: other modules include it without linking gpu_cuda_hip.
 
 #ifdef __HIP__
 
