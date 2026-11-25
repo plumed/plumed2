@@ -32,6 +32,8 @@ else
   fi
   # Local sandbox validation can specify explicit localhost slots.
   launcher=${MD_EXCHANGE_LAUNCHER:-$launcher}
+  python "$suite/validate_multisim_auxiliary.py" --gmx "$gmx" --kernel "$kernel" \
+    --output "$results/multisim-auxiliary" --launcher "$launcher"
   python "$suite/validate_shells.py" --gmx "$gmx" --kernel "$kernel" \
     --output "$results/shells" --launcher "$launcher"
   python "$suite/validate_checkpoint.py" --gmx "$gmx" --kernel "$kernel" \

@@ -125,6 +125,13 @@ void PlumedForceProvider::prepareExchange()
 
 void PlumedForceProvider::setEvaluationMode(int mode)
 {
+    if (mode == 1 && multiSimulation_)
+    {
+        GMX_THROW(InvalidInputError(
+                "Repeated PLUMED force evaluations with multiple simulations are unsupported: "
+                "different shell iteration counts can misalign replica-collective evaluations. "
+                "Use one simulation for shell relaxation."));
+    }
     if (plumedAPIversion_ < 14)
     {
         if (mode != 0)
@@ -178,6 +185,14 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     expanded_ = options.inputrec_ != nullptr && options.inputrec_->bExpanded;
     if (expanded_ && replex_)
         GMX_THROW(InvalidInputError("Expanded-ensemble lambda MCMC combined with replica exchange is unsupported"));
+    multiSimulation_ = options.ms_ != nullptr && options.ms_->numSimulations_ > 1;
+    if (expanded_ && multiSimulation_)
+    {
+        GMX_THROW(InvalidInputError(
+                "PLUMED-biased expanded-ensemble lambda MCMC with multiple simulations is "
+                "unsupported: replica-coupled biases require synchronized conditional trial "
+                "energies. Run one simulation per mdrun invocation."));
+    }
     context_.mainRank = options.mpiComm_->isMainRank();
     context_.hrex     = options.hrex_;
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
