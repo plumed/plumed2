@@ -262,17 +262,17 @@ FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
 
 // Calculator
 void FuncPathGeneral::calculate() {
-  if(isCalculationOnly() && neigh_size>0 &&
+  if(isGeometryTrial() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
     error("Auxiliary path evaluations require the full frame list; disable NEIGH_SIZE");
   }
-  if(isCalculationOnly() || trialGeometry_) {
+  if(isGeometryTrial() || trialGeometry_) {
     neighpair.resize(path_cv_values.size());
     for(unsigned i=0; i<neighpair.size(); ++i) {
       neighpair[i].first=i;
     }
   }
-  trialGeometry_=isCalculationOnly();
+  trialGeometry_=isGeometryTrial();
   double s_path = 0.;
   double partition = 0.;
   double tmp, value, diff, expdist, s_der, z_der;
@@ -357,18 +357,22 @@ void FuncPathGeneral::calculate() {
 
 // Prepare the required arguments
 void FuncPathGeneral::prepare() {
-  if(isCalculationOnly() && neigh_size>0 &&
+  if(isGeometryTrial() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
     error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
   }
+  if(isCalculationOnly() && !isGeometryTrial() && !trialGeometry_ && preparedStep_==getStep()) {
+    // Repeated local calls use the already selected frames at this MD step.
+    return;
+  }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
-      preparedAuxiliary_==isCalculationOnly()) {
+      preparedAuxiliary_==isGeometryTrial()) {
     return;
   }
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
-  preparedAuxiliary_=isCalculationOnly();
-  if(isCalculationOnly() || trialGeometry_) {
+  preparedAuxiliary_=isGeometryTrial();
+  if(isGeometryTrial() || trialGeometry_) {
     neighpair.resize(path_cv_values.size());
     for(unsigned i=0; i<neighpair.size(); ++i) {
       neighpair[i].first=i;

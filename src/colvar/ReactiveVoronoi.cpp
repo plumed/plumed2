@@ -797,7 +797,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
       independent_=computeAssignment();
     }
     finishAssignment(independent_);
-    firstTime_=isCalculationOnly();
+    firstTime_=isGeometryTrial();
     return independent_;
   }
   if(!sharedCoordinatesMatch()) {
@@ -810,7 +810,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
       } else {
         ++hits_;
       }
-      firstTime_=isCalculationOnly();
+      firstTime_=isGeometryTrial();
       return found->second;
     }
   }
@@ -818,7 +818,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
   Assignment result=computeAssignment();
   auto inserted=shared_->assignments.emplace(kappa_,std::move(result));
   shared_->valid=true;
-  firstTime_=isCalculationOnly();
+  firstTime_=isGeometryTrial();
   return inserted.first->second;
 }
 
@@ -924,7 +924,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment(const bool wait) 
   auto& neighbors=shared_ ? shared_->cudaNeighbors : independentCudaNeighbors_;
   // CPU and CUDA use the same rebuild and safe-skin criteria.
   if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
-      (invalidateList_ || isCalculationOnly() || neighborListNeedsUpdate())) {
+      (invalidateList_ || isGeometryTrial() || neighborListNeedsUpdate())) {
     // The action that first created the list may be inactive on this step.
     neighborList_->update(getPositions(),getPbc());
     saveNeighborListReference();

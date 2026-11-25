@@ -66,6 +66,17 @@ int main() {
       throw std::runtime_error(action+": trial geometry or normal-state restoration failed");
     }
   }
+  // Local explicit modes retain reduced lists and freeze persistent state.
+  for(const std::string action : {"coordination","piv-cadence","pines-cadence","emmi","funcpath"}) {
+    const auto control=evaluate(action,0);
+    for(int mode : {7,8}) {
+      const auto local=evaluate(action,mode);
+      if(local.normal!=control.normal || !std::isfinite(local.trial) ||
+          std::abs(local.trial-control.normal[2][1])>1.e-12) {
+        throw std::runtime_error(action+": local auxiliary evaluation changed geometry or state");
+      }
+    }
+  }
   if(evaluate("coordination",0).normal!=evaluate("coordination",6).normal) {
     throw std::runtime_error("duplicate preparation lost the post-trial list rebuild");
   }

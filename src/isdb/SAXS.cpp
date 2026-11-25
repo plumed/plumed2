@@ -1422,7 +1422,7 @@ void SAXS::launch() {
       formFactorRandom_=random_deut_;
       formFactorRandomValid_=true;
     }
-    if(isCalculationOnly() || trialGeometry_) {
+    if(isGeometryTrial() || trialGeometry_) {
       isFirstStep=true;
     }
   }
@@ -1823,7 +1823,7 @@ void SAXS::calculate() {
     if(isCalculationOnly()) {
       isFirstStep=launchFirstStep_;
     }
-    trialGeometry_=isCalculationOnly();
+    trialGeometry_=isGeometryTrial();
   }
 }
 

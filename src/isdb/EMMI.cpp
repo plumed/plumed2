@@ -1581,7 +1581,7 @@ void EMMI::update_neighbor_list() {
 }
 
 void EMMI::prepare() {
-  if(isCalculationOnly()) {
+  if(isGeometryTrial()) {
     first_time_=true;
   }
 }
@@ -1589,10 +1589,10 @@ void EMMI::prepare() {
 // overlap calculator
 void EMMI::calculate_overlap() {
 
-  if(first_time_ || isCalculationOnly() || getStep()%nl_stride_==0) {
+  if(first_time_ || isGeometryTrial() || (!isGeometryUnchanged() && getStep()%nl_stride_==0)) {
     update_neighbor_list();
     // Trial coordinates must not leave a list for the next local evaluation.
-    first_time_=isCalculationOnly();
+    first_time_=isGeometryTrial();
   }
 
   // clean temporary std::vectors

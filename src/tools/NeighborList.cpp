@@ -581,14 +581,19 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
     bool invalidateList) {
   if(preparedAction_==aa && preparedStep_==aa->getStep() &&
       preparedEvaluation_==aa->getEvaluationId() &&
-      preparedAuxiliary_==aa->isCalculationOnly()) {
+      preparedAuxiliary_==aa->isGeometryTrial()) {
     return {std::get<0>(preparedStatus_),std::get<1>(preparedStatus_)};
+  }
+  if(aa->isGeometryUnchanged() && !firsttime && preparedAction_==aa &&
+      preparedStep_==aa->getStep() && !preparedAuxiliary_) {
+    // Lambda candidates share the ordinary coordinates, even on a list-refresh step.
+    return {false,false};
   }
   if(stride_>0) {
     if(stride_==1) {
       invalidateList=true;
       firsttime=false;
-    } else if(firsttime || aa->isCalculationOnly() || (aa->getStep()%stride_==0 )) {
+    } else if(firsttime || aa->isGeometryTrial() || (aa->getStep()%stride_==0 )) {
       aa->requestAtoms(getFullAtomList());
       reducedRequested=false;
       invalidateList=true;
@@ -603,14 +608,14 @@ NeighborList::preparestatus NeighborList::prepare(Colvar* const aa,
       }
       invalidateList=false;
     }
-    if(aa->isCalculationOnly()) {
+    if(aa->isGeometryTrial()) {
       firsttime=true;
     }
   }
   preparedAction_=aa;
   preparedStep_=aa->getStep();
   preparedEvaluation_=aa->getEvaluationId();
-  preparedAuxiliary_=aa->isCalculationOnly();
+  preparedAuxiliary_=aa->isGeometryTrial();
   preparedStatus_= {firsttime,invalidateList};
   return {firsttime,invalidateList};
 }

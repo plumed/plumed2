@@ -441,6 +441,14 @@ bool Action::isCalculationOnly()const {
   return plumed.isCalculationOnly();
 }
 
+bool Action::isGeometryTrial()const {
+  return getExchangeStep() || (isCalculationOnly() && plumed.getEvaluationMode()==0);
+}
+
+bool Action::isGeometryUnchanged()const {
+  return !getExchangeStep() && plumed.getEvaluationMode()==2;
+}
+
 std::uint64_t Action::getEvaluationId()const {
   return plumed.atomsVersion;
 }

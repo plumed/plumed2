@@ -785,7 +785,7 @@ PIV::PIV(const ActionOptions&ao):
 }
 
 void PIV::calculate() {
-  if(isCalculationOnly() && updatePIV!=1) {
+  if(isGeometryTrial() && updatePIV!=1) {
     error("Auxiliary PIV evaluations require UPDATEPIV=1; held values cannot safely follow replica or lambda trials");
   }
 
@@ -808,8 +808,8 @@ void PIV::calculate() {
   auto & Atom0(sharedData->Atom0);
   auto & Atom1(sharedData->Atom1);
   if(sharedData->evaluation!=getEvaluationId()) {
-    sharedData->forceRefresh=isCalculationOnly() || sharedData->trial;
-    sharedData->trial=isCalculationOnly();
+    sharedData->forceRefresh=isGeometryTrial() || sharedData->trial;
+    sharedData->trial=isGeometryTrial();
   }
 
   std:: vector<std:: vector<int> > A0(Nprec);

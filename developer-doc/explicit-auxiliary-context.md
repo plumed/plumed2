@@ -15,6 +15,16 @@ Restore mode 0 after the evaluation, including error paths. Nonzero modes reject
 rejects `performCalcNoUpdate`. `clear` resets the mode. The mode remains in force
 until explicitly changed, so preparation and nested kernels see the same context.
 It does not imply foreign coordinates: `setExchangeStep` remains separate.
+Modes 1 and 2 are local auxiliary evaluations: mode 1 allows shell coordinates
+to move with the ordinary neighbor-list approximation; mode 2 reuses the current
+ordinary coordinates while varying lambda/ENERGY. A caller supplying foreign
+coordinates must additionally set the exchange flag before preparation.
+`Action::isGeometryTrial()` distinguishes such foreign trials (and unclassified
+mode-0 no-force calls) from local auxiliary calls. Geometry-list refresh and
+reduced-list restrictions use this predicate; persistent-state protection still
+uses `isCalculationOnly()`. Lambda calls can reuse initialized current-coordinate
+lists even on an ordinary refresh step. Local repeated path calculations retain
+the frame membership already selected for this step.
 `isCalculationOnly()` means state changes are forbidden; it does not mean that
 forces are unnecessary. Nested evaluations propagate these two requirements
 independently, and force-bearing loaded guests require the new command.

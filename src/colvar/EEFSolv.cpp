@@ -244,9 +244,9 @@ void EEFSolv::calculate() {
     makeWhole();
   }
   const bool trial=isCalculationOnly();
-  const bool refreshGeometry=trial || trialGeometry_;
-  trialGeometry_=trial;
-  if(nl_update==0 || refreshGeometry) {
+  const bool refreshGeometry=isGeometryTrial() || trialGeometry_;
+  trialGeometry_=isGeometryTrial();
+  if(nl.empty() || refreshGeometry || (nl_update==0 && !isGeometryUnchanged())) {
     update_neighb();
   }
 

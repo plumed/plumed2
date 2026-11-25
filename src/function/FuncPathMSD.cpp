@@ -273,14 +273,14 @@ void FuncPathMSD::updateNeighIndex() {
 
 // calculator
 void FuncPathMSD::calculate() {
-  if(isCalculationOnly() && neigh_size>0 &&
+  if(isGeometryTrial() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<allArguments.size()) {
     error("Auxiliary path evaluations require the full frame list; disable NEIGH_SIZE");
   }
-  if(isCalculationOnly() && neigh_size>0 && neighpair.size()!=allArguments.size()) {
+  if(isGeometryTrial() && neigh_size>0 && neighpair.size()!=allArguments.size()) {
     error("Auxiliary path evaluations need the full frame list: mark exchange evaluations before preparing dependencies or disable NEIGH_SIZE");
   }
-  trialGeometry_=isCalculationOnly();
+  trialGeometry_=isGeometryTrial();
   double s_path=0.;
   double partition=0.;
   if(neighpair.empty()) { // at first step, resize it
@@ -328,17 +328,21 @@ void FuncPathMSD::calculate() {
 /// this function updates the needed argument list
 ///
 void FuncPathMSD::prepare() {
-  if(isCalculationOnly() && neigh_size>0 &&
+  if(isGeometryTrial() && neigh_size>0 &&
       static_cast<unsigned>(neigh_size)<allArguments.size()) {
     error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
   }
+  if(isCalculationOnly() && !isGeometryTrial() && !trialGeometry_ && preparedStep_==getStep()) {
+    // Repeated local calls use the already selected frames at this MD step.
+    return;
+  }
   if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
-      preparedAuxiliary_==isCalculationOnly()) {
+      preparedAuxiliary_==isGeometryTrial()) {
     return;
   }
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
-  preparedAuxiliary_=isCalculationOnly();
+  preparedAuxiliary_=isGeometryTrial();
 
   // neighbor list: rank and activate the chain for the next step
 
@@ -348,7 +352,7 @@ void FuncPathMSD::prepare() {
   //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies
 
   // here just resize the neighpair. The real resizing of reinit will be done by the prepare stage that will modify the  list of arguments
-  if (neigh_size>0 && !isCalculationOnly() && !trialGeometry_) {
+  if (neigh_size>0 && !isGeometryTrial() && !trialGeometry_) {
     if(neighpair.size()==allArguments.size()) { // I just did the complete round: need to sort, shorten and give it a go
       // sort the values
       std::sort(neighpair.begin(),neighpair.end(),pairordering());
@@ -370,7 +374,7 @@ void FuncPathMSD::prepare() {
       }
     }
   } else {
-    if( int(getStep())==0 || isCalculationOnly() || trialGeometry_) {
+    if( int(getStep())==0 || isGeometryTrial() || trialGeometry_) {
       neighpair.resize(allArguments.size());
       for(unsigned i=0; i<allArguments.size(); i++) {
         neighpair[i].first=allArguments[i];

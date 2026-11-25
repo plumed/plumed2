@@ -1661,7 +1661,7 @@ void EMMIVOX::update_gpu() {
 }
 
 void EMMIVOX::prepare() {
-  if(isCalculationOnly()) {
+  if(isGeometryTrial()) {
     first_time_=true;
   }
 }
@@ -1821,10 +1821,10 @@ void EMMIVOX::calculate() {
   getPntrToComponent("kbt")->set(kbt_);
 
   // neighbor list update
-  if(first_time_ || isCalculationOnly() || step%nl_stride_==0) {
+  if(first_time_ || isGeometryTrial() || (!isGeometryUnchanged() && step%nl_stride_==0)) {
     // check if time to update neighbor sphere
     bool update = false;
-    if(first_time_ || isCalculationOnly()) {
+    if(first_time_ || isGeometryTrial()) {
       update = true;
     } else {
       update = do_neighbor_sphere();
@@ -1836,7 +1836,7 @@ void EMMIVOX::calculate() {
     // update neighbor list
     update_neighbor_list();
     // set flag
-    first_time_=isCalculationOnly();
+    first_time_=isGeometryTrial();
   }
 
   // calculate forward model

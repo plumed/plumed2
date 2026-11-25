@@ -532,6 +532,7 @@ class CS2Backbone : public MetainferenceBase {
   unsigned         box_nupdate;
   unsigned         box_count;
   bool             trialGeometry_=false;
+  bool             neighborInitialized_=false;
   bool             camshift;
   bool             pbc;
   bool             serial;
@@ -1182,10 +1183,11 @@ void CS2Backbone::calculate() {
     makeWhole();
   }
   const bool trial=isCalculationOnly();
-  if(trial || trialGeometry_ || box_count==0) {
+  if(!neighborInitialized_ || isGeometryTrial() || trialGeometry_ || (box_count==0 && !isGeometryUnchanged())) {
     update_neighb();
+    neighborInitialized_=true;
   }
-  trialGeometry_=trial;
+  trialGeometry_=isGeometryTrial();
   compute_ring_parameters();
 
   std::vector<double> camshift_sigma2(6);

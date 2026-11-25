@@ -364,7 +364,7 @@ void HBonds::pairHydrogens() {
 void HBonds::prepare() {
   if(nlStride>0) {
     // the list is also updated on exchange steps, where the coordinates are swapped
-    invalidateList=firsttime || getStep()%nlStride==0 || isCalculationOnly();
+    invalidateList=firsttime || getStep()%nlStride==0 || isGeometryTrial();
   }
 }
 
@@ -372,10 +372,10 @@ void HBonds::calculate() {
   if(!paired) {
     pairHydrogens();
   }
-  if(nlStride>0 && (invalidateList || isCalculationOnly() || firsttime)) {
+  if(nlStride>0 && (invalidateList || isGeometryTrial() || firsttime)) {
     nlpos.assign(getPositions().begin(),getPositions().begin()+nD+nA);
     nl->update(nlpos);
-    firsttime=isCalculationOnly();
+    firsttime=isGeometryTrial();
   }
 
   const unsigned stride=serial ? 1 : comm.Get_size();

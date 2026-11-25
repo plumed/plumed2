@@ -741,7 +741,7 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 }
 
 void PINES::prepare() {
-  if(isCalculationOnly()) {
+  if(isGeometryTrial()) {
     for(int n=0; n<N_Blocks; ++n) {
       if(nstride[n]>1 && !all_g1g2_pairs[n]) {
         error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
@@ -756,7 +756,7 @@ void PINES::prepare() {
   preparedStep_=getStep();
   preparedEvaluation_=getEvaluationId();
   preparedAuxiliary_=isCalculationOnly();
-  if(isCalculationOnly()) {
+  if(isGeometryTrial()) {
     // A trial can bring a previously discarded pair arbitrarily close. Request
     // every candidate before sharing data, then choose the list in calculate().
     listreducedall.clear();
@@ -773,6 +773,10 @@ void PINES::prepare() {
     for(auto& derivative : ann_deriv) {
       derivative.resize(total_PIV_length);
     }
+    return;
+  }
+  if(isCalculationOnly()) {
+    // Local auxiliary calls reuse membership without advancing its refresh phase.
     return;
   }
   bool heap_refreshed = false;
@@ -820,7 +824,7 @@ void PINES::prepare() {
 
 void PINES::calculate() {
   const long step = plumed.getStep();
-  const bool refreshGeometry=isCalculationOnly();
+  const bool refreshGeometry=isGeometryTrial();
   if(refreshGeometry) {
     for(int n=0; n<N_Blocks; ++n) {
       if(nstride[n]>1 && !all_g1g2_pairs[n]) {
@@ -848,7 +852,7 @@ void PINES::calculate() {
         target=std::move(*saved);
       }
     }
-  } restore {selection,refreshGeometry ? std::make_unique<Selection>(snapshot()) : nullptr};
+  } restore {selection,isCalculationOnly() ? std::make_unique<Selection>(snapshot()) : nullptr};
   if(refreshGeometry) {
     for(const auto& block : listall) {
       for(const auto& atom : block) {
@@ -859,7 +863,7 @@ void PINES::calculate() {
     }
   }
   for(int n=0; n<N_Blocks; ++n) {
-    if(refreshGeometry || (nstride[n]==1 && !all_g1g2_pairs[n])) {
+    if(refreshGeometry || (!isGeometryUnchanged() && nstride[n]==1 && !all_g1g2_pairs[n])) {
       buildMaxHeapVecBlock(n,mypdb,vecMaxHeapVecs[n]);
     }
   }

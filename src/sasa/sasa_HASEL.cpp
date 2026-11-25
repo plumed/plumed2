@@ -829,13 +829,13 @@ void SASA_HASEL::calculate() {
   }
 
   const bool trial=isCalculationOnly();
-  const bool refreshGeometry=trial || trialGeometry_;
-  trialGeometry_=trial;
+  const bool refreshGeometry=isGeometryTrial() || trialGeometry_;
+  trialGeometry_=isGeometryTrial();
   if (firstStepFlag ==0) {
     readPDB();
     readSASAparam();
   }
-  if (nl_update == 0 || refreshGeometry) {
+  if (firstStepFlag==0 || refreshGeometry || (nl_update==0 && !isGeometryUnchanged())) {
     calcNlist();
   }
 
