@@ -404,36 +404,36 @@ The functionality in PLUMED is split up between a collection of modules.  Each o
 every time PLUMED is compiled, others are not essential but are still compiled by default unless you explicitly tell PLUMED not to compile by using:
           
 ```bash
-./configure --disable-module=module-name
+./configure --enable-modules=-module-name
 ```
    
 The remainder of the modules are not compiled unless you explicitly request PLUMED to include that module in your compilation by using the command:
    
 ```bash
-./configure --enable-module=module-name
+./configure --enable-modules=+module-name
 ```
 
 To enable or disable multiple modules one should provide them as a : separated list. Notice that `+modulename` and `modulename` both activate the module, whereas
 `-modulename` deactivates it. E.g.
 
 ```bash
-./configure --enable-modules=+adjmat:-colvar
+./configure --enable-modules=+adjmat:-ves
 ```
 
-will disable the colvar module and enable the adjmat module.  The : can, in fact, be ommitted when you use + and -.  In other words, the following command can 
+will disable the ves module and enable the adjmat module. The : can be omitted when you use + and -. The following command can
 be used in place of the previous one:
 
 ```bash
-./configure --enable-modules=+adjmat-colvar
+./configure --enable-modules=+adjmat-ves
 ```
 
-If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-colvar` will _not_ do what you expect!
+If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-ves` will _not_ do what you expect!
 
-!!! note "old implementation"
-
-    Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
-    in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
-    in this manner will be overwritten next time `./configure` is used.
+Module overrides are stored in the `PLUMED_MODULE_ENABLED` and `PLUMED_MODULE_DISABLED` variables in the
+generated `Makefile.conf`. Modules in neither list follow their current
+`module.yml` default. Newly added modules therefore follow their defaults without
+running configure again. Legacy `.on` and `.off` files are ignored. Reconfigure
+if a source update adds dependencies that are not satisfied by the saved settings.
 
 There are also some shortcuts available:
 
@@ -442,6 +442,17 @@ There are also some shortcuts available:
 - `./configure --enable-modules=reset` or `./configure --enable-modules` can be used to enable the default modules.
 
 The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
+
+Required modules listed in each module's `module.yml` are enabled automatically,
+including transitive dependencies. Configure prints a warning for each module it
+adds. For example, `--enable-modules=none:ves` also enables `bias` and `cltools`.
+An explicit exclusion is an error if an enabled module requires it:
+`--enable-modules=none:ves:-bias` fails and reports the dependency chain.
+Selections are processed in order: a later `+bias` cancels an earlier `-bias`,
+and `all`, `none`, or `reset` replaces the selection and clears earlier explicit
+exclusions. Dependency resolution happens after the complete expression is read.
+External libraries still need to satisfy their usual configure checks.
+
    
 ## Module dependencies
 
@@ -607,7 +618,7 @@ is always compiled (blue), on by default (green) or off by default (red).  If yo
 PLUMED to include it during the configure stage by using:
 
 ```bash
-./configure --enable-module=module-name
+./configure --enable-modules=+module-name
 ```
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).

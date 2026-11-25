@@ -3,9 +3,13 @@
 VERSION = $(shell if test -f ../../VERSION.txt ; then grep -v \\\# ../../VERSION.txt ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
+ifeq ($(MAKECMDGOALS),clean)
+selected_modules := $(notdir $(patsubst %/module.yml,%,$(wildcard ../*/module.yml)))
+else
 selected_modules := $(shell ../maketools/find_modules.sh || echo __INVALID_MODULE_HEADER__)
 ifneq ($(filter __INVALID_MODULE_HEADER__,$(selected_modules)),)
-$(error Invalid module.yml; see the diagnostic above)
+$(error Invalid module selection; rerun ./configure and see the diagnostic above)
+endif
 endif
 KERNEL_MODULES := $(addprefix ../,$(selected_modules))
 
