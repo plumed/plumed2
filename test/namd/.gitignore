@@ -1,7 +1,0 @@
-*
-!namd_input
-!dia2.pdb
-!dia2.psf
-!plumed.dat
-!par_all27_prot_lipid.prm
-!.gitignore

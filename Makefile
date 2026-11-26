@@ -7,13 +7,13 @@ endif
 endif
 
 
-SRCDIRS := src test
+SRCDIRS := src
 SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest macports vim json astyle python
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check installcheck cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle nmcheck
+.PHONY: all lib clean $(SRCDIRS) doc docclean check test tests installcheck cppcheck distclean all_plus_docs macports codecheck plumedcheck astyle nmcheck
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -49,8 +49,8 @@ install-html: doc
 $(SRCDIRS):
 	$(MAKE) -C $@
      
-# compile plumed before tests:
-test: src
+# conventional aliases for check
+test tests: check
 
 # doxygen
 doc:
