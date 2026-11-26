@@ -355,6 +355,9 @@ public:
     : DRRForceGrid(p_dimensions, p_suffix, initializeTable), kbt(p_kbt) {}
   vector<double> getGradient(const vector<double> &pos,
                              bool SkipCheck = false) const;
+  /// dln(N)/dz used in the CZAR gradient. For merged windows it is the
+  /// count-weighted average of the windows' own log-derivatives.
+  vector<double> getLogDerivative(const vector<double> &pos) const;
   double getkbt() const {
     return kbt;
   }
@@ -367,6 +370,9 @@ public:
 
 private:
   double kbt;
+  /// Set only by mergewindow (not serialized): for each bin, the sum over the
+  /// merged windows of count*dln(N)/dz, each computed from the window's own counts
+  vector<double> weightedLogDerivative;
   friend class boost::serialization::access;
   template <typename Archive>
   void serialize(Archive &ar, const unsigned int version) {
