@@ -1,5 +1,5 @@
 type=plumed
-plumed_needs=boost_serialization
+plumed_needs="drr:boost_serialization"
 plumed_modules=drr
 arg="drr_tool --merge A.drrstate,B.drrstate,C.drrstate --merge_output merged"
 
