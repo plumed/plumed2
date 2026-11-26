@@ -137,10 +137,10 @@ jobs:
         for v in $CUDA_VERSIONS ; do
           echo "::group::CUDA $v, in the kernel"
           export PATH="$HOME/cuda-$v/bin:$path0"
-          # no dependency tracking: without make clean the objects of the previous CUDA version
-          # would be linked with this runtime (e.g. CUDA 12 objects call cudaGetDeviceProperties_v2,
-          # which the CUDA 13 runtime does not have)
-          make clean > /dev/null
+          # make does not rebuild an object when only the compiler changes: without a clean, the
+          # objects of the previous build (the kernel without CUDA, or the previous CUDA version)
+          # are linked as they are. The C++ files come from ccache, so the clean costs little.
+          make clean
           ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
             --enable-modules=+gpu_cuda_hip+gpu_voronoi NVCCFLAGS=-arch=sm_80
           make -j 4
@@ -167,7 +167,7 @@ jobs:
       run: |
         v=${CUDA_VERSIONS##* }
         export PATH="$HOME/cuda-$v/bin:$PATH"
-        make clean > /dev/null
+        make clean
         ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
           --enable-modules=+gpu_voronoi NVCCFLAGS=-arch=sm_80
         make -j 4
