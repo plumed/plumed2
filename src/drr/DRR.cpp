@@ -504,11 +504,11 @@ vector<double> CZAR::getGradient(const vector<double> &pos,
     std::abort();
   }
   const size_t baseaddr = sampleAddress(pos);
-  const vector<double> log_deriv(getCountsLogDerivative(pos));
   const unsigned long int &count = samples[baseaddr];
   if (count == 0) {
     return result;
   }
+  const vector<double> log_deriv(getLogDerivative(pos));
   auto it_fa = begin(forces) + baseaddr * ndims;
   std::transform(it_fa, it_fa + ndims, begin(log_deriv), begin(result),
   [&count, this](double fa, double ld) {
@@ -517,6 +517,27 @@ vector<double> CZAR::getGradient(const vector<double> &pos,
   return result;
 }
 
+vector<double> CZAR::getLogDerivative(const vector<double> &pos) const {
+  if (weightedLogDerivative.empty()) {
+    return getCountsLogDerivative(pos);
+  }
+  vector<double> result(ndims, 0);
+  const size_t addr = sampleAddress(pos);
+  const unsigned long int count = samples[addr];
+  if (count != 0) {
+    for (size_t j = 0; j < ndims; ++j) {
+      result[j] = weightedLogDerivative[addr * ndims + j] / count;
+    }
+  }
+  return result;
+}
+
+// The CZAR gradients of the windows are merged, not their histograms.
+// Summing forces and counts gives the count-weighted average of the mean
+// forces, and the log-derivative of the z-density is averaged with the same
+// weights, each window's one computed from its own counts. The log-derivative
+// of the summed counts would add a spurious step of kT*ln(N_left/N_right)
+// wherever the summed histogram passes from one window to another.
 CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   const vector<DRRAxis> dR = merge(cWA.dimensions, cWB.dimensions);
   const double newkbt = cWA.kbt;
@@ -524,7 +545,20 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
   CZAR result(dR, suffix, newkbt);
   const size_t nrows = result.sampleSize;
   const size_t ncols = result.ndims;
+  result.weightedLogDerivative.assign(nrows * ncols, 0.0);
   vector<double> pos(ncols, 0);
+  auto addLogDerivative = [&result, &pos, ncols](const CZAR &w,
+  unsigned long int count) {
+    // count is zero also when pos is outside the grid of w
+    if (count == 0) {
+      return;
+    }
+    const vector<double> ld = w.getLogDerivative(pos);
+    const size_t addr = result.sampleAddress(pos) * ncols;
+    for (size_t j = 0; j < ncols; ++j) {
+      result.weightedLogDerivative[addr + j] += count * ld[j];
+    }
+  };
   for (size_t i = 0; i < nrows; ++i) {
     for (size_t j = 0; j < ncols; ++j) {
       pos[j] = result.table[j][i];
@@ -535,6 +569,8 @@ CZAR CZAR::mergewindow(const CZAR &cWA, const CZAR &cWB) {
     const vector<double> aForceB = cWB.getAccumulatedForces(pos);
     result.store(pos, aForceA, countA);
     result.store(pos, aForceB, countB);
+    addLogDerivative(cWA, countA);
+    addLogDerivative(cWB, countB);
   }
   return result;
 }

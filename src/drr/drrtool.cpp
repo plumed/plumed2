@@ -55,6 +55,12 @@ The following command will merge windows of two .drrstate file, and output the
 plumed drr_tool --merge win1.drrstate,win2.drrstate
 \endverbatim
 
+The windows must have the same GRID_SPACING, and their GRID_MIN must differ by multiples of it.
+They may overlap or just touch, and may have been sampled for different times.
+The merged naive (ABF) and CZAR gradients of each bin are the averages of the gradients
+of the windows weighted with their counts in that bin. In the CZAR gradient of each window,
+the derivative of the logarithm of the z-averaged density is computed from the counts of that window only.
+
 After getting the .grad and .count file, you can do numerical integration by
 using abf_integrate tool from
 https://github.com/Colvars/colvars/tree/master/colvartools

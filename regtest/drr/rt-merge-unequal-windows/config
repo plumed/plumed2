@@ -1,0 +1,45 @@
+type=plumed
+plumed_needs=boost_serialization
+plumed_modules=drr
+arg="drr_tool --merge A.drrstate,B.drrstate,C.drrstate --merge_output merged"
+
+# Free particle (flat PMF) sampled in three windows of unequal length: A and B
+# touch, B and C overlap. The drrstate files are generated here, so the test does
+# not depend on the version of the boost archives. The merged CZAR gradient must be
+# the count-weighted average of the gradients of the windows (see issue #1638).
+function plumed_regtest_before(){
+  for w in "A 0.0 1.0 20000" "B 1.0 2.0 5000" "C 1.8 3.0 15000" ; do
+    set -- $w
+    sed -e "s/@NAME@/$1/" -e "s/@MIN@/$2/" -e "s/@MAX@/$3/" -e "s/@NSTEP@/$4/" plumed.dat.in > plumed_$1.dat
+    cat > in_$1 << EOI
+nstep $4
+tstep 0.005
+temperature 1.0
+friction 1.0
+dimension 1
+ipos $(awk -v a=$2 -v b=$3 'BEGIN{print (a+b)/2}')
+periodic false
+plumed plumed_$1.dat
+EOI
+    $plumed_nompi pesmd < in_$1 > out_$1
+    $plumed_nompi drr_tool --extract $1.drrstate > /dev/null
+  done
+}
+
+function plumed_regtest_after(){
+  awk '
+    FNR==1 { file=FILENAME }
+    /^#/ { next }
+    file=="merged.czar.grad" { merged[$1]=$2; next }
+    file ~ /\.czar\.count$/ { count[file,$1]=$2; next }
+    { c=count[substr(file,1,1) ".czar.count",$1]; num[$1]+=c*$2; den[$1]+=c }
+    END {
+      bad=0
+      for(x in merged) {
+        expected=(den[x]>0 ? num[x]/den[x] : 0)
+        d=merged[x]-expected
+        if(d>1e-6 || d<-1e-6) { bad++; print "mismatch at", x, merged[x], expected }
+      }
+      print "mismatches", bad
+    }' A.czar.count B.czar.count C.czar.count merged.czar.grad A.czar.grad B.czar.grad C.czar.grad > check
+}
