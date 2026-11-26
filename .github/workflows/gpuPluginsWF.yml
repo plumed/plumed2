@@ -128,6 +128,10 @@ jobs:
         for v in $CUDA_VERSIONS ; do
           echo "::group::CUDA $v, in the kernel"
           export PATH="$HOME/cuda-$v/bin:$path0"
+          # make does not rebuild an object when only the compiler changes: without a clean, the
+          # objects of the previous build (the kernel without CUDA, or the previous CUDA version)
+          # are linked as they are. The C++ files come from ccache, so the clean costs little.
+          make clean
           ./configure CXX="ccache $CXX" --disable-dependency-tracking --disable-doc --disable-python --disable-libsearch \
             --enable-modules=+gpu_cuda_hip NVCCFLAGS=-arch=sm_80
           make -j 4
