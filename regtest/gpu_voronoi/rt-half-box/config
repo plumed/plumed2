@@ -12,6 +12,11 @@ plumed_regtest_after() {
   {
     bash compare.sh values 2
     bash compare.sh derivatives 3
-    echo "actions on the GPU: $(grep -c "requested CUDA; selected CUDA" out)"
+    # one line for each shared evaluation (not one for each action): the GPU is used, never the CPU
+    if grep -q "requested CUDA; selected CUDA" out && ! grep -q "requested CUDA; selected CPU" out ; then
+      echo "on the GPU: yes"
+    else
+      echo "on the GPU: NO"
+    fi
   } > comparison
 }

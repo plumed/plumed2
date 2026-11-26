@@ -11,5 +11,9 @@ plumed_regtest_after() {
   # the value must be exactly 1 and every derivative exactly 0 (also -0)
   awk '!/^#/{if($2!=1) bad++} END{print (bad ? "value: NOT 1" : "value: 1")}' values > exact
   awk '!/^#/{n++; if($3!=0) bad++} END{print (bad ? "derivatives: NOT 0" : "derivatives: " n " rows, all 0")}' derivatives >> exact
-  echo "actions on the GPU: $(grep -c "requested CUDA; selected CUDA" out)" >> exact
+  if grep -q "requested CUDA; selected CUDA" out && ! grep -q "requested CUDA; selected CPU" out ; then
+    echo "on the GPU: yes" >> exact
+  else
+    echo "on the GPU: NO" >> exact
+  fi
 }
