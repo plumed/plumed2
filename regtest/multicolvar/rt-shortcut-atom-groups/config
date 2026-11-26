@@ -1,0 +1,19 @@
+type=driver
+plumed_modules="multicolvar colvar function generic vatom matrixtools bias"
+# Compare named groups, MOLINFO and index selections with explicit atom lists.
+# Each difference is biased linearly: equal derivatives give zero net forces.
+arg="--plumed plumed.dat --ixyz traj.xyz --dump-forces forces --dump-forces-fmt=%12.8f"
+
+plumed_regtest_after() {
+  if ! $plumed driver --plumed inplane.dat --ixyz traj.xyz > inplane.out 2> inplane.err; then
+    echo "FAILURE: multiple in-plane vector starts and ends"
+  fi
+  if ! $plumed driver --plumed order.dat --ixyz traj.xyz > order.out 2> order.err; then
+    echo "FAILURE: ordered selections and virtual atoms"
+  fi
+  if $plumed driver --plumed empty.dat --parse-only --natoms 12 > empty.out 2> empty.err; then
+    echo "FAILURE: empty selection was accepted"
+  elif ! grep -q "the selection in GROUPB contains no atoms" empty.out empty.err; then
+    echo "FAILURE: wrong empty-selection diagnostic"
+  fi
+}

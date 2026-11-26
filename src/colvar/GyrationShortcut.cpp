@@ -112,8 +112,8 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)")<<"\n";
   // Read in the atoms involved
   std::vector<std::string> atoms;
-  parseVector("ATOMS",atoms);
-  Tools::interpretRanges(atoms);
+  parseAtomList("ATOMS",atoms);
+
   std::string gtype, atlist=atoms[0];
   for(unsigned i=1; i<atoms.size(); ++i) {
     atlist += "," + atoms[i];

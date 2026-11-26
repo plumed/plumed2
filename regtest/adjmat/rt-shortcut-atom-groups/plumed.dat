@@ -1,0 +1,17 @@
+MOLINFO STRUCTURE=ref.pdb
+g: GROUP ATOMS=1-4
+g2: GROUP ATOMS=5-8
+s: GROUP ATOMS=1,2
+e: GROUP ATOMS=5,6
+wp: POSITION ATOMS=1-4 NOPBC
+w: CUSTOM ARG=wp.x FUNC=exp(x) PERIODIC=NO
+
+# ATOMS containing group labels selects the legacy block-matrix syntax.
+# Retain that dispatch: flattening g,g2 here would change switch assignment.
+a: CONTACT_MATRIX GROUP1=1-4 GROUP2=5-8 SWITCH11={RATIONAL R_0=1.0} SWITCH12={RATIONAL R_0=1.0} SWITCH22={RATIONAL R_0=1.0}
+b: CONTACT_MATRIX ATOMS=g,g2 SWITCH11={RATIONAL R_0=1.0} SWITCH12={RATIONAL R_0=1.0} SWITCH22={RATIONAL R_0=1.0}
+# A flat compound selector uses the regular atom parser, preserving its spaces.
+c: CONTACT_MATRIX ATOMS=1-4 SWITCH={RATIONAL R_0=1.0}
+d: CONTACT_MATRIX ATOMS={@ndx:{index.ndx first}} SWITCH={RATIONAL R_0=1.0}
+f: CONTACT_MATRIX GROUP1={@ndx:{index.ndx first}} GROUP2={@ndx:{index.ndx second}} SWITCH11={RATIONAL R_0=1.0} SWITCH12={RATIONAL R_0=1.0} SWITCH22={RATIONAL R_0=1.0}
+PRINT ARG=a,b,c,d,f FILE=colvar FMT=%12.8f

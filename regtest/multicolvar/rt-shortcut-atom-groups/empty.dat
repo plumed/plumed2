@@ -1,0 +1,2 @@
+MOLINFO STRUCTURE=ref.pdb
+x: DISTANCES GROUPA=9 GROUPB={@ndx:{index.ndx empty}} MEAN
