@@ -50,6 +50,24 @@ void checkPythonVersion() {
   }
 }
 
+// PLUMED within a Python program whose interpreter is not the libpython used by
+// this library, e.g. a Python executable that contains its interpreter (as those
+// of Debian and conda) and the kernel with pycv, which links libpython, loaded with
+// RTLD_DEEPBIND (as the PLUMED wrapper does by default): pycv would start a second
+// interpreter, without the modules of the program
+void checkSingleInterpreter() {
+  using Function=int(*)();
+  // the program and its libraries (RTLD_DEFAULT would search first the libraries
+  // of a library loaded with RTLD_DEEPBIND); the handle is never closed
+  void* program=dlopen(nullptr,RTLD_NOW);
+  auto global=program ? reinterpret_cast<Function>(dlsym(program,"Py_IsInitialized")) : nullptr;
+  if(global && global!=&Py_IsInitialized && global()) {
+    plumed_error()<<"PLUMED runs within a Python program whose interpreter is not the"
+                  <<" libpython used by pycv (e.g. the kernel, with pycv, has been loaded"
+                  <<" with RTLD_DEEPBIND): set PLUMED_LOAD_NODEEPBIND=yes, or use pycv as an extension";
+  }
+}
+
 // Once used, this library is never unloaded, as any Python extension (as the
 // separate extension of the plugin was): when PLUMED runs within Python, the
 // Python code can keep plumedCommunications (its types and functions, whose
@@ -108,6 +126,7 @@ public:
     std::lock_guard<std::mutex> lk(mutex);
     // under the lock: Py_GetVersion writes a static buffer at each call
     checkPythonVersion();
+    checkSingleInterpreter();
     keepThisLibraryLoaded();
     bool started=false;
     if(leases==0 && !Py_IsInitialized()) {

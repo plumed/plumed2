@@ -1,9 +1,8 @@
 # Read only the deliberately restricted, top-level build fields in module.yml.
 # Keep the grammar in sync with module_header.py and PlumedModules.cmake.
 # type and use are required; toolchain (default cxx), placement (default any)
-# and include (default empty) are optional. toolchain python (C++ sources that
-# embed a Python interpreter, one build per Python version) requires placement
-# extension.
+# and include (default empty) are optional. toolchain python: C++ sources that
+# embed a Python interpreter (one build per Python version).
 function fail(message) {
   print FILENAME ": " message > "/dev/stderr"
   bad=1
@@ -36,7 +35,6 @@ BEGIN { toolchain="cxx"; placement="any" }
 }
 END {
   if (nt != 1 || nu != 1) fail("exactly one type and use field required")
-  if (toolchain == "python" && placement != "extension") fail("toolchain: python requires placement: extension")
   if (bad) exit 1
   if (field == "type") print type
   else if (field == "use") print use

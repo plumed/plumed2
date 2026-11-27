@@ -16,8 +16,7 @@ def read_header(path, text=None):
     """Read the restricted top-level YAML fields, preserving USE order.
 
     type and use are required; toolchain, placement and include are optional
-    and are returned only when present (see DEFAULTS). toolchain python requires
-    placement extension."""
+    and are returned only when present (see DEFAULTS)."""
     fields = {}
     for line in (Path(path).read_text() if text is None else text).splitlines():
         if not re.match(
@@ -46,10 +45,6 @@ def read_header(path, text=None):
         fields[key] = value
     if not {"type", "use"} <= set(fields):
         raise ValueError(f"{path}: exactly one type and use field required")
-    if header_field(fields, "toolchain") == "python" and (
-        header_field(fields, "placement") != "extension"
-    ):
-        raise ValueError(f"{path}: toolchain: python requires placement: extension")
     return fields
 
 

@@ -37,7 +37,9 @@ make install
 ```
 
 The registration declares the variant `python3.12`; at runtime the embedded
-interpreter is that Python, which must also provide numpy.
+interpreter is that Python, which must also provide numpy. With a single Python
+version, pycv can also be compiled into the kernel (`./configure
+--enable-modules=+pycv PYTHON_BIN=python3.12`, see the documentation of pycv).
 Available optional native features are detected with compile/link probes against
 this installation, independently of the base's feature macros. For this loading
 proof of concept every selected module is built even when an optional library

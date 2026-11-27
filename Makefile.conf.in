@@ -22,6 +22,9 @@ KERNEL_LDFLAGS=@KERNEL_LDFLAGS@
 # empty when no such module is enabled
 CUDA_COMPILER=@CUDA_COMPILER@
 CUDA_FLAGS=@CUDA_FLAGS@
+# headers of Python and pybind11 for the modules with toolchain python (e.g. pycv),
+# empty when no such module is enabled; libpython is in LIBS
+PYTHON_EMBED_CPPFLAGS=@PYTHON_EMBED_CPPFLAGS@
 LD_MAIN_RUNPATH=@LD_MAIN_RUNPATH@
 GCCDEP=@CXX@
 disable_dependency_tracking=@disable_dependency_tracking@

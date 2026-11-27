@@ -4,8 +4,7 @@
 # include (default empty) are optional and are returned in the optional fourth,
 # fifth and sixth arguments. include lists modules whose headers are used, but that
 # are not enabled or linked: it is only validated here (this build never compiles
-# the modules that use it, see CMakeLists.txt). toolchain python requires placement
-# extension.
+# the modules that use it, see CMakeLists.txt).
 function(plumed_read_module declaration type_out use_out)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${declaration}")
   file(STRINGS "${declaration}" _lines REGEX "^[\"']?(type|use|toolchain|placement|include)[\"']?[ \t]*:")
@@ -45,9 +44,6 @@ function(plumed_read_module declaration type_out use_out)
   endif()
   if(_nc GREATER 1 OR _np GREATER 1 OR _ni GREATER 1)
     message(FATAL_ERROR "${declaration}: duplicate toolchain, placement or include")
-  endif()
-  if(_toolchain STREQUAL "python" AND NOT _placement STREQUAL "extension")
-    message(FATAL_ERROR "${declaration}: toolchain: python requires placement: extension")
   endif()
   set(${type_out} "${_type}" PARENT_SCOPE)
   set(${use_out} "${_use}" PARENT_SCOPE)

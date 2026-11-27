@@ -67,9 +67,9 @@ If not specified, `INIT` will default to `plumedInit` and `CALCULATE`  to
 
 ## Installation
 
-pycv embeds a Python interpreter, so it is built for one Python version: it is
-never compiled into the PLUMED kernel, but built as an extension against an
-installed PLUMED, once for each Python version that you want to use.
+pycv embeds a Python interpreter, so it is built for one Python version: usually
+as an extension against an installed PLUMED, once for each Python version that you
+want to use, or in the PLUMED kernel, for one Python version (see below).
 
 With conda, install the package `plumed-ext-pycv` next to `plumed`: the variant
 that matches the Python of the environment is selected automatically.
@@ -86,6 +86,20 @@ make install
 (add its `lib/plumed/plugins` directory to `PLUMED_PLUGIN_PATH` if it is not
 installed next to PLUMED), or with `LOAD MODULE=pycv` when autoloading is
 disabled (`PLUMED_AUTOLOAD=0`). `plumed modules --has pycv` checks that it is available.
+
+When only one Python version is needed (e.g. on a cluster), pycv can instead be
+compiled into the kernel, requesting it by name:
+```sh
+./configure --enable-modules=+pycv PYTHON_BIN=python3.12
+```
+The kernel then links the shared libpython of that Python (`PYTHON_BIN`, by default
+`python3`, which must have `pybind11` >=3.0), and works only with that Python
+version; `--enable-modules=all` does not include pycv. When PLUMED runs within a
+Python program whose executable contains its own interpreter (as the Python of
+Debian, Ubuntu and conda), the kernel must be loaded without `RTLD_DEEPBIND`
+(`export PLUMED_LOAD_NODEEPBIND=yes`, otherwise pycv stops with an error):
+with `RTLD_DEEPBIND` the kernel would use the libpython it links, a second
+interpreter. The extension has no such limitation.
 
 > [!NOTE]
 >Until PLUMED 2.10 pycv was a plugin, installed with `pip install plugins/pycv`

@@ -1,11 +1,11 @@
 name: pycv
 type: default-off
 use: [core, tools, colvar, function]
-# embeds a Python interpreter: one build for each Python version, only as an
-# extension against an installed base (neither the kernel nor the packages
-# without pycv depend on Python)
+# embeds a Python interpreter: one build for each Python version, as an extension
+# against an installed base, or in the kernel when requested by name
+# (--enable-modules=+pycv, with the Python of PYTHON_BIN: the kernel then links
+# libpython); not with --enable-modules=all, nor in the packages and wheels
 toolchain: python
-placement: extension
 authors: Daniele Rapetti and Toni Giorgino
 description: functionality for calling python from PLUMED to calculate CVs and functions
 dois: ["10.21105/joss.01773"]

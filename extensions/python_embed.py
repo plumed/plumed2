@@ -2,12 +2,21 @@
 
 The module is compiled with the headers of one Python and pybind11, and linked
 to that Python's shared libpython: one build for each Python version, with the
-registration variant python<version>. Used by configure.py (checks) and build.py.
+registration variant python<version>. Used by configure.py (checks) and build.py,
+and by the native configure (with --enable-modules=+pycv) as a script:
+
+    python3 extensions/python_embed.py PYTHON SOEXT
+
+prints the version, the compiler flags (without the macro, defined by configure)
+and the link flags, one per line (on an error, a message on stderr and exit
+status 1).
 """
 
 import json
+import shlex
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 # Run by the selected Python: everything comes from its own sysconfig.
@@ -73,3 +82,15 @@ def settings(python, soext):
         "link": ["-L" + str(libdir), "-l" + library, "-Wl,-rpath," + str(libdir)],
         "variant": "python" + info["version"],
     }
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        sys.exit("usage: python_embed.py PYTHON SOEXT")
+    try:
+        result = settings(sys.argv[1], sys.argv[2])
+    except ValueError as error:
+        sys.exit(str(error))
+    print(result["version"])
+    print(shlex.join(result["flags"]))
+    print(shlex.join(result["link"]))
