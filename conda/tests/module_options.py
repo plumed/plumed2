@@ -137,8 +137,8 @@ class ModuleOptions(unittest.TestCase):
             ("DRR", "drr"),
             ("CUDACOORDINATION", "gpu_cuda_hip"),
             ("cuda-devices", "gpu_cuda_hip"),
-            ("PYCVINTERFACE", "plugins/pycv"),
-            ("PYFUNCTION", "plugins/pycv"),
+            ("PYCVINTERFACE", "pycv"),
+            ("PYFUNCTION", "pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
         ):
             self.assertIn('"' + action + '", "' + module + '"', text)
@@ -226,8 +226,8 @@ class ModuleOptions(unittest.TestCase):
         self.assertIn("target_platform == 'linux-64'", skip_selector([policy]))
 
     def test_backend_restrictions(self):
-        policy = self.policy("conda:\n  cmake_args:\n  - -DSOME_OPTION=ON\n")
-        validate_backend(policy, "pycv", self.root)
+        policy = self.policy("conda:\n  make_args:\n  - SOME_OPTION=ON\n")
+        validate_backend(policy, "openacc_ptm", self.root)
         with self.assertRaises(ValueError):
             validate_backend(policy, "native", self.root)
 
@@ -350,7 +350,7 @@ class ModuleOptions(unittest.TestCase):
             ["12.9", "13.0"],
         )
         self.assertEqual(
-            len(catalog["plugins"]["pycv"]["conda"]["variants"]["python"]), 5
+            len(catalog["modules"]["pycv"]["conda"]["variants"]["python"]), 5
         )
         tests = regression_selection(catalog)["tests"]
         self.assertEqual(len(tests), 6)
@@ -383,7 +383,7 @@ class ModuleOptions(unittest.TestCase):
             source / "src/maketools/module_header.py",
             tree / "src/maketools/module_header.py",
         )
-        for plugin in ("pycv", "openaccPTM"):
+        for plugin in ("openaccPTM",):
             (tree / "plugins" / plugin / "src").mkdir(parents=True)
         for module, kind in (
             ("tools", "always"),

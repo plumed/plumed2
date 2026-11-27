@@ -157,7 +157,6 @@ All the following `conda` fields default to empty lists of strings:
 | `configure_flags` | Extra kernel configure arguments. |
 | `cppflags`, `cxxflags`, `ldflags` | Extra compiler/preprocessor/linker arguments. |
 | `make_args` | Kernel or Make-based plugin arguments. |
-| `cmake_args` | pycv/scikit-build arguments. |
 | `required_features` | Missing feature fails the build. |
 | `optional_features` | Explicit additional optional probes. |
 | `disabled_features` | Deliberately disable and report features absent. |
@@ -172,7 +171,7 @@ Flags are argument lists. Build-environment variables expand once; `$$` means a
 literal dollar. Missing variables are errors. Values are never shell-evaluated.
 Kernel settings combine globally. Native extensions apply flags per module,
 retain kernel ABI flags and use a Python compiler driver, so configure/Make/CMake
-arguments are rejected for that backend. pycv accepts `cmake_args`; CUDA/OpenACC
+arguments are rejected for that backend. CUDA/OpenACC
 accept `make_args`. Kernel configure arguments cannot override installation
 layout, module selection or MPI policy.
 

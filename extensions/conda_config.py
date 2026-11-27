@@ -155,7 +155,7 @@ def regression_selection(catalog):
 
 def build_environment(policy, environment):
     result = dict(environment)
-    for key in ("cppflags", "cxxflags", "ldflags", "cmake_args"):
+    for key in ("cppflags", "cxxflags", "ldflags"):
         values = [Template(value).substitute(result) for value in policy.get(key, [])]
         if values:
             variable = key.upper()

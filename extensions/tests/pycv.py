@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate installed Python-variant plugins against the main PLUMED package."""
+"""Validate the installed pycv module (toolchain python) against the main PLUMED package."""
 
 import argparse
 import os
@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-pycv-tests-") as scratch:
     # Existing Python-hosted tests exercise the companion extension, lifecycle,
     # initialization callbacks, periodicity, atom access and returned values.
     tests = scratch / "pythontests"
-    shutil.copytree(source / "plugins/pycv/pythontests", tests)
+    shutil.copytree(source / "regtest/pycv/pythontests", tests)
     subprocess.run(
         [str(prefix / "bin/python"), "-m", "pytest", "-q", str(tests)],
         cwd=scratch,
@@ -64,20 +64,16 @@ with tempfile.TemporaryDirectory(prefix="plumed-pycv-tests-") as scratch:
     (regtest / "scripts").symlink_to(
         source / "regtest/scripts", target_is_directory=True
     )
-    fixtures = ("pycvcomm/rt-getPositions", "pycvfunc/rt-derivative")
+    fixtures = ("rt-getPositions", "rt-func-derivative")
     for mode in ("autoload", "explicit"):
         for name in fixtures:
             fixture = regtest / mode / Path(name).name
-            shutil.copytree(source / "plugins/pycv/regtest" / name, fixture)
-            # Retain calculations, hooks and numerical references. Change only
-            # the loading directive to test the installed module interface.
-            input_path = fixture / "plumed.dat"
-            input_path.write_text(
-                input_path.read_text().replace(
-                    "LOAD FILE=@pycvpath@",
-                    "LOAD MODULE=pycv" if mode == "explicit" else "",
-                )
-            )
+            shutil.copytree(source / "regtest/pycv" / name, fixture)
+            # Retain calculations, hooks and numerical references. Add only
+            # the loading directive to test the explicit module interface.
+            if mode == "explicit":
+                input_path = fixture / "plumed.dat"
+                input_path.write_text("LOAD MODULE=pycv\n" + input_path.read_text())
             result = subprocess.run(
                 ["bash", str(source / "regtest/scripts/run")],
                 cwd=fixture,
@@ -85,7 +81,9 @@ with tempfile.TemporaryDirectory(prefix="plumed-pycv-tests-") as scratch:
                     environment,
                     PLUMED_AUTOLOAD="0" if mode == "explicit" else "1",
                     PLUMED_PROGRAM_NAME=program,
-                    PLUMED_PYTHON_SELECT=str(prefix / "bin/python"),
+                    # the package provides pycv: with PLUMED_AUTOLOAD=0 the check of
+                    # plumed_modules=pycv would skip the test (it is loaded by the input)
+                    PLUMED_REGTEST_FORCE_REQUIREMENTS="yes",
                 ),
                 check=False,
                 capture_output=True,

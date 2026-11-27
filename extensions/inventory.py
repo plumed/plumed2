@@ -153,7 +153,6 @@ def generate_catalog(write=True):
     plugins = {}
     for name, path in {
         "openacc_ptm": "plugins/openaccPTM",
-        "pycv": "plugins/pycv",
     }.items():
         directory = ROOT / path
         plugins[name] = {
