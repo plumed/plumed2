@@ -147,6 +147,8 @@ with tempfile.TemporaryDirectory(prefix="plumed-rpath-") as temporary:
         f"--prefix={prefix}",
         *options,
         "--enable-rpath",
+        # 2.10 does not automatically enable cltools' optional dependencies.
+        "--enable-modules=none:+cltools:+molfile:+xdrfile",
         cwd=old,
         env=env,
     )
