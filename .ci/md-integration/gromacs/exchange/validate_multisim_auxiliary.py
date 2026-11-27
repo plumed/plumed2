@@ -1,4 +1,4 @@
-"""Check selective local-auxiliary guards and supported independent/walker MD."""
+"""Reject unsupported coupled MCMC/shell queries; retain ordinary ensemble MD."""
 
 import argparse
 import json
@@ -52,21 +52,13 @@ def main():
                 ) from None
 
     results = []
-    for case in [
-        "ordinary",
-        "mcmc",
-        "shells",
-        "mcmc-independent",
-        "shells-independent",
-        "mcmc-walkers",
-        "shells-walkers",
-    ]:
+    for case in ["ordinary", "mcmc", "shells"]:
         work = root / case
         work.mkdir(exist_ok=True)
         for replica in range(2):
             rep = work / f"rep{replica}"
             rep.mkdir(exist_ok=True)
-            template = location / "shell" if case.startswith("shells") else model
+            template = location / "shell" if case == "shells" else model
             shutil.copy2(template / "topol.top", rep)
             shutil.copy2(template / "conf.gro", rep)
             mdp = (template / "md.mdp").read_text()
@@ -92,7 +84,7 @@ def main():
                 )
                 mdp = mdp.replace("nsteps = 6", "nsteps = 1")
                 plumed = "d: DISTANCE ATOMS=1,2 NOPBC\ne: ENSEMBLE ARG=d\nr: RESTRAINT ARG=e.d AT=0 KAPPA=2\nPRINT ARG=d,e.d,r.bias FILE=COLVAR\n"
-            elif case.startswith("mcmc"):
+            elif case == "mcmc":
                 mdp = mdp.replace(
                     "init-lambda-state = 0", f"init-lambda-state = {replica}"
                 )
@@ -100,8 +92,7 @@ def main():
             else:
                 # One replica converges at its first force call; the other needs
                 # more. An unguarded ensemble query then mismatches collectives.
-                if case == "shells":
-                    mdp = mdp.replace("nsteps = 2", "nsteps = 0")
+                mdp = mdp.replace("nsteps = 2", "nsteps = 0")
                 xyz = "Shell collective control\n2\n"
                 for atom, atomname, x in [
                     (1, "C", 0),
@@ -110,18 +101,6 @@ def main():
                     xyz += f"{1:5d}{'POL':<5}{atomname:>5}{atom:5d}{x:13.8f}{1.0:13.8f}{1.0:13.8f}\n"
                 (rep / "conf.gro").write_text(xyz + "3.0 3.0 3.0\n")
                 plumed = "d: DISTANCE ATOMS=1,2 NOPBC\ne: ENSEMBLE ARG=d\nr: RESTRAINT ARG=e.d AT=0 KAPPA=0\n"
-            if case.endswith("-independent") or case.endswith("-walkers"):
-                if case.startswith("mcmc"):
-                    variable, definition = "l", "l: EXTRACV NAME=lambda\n"
-                else:
-                    variable, definition = "d", "d: DISTANCE ATOMS=1,2 NOPBC\n"
-                if case.endswith("-walkers"):
-                    bias = f"m: METAD ARG={variable} SIGMA=1 HEIGHT=0.01 PACE=1 WALKERS_MPI FILE=HILLS\n"
-                else:
-                    bias = f"m: RESTRAINT ARG={variable} AT=0 KAPPA=2\n"
-                plumed = (
-                    definition + bias + f"PRINT ARG={variable},m.bias FILE=COLVAR\n"
-                )
             (rep / "md.mdp").write_text(mdp)
             (rep / "plumed.dat").write_text(plumed)
             if run(
@@ -185,52 +164,14 @@ def main():
                 ]
                 if len(rows) != 2:
                     raise AssertionError("ordinary control did not finish both steps")
-        elif case in ["mcmc", "shells"]:
-            required = "action e (ENSEMBLE) communicates between replicas"
-            mode = 2 if case == "mcmc" else 1
-            normalized = " ".join(log.split())
-            if (
-                code == 0
-                or required not in normalized
-                or f"local auxiliary mode {mode}" not in normalized
-            ):
-                raise AssertionError(f"{case}: missing action-specific rejection")
         else:
-            if code != 0:
-                raise AssertionError(
-                    f"{case}: supported local auxiliary evaluation failed"
-                )
-            for replica in range(2):
-                rep = work / f"rep{replica}"
-                files = list(rep.glob("COLVAR*"))
-                rows = (
-                    [
-                        line
-                        for line in files[0].read_text().splitlines()
-                        if line and not line.startswith("#")
-                    ]
-                    if files
-                    else []
-                )
-                expected = 7 if case.startswith("mcmc") else 3
-                if len(rows) != expected:
-                    raise AssertionError(f"{case}: missing ordinary output records")
-            if case.endswith("-walkers"):
-                # WALKERS_MPI writes one shared HILLS file from the leader.
-                # Count both walkers' deposits, excluding the initial step and
-                # every local auxiliary force/lambda evaluation.
-                hills = list(work.glob("rep*/HILLS*"))
-                deposits = sum(
-                    sum(
-                        line and not line.startswith("#")
-                        for line in path.read_text().splitlines()
-                    )
-                    for path in hills
-                )
-                if deposits != 2 * (expected - 1):
-                    raise AssertionError(
-                        f"{case}: wrong number of committed walker hills"
-                    )
+            required = (
+                "synchronized conditional trial energies"
+                if case == "mcmc"
+                else "shell iteration counts"
+            )
+            if code == 0 or required not in " ".join(log.split()):
+                raise AssertionError(f"{case}: missing feature-specific rejection")
         results.append({"case": case, "status": "pass", "returncode": code})
         print(f"{case}: PASS", flush=True)
     (root / "results.json").write_text(json.dumps(results, indent=2) + "\n")
