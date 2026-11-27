@@ -36,6 +36,7 @@
 !/funnel
 !/gpu_cuda_hip
 !/gpu_voronoi
+!/pycv
 !/opes
 !/tools
 !/sasa

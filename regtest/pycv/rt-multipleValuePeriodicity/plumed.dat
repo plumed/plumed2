@@ -1,5 +1,3 @@
-LOAD FILE=@pycvpath@
-
 cvPY: ...
 PYCVINTERFACE
 IMPORT=unitTest

@@ -1,5 +1,3 @@
-LOAD FILE=@pycvpath@
-
 fPY: ...
 PYFUNCTION
 IMPORT=unitTest

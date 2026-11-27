@@ -1,5 +1,3 @@
-LOAD FILE=@pycvpath@
-
 cv1: PYCVINTERFACE ATOMS=@mdatoms IMPORT=pycvPersistentData CALCULATE=pydist INIT=pyinit
 
 PRINT FILE=colvar.out ARG=*

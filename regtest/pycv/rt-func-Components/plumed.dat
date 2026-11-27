@@ -1,5 +1,3 @@
-LOAD FILE=@pycvpath@
-
 dc: DISTANCE ATOMS=1,2 COMPONENTS 
 
 fPY: ...

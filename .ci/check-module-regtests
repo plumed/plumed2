@@ -1,0 +1,24 @@
+#! /usr/bin/env bash
+# Usage: .ci/check-module-regtests regtest/<module>
+# After "make -C regtest/<module>" in a job where the module is available (e.g. pycv, built as
+# an extension): every test must have run and passed. The configs of such modules set
+# PLUMED_ALLOW_SKIP_ON_CI, so that the other jobs skip them: here a skipped test (NOT_APPLICABLE,
+# or "SKIP_ON_CI found!" on the CI, see regtest/scripts/run) is an error, since it would make
+# every test "pass".
+set -euo pipefail
+dir=$1
+fail=
+count=0
+for test in "$dir"/rt-*/; do
+  report=$test/report.txt
+  count=$((count+1))
+  if ! test -f "$report"; then
+    echo "+ ERROR in $test: the test did not run"
+    fail=1
+  elif grep -q -e FAILURE -e NOT_APPLICABLE -e "SKIP_ON_CI found!" "$report"; then
+    echo "+ ERROR in $report: failed or skipped"
+    cat "$report"
+    fail=1
+  fi
+done
+test -z "$fail" && echo "+ all the $count tests in $dir ran and passed"
