@@ -19,6 +19,13 @@ env:
 
 jobs:
 
+  rpath:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v6
+    - name: Check Linux runtime paths and installation over an older release
+      run: python3 .ci/check-rpath.py
+
   module-declarations:
     runs-on: ubuntu-24.04
     steps:

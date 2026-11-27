@@ -231,6 +231,15 @@ Developer documentation can be found at `developer-doc/html/index.html`.
 [Pre-compiled documentation](https://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
 
+On Linux, `configure` enables `--enable-rpath` by default: the installed library
+directory and the nonempty directories in `LIBRARY_PATH` are recorded in the
+executables and shared libraries, so installations in nonstandard prefixes can
+run without setting `LD_LIBRARY_PATH`. Use `--disable-rpath` to opt out.
+`RUNPATH` is preferred, so `LD_LIBRARY_PATH` can override the installed libraries
+when testing a build with `source sourceme.sh`. Older linkers that only support
+`RPATH` instead give the installed libraries precedence; `configure` warns in
+that case. This option remains disabled on macOS.
+
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
 we recommend installing PLUMED.
 To install it in `$HOME/opt` (directory should be set during `./configure`):

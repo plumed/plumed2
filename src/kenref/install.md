@@ -91,7 +91,7 @@ src/kenref/build-and-patch.sh --kenref-src ~/KEnRef --gromacs-src ~/gromacs-2026
 
 ## Self-contained binaries (rpath)
 
-With the `kenref` module enabled, `configure` turns **rpath ON by default** (PLUMED's global default is off).
+On Linux, `configure` turns **rpath ON by default** for all builds, including the `kenref` module.
 This bakes the runtime library directories into the RUNPATH of **both** the `plumed` executable and
 `libplumedKernel.so`, so the **installed** binaries run with no `LD_LIBRARY_PATH` or module setup — including
 `sudo make install` itself, whose doc-generation step runs the freshly built `plumed` (with the environment
@@ -102,8 +102,9 @@ own prefix (e.g. `/usr/local/kenref/lib`) that is **not** on the system loader p
 binaries can't find it at run time. If you *also* choose a **non-system C++ runtime** (e.g. build with
 `-stdlib=libc++`), the same applies to `libc++.so.1`.
 
-rpath records **`LIBRARY_PATH`**, plus the `libkenref_core` lib dir that `pkg-config` reports, so a KEnRef
-that `configure` fetched and built, or one found through `PKG_CONFIG_PATH`, needs nothing more. Put any other
+rpath records PLUMED's installed library directory and nonempty entries in **`LIBRARY_PATH`**, including
+the `libkenref_core` lib dir that `pkg-config` reports, so a KEnRef that `configure` fetched and built,
+or one found through `PKG_CONFIG_PATH`, needs nothing more. Put any other
 non-system runtime library dir on `LIBRARY_PATH` at configure time — for a libc++ build, the dir holding
 `libc++.so.1` (with LLVM that is the `…/lib/x86_64-unknown-linux-gnu` **subdir**, not the parent `…/lib`):
 
