@@ -78,8 +78,12 @@ def settings(python, soext):
         "version": info["version"],
         "flags": ["-I" + path for path in includes],
         "macro": "-D__PLUMED_HAS_PYTHON_EMBED=1",
-        # the libpython of this Python, found also outside the default search path
-        "link": ["-L" + str(libdir), "-l" + library, "-Wl,-rpath," + str(libdir)],
+        # the libpython of this Python, found also outside the default search path;
+        # libdl for dlopen/dladdr/dlsym, used by pycv itself: with glibc < 2.34 (e.g.
+        # the sysroot of the conda compilers) they are not in libc, and the extensions
+        # are linked with -z defs
+        "link": ["-L" + str(libdir), "-l" + library, "-Wl,-rpath," + str(libdir)]
+        + (["-ldl"] if soext == "so" else []),
         "variant": "python" + info["version"],
     }
 

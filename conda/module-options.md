@@ -46,13 +46,15 @@ can go into the kernel. `toolchain: python` declares C++ sources that embed a
 Python interpreter (pybind11): they are compiled with the headers of one Python
 and the library is linked to its `libpython`, so there is one build for each
 Python version, registered with the variant `python<version>` (for instance
-`python3.12`). Such a module requires `placement: extension`, so that neither the
-kernel nor the packages without it depend on Python. `placement` is `any` (the default: into the kernel with
+`python3.12`). It goes into the kernel only when enabled by name, with the Python
+of `PYTHON_BIN` (`--enable-modules=+pycv PYTHON_BIN=python3.12`: the kernel then
+links libpython); the packages and wheels never do, so they do not depend on Python.
+`placement` is `any` (the default: into the kernel with
 `--enable-modules`, or as an extension against an installed base) or `extension`
 (only as an extension). `--enable-modules=all` enables neither modules with a
 toolchain other than `cxx` nor `placement: extension` modules; a CUDA module is
 enabled only by name (`--enable-modules=+gpu_cuda_hip`), and only then does
-configure look for nvcc or hipcc. The CMake build never compiles them.
+configure look for nvcc or hipcc (or check the Python, for toolchain python). The CMake build never compiles them.
 
 A module that uses only the headers of another module lists it in `include`:
 
