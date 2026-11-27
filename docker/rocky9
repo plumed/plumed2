@@ -19,7 +19,7 @@ RUN python3 -m pip install --user --upgrade pip
 # assumes a file plumed2.tgz is present in the Dockerfile directory
 COPY plumed2.tgz /home/plumed
 
-# build and test plumed (no install)
+# build and test plumed (no install here: the -pycv images install it in $HOME/opt)
 RUN . ./.bashrc \
  && module load mpi \
  && export OMPI_MCA_btl_base_warn_component_unused=0 \
@@ -38,6 +38,6 @@ RUN . ./.bashrc \
  && export PYTHON_BIN=python3 \
  && python3 -m pip install --user -r ./python/requirements_build.txt \
  && python3 -m pip install --user -r ./python/requirements_run.txt \
- && ./configure --enable-modules=all --enable-boost_serialization \
+ && ./configure --enable-modules=all --enable-boost_serialization --prefix=$HOME/opt \
  && make -j 4 \
  && make -j 2 check

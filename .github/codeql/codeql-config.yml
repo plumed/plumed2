@@ -21,4 +21,3 @@ paths-ignore:
   - regtest
   - python/test
   - plugins/*/regtest
-  - plugins/pycv/pythontests

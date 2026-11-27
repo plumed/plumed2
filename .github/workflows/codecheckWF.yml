@@ -63,6 +63,14 @@ jobs:
         ./configure --enable-modules=all
         # then generate the links
         make -C src/lib/ dirslinks
+        # the modules that --enable-modules=all does not enable because of their toolchain (e.g. pycv,
+        # toolchain python) need their links too: without them cppcheck does not find the headers of
+        # the modules they use, and stops at PLUMED_REGISTER_ACTION (unknownMacro)
+        for module in src/*/module.yml ; do
+          if test "$(src/maketools/module-header toolchain "$module")" != cxx ; then
+            make -C "$(dirname "$module")" links
+          fi
+        done
         make codecheck
     # saved also when codecheck fails: the stored results are valid, a failure only means that some of them are errors
     - name: Save the cppcheck results for the next runs
