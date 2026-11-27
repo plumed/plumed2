@@ -34,7 +34,7 @@ public:
 /// Hold the function on the grid
   Value* function=NULL;
 /// This is the grid that is used here
-  ActionWithGrid* gridact=NULL;
+  const GridOutput* gridact=NULL;
 /// How should we set the value of this function outside the range
   bool set_zero_outside_range;
 /// How are we doing interpolation

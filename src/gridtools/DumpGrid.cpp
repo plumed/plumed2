@@ -321,7 +321,7 @@ DumpGrid::DumpGrid(const ActionOptions&ao):
   if(filename.length()==0) {
     error("name out output file was not specified");
   }
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   if( !ag ) {
     error( getPntrToArgument(0)->getName() + " is not grid");
   }
@@ -366,7 +366,7 @@ void DumpGrid::update() {
     ofile.open( filename );
   }
 
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   const GridCoordinatesObject & mygrid = ag->getGridCoordinatesObject();
   // A grid that was never calculated has no points, and the loops below read an empty grid (segmentation fault).

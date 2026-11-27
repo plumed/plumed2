@@ -151,14 +151,14 @@ std::string FunctionOfGrid<T>::writeInGraph() const {
 
 template <class T>
 const GridCoordinatesObject& FunctionOfGrid<T>::getGridCoordinatesObject() const {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinatesObject();
 }
 
 template <class T>
 std::vector<std::string> FunctionOfGrid<T>::getGridCoordinateNames() const {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }

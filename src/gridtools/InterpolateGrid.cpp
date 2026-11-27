@@ -205,7 +205,7 @@ const GridCoordinatesObject& InterpolateGrid::getGridCoordinatesObject() const {
 }
 
 std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
@@ -213,7 +213,7 @@ std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
 void InterpolateGrid::calculate() {
   if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
     ninput=getPntrToArgument(0)->getNumberOfValues();
-    ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+    const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
     plumed_assert( ag );
     const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
     // the bounds of the input grid, as it is now (it may be extended later)

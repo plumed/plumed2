@@ -127,7 +127,7 @@ public:
     action->parse("SEARCHDIR",dir);
     action->log.printf("  calculating location of contour on %d dimensional grid \n", (action->getPntrToArgument(0))->getRank()-1 );
     Value* gval=func.cf.function.function;
-    ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
+    const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
     if( !ag ) {
       action->error("input argument must be a grid");
     }
@@ -204,7 +204,7 @@ FindContourSurface::FindContourSurface(const ActionOptions&ao):
   Value* gval=getPntrToArgument(0);
   gnames.resize( getPntrToArgument(0)->getRank()-1 );
 
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( gval->getPntrToAction() );
   if( !ag ) {
     error("input argument must be a grid");
   }

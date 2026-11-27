@@ -66,7 +66,7 @@ public:
 /// This is the function whose marginal we are calculating
   Value* function=NULL;
 /// This is the action that calculates the function we need
-  ActionWithGrid* gridact=NULL;
+  const GridOutput* gridact=NULL;
   static void registerKeywords( Keywords& keys );
   static void read( MarginalInput& func, ActionWithArguments* action );
   // the assignment is customized (see below): copy construction is the default one
@@ -229,7 +229,7 @@ const GridCoordinatesObject& Marginal::getGridCoordinatesObject() const {
 }
 
 std::vector<std::string> Marginal::getGridCoordinateNames() const {
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   std::vector<std::string> gnames(1);
   gnames[0] = ag->getGridCoordinateNames()[taskmanager.getActionInput().dir];

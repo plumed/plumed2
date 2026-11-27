@@ -23,13 +23,8 @@
 
 namespace PLMD {
 
-ActionWithGrid* ActionWithGrid::getInputActionWithGrid( Action* action ) {
-  ActionWithGrid* ag = dynamic_cast<ActionWithGrid*>( action );
-  if( !ag && action->getName()=="ACCUMULATE" ) {
-    ActionWithArguments* aa=dynamic_cast<ActionWithArguments*>( action );
-    plumed_assert( aa );
-    ag = dynamic_cast<ActionWithGrid*>( (aa->getPntrToArgument(0))->getPntrToAction() );
-  }
+const GridOutput* ActionWithGrid::getInputActionWithGrid( Action* action ) {
+  const GridOutput* ag = dynamic_cast<const GridOutput*>( action );
   plumed_assert( ag );
   return ag;
 }

@@ -152,7 +152,7 @@ FindGridOptimum::FindGridOptimum(const ActionOptions&ao):
     plumed_error();
   }
   // Create value for this function
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   if( !ag ) {
     error("input action should be a grid");
   }
@@ -199,7 +199,7 @@ double FindGridOptimum::calculateValueAndDerivatives( const std::vector<double>&
 }
 
 void FindGridOptimum::calculate() {
-  ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   spacing = ag->getGridCoordinatesObject().getGridSpacing();
   const GridCoordinatesObject& ingrid = ag->getGridCoordinatesObject();

@@ -27,15 +27,25 @@
 
 namespace PLMD {
 
-class ActionWithGrid : public ActionWithVector {
+/// An action whose output is a function on a grid: an ActionWithGrid, or ACCUMULATE of a grid
+class GridOutput {
+public:
+  virtual ~GridOutput() = default;
+/// The names of the coordinates of the grid
+  virtual std::vector<std::string> getGridCoordinateNames() const = 0;
+/// The grid of the output (for ACCUMULATE, the grid of the accumulated data, which can differ from the one of its
+/// argument between the steps on which the data are accumulated)
+  virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
+};
+
+class ActionWithGrid : public ActionWithVector, public GridOutput {
 public:
   static void registerKeywords( Keywords& keys );
-  static ActionWithGrid* getInputActionWithGrid( Action* action );
+/// The grid of the output of action, which must be a GridOutput
+  static const GridOutput* getInputActionWithGrid( Action* action );
   explicit ActionWithGrid(const ActionOptions&ao);
   void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
   void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) override ;
-  virtual std::vector<std::string> getGridCoordinateNames() const = 0;
-  virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
 };
 
 }
