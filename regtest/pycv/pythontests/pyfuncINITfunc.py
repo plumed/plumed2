@@ -1,1 +1,1 @@
-../regtest/pycvfunc/rt-derivative/unitTest.py
+../rt-func-derivative/unitTest.py

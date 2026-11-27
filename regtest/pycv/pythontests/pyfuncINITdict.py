@@ -1,1 +1,1 @@
-../regtest/pycvfunc/rt-argumentsArray/unitTest.py
+../rt-func-argumentsArray/unitTest.py

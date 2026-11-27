@@ -57,8 +57,6 @@ def setUpTraj(trajfile: str):
 
 
 def preparePlumed(num_atoms: int):
-    from pycv import getPythonCVInterface
-
     # Create PLUMED object and read input
     plmd = Plumed()
 
@@ -71,7 +69,8 @@ def preparePlumed(num_atoms: int):
     plmd.cmd("setNatoms", num_atoms)
     plmd.cmd("setLogFile", "test.log")
     plmd.cmd("init")
-    plmd.cmd("readInputLine", f"LOAD FILE={getPythonCVInterface()}")
+    # pycv is loaded automatically; LOAD MODULE also works with PLUMED_AUTOLOAD=0
+    plmd.cmd("readInputLine", "LOAD MODULE=pycv")
     return plmd
 
 

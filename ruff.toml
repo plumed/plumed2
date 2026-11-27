@@ -1,6 +1,6 @@
 exclude = [
-  # regtests - only in the main dir, so that pycv will get checked
- "./regtest"
+  # the inputs of the regtests, except those of pycv (see regtest/pycv/ruff.toml)
+ "./regtest/*/rt-*"
 ]
 
 #unlike with clang-format I was promised that the formattation rules behaviour should not change between ruff versions
