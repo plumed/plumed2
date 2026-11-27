@@ -13,8 +13,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
-from unittest import mock
 
 import yaml
 
@@ -118,7 +118,7 @@ class ModuleOptions(unittest.TestCase):
                 counts[path] = counts.get(path, 0) + 1
             return original(path, *args, **kwargs)
 
-        with mock.patch.object(Path, "read_text", read):
+        with unittest.mock.patch.object(Path, "read_text", read):
             catalog = generate_catalog(write=False)
         self.assertEqual(len(counts), len(catalog["modules"]) + len(catalog["plugins"]))
         self.assertTrue(all(count == 1 for count in counts.values()))

@@ -101,7 +101,7 @@ bool Completion::readInput(int argc,char** argv,FILE* in,FILE* out) {
 
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   static const char completion [] = {
-#include "completion.xxd"
+#include "completion.h"
 // cppcheck-suppress syntaxError
     , 0x00
   };

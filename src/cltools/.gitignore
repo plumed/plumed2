@@ -10,5 +10,6 @@
 !/module.md
 !/module.yml
 
-# Generated completion option records.
+# Generated completion function and option records.
+/completion.h
 /completion-scripts.h

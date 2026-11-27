@@ -207,7 +207,7 @@ try:
                     )
                 )
 
-            assert decode("completion.xxd") == body
+            assert decode("completion.h") == body
             expected = (
                 b"tool-name\t--first --second\ntool.extra\t--first --second\n"
                 b"tool_name\t--first --second\n"
