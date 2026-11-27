@@ -20,7 +20,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <mutex>
 #include <string>
 
-#include "plumed/core/Action.h"
+#include "core/Action.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 
@@ -71,6 +71,10 @@ void ActionWithPython::pyParse(
     returnValue = initDict[key].cast<T>();
   }
 }
+
+/// Defines the module plumedCommunications, imported by the user's Python code
+/// (in PlumedPythonEmbeddedModule.cpp)
+void definePlumedCommunications(::pybind11::module_ m);
 
 void initializeValue(::PLMD::ActionWithValue&, pybind11::dict &);
 void initializeComponent(::PLMD::ActionWithValue&,const std::string&,pybind11::dict &);

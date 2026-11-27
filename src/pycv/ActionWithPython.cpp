@@ -17,8 +17,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ActionWithPython.h"
 
-#include "plumed/core/ActionWithValue.h"
-#include "plumed/tools/DLLoader.h"
+#include "core/ActionWithValue.h"
+#include "tools/DLLoader.h"
 
 #include <pybind11/embed.h> // everything needed for embedding
 #include <pybind11/numpy.h>
@@ -29,15 +29,25 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace py = pybind11;
 
-#ifdef PLUMED_PYCV_RUNTIME_HELPER
-extern "C" void plumed_pycv_runtime_anchor();
-#endif
-
 namespace {
-#ifdef PLUMED_PYCV_RUNTIME_HELPER
-const auto runtime_link = (plumed_pycv_runtime_anchor(), 0);
-#endif
 auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
+
+// The module plumedCommunications is part of this library, not a separate
+// Python extension: put it in sys.modules before any user module imports it,
+// both when the interpreter is started here and when PLUMED runs within Python
+// (again if the interpreter has been restarted)
+void registerPlumedCommunications() {
+  // as in the actions: a Python host may have released the GIL
+  py::gil_scoped_acquire gil;
+  auto modules = py::module_::import("sys").attr("modules");
+  if(modules.contains("plumedCommunications")) {
+    return;
+  }
+  static PyModuleDef definition{};
+  auto m = py::module_::create_extension_module("plumedCommunications", nullptr, &definition);
+  PLMD::pycv::definePlumedCommunications(m);
+  modules["plumedCommunications"] = m;
+}
 }
 
 namespace PLMD {
@@ -73,6 +83,7 @@ PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter(::PLMD::Log&outlog)
     log << "------ Python interpreter already initializated\n";
   }
   ++use_count;
+  registerPlumedCommunications();
 }
 
 PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter() {

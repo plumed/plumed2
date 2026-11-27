@@ -18,7 +18,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #define __PLUMED_pycv_PythonCVInterface_h
 #include "ActionWithPython.h"
 
-#include "plumed/colvar/Colvar.h"
+#include "colvar/Colvar.h"
 
 namespace PLMD {
 

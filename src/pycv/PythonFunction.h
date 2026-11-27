@@ -17,7 +17,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __PLUMED_pycv_PythonFunction_h
 #define __PLUMED_pycv_PythonFunction_h
 #include "ActionWithPython.h"
-#include "plumed/function/Function.h"
+#include "function/Function.h"
 #include <pybind11/numpy.h>
 namespace PLMD {
 

@@ -21,8 +21,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/operators.h>
 #include <pybind11/stl_bind.h>
 
-#include "plumed/tools/Vector.h"
-#include "plumed/tools/NeighborList.h"
+#include "tools/Vector.h"
+#include "tools/NeighborList.h"
 
 #include "PythonCVInterface.h"
 #include "PythonFunction.h"
@@ -36,7 +36,12 @@ namespace PLMD {}
 
 //NB: the action methods are written two times due to the diamond inheritance
 
-PYBIND11_MODULE(plumedCommunications, m) {
+namespace PLMD {
+namespace pycv {
+
+// The module plumedCommunications is defined in the library of pycv, and it is
+// registered by PlumedScopedPythonInterpreter (see ActionWithPython.cpp)
+void definePlumedCommunications(py::module_ m) {
   /*******************************default submodule****************************/
   py::module_ defaults = m.def_submodule("defaults", "Submodule with the default definitions");
   defaults.attr("COMPONENT") = py::dict(py::arg("period")=py::none(),py::arg("derivative")=true);
@@ -283,3 +288,6 @@ return toRet;
   //      py::arg("i"),py::arg("j"))
   ;
 }
+
+} // namespace pycv
+} // namespace PLMD
