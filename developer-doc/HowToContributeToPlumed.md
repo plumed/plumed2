@@ -126,7 +126,10 @@ compiler, with the GPU runtime and `-z nodelete`. Such modules are enabled only 
 `.cuh` headers are installed with the other headers. `placement: extension` declares a
 module that can only be built as an extension, against an installed base. The CUDA/HIP code
 shared by these modules (portability header, GPU choice, device guard, reductions) is in
-src/gpu_cuda_hip. Tests that need a GPU add `plumed_needs_device=cuda` to their config
+src/gpu_cuda_hip. A module that needs only these headers lists the module in
+`include: [gpu_cuda_hip]` instead of `use`: its headers are then visible, but gpu_cuda_hip is
+neither enabled nor linked (see conda/module-options.md); the headers that are used in this
+way must stay header-only. Tests that need a GPU add `plumed_needs_device=cuda` to their config
 (see \ref regtests).
 
 The Makefile contains the executable build rules, usually just:

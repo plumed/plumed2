@@ -18,21 +18,26 @@ def check():
         header = read_header(declaration)
         data = read_metadata(declaration)
         assert data["type"] == header["type"] and data["use"] == header["use"]
-        for key in ("toolchain", "placement"):
+        for key in ("toolchain", "placement", "include"):
             assert header_field(data, key) == header_field(header, key), declaration
-        for key in ("type", "use", "toolchain", "placement"):
+        for key in ("type", "use", "toolchain", "placement", "include"):
             result = subprocess.check_output(
                 [str(reader), key, str(declaration)], text=True
             ).strip()
-            expected = (
-                " ".join(header[key]) if key == "use" else header_field(header, key)
-            )
+            expected = header_field(header, key)
+            if isinstance(expected, list):
+                expected = " ".join(expected)
             assert result == expected, declaration
         # Ordinary Make queries must get the dependency list without configuration.
         result = subprocess.check_output(
             ["make", "-s", "show_used_modules"], cwd=declaration.parent, text=True
         )
-        assert result.split() == ["used_modules", *header["use"]], declaration
+        # plumedcheck accepts the headers of the used and of the included modules
+        assert result.split() == [
+            "used_modules",
+            *header["use"],
+            *header_field(header, "include"),
+        ], declaration
 
     good = "type: default-off\nuse: [core, tools]\n"
     cases = [
@@ -42,6 +47,9 @@ def check():
         good + "toolchain: cuda\n",
         good + "toolchain: cxx\nplacement: extension\n",
         "placement: any\n" + good,
+        good + "include: [gpu_cuda_hip]\n",
+        good + "include: []\n",
+        "include: [a, b-c, d_2]\n" + good,
     ]
     invalid = [
         good + "type: always\n",
@@ -59,6 +67,11 @@ def check():
         good + "placement: kernel\n",
         good + "placement: any\nplacement: any\n",
         good + "toolchain: cuda # comment\n",
+        good + "include: [a]\ninclude: [b]\n",
+        good + "include: [a,b]\n",
+        good + "include: a\n",
+        good + 'include: ["a"]\n',
+        good + "include: [A]\n",
     ]
     with tempfile.TemporaryDirectory(prefix="plumed-metadata-") as temporary:
         directory = Path(temporary)
@@ -66,13 +79,15 @@ def check():
         for text in cases + invalid:
             declaration.write_text(text)
             valid = text in cases
-            for key in ("type", "toolchain", "placement"):
+            for key in ("type", "toolchain", "placement", "include"):
                 result = subprocess.run(
                     [str(reader), key, str(declaration)], capture_output=True, text=True
                 )
                 assert (result.returncode == 0) == valid, text
                 if valid and key != "type":
                     expected = header_field(read_header(declaration), key)
+                    if isinstance(expected, list):
+                        expected = " ".join(expected)
                     assert result.stdout.strip() == expected, (text, key)
             try:
                 read_header(declaration)
@@ -84,10 +99,11 @@ def check():
             cmake = directory / "read.cmake"
             cmake.write_text(
                 f'include("{source}/cmake-msvc/PlumedModules.cmake")\n'
-                f'plumed_read_module("{declaration}" kind deps toolchain placement)\n'
+                f'plumed_read_module("{declaration}" kind deps toolchain placement'
+                " included)\n"
                 'file(WRITE "'
                 + str(directory / "result")
-                + '" "${kind}\n${deps}\n${toolchain}\n${placement}\n")\n'
+                + '" "${kind}\n${deps}\n${toolchain}\n${placement}\n${included}\n")\n'
             )
             result = subprocess.run(
                 [os.environ.get("CMAKE", "cmake"), "-P", str(cmake)],
@@ -95,8 +111,11 @@ def check():
             )
             assert (result.returncode == 0) == valid, (text, result.stderr)
             if valid:
-                kind, deps, toolchain, placement = (
-                    (directory / "result").read_text().split("\n")[:4]
+                kind, deps, toolchain, placement, included = (
+                    (directory / "result").read_text().split("\n")[:5]
+                )
+                assert (included.split(";") if included else []) == header_field(
+                    read_header(declaration), "include"
                 )
                 assert kind == read_header(declaration)["type"]
                 assert toolchain == header_field(read_header(declaration), "toolchain")
@@ -150,6 +169,7 @@ def check():
             good.replace("core, tools", "core"),
             good + "toolchain: cuda\n",
             good + "placement: extension\n",
+            good + "include: [gpu_cuda_hip]\n",
         ):
             module.write_text(changed)
             assert cmake_headers() != baseline

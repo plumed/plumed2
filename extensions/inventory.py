@@ -131,6 +131,8 @@ def generate_catalog(write=True):
             "source_use": metadata["use"],
             "toolchain": header_field(metadata, "toolchain"),
             "placement": header_field(metadata, "placement"),
+            # headers only: not enabled, linked or required (see conda/module-options.md)
+            "include": header_field(metadata, "include"),
             "feature_guards": feature_guards(directory),
             "conda": conda_requirements(directory, metadata),
             "about": module_license(directory),

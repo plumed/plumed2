@@ -5,6 +5,10 @@ export PLUMED_CONDA_BUILD=1
 # the .cu files are compiled by NVCC with the flags of the base (src/maketools/cuda-flags),
 # the library is linked by the C++ compiler with the shared CUDA runtime, and registered
 # with the variant cuda<version of NVCC>.
+# The same script for every module with toolchain cuda (conda/plumed-<module>/build.sh):
+# the module comes from the name of the package, plumed-ext-<module> with - for _.
+module=${PKG_NAME#plumed-ext-}
+module=${module//-/_}
 nvcc=${CUDACXX:-nvcc}
 actual_cuda=$("$nvcc" --version | sed -n 's/.*release \([0-9][0-9]*\.[0-9][0-9]*\),.*/\1/p')
 echo "Building CUDA variant $cuda_compiler_version with NVCC $actual_cuda"
@@ -21,6 +25,6 @@ if [[ -z $gencode ]]; then
   gencode+=" -gencode=arch=$latest,code=$latest"
 fi
 NVCC="$nvcc" NVCCFLAGS="$gencode" ./configure --with-extension-base="$PREFIX" \
-  --enable-extension-modules=gpu_cuda_hip --with-cudart=shared --prefix="$PREFIX"
+  --enable-extension-modules="$module" --with-cudart=shared --prefix="$PREFIX"
 make
 make install

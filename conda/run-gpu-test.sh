@@ -14,12 +14,12 @@ kernel_spec=${GPU_KERNEL_SPEC:-plumed=$VERSION}
 while IFS='|' read -r variant build_variant cuda_version; do
   prefix="$GPU_TEST_ROOT/$variant"
   if [[ $variant == cuda* ]]; then
-    package=plumed-ext-gpu-cuda-hip
+    # gpu_voronoi does not need gpu_cuda_hip, but its GPU tests do (plumed cuda-devices)
+    specs=("plumed-ext-gpu-cuda-hip=$VERSION=$build_variant" "plumed-ext-gpu-voronoi=$VERSION=$build_variant")
   else
-    package=plumed-ext-openacc-ptm
+    specs=("plumed-ext-openacc-ptm=$VERSION=$build_variant")
   fi
-  spec="$package=$VERSION=$build_variant"
-  if ! conda create -y -p "$prefix" --strict-channel-priority --override-channels -c "$GPU_CONDA_CHANNEL" -c conda-forge "$kernel_spec" "$spec" python=3.13 > "$GPU_TEST_ROOT/$variant.log" 2>&1; then
+  if ! conda create -y -p "$prefix" --strict-channel-priority --override-channels -c "$GPU_CONDA_CHANNEL" -c conda-forge "$kernel_spec" "${specs[@]}" python=3.13 > "$GPU_TEST_ROOT/$variant.log" 2>&1; then
     echo "$variant: installation failed (see $GPU_TEST_ROOT/$variant.log)"
     echo 'INSTALLATION FAILED' > "$GPU_TEST_ROOT/$variant.status"
     failed=1
@@ -35,11 +35,20 @@ print("plumed=" + record["version"] + "=" + record["build"])
 PY
 )
   if [[ $variant == cuda* ]]; then
-    command=("$prefix/bin/python" extensions/tests/gpu_cuda_hip.py --prefix "$prefix" --cuda-version "$cuda_version" --gpu)
+    tests=(gpu_cuda_hip gpu_voronoi)
   else
-    command=("$prefix/bin/python" extensions/tests/openacc.py --prefix "$prefix" --device nvidia)
+    tests=(openacc)
   fi
-  if "${command[@]}" >> "$GPU_TEST_ROOT/$variant.log" 2>&1; then
+  passed=yes
+  for test in "${tests[@]}"; do
+    if [[ $test == openacc ]]; then
+      command=("$prefix/bin/python" extensions/tests/openacc.py --prefix "$prefix" --device nvidia)
+    else
+      command=("$prefix/bin/python" "extensions/tests/$test.py" --prefix "$prefix" --cuda-version "$cuda_version" --gpu)
+    fi
+    "${command[@]}" >> "$GPU_TEST_ROOT/$variant.log" 2>&1 || passed=no
+  done
+  if [[ $passed == yes ]]; then
     echo "$variant: GPU numerical tests passed"
     echo PASS > "$GPU_TEST_ROOT/$variant.status"
   else

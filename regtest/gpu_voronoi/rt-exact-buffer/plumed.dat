@@ -1,0 +1,6 @@
+# Only the center at distance 0.5 contributes. The center at distance 2.5, in the
+# candidate list because of the skin, would overflow the score if it were
+# evaluated before the cutoff
+v: VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 SELECT=1 REFERENCE=0 KAPPA=1e308 NLIST NL_CUTOFF=1 NL_STRIDE=3 NL_SKIN=1.5 BACKEND=CUDA
+PRINT ARG=v FILE=values FMT=%.17g
+DUMPDERIVATIVES ARG=v FILE=derivatives FMT=%.17g

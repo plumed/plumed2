@@ -1,0 +1,5 @@
+empty-nlist: rejected
+invalid-pair: rejected
+invalid-pair-nlist: rejected
+nonfinite-distance: rejected
+overflow-score: rejected

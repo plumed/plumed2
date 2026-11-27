@@ -260,6 +260,15 @@ can be requested with `python extensions/tests/gpu_cuda_hip.py --prefix
 and derivative fixtures in autoload and explicit module modes and rejects skips.
 Passing loading checks alone does not validate GPU calculations.
 
+`plumed-ext-gpu-voronoi` (module `gpu_voronoi`, the GPU backend of the reactive
+Voronoi actions, `BACKEND=CUDA`) has the same CUDA variants. It uses only the
+headers of gpu_cuda_hip (`include: [gpu_cuda_hip]` in its `module.yml`), so it
+neither links nor requires `plumed-ext-gpu-cuda-hip`. Its package tests also run
+the regression test without a GPU (AUTO falls back to the CPU, `BACKEND=CUDA`
+stops with an error); `python extensions/tests/gpu_voronoi.py --prefix
+"$CONDA_PREFIX" --cuda-version 12.9 --gpu` compares the GPU with the CPU on a GPU,
+and also needs `plumed-ext-gpu-cuda-hip` (for `plumed cuda-devices`).
+
 ### OpenACC parallel task manager plugin
 
 `plumed-ext-openacc-ptm` is built against the exact main kernel with an external
