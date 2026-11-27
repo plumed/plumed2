@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 import metatensor.torch as mts
+import metatomic_torch._legacy._model as _legacy_model
 import torch
 from metatensor.torch import Labels, TensorBlock, TensorMap
 from metatomic.torch import (
@@ -11,6 +12,12 @@ from metatomic.torch import (
     PairListOptions,
     System,
 )
+
+# The metatomic-torch legacy plugin only recognizes files exported by v0.1
+# (extra/metatomic-version starting with "0.1."), whereas development builds of
+# v0.2 export them as "0.2.0.devN". Stamp these test models as v0.1 so the
+# plugin loads them.
+_legacy_model.metatomic_version = "0.1.19"
 
 
 class TestCollectiveVariable(torch.nn.Module):
