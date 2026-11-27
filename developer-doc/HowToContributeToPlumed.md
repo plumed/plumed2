@@ -132,6 +132,11 @@ neither enabled nor linked (see conda/module-options.md); the headers that are u
 way must stay header-only. Tests that need a GPU add `plumed_needs_device=cuda` to their config
 (see \ref regtests).
 
+A module whose C++ code embeds a Python interpreter (with pybind11, as src/pycv) adds
+`toolchain: python` and `placement: extension`: it is never compiled into the kernel, and it is
+built against an installed base once for each Python version, with the Python chosen at configure
+(`./configure --with-extension-base=... --enable-extension-modules=pycv PYTHON_BIN=python3.12`).
+
 The Makefile contains the executable build rules, usually just:
 
 \verbatim

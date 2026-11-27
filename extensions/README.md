@@ -24,6 +24,20 @@ it remains the builder's responsibility to preserve C++ ABI compatibility.
 When using Make, pass overrides as command-line assignments, for example
 `make CXX=/path/to/compatible-c++ install`. Assignments in `Makefile.conf` take
 precedence over ordinary shell environment variables.
+Modules with `toolchain: python` (pycv) embed a Python interpreter: they are
+built for one Python version, the one given by `PYTHON_BIN` (by default, the
+`python3` running configure), which must have pybind11 >= 3.0 and a shared
+libpython. Build them once for each Python version, with separate prefixes:
+
+```sh
+./configure --with-extension-base=/path/to/base --enable-extension-modules=pycv \
+  PYTHON_BIN=python3.12 --prefix=/path/to/pycv-python3.12
+make
+make install
+```
+
+The registration declares the variant `python3.12`; at runtime the embedded
+interpreter is that Python, which must also provide numpy.
 Available optional native features are detected with compile/link probes against
 this installation, independently of the base's feature macros. For this loading
 proof of concept every selected module is built even when an optional library

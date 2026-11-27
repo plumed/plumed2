@@ -36,6 +36,7 @@ def validate_backend(policy, backend, directory):
         "native": set(),
         "pycv": {"cmake_args"},
         "cuda": set(),
+        "python": set(),
         "openacc_ptm": {"make_args"},
     }[backend]
     for key in {"configure_flags", "make_args", "cmake_args"} - supported:

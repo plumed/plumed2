@@ -42,7 +42,12 @@ placement: any
 or `cuda`: the `.cu` files are compiled by nvcc, or by hipcc for AMD GPUs when
 PLUMED is configured with `--enable-hip`, and the `.cpp` files by the C++
 compiler. Either way the library is linked by the C++ compiler, so such a module
-can go into the kernel. `placement` is `any` (the default: into the kernel with
+can go into the kernel. `toolchain: python` declares C++ sources that embed a
+Python interpreter (pybind11): they are compiled with the headers of one Python
+and the library is linked to its `libpython`, so there is one build for each
+Python version, registered with the variant `python<version>` (for instance
+`python3.12`). Such a module requires `placement: extension`, so that neither the
+kernel nor the packages without it depend on Python. `placement` is `any` (the default: into the kernel with
 `--enable-modules`, or as an extension against an installed base) or `extension`
 (only as an extension). `--enable-modules=all` enables neither modules with a
 toolchain other than `cxx` nor `placement: extension` modules; a CUDA module is

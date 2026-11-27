@@ -140,8 +140,8 @@ def generate_catalog(write=True):
         validate_backend(
             modules[directory.name]["conda"],
             (
-                "cuda"
-                if modules[directory.name]["toolchain"] == "cuda"
+                modules[directory.name]["toolchain"]
+                if modules[directory.name]["toolchain"] in ("cuda", "python")
                 else (
                     "native"
                     if modules[directory.name]["type"] == "default-off"
