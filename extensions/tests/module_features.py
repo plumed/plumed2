@@ -12,6 +12,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from lifetime import check_lifetime
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--base", type=Path, required=True)
 parser.add_argument(
@@ -19,6 +21,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 base = args.base.resolve()
+check_lifetime(base)
 program = str(base / "bin/plumed")
 source = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(source / "extensions"))

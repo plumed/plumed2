@@ -66,7 +66,9 @@ plumed modules --list
 Explicit loading affects only the requesting object or CLI context. Hard
 dependencies become available silently in that context. Repeated loads, including
 already-built-in modules, succeed without changing visibility elsewhere.
-Autoloaded modules are shared by the kernel and retained across object lifetimes.
+Autoloaded modules are shared while kernel clients are alive. Their shared
+handles are released after the last client's actions and per-object handles,
+before the wrapper closes the kernel. A later client can autoload them again.
 `plumed modules --list` reports built-in and successfully loaded modules.
 `plumed modules --has ves pamm` checks all requested modules and returns 0 only
 when all are visible; `-q` suppresses output. Runtime native feature checks use
