@@ -33,6 +33,12 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <thread>
 
 
+// Defined with the flags of the Python embedded by pycv (toolchain python in module.yml):
+// by the configure of the kernel (--enable-modules=+pycv) or of the extensions
+#ifndef __PLUMED_HAS_PYTHON_EMBED
+#error "pycv must be compiled with the flags of its Python (configure --enable-modules=+pycv or --enable-extension-modules=pycv)"
+#endif
+
 namespace py = pybind11;
 
 namespace {
