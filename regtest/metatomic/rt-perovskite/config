@@ -1,9 +1,10 @@
 plumed_modules=metatomic
-plumed_needs="metatomic:libmetatomic metatomic:libtorch"
+plumed_needs="metatomic:libmetatomic"
 type=driver
 
 arg="--plumed plumed.dat --ixyz frames.xyz --length-units A --dump-forces forces --dump-full-virial"
 
-function plumed_regtest_before(){
-  python BaTiO3-CV.py && echo Generated model using BaTiO3-CV.py
+# BaTiO3-CV.py runs in the Python plugin, and computes its features with featomic
+function plumed_custom_skip(){
+  ! python -c "import featomic" 2>/dev/null
 }

@@ -2,35 +2,16 @@ import os
 import sys
 
 try:
-    import torch
     import metatensor
-    import metatensor.torch
-    import metatomic.torch
+    import metatomic.utils
 except ImportError as e:
     raise ImportError(
         "Failed to import metatomic and its dependencies, "
-        "please install them with `pip install metatomic-torch`"
+        "see `.ci/install.metatomic` for how to install them"
     ) from e
 
 CPPFLAGS = []
 LDFLAGS = []
-
-##### torch
-
-torch_prefix = os.path.realpath(os.path.join(torch.utils.cmake_prefix_path, "..", ".."))
-CPPFLAGS.append(f"-I{os.path.join(torch_prefix, 'include')}")
-CPPFLAGS.append(
-    f"-I{os.path.join(torch_prefix, 'include', 'torch', 'csrc', 'api', 'include')}"
-)
-
-if torch.compiled_with_cxx11_abi():
-    CPPFLAGS.append("-D_GLIBCXX_USE_CXX11_ABI=1")
-
-LDFLAGS.append(f"-L{os.path.join(torch_prefix, 'lib')}")
-LDFLAGS.append(f"-Wl,-rpath,{os.path.join(torch_prefix, 'lib')}")
-LDFLAGS.append("-ltorch")
-LDFLAGS.append("-lc10")
-LDFLAGS.append("-ltorch_cpu")
 
 ##### metatensor
 
@@ -43,27 +24,21 @@ LDFLAGS.append(f"-L{os.path.join(metatensor_prefix, 'lib')}")
 LDFLAGS.append(f"-Wl,-rpath,{os.path.join(metatensor_prefix, 'lib')}")
 LDFLAGS.append("-lmetatensor")
 
-##### metatensor-torch
+##### metatomic-core
 
-metatensor_torch_prefix = os.path.realpath(
-    os.path.join(metatensor.torch.utils.cmake_prefix_path, "..", "..")
+# PLUMED finds the Python plugin installed next to this libmetatomic (see
+# `defaultPlugins` in metatomic_core.cpp)
+metatomic_prefix = os.path.realpath(
+    os.path.join(metatomic.utils.cmake_prefix_path, "..", "..")
 )
-CPPFLAGS.append(f"-I{os.path.join(metatensor_torch_prefix, 'include')}")
-
-LDFLAGS.append(f"-L{os.path.join(metatensor_torch_prefix, 'lib')}")
-LDFLAGS.append(f"-Wl,-rpath,{os.path.join(metatensor_torch_prefix, 'lib')}")
-LDFLAGS.append("-lmetatensor_torch")
-
-##### metatomic-torch
-
-metatomic_torch_prefix = os.path.realpath(
-    os.path.join(metatomic.torch.utils.cmake_prefix_path, "..", "..")
+CPPFLAGS.append(f"-I{os.path.join(metatomic_prefix, 'include')}")
+CPPFLAGS.append(
+    f"-I{os.path.join(metatomic_prefix, 'include', 'metatomic', 'third-party')}"
 )
-CPPFLAGS.append(f"-I{os.path.join(metatomic_torch_prefix, 'include')}")
 
-LDFLAGS.append(f"-L{os.path.join(metatomic_torch_prefix, 'lib')}")
-LDFLAGS.append(f"-Wl,-rpath,{os.path.join(metatomic_torch_prefix, 'lib')}")
-LDFLAGS.append("-lmetatomic_torch")
+LDFLAGS.append(f"-L{os.path.join(metatomic_prefix, 'lib')}")
+LDFLAGS.append(f"-Wl,-rpath,{os.path.join(metatomic_prefix, 'lib')}")
+LDFLAGS.append("-lmetatomic")
 
 if sys.platform.startswith("linux"):
     # When running on Linux, force the use of rpath instead of runpath

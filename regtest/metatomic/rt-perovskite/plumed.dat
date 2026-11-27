@@ -1,6 +1,6 @@
 Pmod: METATOMIC ...
-      MODEL=BaTiO3_CV.pt
-      EXTENSIONS_DIRECTORY=extensions
+      MODEL=BaTiO3-CV.py
+      PLUGIN=python
 
       SPECIES1=1-216
       SPECIES2=217-432

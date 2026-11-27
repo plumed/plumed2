@@ -9,9 +9,12 @@ tags:
 
 # Packaging options: see conda/module-options.md.
 # EMMIVOX uses LibTorch directly; it does not link the PLUMED pytorch module.
+# libtorch >=2.8 needs the OpenMP OpenBLAS: the lower bound keeps the shared
+# extension build, where other modules ask for OpenBLAS, on the libtorch this
+# package runs with, instead of falling back to libtorch 2.7.
 conda:
   requirements:
-    host: [libtorch * cpu_generic*]
+    host: [libtorch >=2.8 cpu_generic*]
     run: [libtorch * cpu_generic*]
   tests:
     regtests: [isdb-pytorch/rt-emmivox-fixed, isdb-pytorch/rt-checkpoint-emmivox]

@@ -7,9 +7,12 @@ dois: ["10.1021/acs.jpclett.0c00535", "10.1073/pnas.2113533118"]
 
 # Packaging options: see conda/module-options.md.
 # CPU packaging first; CUDA variants are a separate packaging dimension.
+# libtorch >=2.8 needs the OpenMP OpenBLAS: the lower bound keeps the shared
+# extension build, where other modules ask for OpenBLAS, on the libtorch this
+# package runs with, instead of falling back to libtorch 2.7.
 conda:
   requirements:
-    host: [libtorch * cpu_generic*]
+    host: [libtorch >=2.8 cpu_generic*]
     run: [libtorch * cpu_generic*]
   tests:
     regtests: [pytorch/rt-pytorch_model_strided]
