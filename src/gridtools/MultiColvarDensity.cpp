@@ -187,7 +187,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   std::string inputLine = convertInputLineToString();
   // Make the kde object for the numerator if needed
   if( hasheights ) {
-    readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine );
+    readInputLine( getShortcutLabel() + "_inumer: KDE VOLUMES=" + data_str + " " + direction_string + " " + inputLine + " NO_EXTEND" );
     if( unorm ) {
       readInputLine( getShortcutLabel() + ": ACCUMULATE ARG=" + getShortcutLabel() + "_inumer STRIDE=" + stride + " CLEAR=" + clear );
       return;
@@ -196,7 +196,7 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
     }
   }
   // Make the kde object
-  readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string );
+  readInputLine( getShortcutLabel() + "_kde: KDE " + inputLine  + " " + direction_string + " NO_EXTEND" );
   // Make the division object if it is required
   if( hasheights && !unorm ) {
     readInputLine( getShortcutLabel() + "_denom: ACCUMULATE ARG=" + getShortcutLabel() + "_kde STRIDE=" + stride + " CLEAR=" + clear );

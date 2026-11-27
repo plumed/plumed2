@@ -33,7 +33,7 @@ Create a histogram from the input scalar/vector/matrix using KDE
 This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 The input arguments must all have the same rank and size but you can use a scalar, vector or matrix in input.  The distribution
 of this quantity on a grid is then computed using kernel density estimation. You thus need to provide a bandwidth for the kernels that are being used when constructing the density
-and a spacing for the grid points.  **If you are using Gaussian kernels then we recommend using a grid spacing that 1/5th the size of the bandwidth.**
+and a spacing for the grid points.  **If you are using Gaussian kernels we recommend a grid spacing of 1/5 of the bandwidth.**
 
 The following example demonstrates how this action can be used with a scalar as input:
 
@@ -62,29 +62,20 @@ as it is easier to understand what you are doing in more complicated cases.
 
 ## Controlling the grid
 
-In the examples above we used the GRID_SPACING keyword. When you use this keyword alone PLUMED discovers the range of grid values for you in one of three
-ways. If your CVs have a periodic domain, e.g. [TORSION](TORSION.md), then PLUMED sets the minimum and maximum of the grid at the lower and upper bounds
-of the periodic domain. For [TORSION](TORSION.md) the grid would thus run from $-\pi$ to $\pi$.
+In the examples above only GRID_SPACING is given and PLUMED sets the range of the grid. For an argument with a periodic domain, e.g. [TORSION](TORSION.md),
+the grid covers the domain (from $-\pi$ to $\pi$ for a torsion). For the x, y and z components of a vector (e.g. [DISTANCE](DISTANCE.md) with COMPONENTS)
+the grid covers the box of the first step. For all the other arguments the grid is placed around the kernels, as the grid of [METAD](METAD.md):
+it contains all the points where the density of a kernel is not zero, plus one point on each side, and its points are on the lattice
+with spacing GRID_SPACING that has a point at zero. Until there are kernels with a non-zero weight the grid has a single bin.
 
-PLUMED works similarly if you are using the x, y and z components calculated by a [DISTANCE](DISTANCE.md) action. In these cases, PLUMED uses the box
-vectors to work out the extent of the grid.
+The grid is then extended, along the arguments that are not periodic, whenever the kernels do not fit in it: the spacing does not change, the new points
+are on the same lattice and each extension adds at least a quarter of the points, so that the grid is not extended at every step.
+Each extension is written in the log. [ACCUMULATE](ACCUMULATE.md) and the actions that take the grid as input follow the extensions.
+GRID_SIZE_LIMIT sets the maximum number of points of the grid: the calculation stops with an error if the kernels require a larger grid
+(e.g. with a distance that grows without limit).
 
-If the domain is not periodic then PLUMED uses the input data to find the extent of the grid. For argument $j$ PLUMED places the lower ($l_j$) and upper ($u_j$)
-bounds of the grid at:
-
-$$
-l_j = \min_i \mu_{ij} - s_j \lceil \frac{d^{(max)}(\sigma_{ij})}{s_j} \rceil  \qquad \textrm{and} \qquad u_j = \max_i \mu_{ij} + s_j \lceil \frac{d^{(max)}(\sigma_{ij})}{s_j} \rceil
-$$
-
-where the minimum and maximum run over all the input kernels, $\mu_{ij}$ and $\d^{(max)}(\sigma_{ij})$ are the center and cutoff for the $i$th kernel in the $j$ direction
-and $s_j$ is the grid spacing along the $j$th coordinate. For more details on how the $d^{(max)}(\sigma_{ij})$ cutoff is calculated from the bandwidth, $\sigma_{ij}$, see the section on setting
-the kernel below. In short, however, using the above criterion ensures that the grid is big enough to incorporate the density that is contribued by all the kernels
-
-The upper and lower bounds of the grid will be set using these criteria the first time the KDE action is called. In subsequent calls PLUMED checks if any density from
-kernels would be lost by keeping the grid extents as they are.  If density would be lost then the grid is expanded to ensure that the density from all the kernels is
-accumulated.
-
-Notice, that you can set the GRID_MIN and GRID_MAX using an input like the one below.
+If you give GRID_MIN and GRID_MAX, they set the initial range of the grid, which is extended as above. This ensures that a normalised histogram integrates
+to one: a histogram of a distance with GRID_MIN=0 also contains the density of the kernels at negative values.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -92,17 +83,17 @@ kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
-However, if the minimum and maximum values of the grid that you set are too small then PLUMED will automaticaly expand the extent of the grid for you so as to ensure that the
-density from all the kernels is accumulated. If for some reason you want to turn off this accumulating of density then you can use the GRID_BIN and GRID_SIZE_LIMIT as
-indicated below:
+With NO_EXTEND the grid is not extended and the density outside GRID_MIN and GRID_MAX is not computed, as in PLUMED 2.10. This is needed,
+for example, when the KDE is combined with a grid that does not change, such as the one of [REFERENCE_GRID](REFERENCE_GRID.md):
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 GRID_SIZE_LIMIT=100 BANDWIDTH=0.2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 NO_EXTEND
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
-By setting GRID_BIN and GRID_SIZE_LIMIT equal you prevent the grid from expanding during the calculation.
+With GRID_BIN and no GRID_MIN and GRID_MAX, the range of the kernels of the first step with a non-zero weight is divided in GRID_BIN bins (plus one on each side),
+and the grid is then extended with this spacing.
 
 ## Constructing the density
 

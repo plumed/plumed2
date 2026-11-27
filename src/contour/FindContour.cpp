@@ -158,7 +158,8 @@ std::string FindContour::getOutputComponentDescription( const std::string& cname
 }
 
 void FindContour::calculate() {
-  if( firststep ) {
+  if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
     std::vector<std::size_t> shape(1);
     shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
     for(unsigned i=0; i<getNumberOfComponents(); ++i) {

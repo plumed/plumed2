@@ -1,0 +1,6 @@
+d: DISTANCE ATOMS=2,3
+t: TORSION ATOMS=1,2,3,4
+# the grid of the KDE is extended along the distance: the Fourier transform follows it
+k: KDE ARG=t,d BANDWIDTH=0.3,0.1 GRID_SPACING=0.2,0.05
+f: FOURIER_TRANSFORM ARG=k FT_TYPE=norm FOURIER_PARAMETERS=0,1
+DUMPGRID ARG=f FILE=ft.grid STRIDE=10 FMT=%8.4f

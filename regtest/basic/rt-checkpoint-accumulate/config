@@ -27,7 +27,7 @@ function plumed_regtest_before() {
 function plumed_regtest_after() {
   # the restarted runs must reproduce the reference bitwise (COLVAR holds no wall-clock data)
   for d in restart restart-stride ; do
-    for f in COLVAR hist.grid histn.grid col.dat colc.dat colm.dat colmc.dat ; do
+    for f in COLVAR hist.grid histn.grid hista.grid col.dat colc.dat colm.dat colmc.dat ; do
       if cmp -s $f $d/$f ; then echo "$d/$f IDENTICAL" ; else echo "$d/$f DIFFERENT" ; fi
     done
     # no warning about unported state must be left

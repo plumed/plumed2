@@ -79,6 +79,8 @@ $$
 class FourierTransform : public ActionWithGrid {
 private:
   bool firsttime;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
   std::string output_type;
   bool real_output, store_norm;
   std::vector<int> fourier_params;
@@ -198,7 +200,8 @@ std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
 }
 
 void FourierTransform::calculate() {
-  if( firsttime ) {
+  if( firsttime || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
     ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
     // already checked in the constructor
     plumed_assert( ag );
@@ -251,8 +254,8 @@ void FourierTransform::calculate() {
     // Get point indices
     gridcoords.getIndices(i, ind);
     // Fill input data in row-major order
-    input_data[ind[0]*N_input_data[0]+ind[1]].real( arg->get( i ) );
-    input_data[ind[0]*N_input_data[0]+ind[1]].imag( 0.0 );
+    input_data[ind[0]*N_input_data[1]+ind[1]].real( arg->get( i ) );
+    input_data[ind[0]*N_input_data[1]+ind[1]].imag( 0.0 );
   }
 
   // *** HERE is the only clear limitation: I'm computing explicitly a 2D FT. It should not happen to deal with other than two-dimensional grid ...
@@ -276,16 +279,16 @@ void FourierTransform::calculate() {
       double ft_value;
       // Compute abs/norm and fix normalization
       if (!store_norm) {
-        ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+        ft_value=std::abs( fft_data[out_ind[0]*N_out_data[1]+out_ind[1]] / norm );
       } else {
-        ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+        ft_value=std::norm( fft_data[out_ind[0]*N_out_data[1]+out_ind[1]] / norm );
       }
       // Set the value
       getPntrToComponent(0)->set( i, ft_value);
     } else {
       double ft_value_real, ft_value_imag;
-      ft_value_real=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].real() / norm;
-      ft_value_imag=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].imag() / norm;
+      ft_value_real=fft_data[out_ind[0]*N_out_data[1]+out_ind[1]].real() / norm;
+      ft_value_imag=fft_data[out_ind[0]*N_out_data[1]+out_ind[1]].imag() / norm;
       // Set values
       getPntrToComponent(0)->set( i, ft_value_real );
       getPntrToComponent(1)->set( i, ft_value_imag );

@@ -61,7 +61,7 @@ tt: TORSION ...
 
 # We now compute our instantaneous normalised histogram of the bond directions.  Notice that the weights are used here so that we do not consider
 # non-bonded atoms
-hu: KDE VOLUMES=d1lt ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.2,0.2
+hu: KDE VOLUMES=d1lt ARG=aa,tt GRID_BIN=20,20 GRID_MIN=0,-pi GRID_MAX=pi,pi BANDWIDTH=0.2,0.2 NO_EXTEND
 de: SUM ARG=d1lt PERIODIC=NO
 h: CUSTOM ARG=hu,de FUNC=x/y PERIODIC=NO
 

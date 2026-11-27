@@ -15,6 +15,9 @@ ac: CUSTOM ARG=sc,nc FUNC=x/y PERIODIC=NO
 kde: KDE ARG=d1 BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=3 GRID_BIN=60
 hist: ACCUMULATE ARG=kde STRIDE=1
 histn: CUSTOM ARG=hist,n FUNC=x/y PERIODIC=NO
+# a histogram on a grid that is placed around the kernels and extended when they do not fit in it
+kdea: KDE ARG=d1 BANDWIDTH=0.05 GRID_SPACING=0.01
+hista: ACCUMULATE ARG=kdea STRIDE=1
 # collected data: a growing vector, a growing matrix and fixed size windows
 col: COLLECT ARG=d1 STRIDE=1
 colm: COLLECT ARG=dv TYPE=matrix STRIDE=2
@@ -26,6 +29,7 @@ tt: TIME
 UPDATE_IF ARG=tt MORE_THAN=58.5
 DUMPGRID ARG=hist FILE=hist.grid STRIDE=1 FMT=%.17g
 DUMPGRID ARG=histn FILE=histn.grid STRIDE=1 FMT=%.17g
+DUMPGRID ARG=hista FILE=hista.grid STRIDE=1 FMT=%.17g
 DUMPVECTOR ARG=col FILE=col.dat STRIDE=1 FMT=%.17g
 DUMPVECTOR ARG=colc FILE=colc.dat STRIDE=1 FMT=%.17g
 DUMPVECTOR ARG=colm FILE=colm.dat STRIDE=1 FMT=%.17g

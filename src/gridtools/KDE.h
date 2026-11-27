@@ -31,6 +31,7 @@
 #include "core/ParallelTaskManager.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
+#include "tools/Checkpoint.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -57,7 +58,12 @@ public:
                     function::FunctionOptions& options );
   static void readKernelParameters( std::string& value, ActionWithArguments* action, const std::string& outlab, bool rerequestargs );
   static void addArgument( const std::string& value, ActionWithArguments* action );
-  static void setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval );
+/// the grid at the first step (placed around the kernels if no range was given)
+  static void setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action );
+/// extend the grid if the kernels do not fit in it
+  static void extendGridBounds( KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action );
+/// the domain of the arguments and the support of the kernels on the current grid
+  static void setupKernelSupport( KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, const std::vector<Value*>& args );
   static void transferParamsToKernel( const std::vector<double>& argval, KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, bool updateNeighborsOnEachKernel, std::size_t nkernels, unsigned kval, View<double>& params );
   static void transferKernels( KDEHelper<K,P,G>& func, const std::vector<Value*>& args, GridCoordinatesObject& gridobject );
   void update() {
@@ -116,9 +122,22 @@ void KDEHelper<K,P,G>::read( KDEHelper<K,P,G>& func,
 }
 
 template <class K, class P, class G>
-void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {
+void KDEHelper<K,P,G>::setupGridBounds( KDEHelper<K,P,G>& func, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action ) {
   // Setup the grid boundaries on first step
-  G::setupGridBounds( func.g, func.kernelsum.params, box, gridobject, args, myval );
+  G::setupGridBounds( func.g, func.kernelsum.params, box, gridobject, args, myval, action );
+  setupKernelSupport( func, gridobject, args );
+  extendGridBounds( func, gridobject, args, myval, action );
+}
+
+template <class K, class P, class G>
+void KDEHelper<K,P,G>::extendGridBounds( KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action ) {
+  if( G::extendGridBounds( func.g, func.kernelsum.params, gridobject, args, myval, action ) ) {
+    setupKernelSupport( func, gridobject, args );
+  }
+}
+
+template <class K, class P, class G>
+void KDEHelper<K,P,G>::setupKernelSupport( KDEHelper<K,P,G>& func, GridCoordinatesObject& gridobject, const std::vector<Value*>& args ) {
   if( gridobject.getGridType()!="fibonacci" ) {
     // Set the periodicity of the parameters
     for(unsigned i=0; i<gridobject.getDimension(); ++i) {
@@ -312,12 +331,24 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+/// The box (for the grids that cover it)
+  PbcAction* pbcaction;
 /// The parallel task manager
   PTM taskmanager;
   GridCoordinatesObject gridobject;
 public:
   static void registerKeywords( Keywords& keys );
   explicit KDE(const ActionOptions&ao);
+/// the grid depends on the kernels (it is extended) or on the box of the first step
+  bool hasCheckpointState() const override {
+    return G::hasCheckpointState( taskmanager.getActionInput().g );
+  }
+  void writeCheckpoint( CheckpointWriter& w ) override {
+    G::writeCheckpoint( taskmanager.getActionInput().g, gridobject, w );
+  }
+  void readCheckpoint( CheckpointReader& r ) override {
+    G::readCheckpoint( taskmanager.getActionInput().g, gridobject, getPntrToComponent(0), r );
+  }
   std::vector<std::string> getGridCoordinateNames() const override ;
   const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   unsigned getNumberOfDerivatives() override;
@@ -361,6 +392,7 @@ KDE<K,P,G,myPTM>::KDE(const ActionOptions&ao):
   Action(ao),
   ActionWithGrid(ao),
   firststep(true),
+  pbcaction(plumed.getActionSet().template selectWithLabel<PbcAction*>("Box")),
   taskmanager(this) {
 
   std::vector<std::size_t> shape( getNumberOfArguments() );
@@ -431,16 +463,15 @@ void KDE<K,P,G,myPTM>::prepare() {
 
 template <class K, class P, class G, typename myPTM>
 void KDE<K,P,G,myPTM>::calculate() {
-  Tensor box;
-  PbcAction* bv = plumed.getActionSet().template selectWithLabel<PbcAction*>("Box");
-  if( bv ) {
-    box = bv->getPbc().getBox();
-  }
   if( firststep ) {
-    KDEHelper<K,P,G>::setupGridBounds( taskmanager.getActionInput(), box, gridobject, getArguments(), getPntrToComponent(0) );
+    Tensor box;
+    if( pbcaction ) {
+      box = pbcaction->getPbc().getBox();
+    }
+    KDEHelper<K,P,G>::setupGridBounds( taskmanager.getActionInput(), box, gridobject, getArguments(), getPntrToComponent(0), *this );
     firststep=false;
-  } else if( gridobject.getGridType()!="fibonacci" ) {
-    G::expandGridBounds( taskmanager.getActionInput().g, taskmanager.getActionInput().kernelsum.params, box, gridobject, getArguments(), getPntrToComponent(0) );
+  } else {
+    KDEHelper<K,P,G>::extendGridBounds( taskmanager.getActionInput(), gridobject, getArguments(), getPntrToComponent(0), *this );
   }
   KDEHelper<K,P,G>::transferKernels( taskmanager.getActionInput(), getArguments(), gridobject );
   taskmanager.setupParallelTaskManager( getNumberOfArguments()*taskmanager.getActionInput().maxkernels, getNumberOfForceDerivatives() );

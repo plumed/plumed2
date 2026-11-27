@@ -159,6 +159,8 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
 /// The parallel task manager
   PTM taskmanager;
   std::vector<std::string> gnames;
@@ -233,7 +235,8 @@ const GridCoordinatesObject& FindContourSurface::getInputGridObject() const {
 }
 
 void FindContourSurface::calculate() {
-  if( firststep ) {
+  if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
     std::vector<double> fspacing;
     std::vector<std::size_t> snbins( gridcoords.getDimension() );
     std::vector<std::string> smin( gridcoords.getDimension() ), smax( gridcoords.getDimension() );

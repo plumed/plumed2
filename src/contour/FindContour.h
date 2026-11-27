@@ -39,6 +39,8 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
 /// The parallel task manager
   PTM taskmanager;
   unsigned gbuffer;
