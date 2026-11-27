@@ -19,6 +19,21 @@ This module requires two main dependencies: the C++ torch library (i.e.
 `libtorch`); and the C++ metatomic_torch library. There are multiple ways of
 installing both libraries, which are discussed below.
 
+## Lifetime of dynamically loaded modules
+
+On Linux/ELF, the metatomic extension is linked with `NODELETE` when its native
+metatomic support is enabled. PyTorch retains registered custom-class methods
+from the metatomic and metatensor libraries in a static registry. Unloading
+those libraries when the last PLUMED object is destroyed can leave that registry
+referring to unloaded code and cause a crash at process exit.
+
+This is a targeted workaround for the external registration lifetime. Once the
+metatomic extension is loaded, including by autoload, it and its native
+dependencies remain mapped until process exit. Since the extension links to the
+PLUMED kernel, the kernel also remains mapped. PLUMED still closes its owned
+library handles normally; extensions without this restriction retain the usual
+lifetime tied to live PLUMED objects.
+
 ## Getting the dependencies
 
 ### Using Python's package manager (`pip`)

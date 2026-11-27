@@ -364,3 +364,10 @@ libraries do not require development linker files just to compile a basic
 action. C++ LOAD cache filenames include the kernel build ID; direct mklib -n
 also records kernel identity, compiler/link flags and the compiler helper content. Existing atomic publication
 and simultaneous-builder handling are retained.
+
+The Linux/ELF `metatomic` extension is an unloadability exception when native
+metatomic support is enabled: it is linked with `NODELETE` because PyTorch's
+static custom-class registry can outlive the last PLUMED object. Loading this
+extension, including by autoload, retains its native dependencies and the linked
+kernel until process exit. Owned handles are still closed normally. See the
+metatomic module documentation for this external registration-lifetime workaround.
