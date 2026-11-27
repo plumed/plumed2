@@ -192,7 +192,6 @@ dictionary and can be used to store data during the calculations
 You can obtain the manual of the module (and of its components)
 by running plumed driver with this plumed file
 \plumedfile
-LOAD FILE=PythonCVInterface.so
 cvdist: PYCVINTERFACE IMPORT=pyhelp
 PRINT FILE=colvar.out ARG=*
 \endplumedfile
@@ -356,23 +355,9 @@ def cv(action: PLMD.PythonCVInterface):
 
 \par Installation
 
-A use of an virtual environment or equivalent is recomended.
-To compile pycv you just need numpy and pybind11, jax is not necessary for
-compilation and installation.
-
-To compile the shared object library you need also plumed in your path.
-You need to export the following  environmental variables:
-\verbatim
-export PLUMED_MKLIB_CFLAGS="$(python3-config --cflags --embed) $(python -m pybind11 --includes)"
-export PLUMED_MKLIB_LDFLAGS="$(python3-config --ldflags --embed)"
-\endverbatim
-and then compile the shared object:
-\verbatim
-plumed mklib PythonCVInterface.cpp ActionWithPython.cpp PlumedPythonEmbeddedModule.cpp
-\endverbatim
-
-If you are on linux you can use pycv only with a plumed version that is
-compatible with the `GLOBAL` keyword for the action `LOAD`
+pycv is a module built as an extension against an installed PLUMED, once for
+each Python version (or installed with the conda package plumed-ext-pycv),
+and loaded automatically: see the page of the module pycv.
 
 */
 //+ENDPLUMEDOC

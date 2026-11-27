@@ -85,7 +85,7 @@ Here's a description of the content of each file and directory in the root PLUME
     macports         : directory where Portfiles are generated
     new-manual       : user manual (MkDocs)
     patches          : patch scripts
-    plugins          : optional plugins (e.g. pycv)
+    plugins          : optional plugins (e.g. openaccPTM)
     python           : python package (wrappers and pip packaging)
     pythonformatter.sh : formats the python code (as astyle for C++)
     regtest          : regression tests, including reference results
@@ -191,10 +191,11 @@ Python wheels on Linux and macOS, but not on Windows. Plugins can be:
 * the [gpu_cuda_hip](src/gpu_cuda_hip/module.md) module (coordination number on
   NVIDIA GPUs with CUDA and AMD GPUs with HIP), compiled into PLUMED with
   `./configure --enable-modules=+gpu_cuda_hip` (nvcc or hipcc is needed);
-* the plugins in the [plugins](plugins) directory, each with its own README and
-  build instructions: [pycv](plugins/pycv/README.md) (collective variables and
-  functions written in Python, installed with `pip`) and
-  [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
+* the [pycv](src/pycv/module.md) module (collective variables and functions
+  written in Python), built as an extension for one Python version against an
+  installed PLUMED (see [extensions](extensions/README.md));
+* the plugin in the [plugins](plugins) directory, with its own README and
+  build instructions: [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
   GPUs with OpenACC, including SAXS and SANS), compiled with `./configure` and
   `make` in its directory.
 

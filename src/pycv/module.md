@@ -17,25 +17,18 @@ You can see the original PyCV [here](https://giorginolab.github.io/plumed2-pycv)
 Note that the current syntax is different than the one described in the original paper.
 
 
-As usual if you are not working in a virtual environment you are doing this at your own risk
-`pip install .` should be enough, with a plumed version (>=2.10) avaiable with a pkg-config or in the `PATH`s.
-
-
->[!NOTE]
->On linux If you use `make` and `make check` note that the tests will find pycv only if you are working in the same python environment that you had active when compiling/installing plumed
-
 > [!NOTE]
 >We have some problem with the macs:
-you may need to explicitly declare and export some environmental variables like the `PYTHON_PATH` to make pycv work when plumed is called
+you may need to explicitly declare and export some environmental variables like the `PYTHONPATH` to make pycv work when plumed is called
 
 
 ## Documentation
 
 >[!NOTE]
->The regtests `regtest/pycvcomm/rt-doc` and `regtest/pycvfunc/rt-doc` can be used both as
+>The regtests `regtest/pycv/rt-doc` and `regtest/pycv/rt-func-doc` can be used both as
  an example and a way to create a (very) basic code documentation for the action/function interface.
->The example in `regtest/pycvcomm/rt-doc` will produce very basic html pages,
- and the one in `regtest/pycvfunc/rt-doc` will dump a few simple textfiles
+>The example in `regtest/pycv/rt-doc` will produce very basic html pages,
+ and the one in `regtest/pycv/rt-func-doc` will dump a few simple textfiles
 
 
 The PYCV module defines the following actions:
@@ -73,25 +66,40 @@ If not specified, `INIT` will default to `plumedInit` and `CALCULATE`  to
 
 ## Installation
 
-It should be sufficient to run, ideally in a virtual or conda environment:
+pycv embeds a Python interpreter, so it is built for one Python version: it is
+never compiled into the PLUMED kernel, but built as an extension against an
+installed PLUMED, once for each Python version that you want to use.
+
+With conda, install the package `plumed-ext-pycv` next to `plumed`: the variant
+that matches the Python of the environment is selected automatically.
+
+Otherwise, from the source tree of the same version of the installed PLUMED,
+with a Python that has `pybind11` (>=3.0) and its shared library, and `numpy` at runtime:
 ```sh
-cd plugins/pycv
-pip install .
+./configure --with-extension-base=/path/to/plumed --enable-extension-modules=pycv \
+  PYTHON_BIN=python3.12 --prefix=/path/to/pycv
+make
+make install
 ```
-You will need to have plumed avaiable in your path or through `pkg-config`
+(see `extensions/README.md`). The installed module is loaded automatically
+(add its `lib/plumed/plugins` directory to `PLUMED_PLUGIN_PATH` if it is not
+installed next to PLUMED), or with `LOAD MODULE=pycv` when autoloading is
+disabled (`PLUMED_AUTOLOAD=0`). `plumed modules --has pycv` checks that it is available.
 
-Required dependencies `numpy` and `pybind11` are installed as part of the installation process.
-
-Note that an in-place installation, `pip install -e .`, won't work. 
-
-Now you can get the position of the shared object to load with `python -m pycv`, see [below](#some-examples)
+> [!NOTE]
+>Until PLUMED 2.10 pycv was a plugin, installed with `pip install plugins/pycv`
+ and loaded with `LOAD FILE=$(python -m pycv)`: these `LOAD FILE` lines are not
+ needed anymore, and can be removed from the inputs.
 
 ## Regression tests
 
-A suite of regression tests are provided in the `regtest` subdirectory. They can be run e.g. with 
+A suite of regression tests is provided in `regtest/pycv`, run with
 ```sh
-make -C regtest
+make -C regtest/pycv
 ```
+when pycv is available (e.g. after the installation above, with `PLUMED_PLUGIN_PATH`).
+The tests in `regtest/pycv/pythontests` run PLUMED from Python (they need the `plumed`
+Python package) and are run with `pytest`.
 
 ## Common runtime problems
 
@@ -109,21 +117,14 @@ differently than the plain ones, raising surprising errors.  For example:
 ```
 
 >[!NOTE]
->Similarly, some Python configurations (e.g. MacOS) ignore the current
- environment when searching for packages (e.g. `numpy`). Hence,
+>Similarly, some Python configurations (e.g. MacOS, or a virtual environment) ignore the current
+ environment when searching for packages (e.g. `numpy`): the embedded interpreter is
+ the Python pycv was built for. Hence,
  one should set PYTHONPATH manually.  This manifests itself with an
  error like:
 
 ```
       No module named numpy
-```
-### Developing pycv
-
-If you are developing pycv can be compiled and tested from the pycv dir with `make`
-
-```sh
-make
-make check
 ```
 
 ## Getting started
@@ -225,14 +226,7 @@ You can however act on the `.data` dict or access to all the parameters accessib
 
 ## Some Examples
 
-In the following paragraphs I am showing a few examples, for a short description of the python interface look [here](PythonInterface.md)
-
->![IMPORTANT]
-> In the following examples you will see often `path/to/PythonCVInterface.so` as the path to load pycv into plumed
-> If you are using a standalone plumed you can get the path to that file simply by calling `python -m pycv`
-> If you are using plumed within python by importing the `pycv` python module
-  and loading the pycv plumed module with the convenient function  `pycv.getPythonCVInterface()`,
-  like `plmd.cmd("readInputLine", f"LOAD FILE={pycv.getPythonCVInterface()}")`
+In the following paragraphs I am showing a few examples, for a short description of the python interface look [below](#the-python-interface)
 
 
 ### Bare minimum
@@ -240,7 +234,6 @@ The minimum invocation can be the following:
 
 **plumed.dat**
 ```
-LOAD FILE=path/to/PythonCVInterface.so
 cvPY: PYFUNCTION IMPORT=pycv
 PRINT FILE=colvar.out ARG=*
 ```
@@ -317,15 +310,96 @@ def cv1(action):
     return angle(x), grad_angle(x)
 ```
 
+## The Python interface
+
+### Getting the manual
+To obtain a <i>**VERY BASIC**</i> reference/manual with all the function and method definitions, run the test rt-doc or call `PYFUNCTION` in with: 
+
+**plumed.dat**
+```
+PYFUNCTION IMPORT=pycv
+```
+
+**pycv.py**
+```python
+import plumedCommunications
+import pydoc
+
+
+def plumedInit(_):
+    pydoc.writedoc(plumedCommunications)
+    pydoc.writedoc(plumedCommunications.defaults)
+    return {"Value": plumedCommunications.defaults.COMPONENT_NODEV}
+
+
+def plumedCalculate(_):
+    return 0.0
+```
+
+### Specifics
+In the following section
+#### Common interface
+Both `PYFUNCTION` and `PYCVINTERFACE` have the following attribute:
+ - `label` (readonly) returns the label
+
+And the following functions:
+ - `log(s:object)` puts a string in the PLUMED output
+ - `lognl(s:object)` puts a string in the PLUMED output (and appends a newline)
+ - `getStep()` Returns the current step
+ - `getTime()` Return the present time
+ - `getTimeStep()` Return the timestep
+ - `isExchangeStep()` Check if we are on an exchange step
+ - `isRestart()` Return true if we are doing a restart
+
+#### PYFUNCTION: arguments
+
+`PYFUNCTION` accepts arguments in the plumed file with the `ARG` keyword, the arguments are then accessible in python with the functions:
+ - `PythonFunction.argument(argID:int)` Get value of the of argID-th argument (as `float`)
+ - `PythonFunction.arguments()` Retuns a ndarray with the values of the arguments (as `numpy.ndarray[numpy.float64]`)
+
+and the argument:
+- `PythonFunction.nargs` (readonly) Get the number of arguments
+
+`PYFUNCTION` also has a few functions that can be used to interact with the periodicity of the arguments:
+ - `PythonFunction.bringBackInPbc(argID:int,x:float)` Takes one value and brings it back into the pbc of argument argID
+ - `PythonFunction.difference(argID:int,x:float,y:float)` Takes the difference taking into account pbc for argument argID
+
+#### PYCVINTERFACE: atoms, pbc, neigbourlist, makeWhole
+`PYCVINTERFACE` works with atoms:
+
+Has the following attributes:
+ - `PythonCVInterface.nat` (readonly) Return the number of atoms
+
+For getting the atomic data you can call the following functions:
+ - `PythonCVInterface.getPosition(atomID:int)` Returns an ndarray with the position of the atomID-th atom 
+ - `PythonCVInterface.getPositions()` Returns a numpy.array that contains the atomic positions of the atoms 
+ - `PythonCVInterface.mass(atomID:int)` Get mass of atomID-th atom
+ - `PythonCVInterface.masses()` Returns and ndarray with the masses 
+ - `PythonCVInterface.charge(atomID:int)` Get charge of atomID-th atom
+ - `PythonCVInterface.charges()` Returns and ndarray with the charges 
+ - `PythonCVInterface.absoluteIndexes()` Get the npArray of the absolute indexes (like in AtomNumber::index()).
+
+ And in general you can use some support-function from plumed:
+ - `PythonCVInterface.getNeighbourList()` returns an interface to the current Neighborlist
+ - `PythonCVInterface.getPbc()` returns an interface to the current pbcs
+ - `PythonCVInterface.makeWhole()` Make atoms whole, assuming they are in the proper order
+
+`plumedCommunications.Pbc` and `plumedCommunications.NeighborList` are simple methods container to help with the calculations:
+
+`plumedCommunications.Pbc` has the following functions:
+ - `Pbc.apply(d:ndarray)` pply PBC to a set of positions or distance vectors (`d.shape==(n,3)`)
+ - `Pbc.getBox()` Get a numpy array of shape (3,3) with the box vectors
+ - `Pbc.getInvBox()` Get a numpy array of shape (3,3) with the inverted box vectors
+
+`plumedCommunications.NeighborList` has the following functions and attributes:
+- `NeigbourList.getClosePairs()` get the (nl.size,2) nd array with the list of couple indexes
+- `NeigbourList.size` and `len(nl:NeigbourList.size)` give the number of couples
+
 ## Limitations
 
 - No test have been done with MPI
 - JAX's GPU/TPU offloading are not 100% tested.
 
-
-If you are using an older Plumed version you must know that:
- - On linux the plug-in can be loaded only if `LOAD` supports the `GLOBAL` keyword
- - mklib won't work (supports only single file compilations), so you'll need to use `./prepareMakeForDevelop.sh`
 
 ## Authors
 
