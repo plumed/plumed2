@@ -45,6 +45,11 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   explicit ActionShortcut(const ActionOptions&ao);
+/// Read an atom-list keyword and expand ranges, groups and MOLINFO selections.
+  void parseAtomList(const std::string& key, std::vector<std::string>& atoms);
+/// Expand an already parsed atom list, preserving order, duplicates and virtual atoms.
+  void expandAtomList(const std::string& key, const std::vector<std::string>& input,
+                      std::vector<std::string>& atoms);
 /// Read keywords
   void readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap );
 /// Read a line of input and create appropriate actions

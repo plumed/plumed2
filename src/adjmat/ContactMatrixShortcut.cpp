@@ -99,18 +99,41 @@ ContactMatrixShortcut::ContactMatrixShortcut(const ActionOptions& ao):
     }
     if( grp_str.size()!=atomsvec.size() ) {
       grp_str.resize(0);
+      std::vector<std::string> expanded;
+      expandAtomList("ATOMS",atomsvec,expanded);
+      atomsvec.swap(expanded);
       atomsstr = " ATOMS=" + atomsvec[0];
       for(unsigned i=1; i<atomsvec.size(); ++i) {
         atomsstr += "," + atomsvec[i];
       }
     }
   } else {
-    std::string grp_inpt;
+    // Remove the unnumbered form before asking for numbered vectors: the
+    // numbered-vector parser treats an unnumbered GROUP as malformed GROUP1.
+    std::string ordinary;
+    parse("GROUP",ordinary);
+    if(!ordinary.empty()) {
+      atomsstr = " GROUP={" + ordinary + "}";
+    }
     for(unsigned i=1;; ++i) {
-      if( !parseNumbered("GROUP",i,grp_inpt) ) {
+      std::vector<std::string> input, expanded;
+      if(!parseNumberedVector("GROUP",i,input)) {
         break;
       }
-      grp_str.push_back( grp_inpt );
+      std::string number;
+      Tools::convert(i,number);
+      expandAtomList("GROUP" + number,input,expanded);
+      std::string grp_inpt;
+      for(const auto& atom : expanded) {
+        if(!grp_inpt.empty()) {
+          grp_inpt += ",";
+        }
+        grp_inpt += atom;
+      }
+      grp_str.push_back(grp_inpt);
+    }
+    if(!ordinary.empty() && !grp_str.empty()) {
+      error("use GROUP or numbered GROUP keywords, not both");
     }
   }
   if( grp_str.size()>9 ) {

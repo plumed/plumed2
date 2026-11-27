@@ -85,7 +85,6 @@ ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSS
 PRINT ARG=a1.* FILE=colvar
 \endplumedfile
 
-
 */
 //+ENDPLUMEDOC
 
@@ -121,8 +120,21 @@ Angles::Angles(const ActionOptions&ao):
   parse("SWITCH",swit);
   if( swit.length()>0 ) {
     std::string cat, grp;
-    parse("GROUPA",cat);
-    parse("GROUPB",grp);
+    std::vector<std::string> ca, neighbors;
+    parseAtomList("GROUPA",ca);
+    parseAtomList("GROUPB",neighbors);
+    for(const auto& atom : ca) {
+      if(!cat.empty()) {
+        cat += ",";
+      }
+      cat += atom;
+    }
+    for(const auto& atom : neighbors) {
+      if(!grp.empty()) {
+        grp += ",";
+      }
+      grp += atom;
+    }
     if( cat.length()==0 || grp.length()==0 ) {
       error("must use GROUPA/GROUPB when using SWITCH");
     }
@@ -130,18 +142,18 @@ Angles::Angles(const ActionOptions&ao):
     return;
   }
   std::vector<std::string> group;
-  parseVector("GROUP",group);
+  parseAtomList("GROUP",group);
   std::vector<std::string> groupa;
-  parseVector("GROUPA",groupa);
+  parseAtomList("GROUPA",groupa);
   std::vector<std::string> groupb;
-  parseVector("GROUPB",groupb);
+  parseAtomList("GROUPB",groupb);
   std::vector<std::string> groupc;
-  parseVector("GROUPC",groupc);
+  parseAtomList("GROUPC",groupc);
   if( group.size()>0 ) {
     if( groupa.size()>0 || groupb.size()>0 || groupc.size()>0 ) {
       error("should only be GROUP keyword in input not GROUPA/GROUPB/GROUPC");
     }
-    Tools::interpretRanges( group );
+
     std::string ainput = getShortcutLabel() + ": ANGLE";
     unsigned n=1;
     // Not sure if this triple sum makes any sense
@@ -157,9 +169,7 @@ Angles::Angles(const ActionOptions&ao):
     }
     readInputLine( ainput );
   } else if( groupc.size()>0 ) {
-    Tools::interpretRanges( groupa );
-    Tools::interpretRanges( groupb );
-    Tools::interpretRanges( groupc );
+
     unsigned n=1;
     std::string ainput = getShortcutLabel() + ": ANGLE";
     for(unsigned i=0; i<groupa.size(); ++i ) {
@@ -174,8 +184,7 @@ Angles::Angles(const ActionOptions&ao):
     }
     readInputLine( ainput );
   } else if( groupa.size()>0 ) {
-    Tools::interpretRanges( groupa );
-    Tools::interpretRanges( groupb );
+
     unsigned n=1;
     std::string ainput;
     ainput = getShortcutLabel() + ": ANGLE";
@@ -196,6 +205,4 @@ Angles::Angles(const ActionOptions&ao):
 
 }
 }
-
-
 

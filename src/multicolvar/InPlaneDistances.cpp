@@ -60,14 +60,14 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
   Action(ao),
   ActionShortcut(ao) {
   std::vector<std::string> str_atomsA;
-  parseVector("VECTORSTART",str_atomsA);
-  Tools::interpretRanges( str_atomsA );
+  parseAtomList("VECTORSTART",str_atomsA);
+
   std::vector<std::string> str_atomsB;
-  parseVector("VECTOREND",str_atomsB);
-  Tools::interpretRanges( str_atomsB );
+  parseAtomList("VECTOREND",str_atomsB);
+
   std::vector<std::string> str_atomsC;
-  parseVector("GROUP",str_atomsC);
-  Tools::interpretRanges( str_atomsC );
+  parseAtomList("GROUP",str_atomsC);
+
   unsigned n=1;
   std::string dinput= getShortcutLabel() + "_dis: DISTANCE", ainput = getShortcutLabel() + "_ang: ANGLE";
   for(unsigned i=0; i<str_atomsA.size(); ++i ) {
@@ -76,7 +76,7 @@ InPlaneDistances::InPlaneDistances(const ActionOptions&ao):
         std::string str_n;
         Tools::convert( n, str_n );
         n++;
-        dinput += " ATOMS" + str_n + "=" + str_atomsA[j] + "," + str_atomsC[k];
+        dinput += " ATOMS" + str_n + "=" + str_atomsA[i] + "," + str_atomsC[k];
         ainput += " ATOMS" + str_n + "=" + str_atomsB[j] + "," + str_atomsA[i] + "," + str_atomsC[k];
       }
     }
