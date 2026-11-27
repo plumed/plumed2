@@ -406,7 +406,19 @@ For getting the atomic data you can call the following functions:
 
 ## Limitations
 
-- No test have been done with MPI
+- When pycv starts the Python interpreter (PLUMED is not running within Python),
+  only the thread that started it can use it: a pycv action created in another
+  thread, e.g. by another thread-MPI rank (as in GROMACS without real MPI) or by
+  a Plumed object created in another thread, stops with an error. With MPI
+  processes every process has its own interpreter (tested with the regression tests).
+- pycv is compiled for one Python version, and it stops with an error if the
+  Python interpreter is another version (e.g. when PLUMED runs within Python).
+- Once a pycv action has been created, the library of pycv (and so the PLUMED
+  kernel and libpython) is never unloaded, as any Python extension: when PLUMED
+  runs within Python, the Python code can keep `plumedCommunications`.
+- `plumedCommunications` is provided by pycv, not installed as a Python package:
+  when PLUMED runs within Python, the Python script can import it (or a module
+  that imports it) only after PLUMED has created a pycv action.
 - JAX's GPU/TPU offloading are not 100% tested.
 
 

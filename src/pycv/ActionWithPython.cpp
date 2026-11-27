@@ -24,13 +24,42 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <pybind11/numpy.h>
 #include <Python.h>
 
+#include <cstring>
+#include <dlfcn.h>
 #include <iostream>
+#include <thread>
 
 
 namespace py = pybind11;
 
 namespace {
 auto a=PLMD::DLLoader::EnsureGlobalDLOpen(&Py_Initialize);
+
+// This library is compiled for one Python version: it must be the one of the
+// interpreter (the check of PYBIND11_MODULE, PYBIND11_CHECK_PYTHON_VERSION)
+void checkPythonVersion() {
+  const char* compiled=PYBIND11_TOSTRING(PY_MAJOR_VERSION) "." PYBIND11_TOSTRING(PY_MINOR_VERSION);
+  const char* running=Py_GetVersion();
+  const auto length=std::strlen(compiled);
+  if(std::strncmp(running,compiled,length)!=0 || (running[length]>='0' && running[length]<='9')) {
+    plumed_error()<<"pycv was compiled for Python "<<compiled
+                  <<", it cannot be used with Python "<<running;
+  }
+}
+
+// Once plumedCommunications exists, this library is never unloaded, as any Python
+// extension (as the separate extension of the plugin was): when PLUMED runs within
+// Python, the Python code can keep the module (its types and functions, whose code
+// is in this library) after PLUMED has closed this library; when pycv started the
+// interpreter, libpython (loaded with this library) must stay with it, e.g. for the
+// thread-specific data that it destroys when a thread that used it exits
+void keepThisLibraryLoaded() {
+  Dl_info info;
+  if(dladdr(reinterpret_cast<void*>(&keepThisLibraryLoaded),&info) && info.dli_fname) {
+    // the handle is never closed: the library is already loaded
+    dlopen(info.dli_fname,RTLD_NOW|RTLD_NOLOAD|RTLD_NODELETE);
+  }
+}
 
 // The module plumedCommunications is part of this library, not a separate
 // Python extension: put it in sys.modules before any user module imports it,
@@ -43,11 +72,15 @@ void registerPlumedCommunications() {
   if(modules.contains("plumedCommunications")) {
     return;
   }
+  keepThisLibraryLoaded();
   static PyModuleDef definition{};
   auto m = py::module_::create_extension_module("plumedCommunications", nullptr, &definition);
   PLMD::pycv::definePlumedCommunications(m);
   modules["plumedCommunications"] = m;
 }
+
+// The thread that started the interpreter keeps the GIL until it finalizes it
+std::thread::id interpreterThread;
 }
 
 namespace PLMD {
@@ -69,6 +102,8 @@ std::mutex PlumedScopedPythonInterpreter::interpreterMutex{};
 PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter(::PLMD::Log&outlog)
   :log(outlog) {
   std::lock_guard<std::mutex> lk(interpreterMutex);
+  // under the lock: Py_GetVersion writes a static buffer at each call
+  checkPythonVersion();
   if(use_count==0 && Py_IsInitialized()) {
     //this addresses the "calling pycv within a python interpreter problem"
     ++use_count;
@@ -78,12 +113,28 @@ PlumedScopedPythonInterpreter::PlumedScopedPythonInterpreter(::PLMD::Log&outlog)
     std::cerr<< "------ initialized Python interpreter\n";
     log<< "------ initialized Python interpreter\n";
     interpreterGuard = std::make_unique<py::scoped_interpreter>();
+    interpreterThread = std::this_thread::get_id();
   } else {
+    // Another thread would wait forever for the GIL (e.g. a second thread-MPI rank)
+    if(interpreterGuard && interpreterThread!=std::this_thread::get_id()) {
+      plumed_error()<<"pycv cannot use its Python interpreter from more than one thread:"
+                    <<" it has been started by another thread (another thread-MPI rank,"
+                    <<" or a Plumed object created in another thread)";
+    }
     std::cerr << "------ Python interpreter already initializated\n";
     log << "------ Python interpreter already initializated\n";
   }
   ++use_count;
-  registerPlumedCommunications();
+  try {
+    registerPlumedCommunications();
+  } catch(...) {
+    // the destructor will not run
+    --use_count;
+    if(use_count==0) {
+      interpreterGuard.reset(nullptr);
+    }
+    throw;
+  }
 }
 
 PlumedScopedPythonInterpreter::~PlumedScopedPythonInterpreter() {

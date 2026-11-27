@@ -1,7 +1,7 @@
+import importlib
 import os
 import unittest
 
-import calculation_context
 from utilities_for_test import cd, create_plumed_var, preparePlumed, setUpTraj
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,7 +11,6 @@ class TestCalculationContext(unittest.TestCase):
     def test_cv_and_function_context(self):
         with cd(THIS_DIR):
             os.environ["PLUMED_MAXBACKUP"] = "0"
-            calculation_context.counts.clear()
             traj, _, natoms, box, virial, masses, forces, charges = setUpTraj(
                 "traj.xyz"
             )
@@ -23,6 +22,10 @@ class TestCalculationContext(unittest.TestCase):
                 "PYFUNCTION ARG=cv IMPORT=calculation_context INIT=functionInit",
             )
             p.cmd("readInputLine", "PRINT ARG=cv,fun FILE=context.out")
+            # the module imported by the actions: it imports plumedCommunications,
+            # which pycv provides once a pycv action exists
+            calculation_context = importlib.import_module("calculation_context")
+            calculation_context.counts.clear()
             for step, exchange, auxiliary, expected in (
                 (0, False, False, 100),
                 (1, False, True, 110),
