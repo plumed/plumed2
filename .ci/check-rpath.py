@@ -93,11 +93,18 @@ with tempfile.TemporaryDirectory(prefix="plumed-rpath-") as temporary:
         check_tags(library, f"{prefix}/lib{suffix}")
 
     # A linker defaulting to legacy dtags must still be upgraded to RUNPATH.
+    legacy_cxx = scratch / "legacy-cxx"
+    legacy_cxx.write_text(
+        "#!/bin/sh\nexec "
+        + shlex.join(shlex.split(env.get("CXX", "c++")))
+        + ' -Wl,--disable-new-dtags "$@"\n'
+    )
+    legacy_cxx.chmod(0o755)
     run(
         "./configure",
         f"--prefix={prefix}",
         *options,
-        "LDFLAGS=-Wl,--disable-new-dtags",
+        f"CXX={legacy_cxx}",
         env=env,
     )
     assert "--enable-new-dtags" in make_variable("LD_MAIN_RUNPATH")
