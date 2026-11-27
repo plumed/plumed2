@@ -433,6 +433,16 @@ public:
   virtual void readAtomsFromPDB( const PDB&  ) {}
 /// Check if we are on an exchange step
   bool getExchangeStep()const;
+/// True for auxiliary forward evaluations, including GREX and no-force trials.
+/// This is an internal action contract, not a new MD command.
+  bool isCalculationOnly()const;
+/// Whether this evaluation may use foreign coordinates, requiring trial/return lists.
+/// Explicit local shell/lambda modes retain normal geometry-list semantics.
+  bool isGeometryTrial()const;
+/// Explicit lambda-potential mode promises the current ordinary coordinates.
+  bool isGeometryUnchanged()const;
+/// Identity of the current geometry evaluation, including same-step transforms.
+  std::uint64_t getEvaluationId()const;
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);

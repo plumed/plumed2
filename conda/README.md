@@ -20,7 +20,7 @@ using the non-MPI FFTW variant. Adding/removing an extension must not replace
 its kernel. Optional source modules are delivered as `plumed-ext-<module>` packages,
 without an MPI variant dimension. See [extension builds and loading](../extensions/README.md).
 
-The base recipe inherits native requirements from the `conda.mk` declarations
+The base recipe inherits native requirements from the `module.yml`/`plugin.yml` declarations
 of modules enabled by default. ISDB remains in the kernel without LibTorch;
 its Torch-dependent `EMMIVOX` action is supplied by `plumed-ext-isdb-pytorch`.
 That optional module owns its LibTorch requirement and build feature report.
@@ -74,11 +74,11 @@ make -C conda test
 
 The build script generates the inventory and recipes, builds `plumed` once,
 then builds matching Python/tooling, optional module, MPI provider and
-plugin variants, including opted-in empty compatibility packages. Module-local `conda.mk` files declare
+plugin variants, including opted-in empty compatibility packages. Module-local `module.yml`/`plugin.yml` files declare
 native conda requirements, variants, build options and tests; see the complete
-[conda.mk option reference](module-options.md). Licenses come from module license files. Optional
+[YAML option reference](module-options.md). Licenses come from module license files. Optional
 libraries that are unavailable do not exclude modules during this proof of concept.
-The base requirements are inherited from the `conda.mk` files of the default
+The base requirements are inherited from the `module.yml`/`plugin.yml` files of the default
 modules and their hard dependencies. LibTorch is supplied only by optional
 outputs, including `plumed-ext-isdb-pytorch` for EMMIVOX.
 To invoke conda-build directly on any recipe, first run
@@ -137,7 +137,7 @@ After merging and completing a manual test publication, open the
 **Run all**. It installs from `plumed/label/test` (optionally a requested dated
 version), reads the kernel's installed `conda-source.json`, and downloads the
 exact matching source revision for its fixtures and test harness. GPU alternatives
-come from that revision's module `conda.mk` files. No laptop upload, GitHub token,
+come from that revision's module `module.yml`/`plugin.yml` files. No laptop upload, GitHub token,
 expiring CI artifact link or manually refreshed version list is needed.
 
 The notebook bootstraps the current official Miniforge release with checksum
@@ -156,7 +156,7 @@ The notebook needs a user-owned GPU session; CPU CI checks orchestration using
 stubs and does not establish GPU numerical correctness.
 
 Generated recipes/catalogs are build products. Curate module requirements and
-compatibility-package choices in their `conda.mk` files, regenerate with
+compatibility-package choices in their `module.yml`/`plugin.yml` files, regenerate with
 `python extensions/conda_recipe.py`, and build the main package before its
 outputs. Publish the exact base and dependent outputs together. The current
 prototype is available as local/fork CI artifacts; public channel/feedstock

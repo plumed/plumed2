@@ -126,7 +126,7 @@ and enabled if available):
 * An external MPI library for distributed-memory parallel simulations, matching the MPI implementation used by your MD code. Serial builds can instead use embedded thread-MPI for local ranks; see [MPI runtime selection](src/mpiwrap/README.md).
 * Optimized blas and lapack libraries (e.g. OpenBLAS or MKL). They are automatically replaced by an internal version if not available. They only make a difference for actions working on large matrices (e.g. DIAGONALIZE, INVERT_MATRIX or dimensionality reduction): the internal version is as fast as an optimized library for small matrices and faster than the reference netlib implementation.
 * [Zlib library](https://zlib.net/) to use compressed data files.
-* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (`.h5`).
+* [HDF5 library](https://www.hdfgroup.org/solutions/hdf5/) to read and write tables in HDF5 files (archives `.hpa` or `.h5.tar`, and single `.h5` files).
 * [FFTW library](https://www.fftw.org/) for FOURIER_TRANSFORM (`fourier` module).
 * [Chemfiles library](https://chemfiles.org/) to read more file formats in `plumed driver` and in the MOLINFO action (only used if requested with `--enable-libchemfiles`).
 * [MkDocs](https://www.mkdocs.org) to build the user manual (Python requirements are listed in `new-manual/requirements.txt`).
@@ -152,7 +152,7 @@ Modules and plugins
 -------------------
 
 The source code is organized in modules, one for each directory of `src`.
-The `module.type` file of each module says when it is compiled:
+The `type:` field in each module's `module.yml` says when it is compiled:
 
 * `always`: the basic infrastructure (e.g. `core`, `tools`), always compiled;
 * `default-on`: the common actions (e.g. `bias`, `colvar`, `function`,
@@ -161,6 +161,9 @@ The `module.type` file of each module says when it is compiled:
 * `default-off`: specialized methods and modules that need external libraries
   (e.g. `ves`, `funnel`, `drr`, `sasa`, `pytorch`, `metatomic`), compiled only
   when they are requested.
+
+The same YAML file declares native dependencies in `use:` and optional packaging
+policy in `conda:`; see the [declaration reference](conda/module-options.md).
 
 Modules are selected when PLUMED is configured, with a `:`-separated list:
 
@@ -185,13 +188,15 @@ Python wheels on Linux and macOS, but not on Windows. Plugins can be:
 * your own actions: a C++ file with an action can be compiled with
   `plumed mklib MyCV.cpp`, or loaded directly with `LOAD FILE=MyCV.cpp`, which
   compiles it when PLUMED starts (a C++ compiler is needed in both cases);
+* the [gpu_cuda_hip](src/gpu_cuda_hip/module.md) module (coordination number on
+  NVIDIA GPUs with CUDA and AMD GPUs with HIP), compiled into PLUMED with
+  `./configure --enable-modules=+gpu_cuda_hip` (nvcc or hipcc is needed);
 * the plugins in the [plugins](plugins) directory, each with its own README and
   build instructions: [pycv](plugins/pycv/README.md) (collective variables and
-  functions written in Python, installed with `pip`),
-  [cudaCoord](plugins/cudaCoord/README.md) (coordination number on GPUs with
-  CUDA) and [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
-  GPUs with OpenACC, including SAXS and SANS). cudaCoord and openaccPTM are
-  compiled with `./configure` and `make` in their directory.
+  functions written in Python, installed with `pip`) and
+  [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
+  GPUs with OpenACC, including SAXS and SANS), compiled with `./configure` and
+  `make` in its directory.
 
 Python package and other packages
 ---------------------------------
@@ -225,6 +230,15 @@ User documentation can be found at `new-manual/site/index.html`.
 Developer documentation can be found at `developer-doc/html/index.html`.
 [Pre-compiled documentation](https://www.plumed.org/doc) is available online, so this is only required
 if you are working with a modified version of the code!
+
+On Linux, `configure` enables `--enable-rpath` by default: the installed library
+directory and the nonempty directories in `LIBRARY_PATH` are recorded in the
+executables and shared libraries, so installations in nonstandard prefixes can
+run without setting `LD_LIBRARY_PATH`. Use `--disable-rpath` to opt out.
+`RUNPATH` is preferred, so `LD_LIBRARY_PATH` can override the installed libraries
+when testing a build with `source sourceme.sh`. Older linkers that only support
+`RPATH` instead give the installed libraries precedence; `configure` warns in
+that case. This option remains disabled on macOS.
 
 In order to run PLUMED without installing it you should type `source sourceme.sh`. However,
 we recommend installing PLUMED.

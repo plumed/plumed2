@@ -8,7 +8,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from inventory import default_modules, generate_catalog, kernel_requirements
 
-modules = generate_catalog(write=False)["modules"]
+actual = generate_catalog(write=False)["modules"]
+selected = set(default_modules(actual))
+for name, module in actual.items():
+    if module["type"] in ("always", "default-on"):
+        assert name in selected
+    if name in selected:
+        assert set(module["source_use"]) - {"config"} <= selected
+
+# Exercise the optional ISDB split with controlled fixture policies. Production
+# defaults can change without changing the dependency/requirement expectations.
+modules = copy.deepcopy(actual)
+for module in modules.values():
+    if module["type"] != "always":
+        module["type"] = "default-off"
+for name in ("isdb", "cltools"):
+    modules[name]["type"] = "default-on"
 selected = default_modules(modules)
 assert "isdb" in selected
 assert "isdb-pytorch" not in selected

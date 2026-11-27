@@ -1,0 +1,5 @@
+type=make
+mpiprocs=4
+plumed_mpi_harness=yes
+plumed_needs="mpi"
+extra_files="${extra_files} ../../scripts/mpi-test.h ../rt-image-distance/test-tools.h"

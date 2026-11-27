@@ -67,6 +67,21 @@ private:
 /// Set arguments from the default options provided to Keywords
   void setRemainingToDefault(FILE* out);
 public:
+  /// Shell-independent completion request result. Candidates are literal values,
+  /// never shell code. The shell adds filesystem matches when files is true.
+  struct Completion {
+    bool files=false;
+    std::vector<std::string> candidates;
+    /// Option identified by the default implementation, empty for positional input.
+    std::string option;
+    /// Prefix of an attached value, e.g. "--input="; candidates omit this prefix.
+    std::string prefix;
+  };
+  /// Complete arguments following the tool name, including the current partial
+  /// word as the last element (possibly empty). This does not parse required
+  /// input or run the tool. The default uses registered keywords and falls back
+  /// to filenames for values/positional input. Override for tool-specific values.
+  virtual Completion complete(const std::vector<std::string>& arguments) const;
   /// Set the loaded libraries visible to this command-line tool.
   /// CLToolMain supplies handles from its local DLLoader for command-line
   /// --load options. These differ from PlumedMain's input-file LOAD handles.
@@ -109,7 +124,8 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit CLTool(const CLToolOptions& co );
 /// Read the arguments from the command line
-  bool readInput( int argc, char**argv, FILE* in, FILE*out );
+/// Override to implement a tool with positional arguments.
+  virtual bool readInput( int argc, char**argv, FILE* in, FILE*out );
 /// virtual function mapping to the specific main for each tool
   virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool

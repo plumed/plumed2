@@ -26,6 +26,7 @@
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
 #include "tools/Pbc.h"
+#include "tools/PDB.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/GenericMolInfo.h"
@@ -34,6 +35,10 @@
 #include <array>
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace PLMD {
 namespace generic {
@@ -50,7 +55,7 @@ in the ATOMS list the following procedure is performed:
 
 This action works similarly to [WHOLEMOLECULES](WHOLEMOLECULES.md) in that it replaces atoms coordinate. Notice that only
 atoms specified with ATOMS are replaced, and that, at variance with [WHOLEMOLECULES](WHOLEMOLECULES.md),
-the order in which atoms are specified is irrelevant.
+the order in which atoms are specified is irrelevant when grouping and PAIR are not used.
 
 This is often convenient at a post processing stage (using the driver), but sometime
 it is required during the simulation if collective variables need atoms to be in a specific periodic image.
@@ -61,8 +66,10 @@ it is required during the simulation if collective variables need atoms to be in
     the input script will see the corrected positions. As a general rule, put it at the top of the input file. Also, unless you know exactly what you are doing,
     leave the default stride (1), so that this action is performed at every MD step.
 
-The computational cost of this action grows with the product
-of the size of the two lists (ATOMS and AROUND), so this action can become very expensive.
+This action searches the reference list once per atom or group. Large AROUND
+lists use a cell search; smaller lists are searched directly. Reconstructing
+residue batches and computing their centers takes linear work in the number
+of selected atoms. Large selections can still be expensive.
 If you are using it to analyze a trajectory this is usually not a big problem. If you use it to
 analyze a simulation on the fly, e.g. with [DUMPATOMS](DUMPATOMS.md) to store a properly wrapped trajectory,
 consider using the STRIDE keyword here (with great care).
@@ -148,6 +155,50 @@ WRAPAROUND ATOMS=water AROUND=com GROUPBY=3
 DUMPATOMS FILE=dump.xyz ATOMS=solute,water
 ```
 
+
+## Grouping by residue
+
+`GROUP_BY_RESIDUE` handles mixed residue sizes in a single selection, for example
+three- and four-site waters and single-atom ions. A preceding MOLINFO supplies
+residue membership only: its reference coordinates and box are ignored. Neither
+WHOLE nor SMALL_RESIDUES is required.
+
+Duplicate ATOMS entries are removed while retaining their first occurrence.
+Each consecutive run of selected atoms of the same residue forms a batch. The
+metadata distinguishes chain, residue number, insertion code, TER boundaries and
+nonconsecutive occurrences of reused residue identifiers. Partial selections
+include only the selected members. If one residue occurs in separate ATOMS
+runs, those batches are wrapped independently.
+
+At each active step, the selected atoms in every batch are reconstructed in
+ATOMS order, as with WHOLEMOLECULES without a reference tree. WRAPAROUND computes
+the geometric center of these current whole coordinates, finds its closest
+periodic reference in AROUND, and translates the entire reconstructed batch by
+one lattice vector. This preserves its reconstructed internal geometry.
+
+```plumed
+#SETTINGS MOLFILE=regtest/basic/rt-wraparound-residue-centers/metadata.pdb
+MOLINFO STRUCTURE=regtest/basic/rt-wraparound-residue-centers/metadata.pdb
+solute: GROUP ATOMS=1-3
+solvent: GROUP ATOMS=4-14
+WHOLEMOLECULES ENTITY0=solute
+WRAPAROUND ATOMS=solvent AROUND=solute GROUP_BY_RESIDUE
+DUMPATOMS ATOMS=solute,solvent FILE=wrapped.xyz
+```
+
+Use this option for residues whose selected members can be reconstructed by
+minimum-image links in the supplied ATOMS order. Ordinary compact biomolecular
+residues normally satisfy this condition. It is an explicit grouping request;
+a material encoded as one large residue should use a reconstruction/grouping
+appropriate to that material instead. A multi-residue solute can still be split
+by independently wrapping its residues around a point. To keep it whole, first
+use WHOLEMOLECULES on the solute and wrap solvent around the solute's atoms.
+
+`PAIR` requires exactly one AROUND entry per batch, matched in batch order, and
+retains repeated AROUND entries. A count mismatch is an error. The default
+`GROUPBY=1`, including an explicit value of 1, is accepted with GROUP_BY_RESIDUE;
+other GROUPBY values conflict. Existing fixed-size GROUPBY behavior is unchanged.
+
 */
 //+ENDPLUMEDOC
 
@@ -163,6 +214,9 @@ class WrapAround:
   std::vector<std::pair<std::size_t,std::size_t> > p_reference;
   unsigned groupby;
   bool pair_;
+  bool byResidue=false;
+  std::vector<unsigned> batchStarts, batchParents, batchChildren;
+  std::vector<Vector> batchPositions;
   // cells of the reference atoms (orthorhombic boxes): the reference atoms of cell c are
   // cellatoms[cellstart[c]] ... cellatoms[cellstart[c+1]-1], in increasing order
   // (cells in scaled coordinates, so that the boxes need not be orthorhombic)
@@ -196,7 +250,8 @@ void WrapAround::registerKeywords( Keywords& keys ) {
   keys.add("atoms","AROUND","the reference atoms: the atoms in ATOMS are moved to the periodic image that is closest to one of these atoms");
   keys.add("atoms","ATOMS","the atoms that should be wrapped");
   keys.add("compulsory","GROUPBY","1","group atoms so as not to break molecules");
-  keys.addFlag("PAIR", false, "Pair atoms in AROUND and ATOMS groups");
+  keys.addFlag("GROUP_BY_RESIDUE", false, "Group consecutive selected atoms of each residue, reconstruct them in ATOMS order and wrap their current geometric center. Requires MOLINFO metadata only");
+  keys.addFlag("PAIR", false, "Pair each ATOMS group with one AROUND entry in group order");
 }
 
 WrapAround::WrapAround(const ActionOptions&ao):
@@ -217,6 +272,10 @@ WrapAround::WrapAround(const ActionOptions&ao):
     error("GROUPBY should be at least 1");
   }
   parseFlag("PAIR", pair_);
+  parseFlag("GROUP_BY_RESIDUE",byResidue);
+  if(byResidue && groupby!=1) {
+    error("GROUP_BY_RESIDUE cannot be combined with GROUPBY other than 1");
+  }
 
   log.printf("  atoms in reference :");
   for(unsigned j=0; j<reference.size(); ++j) {
@@ -235,26 +294,84 @@ WrapAround::WrapAround(const ActionOptions&ao):
     log.printf("  pairing atoms and references\n");
   }
 
-  if(atoms.size()%groupby!=0) {
-    error("number of atoms should be a multiple of groupby option");
-  }
-  // additional checks with PAIR
-  if(pair_ && atoms.size()!=reference.size()*groupby) {
-    error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
-  }
-
   checkRead();
 
-  // do not remove duplicates with pair
-  if(!pair_) {
-    if(groupby<=1) {
+  if(byResidue) {
+    const auto* info=plumed.getActionSet().selectLatest<GenericMolInfo*>(this);
+    if(!info) {
+      error("GROUP_BY_RESIDUE requires a preceding MOLINFO with structure metadata");
+    }
+    std::unordered_set<unsigned> seen;
+    seen.reserve(atoms.size());
+    std::vector<AtomNumber> distinctAtoms;
+    for(const auto atom:atoms) {
+      if(seen.insert(atom.index()).second) {
+        distinctAtoms.push_back(atom);
+      }
+    }
+    atoms.swap(distinctAtoms);
+    // Distinguish each reference residue occurrence, including reused PDB numbers.
+    // Coordinates and reference box are never consulted.
+    const auto& pdb=info->getPDB();
+    const auto& referenceAtoms=pdb.getAtomNumbers();
+    const auto& blockEnds=pdb.getAtomBlockEnds();
+    using ResidueKey=std::tuple<unsigned,std::string,int,std::string>;
+    ResidueKey previous;
+    unsigned block=0, residue=0;
+    std::unordered_map<unsigned,unsigned> residueOfAtom;
+    residueOfAtom.reserve(atoms.size());
+    for(unsigned j=0; j<referenceAtoms.size(); ++j) {
+      while(block<blockEnds.size() && j>=blockEnds[block]) {
+        ++block;
+      }
+      const auto atom=referenceAtoms[j];
+      const ResidueKey key(block,pdb.getChainID(atom),pdb.getResidueNumber(atom),pdb.getInsertionCode(atom));
+      if(j>0 && key!=previous) {
+        ++residue;
+      }
+      previous=key;
+      if(seen.count(atom.index())>0) {
+        residueOfAtom.emplace(atom.index(),residue);
+      }
+    }
+    unsigned previousResidue=0;
+    for(unsigned j=0; j<atoms.size(); ++j) {
+      const auto found=residueOfAtom.find(atoms[j].index());
+      if(found==residueOfAtom.end()) {
+        error("GROUP_BY_RESIDUE: atom "+std::to_string(atoms[j].serial())+" is missing from the MOLINFO structure");
+      }
+      if(j==0 || found->second!=previousResidue) {
+        batchStarts.push_back(j);
+      } else {
+        batchParents.push_back(j-1);
+        batchChildren.push_back(j);
+      }
+      previousResidue=found->second;
+    }
+    if(pair_ && batchStarts.size()!=reference.size()) {
+      error("with PAIR and GROUP_BY_RESIDUE you must have one AROUND entry per consecutive residue batch");
+    }
+    batchStarts.push_back(atoms.size());
+    batchPositions.resize(atoms.size());
+    log<<"  grouping consecutive atoms by residue and wrapping their current geometric centers\n";
+  } else {
+    if(atoms.size()%groupby!=0) {
+      error("number of atoms should be a multiple of groupby option");
+    }
+    if(pair_ && atoms.size()!=reference.size()*groupby) {
+      error("with PAIR you must have: #ATOMS = #AROUND * #GROUPBY");
+    }
+    if(!pair_ && groupby<=1) {
       Tools::removeDuplicates(atoms);
     }
+  }
+  if(!pair_) {
     Tools::removeDuplicates(reference);
   }
 
-  std::vector<AtomNumber> merged(atoms.size()+reference.size());
-  merge(atoms.begin(),atoms.end(),reference.begin(),reference.end(),merged.begin());
+  // Group and PAIR lists need not be sorted; deduplicate only the request list.
+  std::vector<AtomNumber> merged(atoms);
+  merged.insert(merged.end(),reference.begin(),reference.end());
   p_atoms.resize( atoms.size() );
   for(unsigned i=0; i<atoms.size(); ++i) {
     p_atoms[i] = getValueIndices( atoms[i] );
@@ -417,16 +534,35 @@ void WrapAround::calculate() {
     distances.resize(nref);
   }
   const Pbc& pbc=getPbc();
+  if(byResidue) {
+    for(unsigned j=0; j<p_atoms.size(); ++j) {
+      batchPositions[j]=getGlobalPosition(p_atoms[j]);
+    }
+    // One forest reconstruction for all batches: reuse the optimized integer
+    // image shifts and box-dependent setup, without per-residue allocations.
+    pbc.makeWhole(batchPositions,batchParents.size(),batchParents.data(),batchChildren.data());
+  }
   const bool orthorombic=pbc.isOrthorombic();
   const Vector diag(pbc.getBox()(0,0),pbc.getBox()(1,1),pbc.getBox()(2,2));
   const Vector invdiag(pbc.getInvBox()(0,0),pbc.getInvBox()(1,1),pbc.getInvBox()(2,2));
   // with few reference atoms the loop over all of them is faster than the cells
   const unsigned cellsMinReference=128;
-  for(unsigned i=0; i<p_atoms.size(); i+=groupby) {
-    Vector second, first=getGlobalPosition(p_atoms[i]);
+  for(unsigned i=0, group=0; i<p_atoms.size(); ++group) {
+    const unsigned end=byResidue ? batchStarts[group+1] : i+groupby;
+    Vector second, first;
+    if(byResidue) {
+      const Vector origin=batchPositions[i];
+      Vector sum;
+      for(unsigned j=i+1; j<end; ++j) {
+        sum+=batchPositions[j]-origin;
+      }
+      first=origin+sum/(end-i);
+    } else {
+      first=getGlobalPosition(p_atoms[i]);
+    }
     int closest=-1;
     if(pair_) {
-      closest = i/groupby;
+      closest = group;
     } else {
       double mindist2=std::numeric_limits<double>::max();
       if(pbc.isSet() && nref>=cellsMinReference) {
@@ -465,14 +601,41 @@ void WrapAround::calculate() {
       plumed_massert(closest>=0,"closest not found");
     }
     second=refatoms[closest];
-// place first atom of the group
-    first=second+pbcDistance(second,first);
-    setGlobalPosition(p_atoms[i],first);
-// then place other atoms close to the first of the group
-    for(unsigned j=1; j<groupby; j++) {
-      second=getGlobalPosition(p_atoms[i+j]);
-      setGlobalPosition( p_atoms[i+j], first+pbcDistance(first,second) );
+    if(byResidue) {
+      // All atoms receive the same final lattice translation. Do not perform
+      // another minimum-image reconstruction around the translated center.
+      Vector shift;
+      if(pbc.isSet()) {
+        const Vector difference=first-second;
+        const Vector correction=pbcDistance(second,first)-difference;
+        if(orthorombic) {
+          for(unsigned k=0; k<3; ++k) {
+            shift[k]=std::nearbyint(correction[k]*invdiag[k])*diag[k];
+          }
+        } else {
+          Vector lattice=pbc.realToScaled(correction);
+          for(unsigned k=0; k<3; ++k) {
+            lattice[k]=std::nearbyint(lattice[k]);
+          }
+          shift=pbc.scaledToReal(lattice);
+        }
+      }
+      for(unsigned j=i; j<end; ++j) {
+        const Vector moved=batchPositions[j]+shift;
+        const Vector original=getGlobalPosition(p_atoms[j]);
+        if(moved[0]!=original[0] || moved[1]!=original[1] || moved[2]!=original[2]) {
+          setGlobalPosition(p_atoms[j],moved);
+        }
+      }
+    } else {
+      first=second+pbcDistance(second,first);
+      setGlobalPosition(p_atoms[i],first);
+      for(unsigned j=i+1; j<end; ++j) {
+        second=getGlobalPosition(p_atoms[j]);
+        setGlobalPosition(p_atoms[j],first+pbcDistance(first,second));
+      }
     }
+    i=end;
   }
 }
 

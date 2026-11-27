@@ -6,7 +6,7 @@ SHA256 checksums for each original upstream file before import transformations.
 The license is copied from the pinned upstream tree. Like other vendored
 libraries, this module is excluded from the PLUMED-owned compiler-warning
 gate and coverage metrics. The `mpiwrap` adapter remains subject to both. The imported runtime has no
-PLUMED module dependencies (`USE=`); `mpiwrap` depends on it, rather than
+PLUMED module dependencies (`use:` in `module.yml`); `mpiwrap` depends on it, rather than
 the runtime depending on `core`.
 
 `reimport.py` discovers implementation sources and headers from the pinned

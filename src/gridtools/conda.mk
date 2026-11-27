@@ -1,3 +1,0 @@
-# Options: see conda/module-options.md (repository root).
-# OpenACC acceleration is compiled separately in plugins/openaccPTM.
-# This CPU module does not require the NVIDIA HPC SDK.

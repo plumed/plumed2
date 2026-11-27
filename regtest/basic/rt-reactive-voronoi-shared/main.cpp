@@ -41,7 +41,9 @@ struct System {
     p.cmd("setBox",box.data());
     p.cmd("setForces",f.data());
     p.cmd("setVirial",vir.data());
-    p.cmd("calc");
+    // Cache and derivative checks deliberately reuse the same step.
+    p.cmd("prepareCalc");
+    p.cmd("performCalcNoUpdate");
     p.cmd("getBias",&energy);
   }
 };

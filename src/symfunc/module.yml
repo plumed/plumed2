@@ -1,4 +1,11 @@
 name: symfunc
+type: default-off
+use: [core, tools, multicolvar, function]
 authors: Gareth Tribello
 description: tools for calculating symmetry functions that measure the degree of order in the coordination sphere around atoms
 dois: ["10.1103/PhysRevB.92.180102","10.1063/1.4997180","10.1063/1.5134461","10.1088/1361-648X/aa893d","10.1021/acs.jctc.6b01073","10.1021/ct4002027"]
+
+# Packaging options: see conda/module-options.md.
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.
+conda: {}

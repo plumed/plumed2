@@ -491,12 +491,12 @@ class HDF5IO(unittest.TestCase):
 
         run_dir = self.path.with_name("native-restart")
         run_dir.mkdir()
-        table = run_dir / "COLVAR.h5"
+        table = run_dir / "COLVAR.hpa"
         # Seed rows before, at, and after the restart step using only Python.
         initial = pd.DataFrame({"time": [0, 1, 2], "d": [10.0, 20.0, 30.0]})
         plumed.write_pandas(initial, table)
         (run_dir / "plumed.dat").write_text(
-            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.h5\n"
+            "d: DISTANCE ATOMS=1,2\nPRINT ARG=d FILE=COLVAR.hpa\n"
         )
         trajectory = run_dir / "traj.xyz"
         trajectory.write_text(
@@ -521,9 +521,69 @@ class HDF5IO(unittest.TestCase):
             text=True,
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        result = plumed.read_as_pandas(run_dir / "COLVAR.h5", enable_conversion=False)
+        result = plumed.read_as_pandas(table, enable_conversion=False)
         self.assertEqual(result["time"].tolist(), [0, 1, 2])
         np.testing.assert_allclose(result["d"], [10.0, 1.0, 2.0])
+
+    def test_archive_extension_aliases(self):
+        for suffix in (".hpa", ".h5.tar"):
+            with self.subTest(suffix=suffix):
+                archive = self.path.with_name("alias" + suffix)
+                plumed.write_pandas(self.df, archive)
+                assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+                renamed = self.path.with_name("renamed-alias.data")
+                renamed.write_bytes(archive.read_bytes())
+                assert_frame_equal(self.read(renamed, enable_constants=False), self.df)
+
+    def test_archive(self):
+        """Archives (.hpa): TAR files of tables, possibly ending with a member written in part."""
+        import tarfile
+
+        archive = self.path.with_name("table.hpa")
+        plumed.write_pandas(self.df, archive)
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        with tarfile.open(archive) as tar:
+            (member,) = tar.getmembers()
+            with h5py.File(tar.extractfile(member)) as handle:
+                self.assertEqual(handle.attrs["plumed_format"], "plumed-table")
+        # a second member: the table is the concatenation of the members
+        second = self.df.iloc[:2]
+        plumed.write_pandas(second, self.path)
+        with tarfile.open(archive, "a", format=tarfile.USTAR_FORMAT) as tar:
+            tar.add(self.path, arcname="batch_00000002.h5")
+        both = pd.concat([self.df, second], ignore_index=True)
+        assert_frame_equal(self.read(archive, enable_constants=False), both)
+        data = archive.read_bytes()
+        second_header = data.index(b"batch_00000002.h5")
+        # an archive is recognized by its content, whatever its name
+        renamed = self.path.with_name("renamed.h5")
+        renamed.write_bytes(data)
+        assert_frame_equal(self.read(renamed, enable_constants=False), both)
+        # interrupted while writing the second member: the first one is read
+        archive.write_bytes(data[: second_header + 1000])
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        # its header written in part
+        torn = bytearray(data[: second_header + 512])
+        torn[second_header] ^= 1
+        archive.write_bytes(bytes(torn))
+        assert_frame_equal(self.read(archive, enable_constants=False), self.df)
+        # an invalid header followed by valid members: the archive is damaged
+        damaged = bytearray(data)
+        damaged[0] ^= 1
+        archive.write_bytes(bytes(damaged))
+        with self.assertRaisesRegex(plumed.FormatError, "damaged"):
+            self.read(archive)
+        # a trim interrupted by a crash: the trim record replaces the second member
+        archive.write_bytes(data[:second_header])
+        entries = data[second_header:]
+        record = archive.with_name(archive.name + ".plumed-trim")
+        record.write_bytes(
+            f"plumed-trim-record 1 {second_header} {len(entries)}\n".encode().ljust(
+                512, b"\0"
+            )
+            + entries
+        )
+        assert_frame_equal(self.read(archive, enable_constants=False), both)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,20 @@
+#!/bin/sh
+# Resolve native USE dependencies without Python. Print additions only on success.
+# check is a final guard after library probes; it never re-enables a module.
+set -e
+if test "$#" -lt 4 || test "$#" -gt 5; then
+  echo "usage: resolve-modules src enabled disabled excluded [resolve|check]" >&2
+  exit 1
+fi
+src=$1
+enabled=$2
+disabled=$3
+excluded=$4
+mode=${5:-resolve}
+case "$mode" in
+  resolve|check) ;;
+  *) echo "unknown module resolution mode: $mode" >&2; exit 1 ;;
+esac
+trap 'rm -f conftest.modules' 0
+"$(dirname "$0")/module-selection" "$src" --overrides "$enabled" "$disabled" table > conftest.modules
+awk -v excluded="$excluded" -v mode="$mode" -f "$(dirname "$0")/resolve-modules.awk" conftest.modules

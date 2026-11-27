@@ -1,4 +1,15 @@
 name: cltools
+type: default-on
+use: [core, config, tools, xdrfile]
 authors: The PLUMED core developers
 description: PLUMED's suite of command line tools
 dois: []
+
+# Packaging options: see conda/module-options.md.
+# Driver trajectory formats; chemfiles has no run_exports and changes SONAME
+# with its minor version. 0.10.3 also supports linux-aarch64.
+conda:
+  requirements:
+    host: [chemfiles-lib 0.10.*]
+    run: ['chemfiles-lib >=0.10.3,<0.11']
+  configure_flags: [--enable-libchemfiles]

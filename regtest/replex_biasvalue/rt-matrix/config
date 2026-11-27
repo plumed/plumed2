@@ -1,0 +1,16 @@
+mpiprocs=3
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# 3 replicas, 2 arguments, coefficient matrix with zeros, temperature from TEMP
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 3 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 3 40
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 > log_summary
+}

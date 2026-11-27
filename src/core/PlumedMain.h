@@ -33,6 +33,7 @@
 #include <map>
 #include <atomic>
 #include <cstdint>
+#include <optional>
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -51,6 +52,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////
 
 namespace PLMD {
+class Action;
 
 
 
@@ -191,6 +193,13 @@ private:
 /// Present step number.
   long long int step=0;
 
+/// Step at which update() was last called.
+/// Repeated updates warn on the first update step for MD startup compatibility,
+/// and raise an error on subsequent steps (see issues #512 and #1690).
+  std::optional<long long int> lastUpdateStep;
+/// Cleared permanently once an update is performed at a different step.
+  bool firstUpdateStep=true;
+
 /// Condition for plumed to be active.
 /// At every step, PlumedMain is checking if there are Action's requiring some work.
 /// If at least one Action requires some work, this variable is set to true.
@@ -295,6 +304,28 @@ private:
   bool useLaunch=false;
 /// Counts the forward loops, see Action::forwardLoop
   std::uint64_t forwardLoop=0;
+/// Internal evaluation context; no additional MD command or API version is needed.
+  bool calculationOnly_=false;
+/// Explicit early context: 0 normal, 1 auxiliary forces, 2 full auxiliary potential.
+  int evaluationMode_=0;
+/// Action executing prepare/calculate/apply, including recursive preparation.
+  Action* currentAction_=nullptr;
+  class ActionScope {
+    Action*& slot_;
+    Action* previous_;
+  public:
+    ActionScope(PlumedMain& main,Action* action): slot_(main.currentAction_),previous_(slot_) {
+      slot_=action;
+    }
+    ~ActionScope() {
+      slot_=previous_;
+    }
+    ActionScope(const ActionScope&)=delete;
+    ActionScope& operator=(const ActionScope&)=delete;
+  };
+
+/// State freezing and force propagation are independent for shell iterations.
+  bool forcesRequested_=true;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
   std::uint64_t atomsVersion=0;
 /// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
@@ -445,7 +476,18 @@ public:
   /**
     Perform the forward loop on active actions.
   */
-  void justCalculate();
+  void justCalculate(bool calculationOnly=false, bool forcesRequested=true);
+/// Whether this forward evaluation must leave persistent action state unchanged.
+  bool isCalculationOnly() const {
+    return calculationOnly_ || exchangeStep || evaluationMode_!=0;
+  }
+  bool areForcesRequested() const {
+    return forcesRequested_;
+  }
+  void setEvaluationMode(int mode);
+  int getEvaluationMode() const {
+    return evaluationMode_;
+  }
   /**
     Backward propagate and update.
     Shortcut for backwardPropagate() + update()

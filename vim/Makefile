@@ -8,9 +8,9 @@ endif
 plumed_compiled := $(wildcard ../src/lib/plumed)
 
 # The syntax files are generated with "plumed gen_vim" in the cltools module.
-# cltools is a default-on module, so it is disabled when src/cltools.off exists
-# (see src/maketools/find_modules.sh), e.g. with ./configure --enable-modules=none
-cltools_disabled := $(wildcard ../src/cltools.off)
+# Use the same live defaults and configured overrides as the kernel build.
+selected_modules := $(shell ../src/maketools/find_modules.sh 2>/dev/null)
+cltools_disabled := $(if $(filter cltools,$(selected_modules)),,yes)
 
 ifeq ($(strip $(plumed_compiled)),)
 

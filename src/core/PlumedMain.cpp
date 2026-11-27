@@ -476,6 +476,22 @@ PlumedMain::PlumedMain():
   increaseReferenceCounter();
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
+  multi_sim_comm.setCommunicationCheck([this]() {
+    // GREX uses synchronized mode-0 passes and remains supported. Only the
+    // independently scheduled local shell/lambda protocol needs this guard.
+    if(evaluationMode_!=0 && nReplicas>1 && currentAction_) {
+      std::fprintf(stderr,
+                   "\nPLUMED: ERROR: action %s (%s) communicates between replicas and cannot "
+                   "be evaluated in local auxiliary mode %d (shell forces/lambda trials).\n",
+                   currentAction_->getLabel().c_str(),currentAction_->getName().c_str(),evaluationMode_);
+      std::fflush(stderr);
+      // Throwing on replica leaders alone can strand their other ranks in an
+      // intra-replica collective before the exception reaches the host. Abort
+      // without attempting any further communication or collective logging.
+      comm.Abort(1);
+    }
+  });
+
   // this is at last so as to avoid inconsistencies if an exception is thrown
   CountInstances::increase(); // noexcept
 }
@@ -606,6 +622,12 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         CHECK_INIT(initialized,word);
         CHECK_NOTNULL(val,word);
         setExchangeStep(val.get<int>()!=0);
+        break;
+      /* ADDED WITH API=14 */
+      case cmd_setEvaluationMode:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        setEvaluationMode(val.get<int>());
         break;
       case cmd_prepareDependencies:
         CHECK_INIT(initialized,word);
@@ -805,6 +827,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
         break;
       case cmd_clear: {
         CHECK_INIT(initialized,word);
+        evaluationMode_=0;
         std::vector<int> natoms;
         for(const auto & pp : inputs ) {
           plumed_assert(pp);
@@ -831,7 +854,7 @@ void PlumedMain::cmd(std::string_view word,const TypesafePtr & val) {
       break;
       case cmd_getApiVersion:
         CHECK_NOTNULL(val,word);
-        val.set(int(13));
+        val.set(int(14));
         break;
       case cmd_getInputBuilderJSONLength: {
         CHECK_NOTNULL(val,word);
@@ -1467,6 +1490,11 @@ void PlumedMain::calc() {
   performCalc();
 }
 
+void PlumedMain::setEvaluationMode(int mode) {
+  plumed_massert(mode>=0 && mode<=2,"setEvaluationMode accepts 0 (normal), 1 (auxiliary forces), or 2 (full auxiliary potential)");
+  evaluationMode_=mode;
+}
+
 void PlumedMain::prepareCalc() {
   prepareDependencies();
   shareData();
@@ -1481,6 +1509,15 @@ void PlumedMain::prepareDependencies() {
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("1 Prepare dependencies");
 
+// When the MD engine writes its checkpoint at this step, the files are flushed before anything
+// of this step is written, so that at a restart from this step they are trimmed exactly at the
+// end of what was flushed (e.g. an archive of HDF5 tables at the end of a member, which is not rewritten).
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
 // Restore the checkpoint at the first step after a restart and write one when
 // requested: before anything of this step is computed, see Checkpointing.
   checkpointing.atStepStart(doCheckPoint);
@@ -1499,7 +1536,12 @@ void PlumedMain::prepareDependencies() {
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0; i<pilots.size(); ++i) {
-    if(pilots[i]->onStep()) {
+    const bool fullPotential=exchangeStep || evaluationMode_==2;
+    auto* value=fullPotential ? dynamic_cast<ActionWithValue*>(pilots[i]) : nullptr;
+    // Calculation-only exchange trials need the full potential even when an
+    // MTS bias does not apply forces on this MD step.
+    const bool exchangeBias=fullPotential && value && value->exists(value->getLabel()+".bias");
+    if(pilots[i]->onStep() || exchangeBias) {
       pilots[i]->activate();
       active=true;
     }
@@ -1549,6 +1591,7 @@ void PlumedMain::shareData() {
 }
 
 void PlumedMain::performCalcNoUpdate() {
+  plumed_massert(evaluationMode_!=2,"full auxiliary potential mode requires performCalcNoForces");
   waitData();
   justCalculate();
   backwardPropagate();
@@ -1556,13 +1599,21 @@ void PlumedMain::performCalcNoUpdate() {
 }
 
 void PlumedMain::performCalcNoForces() {
+  plumed_massert(evaluationMode_!=1,"auxiliary force mode requires performCalcNoUpdate");
   waitData();
-  justCalculate();
+  justCalculate(true,false);
 }
 
 void PlumedMain::performCalc() {
+  plumed_massert(evaluationMode_==0,"auxiliary evaluation mode does not permit update; restore normal mode before performCalc");
 // In case the checkpointing signal arrived after prepareCalc() (2024 GROMACS patch);
 // does nothing if the checkpoint of this step was already written
+  if(doCheckPoint) {
+    fflush();
+    for(const auto & p : actionSet) {
+      p->fflush();
+    }
+  }
   checkpointing.atStepStart(doCheckPoint);
   waitData();
   justCalculate();
@@ -1642,10 +1693,23 @@ void PlumedMain::launchReady(const std::size_t done) {
   launchQueue.resize(kept);
 }
 
-void PlumedMain::justCalculate() {
+void PlumedMain::justCalculate(bool calculationOnly, bool forcesRequested) {
   if(!active) {
     return;
   }
+  // Restore the context even if an action throws, or an evaluation is nested.
+  struct RestoreContext {
+    bool& flag;
+    bool previous;
+    bool& forceFlag;
+    bool previousForceFlag;
+    ~RestoreContext() {
+      flag=previous;
+      forceFlag=previousForceFlag;
+    }
+  } restore {calculationOnly_,calculationOnly_,forcesRequested_,forcesRequested_};
+  calculationOnly_=calculationOnly || exchangeStep;
+  forcesRequested_=forcesRequested;
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("4 Calculating (forward loop)");
   bias=0.0;
@@ -1679,6 +1743,7 @@ void PlumedMain::justCalculate() {
     iaction++;
     Action* p(pp.get());
     plumed_assert(p);
+    ActionScope actionScope(*this,p);
     try {
       if(p->isActive()) {
 // Stopwatch is stopped when sw goes out of scope.
@@ -1776,6 +1841,7 @@ void PlumedMain::backwardPropagate() {
   for(auto pp=actionSet.rbegin(); pp!=actionSet.rend(); ++pp) {
     const auto & p(pp->get());
     if(p->isActive()) {
+      ActionScope actionScope(*this,p);
 
 // Stopwatch is stopped when sw goes out of scope.
 // We explicitly declare a Stopwatch::Handler here to allow for conditional initialization.
@@ -1801,10 +1867,25 @@ void PlumedMain::backwardPropagate() {
 }
 
 void PlumedMain::update() {
+  plumed_massert(evaluationMode_==0,"auxiliary evaluation mode does not permit update");
   if(!active) {
     checkpointing.atStepEnd();
     return;
   }
+
+// Some MD engines repeat the first force evaluation during startup (see #1690).
+// Warn on that step, retaining the error for repeated updates after advancing.
+  if(lastUpdateStep && *lastUpdateStep==step) {
+    std::string message="update() called more than once at step "+std::to_string(step)+", this most likely leads to incorrect results";
+    if(firstUpdateStep) {
+      log<<"WARNING: "<<message<<"\n";
+    } else {
+      plumed_merror(message);
+    }
+  } else if(lastUpdateStep) {
+    firstUpdateStep=false;
+  }
+  lastUpdateStep=step;
 
 // Stopwatch is stopped when sw goes out of scope
   auto sw=stopwatch.startStop("6 Update");

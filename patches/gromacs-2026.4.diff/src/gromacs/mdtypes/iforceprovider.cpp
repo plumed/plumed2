@@ -79,6 +79,25 @@ bool ForceProviders::hasForceProvider() const
     return !impl_->providers_.empty();
 }
 
+int ForceProviders::numForceProviders() const
+{
+    return static_cast<int>(impl_->providers_.size());
+}
+
+PlumedForceProvider* ForceProviders::plumedForceProvider() const
+{
+    PlumedForceProvider* result = nullptr;
+    for (const auto& provider : impl_->providers_)
+    {
+        if (auto* plumed = provider.first->plumedForceProvider())
+        {
+            GMX_RELEASE_ASSERT(result == nullptr, "Only one PLUMED provider per simulation rank is supported");
+            result = plumed;
+        }
+    }
+    return result;
+}
+
 void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInput,
                                      ForceProviderOutput*      forceProviderOutput) const
 {

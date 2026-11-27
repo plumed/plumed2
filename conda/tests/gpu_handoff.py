@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import os
+import shlex
 import runpy
 import subprocess
 import sys
@@ -228,7 +229,10 @@ program.chmod(0o755)
 """)
                 for file in tools.iterdir():
                     file.chmod(0o755)
-                (tools / "python").symlink_to(sys.executable)
+                (tools / "python").write_text(
+                    "#!/bin/sh\nexec " + shlex.quote(sys.executable) + ' "$@"\n'
+                )
+                (tools / "python").chmod(0o755)
                 record = root / "commands.jsonl"
                 environment = dict(
                     os.environ,

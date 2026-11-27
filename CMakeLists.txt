@@ -21,7 +21,7 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 
 # ---------------------------------------------------------------- modules
 # PLUMED_MODULES has the syntax of ./configure --enable-modules: "reset" (the
-# default: the "always" and "default-on" modules of the src/*/module.type
+# default: the "always" and "default-on" modules of the src/*/module.yml
 # files), "all", "none" (the "always" modules only), or a ":" separated list
 # such as "+ves:+funnel:-isdb". Modules that need a library this build does
 # not support (drr, fourier, metatomic, pytorch, ttsketch) compile without it,
@@ -29,15 +29,25 @@ file(MAKE_DIRECTORY ${PLUMED_GEN})
 # drops in that case, is never compiled.
 set(PLUMED_MODULES "reset" CACHE STRING
     "Modules to compile, with the syntax of ./configure --enable-modules")
+include(${PLUMED_SRC}/cmake-msvc/PlumedModules.cmake)
+plumed_check_obsolete_modules("${PLUMED_SRC}")
 set(_all_modules)
 set(_always_modules)
 set(_default_modules)
-file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.type)
+# Modules compiled by another toolchain (toolchain: cuda in module.yml) or built only as
+# extensions (placement: extension) are not supported by this build: they are never
+# compiled, and asking for one, or for a module that needs one, is an error.
+set(_unsupported_modules)
+file(GLOB _module_type_files ${PLUMED_SRC}/src/*/module.yml)
 list(SORT _module_type_files)
 foreach(_mt ${_module_type_files})
-    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    plumed_read_module("${_mt}" _type _use _toolchain _placement)
     get_filename_component(_dir ${_mt} DIRECTORY)
     get_filename_component(_mod ${_dir} NAME)
+    if(NOT _toolchain STREQUAL "cxx" OR NOT _placement STREQUAL "any")
+        list(APPEND _unsupported_modules ${_mod})
+        continue()
+    endif()
     list(APPEND _all_modules ${_mod})
     if(_type STREQUAL "always")
         list(APPEND _always_modules ${_mod})
@@ -47,13 +57,14 @@ foreach(_mt ${_module_type_files})
     endif()
 endforeach()
 set(MODULES ${_default_modules})
+set(_excluded_modules)
 # Preserve known hyphenated names, as the configure parser does. Colon-separated
 # names can still be combined with legacy compact expressions such as all-ves.
 string(REPLACE ":" ";" _module_words "${PLUMED_MODULES}")
 set(_tokens)
 foreach(_word IN LISTS _module_words)
     string(REGEX REPLACE "^[+-]" "" _candidate "${_word}")
-    if(_candidate IN_LIST _all_modules)
+    if(_candidate IN_LIST _all_modules OR _candidate IN_LIST _unsupported_modules)
         list(APPEND _tokens "${_word}")
     else()
         string(REGEX REPLACE "([+-])" ";\\1" _split "${_word}")
@@ -62,43 +73,48 @@ foreach(_word IN LISTS _module_words)
 endforeach()
 foreach(_tok ${_tokens})
     if(_tok STREQUAL "reset")
+        set(_excluded_modules)
         set(MODULES ${_default_modules})
     elseif(_tok STREQUAL "all")
+        set(_excluded_modules)
         set(MODULES ${_all_modules})
     elseif(_tok STREQUAL "none")
+        set(_excluded_modules)
         set(MODULES ${_always_modules})
     else()
         string(REGEX REPLACE "^[+-]" "" _mod "${_tok}")
+        if(_mod IN_LIST _unsupported_modules)
+            if(NOT _tok MATCHES "^-")
+                message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} is compiled with another toolchain or only as an extension (see its module.yml), not supported by the CMake build")
+            endif()
+            continue()
+        endif()
         if(NOT _mod IN_LIST _all_modules)
             message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} does not exist")
         endif()
         if(NOT _tok MATCHES "^-")
             list(APPEND MODULES ${_mod})
+            list(REMOVE_ITEM _excluded_modules ${_mod})
         elseif(_mod IN_LIST _always_modules)
             message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} is always enabled")
         else()
             list(REMOVE_ITEM MODULES ${_mod})
+            list(APPEND _excluded_modules ${_mod})
         endif()
     endif()
 endforeach()
-list(REMOVE_DUPLICATES MODULES)
-list(SORT MODULES)
+plumed_resolve_modules("${PLUMED_SRC}" "${MODULES}" "${_excluded_modules}" FALSE MODULES)
+foreach(_mod IN LISTS MODULES)
+    if(_mod IN_LIST _unsupported_modules)
+        message(FATAL_ERROR "PLUMED_MODULES: module ${_mod}, needed by the selected modules, is compiled with another toolchain or only as an extension (see its module.yml), not supported by the CMake build")
+    endif()
+endforeach()
 if(kenref IN_LIST MODULES)
     message(STATUS "PLUMED_MODULES: kenref needs the KEnRef library, not supported by this build: skipped")
     list(REMOVE_ITEM MODULES kenref)
 endif()
-# As src/maketools/check_module.sh: the modules listed in the USE line of the
-# Makefile of an enabled module must be enabled
-foreach(_mod ${MODULES})
-    file(STRINGS ${PLUMED_SRC}/src/${_mod}/Makefile _use REGEX "^USE[ \t]*=")
-    string(REGEX REPLACE "^USE[ \t]*=" "" _use "${_use}")
-    separate_arguments(_use)
-    foreach(_dep ${_use})
-        if(_dep IN_LIST _all_modules AND NOT _dep IN_LIST MODULES)
-            message(FATAL_ERROR "PLUMED_MODULES: module ${_mod} depends on ${_dep}, which is disabled")
-        endif()
-    endforeach()
-endforeach()
+# Match configure's final check after unavailable library modules are removed.
+plumed_resolve_modules("${PLUMED_SRC}" "${MODULES}" "${_excluded_modules}" TRUE MODULES)
 # The Windows CMake build uses the imported Win32 thread backend by default.
 # Keep the wrapper frontend enabled when this option is off so the fully
 # serial build still provides the communicator compatibility layer.
@@ -290,10 +306,10 @@ if(MSVC AND PLUMED_MSVC_DEBUG_INFO)
 endif()
 
 # --------------------------------------------------- optional libraries
-# HDF5 tables (.h5 files) and more trajectory formats in the driver (chemfiles).
+# HDF5 tables (.hpa and .h5 files) and more trajectory formats in the driver (chemfiles).
 # The python package links static copies of them, built by
 # python/build_dependencies.py and found with CMAKE_PREFIX_PATH.
-option(PLUMED_ENABLE_HDF5 "HDF5 tables (.h5 files), with the HDF5 library" OFF)
+option(PLUMED_ENABLE_HDF5 "HDF5 tables (.hpa and .h5 files), with the HDF5 library" OFF)
 option(PLUMED_ENABLE_CHEMFILES "More trajectory formats in the driver, with chemfiles" OFF)
 if(PLUMED_ENABLE_HDF5 OR PLUMED_ENABLE_CHEMFILES)
     # a static HDF5 or chemfiles may need the zlib they were built with
@@ -346,12 +362,12 @@ foreach(_h ${_has})
     string(APPEND _config_txt "has ${_h} on\n")
 endforeach()
 string(APPEND _config_txt "\n")
-file(GLOB _module_types ${PLUMED_SRC}/src/*/module.type)
+file(GLOB _module_types ${PLUMED_SRC}/src/*/module.yml)
 list(SORT _module_types)
 foreach(_mt ${_module_types})
     get_filename_component(_dir ${_mt} DIRECTORY)
     get_filename_component(_mod ${_dir} NAME)
-    file(STRINGS ${_mt} _type LIMIT_COUNT 1)
+    plumed_read_module("${_mt}" _type _use)
     if(_mod IN_LIST MODULES)
         string(APPEND _config_txt "module ${_mod} on (${_type})\n")
     else()

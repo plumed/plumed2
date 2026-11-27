@@ -1,0 +1,24 @@
+mpiprocs=6
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# 3D grid (SHAPE=3,1,2) with NEX=3: flat list of the pairs in the log (VERBOSE)
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 6 --kt 2.49 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 6 40
+  # run of a single step (step 0, no exchange): empty statistics
+  split_traj 6 1
+  mkdir noexchange
+  cd noexchange
+  cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../first.xyz --multi 6 --kt 2.49 --log-file log > out 2> err
+  cd ..
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 > log_summary
+  extract_log noexchange/log.0 | sed -n '/over this run/,$p' >> log_summary
+}

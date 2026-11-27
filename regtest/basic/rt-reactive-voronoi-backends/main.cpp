@@ -91,7 +91,9 @@ struct System {
     plumed.cmd("setBox",box.data());
     plumed.cmd("setForces",forces.data());
     plumed.cmd("setVirial",virial.data());
-    plumed.cmd("calc");
+    // Cache and derivative checks deliberately reuse the same step.
+    plumed.cmd("prepareCalc");
+    plumed.cmd("performCalcNoUpdate");
     plumed.cmd("getBias",&energy);
   }
 };

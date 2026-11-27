@@ -1,31 +1,9 @@
-#! /usr/bin/env bash
-
-dir=$1
-
-msg="ERROR: this module depends on $dir, which is presently disabled"
-
-cd ../
-
-if test -f "$dir/module.type"
-then
-  case "$(cat "$dir/module.type")" in
-  (always) exit 0 ;;
-  (default-on)
-    if  test -f $dir.off
-    then
-      echo "$msg"
-      exit 1
-    else 
-      exit 0
-    fi ;;
-  (default-off)
-    if  test -f $dir.on
-    then
-      exit 0
-    else 
-      echo "$msg"
-      exit 1
-    fi ;;
-  esac
-fi
-
+#!/bin/sh
+set -e
+# Build support directories are not selectable modules.
+case "$1" in config|wrapper) exit 0 ;; esac
+src=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
+active=$("$src/maketools/module-selection" "$src" --config "$src/../Makefile.conf" single "$1")
+if test -n "$active"; then exit 0; fi
+echo "ERROR: this module depends on $1, which is presently disabled; rerun ./configure"
+exit 1

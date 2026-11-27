@@ -1,4 +1,15 @@
 name: pytorch
+type: default-off
+use: [core, function]
 authors: Luigi Bonati
 description: an interface between PLUMED and the PyTorch machine learning library
 dois: ["10.1021/acs.jpclett.0c00535", "10.1073/pnas.2113533118"]
+
+# Packaging options: see conda/module-options.md.
+# CPU packaging first; CUDA variants are a separate packaging dimension.
+conda:
+  requirements:
+    host: [libtorch * cpu_generic*]
+    run: [libtorch * cpu_generic*]
+  tests:
+    regtests: [pytorch/rt-pytorch_model_strided]

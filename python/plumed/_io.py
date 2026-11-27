@@ -182,7 +182,8 @@ def read_as_pandas(
         Passed to pandas for text files; applied to table data for HDF5 files.
 
     format : {'text', 'hdf5'} or None, optional
-        By default, .h5 and .hdf5 filenames and h5py.File objects select HDF5;
+        By default, files are recognized by content; .hpa/.h5.tar archive names,
+        .h5/.hdf5 filenames and h5py.File objects also select HDF5;
         other inputs select text. Specify 'hdf5' for anonymous binary streams.
         HDF5 support requires the optional h5py package.
 
@@ -322,7 +323,7 @@ def read_as_pandas(
 
     from . import _hdf5
 
-    if _hdf5.is_hdf5(file_or_path, format):
+    if _hdf5.is_hdf5(file_or_path, format, content=True):
 
         def process_hdf(df, constants):
             constants = [
@@ -492,7 +493,8 @@ def write_pandas(df, file_or_path=None, format=None):
         If None, stdout is used for text. Supplied streams remain open;
         internally opened files are closed. A supplied h5py.File must be empty.
     format : {'text', 'hdf5'} or None, optional
-        Infer HDF5 from .h5/.hdf5 filenames or h5py.File objects by default.
+        Infer HDF5 from .hpa/.h5.tar archive filenames, .h5/.hdf5 filenames,
+        or h5py.File objects by default.
         Use format='hdf5' for binary streams. Requires h5py. Output uses the
         native PLUMED table layout, not pandas' PyTables layout. Numeric columns
         are stored as float64 or signed int64; strings use UTF-8 bytes. Missing

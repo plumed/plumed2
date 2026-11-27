@@ -1,15 +1,5 @@
-#! /usr/bin/env bash
-
-cd ../
-for dir in *
-do
-  
-  if test -f "$dir/module.type"
-  then
-    case "$(cat "$dir/module.type")" in
-    (always) echo $dir ;;
-    (default-on) test -f $dir.off || echo $dir ;;
-    (default-off) test -f $dir.on && echo $dir ;;
-    esac
-  fi
-done
+#!/bin/sh
+# Defaults remain live: modules added after configuration follow module.yml.
+set -e
+src=$(CDPATH= cd "$(dirname "$0")/.." && pwd)
+exec "$src/maketools/module-selection" "$src" --config "$src/../Makefile.conf"

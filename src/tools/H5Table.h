@@ -22,6 +22,7 @@
 #ifndef __PLUMED_tools_H5Table_h
 #define __PLUMED_tools_H5Table_h
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,13 +35,15 @@ namespace h5table {
 \ingroup TOOLBOX
 Tables of fields (the files written with OFile::printField) stored in HDF5 files.
 
-A file whose name ends with `.h5` is written in HDF5 format (with libhdf5, see
-`./configure --enable-libhdf5`). Layout, version 1:
+Simulations write them as archives of tables (`.hpa`, see below); a single HDF5 file (`.h5`)
+is read, and written only from scratch (by h5convert), never appended to: HDF5 updates it in place,
+so that an interrupted run could damage it. Requires libhdf5 (`./configure --enable-libhdf5`).
+Layout of a table, version 1:
 - the root group has the attribute `plumed_format` = "plumed-table" and `plumed_format_version` = 1;
 - the table is made of blocks, `block_0`, `block_1`, ...: a new block starts when the fields
   change (where a text file would print a new `#! FIELDS` header), i.e. when the names or the
   types of the columns or the values of the constant fields change;
-- every column of a block is an extendable 1-D dataset with the name of the field (doubles,
+- every column of a block is a 1-D dataset with the name of the field (doubles,
   64-bit integers, or strings), in the order given by the attribute `plumed_columns` of the block
   (names separated by spaces);
 - the constant fields (`#! SET` in text files) are attributes of the block, listed in order in
@@ -49,13 +52,36 @@ Values are stored with full precision, whatever FMT says.
 
 The reader (Reader) presents the table as the lines of the equivalent text file, with the numbers
 written with all their digits, so that everything that reads text files (IFile) reads HDF5 files too.
+
+A file whose name ends with `.hpa` (also `.h5.tar`) is an archive of tables: an uncompressed POSIX (ustar) TAR file
+whose members (`batch_00000001.h5`, ...) are complete tables with the layout above, and nothing else
+(no metadata in the TAR headers). Rows are buffered and every flush (or every 4096 rows, or a change of
+the fields) appends a new member at the end of the file: its data, synchronized to the disk behind a
+header of zeros, then its header, synchronized too. The members already written are never modified
+(but by trimming at a restart). An interruption can only leave a last member not published, or with
+its header written in part: the readers ignore it and the writer removes it when it appends to the
+archive. The table is the concatenation of the members, where consecutive blocks with the same
+signature are the same block. Unlike a single HDF5 file (which HDF5 updates in place, and keeps locked
+while it is written), an archive can be read while it is written, and what has been flushed survives
+an interruption. Existing files are recognized by their content (an archive before an HDF5 file:
+HDF5 would read an archive as its first member).
 */
 
 /// True if PLUMED was compiled with libhdf5
 bool available();
 
-/// True if the file is an HDF5 table (by its extension, .h5)
+/// True if the file is an HDF5 table (by its extension, .h5) or an archive of tables (.hpa or .h5.tar):
+/// for the files that are written
 bool isH5(const std::string& path);
+
+/// True if the file is an archive of tables: by its content if it exists, otherwise by its extension (.hpa or .h5.tar)
+bool isArchive(const std::string& path);
+
+/// True if the name of the file ends with .hpa or .h5.tar
+bool isArchiveName(const std::string& path);
+
+/// True if the file is an HDF5 table or an archive, by its extension or by its content: for the files that are read
+bool isTable(const std::string& path);
 
 /// A value of a field
 struct Value {
@@ -80,8 +106,9 @@ class Writer {
   struct Impl;
   std::unique_ptr<Impl> impl;
 public:
-/// Create the file, or open it to append to its last block (append)
-  Writer(const std::string& path,bool append);
+/// Create the file, or open it to append to it (append, only for an archive); rows are written
+/// every batch rows (in an archive, a member every batch rows at most)
+  Writer(const std::string& path,bool append,std::size_t batch=4096);
   ~Writer();
   Writer(const Writer&)=delete;
   Writer& operator=(const Writer&)=delete;
@@ -89,8 +116,6 @@ public:
   void addRow(const std::vector<Field>& fields,const std::vector<Field>& constants);
 /// Write the buffered rows and flush the file
   void flush();
-/// Number of rows of every block in the file (after writing the buffered rows)
-  std::vector<unsigned long long> rows();
 };
 
 /// Reads a table as the lines of the equivalent text file
@@ -106,12 +131,15 @@ public:
   bool getline(std::string& line);
 };
 
-/// Number of rows of every block of a table
-std::vector<unsigned long long> rows(const std::string& path);
+/// Copy a table (or archive) into a new table (or archive), with the values as they are
+/// (an archive with members of batch rows at most)
+void copy(const std::string& input,const std::string& output,std::size_t batch=4096);
 
-/// Keep the first keep[b] rows of block b (the blocks beyond keep.size() are removed).
-/// The rows removed are written, with the same structure, in the table backup (if not empty).
-void truncate(const std::string& path,const std::vector<unsigned long long>& keep,const std::string& backup);
+/// Trim an archive at a restart: remove the rows from the last one with time<tcut on, moving them to
+/// backup (if not empty). Only the members after that row are read and rewritten. Nothing is done if
+/// there is no time field (hasTime), or if the times of the rows removed would not be increasing.
+/// Returns the number of rows removed.
+unsigned long long trimArchive(const std::string& path,double tcut,const std::string& backup,bool& hasTime,bool& increasing);
 
 }
 }

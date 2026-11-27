@@ -21,7 +21,7 @@ all:
 
 obj: all
 
-config.txt: ../../Makefile.conf
+config.txt: ../../Makefile.conf $(wildcard ../*/module.yml)
 	@echo "Updating config.txt file"
 	@makefile_conf="$(realpath ../../Makefile.conf)" \
          python_bin="$(python_bin)" \

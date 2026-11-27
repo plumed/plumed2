@@ -204,7 +204,7 @@ kn_plumed_clean_if_settings_changed() {   # $1 = signature of this build's setti
 
 # ---- STEP 2: build PLUMED (+kenref) with PLUMED's OWN autotools --------------
 build_plumed() {
-    [ -f "${MODULE_DIR}/module.type" ] || die "no kenref module here (${MODULE_DIR}) — wrong PLUMED tree/branch."
+    [ -f "${MODULE_DIR}/module.yml" ] || die "no kenref module here (${MODULE_DIR}) — wrong PLUMED tree/branch."
     say "building PLUMED (+kenref) with PLUMED's autotools -> ${PLUMED_PREFIX}"
     local kn_libs kn_libdir
     if pkg-config --exists kenref_core; then

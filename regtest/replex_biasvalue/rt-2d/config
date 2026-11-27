@@ -1,0 +1,16 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# 2D grid (SHAPE=2,2): pairs along both dimensions, grids in the log (VERBOSE)
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 40
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 > log_summary
+}

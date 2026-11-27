@@ -23,7 +23,7 @@ for dir in $DIRS; do
     exit 1
   }
 
-  for file in *.c *.cpp *.h *.inc.in; do
+  for file in *.c *.cpp *.h *.inc.in *.cu *.cuh; do
 
     test -f "$file" || continue
 

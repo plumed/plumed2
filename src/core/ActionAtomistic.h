@@ -176,6 +176,8 @@ public:
   void interpretAtomList( std::vector<std::string>& strings, std::vector<AtomNumber> &t);
 /// Convert a set of read in strings into an atom list (this is used in parseAtomList)
   static void interpretAtomList( std::vector<std::string>& strings, const std::vector<Value*>& xpos, Action* action, std::vector<AtomNumber> &t);
+/// Convert atom numbers to input identifiers, retaining labels for virtual atom sources.
+  static std::vector<std::string> getAtomIdentifiers(const std::vector<AtomNumber>& atoms, const std::vector<Value*>& xpos);
 /// This gets std::vector that contain the PLMD::Value objects that contain xpositions, ypositions, zpositions, masses and charges
   static void getAtomValuesFromPlumedObject( const PlumedMain& plumed, std::vector<Value*>& xpos, std::vector<Value*>& ypos, std::vector<Value*>& zpos, std::vector<Value*>& masv, std::vector<Value*>& chargev );
 /// Change the box shape

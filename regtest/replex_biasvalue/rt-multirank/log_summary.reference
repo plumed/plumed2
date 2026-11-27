@@ -1,0 +1,81 @@
+Action REPLEX_BIASVALUE
+  with label bias
+  with arguments : 
+   scalar with label left 
+   scalar with label right 
+  added component to this action: bias.bias 
+  added component to this action: bias.left_bias 
+  added component to this action: bias.right_bias 
+  added component to this action: bias.index 
+  number of replicas: 3, index of this replica: 0
+  coefficients of each argument in the biases:
+    left:  1.000000  0.500000  0.000000
+    right:  0.000000  0.500000  1.000000
+  exchange attempts every 2 steps, 1 sweep(s) per exchange step
+  seed of the random numbers: 11
+  kBT: 2.494339
+  bias indices written to file: bias_index.xvg
+REPLEX_BIASVALUE bias: exchange at step 2, time 2.000000
+  bias indices: 1 0 2
+  replica indices: 1 0 2
+REPLEX_BIASVALUE bias: exchange at step 4, time 4.000000
+  bias indices: 2 0 1
+  replica indices: 1 2 0
+REPLEX_BIASVALUE bias: exchange at step 6, time 6.000000
+  bias indices: 2 1 0
+  replica indices: 2 1 0
+REPLEX_BIASVALUE bias: exchange at step 8, time 8.000000
+  bias indices: 1 2 0
+  replica indices: 2 0 1
+REPLEX_BIASVALUE bias: exchange at step 10, time 10.000000
+  bias indices: 0 2 1
+  replica indices: 0 2 1
+REPLEX_BIASVALUE bias: exchange at step 12, time 12.000000
+  bias indices: 0 2 1
+  replica indices: 0 2 1
+REPLEX_BIASVALUE bias: exchange at step 14, time 14.000000
+  bias indices: 0 2 1
+  replica indices: 0 2 1
+REPLEX_BIASVALUE bias: exchange at step 16, time 16.000000
+  bias indices: 0 1 2
+  replica indices: 0 1 2
+REPLEX_BIASVALUE bias: exchange at step 18, time 18.000000
+  bias indices: 0 1 2
+  replica indices: 0 1 2
+REPLEX_BIASVALUE bias: exchange at step 20, time 20.000000
+  bias indices: 0 2 1
+  replica indices: 0 2 1
+REPLEX_BIASVALUE bias: exchange at step 22, time 22.000000
+  bias indices: 1 2 0
+  replica indices: 2 0 1
+REPLEX_BIASVALUE bias: exchange at step 24, time 24.000000
+  bias indices: 2 1 0
+  replica indices: 2 1 0
+REPLEX_BIASVALUE bias: exchange at step 26, time 26.000000
+  bias indices: 2 0 1
+  replica indices: 1 2 0
+REPLEX_BIASVALUE bias: exchange at step 28, time 28.000000
+  bias indices: 1 0 2
+  replica indices: 1 0 2
+REPLEX_BIASVALUE bias: exchange at step 30, time 30.000000
+  bias indices: 0 1 2
+  replica indices: 0 1 2
+REPLEX_BIASVALUE bias: exchange at step 32, time 32.000000
+  bias indices: 0 1 2
+  replica indices: 0 1 2
+REPLEX_BIASVALUE bias: exchange at step 34, time 34.000000
+  bias indices: 1 0 2
+  replica indices: 1 0 2
+REPLEX_BIASVALUE bias: exchange at step 36, time 36.000000
+  bias indices: 1 0 2
+  replica indices: 1 0 2
+REPLEX_BIASVALUE bias: exchange at step 38, time 38.000000
+  bias indices: 1 0 2
+  replica indices: 1 0 2
+REPLEX_BIASVALUE bias: statistics of the exchanges over this run
+  accepted/attempted:
+   [0] 7/10  [1]  6/9  [2]
+  acceptance ratio:
+    [0] 0.700   [1] 0.667   [2]
+  average probability:
+    [0] 0.627   [1] 0.671   [2]

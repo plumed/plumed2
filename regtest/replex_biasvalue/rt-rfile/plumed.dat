@@ -1,0 +1,10 @@
+d: DISTANCE ATOMS=1,2
+b0: CUSTOM ARG=d FUNC=100*(x-0.1)^2 PERIODIC=NO
+b1: CUSTOM ARG=d FUNC=100*(x-0.2)^2 PERIODIC=NO
+b2: CUSTOM ARG=d FUNC=100*(x-0.3)^2 PERIODIC=NO
+b3: CUSTOM ARG=d FUNC=100*(x-0.4)^2 PERIODIC=NO
+
+# start from the last line of start.xvg (no check of the time)
+bias: REPLEX_BIASVALUE ARG=b0,b1,b2,b3 PACE=2 SEED=7 BIASINDEX_RFILE=start.xvg
+
+PRINT ARG=d,bias.bias,bias.index FILE=COLVAR FMT=%8.4f

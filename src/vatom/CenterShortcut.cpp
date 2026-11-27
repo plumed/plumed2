@@ -88,7 +88,14 @@ CenterShortcut::CenterShortcut(const ActionOptions& ao):
   }
   // Read in the atoms
   std::string atlist;
-  parse("ATOMS",atlist);
+  std::vector<std::string> atoms;
+  parseAtomList("ATOMS",atoms);
+  for(const auto& atom : atoms) {
+    if(!atlist.empty()) {
+      atlist += ",";
+    }
+    atlist += atom;
+  }
   // Calculate the mass of the vatom
   readInputLine( getShortcutLabel() + "_m: MASS ATOMS=" + atlist );
   readInputLine( getShortcutLabel() + "_mass: SUM PERIODIC=NO ARG=" + getShortcutLabel() + "_m" );

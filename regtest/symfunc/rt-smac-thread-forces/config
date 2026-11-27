@@ -1,0 +1,55 @@
+type=driver
+plumed_modules="symfunc adjmat"
+export PLUMED_NUM_THREADS=2
+arg="--plumed plumed.dat --ixyz stress.xyz --length-units=A --box=70,70,70 --dump-forces forces2 --dump-forces-fmt=%.14g"
+
+# The small model is the biased part of rt-smac, with its 16 atoms renumbered.
+# Repetition exercises the force gather after OpenMP's timing calibration.
+function plumed_regtest_before() {
+  for ((i=0; i<100; i++)); do cat trajectory.xyz; done > stress.xyz
+  if ! PLUMED_NUM_THREADS=1 $plumed driver --plumed plumed.dat --ixyz stress.xyz \
+      --length-units=A --box=70,70,70 --dump-forces forces1 \
+      --dump-forces-fmt=%.14g > serial.out 2> serial.err; then
+    cat serial.err
+    echo "FAILURE: serial force control did not run"
+  fi
+}
+
+function compare_forces() {
+  awk -v nt="$2" '
+    FNR==NR {
+      if ($1=="X") {
+        n++
+        for (j=2; j<=4; j++) {
+          ref[n,j]=$j
+          if (tolower($j) ~ /nan|inf/) bad++
+        }
+      }
+      next
+    }
+    $1=="X" {
+      m++
+      for (j=2; j<=4; j++) {
+        delta=$j-ref[m,j]
+        if (delta<0) delta=-delta
+        if (delta>1e-10 || tolower($j) ~ /nan|inf/) bad++
+      }
+    }
+    END {
+      if (n!=17600 || m!=n || bad) {
+        printf "FAILURE: threads %d: %d differing components, %d/%d vectors\n", nt,bad,m,n
+      } else {
+        printf "threads %d: PASS\n",nt
+      }
+    }' forces1 "$1"
+}
+
+function plumed_regtest_after() {
+  if ! PLUMED_NUM_THREADS=4 $plumed driver --plumed plumed.dat --ixyz stress.xyz \
+      --length-units=A --box=70,70,70 --dump-forces forces4 \
+      --dump-forces-fmt=%.14g > four.out 2> four.err; then
+    cat four.err
+    echo "FAILURE: four-thread force calculation did not run"
+  fi
+  { compare_forces forces2 2; compare_forces forces4 4; } > result
+}

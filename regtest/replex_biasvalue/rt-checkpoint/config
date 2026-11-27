@@ -1,0 +1,30 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# Reference run: the whole trajectory (40 steps), checkpoints every 7 steps
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --checkpoint-stride 7 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 40
+  split_traj 4 20
+  # interrupted run: 20 steps (last checkpoint at step 14), then a restart from
+  # the checkpoint: the action needs nothing from it, FILE is trimmed at step 14
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../first.xyz --multi 4 --kt 2.49 --checkpoint-stride 7 --log-file log-part > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../traj.xyz --multi 4 --kt 2.49 --checkpoint-stride 7 --restart-from-checkpoint plumed.cpt --log-file log > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  # the restarted run must reproduce the reference bitwise
+  compare restart COLVAR.0 COLVAR.1 COLVAR.2 COLVAR.3 bias_index.xvg > restart_check
+  # no state of the action is missing from the checkpoint
+  if grep -q "not stored in the checkpoint" restart/out2 restart/err2 restart/log.* ; then echo "unported state warning" ; fi >> restart_check
+  sed 's/^PLUMED: //' restart/log.0 | grep "Restarting from checkpoint" | sed 's/by PLUMED.*//' >> restart_check
+  extract_log restart/log.0 | sed -n '/initial state/,/replica indices/p' >> restart_check
+}

@@ -22,6 +22,8 @@
 #include "GREX.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "ActionPilot.h"
+#include "ActionWithValue.h"
 #include "ActionToPutData.h"
 #include "DomainDecomposition.h"
 #include "tools/Tools.h"
@@ -190,6 +192,24 @@ void GREX::cmd(std::string_view key,const TypesafePtr & val) {
 }
 
 void GREX::savePositions() {
+  // The normal local calculation must contain every bias used for acceptance.
+  // Check actual attempt steps and cadence, without extending the MD cmd API.
+  // After a restart the first attempt may mask an incompatible cadence; the
+  // following attempt still rejects it before any off-stride acceptance is used.
+  const auto step=plumedMain.getStep();
+  for(auto* pilot : plumedMain.getActionSet().select<ActionPilot*>()) {
+    auto* value=dynamic_cast<ActionWithValue*>(pilot);
+    if(value && value->exists(value->getLabel()+".bias")) {
+      const auto stride=pilot->getStride();
+      if(stride==0 || step%stride!=0 || (previousExchangeStep>=0 && (step-previousExchangeStep)%stride!=0)) {
+        plumed_error()<<"Replica exchange requires bias force STRIDE to divide the exchange interval: "
+                      <<pilot->getLabel()<<" has STRIDE="<<stride<<" at exchange step "<<step;
+      }
+    }
+  }
+  previousExchangeStep=step;
+  const bool wasExchangeStep=plumedMain.getExchangeStep();
+  plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.resetActive(true);
   plumedMain.shareAll();
@@ -205,6 +225,7 @@ void GREX::savePositions() {
   std::ostringstream o;
   plumedMain.writeBinary(o);
   buffer=o.str();
+  plumedMain.setExchangeStep(wasExchangeStep);
 }
 
 void GREX::calculate() {
@@ -229,7 +250,7 @@ void GREX::calculate() {
   plumedMain.readBinary(own);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  plumedMain.justCalculate(true,false);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -251,7 +272,7 @@ void GREX::calculate() {
   }
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  plumedMain.justCalculate(true,false);
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
   if(physicalEnergiesProvided) {

@@ -181,8 +181,9 @@ public:
   bool isOrthorombic()const;
 /// Moves atoms by lattice vectors so that, for each link l in order, atom child[l]
 /// is at its minimum image distance from atom parent[l] (already placed: the parent
-/// of a link is the first atom or the child of an earlier link). The images are the
-/// same as with pos[child]=pos[parent]+distance(pos[parent],pos[child]) done link by
+/// of a link is a root or the child of an earlier link). Multiple independent
+/// roots are allowed; atoms not listed as children keep their original images.
+/// The images are the same as with pos[child]=pos[parent]+distance(pos[parent],pos[child]) done link by
 /// link, but the shifts are computed independently for each link and summed as
 /// integers, so most of the work is done with OpenMP threads, and the atoms that do
 /// not move keep their positions exactly. With parent and child null the links are

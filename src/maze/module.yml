@@ -1,4 +1,6 @@
 name: maze
+type: default-off
+use: [core, tools, colvar, bias]
 authors: Jakub Rydzewski
 description: enhanced sampling methods for studying ligand unbinding from protein tunnels
 dois: ["10.1063/1.5108638", "10.48550/arXiv.1904.03929"]

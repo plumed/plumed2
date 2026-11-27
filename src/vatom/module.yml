@@ -1,4 +1,6 @@
 name: vatom
+type: default-on
+use: [core, tools]
 authors: The PLUMED core developers
 description: actions for calculating the positions of virtual atoms
 dois: []

@@ -31,11 +31,13 @@ and every part of the plugin follows them in the same way:
 
 1. Each action works on one GPU, held in an ACC::Device and chosen the first
    time it is needed with Device::resolve(action), which also writes it in the
-   log of the action ("<label> runs on GPU <n>"): the GPU assigned to PLUMED by
-   the MD code (cmd "setGpuDeviceId"), otherwise the GPU the MD code is using
-   (the one of the CUDA context current in the calling thread), otherwise the
-   current OpenACC device (by default the first GPU, see ACC_DEVICE_NUM and
-   CUDA_VISIBLE_DEVICES). It is then fixed.
+   log of the action ("<label> runs on GPU <n> (<why>)"). The choice is made by
+   PLUMED (PLMD::GpuDevice in core/GpuDevice.h, the same for all the plugins): the
+   GPU assigned to PLUMED by the MD code (cmd "setGpuDeviceId"), otherwise the GPU
+   the MD code is using (the one of the CUDA context current in the calling
+   thread), otherwise the one set with ACC_DEVICE_NUM, otherwise, with several
+   GPUs, the rank of the process in its node modulo the number of GPUs,
+   otherwise the first GPU (see also CUDA_VISIBLE_DEVICES). It is then fixed.
 
 2. Every piece of code that uses OpenACC (kernels, transfers, allocations, and
    the destructors that free device memory) runs inside a DeviceScope for that
@@ -55,10 +57,6 @@ namespace PLMD {
 class Action;
 
 namespace ACC {
-
-/// The device of the CUDA context current in this thread, -1 if there is none
-/// (or without GPUs)
-int currentCudaDevice();
 
 /// The GPU of an action, see rule 1 above
 class Device {

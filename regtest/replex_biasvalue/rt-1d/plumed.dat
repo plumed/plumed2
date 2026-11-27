@@ -1,0 +1,10 @@
+# Four biases, one per replica (diagonal coefficients, the default)
+d: DISTANCE ATOMS=1,2
+b0: CUSTOM ARG=d FUNC=100*(x-0.1)^2 PERIODIC=NO
+b1: CUSTOM ARG=d FUNC=100*(x-0.2)^2 PERIODIC=NO
+b2: CUSTOM ARG=d FUNC=100*(x-0.3)^2 PERIODIC=NO
+b3: CUSTOM ARG=d FUNC=100*(x-0.4)^2 PERIODIC=NO
+
+bias: REPLEX_BIASVALUE ARG=b0,b1,b2,b3 PACE=2 SEED=7 REPINDEX_FILE=replica_index.xvg
+
+PRINT ARG=d,bias.bias,bias.b0_bias,bias.b1_bias,bias.b2_bias,bias.b3_bias,bias.index FILE=COLVAR FMT=%8.4f

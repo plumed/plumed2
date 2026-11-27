@@ -33,6 +33,7 @@
 #include <cmath>
 #include <iomanip>
 #include <limits>
+#include <cstdint>
 #include <memory>
 #include <numeric>
 #include <map>
@@ -198,6 +199,7 @@ protected:
     bool mixedKappa=false;
     bool valid=false;
     long long step=0;
+    std::uint64_t evaluation=0;
     std::vector<Vector> positions;
     Tensor box;
     std::vector<PairData> geometry;
@@ -646,20 +648,11 @@ void SoftVoronoiBase::finishSetup(const std::string& displayName) {
 
 void SoftVoronoiBase::prepare() {
   if(neighborList_->getStride()>0) {
-    if(firstTime_ || getStep()%neighborList_->getStride()==0) {
-      requestAtoms(neighborList_->getFullAtomList());
-      invalidateList_=true;
-      firstTime_=false;
-    } else {
-      requestAtoms(neighborList_->getFullAtomList());
-      invalidateList_=false;
-      if(getExchangeStep()) {
-        error("neighbor lists must be updated on exchange steps; choose an NL_STRIDE that divides the exchange stride");
-      }
-    }
-    if(getExchangeStep()) {
-      firstTime_=true;
-    }
+    requestAtoms(neighborList_->getFullAtomList());
+    invalidateList_=firstTime_ || getExchangeStep() ||
+                    getStep()%neighborList_->getStride()==0;
+    // Keep firstTime_ until a list has actually been used by calculate().
+    // Repeated preparation must not cancel a pending post-trial rebuild.
   }
 }
 
@@ -724,6 +717,7 @@ SoftVoronoiBase::~SoftVoronoiBase() {
 
 bool SoftVoronoiBase::sharedCoordinatesMatch() const {
   if(!shared_->valid || shared_->step!=getStep() ||
+      shared_->evaluation!=getEvaluationId() ||
       shared_->positions.size()!=getPositions().size()) {
     return false;
   }
@@ -763,6 +757,7 @@ void SoftVoronoiBase::resetSharedEvaluation() {
   shared_->positions=getPositions();
   shared_->box=getPbc().getBox();
   shared_->step=getStep();
+  shared_->evaluation=getEvaluationId();
 }
 
 void SoftVoronoiBase::launch() {
@@ -802,6 +797,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
       independent_=computeAssignment();
     }
     finishAssignment(independent_);
+    firstTime_=isGeometryTrial();
     return independent_;
   }
   if(!sharedCoordinatesMatch()) {
@@ -814,6 +810,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
       } else {
         ++hits_;
       }
+      firstTime_=isGeometryTrial();
       return found->second;
     }
   }
@@ -821,6 +818,7 @@ const SoftVoronoiBase::Assignment& SoftVoronoiBase::calculateAssignment() {
   Assignment result=computeAssignment();
   auto inserted=shared_->assignments.emplace(kappa_,std::move(result));
   shared_->valid=true;
+  firstTime_=isGeometryTrial();
   return inserted.first->second;
 }
 
@@ -876,7 +874,7 @@ std::shared_ptr<ReactiveVoronoiBackend> SoftVoronoiBase::cudaContext() {
       const auto& images=plumed.getLoadedLibraryHandles();
       const auto& registry=reactiveVoronoiBackendRegister();
       if(!registry.check(images,"CUDA")) {
-        throw std::runtime_error("No CUDA Voronoi backend is available. Build the reactive-voronoi-cuda plugin and LOAD it before the action.");
+        throw std::runtime_error("No CUDA Voronoi backend is available: it is in the gpu_voronoi module (--enable-modules=+gpu_voronoi, or the extension).");
       }
       const auto create=registry.get(images,"CUDA");
       context=create(centers_.size(),assigned_.size(),plumed.getGpuDeviceId());
@@ -926,7 +924,7 @@ SoftVoronoiBase::Assignment SoftVoronoiBase::computeAssignment(const bool wait) 
   auto& neighbors=shared_ ? shared_->cudaNeighbors : independentCudaNeighbors_;
   // CPU and CUDA use the same rebuild and safe-skin criteria.
   if(neighborList_->getStride()>0 && !(shared_ && shared_->valid) &&
-      (invalidateList_ || neighborListNeedsUpdate())) {
+      (invalidateList_ || isGeometryTrial() || neighborListNeedsUpdate())) {
     // The action that first created the list may be inactive on this step.
     neighborList_->update(getPositions(),getPbc());
     saveNeighborListReference();
@@ -1622,9 +1620,11 @@ Before using NLIST in production:
    skin or if the periodic box changes, while the evaluated pairs are still
    filtered at the true NL_CUTOFF on every step.
 
-For replica exchange, every exchange step must also be a neighbor-list update
-step.  Choose the update schedule accordingly; normally NL_STRIDE should
-divide the exchange stride.
+Auxiliary replica-exchange and no-force evaluations refresh the candidate list
+for their coordinates, including off NL_STRIDE. The first ordinary evaluation
+after a trial also rebuilds its list; repeated dependency preparation preserves
+that pending rebuild. Shared assignments are reused within one geometry
+evaluation, including between actions with different KAPPA values.
 
 For a fixed box, the half-skin displacement check ensures that a pair cannot
 cross NL_CUTOFF before it was present in the buffered candidate list.  A
@@ -1648,19 +1648,21 @@ geometry and, for equal KAPPA, weights and occupancies. NO_SHARE selects an
 independent CPU reference. Consumer-specific selections and reductions retain
 their own meanings.
 
-Load the optional CUDA plugin with [LOAD](LOAD.md) before the CV.
-BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the loaded
-backend supports the calculation and otherwise uses CPU. The log shows the
+The CUDA backend (for NVIDIA GPUs, and for AMD GPUs through HIP) is in the optional
+[gpu_voronoi](module_gpu_voronoi.md) module.
+BACKEND=CUDA explicitly requests CUDA. BACKEND=AUTO selects CUDA if the
+backend is available and supports the calculation, and otherwise uses CPU. The log shows the
 selected backend. CUDA supports a single MPI rank with axis-aligned
 orthorhombic PBC or NOPBC. CUDA NLIST reuses the CPU-built candidate list and
 applies the same cutoff at each evaluation. OPES, scalar reductions and direct
-distance/position terms execute on CPU. Floating-point CUDA reductions may
-differ in the last digits between runs. With CUDA or AUTO the assignment on the
+distance/position terms execute on CPU. The CUDA sums are done in a fixed order,
+so the results are the same at every run, but they can differ from the CPU ones
+in the last digits. With CUDA or AUTO the assignment on the
 GPU is started in advance, so that it can overlap with the work of other actions
 (see PLUMED\_LAUNCH in [the page on actions](actions.md)); its derivatives are
 computed when the action is reached.
 
-The plugin README describes compilation, device selection and examples.
+The page of the module describes compilation and device selection.
 Choose a backend using matched numerical checks and workload timings.
 
 ## CPU parallelism and practical scaling

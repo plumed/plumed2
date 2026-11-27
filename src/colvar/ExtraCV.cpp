@@ -43,6 +43,19 @@ l: EXTRACV NAME=lambda
 RESTRAINT ARG=l KAPPA=10 AT=3
 ```
 
+With the updated GROMACS 2026 patch, `lambda` is the integer alchemical state
+index (`init-lambda-state`), not an individual Coulomb or van der Waals coupling
+parameter. In an expanded-ensemble simulation (`free-energy=expanded`), biases
+on this variable enter GROMACS's MCMC transition probabilities. The host evaluates
+all candidate states without depositing hills, writing ordinary output, or
+changing the MD forces. Metadynamics can therefore bias lambda alone or together
+with configurational variables, as in alchemical metadynamics
+([Hsu et al., JCTC 2023](https://doi.org/10.1021/acs.jctc.2c01258)).
+
+Lambda is supplied only during expanded-ensemble MCMC. Native MPI and thread-MPI
+GROMACS builds are supported. Native lambda replica
+exchange uses replica-specific fixed parameters in the PLUMED inputs instead.
+Simultaneous expanded-ensemble MCMC and replica exchange is unsupported.
 
 */
 //+ENDPLUMEDOC

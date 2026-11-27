@@ -21,6 +21,9 @@ install a kernel. Python 3 is needed for this build interface, not at runtime.
 The installed base supplies its compiler flags and public headers. An explicitly
 set CXX/CXXFLAGS/CPPFLAGS can adapt paths/toolchain activation for a package build;
 it remains the builder's responsibility to preserve C++ ABI compatibility.
+When using Make, pass overrides as command-line assignments, for example
+`make CXX=/path/to/compatible-c++ install`. Assignments in `Makefile.conf` take
+precedence over ordinary shell environment variables.
 Available optional native features are detected with compile/link probes against
 this installation, independently of the base's feature macros. For this loading
 proof of concept every selected module is built even when an optional library
@@ -101,8 +104,8 @@ identity translation unit and registration file before the plugin's own build:
 
 ```sh
 python3 extensions/register.py --plumed /path/to/base/bin/plumed \
-  --module cuda_coordination --variant cuda13.0 --features CUDA \
-  --library ../../CudaCoordination.so --output plugin-registration
+  --module openacc_ptm --variant nvhpc25.11 --features OPENACC \
+  --library ../../plumedOpenACC.so --output plugin-registration
 ```
 
 Compile `plugin-registration/module_identity.cpp` into the plugin library, link
@@ -117,21 +120,22 @@ GPU numerical validation uses the channel-based Colab notebook after publication
 The inventory and conda recipes, including `conda/plumed/meta.yaml`, are generated files and are not tracked. Run
 `python3 extensions/conda_recipe.py` before invoking conda-build directly;
 `conda/run-conda-build.sh` does this automatically. Configure and extension builds
-regenerate the inventory themselves. The generators read `module.type`, exact
-Makefile `USE` dependencies, source `__PLUMED_HAS_*` guards, module license files,
-and module-local `conda.mk` declarations. See the complete
+regenerate the inventory themselves. The generators read `type`, direct native `use` dependencies and `conda` policy
+from `module.yml` (or `plugin.yml`), source `__PLUMED_HAS_*` guards and module license files.
+Install the metadata tools with `python -m pip install -r extensions/requirements.txt`. See the complete
 [configuration reference](../conda/module-options.md) for build tools, supported
 platforms, variants, flags, feature policy and tests:
 
-```make
-CONDA_HOST_REQUIREMENTS = libboost-devel
-CONDA_RUN_REQUIREMENTS = libboost
-# Libraries without a verified conda-forge package are recorded, not required:
-CONDA_UNAVAILABLE_LIBRARIES = example-library
+```yaml
+conda:
+  requirements:
+    host: [libboost-devel]
+    run: [libboost]
+  unavailable_libraries: [example-library]
 ```
 
-Quote MatchSpecs containing spaces. Conda selectors are supported at the end of
-a declaration, for example `# [linux]`. These files are manually curated inputs and are never overwritten by the
+Use explicit `spec`/`selector` mappings for conditional requirements. These files
+are manually curated inputs and are never overwritten by the
 generators. They declare package policy;
 compiler probes only decide which feature macros and native links to enable.
 The base recipe is generated from `conda/plumed/meta.yaml.in` and the requirements
@@ -195,7 +199,7 @@ contract as source modules.
 
 `conda install plumed-ext-pycv` installs the pycv plugin and its companion Python
 extension for the environment's Python minor version. The recipe builds Python
-3.11–3.15 variants declared in `plugins/pycv/conda.mk`. Every variant
+3.11–3.15 variants declared in `plugins/pycv/plugin.yml`. Every variant
 links to and pins the same main `plumed` package, without bundling another kernel.
 Python and NumPy are plugin runtime requirements; pybind11 is needed only to build.
 
@@ -214,16 +218,36 @@ symbols. It is not registered as a module: `plumed modules --list` shows only
 Its package tests run the existing Python-hosted suite and numerical driver
 fixtures for both autoloading and explicit module loading.
 
-### CUDA coordination plugin
+### Modules compiled with CUDA (`toolchain: cuda`)
 
-`plumed-ext-cuda-coordination` has CUDA 12.9 and 13.0 builds on Linux. Select one
+The modules with `toolchain: cuda` in their `module.yml` (`gpu_cuda_hip`) are built
+against an installed base like the other modules. Their `.cu` files are compiled
+by nvcc (`NVCC`, or `CUDACXX`, default `nvcc`), or by hipcc with `--enable-hip`
+(`HIPCC`, `HIP_ARCHITECTURES`), with the compiler flags of the base translated by
+`src/maketools/cuda-flags`, the same script used by the native configure.
+`NVCCFLAGS` adds flags (e.g. `-gencode` options). The library is linked by the C++
+compiler with the shared CUDA runtime (`--with-cudart=static` for the static one)
+or the HIP runtime, and with `-z nodelete`. The registration declares the variant
+`cuda<version of nvcc>` (or `rocm<version>`), and the library exports the feature
+`cuda` (or `hip`). Such modules are built only when named: `--enable-extension-modules=all`
+skips them.
+
+```sh
+./configure --with-extension-base=/path/to/base \
+  --enable-extension-modules=gpu_cuda_hip --prefix=/path/to/extensions
+make
+make install
+```
+
+`plumed-ext-gpu-cuda-hip` has CUDA 12.9 and 13.0 builds on Linux. Select one
 with `cuda-version=12.9` or `cuda-version=13.0`; they are variants of the same
 package, so conda installs one at a time. Each links to the exact main `plumed`
 version/build and the shared CUDA runtime. The kernel has no CUDA compiler or
 runtime dependency. Compiler tools and CCCL headers are build requirements only.
+Up to PLUMED 2.10 these actions were in the `cudaCoord` plugin.
 
-The plugin autoloads as `cuda_coordination`. With autoloading disabled use
-`LOAD MODULE=cuda_coordination` or `plumed --load-module=cuda_coordination ...`.
+The module autoloads as `gpu_cuda_hip`. With autoloading disabled use
+`LOAD MODULE=gpu_cuda_hip` or `plumed --load-module=gpu_cuda_hip ...`.
 The loader rejects multiple variants exposed through `PLUMED_PLUGIN_PATH`,
 including variants outside the active conda prefix.
 
@@ -231,10 +255,19 @@ Package tests without a GPU verify native loading, both action registrations,
 feature exports and explicit loading. The install/remove harness switches CUDA
 variants and checks that the main kernel bytes stay unchanged. Driver metadata
 is overridden only for those CPU-only CI checks. Actual GPU numerical validation
-can be requested with `python extensions/tests/cuda_coordination.py --prefix
+can be requested with `python extensions/tests/gpu_cuda_hip.py --prefix
 "$CONDA_PREFIX" --cuda-version 12.9 --gpu`; it runs existing double/float value
 and derivative fixtures in autoload and explicit module modes and rejects skips.
 Passing loading checks alone does not validate GPU calculations.
+
+`plumed-ext-gpu-voronoi` (module `gpu_voronoi`, the GPU backend of the reactive
+Voronoi actions, `BACKEND=CUDA`) has the same CUDA variants. It uses only the
+headers of gpu_cuda_hip (`include: [gpu_cuda_hip]` in its `module.yml`), so it
+neither links nor requires `plumed-ext-gpu-cuda-hip`. Its package tests also run
+the regression test without a GPU (AUTO falls back to the CPU, `BACKEND=CUDA`
+stops with an error); `python extensions/tests/gpu_voronoi.py --prefix
+"$CONDA_PREFIX" --cuda-version 12.9 --gpu` compares the GPU with the CPU on a GPU,
+and also needs `plumed-ext-gpu-cuda-hip` (for `plumed cuda-devices`).
 
 ### OpenACC parallel task manager plugin
 
@@ -289,7 +322,7 @@ main kernel bytes.
 
 ### Modules moved into the kernel
 
-Set `CONDA_DUMMY_PACKAGE = yes` in a kernel-built module's `conda.mk` to retain
+Set `conda: {dummy_package: true}` in a kernel-built module's `module.yml` to retain
 its historical `plumed-ext-<name>` package as an empty compatibility output.
 The generated package pins the exact main kernel and installs no module library
 or registration. Its test requires the module in the static kernel config.

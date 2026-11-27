@@ -28,7 +28,12 @@ mkdir -p science/plumed
 mkdir -p python/py-plumed
 
 modules=$(
-  grep default-off ../src/*/module.type | sed "s|.*/src/||" | sed "s|/.*||" | awk '{printf("%s ",$1)}'
+  for declaration in ../src/*/module.yml; do
+    if test "$(../src/maketools/module-header type "$declaration")" = default-off; then
+      module=${declaration%/module.yml}
+      printf '%s ' "${module##*/}"
+    fi
+  done
 )
 
 

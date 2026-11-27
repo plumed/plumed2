@@ -249,7 +249,7 @@ p.cmd("setNatoms", 2)
 p.cmd("setLogFile", "log")
 p.cmd("init")
 p.cmd("readInputLine", "d: DISTANCE ATOMS=1,2 NOPBC")
-p.cmd("readInputLine", "PRINT ARG=d FILE=other.h5")
+p.cmd("readInputLine", "PRINT ARG=d FILE=other.hpa")
 # the arrays must stay alive until calc
 box = array.array("d", [10, 0, 0, 0, 10, 0, 0, 0, 10])
 forces = array.array("d", [0] * 6)
@@ -281,7 +281,7 @@ p.finalize()
                 "--no-mpi",
                 "h5convert",
                 "--input",
-                "other.h5",
+                "other.hpa",
                 "--output",
                 "other.txt",
             ],
@@ -315,7 +315,7 @@ def check_optional_libraries(bundled, executable):
         h5py = None
     with temporary_directory() as temporary:
         directory = Path(temporary)
-        table = directory / "colvar.h5"
+        table = directory / "colvar.hpa"
         p = plumed.Plumed()
         p.cmd("setMDEngine", "python")
         p.cmd("setNatoms", 2)
@@ -337,8 +337,15 @@ def check_optional_libraries(bundled, executable):
             p.cmd("calc")
         p.finalize()
         if h5py is not None:
-            with h5py.File(table, "r") as f:
-                assert list(f["block_0"]["d"][:]) == [1.0, 2.0, 3.0]
+            # an archive of HDF5 tables: its members are read by h5py
+            import tarfile
+
+            values = []
+            with tarfile.open(table) as tar:
+                for member in tar:
+                    with h5py.File(tar.extractfile(member), "r") as f:
+                        values.extend(f["block_0"]["d"][:])
+            assert values == [1.0, 2.0, 3.0], values
         text = directory / "colvar.txt"
         subprocess.run(
             [

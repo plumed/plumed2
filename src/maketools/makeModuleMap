@@ -11,9 +11,9 @@ toPrint='  {"%s", "%s"}'
 regex='PLUMED_REGISTER_ACTION *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_]+)" *\)'
 regex_cl='PLUMED_REGISTER_CLTOOL *\( *[0-9a-zA-Z_]+ *, *"([0-9a-zA-Z_-]+)" *\)'
 
-for module in ../*/module.type ../../plugins/*/; do
+for module in ../*/module.yml ../../plugins/*/; do
   moduledir=${module%/}
-  moduledir=${moduledir%%/module.type}
+  moduledir=${moduledir%%/module.yml}
   [[ -d $moduledir ]] || continue
   modulename=${moduledir##*/}
   # the actions of a plugin are recorded as provided by "plugins/<name>" (see ActionRegister::create)

@@ -1,4 +1,6 @@
 name: s2cm
+type: default-off
+use: [core, tools, colvar]
 authors: Omar Valsson  
 description: S2 contact model collective variable (S2CM) 
 dois: ["10.1021/acs.jpclett.7b01770"]

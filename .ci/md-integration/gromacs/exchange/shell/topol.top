@@ -1,0 +1,16 @@
+[ defaults ]
+1 1 no
+[ atomtypes ]
+C 12.0 0.0 A 0 0
+S 0.0 -1.0 S 0 0
+[ moleculetype ]
+POL 1
+[ atoms ]
+1 C 1 POL C 1 0.0 12.0
+2 S 1 POL S 1 -1.0 0.0
+[ polarization ]
+1 2 1 0.001
+[ system ]
+One shell
+[ molecules ]
+POL 1

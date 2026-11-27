@@ -1,4 +1,13 @@
 name: core
+type: always
+use: [config, tools, lepton, small_vector, mpiwrap]
 authors: The PLUMED core developers
 description: PLUMED's core functionalities for interfacing with MD codes and building actions
 dois: ["10.1016/j.cpc.2013.09.018"]
+
+# Packaging options: see conda/module-options.md.
+# Optional native libraries used by this built-in module.
+conda:
+  requirements:
+    host: [zlib]
+    run: [zlib]

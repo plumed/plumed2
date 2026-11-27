@@ -104,9 +104,19 @@ void PlumedOptionProvider::setComm(const MpiComm& mpiComm)
     opts_.mpiComm_ = &mpiComm;
 }
 
+void PlumedOptionProvider::setHrex(bool hrex)
+{
+    opts_.hrex_ = hrex;
+}
+
 void PlumedOptionProvider::setReplex(bool replex)
 {
     opts_.replex_ = replex;
+}
+
+void PlumedOptionProvider::setGpuDeviceId(int gpuDeviceId)
+{
+    opts_.gpuDeviceId_ = gpuDeviceId;
 }
 
 void PlumedOptionProvider::setInputrec(const t_inputrec* inputrec)

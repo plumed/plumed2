@@ -3,7 +3,15 @@
 VERSION = $(shell if test -f ../../VERSION.txt ; then grep -v \\\# ../../VERSION.txt ; else echo "Unknown" ; fi )
 
 # here we build the list of modules to be linked in plumedKernel
-KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
+ifeq ($(MAKECMDGOALS),clean)
+selected_modules := $(notdir $(patsubst %/module.yml,%,$(wildcard ../*/module.yml)))
+else
+selected_modules := $(shell ../maketools/find_modules.sh || echo __INVALID_MODULE_HEADER__)
+ifneq ($(filter __INVALID_MODULE_HEADER__,$(selected_modules)),)
+$(error Invalid module selection; rerun ./configure and see the diagnostic above)
+endif
+endif
+KERNEL_MODULES := $(addprefix ../,$(selected_modules))
 
 # This adds modules which are built anyway and linked with some ad hoc procedure
 DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
@@ -48,14 +56,16 @@ SRC_MAIN=../main/main.cpp
 
 # source for plumed kernel
 # everything else
-SRC_KERNEL := $(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
+# (and the .cu files of the modules with toolchain cuda)
+SRC_KERNEL := $(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; ls $$dir/*.cu 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
 
 # corresponding objects:
 OBJ_WRAPPER := ../wrapper/PlumedStatic.o
 OBJ_DYNAMIC_WRAPPER := ../wrapper/Plumed.o
 OBJ_MAIN := $(SRC_MAIN:.cpp=.o)
 XXX := $(SRC_KERNEL:.cpp=.o)
-OBJ_KERNEL := $(XXX:.c=.o)
+YYY := $(XXX:.cu=.o)
+OBJ_KERNEL := $(YYY:.c=.o)
 ALL_OBJ := $(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # when calling install-build, libraries in install should be built.
@@ -546,7 +556,7 @@ ifeq ($(PLUMED_INSTALL),Install)
 	mkdir -p install
 endif
 # $(notdir $@) is required to obtain the plain name (without `install/`)
-	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(DYNAMIC_LIBS)
+	$(LDSHARED) -o $@ $^ $(SONAME_OPTION),"$(SONAME_INSTALL_PATH)$(notdir $@)" $(KERNEL_LDFLAGS) $(DYNAMIC_LIBS)
 
 $(PLUMED_SHARED_OBJ): $(OBJ_WRAPPER) $(PLUMED_KERNEL)
 ifeq ($(PLUMED_INSTALL),Install)

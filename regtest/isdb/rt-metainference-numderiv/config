@@ -1,0 +1,19 @@
+type=driver
+plumed_modules=isdb
+# The numerical derivatives evaluate the score many times per step: every evaluation must start
+# from the state of Metainference at the beginning of the step, so that the Monte Carlo moves of
+# sigma are the same as with analytical derivatives. The scores and sigmas of a and n must be
+# identical, and their derivatives equal within the error of the finite differences.
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  awk 'BEGIN{for(f=0;f<20;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", 0.6*i+0.1*sin(0.3*f+i), 0.2*cos(0.2*f*(i+1)), 0.05*i*f/20.0}}}' > traj.xyz
+}
+
+function plumed_regtest_after() {
+  {
+    awk 'NR>1{if($2!=$6||$3!=$7||$4!=$8||$5!=$9) bad++; n++} END{printf "%d steps, %d with different score, sigma or acceptance\n", n, bad}' COLVAR
+    # deriv: time, index of the derivative, derivative of a.score, derivative of n.score
+    awk '!/^#/{d=$3-$4; if(d<0)d=-d; if(d>m)m=d} END{printf "max |analytical - numerical| derivative below 1e-3: %s\n", (m<1e-3?"yes":"no")}' deriv
+  } > numderiv_check
+}

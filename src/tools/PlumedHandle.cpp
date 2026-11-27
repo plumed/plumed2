@@ -92,6 +92,68 @@ PlumedHandle PlumedHandle::dlopen(const char* path) {
   return PlumedHandle(path);
 }
 
+int PlumedHandle::loadedApiVersion() {
+  if(loadedApiVersion_<0) {
+    int api=0;
+    cmd("getApiVersion",&api);
+    loadedApiVersion_=api;
+  }
+  return loadedApiVersion_;
+}
+
+void PlumedHandle::setExchangeStep(bool exchange) {
+  if(local) {
+    local->setExchangeStep(exchange);
+  } else {
+    const int api=loadedApiVersion();
+    if(api<13) {
+      if(exchange) {
+        plumed_error()<<"This loaded guest kernel cannot receive exchange context; use the current kernel for nested replica exchange";
+      }
+      return;
+    }
+    const int flag=exchange ? 1 : 0;
+    cmd("setExchangeStep",&flag);
+  }
+}
+
+void PlumedHandle::setEvaluationMode(int mode) {
+  plumed_massert(mode>=0 && mode<=2,"invalid evaluation mode");
+  if(local) {
+    local->setEvaluationMode(mode);
+  } else {
+    const int api=loadedApiVersion();
+    if(api<14) {
+      if(mode!=0) {
+        plumed_error()<<"This loaded guest kernel cannot receive early auxiliary evaluation context (requires API >= 14)";
+      }
+      return;
+    }
+    cmd("setEvaluationMode",&mode);
+  }
+}
+
+void PlumedHandle::performCalcNoUpdate(bool forcesRequested) {
+  if(local) {
+    if(forcesRequested) {
+      local->performCalcNoUpdate();
+    } else {
+      local->performCalcNoForces();
+    }
+  } else {
+    const int api=loadedApiVersion();
+    if(api<4) {
+      plumed_error()<<"This loaded guest kernel does not support performCalcNoUpdate (requires API >= 4)";
+    }
+    if(!forcesRequested && api<9) {
+      plumed_error()<<"This loaded guest kernel does not support performCalcNoForces (requires API >= 9)";
+    }
+    // Context has already been forwarded before preparation/calculation.
+    // API versions describe command availability, not the action state fixes.
+    cmd(forcesRequested ? "performCalcNoUpdate" : "performCalcNoForces");
+  }
+}
+
 void PlumedHandle::cmd(std::string_view key,const TypesafePtr & ptr) {
   if(local) {
     local->cmd(key,ptr);
@@ -136,8 +198,10 @@ void PlumedHandle::cmd(std::string_view key,const TypesafePtr & ptr) {
 
 PlumedHandle::PlumedHandle(PlumedHandle && other) noexcept:
   local(std::move(other.local)),
-  loaded(other.loaded) {
+  loaded(other.loaded),
+  loadedApiVersion_(other.loadedApiVersion_) {
   other.loaded=nullptr;
+  other.loadedApiVersion_=-1;
 }
 
 PlumedHandle & PlumedHandle::operator=(PlumedHandle && other) noexcept {
@@ -147,7 +211,9 @@ PlumedHandle & PlumedHandle::operator=(PlumedHandle && other) noexcept {
     }
     local=std::move(other.local);
     loaded=other.loaded;
+    loadedApiVersion_=other.loadedApiVersion_;
     other.loaded=nullptr;
+    other.loadedApiVersion_=-1;
   }
   return *this;
 }

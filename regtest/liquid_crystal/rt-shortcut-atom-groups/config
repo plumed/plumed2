@@ -1,0 +1,5 @@
+type=driver
+plumed_modules="liquid_crystal multicolvar colvar function generic matrixtools bias"
+# Compare named groups, MOLINFO and index selections with explicit atom lists.
+# Each difference is biased linearly: equal derivatives give zero net forces.
+arg="--plumed plumed.dat --ixyz traj.xyz --dump-forces forces --dump-forces-fmt=%12.8f"

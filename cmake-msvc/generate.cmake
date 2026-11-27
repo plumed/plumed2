@@ -1,4 +1,5 @@
 # Driver for the PLUMED build-time generators (run with: cmake -P).
+cmake_minimum_required(VERSION 3.18)
 # Usage: cmake -DSRC=<plumed-source-root> -DOUT=<generation-dir> -P generate.cmake
 if(NOT DEFINED SRC OR NOT DEFINED OUT)
   message(FATAL_ERROR "Usage: cmake -DSRC=<plumed-source-root> -DOUT=<generation-dir> -P generate.cmake")

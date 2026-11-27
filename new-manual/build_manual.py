@@ -4,7 +4,7 @@ import json
 import shutil
 import requests
 import subprocess
-import yaml
+import sys
 import glob
 import numpy as np
 from pathlib import Path
@@ -15,6 +15,9 @@ from PlumedToHTML import processMarkdown, processMarkdownString, get_javascript,
 import networkx as nx
 from multiprocessing import Pool, cpu_count
 import functools
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "extensions"))
+from metadata import header_field, read_header, read_metadata
 
 PLUMED = "plumed"
 
@@ -81,7 +84,9 @@ def getActionDocumentationFromPlumed(syntax):
     docs = {}
     tags = {}
     run_action_page = functools.partial(getActionDocumentation, syntax=syntax)
-    files = glob.glob("../src/*/*.cpp")
+    # .cu: the sources of the modules compiled with the cuda toolchain (e.g. gpu_cuda_hip);
+    # their pages are made when the module is in the build of the manual
+    files = sorted(glob.glob("../src/*/*.cpp") + glob.glob("../src/*/*.cu"))
     if sys_platform == "wasi" or sys_platform == "ios":
         # multiprocessing is not avaiable on WASI or iOS
         # https://docs.python.org/3/library/multiprocessing.html
@@ -401,36 +406,36 @@ The functionality in PLUMED is split up between a collection of modules.  Each o
 every time PLUMED is compiled, others are not essential but are still compiled by default unless you explicitly tell PLUMED not to compile by using:
           
 ```bash
-./configure --disable-module=module-name
+./configure --enable-modules=-module-name
 ```
    
 The remainder of the modules are not compiled unless you explicitly request PLUMED to include that module in your compilation by using the command:
    
 ```bash
-./configure --enable-module=module-name
+./configure --enable-modules=+module-name
 ```
 
 To enable or disable multiple modules one should provide them as a : separated list. Notice that `+modulename` and `modulename` both activate the module, whereas
 `-modulename` deactivates it. E.g.
 
 ```bash
-./configure --enable-modules=+adjmat:-colvar
+./configure --enable-modules=+adjmat:-ves
 ```
 
-will disable the colvar module and enable the adjmat module.  The : can, in fact, be ommitted when you use + and -.  In other words, the following command can 
+will disable the ves module and enable the adjmat module. The : can be omitted when you use + and -. The following command can
 be used in place of the previous one:
 
 ```bash
-./configure --enable-modules=+adjmat-colvar
+./configure --enable-modules=+adjmat-ves
 ```
 
-If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-colvar` will _not_ do what you expect!
+If you repeat the `--enable-modules` keyword only the last instance will be used. Thus `./configure --enable-modules=adjmat --enable-modules=-ves` will _not_ do what you expect!
 
-!!! note "old implementation"
-
-    Until PLUMED 2.2, it was also possible to switch on or off modules by adding files
-    in the plumed2/src directory. Since PLUMED 2.3 this is discouraged, since any choice made
-    in this manner will be overwritten next time `./configure` is used.
+Module overrides are stored in the `PLUMED_MODULE_ENABLED` and `PLUMED_MODULE_DISABLED` variables in the
+generated `Makefile.conf`. Modules in neither list follow their current
+`module.yml` default. Newly added modules therefore follow their defaults without
+running configure again. Legacy `.on` and `.off` files are ignored. Reconfigure
+if a source update adds dependencies that are not satisfied by the saved settings.
 
 There are also some shortcuts available:
 
@@ -439,10 +444,21 @@ There are also some shortcuts available:
 - `./configure --enable-modules=reset` or `./configure --enable-modules` can be used to enable the default modules.
 
 The two kinds of syntax can be combined and, for example, `./configure --enable-modules=none:colvar` will cause a version of PLUMED with all the modules disabled with the exception of the colvar module to be compiled.
+
+Required modules listed in each module's `module.yml` are enabled automatically,
+including transitive dependencies. Configure prints a warning for each module it
+adds. For example, `--enable-modules=none:ves` also enables `bias` and `cltools`.
+An explicit exclusion is an error if an enabled module requires it:
+`--enable-modules=none:ves:-bias` fails and reports the dependency chain.
+Selections are processed in order: a later `+bias` cancels an earlier `-bias`,
+and `all`, `none`, or `reset` replaces the selection and clears earlier explicit
+exclusions. Dependency resolution happens after the complete expression is read.
+External libraries still need to satisfy their usual configure checks.
+
    
 ## Module dependencies
 
-The table below lists the direct native dependencies declared in each module's `USE=` line in its Makefile. The same list appears on each module page.
+The table below lists the direct native dependencies declared in each module's `use:` field in `module.yml`. The same list appears on each module page.
 Always-compiled components, such as `core` and `tools`, are supplied by the PLUMED kernel. Components without their own action documentation are shown without a link.
 
 A shortcut can also invoke actions from other modules at runtime. These action requirements are included in the [dependency graph](modulegraph.md), but they are
@@ -460,7 +476,7 @@ make install
 
 This builds VES, PAMM and any native dependencies that are missing from the base, including adjmat. It does not rebuild the kernel.
 The libraries must match the exact base version and build. Distributions can provide them as packages such as `plumed-ext-ves`.
-Their package dependencies include the native module dependencies from `USE=`, but not shortcut requirements.
+Their package dependencies include the native module dependencies from `use:`, but not shortcut requirements.
 
 Installed modules are loaded automatically from `lib/plumed/plugins` beside the loaded kernel. Set `PLUMED_PLUGIN_PATH` to a colon-separated list of additional
 registration directories when libraries are installed in separate prefixes, as with HPC environment modules. Include the directories of their native dependencies too.
@@ -536,10 +552,8 @@ def addSpecialGroupsToPage(file, groups):
 
 
 def getModuleType(module):
-    if not Path("../../src/" + module + "/module.type").is_file():
-        return "always"
-    with open("../../src/" + module + "/module.type") as f:
-        return f.read().strip()
+    declaration = Path("../../src") / module / "module.yml"
+    return read_header(declaration)["type"] if declaration.is_file() else "always"
 
 
 def drawModuleNode(index, key, of):
@@ -554,19 +568,15 @@ def drawModuleNode(index, key, of):
         raise Exception("don't know how to draw node of type " + getModuleType(key))
 
 
-def getModuleRequirementsFromMakefile(thismodule):
-    makefile = Path(__file__).resolve().parent.parent / "src" / thismodule / "Makefile"
-    with makefile.open() as f:
-        for line in f:
-            declaration, _, _ = line.partition("#")
-            key, separator, value = declaration.partition("=")
-            if separator and key.strip() == "USE":
-                return value.split()
-    return []
+def getModuleRequirements(thismodule):
+    declaration = (
+        Path(__file__).resolve().parent.parent / "src" / thismodule / "module.yml"
+    )
+    return read_header(declaration)["use"]
 
 
 def formatModuleRequirements(thismodule, documented_modules):
-    dependencies = getModuleRequirementsFromMakefile(thismodule)
+    dependencies = getModuleRequirements(thismodule)
     return (
         ", ".join(
             '<a href="../module_' + name + '">' + name + "</a>"
@@ -591,9 +601,9 @@ def createModuleGraph(version, plumed_syntax):
             for req in value["needs"]:
                 if plumed_syntax[req]["module"] != thismodule:
                     requires[thismodule].add(plumed_syntax[req]["module"])
-    # Get dependencies from Makefiles
+    # Get direct native dependencies from module declarations
     for thismodule in requires.keys():
-        for conn in getModuleRequirementsFromMakefile(thismodule):
+        for conn in getModuleRequirements(thismodule):
             if conn in requires.keys():
                 requires[thismodule].add(conn)
 
@@ -610,14 +620,14 @@ is always compiled (blue), on by default (green) or off by default (red).  If yo
 PLUMED to include it during the configure stage by using:
 
 ```bash
-./configure --enable-module=module-name
+./configure --enable-modules=+module-name
 ```
 
 Each module contains implementations of a number of [actions](actions.md). You can find a list of all the actions implemented in in PLUMED [here](actionlist.md).
 
-This graph combines native `USE=` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
+This graph combines native `use:` dependencies and action requirements, including shortcuts, and omits redundant edges for readability.
 The complete direct native dependency lists are given in the [module table](modules.md#module-dependencies) and on each module page.
-Only the native `USE=` dependencies determine separately installed module packages.
+Only the native `use:` dependencies determine separately installed module packages.
 
 <pre class=\"mermaid\">
 """
@@ -723,8 +733,7 @@ Only the native `USE=` dependencies determine separately installed module packag
 
 def getModuleDictionary(modname):
     if os.path.exists("../../src/" + modname + "/module.yml"):
-        with open("../../src/" + module + "/module.yml") as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata("../../src/" + modname + "/module.yml")
         return moddict
     return {
         "name": modname,
@@ -736,8 +745,7 @@ def getModuleDictionary(modname):
 
 def getPluginDictionary(plugname):
     if os.path.exists("../../plugins/" + plugname + "/plugin.yml"):
-        with open("../../plugins/" + plugname + "/plugin.yml") as f:
-            plugdict = yaml.load(f, Loader=yaml.BaseLoader)
+        plugdict = read_metadata("../../plugins/" + plugname + "/plugin.yml")
         return plugdict
     return {
         "name": plugname,
@@ -940,9 +948,15 @@ def createPluginPage(
     plumedtags,
     tagdictionary,
     broken_inputs,
+    kind="plugin",
+    docfile=None,
 ):
-    with open("plugin_" + plugname + ".md", "w") as f:
-        f.write("# [Plugin](modules.md): " + plugname + "\n\n")
+    # kind="module": the page of a module that is not in the build of the manual,
+    # made from its module.md (docfile) as the page of a plugin is made from its README
+    if docfile is None:
+        docfile = "../../plugins/" + plugname + "/README.md"
+    with open(kind + "_" + plugname + ".md", "w") as f:
+        f.write("# [" + kind.capitalize() + "](modules.md): " + plugname + "\n\n")
         f.write("| Description    | Usage |\n")
         f.write("|:--------|:--------:|\n")
         f.write(
@@ -986,13 +1000,13 @@ def createPluginPage(
             )
         f.write("|\n\n")
         f.write("## Details \n")
-        if os.path.exists("../../plugins/" + plugname + "/README.md"):
-            with open("../../plugins/" + plugname + "/README.md") as iff:
+        if os.path.exists(docfile):
+            with open(docfile) as iff:
                 docs = iff.read()
             actions = set()
             _, nf = processMarkdownString(
                 docs,
-                "plugins_" + plugname + ".md",
+                kind + "s_" + plugname + ".md",
                 (PLUMED,),
                 (version,),
                 actions,
@@ -1682,8 +1696,7 @@ if (
     # Read in all the module pages
     tagdictionary = {}
     for file in glob.glob("../src/*/module.yml"):
-        with open(file) as f:
-            moddict = yaml.load(f, Loader=yaml.BaseLoader)
+        moddict = read_metadata(file)
         if "tags" in moddict:
             for key, value in moddict["tags"].items():
                 if key in tagdictionary.keys():
@@ -1774,6 +1787,40 @@ if (
         ):
             nodocs.append(
                 ['<a href="../module_' + module + '">' + module + "</a>", "module"]
+            )
+
+    # Modules compiled with another toolchain (e.g. toolchain: cuda in module.yml) are
+    # not in the build of the manual: their page is made from their module.md alone
+    for file in sorted(glob.glob("../src/*/module.yml")):
+        module = Path(file).parent.name
+        if module in modules or header_field(read_header(file), "toolchain") == "cxx":
+            continue
+        mlink = '<a href="../module_' + module + '">' + module + "</a>"
+        print("Building module page", module, "(not compiled in this build)")
+        with cd("docs"):
+            mod_dict = getModuleDictionary(module)
+            moduletabledata.append(
+                [
+                    mlink,
+                    mod_dict["description"],
+                    mod_dict["authors"],
+                    getModuleType(module),
+                    formatModuleRequirements(module, modules),
+                ]
+            )
+            createPluginPage(
+                version,
+                module,
+                mod_dict,
+                0,
+                int(mod_dict.get("nlessons", 0)),
+                mod_dict.get("searchterm", module),
+                plumed_syntax,
+                plumedtags,
+                tagdictionary,
+                broken_inputs,
+                kind="module",
+                docfile="../../src/" + module + "/module.md",
             )
 
     # And create a page for each plugin

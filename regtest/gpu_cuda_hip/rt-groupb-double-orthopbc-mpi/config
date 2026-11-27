@@ -1,0 +1,17 @@
+type=driver
+plumed_modules=gpu_cuda_hip
+# skipped on the CI where gpu_cuda_hip is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes)
+# or there is no GPU: the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests)
+PLUMED_ALLOW_SKIP_ON_CI=yes
+plumed_needs_device=cuda
+mpiprocs=2
+
+arg="--plumed plumed.dat --ixyz traj-ortho.xyz"
+
+plumed_regtest_after() {
+  {
+    echo '#! FIELDS time parameter cpu-gpu'
+    awk 'NR>1{print $1, $2, $4-$3} ' <deriv
+  } >deriv_delta
+}
+extra_files="../trajectories/traj-ortho.xyz"

@@ -46,6 +46,53 @@ CLTool::CLTool(const CLToolOptions& co ):
   inputdata(inputType::unset) {
 }
 
+CLTool::Completion CLTool::complete(const std::vector<std::string>& arguments) const {
+  Completion result;
+  // Expand aliases while retaining the canonical keyword and its argument kind.
+  std::map<std::string,std::string> options;
+  for(const auto& key : keywords.getKeys()) {
+    for(const auto& alias : Tools::getWords(key,"/")) {
+      options[alias]=key;
+    }
+  }
+  std::string pending;
+  bool positional=false;
+  for(std::size_t i=0; i+1<arguments.size(); ++i) {
+    const auto& word=arguments[i];
+    if(!pending.empty()) {
+      pending.clear();
+    } else if(!positional) {
+      if(word=="--" && options.count(word)) {
+        positional=true;
+      } else {
+        const auto it=options.find(word);
+        if(it!=options.end() && !keywords.style(it->second,"flag")) {
+          pending=it->second;
+        }
+      }
+    }
+  }
+  const std::string current=arguments.empty()?"":arguments.back();
+  if(!positional && pending.empty()) {
+    const auto equal=current.find('=');
+    if(equal!=std::string::npos) {
+      const auto it=options.find(current.substr(0,equal));
+      if(it!=options.end() && !keywords.style(it->second,"flag")) {
+        pending=it->second;
+        result.prefix=current.substr(0,equal+1);
+      }
+    }
+  }
+  result.option=pending;
+  result.files=positional || !pending.empty() || current.empty() || current[0]!='-';
+  if(!result.files) {
+    for(const auto& option : options) {
+      result.candidates.push_back(option.first);
+    }
+  }
+  return result;
+}
+
 void CLTool::parseFlag( const std::string&key, bool&t ) {
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   plumed_massert(keywords.style(key,"flag"),"keyword " + key + " has not been registered as a flag");

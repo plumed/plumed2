@@ -179,6 +179,9 @@ void Committor::readCheckpoint(CheckpointReader& r) {
 }
 
 void Committor::calculate() {
+  if(isCalculationOnly()) {
+    return;
+  }
   std::vector<unsigned> inbasin;
   inbasin.assign (nbasins,1);
 

@@ -1,0 +1,26 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# Reference run: the whole trajectory (40 steps)
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 40
+  split_traj 4 20
+  # interrupted run: 20 steps, then a restart from step 20 (state read from FILE)
+  mkdir restart
+  cd restart
+  cp ../plumed.dat .
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../first.xyz --multi 4 --kt 2.49 --log-file log-part > out1 2> err1
+  $mpi $plumed driver --plumed plumed.dat --ixyz ../second.xyz --multi 4 --kt 2.49 --restart --initial-step 20 --log-file log > out2 2> err2
+  cd ..
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  # the restarted run must reproduce the reference bitwise
+  compare restart COLVAR.0 COLVAR.1 COLVAR.2 COLVAR.3 bias_index.xvg replica_index.xvg > restart_check
+  extract_log restart/log.0 | sed -n '/initial state/,/replica indices/p' >> restart_check
+}

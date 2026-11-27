@@ -84,6 +84,10 @@ NEIGH_STRIDE=20
 //+ENDPLUMEDOC
 
 class FuncPathGeneral : public Function {
+  long long preparedStep_=-1;
+  std::uint64_t preparedEvaluation_=0;
+  bool preparedAuxiliary_=false;
+  bool trialGeometry_=false;
   double lambda;
   int neigh_size;
   double neigh_stride;
@@ -258,6 +262,17 @@ FuncPathGeneral::FuncPathGeneral(const ActionOptions&ao):
 
 // Calculator
 void FuncPathGeneral::calculate() {
+  if(isGeometryTrial() && neigh_size>0 &&
+      static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
+    error("Auxiliary path evaluations require the full frame list; disable NEIGH_SIZE");
+  }
+  if(isGeometryTrial() || trialGeometry_) {
+    neighpair.resize(path_cv_values.size());
+    for(unsigned i=0; i<neighpair.size(); ++i) {
+      neighpair[i].first=i;
+    }
+  }
+  trialGeometry_=isGeometryTrial();
   double s_path = 0.;
   double partition = 0.;
   double tmp, value, diff, expdist, s_der, z_der;
@@ -342,6 +357,28 @@ void FuncPathGeneral::calculate() {
 
 // Prepare the required arguments
 void FuncPathGeneral::prepare() {
+  if(isGeometryTrial() && neigh_size>0 &&
+      static_cast<unsigned>(neigh_size)<path_cv_values.size()) {
+    error("Auxiliary evaluation with a reduced path frame list is unsupported; disable NEIGH_SIZE");
+  }
+  if(isCalculationOnly() && !isGeometryTrial() && !trialGeometry_ && preparedStep_==getStep()) {
+    // Repeated local calls use the already selected frames at this MD step.
+    return;
+  }
+  if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
+      preparedAuxiliary_==isGeometryTrial()) {
+    return;
+  }
+  preparedStep_=getStep();
+  preparedEvaluation_=getEvaluationId();
+  preparedAuxiliary_=isGeometryTrial();
+  if(isGeometryTrial() || trialGeometry_) {
+    neighpair.resize(path_cv_values.size());
+    for(unsigned i=0; i<neighpair.size(); ++i) {
+      neighpair[i].first=i;
+    }
+    return;
+  }
   // Neighbour list: rank and activate the chain for the next step
 
   // Neighbour list: if neigh_size < 0 never sort and keep the full vector

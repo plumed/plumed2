@@ -284,6 +284,7 @@ void Action::activate() {
 // accessing to a virtual atom), this is done just before dependencies are
 // activated
   if(!active) {
+    PlumedMain::ActionScope actionScope(plumed,this);
     this->unlockRequests();
     prepare();
     this->lockRequests();
@@ -435,6 +436,22 @@ void Action::calculateFromPDB( const PDB& pdb ) {
 
 bool Action::getExchangeStep()const {
   return plumed.getExchangeStep();
+}
+
+bool Action::isCalculationOnly()const {
+  return plumed.isCalculationOnly();
+}
+
+bool Action::isGeometryTrial()const {
+  return getExchangeStep() || (isCalculationOnly() && plumed.getEvaluationMode()==0);
+}
+
+bool Action::isGeometryUnchanged()const {
+  return !getExchangeStep() && plumed.getEvaluationMode()==2;
+}
+
+std::uint64_t Action::getEvaluationId()const {
+  return plumed.atomsVersion;
 }
 
 std::string Action::cite(const std::string&s) {

@@ -103,6 +103,45 @@ plain candidates, one per line. `modules` includes the kernel and visible loaded
 modules; `installed-modules` also includes discovered registrations without loading
 their libraries. Selection still performs compatibility/dependency checks.
 
+## Tool-owned completion
+
+Every C++ CL tool has a virtual `CLTool::complete(arguments)` hook. It receives
+the arguments after the tool name, including the current partial word as the
+last element (an empty string after a space). Completion does not call `readInput`
+or `main`, so compulsory arguments need not be present and incomplete input is
+allowed. The default implementation derives option names, aliases and whether an
+option takes a value from the tool's registered keywords. Values and positional
+arguments fall back to filename completion; a registered `--` delimiter ends
+option completion. Existing tools inherit this behavior without changes.
+
+A tool can override the hook to supply its own values or disable filename
+completion for an argument. For example:
+
+```cpp
+Completion complete(const std::vector<std::string>& arguments) const override {
+  auto result=CLTool::complete(arguments);
+  if(result.option=="--format") {
+    result.files=false;
+    result.candidates={"text","binary"};
+  }
+  return result;
+}
+```
+
+The result's `option` identifies the canonical keyword for the current value,
+and `prefix` identifies an attached value such as `--format=`. Candidates contain
+only the value, without this prefix. Candidates are literal strings, not shell
+code, and must not contain newlines. The shell handles tokenization, prefix
+matching, quoting and filesystem matches. Tools loaded with global `--load` or
+`--load-module` use their own hook in the same runtime context. Script tools
+retain their own `--options` declarations and the generic filename fallback.
+
+The backend query `completion --list context --command TOOL -- WORD...` exposes
+this interface independently of Bash. Its first line is `files<TAB>PREFIX` or
+`words<TAB>PREFIX`, followed by literal candidates, one per line. The generated
+Bash function uses this query for all tools; it has no tool-name-specific rules.
+The built-in `modules` command owns its completion rules in its dispatcher.
+
 ## Multiple versions and suffixes
 
 If you have multiple versions of PLUMED installed in separate env modules there is nothing more to do.

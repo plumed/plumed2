@@ -1,6 +1,13 @@
 name: volumes
+type: default-off
+use: [core, tools, colvar]
 authors: Gareth Tribello
 description: tools for calculating whether atoms are within a certain part of the simulation cell or not
 dois: []
 tags: 
   VOLUMES: actions for calculating whether atoms are within a certain part of the simulation cell or not
+
+# Packaging options: see conda/module-options.md.
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.
+conda: {}

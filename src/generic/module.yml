@@ -1,4 +1,6 @@
 name: generic
+type: default-on
+use: [core, tools, xdrfile, mpiwrap]
 authors: The PLUMED core developers
 description: generic features of PLUMED many of which are for printing data to files
 dois: ["10.1016/j.cpc.2013.09.018"]

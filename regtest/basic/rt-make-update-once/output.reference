@@ -1,0 +1,6 @@
+first-step duplicate updates warn
+same-step evaluation allowed
+next step allowed
+later duplicate updates rejected
+nonzero and negative starts supported
+return to initial step remains strict

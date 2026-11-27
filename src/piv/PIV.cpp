@@ -208,6 +208,9 @@ private:
   /// shared across multiple PIV instances
   struct SharedData {
     int prev_stp=-1;
+    std::uint64_t evaluation=0;
+    bool trial=false;
+    bool forceRefresh=false;
     int init_stp=1;
     std:: vector<std:: vector<Vector> > prev_pos;
     std:: vector<std:: vector<double> > cPIV;
@@ -242,7 +245,7 @@ void PIV::registerKeywords( Keywords& keys ) {
   keys.add("compulsory","ATOMTYPES","The atom types to use for PIV.");
   keys.add("optional","SFACTOR","Scale the PIV-distance by such block-specific factor");
   keys.add("optional","VOLUME","Scale atom-atom distances by the cubic root of the cell volume. The input volume is used to scale the R_0 value of the switching function. ");
-  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated.");
+  keys.add("optional","UPDATEPIV","Frequency (in steps) at which the PIV is updated. Auxiliary replica/lambda or no-force evaluations require UPDATEPIV=1.");
   keys.addFlag("TEST",false,"Print the actual and reference PIV and exit");
   keys.addFlag("COM",false,"Use centers of mass of groups of atoms instead of atoms as specified in the Pdb file");
   keys.addFlag("ONLYCROSS",false,"Use only cross-terms (A-B, A-C, B-C, ...) in PIV");
@@ -359,6 +362,9 @@ PIV::PIV(const ActionOptions&ao):
   // UPDATEPIV
   if(keywords.exists("UPDATEPIV")) {
     parse("UPDATEPIV",updatePIV);
+  }
+  if(updatePIV<1) {
+    error("UPDATEPIV must be greater than zero");
   }
 
   // Test
@@ -779,6 +785,9 @@ PIV::PIV(const ActionOptions&ao):
 }
 
 void PIV::calculate() {
+  if(isGeometryTrial() && updatePIV!=1) {
+    error("Foreign-coordinate PIV evaluations require UPDATEPIV=1; held values cannot safely follow foreign geometry");
+  }
 
   // Local variables
 
@@ -798,6 +807,10 @@ void PIV::calculate() {
   auto & cPIV(sharedData->cPIV);
   auto & Atom0(sharedData->Atom0);
   auto & Atom1(sharedData->Atom1);
+  if(sharedData->evaluation!=getEvaluationId()) {
+    sharedData->forceRefresh=isGeometryTrial() || sharedData->trial;
+    sharedData->trial=isGeometryTrial();
+  }
 
   std:: vector<std:: vector<int> > A0(Nprec);
   std:: vector<std:: vector<int> > A1(Nprec);
@@ -878,7 +891,9 @@ void PIV::calculate() {
     log << "\n";
   }
   // Do the sorting only once per timestep to avoid building the PIV N times for N rPIV PDB structures!
-  if ((getStep()>prev_stp&&getStep()%updatePIV==0)||CompDer) {
+  if ((sharedData->evaluation!=getEvaluationId() &&
+       (getStep()%updatePIV==0 || sharedData->forceRefresh)) || CompDer) {
+    sharedData->evaluation=getEvaluationId();
     if (CompDer) {
       log << " Step " << getStep() << "  Computing Derivatives NON-SORTED PIV \n";
     }
@@ -919,7 +934,7 @@ void PIV::calculate() {
       }
       // Decide whether to update lists based on atom displacement, every stride
       std:: vector<std:: vector<Vector> > tmp_pos(Nlist);
-      if (getStep() % nlall->getStride() ==0) {
+      if (getStep() % nlall->getStride() ==0 || sharedData->forceRefresh) {
         bool docom=com;
         for (unsigned j=0; j<Nlist; j++) {
           for (unsigned i=0; i<nl[j]->getFullAtomList().size(); i++) {
@@ -1161,7 +1176,7 @@ void PIV::calculate() {
   // non-global variables Nder and Scalevol defined to speedup if structures in cycles
   bool Nder=CompDer;
   bool Scalevol=Svol;
-  if(getStep()%updatePIV==0) {
+  if(getStep()%updatePIV==0 || sharedData->forceRefresh) {
     // set to zero PIVdistance, derivatives and virial when they are calculated
     for(unsigned j=0; j<m_deriv.size(); j++) {
       for(unsigned k=0; k<3; k++) {

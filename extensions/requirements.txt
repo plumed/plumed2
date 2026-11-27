@@ -1,0 +1,2 @@
+# Only Python metadata/extension/packaging tools need this; native builds do not.
+PyYAML>=6

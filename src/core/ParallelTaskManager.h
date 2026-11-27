@@ -753,7 +753,10 @@ void ParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, b
       std::vector<std::size_t> indices(ForceIndexHolder::indexesPerScalar(nindexrows,myinput.nderivatives_per_scalar));
 
       auto force_indices = ForceIndexHolder::create( nindexrows, myinput.nderivatives_per_scalar, indices.data() );
-      #pragma omp for nowait
+      // Task-owned force entries can lie inside the range reduced by gatherThreads
+      // (e.g. the first atoms of TORSIONS_MATRIX). Finish their direct writes before
+      // any thread adds its private buffer to that range, even where it adds zero.
+      #pragma omp for
       for(unsigned i=first; i<nmytasks; i+=step) {
         std::size_t task_index = mytasks[i];
         // the tasks may add to their values (e.g. the sums of MATRIX_VECTOR_PRODUCT): they start

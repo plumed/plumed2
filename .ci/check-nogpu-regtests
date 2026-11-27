@@ -1,0 +1,40 @@
+#! /usr/bin/env bash
+# Usage: .ci/check-nogpu-regtests regtest/<module>
+# After "make -C regtest/<module>" on a machine without a GPU: the tests that do not need a GPU
+# (rt-nogpu-*) must have run and passed, and the others must have been skipped because there is
+# no GPU, not because the module is missing (that would make every test "pass").
+# A skipped test reports NOT_APPLICABLE, or "SKIP_ON_CI found!" on the CI when its config sets
+# PLUMED_ALLOW_SKIP_ON_CI (regtest/scripts/run): the requirement that was missing is the last
+# one the report says it was checking for.
+set -euo pipefail
+dir=$1
+fail=
+error() {
+  echo "+ ERROR in $1: $2"
+  cat "$1" 2>/dev/null || true
+  fail=1
+}
+for report in "$dir"/rt-*/report.txt; do
+  skipped=
+  grep -q -e NOT_APPLICABLE -e "SKIP_ON_CI found!" "$report" && skipped=yes
+  case $report in
+  ("$dir"/rt-nogpu-*)
+    if grep -q FAILURE "$report"; then
+      error "$report" "failed"
+    elif test -n "$skipped"; then
+      error "$report" "skipped, but it needs no GPU"
+    fi
+    ;;
+  (*)
+    if grep -q FAILURE "$report"; then
+      error "$report" "failed"
+    elif test -n "$skipped" && ! grep "^Checking for" "$report" | tail -n 1 | grep -q "^Checking for a .* device$"; then
+      error "$report" "skipped, but not because of a missing GPU"
+    fi
+    ;;
+  esac
+done
+for test in "$dir"/rt-nogpu-*/; do
+  test -f "$test/report.txt" || error "$test/report.txt" "the test did not run"
+done
+test -z "$fail" && echo "+ the tests that do not need a GPU passed, the others were skipped (no GPU)"

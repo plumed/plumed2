@@ -1,0 +1,5 @@
+current centroids, mixed sizes, metadata-only grouping and reference independence PASS
+rectangular/skew cells, images, partial selections, duplicates and identity collisions PASS
+PAIR, direct/cell reference searches, COM, overlap and unselected atoms PASS
+dynamic shapes/boxes, STRIDE, empty selections and opt-in behavior PASS
+invalid metadata, GROUPBY conflicts and PAIR counts PASS

@@ -1,0 +1,13 @@
+MOLINFO STRUCTURE=ref.pdb
+v: CENTER ATOMS=11,12
+g: GROUP ATOMS=4,v,2,4
+a: DISTANCES ORIGIN=9 ATOMS=4,v,2,4
+b: DISTANCES ORIGIN=9 ATOMS=g
+c: DISTANCES ORIGIN=9 ATOMS=4,@back-1,4
+d: DISTANCES ORIGIN=9 ATOMS=4,1-4,4
+PRINT ARG=a,b,c,d FILE=order FMT=%12.8f
+
+# The first numbered ATOMS input is consumed by the shortcut, unlike ATOMS2.
+gexp: GYRATION ATOMS1=1-4 ATOMS2=5-8
+ggrp: GYRATION ATOMS1={@ndx:{index.ndx first}} ATOMS2={@ndx:{index.ndx second}}
+PRINT ARG=gexp,ggrp FILE=gyrvectors FMT=%12.8f

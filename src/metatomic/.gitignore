@@ -7,7 +7,6 @@
 !/*.sh
 !/Makefile
 !/README.md
-!/module.type
 !/COPYRIGHT
 !/PEOPLE-METATOMIC
 !/flags-from-python.py

@@ -4,3 +4,28 @@ description: versions of CVs in PLUMED that can run on the GPU using OpenACC par
 dois: []
 nlessons: 0
 searchterm: ""
+
+# Packaging options: see conda/module-options.md.
+# NVHPC is an external build tool, never a dependency of the main kernel.
+# The recipe statically links its runtime and includes the vendor notices.
+# OpenBLAS supplies the directly imported LAPACK routines and its own SONAME.
+conda:
+  requirements:
+    host: [libopenblas]
+    run: [libopenblas]
+    test: [python]
+  unavailable_libraries: [NVHPC]
+  platforms: [linux-64]
+  zip_keys: ['nvhpc_version,openacc_cuda_version']
+  variants:
+    nvhpc_version: ['25.11']
+    openacc_cuda_version: ['13.0']
+    c_compiler_version: ['14']
+    cxx_compiler_version: ['14']
+    c_stdlib: [sysroot]
+    c_stdlib_version: ['2.28']
+  tests:
+    commands: [python extensions/tests/openacc.py --prefix "$PREFIX" --device host]
+    source_files: [extensions/tests/openacc.py, plugins/openaccPTM/regtest/targetGPU/rt-GPU-DISTANCE,
+      plugins/openaccPTM/regtest/targetSAXS/rt-GPU-saxs-chi2-deriv, regtest/isdb/rt-saxs-chi2-deriv,
+      plugins/openaccPTM/regtest/trajectories/isomers.xyz, regtest/scripts]

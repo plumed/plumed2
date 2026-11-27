@@ -54,6 +54,7 @@
 #include <algorithm>
 #include <bitset>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -89,6 +90,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/gpu_utils/nvshmem_manager.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/printhardware.h"
@@ -1136,6 +1138,7 @@ int Mdrunner::mdrunner()
         if (opt2bSet(plumedOptionName, filenames.size(), filenames.data()))
         {
             plumedFilename.replex_ = replExParams.exchangeInterval > 0;
+            plumedFilename.hrex_     = replExParams.plumedHrex;
             plumedFilename.inputrec_ = inputrec.get();
             plumedFilename.plumedFilename_ =
                     std::string(opt2fn(plumedOptionName, filenames.size(), filenames.data()));
@@ -1359,6 +1362,42 @@ int Mdrunner::mdrunner()
             box,
             useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes));
 
+#if GMX_LIB_MPI
+    if (replExParams.plumedHrex && isMultiSim(ms))
+    {
+        // Automatic buffering uses the current coordinates/box and can choose
+        // different radii after a restart. Keep every local safe buffer while
+        // making the outer list radius identical for all HREX replicas, before
+        // update groups, DD and force/pair-list objects consume it.
+        const real localRlist = inputrec->rlist;
+        double common[2] = { double(localRlist),
+                             inputrec->pbcType == PbcType::No
+                                     ? std::numeric_limits<double>::max()
+                                     : double(max_cutoff2(inputrec->pbcType, box)) };
+        if (mpiCommSimulation.isMainRank())
+        {
+            MPI_Allreduce(MPI_IN_PLACE, &common[0], 1, MPI_DOUBLE, MPI_MAX, ms->mainRanksComm_);
+            MPI_Allreduce(MPI_IN_PLACE, &common[1], 1, MPI_DOUBLE, MPI_MIN, ms->mainRanksComm_);
+        }
+        gmx_bcast(sizeof(common), common, mpiCommSimulation.comm());
+        const real commonRlist = real(common[0]);
+        if (!(square(commonRlist) < common[1]))
+        {
+            gmx_fatal(FARGS,
+                      "The common HREX neighbor-list cutoff (%g nm) does not fit all replica boxes; "
+                      "increase the box size or reduce the list lifetime/buffer requirements",
+                      double(commonRlist));
+        }
+        if (fplog != nullptr)
+        {
+            fprintf(fplog,
+                    "HREX neighbor-list cutoff: local %.17g nm, common %.17g nm (nstlist %d)\n",
+                    double(localRlist), double(commonRlist), inputrec->nstlist);
+        }
+        inputrec->rlist = commonRlist;
+    }
+#endif
+
     // We need to decide on update groups early, as this affects
     // inter-domain communication distances.
     auto         updateGroupingsPerMoleculeTypeResult = makeUpdateGroupingsPerMoleculeType(mtop);
@@ -1524,6 +1563,20 @@ int Mdrunner::mdrunner()
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
+
+    /* PLUMED */
+    {
+        /* The PLUMED actions that run on a GPU (they are in PLUMED plugins) use the GPU of this
+           rank, unless the user chooses otherwise. PLUMED numbers the GPUs as CUDA and HIP do, so the
+           GPU is passed only when GROMACS uses CUDA or HIP. */
+        gmx::PlumedGpuDevice plumedGpuDevice;
+        if ((GMX_GPU_CUDA || GMX_GPU_HIP) && deviceInfo != nullptr)
+        {
+            plumedGpuDevice.id_ = deviceInfo->id;
+        }
+        setupNotifier.notify(plumedGpuDevice);
+    }
+    /* END PLUMED */
 
     // We will later get the pairlist type from the device information here, for now we hard code it.
     const auto pairlistType = PairlistType::Hierarchical8x8x8;

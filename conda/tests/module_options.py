@@ -3,15 +3,20 @@
 
 import argparse
 import copy
+import hashlib
 import importlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+
+import yaml
 
 source = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(source / "extensions"))
@@ -41,14 +46,14 @@ class ModuleOptions(unittest.TestCase):
         self.addCleanup(self.scratch.cleanup)
 
     def policy(self, text=""):
-        (self.root / "conda.mk").write_text(text)
+        (self.root / "plugin.yml").write_text(text or "conda: {}\n")
         return read_policy(self.root)
 
     def test_defaults_and_missing_file(self):
         policy = read_policy(self.root)
         self.assertFalse(policy["dummy_package"])
         self.assertEqual(policy["test_hardware"], "none")
-        self.assertEqual(policy["test_force_requirements"], "no")
+        self.assertFalse(policy["test_force_requirements"])
         self.assertEqual(policy["required_features"], [])
 
     def test_kernel_identity_changes_with_module_selection(self):
@@ -57,14 +62,22 @@ class ModuleOptions(unittest.TestCase):
         config.mkdir(parents=True)
         tools = tree / "src/maketools"
         tools.mkdir()
-        for name in ("module-build-info", "find_modules.sh"):
+        for name in (
+            "module-build-info",
+            "find_modules.sh",
+            "module-selection",
+            "module-header",
+            "module-header.awk",
+        ):
             shutil.copy2(source / "src/maketools" / name, tools / name)
         (tree / "VERSION.txt").write_text("2.11\n")
-        (tree / "Makefile.conf").write_text("CXX=c++\n")
+        (tree / "Makefile.conf").write_text(
+            "CXX=c++\nPLUMED_MODULE_ENABLED=\nPLUMED_MODULE_DISABLED=\n"
+        )
         for module, kind in (("core", "always"), ("alpha", "default-off")):
             directory = tree / "src" / module
             directory.mkdir()
-            (directory / "module.type").write_text(kind + "\n")
+            (directory / "module.yml").write_text(f"type: {kind}\nuse: []\n")
             (directory / "Source.cpp").write_text("int value;\n")
 
         def identity():
@@ -74,11 +87,41 @@ class ModuleOptions(unittest.TestCase):
             return (config / "module-build-id").read_text()
 
         baseline = identity()
-        marker = tree / "src/alpha.on"
-        marker.touch()
+        configuration = tree / "Makefile.conf"
+        original_config = configuration.read_text()
+        configuration.write_text(
+            original_config.replace(
+                "PLUMED_MODULE_ENABLED=", "PLUMED_MODULE_ENABLED=alpha"
+            )
+        )
         self.assertNotEqual(identity(), baseline)
-        marker.unlink()
+        configuration.write_text(original_config)
         self.assertEqual(identity(), baseline)
+        declaration = tree / "src/core/module.yml"
+        original = declaration.read_text()
+        declaration.write_text(
+            original
+            + "description: Updated prose\nconda: {requirements: {host: [example]}}\n"
+        )
+        self.assertEqual(identity(), baseline)
+        declaration.write_text(original.replace("use: []", "use: [alpha]"))
+        self.assertNotEqual(identity(), baseline)
+        declaration.write_text(original.replace("type: always", "type: default-on"))
+        self.assertNotEqual(identity(), baseline)
+
+    def test_inventory_reads_each_declaration_once(self):
+        counts = {}
+        original = Path.read_text
+
+        def read(path, *args, **kwargs):
+            if path.name in ("module.yml", "plugin.yml"):
+                counts[path] = counts.get(path, 0) + 1
+            return original(path, *args, **kwargs)
+
+        with mock.patch.object(Path, "read_text", read):
+            catalog = generate_catalog(write=False)
+        self.assertEqual(len(counts), len(catalog["modules"]) + len(catalog["plugins"]))
+        self.assertTrue(all(count == 1 for count in counts.values()))
 
     def test_complete_unavailable_action_catalogue(self):
         output = self.root / "ModuleMap.inc"
@@ -92,16 +135,17 @@ class ModuleOptions(unittest.TestCase):
         for action, module in (
             ("EMMIVOX", "isdb-pytorch"),
             ("DRR", "drr"),
-            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("CUDACOORDINATION", "gpu_cuda_hip"),
+            ("cuda-devices", "gpu_cuda_hip"),
             ("PYCVINTERFACE", "plugins/pycv"),
             ("PYFUNCTION", "plugins/pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
         ):
             self.assertIn('"' + action + '", "' + module + '"', text)
 
-    def test_requirements_quoting_selectors_and_replace(self):
+    def test_requirements_specs_and_selectors(self):
         policy = self.policy(
-            'CONDA_HOST_REQUIREMENTS = old\nCONDA_HOST_REQUIREMENTS = "hdf5 * nompi_*"\nCONDA_HOST_REQUIREMENTS += libpython  # [py>=315]\nCONDA_BUILD_REQUIREMENTS = cmake ninja\n'
+            "conda:\n  requirements:\n    host:\n    - hdf5 * nompi_*\n    - spec: libpython\n      selector: py>=315\n    build:\n    - cmake\n    - ninja\n"
         )
         self.assertEqual(
             policy["host"],
@@ -111,36 +155,52 @@ class ModuleOptions(unittest.TestCase):
 
     def test_malformed_and_unknown_settings(self):
         for text in (
-            "CONDA_HOST_REQUIRMENTS = hdf5",
-            "include other.mk",
-            "CONDA_DUMMY_PACKAGE += yes",
-            "CONDA_DUMMY_PACKAGE = maybe",
-            "CONDA_TEST_HARDWARE = maybe",
-            "CONDA_CXXFLAGS = -O2 # [linux]",
-            "CONDA_PLATFORMS = linux",
-            "CONDA_REQUIRED_FEATURES = boost",
+            "conda:\n  host_requirments:\n  - hdf5\n",
+            "conda: []",
+            'conda:\n  dummy_package: "true"\n',
+            "conda:\n  dummy_package: maybe\n",
+            "conda:\n  tests:\n    hardware: maybe\n",
+            "conda:\n  cxxflags:\n  - spec: -O2\n    selector: linux\n",
+            "conda:\n  platforms:\n  - linux\n",
+            "conda:\n  required_features:\n  - boost\n",
         ):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 self.policy(text)
 
     def test_variant_pairs_and_invalid_combinations(self):
-        valid = "CONDA_VARIANT_nvhpc_version = 25.11 26.1\nCONDA_VARIANT_openacc_cuda_version = 13.0 13.1\nCONDA_ZIP_KEYS = nvhpc_version,openacc_cuda_version\n"
-        policy = self.policy(valid)
+        valid = {
+            "variants": {
+                "nvhpc_version": ["25.11", "26.1"],
+                "openacc_cuda_version": ["13.0", "13.1"],
+            },
+            "zip_keys": ["nvhpc_version,openacc_cuda_version"],
+        }
+        policy = self.policy(yaml.safe_dump({"conda": valid}))
         self.assertEqual(policy["variants"]["nvhpc_version"][0]["spec"], "25.11")
-        for change in (
-            valid.replace("13.0 13.1", "13.0"),
-            valid.replace(
-                "nvhpc_version,openacc_cuda_version", "missing,openacc_cuda_version"
+        invalid = []
+        for key, value in (
+            ("openacc_cuda_version", ["13.0"]),
+            ("python", []),
+            (
+                "openacc_cuda_version",
+                [
+                    {"spec": "13.0", "selector": "linux"},
+                    {"spec": "13.1", "selector": "linux"},
+                ],
             ),
-            "CONDA_VARIANT_python =\n",
-            valid.replace("13.0 13.1", "13.0 13.1 # [linux]"),
+            ("python", [3.13]),
         ):
-            with self.subTest(text=change), self.assertRaises(ValueError):
-                self.policy(change)
+            changed = copy.deepcopy(valid)
+            changed["variants"][key] = value
+            invalid.append(changed)
+        invalid.append(dict(valid, zip_keys=["missing,openacc_cuda_version"]))
+        for changed in invalid:
+            with self.subTest(policy=changed), self.assertRaises(ValueError):
+                self.policy(yaml.safe_dump({"conda": changed}))
 
     def test_variant_template_override(self):
         policy = self.policy(
-            "CONDA_VARIANT_c_stdlib_version = 2.28\nCONDA_VARIANT_python = 3.13\n"
+            "conda:\n  variants:\n    c_stdlib_version:\n    - '2.28'\n    python:\n    - '3.13'\n"
         )
         output = self.root / "conda_build_config.yaml"
         output.with_suffix(".yaml.in").write_text(
@@ -153,27 +213,27 @@ class ModuleOptions(unittest.TestCase):
         self.assertIn("kept", text)
 
     def test_shared_matrix_conflict(self):
-        first = self.policy("CONDA_VARIANT_python = 3.12\n")
+        first = self.policy("conda:\n  variants:\n    python:\n    - '3.12'\n")
         second = copy.deepcopy(first)
         second["variants"]["python"] = [{"spec": "3.13"}]
         with self.assertRaises(ValueError):
             merge_policies([first, second])
 
     def test_supported_platforms(self):
-        policy = self.policy("CONDA_PLATFORMS = linux-64 linux-aarch64\n")
+        policy = self.policy("conda:\n  platforms:\n  - linux-64\n  - linux-aarch64\n")
         self.assertTrue(supported(policy, "linux-64"))
         self.assertFalse(supported(policy, "osx-arm64"))
         self.assertIn("target_platform == 'linux-64'", skip_selector([policy]))
 
     def test_backend_restrictions(self):
-        policy = self.policy("CONDA_CMAKE_ARGS = -DSOME_OPTION=ON\n")
+        policy = self.policy("conda:\n  cmake_args:\n  - -DSOME_OPTION=ON\n")
         validate_backend(policy, "pycv", self.root)
         with self.assertRaises(ValueError):
             validate_backend(policy, "native", self.root)
 
     def test_environment_arguments_without_shell_evaluation(self):
         policy = self.policy(
-            'CONDA_CPPFLAGS = "-I${PREFIX}/include path"\nCONDA_CXXFLAGS = -DTEST=1\n'
+            "conda:\n  cppflags:\n  - -I${PREFIX}/include path\n  cxxflags:\n  - -DTEST=1\n"
         )
         env = build_environment(policy, {"PREFIX": str(self.root), "CXXFLAGS": "-O2"})
         self.assertEqual(env["CXXFLAGS"], "-O2 -DTEST=1")
@@ -184,7 +244,7 @@ class ModuleOptions(unittest.TestCase):
 
     def test_real_configure_backend_arguments(self):
         policy = self.policy(
-            'CONDA_CONFIGURE_FLAGS = "--example=${PREFIX}/with space"\nCONDA_CXXFLAGS = -DTEST=1\n'
+            "conda:\n  configure_flags:\n  - --example=${PREFIX}/with space\n  cxxflags:\n  - -DTEST=1\n"
         )
         script = self.root / "configure"
         record = self.root / "record.json"
@@ -217,7 +277,7 @@ class ModuleOptions(unittest.TestCase):
 
     def test_real_make_backend_preserves_existing_flags(self):
         policy = self.policy(
-            "CONDA_CXXFLAGS = -DTEST=1\nCONDA_LDFLAGS = -Wl,--as-needed\nCONDA_MAKE_ARGS = EXTRA=selected\n"
+            "conda:\n  cxxflags:\n  - -DTEST=1\n  ldflags:\n  - -Wl,--as-needed\n  make_args:\n  - EXTRA=selected\n"
         )
         catalog = {"modules": {}, "plugins": {"openacc_ptm": {"conda": policy}}}
         (self.root / "Makefile").write_text(
@@ -267,13 +327,13 @@ class ModuleOptions(unittest.TestCase):
     def test_feature_policy_conflict(self):
         with self.assertRaises(ValueError):
             self.policy(
-                "CONDA_REQUIRED_FEATURES = FFTW\nCONDA_DISABLED_FEATURES = FFTW\n"
+                "conda:\n  required_features:\n  - FFTW\n  disabled_features:\n  - FFTW\n"
             )
         with self.assertRaises(ValueError):
             merge_policies(
                 [
-                    self.policy("CONDA_REQUIRED_FEATURES = FFTW\n"),
-                    self.policy("CONDA_DISABLED_FEATURES = FFTW\n"),
+                    self.policy("conda:\n  required_features:\n  - FFTW\n"),
+                    self.policy("conda:\n  disabled_features:\n  - FFTW\n"),
                 ],
                 shared_features=True,
             )
@@ -283,7 +343,7 @@ class ModuleOptions(unittest.TestCase):
         self.assertEqual(
             [
                 v["spec"]
-                for v in catalog["plugins"]["cuda_coordination"]["conda"]["variants"][
+                for v in catalog["modules"]["gpu_cuda_hip"]["conda"]["variants"][
                     "cuda_compiler_version"
                 ]
             ],
@@ -304,10 +364,11 @@ class ModuleOptions(unittest.TestCase):
             )
         )
         for path in [
-            *source.glob("src/*/conda.mk"),
-            *source.glob("plugins/*/conda.mk"),
+            *source.glob("src/*/module.yml"),
+            *source.glob("plugins/*/plugin.yml"),
         ]:
-            self.assertIn("conda/module-options.md", path.read_text(), path)
+            if "conda:" in path.read_text():
+                self.assertIn("conda/module-options.md", path.read_text(), path)
 
     @unittest.skipUnless(options.base, "installed kernel supplied by conda integration")
     def test_real_native_extension_policy(self):
@@ -317,7 +378,12 @@ class ModuleOptions(unittest.TestCase):
         for file in (source / "extensions").glob("*.py"):
             shutil.copy2(file, tree / "extensions" / file.name)
         shutil.copy2(source / "COPYING.LESSER", tree / "COPYING.LESSER")
-        for plugin in ("pycv", "cudaCoord", "openaccPTM"):
+        (tree / "src/maketools").mkdir(parents=True)
+        shutil.copy2(
+            source / "src/maketools/module_header.py",
+            tree / "src/maketools/module_header.py",
+        )
+        for plugin in ("pycv", "openaccPTM"):
             (tree / "plugins" / plugin / "src").mkdir(parents=True)
         for module, kind in (
             ("tools", "always"),
@@ -326,12 +392,11 @@ class ModuleOptions(unittest.TestCase):
         ):
             directory = tree / "src" / module
             directory.mkdir(parents=True)
-            (directory / "module.type").write_text(kind + "\n")
-            (directory / "Makefile").write_text(
-                "USE=tools policy-dependency\n"
-                if module == "policy-fixture"
-                else "USE=\n"
-            )
+            (directory / "module.yml").write_text(f"type: {kind}\nuse: []\n")
+            if module == "policy-fixture":
+                (directory / "module.yml").write_text(
+                    f"type: {kind}\nuse: [tools, policy-dependency]\n"
+                )
         # USE must remain a native dependency even if ordinary code imports no
         # symbols from B (e.g. a header-only use); linkers may discard unused DSOs.
         (tree / "src/policy-dependency/Unused.cpp").write_text(
@@ -347,24 +412,41 @@ class ModuleOptions(unittest.TestCase):
         (module / "Check.cpp").write_text(
             '#include "policy-dependency/Value.hpp"\n#ifndef PLUMED_POLICY_TEST\n#error conda flag missing\n#endif\n#ifdef __PLUMED_HAS_FFTW\n#error disabled feature still visible\n#endif\nextern "C" int policy_test(){return POLICY_VALUE+PLUMED_POLICY_TEST;}\n'
         )
-        (module / "conda.mk").write_text(
-            "CONDA_CXXFLAGS = -DPLUMED_POLICY_TEST=1\nCONDA_DISABLED_FEATURES = FFTW\nCONDA_LDFLAGS = "
-            + (
-                "-Wl,-dead_strip_dylibs"
-                if sys.platform == "darwin"
-                else "-Wl,--as-needed"
+        with (module / "module.yml").open("a") as declaration:
+            declaration.write(
+                yaml.safe_dump(
+                    {
+                        "conda": {
+                            "cxxflags": ["-DPLUMED_POLICY_TEST=1"],
+                            "disabled_features": ["FFTW"],
+                            "ldflags": [
+                                "-Wl,-dead_strip_dylibs"
+                                if sys.platform == "darwin"
+                                else "-Wl,--as-needed"
+                            ],
+                        }
+                    }
+                )
             )
-            + "\n"
-        )
         prefix = self.root / "installed"
         program = base / "bin/plumed"
         # The installed runtime deliberately has no compiler package. This tiny
         # C export/identity fixture uses the test host compiler, retaining the
         # installed ABI CPPFLAGS and testing the module-owned additions.
+        compiler_marker = self.root / "host-compiler-used"
+        compiler_wrapper = self.root / "host-cxx"
+        host_compiler = shlex.split(os.environ.get("CXX", "c++"))
+        compiler_wrapper.write_text(
+            f"#!{sys.executable}\n"
+            "import pathlib,subprocess,sys\n"
+            f"pathlib.Path({str(compiler_marker)!r}).touch()\n"
+            f"raise SystemExit(subprocess.call({host_compiler!r} + sys.argv[1:]))\n"
+        )
+        compiler_wrapper.chmod(0o755)
         env = dict(
             os.environ,
             PLUMED_AUTOLOAD="0",
-            CXX=os.environ.get("CXX", "c++"),
+            CXX=str(compiler_wrapper),
             CXXFLAGS="-O2 -std=c++17 -fPIC",
         )
         configuration = subprocess.check_output(
@@ -373,10 +455,58 @@ class ModuleOptions(unittest.TestCase):
         identity = subprocess.check_output(
             [str(program), "--module-build-id"], env=env, text=True
         ).strip()
-        (tree / "Makefile.conf").write_text(
-            configuration
-            + f"\nEXTENSION_BASE={base}\nEXTENSION_PREFIX={prefix}\nEXTENSION_MODULES=policy-fixture\nEXTENSION_BUILD_ID={identity}\n"
+        soext = next(
+            line.split("=", 1)[1]
+            for line in configuration.splitlines()
+            if line.startswith("SOEXT=")
         )
+        kernel = base / "lib" / ("libplumedKernel." + soext)
+        kernel_digest = hashlib.sha256(kernel.read_bytes()).digest()
+        shutil.copy2(source / "configure", tree / "configure")
+        shutil.copy2(source / "Makefile", tree / "Makefile")
+        shutil.copy2(source / "extensions/Makefile", tree / "extensions/Makefile")
+        env["PATH"] = os.pathsep.join((str(Path(sys.executable).parent), env["PATH"]))
+        configure = [
+            "bash",
+            "configure",
+            f"--with-extension-base={base}",
+            "--enable-extension-modules=policy-fixture",
+            f"--prefix={prefix}",
+        ]
+        configured = subprocess.run(
+            configure,
+            cwd=tree,
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+        self.assertEqual(
+            configured.returncode, 0, configured.stdout + configured.stderr
+        )
+        persisted = (tree / "Makefile.conf").read_bytes()
+        self.assertTrue(persisted.startswith(configuration.encode()))
+        self.assertIn(b"EXTENSION_MODULES=policy-fixture\n", persisted)
+        self.assertIn(f"EXTENSION_BUILD_ID={identity}".encode(), persisted)
+        for name in ("nonexistent-test-module", "tools"):
+            invalid = subprocess.run(
+                [
+                    "bash",
+                    "configure",
+                    f"--with-extension-base={base}",
+                    f"--enable-extension-modules={name}",
+                    f"--prefix={prefix}",
+                ],
+                cwd=tree,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertNotEqual(invalid.returncode, 0, invalid.stdout + invalid.stderr)
+            self.assertEqual((tree / "Makefile.conf").read_bytes(), persisted)
         command = [sys.executable, "extensions/build.py", "install"]
         negative = subprocess.run(
             command,
@@ -388,8 +518,11 @@ class ModuleOptions(unittest.TestCase):
             timeout=120,
         )
         self.assertNotEqual(negative.returncode, 0)
+        compiler_marker.unlink(missing_ok=True)
+        # Makefile.conf assignments override environment variables. Use Make's
+        # command-line precedence to select the test host compiler explicitly.
         positive = subprocess.run(
-            command,
+            ["make", "install", f"CXX={env['CXX']}", f"CXXFLAGS={env['CXXFLAGS']}"],
             check=False,
             cwd=tree,
             env=dict(env, PLUMED_CONDA_BUILD="1"),
@@ -398,6 +531,15 @@ class ModuleOptions(unittest.TestCase):
             timeout=120,
         )
         self.assertEqual(positive.returncode, 0, positive.stdout + positive.stderr)
+        self.assertTrue(
+            compiler_marker.exists(), "Make ignored the host compiler override"
+        )
+        self.assertEqual(
+            json.loads((tree / "_extensions/modules.json").read_text()),
+            ["policy-dependency", "policy-fixture"],
+        )
+        self.assertEqual(hashlib.sha256(kernel.read_bytes()).digest(), kernel_digest)
+        self.assertFalse((prefix / "lib" / kernel.name).exists())
         report = json.loads(
             (prefix / "lib/plumed/plugins/policy-fixture.json").read_text()
         )

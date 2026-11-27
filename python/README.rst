@@ -77,18 +77,23 @@ PLUMED HDF5 tables. Install the optional pandas and HDF5 dependencies with
 
     import plumed
 
-    data = plumed.read_as_pandas("COLVAR.h5")
-    plumed.write_pandas(data, "COLVAR-copy.h5")
+    data = plumed.read_as_pandas("COLVAR.hpa")
+    plumed.write_pandas(data, "COLVAR-copy.h5")  # a single HDF5 file
     plumed.write_pandas(data, "COLVAR")  # convert back to text
 
-The filename extensions ``.h5`` and ``.hdf5`` select HDF5 automatically.
+PLUMED writes HDF5 tables as archives (``.hpa``): TAR files whose members
+are HDF5 tables, read as one table (also while PLUMED is writing them). Files
+that are read are recognized by their content; when writing, the filename
+extensions ``.hpa`` or ``.h5.tar`` (an archive), ``.h5`` and ``.hdf5`` (a single HDF5
+file) select HDF5 automatically.
+``.hpa`` means HDF PLUMED archive; ``.h5.tar`` remains a supported alias with the same format.
 Use ``format='hdf5'`` for anonymous binary streams or other filenames;
 ``format='text'`` explicitly selects text. Open ``h5py.File`` objects are also
 accepted. Supplied files/streams remain open. Internally opened files are
 closed after use; when stopping chunked reading early, close the reader or
 use a context manager::
 
-    with plumed.read_as_pandas("HILLS.h5", chunksize=10000) as reader:
+    with plumed.read_as_pandas("HILLS.hpa", chunksize=10000) as reader:
         for chunk in reader:
             print(chunk.plumed_constants)
 

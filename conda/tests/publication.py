@@ -25,7 +25,8 @@ recipes = (
     "plumed-mklib",
     "plumed-extensions",
     "plumed-pycv",
-    "plumed-cuda-coordination",
+    "plumed-gpu-cuda-hip",
+    "plumed-gpu-voronoi",
     "plumed-openacc",
 )
 # Select escaping by filename: these recipes are YAML, so dependency operators
@@ -65,7 +66,7 @@ for revision in (0, 201001):
             2
             if recipe == "plumed-mklib"
             else 1
-            if recipe in ("plumed-pycv", "plumed-cuda-coordination")
+            if recipe in ("plumed-pycv", "plumed-gpu-cuda-hip", "plumed-gpu-voronoi")
             else 0
         )
         assert document["build"]["number"] == expected, recipe
@@ -76,7 +77,8 @@ for revision in (0, 201001):
             "plumed",
             "plumed-extensions",
             "plumed-pycv",
-            "plumed-cuda-coordination",
+            "plumed-gpu-cuda-hip",
+            "plumed-gpu-voronoi",
             "plumed-openacc",
         ):
             for target in (

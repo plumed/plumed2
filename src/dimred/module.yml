@@ -1,6 +1,15 @@
 name: dimred
+type: default-off
+use: [core, tools, gridtools, mapping]
 authors: Gareth Tribello
 description: tools for performing dimensionality reduction 
 dois: ["10.1007/978-1-4939-9608-7_19", "10.3389/fmolb.2019.00046"]
 tags: 
   DIMRED: dimensionality reduction algorithms
+
+# Packaging options: see conda/module-options.md.
+# Link the actual OpenBLAS provider rather than switchable BLAS/LAPACK symlinks.
+conda:
+  requirements:
+    host: [libopenblas]
+    run: [libopenblas]

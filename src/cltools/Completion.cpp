@@ -42,6 +42,12 @@ With no options this command emits the function body used by the profile snippet
 described [here](module_cltools.md). The snippet queries the executable at completion
 time, including explicit global module selections. `--list` emits plain candidates
 for the completion function, and `--command` selects a tool for its option list.
+For contextual completion, `--list context --command TOOL -- WORD...` asks the
+selected tool's completion hook. The last word is the partial word at the cursor,
+possibly empty. The response starts with `files<TAB>PREFIX` or `words<TAB>PREFIX`,
+followed by literal candidates, one per line. `files` also requests filesystem
+matches; `PREFIX` is an attached-value prefix such as `--input=`. The shell
+handles matching and quoting, without evaluating candidate text as shell code.
 
 ## Examples
 
@@ -55,9 +61,11 @@ plumed completion
 
 class Completion:
   public CLTool {
+  std::vector<std::string> arguments;
 public:
   static void registerKeywords( Keywords& keys );
   explicit Completion(const CLToolOptions& co );
+  bool readInput(int argc,char** argv,FILE* in,FILE* out) override;
   int main(FILE* in, FILE*out,Communicator& pc) override;
   std::string description()const override {
     return "dump a function usable for programmable completion";
@@ -68,13 +76,27 @@ PLUMED_REGISTER_CLTOOL(Completion,"completion")
 
 void Completion::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("optional","--list","list commands, global-options, options, modules or installed-modules, one per line");
+  keys.add("optional","--list","list commands, global-options, options, modules or installed-modules, or request context completion");
   keys.add("optional","--command","tool whose options should be listed");
 }
 
 Completion::Completion(const CLToolOptions& co ):
   CLTool(co) {
   inputdata=inputType::commandline;
+}
+
+bool Completion::readInput(int argc,char** argv,FILE* in,FILE* out) {
+  arguments.clear();
+  for(int i=1; i<argc; ++i) {
+    if(std::string(argv[i])=="--") {
+      for(int j=i+1; j<argc; ++j) {
+        arguments.emplace_back(argv[j]);
+      }
+      argc=i;
+      break;
+    }
+  }
+  return CLTool::readInput(argc,argv,in,out);
 }
 
 int Completion::main(FILE* in, FILE*out,Communicator& pc) {
@@ -88,7 +110,42 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
   parse("--command",command);
   if(!list.empty()) {
     std::vector<std::string> candidates;
-    if(list=="commands") {
+    if(list=="context") {
+      CLTool::Completion result;
+      if(command=="modules") {
+        result=CLToolMain::completeModules(arguments);
+      } else if(cltoolRegister().check(getDLHandles(),command)) {
+        auto tool=cltoolRegister().create(getDLHandles(),CLToolOptions(command));
+        tool->setDLHandles(getDLHandles());
+        result=tool->complete(arguments);
+      } else {
+        // Script tools own their option lists through --options. Retain the
+        // existing generic filename fallback for scripts and unknown commands.
+        const std::string current=arguments.empty()?"":arguments.back();
+        result.files=current.empty() || current[0]!='-';
+        static const char scripts [] = {
+#include "completion-scripts.h"
+          , 0x00
+        };
+        std::istringstream rows(scripts);
+        std::string row;
+        while(!result.files && std::getline(rows,row)) {
+          const auto tab=row.find('\t');
+          if(tab!=std::string::npos && row.substr(0,tab)==command) {
+            std::istringstream options(row.substr(tab+1));
+            std::string option;
+            while(options>>option) {
+              result.candidates.push_back(option);
+            }
+          }
+        }
+      }
+      std::fprintf(out,"%s\t%s\n",result.files?"files":"words",result.prefix.c_str());
+      for(const auto& candidate : result.candidates) {
+        std::fprintf(out,"%s\n",candidate.c_str());
+      }
+      return 0;
+    } else if(list=="commands") {
       candidates=cltoolRegister().list();
       candidates.push_back("help");
       candidates.push_back("modules");
@@ -101,7 +158,7 @@ int Completion::main(FILE* in, FILE*out,Communicator& pc) {
       candidates=CLToolMain::getGlobalOptions();
     } else if(list=="options") {
       if(command=="modules") {
-        candidates= {"--module", "--list", "--has", "--has-feature", "-q", "--help"};
+        candidates=CLToolMain::getModuleOptions();
       } else {
         candidates=cltoolRegister().getKeys(command);
         static const char scripts [] = {

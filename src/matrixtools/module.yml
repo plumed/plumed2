@@ -1,6 +1,13 @@
 name: matrixtools
+type: default-on
+use: [core, tools]
 authors: Gareth Tribello
 description: tools for constructing and manipulating matrices
 dois: []
 tags: 
   MATRIXF: actions that perform operations on input matrices
+
+# Packaging options: see conda/module-options.md.
+# OpenACC acceleration is compiled separately in plugins/openaccPTM.
+# This CPU module does not require the NVIDIA HPC SDK.
+conda: {}

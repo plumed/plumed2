@@ -1,0 +1,16 @@
+mpiprocs=4
+type=driver
+plumed_modules=replex_biasvalue
+extra_files="../common.sh"
+# 4 replicas, default diagonal coefficients: components, forces, REPINDEX_FILE and log
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 4 --kt 2.49 --dump-forces ff --dump-forces-fmt %10.4f --log-file log"
+
+function plumed_regtest_before() {
+  source ./common.sh
+  make_traj 4 40
+}
+
+function plumed_regtest_after() {
+  source ./common.sh
+  extract_log log.0 > log_summary
+}

@@ -259,13 +259,33 @@ AC_DEFUN([PLUMED_OPENMP],
 
 ##################################################################
 
-AC_MSG_NOTICE([Optional modules are disabled by default])
-rm -f src/*.on src/*.off
+src/maketools/module-header check-obsolete src ||
+  AC_MSG_ERROR([obsolete module declaration])
+
+# Validate the restricted build fields with a POSIX reader, without Python.
+for modules_file in src/*/module.yml; do
+  src/maketools/module-header type "$modules_file" >/dev/null ||
+    AC_MSG_ERROR([invalid module declaration $modules_file])
+done
+
+# These are overrides, not a snapshot: new modules retain their live defaults.
+PLUMED_MODULE_ENABLED=" "
+PLUMED_MODULE_DISABLED=" "
+modules_excluded=" "
+plumed_module_enable() {
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $[]1 / /g"`
+  PLUMED_MODULE_ENABLED="$PLUMED_MODULE_ENABLED$[]1 "
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $[]1 / /g"`
+}
+plumed_module_disable() {
+  PLUMED_MODULE_DISABLED=`echo "$PLUMED_MODULE_DISABLED" | sed "s/ $[]1 / /g"`
+  PLUMED_MODULE_DISABLED="$PLUMED_MODULE_DISABLED$[]1 "
+  PLUMED_MODULE_ENABLED=`echo "$PLUMED_MODULE_ENABLED" | sed "s/ $[]1 / /g"`
+}
 
 AC_ARG_ENABLE([modules],
-  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
+  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-ves default: reset; missing dependencies are enabled with warnings, explicit exclusions are errors]),
   [
-   rm -f src/*.on src/*.off
    if test "${enableval}" = yes ; then
      enableval=reset
    fi
@@ -279,7 +299,7 @@ AC_ARG_ENABLE([modules],
      case "$modules_name" in
        (+*|-*) modules_name=${modules_name#?} ;;
      esac
-     if test -f "src/$modules_name/module.type"; then
+     if test -f "src/$modules_name/module.yml"; then
        modules_words="$modules_words $modules_word"
      else
        modules_words="$modules_words `echo "$modules_word" | sed 's/+/ +/g' | sed 's/-/ -/g'`"
@@ -288,49 +308,87 @@ AC_ARG_ENABLE([modules],
    for modules_mod in $modules_words
    do
      case "$modules_mod" in
-     (none)
-       AC_MSG_NOTICE([Disabling all optional modules])
-       rm -f src/*.off src/*.on
-       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
-     (all)
-       AC_MSG_NOTICE([Enabling all optional modules])
-       rm -f src/*.off src/*.off
-       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
-     (reset)
-        AC_MSG_NOTICE([Resetting modules to default])
-        rm -f src/*.on src/*.off ;;
+     (none|all|reset)
+       modules_excluded=" "
+       PLUMED_MODULE_ENABLED=" "
+       PLUMED_MODULE_DISABLED=" "
+       AC_MSG_NOTICE([Setting modules to ${modules_mod}])
+       for modules_file in src/*/module.yml; do
+         modules_kind=$(src/maketools/module-header type "$modules_file")
+         modules_name=${modules_file%/module.yml}
+         modules_name=${modules_name#src/}
+         case "$modules_mod:$modules_kind" in
+           (none:default-on) plumed_module_disable "$modules_name" ;;
+           (all:default-off)
+             # Other toolchains and extension-only modules must be requested by name.
+             if test "$(src/maketools/module-header toolchain "$modules_file")" = cxx &&
+                test "$(src/maketools/module-header placement "$modules_file")" = any; then
+               plumed_module_enable "$modules_name"
+             fi ;;
+         esac
+       done ;;
      (-*)
        modules_mod=`echo "${modules_mod}" | sed "s|-||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which does not exist])
        fi
-       if grep -q always src/$modules_mod/module.type ; then
+       if test "$(src/maketools/module-header type "src/$modules_mod/module.yml")" = always ; then
          AC_MSG_ERROR([trying to remove module $modules_mod which is always enabled])
        fi
+       case "$modules_excluded" in
+         (*" $modules_mod "*) ;;
+         (*) modules_excluded="$modules_excluded$modules_mod " ;;
+       esac
        AC_MSG_NOTICE([Disabling module ${modules_mod}])
-       rm -f src/$modules_mod.on
-       touch src/$modules_mod.off ;;
+       plumed_module_disable "$modules_mod" ;;
      (+*)
        modules_mod=`echo "${modules_mod}" | sed "s|+||"`
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      (*)
-       if test ! -f src/$modules_mod/module.type ; then
+       if test ! -f src/$modules_mod/module.yml ; then
          AC_MSG_ERROR([trying to add module $modules_mod which does not exist])
        fi
+       modules_excluded=`echo "$modules_excluded" | sed "s/ $modules_mod / /g"`
        AC_MSG_NOTICE([Enabling module ${modules_mod}])
-       rm -f src/$modules_mod.off
-       touch src/$modules_mod.on ;;
+       plumed_module_enable "$modules_mod" ;;
      esac
    done
   ]
   ,
   []
 )
+
+
+# Evaluate dependencies only after the complete ordered selection expression.
+# The resolver checks conflicts before printing any automatic additions.
+plumed_resolve_modules() {
+modules_added=$(src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded") ||
+  AC_MSG_ERROR([cannot satisfy module dependencies])
+if test -n "$modules_added"; then
+  while read -r modules_mod modules_reason; do
+    AC_MSG_WARN([enabling module $modules_mod required by $modules_reason])
+    plumed_module_enable "$modules_mod"
+  done <<_PLUMED_MODULES
+$modules_added
+_PLUMED_MODULES
+fi
+}
+# Autoconf has already parsed enable_kenref; include this alternate module
+# entry point before compiler/library probes, too.
+if test "$enable_kenref" = yes; then
+  case "$modules_excluded" in
+    (*" kenref "*) AC_MSG_ERROR([kenref is explicitly disabled but --enable-kenref was given]) ;;
+  esac
+  plumed_module_enable kenref
+fi
+plumed_resolve_modules
+AC_MSG_NOTICE([Module overrides: PLUMED_MODULE_ENABLED=$PLUMED_MODULE_ENABLED PLUMED_MODULE_DISABLED=$PLUMED_MODULE_DISABLED])
+
 
 
 # set enable flags for ./configure
@@ -373,7 +431,7 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([no-gnu-unique],[a flag to avoid gnu unique symbols],[yes])
-PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([rpath],[store rpath (Linux)],[yes])
 PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
 PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
 PLUMED_CONFIG_ENABLE([loader-path],[use @loader_path to find libplumedKernel.dylib (OSX only)],[yes])
@@ -422,6 +480,22 @@ dnl NB: -DACCEL is passed to KEnRef's CMake only when this variable is SET (see 
 dnl empty does not select a fixed tier -- it lets KEnRef auto-detect this machine's SIMD, as it does for
 dnl its own builds. Set it explicitly for a portable binary (e.g. KENREF_ACCEL=AVX2_256).
 AC_ARG_VAR([KENREF_ACCEL],[ACCEL/SIMD width to build the fetched kenref_core with (default: auto-detect this machine's SIMD)])
+
+# modules with "toolchain: cuda" in module.yml (e.g. --enable-modules=+gpu_cuda_hip)
+PLUMED_CONFIG_ENABLE([hip],[compile the modules with toolchain cuda with hipcc, for AMD GPUs, instead of nvcc],[no])
+AC_ARG_WITH([cudart],
+  AS_HELP_STRING([--with-cudart=static|shared],[CUDA runtime linked into the kernel when it contains modules with toolchain cuda (not with --enable-hip), default: static]),
+  [case "$withval" in
+   (static|shared) ;;
+   (*) AC_MSG_ERROR([wrong argument to --with-cudart: $withval (static or shared)]) ;;
+   esac],
+  [with_cudart=static])
+AC_ARG_VAR(NVCC,[CUDA compiler for the modules with toolchain cuda - default: nvcc])
+AC_ARG_VAR(NVCC_CCBIN,[host compiler given to nvcc with -ccbin - default: CXX without ccache])
+AC_ARG_VAR(HIPCC,[HIP compiler for the modules with toolchain cuda with --enable-hip - default: hipcc])
+AC_ARG_VAR(HIP_ARCHITECTURES,[GPU targets for hipcc, e.g. "gfx90a gfx942" - default: native (the GPUs of the machine that compiles)])
+AC_ARG_VAR(NVCCFLAGS,[additional flags for nvcc or hipcc, e.g. -arch=sm_80])
+AC_ARG_VAR(CUDA_LIBDIR,[directory of the CUDA runtime library - default: asked to nvcc; with --enable-hip, the directory of the HIP runtime - default: the lib directory beside the bin directory of hipcc])
 
 AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
 AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
@@ -1078,8 +1152,8 @@ AC_DEFUN([KENREF_CHECK_LIBS], [
 # pathway: passing EITHER one enables the whole KEnRef feature (the `kenref`
 # module is compiled AND the KEnRef core library is located & linked); passing
 # NEITHER disables it entirely (no dependency, module not built). Because the
-# module's on/off marker (src/kenref.on) is consumed at make time (globbed), we
-# can flip it here so whichever switch the user chose converges to one result.
+# module overrides are stored in Makefile.conf; both entry points converge to
+# the same configured module and library selection.
 # ==============================================================================
 KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref_core (keep in lockstep
                                   # with KEnRef's CMake project(VERSION); v2.0.0 = model-abstraction restructure)
@@ -1091,7 +1165,11 @@ KENREF_MIN_VERSION=2.0.0          # floor that catches a stale/mismatched kenref
 AC_SUBST([KENREF_PLUMED_INCLUDE], [""])
 
 kenref_module_on=no
-test -f src/kenref.on && kenref_module_on=yes
+kenref_modules=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  AC_MSG_ERROR([invalid module selection])
+case " $(echo "$kenref_modules" | tr '\n' ' ') " in
+  (*" kenref "*) kenref_module_on=yes ;;
+esac
 
 # Is the LIBRARY required, or merely welcome?
 #
@@ -1108,24 +1186,10 @@ test "$kenref" = true && kenref_required=yes
 
 # "KEnRef wanted" iff EITHER switch is set (the library flag OR the module flag).
 if test "$kenref" = true || test "$kenref_module_on" = yes ; then
-  # (0) rpath ON by default for KEnRef builds. A KEnRef build links libkenref_core from a non-system prefix
-  #     (and, IF you choose such a toolchain, may also link a non-system C++ runtime such as libc++). If ANY
-  #     linked library lives outside the system loader path, the plumed executable AND libplumedKernel.so must
-  #     record those dirs (RPATH) to run without LD_LIBRARY_PATH -- otherwise `sudo make install` (which
-  #     re-runs the build's json step with the environment stripped) can fail with e.g. "libc++.so.1: cannot
-  #     open shared object file", and the installed binary only runs when a matching module is loaded.
-  #     --enable-rpath records $LIBRARY_PATH into the RUNPATH of both; it is harmless for a pure
-  #     system-library build. Default it ON here (PLUMED's global default is off) UNLESS the user EXPLICITLY
-  #     passed --disable-rpath. $enable_rpath is set by AC_ARG_ENABLE: "no" iff --disable-rpath.
-  if test "$enable_rpath" != "no" && test "$rpath" != true ; then
-    AC_MSG_NOTICE([KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)])
-    rpath=true
-  fi
   # (a) make sure the module gets compiled — covers `--enable-kenref` given without +kenref (idempotent).
   if test "$kenref_module_on" = no ; then
     AC_MSG_NOTICE([KEnRef: --enable-kenref implies the 'kenref' module -> enabling it])
-    rm -f src/kenref.off
-    touch src/kenref.on
+    plumed_module_enable kenref
   fi
   # (b) FIND OR FETCH+BUILD the core library, so `--enable-kenref` ALONE is self-sufficient (no build.sh
   #     needed). A plain pkg-config pre-check (NOT PKG_CHECK_MODULES, to dodge autoconf's result caching):
@@ -1141,8 +1205,7 @@ if test "$kenref" = true || test "$kenref_module_on" = yes ; then
     # Enabled only by --enable-modules=all/+kenref, and no library present. Do not download anything and
     # do not fail: switch the module back off and continue, as an unavailable optional dependency should.
     AC_MSG_NOTICE([KEnRef: kenref_core not found and --enable-kenref was not given -> skipping the kenref module])
-    rm -f src/kenref.on
-    touch src/kenref.off
+    plumed_module_disable kenref
     kenref_skipped=yes
   else
     test -n "$KENREF_GIT_URL" || KENREF_GIT_URL="https://github.com/Smith-Group/KEnRef.git"
@@ -1197,8 +1260,7 @@ if test "$kenref_skipped" != yes && ( test "$kenref" = true || test "$kenref_mod
   if test "$HAVE_KENREF" != yes ; then
     if test "$kenref_required" = no ; then
       AC_MSG_NOTICE([KEnRef: kenref_core unusable and --enable-kenref was not given -> skipping the kenref module])
-      rm -f src/kenref.on
-      touch src/kenref.off
+      plumed_module_disable kenref
       kenref_skipped=yes
     else
       AC_MSG_ERROR([KEnRef requested but kenref_core >= $KENREF_MIN_VERSION could not be located even after
@@ -1420,6 +1482,147 @@ fi
 # I leave it by default, since it seems harmless
 AC_DEFINE([_REENTRANT])
 
+#### Modules with "toolchain: cuda" in module.yml ####
+# Only when such a module is enabled: their .cu files are compiled by nvcc (or hipcc with
+# --enable-hip); the kernel is still linked by the C++ compiler (LDSHARED), with the GPU runtime
+# library. No Python is needed. The flags of the C++ compiler are translated by src/maketools/cuda-flags.
+CUDA_COMPILER=
+CUDA_FLAGS=
+KERNEL_LDFLAGS=
+cuda_modules=
+toolchain_modules=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  AC_MSG_ERROR([invalid module selection for compiler checks])
+for modules_name in $toolchain_modules; do
+  modules_file=src/$modules_name/module.yml
+  if test "$(src/maketools/module-header placement "$modules_file")" = extension ; then
+    AC_MSG_ERROR([module $modules_name can only be built as an extension, against an installed base (--with-extension-base, see extensions/README.md)])
+  fi
+  if test "$(src/maketools/module-header toolchain "$modules_file")" = cuda ; then
+    cuda_modules="$cuda_modules $modules_name"
+  fi
+done
+
+if test -n "$cuda_modules" ; then
+  AC_MSG_NOTICE([Modules compiled with the cuda toolchain:$cuda_modules])
+  cuda_cxxflags=
+  for cuda_flag in $CXXFLAGS $OPENMP_CXXFLAGS ; do
+    cuda_cxxflags="$cuda_cxxflags $cuda_flag"
+  done
+  if test "$hip" = true ; then
+    test -n "$HIPCC" || HIPCC=hipcc
+    AC_MSG_CHECKING([for the HIP compiler])
+    cuda_path=`command -v "$HIPCC"`
+    if test -z "$cuda_path" ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([HIPCC=$HIPCC not found: it is needed by the modules$cuda_modules (set HIPCC, or disable them)])
+    fi
+    AC_MSG_RESULT([$cuda_path])
+    CUDA_COMPILER="$HIPCC"
+    test -n "$HIP_ARCHITECTURES" || HIP_ARCHITECTURES=native
+    CUDA_FLAGS="-x hip"
+    for cuda_flag in $HIP_ARCHITECTURES ; do
+      CUDA_FLAGS="$CUDA_FLAGS --offload-arch=$cuda_flag"
+    done
+    CUDA_FLAGS="$CUDA_FLAGS "`src/maketools/cuda-flags compile hipcc $cuda_cxxflags | tr '\n' ' '`
+    # hipcc does not use the C++ compiler, that may be an MPI wrapper
+    if grep -q __PLUMED_HAS_MPI confdefs.h ; then
+      cuda_mpi=`src/maketools/cuda-flags mpi-include $CXX` ||
+        AC_MSG_ERROR([cannot find the directory of mpi.h for hipcc])
+      CUDA_FLAGS="$CUDA_FLAGS $cuda_mpi"
+    fi
+    if test -z "$CUDA_LIBDIR" ; then
+      CUDA_LIBDIR=`dirname "$cuda_path"`
+      CUDA_LIBDIR=`cd "$CUDA_LIBDIR/../lib" 2>/dev/null && pwd`
+    fi
+    # the HIP runtime is a shared library
+    cuda_libs="-L$CUDA_LIBDIR -lamdhip64"
+    cuda_runtime="shared HIP runtime (amdhip64)"
+  else
+    test -n "$NVCC" || NVCC=nvcc
+    AC_MSG_CHECKING([for the CUDA compiler])
+    cuda_path=`command -v "$NVCC"`
+    if test -z "$cuda_path" ; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([NVCC=$NVCC not found: it is needed by the modules$cuda_modules (set NVCC, use --enable-hip for AMD GPUs, or disable them)])
+    fi
+    AC_MSG_RESULT([$cuda_path])
+    CUDA_COMPILER="$NVCC"
+    test -n "$NVCC_CCBIN" || NVCC_CCBIN=`src/maketools/cuda-flags host-compiler $CXX`
+    CUDA_FLAGS="-ccbin $NVCC_CCBIN "`src/maketools/cuda-flags compile nvcc $cuda_cxxflags | tr '\n' ' '`
+    if test -z "$CUDA_LIBDIR" ; then
+      for cuda_dir in `src/maketools/cuda-flags libdirs $NVCC` ; do
+        if test -f "$cuda_dir/libcudart_static.a" || test -f "$cuda_dir/libcudart.so" ; then
+          CUDA_LIBDIR="$cuda_dir"
+          break
+        fi
+      done
+    fi
+    test -n "$CUDA_LIBDIR" || AC_MSG_ERROR([cannot find the CUDA runtime library: set CUDA_LIBDIR])
+    # The static runtime (the default, as nvcc does) lets the kernel load also on machines
+    # without the CUDA toolkit or a GPU: the driver is opened at the first use.
+    if test "$with_cudart" = static ; then
+      cuda_libs="-L$CUDA_LIBDIR -lcudart_static -ldl -lrt -lpthread"
+      cuda_runtime="static CUDA runtime"
+    else
+      cuda_libs="-L$CUDA_LIBDIR -lcudart"
+      cuda_runtime="shared CUDA runtime"
+    fi
+  fi
+  # no -L for the directories that the linker searches anyway
+  case "$CUDA_LIBDIR" in
+  (/usr/lib|/usr/lib/|/usr/lib64|/usr/lib64/|/lib|/lib64|/usr/lib/*-linux-gnu|/usr/lib/*-linux-gnu/)
+    cuda_libs=`echo "$cuda_libs" | sed "s|-L$CUDA_LIBDIR ||"` ;;
+  esac
+  CUDA_FLAGS=`echo $CUDA_FLAGS $NVCCFLAGS`
+  AC_MSG_NOTICE([Using CUDA_COMPILER='$CUDA_COMPILER'])
+  AC_MSG_NOTICE([Using CUDA_FLAGS='$CUDA_FLAGS'])
+  AC_MSG_CHECKING([whether $CUDA_COMPILER compiles and the C++ compiler links with the $cuda_runtime])
+  rm -f conftest*
+  cat > conftest_cuda.cu <<_PLUMED_CUDA_EOF
+#ifdef __HIP__
+#include <hip/hip_runtime.h>
+#define cudaGetDeviceCount hipGetDeviceCount
+#else
+#include <cuda_runtime.h>
+#endif
+__global__ void plumed_conftest_kernel(int*x) { *x = 1; }
+int plumed_conftest_cuda() {
+  int n = 0;
+  plumed_conftest_kernel<<<1, 1>>>(nullptr);
+  return static_cast<int>(cudaGetDeviceCount(&n));
+}
+_PLUMED_CUDA_EOF
+  cat > conftest_main.cpp <<_PLUMED_CUDA_EOF
+int plumed_conftest_cuda();
+int main() { return plumed_conftest_cuda(); }
+_PLUMED_CUDA_EOF
+  cuda_ok=no
+  if eval "$CUDA_COMPILER $CUDA_FLAGS $CPPFLAGS -c conftest_cuda.cu -o conftest_cuda.o" >conftest_cuda.log 2>&1 &&
+     eval "$CXX $CXXFLAGS $CPPFLAGS -c conftest_main.cpp -o conftest_main.o" >>conftest_cuda.log 2>&1 &&
+     eval "$CXX $CXXFLAGS conftest_main.o conftest_cuda.o -o conftest_cuda$EXEEXT $LDFLAGS $cuda_libs $LIBS" >>conftest_cuda.log 2>&1 ; then
+    cuda_ok=yes
+  fi
+  AC_MSG_RESULT([$cuda_ok])
+  if test "$cuda_ok" = no ; then
+    cat conftest_cuda.log >&AS_MESSAGE_LOG_FD
+    cat conftest_cuda.log
+    rm -f conftest*
+    AC_MSG_ERROR([cannot compile or link a CUDA file with $CUDA_COMPILER (see above), needed by the modules$cuda_modules])
+  fi
+  rm -f conftest*
+  LIBS="$LIBS $cuda_libs"
+  # When the kernel is loaded at runtime, the wrapper unloads it with dlclose when PLUMED is
+  # destroyed (PLUMED_LOAD_DLCLOSE). MD codes destroy PLUMED before freeing their own GPU memory,
+  # and unloading the kernel would finalize the GPU runtime it contains. With nodelete
+  # the kernel is never unloaded: the runtime is finalized at process exit.
+  if test "$(uname)" = Linux ; then
+    KERNEL_LDFLAGS="-Wl,-z,nodelete"
+  fi
+fi
+AC_SUBST(CUDA_COMPILER)
+AC_SUBST(CUDA_FLAGS)
+AC_SUBST(KERNEL_LDFLAGS)
+
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)
 AC_SUBST(LDSHARED)
@@ -1477,6 +1680,8 @@ then
     SOEXT=
   fi
   if test -n "$SOEXT" && test "$rpath" = true ; then
+    # Empty path components would make the loader search the working directory.
+    runtime_path=`printf '%s\n' "$libdir:$LIBRARY_PATH" | sed 's/::*/:/g; s/^://; s/:$//'`
     rm -f conftest.$SOEXT
     readelf=""
     AC_CHECK_PROG([readelf],[readelf],[found])
@@ -1491,17 +1696,17 @@ then
         test_LDSHARED="$LDSHARED -Wl,--enable-new-dtags -Wl,-R -Wl,/some/random/dir/"
         $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
         if test -f conftest.$SOEXT && readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           AC_MSG_NOTICE([Enabling RUNPATH (with --enable-new-dtags)])
         else
-          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           AC_MSG_NOTICE([Enabling RPATH])
           AC_MSG_WARN([with RPATH the executables of the build tree load the kernel installed in $libdir, if there is one, also after sourcing sourceme.sh])
         fi
       elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
         LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
         AC_MSG_NOTICE([Enabling RUNPATH])
       else
@@ -1969,6 +2174,20 @@ AC_SUBST(build_dir)
 build_dir=`pwd`
 
 
+
+# Library probes can remove modules; never silently re-enable unavailable ones.
+src/maketools/resolve-modules src "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED" "$modules_excluded" check ||
+  AC_MSG_ERROR([module dependencies are not satisfied after feature checks])
+modules_final=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
+  AC_MSG_ERROR([cannot report enabled modules])
+modules_final=$(echo "$modules_final" | tr '\n' ' ')
+AC_MSG_NOTICE([Enabled modules: $modules_final])
+
+# Normalize the two persistent override lists; no module state files are written.
+PLUMED_MODULE_ENABLED=$(echo "$PLUMED_MODULE_ENABLED" | xargs)
+PLUMED_MODULE_DISABLED=$(echo "$PLUMED_MODULE_DISABLED" | xargs)
+AC_SUBST([PLUMED_MODULE_ENABLED])
+AC_SUBST([PLUMED_MODULE_DISABLED])
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

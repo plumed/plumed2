@@ -4,3 +4,41 @@ description: functionality for calling python from PLUMED to calculate CVs and f
 dois: []
 nlessons: 1
 searchterm: pycv
+
+# Packaging options: see conda/module-options.md.
+# Python variants are selected by conda/plumed-pycv/conda_build_config.yaml.
+# Python 3.15 splits its embedding library into a separate package.
+conda:
+  requirements:
+    build: [cmake, ninja]
+    host:
+    - python
+    - pybind11 >=3.0
+    - numpy
+    - spec: libpython
+      selector: py>=315
+    run:
+    - python
+    - numpy
+    - spec: libpython
+      selector: py>=315
+    test: [pytest, py-plumed]
+  platforms: [linux-64, linux-aarch64, osx-64, osx-arm64]
+  variants:
+    python: ['3.11', '3.12', '3.13', '3.14', '3.15']
+    numpy: ['2']
+    CONDA_BUILD_SYSROOT:
+    - spec: /opt/MacOSX10.13.sdk
+      selector: osx and x86_64
+    - spec: /opt/MacOSX11.0.sdk
+      selector: osx and arm64
+    c_stdlib:
+    - spec: sysroot
+      selector: linux
+    c_stdlib_version:
+    - spec: '2.28'
+      selector: linux
+  tests:
+    commands: [python extensions/tests/pycv.py --prefix "$PREFIX"]
+    source_files: [extensions/tests/pycv.py, plugins/pycv/pythontests, plugins/pycv/regtest,
+      regtest/scripts]

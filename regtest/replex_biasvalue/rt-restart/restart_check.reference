@@ -1,0 +1,12 @@
+restart/COLVAR.0 IDENTICAL
+restart/COLVAR.1 IDENTICAL
+restart/COLVAR.2 IDENTICAL
+restart/COLVAR.3 IDENTICAL
+restart/bias_index.xvg IDENTICAL
+restart/replica_index.xvg IDENTICAL
+  initial state read from file: bias_index.xvg
+  replica indices written to file: replica_index.xvg
+REPLEX_BIASVALUE bias: reading the initial state
+  read from file bias_index.xvg, line at time 18.000000
+  bias indices: 0 1 2 3
+  replica indices: 0 1 2 3

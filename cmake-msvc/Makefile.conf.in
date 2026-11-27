@@ -3,3 +3,5 @@ program_name=plumed
 version=@PLUMED_VERSION_LONG@
 version_git=@PLUMED_VERSION_GIT@
 CPPFLAGS=@PLUMED_CONFIG_CPPFLAGS@
+PLUMED_MODULE_ENABLED=@_builtin_modules@
+PLUMED_MODULE_DISABLED=@_disabled_modules@

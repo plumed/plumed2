@@ -1,4 +1,6 @@
 name: pathbias
+type: default-off
+use: [core, tools, function]
 authors: Pengchao Zhang
 description: Frozen complete-path bias functions
 dois: []

@@ -523,3 +523,83 @@ replicated across the PLUMED communicator and must not be summed again.
 The host must preserve the normal forces, virial and state during its temporary
 foreign evaluation. This path replaces GREX save/prepare/calculate calls for that
 exchange; it must not be combined with their bias correction.
+
+
+\subsection auxiliary-action-state Action state during auxiliary evaluations
+
+The existing `performCalcNoForces` command evaluates without force propagation
+or `update()`. Internally, actions can query `isCalculationOnly()`; it is also
+true during flagged exchange evaluations. Persistent model changes, sampling,
+RNG advancement, output and stop requests must occur only for an intended normal
+evaluation. An action that needs the step's prospective state for derivatives
+should stage that state and commit it in `update()`, replaying the same base for
+repeated evaluations, as METAINFERENCE does. A foreign-coordinate exchange flag
+is more specific than calculation-only context: lambda trials can change the
+Hamiltonian while coordinates remain unchanged.
+
+For common neighbor lists, the caller must flag foreign coordinates with
+`setExchangeStep` before dependency preparation, so that preparation requests
+all candidate atoms. An unflagged `performCalcNoForces` establishes its context
+only at calculation time. It does not promise general foreign-coordinate support
+or early preparation context even when coordinates are unchanged. Lambda trials in the
+2026 GROMACS patch use the early context below instead.
+
+Geometry caches must be rebuilt for the actual evaluation and invalidated when
+returning from trial coordinates. `getEvaluationId()` exposes the internal atom
+version, which changes on forward evaluations and coordinate transformations;
+it is not a new MD command. Preparation can be repeated before calculation and
+must not advance MD counters merely because it was called twice. Equal position
+pointers or equal coordinates alone do not establish equivalent preparation:
+energy, lambda, atom selection and evaluation context can differ.
+
+Command API 14 adds `setEvaluationMode` for context before preparation. Mode 1
+freezes state while retaining ordinary force STRIDE activation/scaling; use
+`performCalcNoUpdate`. Mode 2 freezes state and activates the full bias potential,
+even off stride; use `performCalcNoForces`. Set the integer mode before
+`prepareCalc` or `prepareDependencies` and restore mode 0 after the evaluation,
+including on errors. Nonzero modes forbid `performCalc` and `update`. Mode 0
+retains existing semantics, including repeated full calls at the same step.
+The calculation-only predicate describes state freezing, independently of
+whether forces are requested. See [explicit auxiliary context](explicit-auxiliary-context.md).
+
+The kernel propagates context to same-kernel nested PLUMED actions. Explicitly
+loaded old guests lacking the required existing commands and KEnRef's stateful
+coupled driver cannot safely provide arbitrary auxiliary evaluations and are
+rejected. Reduced path neighbor lists must be disabled for auxiliary path
+calculations. PINES auxiliary evaluations with reduced candidate lists require
+PL_REFRESH=1; accepting a swap cannot safely reuse the old selected pairs. PIV
+auxiliary evaluations similarly require UPDATEPIV=1 rather than held values.
+READ reuses its ordinary record from the current step during post-update trials;
+an auxiliary evaluation without such a current ordinary record is rejected. Python/custom callbacks must ensure their own calculate functions
+are free of persistent side effects: the kernel cannot roll back arbitrary
+external globals or file writes. The pycv CV and function interfaces expose
+`isCalculationOnly()` in calculate callbacks for this purpose.
+
+Auxiliary model statistics have action-specific definitions. EMMI and CALIBER
+evaluate with committed weights/history; METAINFERENCE replays prospective
+statistics from the beginning of the current step. Both must preserve the
+ordinary trajectory state, but their foreign-configuration potentials differ.
+An own-coordinate auxiliary potential need not equal the earlier ordinary
+potential if update() changed the model in between (for example a METAD hill
+deposition). Validate against the current model; self-paired GREX deltas must
+still be zero.
+
+
+Loaded guest compatibility checks guard command availability only:
+`performCalcNoUpdate` requires API >= 4, `performCalcNoForces` requires API >= 9
+(first released in PLUMED 2.8), and `setExchangeStep` requires API >= 13.
+No API increment identifies the action state fixes: backports to 2.9/2.10 retain
+their API numbers. An explicitly loaded guest must contain the relevant fixes;
+a sufficient command API does not establish that its actions are trial-safe.
+Same-kernel guests receive the internal context directly. Propagate the current
+exchange flag and evaluation mode before both preparation and calculation.
+Loaded guests used for early auxiliary context or auxiliary forces require API 14.
+This is a new command requirement, separate from the action-state fixes.
+
+Backport scope must be checked action by action. The affected EEFSOLV, SASA,
+CS2BACKBONE, RESCALE, CALIBER, MAZE, READ, LOGMFD and PIV held-value patterns
+also exist in PLUMED 2.9/2.10; SHADOW exists in 2.10 but not 2.9. PINES,
+HBONDS and the Voronoi actions are new in 2.11. These are source-applicability
+observations, not a claim that older releases contain the fixes or that their
+backports have been tested. A backport must update that release's changelog
+and retain the same public command API number for these action-state fixes.

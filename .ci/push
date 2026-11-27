@@ -207,11 +207,17 @@ at [this link](http://github.com/${GIT_OWNER}/${WHAT}-${BRANCH}/archive/gh-pages
 EOF
 esac
 
+# The HTML noindex tags below cannot protect a PDF. GitHub Pages does not
+# support custom response headers, so offer its offline copy as a ZIP instead.
+if test "$WHAT" = doc && test "$branchtype" != official ; then
+  python3 "$root/.ci/archive-manual-pdf.py" .
+fi
+
 case "$branchtype" in
 (unsupported|unofficial|master)
 # this is to avoid a huge log file:
 set +x
-  for file in $(find . -name "*.html") ; do
+  while IFS= read -r -d '' file ; do
     awk '{
       if(done){print; next;}
       print
@@ -221,9 +227,9 @@ set +x
       }
     }END{
     if(!done) print "error: head not present in " FILENAME > "/dev/stderr"
-    }' $file > $$
-    mv $$ $file
-done
+    }' "$file" > $$
+    mv $$ "$file"
+done < <(find . -name "*.html" -print0)
 set -x
 esac
 

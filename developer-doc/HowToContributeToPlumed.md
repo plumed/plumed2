@@ -94,29 +94,50 @@ else existing in the code. In this respect, before merging your contribution, th
 the name of some of the keywords that you added.
 
 The first step in writing your new feature will thus be to create a sub-directory within src in which to hold your new feature.  Before you 
-write any c++ code you will need to create two files within this directory. The first of these files will be called module.type and will 
-just contain the following text:
+write any c++ code you will need to create a module.yml and a Makefile in this directory.
+The module.yml contains build settings alongside the documentation metadata described in \ref usingDoxygen:
 
 \verbatim
-default-off
+name: newmodule
+type: default-off
+use: [core, tools, multicolvar]
 \endverbatim
 
-By setting this file up this way you ensure that your module is not compiled unless the user specifically asks for it to be compiled at
-configure time.  Explanations on how to configure PLUMED to include your module will appear in the documentation for the module automatically.
-Furthermore, the procedure for compiling with your code enabled is relatively straightforward.
+`default-off` ensures that the module is compiled only when explicitly requested.
+The direct native dependencies belong in `use`, with the exact single-line syntax
+shown above. Most modules need core and tools; other dependencies depend on the
+implementation. See conda/module-options.md for the declaration format and optional
+Conda packaging settings. Native configure and Make do not require Python to read
+these build fields.
 
-The second file you will need to create is the Makefile.  An example module Makefile is shown below:
+A module whose code runs on NVIDIA or AMD GPUs with CUDA/HIP (`.cu` files) adds `toolchain: cuda`:
 
 \verbatim
-USE=core tools vesselbase multicolvar
+name: gpu_cuda_hip
+type: default-off
+use: [core, tools, cltools]
+toolchain: cuda
+\endverbatim
+
+Its `.cu` files are compiled by nvcc (hipcc with `--enable-hip`) with the flags of the C++
+compiler, translated by src/maketools/cuda-flags; the kernel is still linked by the C++
+compiler, with the GPU runtime and `-z nodelete`. Such modules are enabled only by name
+(`--enable-modules=+gpu_cuda_hip`, not by `all`), and configure looks for nvcc only then.
+`.cuh` headers are installed with the other headers. `placement: extension` declares a
+module that can only be built as an extension, against an installed base. The CUDA/HIP code
+shared by these modules (portability header, GPU choice, device guard, reductions) is in
+src/gpu_cuda_hip. A module that needs only these headers lists the module in
+`include: [gpu_cuda_hip]` instead of `use`: its headers are then visible, but gpu_cuda_hip is
+neither enabled nor linked (see conda/module-options.md); the headers that are used in this
+way must stay header-only. Tests that need a GPU add `plumed_needs_device=cuda` to their config
+(see \ref regtests).
+
+The Makefile contains the executable build rules, usually just:
+
+\verbatim
 # generic makefile
 include ../maketools/make.module
 \endverbatim
-
-You should only need to modify the first line of this file - the line starting with USE=.  This line is used to tell PLUMED at compile time
-what other modules are required in order for this module to function.  This module relies on functionality that is contained in the core, tools, 
-vesselbase and multicolvar modules and so these modules are all required during compilation of this particular module.  For your new module you 
-will most likely always need to use core and tools.  The other modules that are required will depend on what you are implementing.
 
 The last thing you will need to do before you start programming is that you will need to modify the .gitignore file in the src directory in order 
 to stop git from ignoring your new module directory.   If you look in the .gitignore file you will see that it reads something like this:

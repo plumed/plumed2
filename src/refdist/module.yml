@@ -1,4 +1,6 @@
 name: refdist
+type: default-on
+use: [core, tools, function]
 authors: Gareth Tribello
 description: tools for calculating the distance between trajectory frames
 dois: []

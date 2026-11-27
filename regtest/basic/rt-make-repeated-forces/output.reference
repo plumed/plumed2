@@ -1,0 +1,1 @@
+Explicit auxiliary force queries preserve ABMD and nested forces; normal commands retain semantics: OK

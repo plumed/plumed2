@@ -1,4 +1,6 @@
 name: colvar
+type: default-on
+use: [core, tools]
 authors: The PLUMED core developers
 description: various core collective variables that can be used to analyse or bias simulations
 dois: []

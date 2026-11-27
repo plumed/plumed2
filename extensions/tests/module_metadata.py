@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Cross-check native header readers and YAML validation without a build."""
+
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+source = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(source / "extensions"))
+from metadata import header_field, read_header, read_metadata  # noqa: E402
+
+
+def check():
+    reader = source / "src/maketools/module-header"
+    for declaration in sorted(source.glob("src/*/module.yml")):
+        header = read_header(declaration)
+        data = read_metadata(declaration)
+        assert data["type"] == header["type"] and data["use"] == header["use"]
+        for key in ("toolchain", "placement", "include"):
+            assert header_field(data, key) == header_field(header, key), declaration
+        for key in ("type", "use", "toolchain", "placement", "include"):
+            result = subprocess.check_output(
+                [str(reader), key, str(declaration)], text=True
+            ).strip()
+            expected = header_field(header, key)
+            if isinstance(expected, list):
+                expected = " ".join(expected)
+            assert result == expected, declaration
+        # Ordinary Make queries must get the dependency list without configuration.
+        result = subprocess.check_output(
+            ["make", "-s", "show_used_modules"], cwd=declaration.parent, text=True
+        )
+        # plumedcheck accepts the headers of the used and of the included modules
+        assert result.split() == [
+            "used_modules",
+            *header["use"],
+            *header_field(header, "include"),
+        ], declaration
+
+    good = "type: default-off\nuse: [core, tools]\n"
+    cases = [
+        good,
+        "type: always\nuse: []\n",
+        good.replace("\n", "\r\n"),
+        good + "toolchain: cuda\n",
+        good + "toolchain: cxx\nplacement: extension\n",
+        "placement: any\n" + good,
+        good + "include: [gpu_cuda_hip]\n",
+        good + "include: []\n",
+        "include: [a, b-c, d_2]\n" + good,
+    ]
+    invalid = [
+        good + "type: always\n",
+        good + "use: []\n",
+        good.replace("default-off", "unknown"),
+        good.replace("use: [core, tools]", "use:\n  - core"),
+        good.replace("use: [core, tools]", "use: [core,tools]"),
+        good.replace("use: [core, tools]", 'use: ["core", tools]'),
+        good.replace("type:", '"type":'),
+        good.replace("core", "$(touch sentinel)"),
+        good.replace("type: default-off", "type: default-off # comment"),
+        "use: []\n",
+        good + "toolchain: hip\n",
+        good + "toolchain: cuda\ntoolchain: cuda\n",
+        good + "placement: kernel\n",
+        good + "placement: any\nplacement: any\n",
+        good + "toolchain: cuda # comment\n",
+        good + "include: [a]\ninclude: [b]\n",
+        good + "include: [a,b]\n",
+        good + "include: a\n",
+        good + 'include: ["a"]\n',
+        good + "include: [A]\n",
+    ]
+    with tempfile.TemporaryDirectory(prefix="plumed-metadata-") as temporary:
+        directory = Path(temporary)
+        declaration = directory / "module.yml"
+        for text in cases + invalid:
+            declaration.write_text(text)
+            valid = text in cases
+            for key in ("type", "toolchain", "placement", "include"):
+                result = subprocess.run(
+                    [str(reader), key, str(declaration)], capture_output=True, text=True
+                )
+                assert (result.returncode == 0) == valid, text
+                if valid and key != "type":
+                    expected = header_field(read_header(declaration), key)
+                    if isinstance(expected, list):
+                        expected = " ".join(expected)
+                    assert result.stdout.strip() == expected, (text, key)
+            try:
+                read_header(declaration)
+            except ValueError:
+                assert not valid, text
+            else:
+                assert valid, text
+            # CMake also has to reject duplicate/unsupported build fields.
+            cmake = directory / "read.cmake"
+            cmake.write_text(
+                f'include("{source}/cmake-msvc/PlumedModules.cmake")\n'
+                f'plumed_read_module("{declaration}" kind deps toolchain placement'
+                " included)\n"
+                'file(WRITE "'
+                + str(directory / "result")
+                + '" "${kind}\n${deps}\n${toolchain}\n${placement}\n${included}\n")\n'
+            )
+            result = subprocess.run(
+                [os.environ.get("CMAKE", "cmake"), "-P", str(cmake)],
+                capture_output=True,
+            )
+            assert (result.returncode == 0) == valid, (text, result.stderr)
+            if valid:
+                kind, deps, toolchain, placement, included = (
+                    (directory / "result").read_text().split("\n")[:5]
+                )
+                assert (included.split(";") if included else []) == header_field(
+                    read_header(declaration), "include"
+                )
+                assert kind == read_header(declaration)["type"]
+                assert toolchain == header_field(read_header(declaration), "toolchain")
+                assert placement == header_field(read_header(declaration), "placement")
+                assert (deps.split(";") if deps else []) == read_header(declaration)[
+                    "use"
+                ]
+        for suffix in (
+            "conda:\n  platforms: []\n  platforms: []\n",
+            "conda: &x {}\nother: *x\n",
+            "conda: !!python/object:os.system {}\n",
+        ):
+            declaration.write_text(good + suffix)
+            try:
+                read_metadata(declaration)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(suffix)
+        assert not (directory / "sentinel").exists()
+        # CMake compatibility identity must ignore prose/Conda policy, but retain
+        # native type/use changes even when the selected module list is unchanged.
+        tree = directory / "tree"
+        module = tree / "src/probe/module.yml"
+        module.parent.mkdir(parents=True)
+        script = directory / "headers.cmake"
+        output = directory / "identity"
+        script.write_text(
+            f'include("{source}/cmake-msvc/PlumedModules.cmake")\n'
+            f'plumed_check_obsolete_modules("{tree}")\n'
+            f'plumed_module_headers("{tree}" headers)\n'
+            f'file(WRITE "{output}" "${{headers}}")\n'
+        )
+
+        def cmake_headers():
+            subprocess.run(
+                [os.environ.get("CMAKE", "cmake"), "-P", str(script)],
+                check=True,
+                capture_output=True,
+            )
+            return output.read_text()
+
+        module.write_text(good)
+        baseline = cmake_headers()
+        module.write_text(
+            good + "description: Updated prose\nconda: {platforms: [linux-64]}\n"
+        )
+        assert cmake_headers() == baseline
+        for changed in (
+            good.replace("default-off", "default-on"),
+            good.replace("core, tools", "core"),
+            good + "toolchain: cuda\n",
+            good + "placement: extension\n",
+            good + "include: [gpu_cuda_hip]\n",
+        ):
+            module.write_text(changed)
+            assert cmake_headers() != baseline
+        obsolete = tree / "src/legacy/module.type"
+        obsolete.parent.mkdir()
+        obsolete.write_text("default-on\n")
+        for command in (
+            [str(reader), "check-obsolete", str(tree / "src")],
+            [os.environ.get("CMAKE", "cmake"), "-P", str(script)],
+        ):
+            result = subprocess.run(command, capture_output=True, text=True)
+            assert result.returncode != 0
+            # CMake wraps diagnostics according to the temporary path length.
+            assert "module.type is obsolete, use module.yml" in " ".join(
+                result.stderr.split()
+            ), (command, result.stderr)
+    print(
+        "Module declarations: shell/Python/Make agreement; invalid headers rejected by shell/Python/CMake"
+    )
+
+
+if __name__ == "__main__":
+    check()

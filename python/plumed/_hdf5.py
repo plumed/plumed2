@@ -25,27 +25,180 @@
 h5py and numpy are imported only when an HDF5 operation is requested.
 """
 
+import io
 import operator
 import os
+import time
 from contextlib import ExitStack
 from numbers import Integral
 
 from ._errors import FormatError
 
 
-def is_hdf5(file, format):
+def _name(file):
+    name = (
+        os.fspath(file)
+        if isinstance(file, (str, os.PathLike))
+        else getattr(file, "name", "")
+    )
+    return name if isinstance(name, str) else ""
+
+
+def _content(file):
+    """'hdf5', 'archive' or None, from the first bytes of an existing file."""
+    try:
+        if hasattr(file, "read"):
+            if not (hasattr(file, "seekable") and file.seekable()):
+                return None
+            pos = file.tell()
+            h = file.read(512)
+            file.seek(pos)
+        else:
+            with open(file, "rb") as f:
+                h = f.read(512)
+    except (OSError, TypeError, ValueError):
+        return None
+    if not isinstance(h, bytes):
+        return None
+    if h[:8] == b"\x89HDF\r\n\x1a\n":
+        return "hdf5"
+    if len(h) == 512 and _tar_size(h) is not None:
+        return "archive"
+    return None
+
+
+def is_hdf5(file, format, content=False):
+    """With content, an existing file is recognized by its content (for reading)."""
     if format not in (None, "text", "hdf5"):
         raise ValueError("format must be None, 'text', or 'hdf5'")
     if format is not None:
         return format == "hdf5"
     if type(file).__module__.startswith("h5py."):
         return True
-    name = (
-        os.fspath(file)
-        if isinstance(file, (str, os.PathLike))
-        else getattr(file, "name", "")
-    )
-    return isinstance(name, str) and name.lower().endswith((".h5", ".hdf5"))
+    if content and _content(file) is not None:
+        return True
+    return _name(file).lower().endswith((".h5", ".hdf5", ".hpa", ".h5.tar"))
+
+
+def _is_archive(file):
+    # by content: h5py would read an archive as its first member (HDF5 looks
+    # for its signature also at byte 512), so an archive is recognized first
+    kind = _content(file)
+    if kind is not None:
+        return kind == "archive"
+    return _name(file).lower().endswith((".hpa", ".h5.tar"))
+
+
+# Archives of tables (.hpa, also .h5.tar): uncompressed POSIX TAR files whose members are
+# complete tables, only appended to by PLUMED. A last member not published, or
+# whose header was written in part (an interrupted run), is ignored, as PLUMED
+# does; a trim record left by an interrupted restart is applied.
+
+
+def _tar_size(h):
+    """The size of the entry of a valid header (POSIX ustar or pax, GNU), otherwise None."""
+    if h[257:262] != b"ustar":
+        return None
+    try:
+        stored = int(h[148:156].replace(b"\0", b" ").strip() or b"x", 8)
+        if stored != sum(h[:148]) + 8 * 32 + sum(h[156:]):
+            return None
+        if h[124] == 0x80:  # base 256 (GNU tar, large sizes)
+            return int.from_bytes(h[125:136], "big")
+        return int(h[124:136].replace(b"\0", b" ").strip() or b"x", 8)
+    except ValueError:
+        return None
+
+
+def _scan(f, file_size):
+    """(header offset, data offset, size) of the regular members."""
+    members, end, pax_size = [], 0, None
+    while file_size - end >= 512:
+        f.seek(end)
+        h = f.read(512)
+        if h == bytes(512):
+            break  # end-of-archive marker, or a member not published
+        size = _tar_size(h)
+        if size is not None and pax_size is not None:
+            size, pax_size = pax_size, None
+        if size is None:
+            # the header of the last member, written in part, unless valid entries follow
+            for o in range(end + 512, file_size - 511, 512):
+                f.seek(o)
+                if _tar_size(f.read(512)) is not None:
+                    raise FormatError(
+                        f"The archive is damaged: invalid TAR header at byte {end}"
+                    )
+            if end == 0:
+                raise FormatError(
+                    "Not a TAR file in a format that PLUMED reads "
+                    "(POSIX ustar or pax, GNU; not compressed)"
+                )
+            break
+        following = end + 512 + (size + 511) // 512 * 512
+        if following > file_size:
+            break  # written in part
+        if h[156:157] == b"x":
+            # pax extended header: its size record applies to the next entry
+            f.seek(end + 512)
+            for record in f.read(size).split(b"\n"):
+                key, _, value = record.partition(b" ")[2].partition(b"=")
+                if key == b"size" and value.isdigit():
+                    pax_size = int(value)
+        elif h[156:157] in (b"0", b"\0"):
+            members.append((end, end + 512, size))
+        end = following
+    return members
+
+
+def _archive_members(f, name=""):
+    """(file, data offset, size) of the members of an archive."""
+    f.seek(0, os.SEEK_END)
+    members = _scan(f, f.tell())
+    record = name + ".plumed-trim" if name else ""
+    if record and os.path.exists(record):
+        with open(record, "rb") as r:
+            data = r.read()
+        words = data[:512].split()
+        if len(words) < 4 or words[0] != b"plumed-trim-record" or words[1] != b"1":
+            raise FormatError("Invalid trim record " + record)
+        offset, size = int(words[2]), int(words[3])
+        if len(data) != 512 + size:
+            raise FormatError("Invalid trim record " + record)
+        tail = io.BytesIO(data[512:])
+        return [(f, d, n) for h, d, n in members if h < offset] + [
+            (tail, d, n) for h, d, n in _scan(tail, size)
+        ]
+    return [(f, d, n) for h, d, n in members]
+
+
+class _Member(io.RawIOBase):
+    """A member of an archive, as a read-only file."""
+
+    def __init__(self, f, offset, size):
+        self.f, self.offset, self.size, self.pos = f, offset, size, 0
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, pos, whence=os.SEEK_SET):
+        base = {os.SEEK_SET: 0, os.SEEK_CUR: self.pos, os.SEEK_END: self.size}[whence]
+        self.pos = base + pos
+        return self.pos
+
+    def readinto(self, b):
+        n = max(0, min(len(b), self.size - self.pos))
+        self.f.seek(self.offset + self.pos)
+        data = self.f.read(n)
+        b[: len(data)] = data
+        self.pos += len(data)
+        return len(data)
 
 
 def _h5py():
@@ -177,8 +330,23 @@ class _Reader:
         self.stack = ExitStack()
         self._closed = False
         try:
-            self.file = _open(self.stack, file, "r")
-            self.blocks = _blocks(self.file)
+            if _is_archive(file):
+                h5py = _h5py()
+                handle = file
+                if not hasattr(file, "read"):
+                    # kept open with the reader, closed by its stack
+                    self.archive = open(file, "rb")  # noqa: SIM115
+                    self.stack.callback(self.archive.close)
+                    handle = self.archive
+                self.blocks = []
+                for source, offset, size in _archive_members(handle, _name(file)):
+                    member = self.stack.enter_context(
+                        h5py.File(_Member(source, offset, size), "r")
+                    )
+                    self.blocks.extend(_blocks(member))
+            else:
+                self.file = _open(self.stack, file, "r")
+                self.blocks = _blocks(self.file)
             if usecols is not None and not callable(usecols):
                 usecols = list(usecols)
             self.selected = [_columns(names, usecols) for _, names, _, _ in self.blocks]
@@ -516,6 +684,31 @@ def write(df, file):
         else:
             value = float(value)
         constants[name] = value
+    if _name(file).lower().endswith((".hpa", ".h5.tar")):
+        # an archive with a single member
+        import tarfile
+
+        image = io.BytesIO()
+        _write(names, datasets, constants, image)
+        info = tarfile.TarInfo("batch_00000001.h5")
+        info.size, info.mode = len(image.getbuffer()), 0o644
+        info.mtime = time.time()
+        image.seek(0)
+        with tarfile.open(
+            fileobj=file if hasattr(file, "write") else None,
+            name=None if hasattr(file, "write") else file,
+            mode="w",
+            format=tarfile.USTAR_FORMAT,
+        ) as tar:
+            tar.addfile(info, image)
+        return
+    _write(names, datasets, constants, file)
+
+
+def _write(names, datasets, constants, file):
+    import numpy as np
+
+    h5py = _h5py()
     with ExitStack() as stack:
         handle = _open(stack, file, "w")
         if len(handle) or len(handle.attrs):

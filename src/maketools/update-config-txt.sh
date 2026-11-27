@@ -77,33 +77,20 @@ do
 done | sort | uniq
 )"
 
+selected_modules=$(../maketools/find_modules.sh) || exit 1
+selected_modules=$(printf '%s\n' "$selected_modules" | tr '\n' ' ')
 modules=$(
 cd ../
-for dir in *
-do
-  if test -f "$dir/module.type"
-  then
-    mtype="$(cat "$dir/module.type")"
-    is=""
-    case "$mtype" in
-    (always) is=on ;;
-    (default-on)
-      if test -f $dir.off ; then
-         is=off
-      else
-         is=on
-      fi  ;;
-    (default-off)
-      if test -f $dir.on ; then
-         is=on
-      else
-         is=off
-      fi  ;;
-    esac
-    echo "module $dir $is ($mtype)"
-  fi
+for declaration in */module.yml; do
+  dir=${declaration%/module.yml}
+  mtype=$(maketools/module-header type "$declaration") || exit 1
+  case " $selected_modules " in
+    (*" $dir "*) is=on ;;
+    (*) is=off ;;
+  esac
+  echo "module $dir $is ($mtype)"
 done
-)
+) || exit 1
 
 {
 echo "# version strings"

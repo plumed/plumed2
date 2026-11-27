@@ -1,4 +1,6 @@
 name: crystdistrib
+type: default-off
+use: [core, tools, colvar, matrixtools]
 authors: Jake McKibbin, Gareth Tribello and Erik Santiso
 description: order parameters for studying the formation of molecular crystals
 dois: ["10.1063/1.3548889"]
