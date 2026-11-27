@@ -99,7 +99,6 @@ g: GYRATION_TENSOR ATOMS=1-5 PHASES
 PRINT ARG=g FILE=colvar
 ```
 
-
 */
 //+ENDPLUMEDOC
 
@@ -172,9 +171,17 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
       if( usemass || (str_weights.size()==1 && str_weights[0]=="@Masses") ) {
         wt_str = "MASS_WEIGHTED";
       }
-      std::string inpt;
-      parseNumbered( "ATOMS", 1, inpt );
-      if( inpt.length()>0 ) {
+      std::vector<std::string> first, expanded;
+      parseNumberedVector("ATOMS",1,first);
+      if(!first.empty()) {
+        expandAtomList("ATOMS1",first,expanded);
+        std::string inpt;
+        for(const auto& atom : expanded) {
+          if(!inpt.empty()) {
+            inpt += ",";
+          }
+          inpt += atom;
+        }
         readInputLine( getShortcutLabel() + ": GYRATION_VECTOR " + wt_str + " ATOMS1=" + inpt + " " +  convertInputLineToString() );
       } else {
         readInputLine( getShortcutLabel() + ": GYRATION_SCALAR " + wt_str + " " + convertInputLineToString() );
@@ -189,8 +196,8 @@ GyrationShortcut::GyrationShortcut(const ActionOptions& ao):
   log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)")<<"\n";
   // Read in the atoms involved
   std::vector<std::string> atoms;
-  parseVector("ATOMS",atoms);
-  Tools::interpretRanges(atoms);
+  parseAtomList("ATOMS",atoms);
+
   if( atoms.empty() ) {
     plumed_merror("no atoms were specified, use the ATOMS keyword");
   }
