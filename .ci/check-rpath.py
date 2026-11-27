@@ -9,6 +9,9 @@ import tempfile
 from pathlib import Path
 
 source = Path(__file__).resolve().parents[1]
+current_version = re.search(
+    r"^(\d+\.\d+)", (source / "VERSION.txt").read_text(), re.MULTILINE
+)[1]
 
 
 def run(*args, cwd=source, env=None, **kwargs):
@@ -159,7 +162,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-rpath-") as temporary:
     run("./configure", f"--prefix={prefix}", *options, env=env)
     run("make", "-j4", env=env)
     version = run("bash", "-c", "source sourceme.sh; plumed info --version", env=env)
-    assert version == "2.11", version
+    assert version == current_version, version
     # The linked executable must select the new kernel through LD_LIBRARY_PATH,
     # independently of PLUMED_KERNEL (which is used by the runtime wrapper).
     version = run(
@@ -168,7 +171,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-rpath-") as temporary:
         "source sourceme.sh; unset PLUMED_KERNEL; src/lib/plumed info --version",
         env=env,
     )
-    assert version == "2.11", version
+    assert version == current_version, version
     run("make", "install", env=env)
     for relative in (
         "bin/plumed",
@@ -179,7 +182,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-rpath-") as temporary:
         check_tags(prefix / relative, f"{prefix}/lib")
     for executable in ("bin/plumed", "lib/plumed/plumed-runtime"):
         version = run(str(prefix / executable), "info", "--version", env=env)
-        assert version == "2.11", version
+        assert version == current_version, version
     print(
         "RPATH checks passed: path filtering, new dtags, opt-out, installation, "
         "and build-tree precedence over PLUMED 2.10.",
