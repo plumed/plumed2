@@ -103,11 +103,17 @@ jobs:
         python -m pip install -r extensions/requirements.txt "pybind11>=3.0" numpy
         ./configure --with-extension-base="$HOME/opt" --enable-extension-modules=pycv \
           --prefix="$HOME/pycv" PYTHON_BIN=python
-        make
-        make install
+        # the base was compiled with CXX="ccache g++" in another job: this one has no ccache
+        make CXX="$CXX"
+        make install CXX="$CXX"
         grep -qx "variant python${{ matrix.pyversion }}" "$HOME/pycv/lib/plumed/plugins/pycv.plumed"
         export PLUMED_PLUGIN_PATH="$HOME/pycv/lib/plumed/plugins"
         plumed modules -q --has pycv
         make -C regtest/pycv
         .ci/check-module-regtests regtest/pycv
         (cd regtest/pycv/pythontests && python -m pytest -v)
+        # PLUMED within a Python of another version (the system Python of the runner):
+        # pycv must stop with an error
+        if test "$(/usr/bin/python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')" != "${{ matrix.pyversion }}" ; then
+          (cd regtest/pycv/pythontests && /usr/bin/python3 mismatched_host.py "$HOME/opt/lib/libplumed.so")
+        fi
