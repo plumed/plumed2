@@ -81,7 +81,12 @@ struct State {
   std::recursive_mutex mutex;
   std::once_flag discovery, automatic;
   std::map<std::string,Module> catalog;
-  DLLoader retained;
+  // The autoloaded libraries are never closed, they stay loaded until the process exits.
+  // They link the kernel, so they keep it loaded also after the program that loaded it
+  // has closed it (e.g. the python wrapper, when its Plumed object is finalized): then
+  // this object is destroyed by an exit handler that runs in the kernel, and closing the
+  // libraries there would unload the kernel while its code is running (segmentation fault).
+  DLLoader& retained=*new DLLoader;
   std::string activating;
 
   struct Activation {
