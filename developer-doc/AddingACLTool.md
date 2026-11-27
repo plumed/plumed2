@@ -120,6 +120,27 @@ will automatically check if a particular flag is present and read any input dire
 with a particular flag (i.e. the data after the space). Within main you can recover the read in 
 data using CLTool::parse and CLTool:parseFlag.   
 
+Command-line tools can register aliases by separating spellings with `/`. Put the
+canonical long option first, for example:
+
+\verbatim
+keys.add("compulsory","--input/-i","the input file");
+keys.addFlag("--verbose/-v",false,"print additional information");
+\endverbatim
+
+Both `--input file` and `-i file` (and the forms `--input=file` and `-i=file`)
+then populate the same canonical `--input` value. Tool code continues to call
+`parse("--input", filename)` or `parseFlag("--verbose", verbose)`. Defaults and
+required-option checks apply once to that canonical value. If an option is
+repeated using either spelling, the last supplied value is used. Help and shell
+completion list both spellings; completion callbacks receive the canonical long
+name in `Completion::option`. Each spelling must be unique within the tool.
+JSON syntax metadata lists each spelling separately, with `aliasof` pointing from
+a short alias to its canonical name. Defaults appear only on the canonical entry.
+Short options are separate words: attached values such as `-ifile` and grouped
+flags such as `-abc` are not supported. This convention applies to command-line
+options, not to input-file directives or positional arguments.
+
 \section getplumed Re-using plumed
 
 To re-use the functionality that is present in plumed you use the same tools that are used to 

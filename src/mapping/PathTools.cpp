@@ -138,7 +138,7 @@ void PathTools::registerKeywords( Keywords& keys ) {
   keys.add("optional","--arg","the arguments that should be read in from the pdb files");
   keys.add("compulsory","--fixed","0","the frames to fix when constructing the path using --path");
   keys.add("compulsory","--metric","the measure to use to calculate the distance between frames");
-  keys.add("compulsory","--out","the name of the file on which to output your path");
+  keys.add("compulsory","--out/-o","the name of the file on which to output your path");
   keys.add("compulsory","--arg-fmt","%f","the format to use for argument values in your frames");
   keys.add("compulsory","--tolerance","1E-4","the tolerance to use for the algorithm that is used to re-parameterize the path");
   keys.add("compulsory","--nframes-before-start","1","the number of frames to include in the path before the first frame");

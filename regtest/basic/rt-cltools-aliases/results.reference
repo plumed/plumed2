@@ -1,0 +1,8 @@
+long, short, attached and mixed repeated values: OK
+defaults, flag defaults and dash-prefixed values: OK
+missing values, required options and unsupported spellings: OK
+help, option discovery and completion argument kinds: OK
+built-in numeric, flag and action-selection aliases: OK
+driver input and float-driver forwarding: OK
+graph and PDB outputs match their long-option equivalents: OK
+manual/input-builder syntax recognizes long and short spellings: OK

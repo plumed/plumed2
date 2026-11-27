@@ -1,0 +1,11 @@
+type=plumed
+plumed_needs="tools:dlopen"
+arg="kt -t 300 -u kcal/mol"
+
+function plumed_regtest_before() {
+  $plumed_nompi mklib alias-tool.cpp
+}
+
+function plumed_regtest_after() {
+  python3 "$regtest_test_dir/check.py" $plumed_nompi > results
+}

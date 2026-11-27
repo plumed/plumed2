@@ -14,3 +14,10 @@ h5convert equals split: OK
 h5convert equals unsplit: OK
 h5convert equals stream: OK
 h5convert equals stream unsplit: OK
+h5convert short input stream: OK
+h5convert short output stream: OK
+h5convert short input file: OK
+h5convert short equals split: OK
+h5convert short equals unsplit: OK
+h5convert short equals stream: OK
+h5convert short equals stream unsplit: OK

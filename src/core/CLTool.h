@@ -59,6 +59,13 @@ private:
   const Keywords& keywords;
 /// The data read in from the command line stored in a map with the keywords
   std::map<std::string,std::string> inputData;
+/// Map each command-line spelling to its registered keyword (including aliases).
+  std::map<std::string,std::string> optionKeywords;
+/// The first slash-separated spelling is the canonical name stored in inputData.
+  static std::string canonicalKeyword(const std::string& key) {
+    return key.substr(0,key.find('/'));
+  }
+  const std::string& registeredKeyword(const std::string& key) const;
   std::vector<void*> dlHandles;
 /// Read the arguments from the command line
   bool readCommandLineArgs( int argc, char**argv, FILE*out );
@@ -137,9 +144,10 @@ public:
 };
 
 template<class T>
-bool CLTool::parse(const std::string&key,T&t) {
-  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  if(keywords.style(key,"compulsory") ) {
+bool CLTool::parse(const std::string&option,T&t) {
+  const auto& registered=registeredKeyword(option);
+  const auto key=canonicalKeyword(registered);
+  if(keywords.style(registered,"compulsory") ) {
     if(inputData.count(key)==0) {
       error("missing data for keyword " + key);
     }
@@ -157,10 +165,10 @@ bool CLTool::parse(const std::string&key,T&t) {
 }
 // very limited support and check: take more from core/Action.h parseVector
 template<class T>
-bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
+bool CLTool::parseVector(const std::string&option,std::vector<T>&t) {
 
-  // Check keyword has been registered
-  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
+  const auto& registered=registeredKeyword(option);
+  const auto key=canonicalKeyword(registered);
   // initial size
   unsigned size=t.size();
   bool skipcheck=false;
@@ -188,8 +196,8 @@ bool CLTool::parseVector(const std::string&key,std::vector<T>&t) {
   }
   std::string def;
   T val;
-  if ( keywords.style(key,"compulsory") && t.size()==0 ) {
-    if( keywords.getDefaultValue(key,def) ) {
+  if ( keywords.style(registered,"compulsory") && t.size()==0 ) {
+    if( keywords.getDefaultValue(registered,def) ) {
       if( def.length()==0 || !Tools::convertNoexcept(def,val) ) {
         plumed_merror("ERROR in keyword "+key+ " has weird default value" );
       } else {

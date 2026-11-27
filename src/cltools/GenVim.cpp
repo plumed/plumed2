@@ -335,7 +335,7 @@ PLUMED_REGISTER_CLTOOL(GenVim,"gen_vim")
 
 void GenVim::registerKeywords(Keywords& keys) {
   CLTool::registerKeywords(keys);
-  keys.add("optional","--outdir","directory for generated Vim files");
+  keys.add("optional","--outdir/-o","directory for generated Vim files");
   keys.add("optional","--template-dir","directory containing Vim templates");
 }
 

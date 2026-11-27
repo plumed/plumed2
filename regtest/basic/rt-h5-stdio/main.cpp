@@ -43,7 +43,7 @@ int main() {
   require(bool(input) && bool(output));
   require(std::fputs("#! FIELDS x\n1.25",input.get())>=0);
   std::rewind(input.get());
-  run({"plumed","h5convert","--input","-","--output","borrowed.h5"},input.get(),output.get());
+  run({"plumed","h5convert","-i","-","-o","borrowed.h5"},input.get(),output.get());
   require(contents(output.get()).empty());
   // The input stream must still be open after the Plumed object is destroyed.
   std::rewind(input.get());

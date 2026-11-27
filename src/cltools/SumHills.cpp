@@ -295,7 +295,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ) {
   keys.add("optional","--bin","the number of bins of the grid, one for each variable");
   keys.add("optional","--spacing","the grid spacing, one for each variable, alternative to the number of bins");
   keys.add("optional","--idw","the variables of the output (default all). With --hills the other variables are integrated out, with --histo the other variables are not considered");
-  keys.add("optional","--outfile","the output file for the free energy (fes.dat, or negativebias.dat with --negbias); with --stride the prefix of the files");
+  keys.add("optional","--outfile/-o","the output file for the free energy (fes.dat, or negativebias.dat with --negbias); with --stride the prefix of the files");
   keys.add("optional","--outhisto","the output file for the histogram (histo.dat); with --stride the prefix of the files");
   keys.add("optional","--kt","the temperature in energy units, needed with --idw, --histo and --basins");
   keys.add("optional","--sigma","the widths of the Gaussian kernels of the histogram, one for each variable (needed with --histo)");

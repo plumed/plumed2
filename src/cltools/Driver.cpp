@@ -218,7 +218,7 @@ void Driver<real>::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
   keys.isDriver();
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
-  keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
+  keys.add("compulsory","--plumed/-p","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
   keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation"
            " (0 means that the number of the step is read from the trajectory file,"

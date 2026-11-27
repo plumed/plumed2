@@ -103,8 +103,8 @@ PLUMED_REGISTER_CLTOOL(H5Convert,"h5convert")
 
 void H5Convert::registerKeywords( Keywords& keys ) {
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--input","the file to convert (- for text standard input)");
-  keys.add("compulsory","--output","the converted file (an archive of HDF5 tables if its extension is .hpa or .h5.tar, a single HDF5 file if .h5, text otherwise; - for text standard output)");
+  keys.add("compulsory","--input/-i","the file to convert (- for text standard input)");
+  keys.add("compulsory","--output/-o","the converted file (an archive of HDF5 tables if its extension is .hpa or .h5.tar, a single HDF5 file if .h5, text otherwise; - for text standard output)");
   keys.add("compulsory","--batch-size","4096","the maximum number of rows of a member, when the output is an archive (.hpa)");
 }
 

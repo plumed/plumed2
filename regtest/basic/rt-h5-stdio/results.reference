@@ -1,5 +1,6 @@
 named conversion: OK
 preferred and alias archive extensions: OK
+short and mixed aliases with streams and spaced filenames: OK
 text stdout: OK
 text pipe with and without final newline: OK
 redirected text stdin: OK
