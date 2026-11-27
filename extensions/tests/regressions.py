@@ -93,7 +93,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-installed-regressions-") as scra
                     "FAILURE",
                     "NOT_APPLICABLE",
                     "DEFERRED",
-                    "SKIP_ON_TRAVIS",
+                    "SKIP_ON_CI",
                 )
             )
         ):

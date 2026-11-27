@@ -158,7 +158,7 @@ public:
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
   template <typename T>
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
   __host__ __device__
 #endif
   static double pbc(T);
@@ -552,7 +552,7 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 template <typename T>
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(__HIPCC__)
 __host__ __device__
 #endif
 inline double Tools::pbc(T x) {

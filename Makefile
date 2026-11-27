@@ -12,7 +12,7 @@ include extensions/Makefile
 else
 
 
-SRCDIRS := src test
+SRCDIRS := src
 SUBDIRS := $(SRCDIRS) new-manual developer-doc regtest macports vim json astyle python
 
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
@@ -68,8 +68,8 @@ install-html: doc
 $(SRCDIRS):
 	$(MAKE) -C $@
      
-# compile plumed before tests:
-test: src
+# conventional aliases for check
+test tests: check
 
 # doxygen
 doc:

@@ -28,7 +28,12 @@ try:
                 default_modules | {"isdb-pytorch", "colvar"},
                 set(),
             ),
-            ("all:-isdb-pytorch", {"isdb", "ves"}, {"isdb-pytorch"}),
+            # modules compiled by another toolchain are never selected by all
+            (
+                "all:-isdb-pytorch",
+                {"isdb", "ves"},
+                {"isdb-pytorch", "gpu_cuda_hip", "gpu_voronoi"},
+            ),
             ("none+ves-isdb", {"ves"}, {"isdb", "isdb-pytorch"}),
             ("none:ves", {"ves", "bias", "cltools"}, {"colvar"}),
             (
@@ -92,6 +97,26 @@ try:
                 result.stderr
             )
             assert "enabling module" not in result.stderr
+        # nor can they be named (another toolchain, or extension only)
+        for module in ("gpu_cuda_hip", "gpu_voronoi"):
+            result = subprocess.run(
+                [
+                    os.environ.get("CMAKE", "cmake"),
+                    "-S",
+                    str(source),
+                    "-B",
+                    directory,
+                    "-DPLUMED_MODULES=none:+" + module,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            assert result.returncode != 0
+            assert "not supported by the CMake build" in " ".join(
+                result.stderr.split()
+            ), result.stderr
 
         # Exercise the graph boundary cases without altering source metadata.
         fixture = Path(directory) / "module-fixture"
@@ -128,6 +153,13 @@ try:
             result.returncode != 0
             and "unavailable after feature checks" in " ".join(result.stderr.split())
         ), result.stderr
+        # an included module (headers only) is neither enabled nor required
+        (fixture / "src/alpha/module.yml").write_text(
+            "type: default-off\nuse: [beta]\ninclude: [gamma]\n"
+        )
+        result = resolve_fixture("alpha", "gamma")
+        assert result.returncode == 0, result.stderr
+        assert "Resolved: alpha;beta" in result.stdout
         (fixture / "src/beta/module.yml").write_text(
             "type: default-off\nuse: [missing_module]\n"
         )
@@ -228,7 +260,7 @@ try:
         for action, module in (
             ("DRR", "drr"),
             ("EMMIVOX", "isdb-pytorch"),
-            ("CUDACOORDINATION", "plugins/cudaCoord"),
+            ("CUDACOORDINATION", "gpu_cuda_hip"),
             ("PYCVINTERFACE", "plugins/pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
         ):

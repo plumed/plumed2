@@ -31,8 +31,9 @@ class Action;
 /**
 The GPU used by the actions that run on a GPU.
 
-PLUMED itself does not use GPUs: the actions that do are in plugins (plugins/openaccPTM,
-plugins/cudaCoord), each with its own runtime (OpenACC, CUDA). They all choose the GPU here,
+PLUMED itself does not use GPUs: the actions that do are in plugins and modules compiled with
+another toolchain (plugins/openaccPTM, src/gpu_cuda_hip), each with its own runtime (OpenACC,
+CUDA or HIP). They all choose the GPU here,
 so that they make the same choice and write it in the log in the same way. The plugin
 tells what its runtime sees, and gets the number of the GPU to use, the first that applies of:
 

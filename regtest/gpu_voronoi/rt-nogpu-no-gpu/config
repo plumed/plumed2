@@ -1,0 +1,39 @@
+type=driver
+plumed_modules=gpu_voronoi
+# skipped on the CI where gpu_voronoi is not built (e.g. --enable-modules=all with PLUMED_ALL_TESTS=yes):
+# the GPU workflow checks that the tests run when they can (.ci/check-nogpu-regtests)
+PLUMED_ALLOW_SKIP_ON_CI=yes
+arg="--plumed plumed.dat --ixyz frame.xyz --box 7,8,9"
+extra_files="../common/frame.xyz ../common/compare.sh"
+export PLUMED_STACK_TRACE=no
+# Without a GPU, BACKEND=AUTO must give the results of the CPU, and BACKEND=CUDA must stop
+# with a clear error. The GPUs are hidden with CUDA_VISIBLE_DEVICES (HIP_VISIBLE_DEVICES for
+# the HIP build), so that the test gives the same result on machines with and without GPUs
+# (and without a driver).
+export CUDA_VISIBLE_DEVICES=-1
+export HIP_VISIBLE_DEVICES=-1
+# Each line of the table below is: name|trajectory|box|expected message|action
+
+plumed_regtest_after() {
+  {
+    bash compare.sh values 2
+    bash compare.sh derivatives 3
+    echo "actions on the CPU: $(grep -c "requested AUTO; selected CPU (AUTO initialization fallback: No CUDA device is available)" out)"
+  } > comparison
+  rm -f errors
+  while IFS='|' read -r name trajectory box text action ; do
+    printf 'q: %s\nPRINT ARG=q FILE=values_%s\n' "$action" "$name" > bad_$name.dat
+    rc=0
+    $plumed driver --plumed bad_$name.dat --ixyz $trajectory --box $box > bad_$name.out 2> bad_$name.err || rc=$?
+    if test $rc -ne 0 && test $rc -lt 128 && grep -q -F "$text" bad_$name.out bad_$name.err ; then
+      echo "$name: stopped with an error" >> errors
+    else
+      echo "$name: DID NOT STOP PROPERLY (exit code $rc)" >> errors
+    fi
+  done <<'EOT'
+no-gpu|frame.xyz|7,8,9|CUDA initialization failed: No CUDA device is available|VORONOI_COORDINATION CENTERS=1,2,3,4 ASSIGNED=5,6,7,8,9,10 REFERENCE=1.5,1.2,1.1,2.2 KAPPA=5 BACKEND=CUDA
+no-gpu-nlist|frame.xyz|7,8,9|CUDA initialization failed: No CUDA device is available|VORONOI_COORDINATION CENTERS=1,2,3,4 ASSIGNED=5,6,7,8,9,10 REFERENCE=1.5,1.2,1.1,2.2 KAPPA=5 NLIST NL_CUTOFF=1.85 NL_STRIDE=3 NL_SKIN=0.4 BACKEND=CUDA
+triclinic|frame.xyz|7,0,0,0.8,8,0,0.4,0.7,9|CUDA backend does not support triclinic PBC|VORONOI_COORDINATION CENTERS=1,2,3,4 ASSIGNED=5,6,7,8,9,10 REFERENCE=1.5,1.2,1.1,2.2 KAPPA=5 BACKEND=CUDA
+degenerate-box|tiny.xyz|4e-6,4e-6,4e-6|non-finite or degenerate periodic box|VORONOI_COORDINATION CENTERS=1,2 ASSIGNED=3 KAPPA=1 REFERENCE=0 BACKEND=CUDA
+EOT
+}

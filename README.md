@@ -188,13 +188,15 @@ Python wheels on Linux and macOS, but not on Windows. Plugins can be:
 * your own actions: a C++ file with an action can be compiled with
   `plumed mklib MyCV.cpp`, or loaded directly with `LOAD FILE=MyCV.cpp`, which
   compiles it when PLUMED starts (a C++ compiler is needed in both cases);
+* the [gpu_cuda_hip](src/gpu_cuda_hip/module.md) module (coordination number on
+  NVIDIA GPUs with CUDA and AMD GPUs with HIP), compiled into PLUMED with
+  `./configure --enable-modules=+gpu_cuda_hip` (nvcc or hipcc is needed);
 * the plugins in the [plugins](plugins) directory, each with its own README and
   build instructions: [pycv](plugins/pycv/README.md) (collective variables and
-  functions written in Python, installed with `pip`),
-  [cudaCoord](plugins/cudaCoord/README.md) (coordination number on GPUs with
-  CUDA) and [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
-  GPUs with OpenACC, including SAXS and SANS). cudaCoord and openaccPTM are
-  compiled with `./configure` and `make` in their directory.
+  functions written in Python, installed with `pip`) and
+  [openaccPTM](plugins/openaccPTM/README.md) (collective variables on
+  GPUs with OpenACC, including SAXS and SANS), compiled with `./configure` and
+  `make` in its directory.
 
 Python package and other packages
 ---------------------------------

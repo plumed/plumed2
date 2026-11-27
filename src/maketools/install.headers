@@ -1,5 +1,5 @@
 #! /usr/bin/env bash
-# cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
+# cd ../../src ; tar cf - */*.h */*.cuh */*/*.h | tar xf - -C "$(DESTDIR)$(includedir)/$(program_name)/"
 
 cd ../../src
 
@@ -19,7 +19,8 @@ export LC_ALL=C
 
 for dir in $dirs
 do
-for file in $dir/*.h
+# .cuh: the CUDA headers of the modules with toolchain cuda, for the modules built against an installed base
+for file in $dir/*.h $dir/*.cuh
 do
   if test -e $file ; then
     mkdir -p "$where/${file%/*}"

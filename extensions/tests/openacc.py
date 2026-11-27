@@ -133,7 +133,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-openacc-regressions-") as scratc
                         "FAILURE",
                         "NOT_APPLICABLE",
                         "DEFERRED",
-                        "SKIP_ON_TRAVIS",
+                        "SKIP_ON_CI",
                     )
                 )
             ):

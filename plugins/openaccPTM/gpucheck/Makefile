@@ -1,16 +1,18 @@
 # Checks, on a node with GPUs, that the GPU plugins leave the GPU of the MD code alone
 # (see device_check.cpp). Run with "make check-gpu" from the openaccPTM directory (after
-# "make", ACCTARGET=gpu) or from the cudaCoord one. Not part of the regtests: the CI has no GPU.
-# PLUGINS lists the plugins to check (by default the openaccPTM one).
+# "make", ACCTARGET=gpu). Not part of the regtests: the CI has no GPU.
+# PLUGINS lists the plugins to check (by default the openaccPTM one): plugin libraries,
+# or gpu_cuda_hip for the module (e.g. "make PLUGINS=gpu_cuda_hip", with the kernel that
+# contains it, or the one it is installed against, in PLUMED_KERNEL).
 
 CUDACXX ?= nvcc
 PLUGINS ?= $(CURDIR)/../plumedOpenACC.so
 PLUMED_INCLUDE_DIR = $(shell plumed --no-mpi info --include-dir)
 ifdef USE_HIP
-# AMD GPUs ("make USE_HIP=1 check-gpu" from cudaCoord): the HIP runtime, with the
-# CUDA names mapped by the header of cudaCoord; the program has no kernels
+# AMD GPUs ("make USE_HIP=1 PLUGINS=gpu_cuda_hip"): the HIP runtime, with the
+# CUDA names mapped by the header of the gpu_cuda_hip module; the program has no kernels
 HIPCC ?= hipcc
-CUDACXX = $(HIPCC) -x hip --offload-host-only -I$(CURDIR)/../../cudaCoord/src
+CUDACXX = $(HIPCC) -x hip --offload-host-only -I$(CURDIR)/../../../src/gpu_cuda_hip
 endif
 
 all: check

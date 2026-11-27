@@ -61,6 +61,25 @@ else
 	$(AT)$(CC) -c $(CPPFLAGS) $(ADDCPPFLAGS) $(CFLAGS) $*.c -o $*.o
 endif
 
+# rule for CUDA (modules with toolchain cuda in module.yml)
+# CUDA_COMPILER is nvcc or hipcc, CUDA_FLAGS has the C++ flags translated by cuda-flags.
+# No relocatable device code: the object can be linked by the C++ compiler.
+%.o: %.cu
+	@echo "compiling " $*.cu
+# only when the object is built, so that the queries of the Makefile (e.g. show_used_modules)
+# work also when PLUMED was configured without the CUDA modules
+ifeq ($(CUDA_COMPILER),)
+	@echo "$(notdir $(CURDIR)) has CUDA sources, but PLUMED was configured without the modules with toolchain cuda: run ./configure --enable-modules=+$(notdir $(CURDIR))" ; exit 1
+endif
+ifneq ($(disable_dependency_tracking),yes)
+	@mkdir -p deps
+	$(AT)$(CUDA_COMPILER) $(CUDA_FLAGS) -MMD -MP -MF deps/$*.d $(CPPFLAGS) $(ADDCPPFLAGS) \
+	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" -c $*.cu -o $*.o
+else
+	$(AT)$(CUDA_COMPILER) $(CUDA_FLAGS) $(CPPFLAGS) $(ADDCPPFLAGS) \
+	-DPLUMED_MODULE_DIR=\"$(notdir $(CURDIR))/\" -c $*.cu -o $*.o
+endif
+
 #
 CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib *.gcda *.gcno *.a
 

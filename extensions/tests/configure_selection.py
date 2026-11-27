@@ -96,6 +96,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-configure-modules-") as scratch:
         ("none:ves", {"bias", "cltools"}),
         ("none:dimred", {"gridtools", "mapping", "function", "colvar"}),
         ("none:colvar", set()),
+        ("none:gpu_cuda_hip", {"cltools"}),
         ("none:isdb-pytorch", {"colvar"}),
         ("none:-bias:ves:+bias", {"cltools"}),
         ("none:-bias:-bias:ves:+bias", {"cltools"}),
@@ -125,6 +126,7 @@ with tempfile.TemporaryDirectory(prefix="plumed-configure-modules-") as scratch:
         ("none:ves:-bias", "ves -> bias"),
         ("none:-bias:ves", "ves -> bias"),
         ("none:dimred:-colvar", "dimred -> mapping -> colvar"),
+        ("none:gpu_cuda_hip:-cltools", "gpu_cuda_hip -> cltools"),
     ):
         result = resolve(expression)
         assert result.returncode != 0
@@ -134,6 +136,61 @@ with tempfile.TemporaryDirectory(prefix="plumed-configure-modules-") as scratch:
         assert "WARNING: enabling module" not in result.stderr, result.stderr
         # No partial automatic additions on a conflict.
         assert not (root / "Makefile.conf").exists()
+
+    # Broad selection still excludes modules requiring a separate toolchain or
+    # extension placement, while an explicit GPU selection resolves dependencies.
+    extension_only = root / "src/extension_probe/module.yml"
+    extension_only.parent.mkdir()
+    extension_only.write_text("type: default-off\nuse: []\nplacement: extension\n")
+    headers["extension_probe"] = {"type": "default-off", "use": []}
+    for expression, enabled in (
+        ("reset", False),
+        ("all", False),
+        ("gpu_cuda_hip:all", False),
+        ("all:+gpu_cuda_hip", True),
+        ("none:+gpu_cuda_hip", True),
+        ("none:+gpu_cuda_hip:-gpu_cuda_hip", False),
+    ):
+        result = resolve(expression)
+        assert "compiler cannot create executables" in result.stderr, result.stderr
+        assert selected_from_config(root, "gpu_cuda_hip", headers) == enabled
+        assert not selected_from_config(root, "extension_probe", headers)
+        if enabled:
+            assert selected_from_config(root, "cltools", headers)
+    extension_only.unlink()
+    extension_only.parent.rmdir()
+    del headers["extension_probe"]
+
+    # The resolved override state, rather than obsolete .on/.off markers, must
+    # drive both CUDA and HIP compiler discovery. No GPU compiler is needed:
+    # configure must reach and diagnose the explicitly missing compiler.
+    (root / "src/gpu_cuda_hip.off").touch()
+    for variable, option in (("NVCC", []), ("HIPCC", ["--enable-hip"])):
+        missing = str(root / ("missing-" + variable.lower()))
+        result = subprocess.run(
+            [
+                "bash",
+                "configure",
+                "--enable-modules=none:+gpu_cuda_hip",
+                "--disable-mpi",
+                "--disable-openmp",
+                "--disable-doc",
+                "--disable-python",
+                "--disable-libsearch",
+                *option,
+                variable + "=" + missing,
+            ],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            timeout=120,
+            check=False,
+        )
+        assert result.returncode != 0
+        assert variable + "=" + missing + " not found" in result.stderr, (
+            result.stdout + result.stderr
+        )
+    (root / "src/gpu_cuda_hip.off").unlink()
 
     result = resolve("none", "--enable-kenref")
     assert "compiler cannot create executables" in result.stderr, result.stderr
