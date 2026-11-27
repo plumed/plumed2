@@ -82,10 +82,21 @@ ContactMatrixShortcut<CM>::ContactMatrixShortcut(const ActionOptions& ao):
       }
     }
   } else {
-    std::string grp_inpt;
     for(unsigned i=1;; ++i) {
-      if( !parseNumbered("GROUP",i,grp_inpt) ) {
+      std::vector<std::string> input;
+      if( !parseNumberedVector("GROUP",i,input) ) {
         break;
+      }
+      std::string num;
+      Tools::convert(i,num);
+      std::vector<std::string> atoms;
+      expandAtomList("GROUP" + num,input,atoms);
+      std::string grp_inpt;
+      for(const auto& atom : atoms) {
+        if(!grp_inpt.empty()) {
+          grp_inpt += ",";
+        }
+        grp_inpt += atom;
       }
       grp_str.push_back( grp_inpt );
     }

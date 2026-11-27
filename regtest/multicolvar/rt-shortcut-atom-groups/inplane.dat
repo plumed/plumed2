@@ -1,0 +1,7 @@
+# Multiple starts and ends must be expanded and enumerated independently.
+s: GROUP ATOMS=1,2
+e: GROUP ATOMS=5,6,7
+t: GROUP ATOMS=9,10
+a: INPLANEDISTANCES VECTORSTART=1,2 VECTOREND=5,6,7 GROUP=9,10
+b: INPLANEDISTANCES VECTORSTART=s VECTOREND=e GROUP=t
+PRINT ARG=a,b FILE=projected FMT=%12.8f
