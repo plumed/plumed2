@@ -30,6 +30,7 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #include <functional>
 #include <vector>
 #include <tuple>
+#include <memory>
 #include <cstddef>
 
 #include "core/ActionWithVirtualAtom.h"
@@ -94,6 +95,10 @@ private:
   int N_Blocks;
   int total_PIV_length;
   int inited_step;
+  std::uint64_t evaluation_=0;
+  long long preparedStep_=-1;
+  std::uint64_t preparedEvaluation_=0;
+  bool preparedAuxiliary_=false;
   bool driver_mode;
   bool freeze_selection;
   std::vector<int> steps_since_update;
@@ -736,10 +741,54 @@ PINES::PINES(const ActionOptions &ao) : PLUMED_COLVAR_INIT(ao),
 }
 
 void PINES::prepare() {
+  if(isGeometryTrial()) {
+    for(int n=0; n<N_Blocks; ++n) {
+      if(nstride[n]>1 && !all_g1g2_pairs[n]) {
+        error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
+      }
+    }
+  }
+  if(preparedStep_==getStep() && preparedEvaluation_==getEvaluationId() &&
+      preparedAuxiliary_==isCalculationOnly()) {
+    return;
+  }
+  const bool newStep=preparedStep_!=getStep();
+  preparedStep_=getStep();
+  preparedEvaluation_=getEvaluationId();
+  preparedAuxiliary_=isCalculationOnly();
+  if(isGeometryTrial()) {
+    // A trial can bring a previously discarded pair arbitrarily close. Request
+    // every candidate before sharing data, then choose the list in calculate().
+    listreducedall.clear();
+    for(const auto& block : listall) {
+      listreducedall.insert(block.begin(),block.end());
+    }
+    listreducedall_vec.assign(listreducedall.begin(),listreducedall.end());
+    atom_ind_hashmap.clear();
+    for(unsigned i=0; i<listreducedall_vec.size(); ++i) {
+      atom_ind_hashmap[listreducedall_vec[i].index()]=i;
+    }
+    requestAtoms(listreducedall_vec);
+    ann_deriv.resize(listreducedall_vec.size());
+    for(auto& derivative : ann_deriv) {
+      derivative.resize(total_PIV_length);
+    }
+    return;
+  }
+  if(isCalculationOnly()) {
+    // Local auxiliary calls reuse membership without advancing its refresh phase.
+    return;
+  }
   bool heap_refreshed = false;
   bool stale_refresh_prep = false;
   for (int n = 0; n < N_Blocks; n++) {
-    if (steps_since_update[n] == 0 || plumed.getStep() == 0 || driver_mode || (int)vecMaxHeapVecs[n].size() != tot_num_pairs[n]) {
+    if(nstride[n]==1 && !all_g1g2_pairs[n]) {
+      // Select from current coordinates in calculate(), after all candidates
+      // have been shared. A previous-frame reduced list misses accepted swaps.
+      listreduced[n]=listall[n];
+      stale_refresh_prep=true;
+      steps_since_update[n]=-1;
+    } else if (steps_since_update[n] == 0 || plumed.getStep() == 0 || driver_mode || (int)vecMaxHeapVecs[n].size() != tot_num_pairs[n]) {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
       heap_refreshed = true;
     } else if((steps_since_update[n] >= nstride[n] || stale_tolerance[n]) && !all_g1g2_pairs[n]) {
@@ -748,7 +797,9 @@ void PINES::prepare() {
       steps_since_update[n] = -1;
       stale_tolerance[n] = false;
     }
-    steps_since_update[n]+=1;
+    if(newStep) {
+      steps_since_update[n]+=1;
+    }
   }
   if (heap_refreshed || stale_refresh_prep) {
     // Collate all atoms from all lists
@@ -773,12 +824,56 @@ void PINES::prepare() {
 
 void PINES::calculate() {
   const long step = plumed.getStep();
+  const bool refreshGeometry=isGeometryTrial();
+  if(refreshGeometry) {
+    for(int n=0; n<N_Blocks; ++n) {
+      if(nstride[n]>1 && !all_g1g2_pairs[n]) {
+        error("Auxiliary PINES evaluations with reduced candidate lists require PL_REFRESH=1");
+      }
+    }
+  }
+  // Trials need their own nearest pairs, but must not change the ordinary
+  // PL_REFRESH phase, buffered membership, or frozen selection after rejection.
+  auto selection=std::tie(vecMaxHeapVecs,listreduced,PL_atoms_ref_coords,
+                          stale_tolerance,delta_pd,r_tolerance,latched_pairs,
+                          preupdated_block,isFirstBuild,steps_since_update,
+                          inited_step,evaluation_);
+  auto snapshot=[&]() {
+    return std::apply([](const auto&... entries) {
+      return std::make_tuple(entries...);
+    },selection);
+  };
+  using Selection=decltype(snapshot());
+  struct RestoreSelection {
+    decltype(selection)& target;
+    std::unique_ptr<Selection> saved;
+    ~RestoreSelection() {
+      if(saved) {
+        target=std::move(*saved);
+      }
+    }
+  } restore {selection,isCalculationOnly() ? std::make_unique<Selection>(snapshot()) : nullptr};
+  if(refreshGeometry) {
+    for(const auto& block : listall) {
+      for(const auto& atom : block) {
+        if(atom_ind_hashmap.find(atom.index())==atom_ind_hashmap.end()) {
+          error("Auxiliary PINES evaluations need all candidate atoms: mark exchange evaluations before preparing dependencies");
+        }
+      }
+    }
+  }
+  for(int n=0; n<N_Blocks; ++n) {
+    if(refreshGeometry || (!isGeometryUnchanged() && nstride[n]==1 && !all_g1g2_pairs[n])) {
+      buildMaxHeapVecBlock(n,mypdb,vecMaxHeapVecs[n]);
+    }
+  }
   if (inited_step == -1) {
     for (int n =0; n < N_Blocks; n++) {
       buildMaxHeapVecBlock(n, mypdb, vecMaxHeapVecs[n]);
     }
   }
-  if (step != inited_step) {
+  if (evaluation_ != getEvaluationId()) {
+    evaluation_=getEvaluationId();
     if ((int)preupdated_block.size() != N_Blocks) {
       preupdated_block.assign(N_Blocks, 0);
     } else {
@@ -791,7 +886,7 @@ void PINES::calculate() {
     }
 
     // Optional: latch here (membership/order frozen for this step)
-    if (freeze_selection) {
+    if (freeze_selection && (step!=inited_step || refreshGeometry)) {
       latchFromCurrentHeaps();
     }
 

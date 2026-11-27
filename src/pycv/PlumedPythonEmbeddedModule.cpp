@@ -57,6 +57,7 @@ void definePlumedCommunications(py::module_ m) {
   .defGetter("getTimeStep",PLMD::pycv::PythonCVInterface,getTimeStep,double,"Return the timestep")
   .defGetter("isRestart",PLMD::pycv::PythonCVInterface,getRestart,bool,"Return true if we are doing a restart")
   .defGetter("isExchangeStep",PLMD::pycv::PythonCVInterface,getExchangeStep,bool,"Check if we are on an exchange step")
+  .defGetter("isCalculationOnly",PLMD::pycv::PythonCVInterface,isCalculationOnly,bool,"Check if calculate is evaluating an auxiliary configuration without updating persistent state")
   .def_property_readonly("label",
   [](PLMD::pycv::PythonCVInterface* self) -> std::string {
     return self->getLabel();
@@ -237,6 +238,7 @@ return toRet;
   .defGetter("getTimeStep",PLMD::pycv::PythonFunction,getTimeStep,double,"Return the timestep")
   .defGetter("isRestart",PLMD::pycv::PythonFunction,getRestart,bool,"Return true if we are doing a restart")
   .defGetter("isExchangeStep",PLMD::pycv::PythonFunction,getExchangeStep,bool,"Check if we are on an exchange step")
+  .defGetter("isCalculationOnly",PLMD::pycv::PythonFunction,isCalculationOnly,bool,"Check if calculate is evaluating an auxiliary configuration without updating persistent state")
   .def_property_readonly("label",
   [](PLMD::pycv::PythonFunction* self) -> std::string {
     return self->getLabel();

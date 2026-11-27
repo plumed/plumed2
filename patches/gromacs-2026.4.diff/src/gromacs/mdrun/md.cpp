@@ -1143,18 +1143,10 @@ void gmx::LegacySimulator::do_md()
             {
                 dd_collect_state(cr_->dd, state_, stateGlobal_);
             }
-            else
-            {
-                copy_state_serial(state_, stateGlobal_);
-            }
 
             if (isMainRank)
                 exchange_state(ms_, partner, stateGlobal_);
 
-            if (!haveDDAtomOrdering(*cr_))
-            {
-                copy_state_serial(stateGlobal_, state_);
-            }
             if (haveDDAtomOrdering(*cr_))
             {
                 dd_partition_system(fpLog_,
@@ -1237,25 +1229,17 @@ void gmx::LegacySimulator::do_md()
                          fr_->longRangeNonbondeds.get(),
                          ddBalanceRegionHandler);
             }
-            plumed_hrex_cache_foreign(plumedForceProvider, &hrex_enerd.term[InteractionFunction::PotentialEnergy]);
+            plumedForceProvider->cacheExchangeForeign(hrex_enerd.term[InteractionFunction::PotentialEnergy]);
 
             /* exchange back */
             if (haveDDAtomOrdering(*cr_))
             {
                 dd_collect_state(cr_->dd, state_, stateGlobal_);
             }
-            else
-            {
-                copy_state_serial(state_, stateGlobal_);
-            }
 
             if (isMainRank)
                 exchange_state(ms_, partner, stateGlobal_);
 
-            if (!haveDDAtomOrdering(*cr_))
-            {
-                copy_state_serial(stateGlobal_, state_);
-            }
             if (haveDDAtomOrdering(*cr_))
             {
                 dd_partition_system(fpLog_,

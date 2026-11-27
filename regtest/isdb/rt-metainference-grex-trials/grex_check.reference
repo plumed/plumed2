@@ -1,0 +1,4 @@
+COLVAR.0 IDENTICAL
+grex.0: 10 self attempts, 0 with a nonzero delta bias
+COLVAR.1 IDENTICAL
+grex.1: 10 self attempts, 0 with a nonzero delta bias

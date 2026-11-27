@@ -137,15 +137,15 @@ CoordAngles::CoordAngles(const ActionOptions& ao):
   ActionShortcut(ao) {
   // Parse the central atoms
   std::vector<std::string> catoms;
-  parseVector("CATOMS",catoms);
-  Tools::interpretRanges(catoms);
+  parseAtomList("CATOMS",catoms);
+
   if( catoms.size()==0 ) {
     error("no central atoms were found in CATOMS");
   }
   // Parse the coordination sphere
   std::vector<std::string> group;
-  parseVector("GROUP",group);
-  Tools::interpretRanges(group);
+  parseAtomList("GROUP",group);
+
   if( group.size()==0 ) {
     error("no atoms were found in GROUP");
   }

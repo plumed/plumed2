@@ -217,8 +217,11 @@ void Shadow::calculate() {
     makeWhole();
   }
 
+  if(first_time_ && isCalculationOnly()) {
+    error("SHADOW needs an ordinary reference update before auxiliary evaluation");
+  }
   // if it is time, update reference coordinates
-  if(first_time_ || getStep()%nupdate_==0) {
+  if(!isCalculationOnly() && (first_time_ || getStep()%nupdate_==0)) {
     update_reference();
     first_time_ = false;
   }

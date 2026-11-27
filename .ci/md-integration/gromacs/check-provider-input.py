@@ -39,13 +39,16 @@ command = [
 ]
 (output / "command.json").write_text(json.dumps(command, indent=2) + "\n")
 with (output / "compile.log").open("w") as log:
-    subprocess.run(
+    compilation = subprocess.run(
         command,
         cwd=entry["directory"],
         stdout=log,
         stderr=subprocess.STDOUT,
-        check=True,
+        check=False,
     )
+if compilation.returncode:
+    print((output / "compile.log").read_text(), file=sys.stderr, end="")
+compilation.check_returncode()
 environment = os.environ.copy()
 environment["PLUMED_KERNEL"] = str(kernel)
 with (output / "output").open("w") as log:

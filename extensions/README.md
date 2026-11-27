@@ -80,7 +80,9 @@ plumed modules --list
 Explicit loading affects only the requesting object or CLI context. Hard
 dependencies become available silently in that context. Repeated loads, including
 already-built-in modules, succeed without changing visibility elsewhere.
-Autoloaded modules are shared by the kernel and retained across object lifetimes.
+Autoloaded modules are shared while kernel clients are alive. Their shared
+handles are released after the last client's actions and per-object handles,
+before the wrapper closes the kernel. A later client can autoload them again.
 `plumed modules --list` reports built-in and successfully loaded modules.
 `plumed modules --has ves pamm` checks all requested modules and returns 0 only
 when all are visible; `-q` suppresses output. Runtime native feature checks use
@@ -377,3 +379,10 @@ libraries do not require development linker files just to compile a basic
 action. C++ LOAD cache filenames include the kernel build ID; direct mklib -n
 also records kernel identity, compiler/link flags and the compiler helper content. Existing atomic publication
 and simultaneous-builder handling are retained.
+
+The Linux/ELF `metatomic` extension is an unloadability exception when native
+metatomic support is enabled: it is linked with `NODELETE` because PyTorch's
+static custom-class registry can outlive the last PLUMED object. Loading this
+extension, including by autoload, retains its native dependencies and the linked
+kernel until process exit. Owned handles are still closed normally. See the
+metatomic module documentation for this external registration-lifetime workaround.

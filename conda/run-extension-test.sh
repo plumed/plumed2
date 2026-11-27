@@ -58,6 +58,7 @@ conda install -y -p "$prefix" --override-channels -c local -c conda-forge \
   "${regression_packages[@]}"
 python - "$prefix" <<'PYTHON'
 import json
+import subprocess
 import sys
 from pathlib import Path
 reports = Path(sys.argv[1]) / "lib/plumed/plugins"
@@ -68,6 +69,12 @@ for module, feature in [
 ]:
     report = json.loads((reports / (module + ".json")).read_text())
     assert report["optional_features"][feature], report
+# Check the installed ELF artifact: PyTorch retains methods implemented by the
+# metatomic/tensor dependency libraries until its static registry is destroyed.
+if sys.platform == "linux":
+    library = Path(sys.argv[1]) / "lib/libplumed-ext-metatomic.so"
+    dynamic = subprocess.check_output(["readelf", "-d", str(library)], text=True)
+    assert "NODELETE" in dynamic, dynamic
 PYTHON
 "$prefix/bin/plumed" modules -q --has drr fourier pytorch metatomic ttsketch kenref
 cmp "$kernel" "$task/kernel-before"

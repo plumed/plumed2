@@ -278,6 +278,26 @@ void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, std::
   interpretAtomList( strings, xpos, this, t );
 }
 
+std::vector<std::string> ActionAtomistic::getAtomIdentifiers(const std::vector<AtomNumber>& atoms, const std::vector<Value*>& xpos) {
+  std::vector<std::string> identifiers;
+  identifiers.reserve(atoms.size());
+  for(const auto& atom : atoms) {
+    std::size_t index=atom.index(), source=0;
+    while(source<xpos.size() && index>=xpos[source]->getNumberOfValues()) {
+      index -= xpos[source]->getNumberOfValues();
+      ++source;
+    }
+    if(source<xpos.size() && xpos[source]->getNumberOfValues()==1) {
+      identifiers.push_back(xpos[source]->getPntrToAction()->getLabel());
+    } else {
+      std::string identifier;
+      Tools::convert(atom.serial(),identifier);
+      identifiers.push_back(identifier);
+    }
+  }
+  return identifiers;
+}
+
 void ActionAtomistic::interpretAtomList(std::vector<std::string>& strings, const std::vector<Value*>& xpos, Action* action, std::vector<AtomNumber> &t) {
   Tools::interpretRanges(strings);
   for(unsigned i=0; i<strings.size(); ++i) {

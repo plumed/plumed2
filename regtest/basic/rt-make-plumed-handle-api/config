@@ -1,0 +1,6 @@
+type=make
+plumed_needs="tools:dlopen"
+plumed_src=main.cpp
+function plumed_regtest_before() {
+  $plumed_nompi mklib mock.cpp > mock-build.log 2>&1
+}

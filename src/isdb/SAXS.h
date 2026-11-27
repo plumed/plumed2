@@ -103,6 +103,14 @@ private:
   // isFirstStep and random_deut_ before launch(), restored by cancelLaunch()
   bool launchFirstStep_=true;
   Random launchRandomDeut_;
+  // Reevaluate geometry after trials, replaying the stochastic form-factor map
+  // from its committed random state rather than advancing it at each trial.
+  bool trialGeometry_=false;
+  bool formFactorRandomValid_=false;
+  bool launchRandomValid_=false;
+  bool launchPreserveRandom_=false;
+  Random formFactorRandom_;
+  Random launchFormFactorRandom_;
   bool onebead;
   bool resolution;
   bool chi2;

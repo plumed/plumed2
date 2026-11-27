@@ -71,14 +71,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "expanded_internal.h"
-#    define __PLUMED_WRAPPER_CXX 1
-#    define __PLUMED_WRAPPER_LIBCXX11 1
-#    define __PLUMED_WRAPPER_EXTERN 0
-#    define __PLUMED_WRAPPER_FORTRAN 0
-#    define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#    define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#    define __PLUMED_HAS_DLOPEN
-#    include "../../../Plumed.h"
+
 
 static void init_df_history_weights(df_history_t* dfhist, const t_expanded* expand, int nlim)
 {
@@ -1454,37 +1447,29 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 
     if (plumedForceProvider)
     {
-        auto& plumed = *plumedForceProvider->plumedHandle();
         std::vector<real> biases(nlim);
-        int               exchange = 1;
-        plumed.cmd("setExchangeStep", &exchange);
-        auto evaluate = [&](int lambdaState)
+        auto              evaluate = [&](int lambdaState)
         {
-            long int plumedStep      = step;
-            plumedForceProvider->context().lambdaState = lambdaState;
-            plumedForceProvider->context().trialEnergy =
+            if (debug && plumedForceProvider->context().mainRank)
+                fprintf(debug,
+                        "PLUMED_LAMBDA_EVALUATION step=%" PRId64 " current=%d state=%d\n",
+                        step,
+                        fep_state,
+                        lambdaState);
+            const real energy =
                     plumedForceProvider->context().mainRank
                             ? enerd->term[InteractionFunction::PotentialEnergy]
                                       + enerd->foreignLambdaTerms.deltaPotentialEnergy(lambdaState)
                             : 0;
-            // Reopen input bindings at the same MD step; do not update history,
-            // propagate forces, or write ordinary output for a lambda trial.
-            plumed.cmd("setStepLong", &plumedStep);
-            plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
-            plumed.cmd("setEnergy", &plumedForceProvider->context().trialEnergy);
-            plumed.cmd("prepareCalc");
-            plumed.cmd("performCalcNoForces");
-            real bias = 0;
-            plumed.cmd("getBias", &bias);
-            return bias;
+            return plumedForceProvider->lambdaTrialBias(step, lambdaState, energy);
         };
+        // Finish with the current state so the provider's input bindings and
+        // PLUMED geometry/model caches are restored without an extra evaluation.
         for (i = 0; i < nlim; ++i)
-            biases[i] = evaluate(i);
-        // Statistics/ordinary output still refer to the original state on this
-        // step. GROMACS applies the MCMC result for the next MD step.
-        evaluate(fep_state);
-        exchange = 0;
-        plumed.cmd("setExchangeStep", &exchange);
+        {
+            const int state = (fep_state + 1 + i) % nlim;
+            biases[state] = evaluate(state);
+        }
         const real referenceBeta =
                 1 / ((ir->bSimTemp ? simtemp->temperatures[fep_state] : expand->mc_temp) * gmx::c_boltz);
         for (i = 0; i < nlim; ++i)
@@ -1493,8 +1478,8 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
                     1 / ((ir->bSimTemp ? simtemp->temperatures[i] : expand->mc_temp) * gmx::c_boltz);
             const real correction = beta * biases[i] - referenceBeta * biases[fep_state];
             scaled_lamee[i] += correction;
-            if (log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
-                fprintf(log,
+            if (debug)
+                fprintf(debug,
                         "PLUMED_LAMBDA step=%" PRId64
                         " current=%d state=%d potential=%.17g bias=%.17g reduced=%.17g\n",
                         step,
@@ -1553,8 +1538,8 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
 
     lamnew = ChooseNewLambda(
             nlim, expand, dfhist, fep_state, weighted_lamee, p_k, ir->expandedvals->lmc_seed, step);
-    if (plumedForceProvider && log && std::getenv("PLUMED_EXCHANGE_DEBUG"))
-        fprintf(log, "PLUMED_LAMBDA_MOVE step=%" PRId64 " old=%d new=%d\n", step, fep_state, lamnew);
+    if (plumedForceProvider && debug)
+        fprintf(debug, "PLUMED_LAMBDA_MOVE step=%" PRId64 " old=%d new=%d\n", step, fep_state, lamnew);
 
     /* now check on the Wang-Landau updating critera */
 

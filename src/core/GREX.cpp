@@ -250,7 +250,7 @@ void GREX::calculate() {
   plumedMain.readBinary(own);
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  plumedMain.justCalculate(true,false);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0) {
     Communicator::Request req=intercomm.Isend(buffer,partner,1066);
@@ -272,7 +272,7 @@ void GREX::calculate() {
   }
   plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
-  plumedMain.justCalculate();
+  plumedMain.justCalculate(true,false);
   plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
   if(physicalEnergiesProvided) {

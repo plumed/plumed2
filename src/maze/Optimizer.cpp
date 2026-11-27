@@ -477,7 +477,7 @@ double Optimizer::sampling_radius() {
 void Optimizer::calculate() {
   update_nl();
 
-  if (getStep() % optimizer_stride_ == 0 && !first_step_) {
+  if (getStep() % optimizer_stride_ == 0 && !first_step_ && !isCalculationOnly()) {
     optimize();
 
     value_x_->set(opt_[0]);
@@ -487,7 +487,9 @@ void Optimizer::calculate() {
     value_action_->set(score());
     value_sampling_radius_->set(sampling_radius());
   } else {
-    first_step_=false;
+    if(!isCalculationOnly()) {
+      first_step_=false;
+    }
 
     value_x_->set(opt_[0]);
     value_y_->set(opt_[1]);

@@ -1,0 +1,13 @@
+[ defaults ]
+1 2 no
+[ atomtypes ]
+ArA 39.948 0.0 A 0.34 2.0
+ArB 39.948 0.0 A 0.34 8.0
+[ moleculetype ]
+AR 1
+[ atoms ]
+1 ArA 1 AR AR 1 0.0 39.948 ArB 0.0 39.948
+[ system ]
+Alchemical LJ pair
+[ molecules ]
+AR 2

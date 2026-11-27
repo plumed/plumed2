@@ -46,6 +46,8 @@ Communicator::Communicator()
 {}
 
 Communicator::Communicator(const Communicator&pc): Communicator() {
+  pc.checkCommunication();
+  communicationCheck_=pc.communicationCheck_;
   if(pc.communicatorResolved) {
     Set_comm(pc.communicator);
   }
@@ -56,6 +58,8 @@ Communicator::Status Communicator::StatusIgnore;
 
 Communicator& Communicator::operator=(const Communicator&pc) {
   if(this != &pc) {
+    pc.checkCommunication();
+    communicationCheck_=pc.communicationCheck_;
     if(pc.communicatorResolved) {
       Set_comm(pc.communicator);
     } else if(communicatorResolved) {
@@ -70,6 +74,16 @@ Communicator& Communicator::operator=(const Communicator&pc) {
     standIn=pc.standIn;
   }
   return *this;
+}
+
+void Communicator::setCommunicationCheck(std::function<void()> check) {
+  communicationCheck_=std::move(check);
+}
+
+void Communicator::checkCommunication()const {
+  if(communicationCheck_) {
+    communicationCheck_();
+  }
 }
 
 void Communicator::resolveCommunicator()const {
@@ -184,6 +198,7 @@ void Communicator::Abort(int errorcode) {
 }
 
 void Communicator::Bcast(const Data& data,int root) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -192,6 +207,7 @@ void Communicator::Bcast(const Data& data,int root) {
 }
 
 void Communicator::Scatter(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
@@ -208,6 +224,7 @@ void Communicator::Scatter(const ConstData& sendbuf,int sendcount,const Data& re
 }
 
 void Communicator::Gather(const ConstData& sendbuf,int sendcount,const Data& recvbuf,int recvcount,int root) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   void*s=const_cast<void*>((const void*)sendbuf.pointer);
@@ -224,6 +241,7 @@ void Communicator::Gather(const ConstData& sendbuf,int sendcount,const Data& rec
 }
 
 void Communicator::Sum(const Data& data) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -232,6 +250,7 @@ void Communicator::Sum(const Data& data) {
 }
 
 void Communicator::Prod(const Data& data) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -240,6 +259,7 @@ void Communicator::Prod(const Data& data) {
 }
 
 void Communicator::Max(const Data& data) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -248,6 +268,7 @@ void Communicator::Max(const Data& data) {
 }
 
 void Communicator::Min(const Data& data) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -256,6 +277,7 @@ void Communicator::Min(const Data& data) {
 }
 
 Communicator::Request Communicator::Isend(const ConstData& data,int source,int tag) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   Request req;
@@ -266,6 +288,7 @@ Communicator::Request Communicator::Isend(const ConstData& data,int source,int t
 }
 
 void Communicator::Allgatherv(const ConstData& in,const Data& out,const int*recvcounts,const int*displs) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   void*s=const_cast<void*>((const void*)in.pointer);
@@ -290,6 +313,7 @@ void Communicator::Allgatherv(const ConstData& in,const Data& out,const int*recv
 }
 
 void Communicator::Allgather(const ConstData& in,const Data& out) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   void*s=const_cast<void*>((const void*)in.pointer);
@@ -309,6 +333,7 @@ void Communicator::Allgather(const ConstData& in,const Data& out) {
 }
 
 void Communicator::Recv(const Data& data,int source,int tag,Status&status) {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
@@ -320,6 +345,7 @@ void Communicator::Recv(const Data& data,int source,int tag,Status&status) {
 }
 
 void Communicator::Barrier()const {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
   if(initialized()) {
@@ -424,6 +450,7 @@ template<> MPI_Datatype Communicator::getMPIType<long double>()   {
   return MPI_LONG_DOUBLE;
 }
 void Communicator::Split(int color,int key,Communicator&pc)const {
+  checkCommunication();
   checkNotStandIn();
   resolveCommunicator();
 #if !defined(__PLUMED_HAS_MPI)
@@ -435,6 +462,7 @@ void Communicator::Split(int color,int key,Communicator&pc)const {
     MPI_Comm_free(&pc.communicator);
   }
   pc.standIn=false;
+  pc.communicationCheck_=communicationCheck_;
   MPI_Comm_split(communicator,color,key,&pc.communicator);
   pc.communicatorResolved=true;
 }

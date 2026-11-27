@@ -24,6 +24,8 @@
 #include "ActionWithValue.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include "ActionAtomistic.h"
+#include "tools/AtomNumber.h"
 #include <cctype>
 #include <unordered_map>
 
@@ -33,6 +35,30 @@ void ActionShortcut::registerKeywords( Keywords& keys ) {
   Action::registerKeywords( keys );
   keys.add("hidden","IS_SHORTCUT","hidden keyword to tell if actions are shortcuts so that example generator can provide expansions of shortcuts");
   keys.add("hidden","HAS_VALUES","this is used in json output to determine those actions that have values");
+}
+
+void ActionShortcut::parseAtomList(const std::string& key, std::vector<std::string>& atoms) {
+  std::vector<std::string> input;
+  parseVector(key,input);
+  expandAtomList(key,input,atoms);
+}
+
+void ActionShortcut::expandAtomList(const std::string& key, const std::vector<std::string>& input,
+                                    std::vector<std::string>& atoms) {
+  if(input.empty()) {
+    return;
+  }
+  // Use the same resolver as atomistic actions, without creating an auxiliary action.
+  std::vector<Value*> xpos, ypos, zpos, masses, charges;
+  ActionAtomistic::getAtomValuesFromPlumedObject(plumed,xpos,ypos,zpos,masses,charges);
+  std::vector<std::string> selection(input);
+  std::vector<AtomNumber> numbers;
+  ActionAtomistic::interpretAtomList(selection,xpos,this,numbers);
+  const auto expanded = ActionAtomistic::getAtomIdentifiers(numbers,xpos);
+  if(expanded.empty()) {
+    error("the selection in " + key + " contains no atoms");
+  }
+  atoms.insert(atoms.end(),expanded.begin(),expanded.end());
 }
 
 void ActionShortcut::readShortcutKeywords( const Keywords& keys, std::map<std::string,std::string>& keymap ) {

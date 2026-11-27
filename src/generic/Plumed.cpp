@@ -368,6 +368,8 @@ void Plumed::prepare() {
     }
   }
   if(root) {
+    p.setExchangeStep(getExchangeStep());
+    p.setEvaluationMode(plumed.getEvaluationMode());
     p.cmd("prepareDependencies");
   }
   int ene=0;
@@ -435,12 +437,19 @@ void Plumed::prepare() {
 void Plumed::calculate() {
   Tools::DirectoryChanger directoryChanger(directory.c_str());
   if(root) {
+    // Forward the current exchange and auxiliary context to the guest before
+    // calculating; preparation already received the early evaluation mode.
+    p.setExchangeStep(getExchangeStep());
+    p.setEvaluationMode(plumed.getEvaluationMode());
     p.cmd("setStopFlag",&stop);
   }
   Tensor box=getPbc().getBox();
   if(root)
     p.cmd("setBox",&box[0][0], {3,3});
 
+  // No-force auxiliary passes leave these zeroed buffers unused. Force-bearing
+  // auxiliary passes (shell iterations) must still obtain the guest's forces,
+  // independently of the state-freezing context.
   virial.zero();
   std::fill(forces.begin(),forces.end(),0.0);
   std::copy(getMasses().begin(),
@@ -474,7 +483,7 @@ void Plumed::calculate() {
     p.cmd("shareData");
   }
   if(root) {
-    p.cmd("performCalcNoUpdate");
+    p.performCalcNoUpdate(plumed.areForcesRequested());
   }
 
   int s=forces.size();

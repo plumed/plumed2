@@ -76,6 +76,9 @@ class PlumedHandle :
   std::unique_ptr<PlumedMain> local;
 /// Pointer to loaded Plumed object;
   void* loaded=nullptr;
+/// Cached command API for the lifetime of a loaded guest (-1 means unknown).
+  int loadedApiVersion_=-1;
+  int loadedApiVersion();
 /// Constructor using the path to a kernel.
 /// I keep it private to avoid confusion wrt the
 /// similar constructor of PLMD::Plumed that accepts a string (conversion from FORTRAN).
@@ -97,6 +100,14 @@ public:
   PlumedHandle & operator=(PlumedHandle && other) noexcept;
 /// Execute cmd.
   void cmd(std::string_view key,const TypesafePtr & ptr) override;
+/// Internal guest context propagation, including kernels using the local C++ interface.
+  void setExchangeStep(bool exchange);
+/// Evaluate a guest without updating it; no new public MD command is introduced.
+/// Loaded guests need API >= 4, or >= 9 for no-force auxiliary passes.
+/// Explicit auxiliary modes are forwarded separately through setEvaluationMode.
+/// These checks establish command availability, not the presence of action fixes.
+  void performCalcNoUpdate(bool forcesRequested);
+  void setEvaluationMode(int mode);
 /// Bring in the possibility to pass shape/nelem
   using WithCmd::cmd;
 };

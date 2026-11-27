@@ -1,0 +1,29 @@
+mpiprocs=2
+type=driver
+plumed_modules=isdb
+# The same run with an exchange attempt every 2 steps (--debug-grex, which never swaps the
+# configurations) and without exchange attempts: the evaluations of the attempts must not change
+# the state of Metainference (sigma, scale, ftilde, the averaged weights, the sigma mean
+# histories, the Monte Carlo), so COLVAR must be the same. When a replica is paired with itself
+# (every other attempt with two replicas), its delta bias must be exactly zero.
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2 --debug-grex 2 --debug-grex-log grex"
+
+function plumed_regtest_before() {
+  # a different trajectory for each replica (traj.0.xyz and traj.1.xyz, found by driver --multi)
+  for r in 0 1 ; do
+    awk -v r=$r 'BEGIN{for(f=0;f<40;f++){print 4; print "10 10 10"; for(i=0;i<4;i++){printf "X %f %f %f\n", i+0.5*sin(0.1*f+i+r), 0.3*cos(0.07*f*(i+1)+0.5*r), 0.2*i*f/40.0+0.1*r}}}' > traj.$r.xyz
+  done
+  mkdir noexchange ; cd noexchange ; cp ../plumed.dat ../traj.0.xyz ../traj.1.xyz .
+  $mpi $plumed driver --plumed plumed.dat --ixyz traj.xyz --multi 2 > out 2> err
+  cd ..
+}
+
+function plumed_regtest_after() {
+  {
+    for r in 0 1 ; do
+      if cmp -s COLVAR.$r noexchange/COLVAR.$r ; then echo "COLVAR.$r IDENTICAL" ; else echo "COLVAR.$r DIFFERENT" ; fi
+      # attempts 0, 2, 4, ...: each replica is paired with itself
+      awk -v r=$r 'NR%2==1{if($1!=0||$2!=0) bad++; n++} END{printf "grex.%s: %d self attempts, %d with a nonzero delta bias\n", r, n, bad}' grex.$r
+    done
+  } > grex_check
+}
