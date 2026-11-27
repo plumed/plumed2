@@ -353,6 +353,15 @@
   kernel symbol table remains version 4. Query `getApiVersion` before sending
   this command to an older kernel.
 
+  Command API version 14 adds `setEvaluationMode` for context before preparation:
+  0 is normal, 1 requests auxiliary forces with the normal force STRIDE, and 2
+  requests a full auxiliary potential including off-stride biases. Modes 1/2
+  freeze model history and never denote a coordinate exchange. Set the mode
+  before preparation and restore mode 0 after evaluation (also on failure).
+  Mode 1 uses `performCalcNoUpdate`; mode 2 uses `performCalcNoForces`.
+  Ordinary commands in mode 0 retain their existing semantics. This optional
+  capability is not a marker for action fixes backported to older releases.
+
 \verbatim
   #define __PLUMED_WRAPPER_MPI_HOST_ADAPTER 1
   #include <mpi.h>

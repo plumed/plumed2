@@ -1,0 +1,3 @@
+MAXENT GREX and unequal local auxiliary counts with MAXENT/WALKERS_MPI: PASS
+Coupled local auxiliary mode 1 rejected before unmatched collectives: PASS
+Coupled local auxiliary mode 2 rejected before unmatched collectives: PASS

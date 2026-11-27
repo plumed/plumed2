@@ -52,6 +52,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////
 
 namespace PLMD {
+class Action;
 
 
 
@@ -303,6 +304,28 @@ private:
   bool useLaunch=false;
 /// Counts the forward loops, see Action::forwardLoop
   std::uint64_t forwardLoop=0;
+/// Internal evaluation context; no additional MD command or API version is needed.
+  bool calculationOnly_=false;
+/// Explicit early context: 0 normal, 1 auxiliary forces, 2 full auxiliary potential.
+  int evaluationMode_=0;
+/// Action executing prepare/calculate/apply, including recursive preparation.
+  Action* currentAction_=nullptr;
+  class ActionScope {
+    Action*& slot_;
+    Action* previous_;
+  public:
+    ActionScope(PlumedMain& main,Action* action): slot_(main.currentAction_),previous_(slot_) {
+      slot_=action;
+    }
+    ~ActionScope() {
+      slot_=previous_;
+    }
+    ActionScope(const ActionScope&)=delete;
+    ActionScope& operator=(const ActionScope&)=delete;
+  };
+
+/// State freezing and force propagation are independent for shell iterations.
+  bool forcesRequested_=true;
 /// Incremented at each forward loop, and when an action that changes the shared positions of the atoms has been calculated
   std::uint64_t atomsVersion=0;
 /// Positions in actionSet of the active launchable actions not launched yet in this forward loop,
@@ -453,7 +476,18 @@ public:
   /**
     Perform the forward loop on active actions.
   */
-  void justCalculate();
+  void justCalculate(bool calculationOnly=false, bool forcesRequested=true);
+/// Whether this forward evaluation must leave persistent action state unchanged.
+  bool isCalculationOnly() const {
+    return calculationOnly_ || exchangeStep || evaluationMode_!=0;
+  }
+  bool areForcesRequested() const {
+    return forcesRequested_;
+  }
+  void setEvaluationMode(int mode);
+  int getEvaluationMode() const {
+    return evaluationMode_;
+  }
   /**
     Backward propagate and update.
     Shortcut for backwardPropagate() + update()

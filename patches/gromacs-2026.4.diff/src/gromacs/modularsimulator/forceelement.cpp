@@ -43,13 +43,6 @@
 #include "forceelement.h"
 
 #include "../mdrun/plumedexchange.h"
-#define __PLUMED_WRAPPER_FORTRAN 0
-#define __PLUMED_WRAPPER_LINK_RUNTIME 1
-#define __PLUMED_WRAPPER_EXTERN 0
-#define __PLUMED_WRAPPER_CXX 1
-#define __PLUMED_WRAPPER_IMPLEMENTATION 1
-#define __PLUMED_HAS_DLOPEN
-#include "../../../Plumed.h"
 
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
@@ -198,15 +191,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
             plumedForceProvider->context().lambdaState = freeEnergyPerturbationData_->currentFEPState();
         // Ask at execution time, not when tasks for future steps are queued.
         // The normal provider call performs sharing, forces and the one update.
-        auto& plumed = *plumedForceProvider->plumedHandle();
-        long int     plumedStep = step;
-        plumed.cmd("setStepLong", &plumedStep);
-        if (inputrec_->bExpanded)
-            plumed.cmd("setExtraCV lambda", &plumedForceProvider->context().lambdaState);
-        plumed.cmd("prepareDependencies");
-        int needsEnergy = 0;
-        plumed.cmd("isEnergyNeeded", &needsEnergy);
-        if (needsEnergy)
+        if (plumedForceProvider->prepareModularStep(step))
             flags |= GMX_FORCE_ENERGY | GMX_FORCE_VIRIAL;
     }
     if (!haveDDAtomOrdering(*cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))

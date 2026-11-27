@@ -258,6 +258,7 @@ void ABMD::readCheckpoint(CheckpointReader& r) {
 void ABMD::calculate() {
   double ene=0.0;
   double totf2=0.0;
+  const bool trial=isCalculationOnly();
   for(unsigned i=0; i<getNumberOfArguments(); ++i) {
     const double cv=difference(i,to[i],getArgument(i));
     // the quantity on which the ratchet acts: the squared distance from the target or, with LINEAR, the distance
@@ -265,7 +266,7 @@ void ABMD::calculate() {
     const double k=kappa[i];
     double noise=0.;
     double diff=temp[i];
-    if(diff>0) {
+    if(diff>0 && !trial) {
       noise = 2.*random[i].Gaussian()*diff;
       if(rho<=diff) {
         diff=0.;
@@ -277,11 +278,15 @@ void ABMD::calculate() {
     // rho < min means that the collective variable is nearer to the target value than at any other previous time so
     // min is set to the CV value
     if(min[i]<0.||rho<min[i]) {
-      min[i] = rho;
+      if(!trial) {
+        min[i] = rho;
+      }
       setOutputForce(i,0.0);
     } else {
       // otherwise a noise is added to the minimum value
-      min[i] += noise;
+      if(!trial) {
+        min[i] += noise;
+      }
       // derivative of rho=cv^2 or of d=|cv| with respect to the CV
       const double f = linear ? -k*(rho-min[i])*(cv<0.0?-1.0:1.0) : -2.*k*(rho-min[i])*cv;
       setOutputForce(i,f);

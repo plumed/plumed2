@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/vec.h"
@@ -83,9 +84,85 @@
 namespace gmx
 {
 
-PLMD::Plumed* PlumedForceProvider::plumedHandle() const
+void PlumedForceProvider::exchangePattern(int replicas, int* order)
 {
-    return plumed_.get();
+    int custom = 0;
+    plumed_->cmd("getExchangesFlag", &custom);
+    if (custom > 0)
+    {
+        plumed_->cmd("setNumberOfReplicas", &replicas);
+        plumed_->cmd("getExchangesList", order);
+    }
+}
+
+void PlumedForceProvider::calculateExchange(int partner)
+{
+    plumed_->cmd("GREX setPartner", &partner);
+    plumed_->cmd("GREX calculate");
+    plumed_->cmd("GREX shareAllDeltaBias");
+}
+
+real PlumedForceProvider::exchangeDelta(int replica)
+{
+    real bias = 0;
+    plumed_->cmd(("GREX getDeltaBias " + std::to_string(replica)).c_str(), &bias);
+    return bias;
+}
+
+void PlumedForceProvider::cacheExchangeCurrent(real energy)
+{
+    plumed_->cmd("GREX cacheLocalUNow", &energy);
+}
+
+void PlumedForceProvider::cacheExchangeForeign(real energy)
+{
+    plumed_->cmd("GREX cacheLocalUSwap", &energy);
+}
+
+void PlumedForceProvider::prepareExchange()
+{
+    plumed_->cmd("GREX prepare");
+}
+
+void PlumedForceProvider::setEvaluationMode(int mode)
+{
+    if (plumedAPIversion_ < 14)
+    {
+        if (mode == 1 && !legacyShellWarningIssued_)
+        {
+            if (context_.mainRank)
+            {
+                gmx_warning("This PLUMED kernel lacks API 14 auxiliary force context. "
+                             "Shell relaxation uses the legacy evaluation sequence; repeated "
+                            "force calls can change adaptive bias state or mismatch inter-replica "
+                            "collectives. Upgrade PLUMED for protected shell evaluations.");
+            }
+            legacyShellWarningIssued_ = true;
+        }
+        return;
+    }
+    if (mode != evaluationMode_)
+    {
+        plumed_->cmd("setEvaluationMode", &mode);
+        evaluationMode_ = mode;
+    }
+}
+
+real PlumedForceProvider::lambdaTrialBias(int64_t step, int state, real physicalEnergy)
+{
+    long int plumedStep  = step;
+    context_.lambdaState = state;
+    context_.trialEnergy = physicalEnergy;
+    plumed_->cmd("setStepLong", &plumedStep);
+    plumed_->cmd("setExtraCV lambda", &context_.lambdaState);
+    plumed_->cmd("setEnergy", &context_.trialEnergy);
+    setEvaluationMode(2);
+    plumed_->cmd("prepareCalc");
+    plumed_->cmd("performCalcNoForces");
+    setEvaluationMode(0);
+    real bias = 0;
+    plumed_->cmd("getBias", &bias);
+    return bias;
 }
 
 PlumedForceProvider::~PlumedForceProvider() = default;
@@ -103,6 +180,13 @@ try : plumed_(std::make_unique<PLMD::Plumed>()),
     context_.mainRank = options.mpiComm_->isMainRank();
     context_.hrex     = options.hrex_;
     plumed_->cmd("getApiVersion", &plumedAPIversion_);
+    if (expanded_ && plumedAPIversion_ < 14)
+    {
+        GMX_THROW(InvalidInputError(
+                "PLUMED-biased expanded-ensemble lambda sampling requires API >= 14 "
+                "for early auxiliary evaluation context; ordinary MD and replica exchange "
+                "can use older kernels."));
+    }
 #if __PLUMED_WRAPPER_MPI_HOST_ADAPTER
     if (plumedAPIversion_ >= 13)
     {
@@ -236,11 +320,7 @@ void PlumedForceProvider::setGlobalAtomIndices(const std::optional<ArrayRef<cons
 void PlumedForceProvider::writeCheckpointData()
 try
 {
-#if GMX_LIB_MPI
-    if (context_.hrexTrial)
-        return;
-#endif
-    if (!prepareStepIsCalled_)
+    if (!prepareStepIsCalled_ || checkpointViaCallback_)
     {
         checkpointRequested_ = 1;
     }
@@ -272,6 +352,8 @@ try
     // "Again" means since the last prepareStep(), which MD and reruns call before each step
     repeatedCall_   = prepareStepIsCalled_ && (calculatedStep_ == lstep);
     calculatedStep_ = lstep;
+    // Repeated force queries freeze histories but retain normal force STRIDE.
+    setEvaluationMode(repeatedCall_ ? 1 : 0);
     // prepareStep() already opened this input epoch. Repeating setStep would
     // clear older kernels' prepared energy requirements before sharing data.
     if (preparedStep_ != lstep)
@@ -318,7 +400,7 @@ try
     }
     plumed_->cmd("setStopFlag", &plumedWantsToStop_);
 
-    if (!prepareStepIsCalled_)
+    if (!prepareStepIsCalled_ || checkpointViaCallback_)
     {
         // writeCheckpointData() runs only on the main rank: pass its request to all ranks
         if (forceProviderInput.mpiComm_.isParallel())
@@ -351,6 +433,7 @@ try
 
     // Do the work
     plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
+    setEvaluationMode(0);
 
     msmul(plumedVir_, 0.5, plumedVir_);
     forceProviderOutput->forceWithVirial_.addVirialContribution(plumedVir_);
@@ -397,6 +480,7 @@ try
        prepareCalc(); calculateForces() runs the second half (shareData()) once the
        positions are available. */
     long int lstep = step;
+    setEvaluationMode(0);
     plumed_->cmd("setStepLong", &lstep);
     if (expanded_)
     {
@@ -428,6 +512,15 @@ catch (const std::exception& ex)
 {
     GMX_THROW(InternalError(
             std::string("An error occurred while PLUMED was preparing the step\n:") + ex.what()));
+}
+
+bool PlumedForceProvider::prepareModularStep(int64_t step)
+{
+    const bool needsEnergy = prepareStep(step, false);
+    // The modular checkpoint helper invokes writeCheckpointData() before forces,
+    // independently of dependency preparation. Keep that notification path active.
+    checkpointViaCallback_ = true;
+    return needsEnergy;
 }
 
 bool PlumedForceProvider::applyAfterPotentialEnergy(bool           energyWasComputed,
@@ -485,6 +578,7 @@ try
     msmul(virial, 2.0, plumedVir_);
     plumed_->cmd("setVirial", &plumedVir_[0][0]);
     plumed_->cmd(repeatedCall_ ? "performCalcNoUpdate" : "performCalc", nullptr);
+    setEvaluationMode(0);
     saveExchangeInputs();
 
 

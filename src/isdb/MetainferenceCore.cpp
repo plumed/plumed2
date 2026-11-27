@@ -1419,82 +1419,81 @@ double MetainferenceCore::doMonteCarlo(const std::vector<double> &mean_) {
     break;
   }
 
-  // do not run MC if this is a replica-exchange trial
-  if(!action_.getExchangeStep()) {
+  // every evaluation starts from the state at the beginning of the step (see beginEvaluation()),
+  // so the trial evaluations of replica exchange repeat the same moves and keep nothing
 
-    // Create std::vector of random sigma indices
-    std::vector<unsigned> indices;
-    if (MCchunksize_ > 0) {
-      for (unsigned j=0; j<sigma_.size(); j++) {
-        indices.push_back(j);
-      }
-      random[2].Shuffle(indices);
+  // Create std::vector of random sigma indices
+  std::vector<unsigned> indices;
+  if (MCchunksize_ > 0) {
+    for (unsigned j=0; j<sigma_.size(); j++) {
+      indices.push_back(j);
     }
-    bool breaknow = false;
-
-    // cycle on MC steps
-    for(unsigned i=0; i<MCsteps_; ++i) {
-      MCtrial_++;
-      // propose move for ftilde
-      if(noise_type_==GENERIC) {
-        moveTilde(mean_, old_energy);
-      }
-      // propose move for scale and/or offset
-      if(doscale_||dooffset_) {
-        moveScaleOffset(mean_, old_energy);
-      }
-      // propose move for sigma
-      moveSigmas(mean_, old_energy, i, indices, breaknow);
-      // exit from the loop if this is the case
-      if(breaknow) {
-        break;
-      }
-    }
-    // the energy obtained by adding differences is recomputed, so that it does not depend on the history of the moves
-    if(energy_from_differences_) {
-      energy_from_differences_=false;
-      switch(noise_type_) {
-      case MGAUSS:
-        old_energy = getEnergyGJE(mean_,sigma_,scale_,offset_);
-        break;
-      case MOUTLIERS:
-        old_energy = getEnergySPE(mean_,sigma_,scale_,offset_);
-        break;
-      case GENERIC:
-        old_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,scale_,offset_);
-        break;
-      default:
-        plumed_error();
-      }
-    }
-
-    /* save the result of the sampling */
-    /* ftilde */
-    if(noise_type_==GENERIC) {
-      double accept = static_cast<double>(MCacceptFT_) / static_cast<double>(MCtrial_);
-      valueAcceptFT->set(accept);
-      for(unsigned i=0; i<sigma_.size(); i++) {
-        valueFtilde[i]->set(ftilde_[i]);
-      }
-    }
-    /* scale and offset */
-    if(doscale_ || doregres_zero_) {
-      valueScale->set(scale_);
-    }
-    if(dooffset_) {
-      valueOffset->set(offset_);
-    }
-    if(doscale_||dooffset_) {
-      double accept = static_cast<double>(MCacceptScale_) / static_cast<double>(MCtrial_);
-      valueAcceptScale->set(accept);
-    }
-    /* sigmas */
-    for(unsigned i=0; i<sigma_.size(); i++) {
-      valueSigma[i]->set(sigma_[i]);
-    }
-    double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
-    valueAccept->set(accept);
+    random[2].Shuffle(indices);
   }
+  bool breaknow = false;
+
+  // cycle on MC steps
+  for(unsigned i=0; i<MCsteps_; ++i) {
+    MCtrial_++;
+    // propose move for ftilde
+    if(noise_type_==GENERIC) {
+      moveTilde(mean_, old_energy);
+    }
+    // propose move for scale and/or offset
+    if(doscale_||dooffset_) {
+      moveScaleOffset(mean_, old_energy);
+    }
+    // propose move for sigma
+    moveSigmas(mean_, old_energy, i, indices, breaknow);
+    // exit from the loop if this is the case
+    if(breaknow) {
+      break;
+    }
+  }
+  // the energy obtained by adding differences is recomputed, so that it does not depend on the history of the moves
+  if(energy_from_differences_) {
+    energy_from_differences_=false;
+    switch(noise_type_) {
+    case MGAUSS:
+      old_energy = getEnergyGJE(mean_,sigma_,scale_,offset_);
+      break;
+    case MOUTLIERS:
+      old_energy = getEnergySPE(mean_,sigma_,scale_,offset_);
+      break;
+    case GENERIC:
+      old_energy = getEnergyMIGEN(mean_,ftilde_,sigma_,scale_,offset_);
+      break;
+    default:
+      plumed_error();
+    }
+  }
+
+  /* save the result of the sampling */
+  /* ftilde */
+  if(noise_type_==GENERIC) {
+    double accept = static_cast<double>(MCacceptFT_) / static_cast<double>(MCtrial_);
+    valueAcceptFT->set(accept);
+    for(unsigned i=0; i<sigma_.size(); i++) {
+      valueFtilde[i]->set(ftilde_[i]);
+    }
+  }
+  /* scale and offset */
+  if(doscale_ || doregres_zero_) {
+    valueScale->set(scale_);
+  }
+  if(dooffset_) {
+    valueOffset->set(offset_);
+  }
+  if(doscale_||dooffset_) {
+    double accept = static_cast<double>(MCacceptScale_) / static_cast<double>(MCtrial_);
+    valueAcceptScale->set(accept);
+  }
+  /* sigmas */
+  for(unsigned i=0; i<sigma_.size(); i++) {
+    valueSigma[i]->set(sigma_[i]);
+  }
+  double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCtrial_);
+  valueAccept->set(accept);
 
   // here we sum the score over the replicas to get the full metainference score that we save as a bias
   if(master) {
@@ -1775,25 +1774,26 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
         sigma_mean2_now[i] *= 1.0/(neff-1.)/norm;
       }
 
-      // add sigma_mean2 to history
-      if(optsigmamean_stride_>0) {
-        for(unsigned i=0; i<narg; ++i) {
-          sigma_mean2_last_[iselect][i].push(sigma_mean2_now[i]);
-        }
-      } else {
-        for(unsigned i=0; i<narg; ++i)
-          if(sigma_mean2_now[i] > sigma_mean2_last_[iselect][i].get(0)) {
-            sigma_mean2_last_[iselect][i].setFirst(sigma_mean2_now[i]);
-          }
-      }
+      // the history is changed by update(): here its maximum is computed as if the value were already added
+      pendingSigmaMean2_=sigma_mean2_now;
+      pendingSelector_=iselect;
+      historyPending_=true;
     }
   }
+  // the maximum of the history of datum i, including the value of this evaluation
+  auto historyMax=[&](const unsigned i) {
+    const SigmaMeanHistory& h=sigma_mean2_last_[iselect][i];
+    if(!historyPending_) {
+      return h.max();
+    }
+    return optsigmamean_stride_>0 ? h.maxAfterPush(pendingSigmaMean2_[i]) : h.maxAfterRaiseFirst(pendingSigmaMean2_[i]);
+  };
 
   if(do_optsigmamean_>0) {
     if(noise_type_==MGAUSS||noise_type_==MOUTLIERS||noise_type_==GENERIC) {
       for(unsigned i=0; i<narg; ++i) {
         /* set to the maximum in history std::vector */
-        sigma_mean2_tmp[i] = sigma_mean2_last_[iselect][i].max();
+        sigma_mean2_tmp[i] = historyMax(i);
         /* the standard error of the mean */
         valueSigmaMean[i]->set(std::sqrt(sigma_mean2_tmp[i]));
         if(noise_type_==GENERIC) {
@@ -1811,7 +1811,7 @@ void MetainferenceCore::get_sigma_mean(const double weight, const double norm, c
       // find maximum for each data point
       std::vector <double> max_values;
       for(unsigned i=0; i<narg; ++i) {
-        max_values.push_back(sigma_mean2_last_[iselect][i].max());
+        max_values.push_back(historyMax(i));
       }
       // find maximum across data points
       const double max_now = *max_element(max_values.begin(), max_values.end());
@@ -1893,7 +1893,92 @@ void MetainferenceCore::do_regression_zero(const std::vector<double> &mean) {
   }
 }
 
+void MetainferenceCore::saveState(State& s) const {
+  s.scale=scale_;
+  s.offset=offset_;
+  s.sigma=sigma_;
+  s.sigma_min=sigma_min_;
+  s.sigma_max=sigma_max_;
+  s.Dsigma=Dsigma_;
+  s.ftilde=ftilde_;
+  s.sigma_max_est=sigma_max_est_;
+  s.random=random;
+  s.MCaccept=MCaccept_;
+  s.MCacceptScale=MCacceptScale_;
+  s.MCacceptFT=MCacceptFT_;
+  s.MCtrial=MCtrial_;
+  s.optimized_step=optimized_step_;
+  s.sigmamax_opt_done=sigmamax_opt_done_;
+  s.firstTime=firstTime;
+  s.firstTimeW=firstTimeW;
+  s.average_weights=average_weights_;
+}
+
+void MetainferenceCore::loadState(const State& s) {
+  scale_=s.scale;
+  offset_=s.offset;
+  sigma_=s.sigma;
+  sigma_min_=s.sigma_min;
+  sigma_max_=s.sigma_max;
+  Dsigma_=s.Dsigma;
+  ftilde_=s.ftilde;
+  sigma_max_est_=s.sigma_max_est;
+  random=s.random;
+  MCaccept_=s.MCaccept;
+  MCacceptScale_=s.MCacceptScale;
+  MCacceptFT_=s.MCacceptFT;
+  MCtrial_=s.MCtrial;
+  optimized_step_=s.optimized_step;
+  sigmamax_opt_done_=s.sigmamax_opt_done;
+  firstTime=s.firstTime;
+  firstTimeW=s.firstTimeW;
+  average_weights_=s.average_weights;
+}
+
+void MetainferenceCore::beginEvaluation() {
+  const long long int step=action_.getStep();
+  if(step!=baseStep_) {
+    for(auto& selector : sigma_mean2_last_) {
+      for(auto& history : selector) {
+        history.beginStep();
+      }
+    }
+    // first evaluation of this step: it starts from the state kept by the last update()
+    if(committedSaved_) {
+      base_=std::move(committed_);
+      committedSaved_=false;
+    } else if(working_==Working::committed) {
+      saveState(base_);
+      working_=Working::base;
+    }
+    // otherwise nothing was kept since base_ was saved, and base_ is that state
+    baseStep_=step;
+  } else if(working_==Working::committed) {
+    // a further evaluation of a step after its update(): what update() kept must not be lost
+    saveState(committed_);
+    committedSaved_=true;
+  }
+  if(working_!=Working::base) {
+    loadState(base_);
+  }
+  working_=Working::evaluated;
+  historyPending_=false;
+}
+
+void MetainferenceCore::restoreCommitted() {
+  if(committedSaved_) {
+    loadState(committed_);
+    committedSaved_=false;
+    working_=Working::committed;
+  } else if(working_==Working::evaluated) {
+    // no update() since base_ was saved
+    loadState(base_);
+    working_=Working::base;
+  }
+}
+
 double MetainferenceCore::calculate(const unsigned isel, const double reweight_bias) {
+  beginEvaluation();
   iselect = isel;
   reweight_bias_ = reweight_bias;
   /* Metainference */
@@ -1946,6 +2031,22 @@ double MetainferenceCore::calculate(const unsigned isel, const double reweight_b
 }
 
 void MetainferenceCore::update() {
+  // keep the state of the last evaluation
+  if(working_==Working::evaluated) {
+    if(historyPending_) {
+      for(unsigned i=0; i<narg; ++i) {
+        SigmaMeanHistory& h=sigma_mean2_last_[pendingSelector_][i];
+        if(optsigmamean_stride_>0) {
+          h.commitPush(pendingSigmaMean2_[i]);
+        } else {
+          h.commitRaiseFirst(pendingSigmaMean2_[i]);
+        }
+      }
+      historyPending_=false;
+    }
+    working_=Working::committed;
+    committedSaved_=false;
+  }
   // write status file
   if(write_stride_>0&& (action_.getStep()%write_stride_==0 || action_.getCPT()) ) {
     writeStatus();
@@ -1956,6 +2057,7 @@ void MetainferenceCore::writeStatus() {
   if(!active_) {
     return;
   }
+  restoreCommitted();
   sfile_.rewind();
   sfile_.printField("time",action_.getTimeStep()*action_.getStep());
   //nsel
@@ -2045,10 +2147,11 @@ void MetainferenceCore::writeStatus() {
 namespace PLMD {
 namespace isdb {
 
-void MetainferenceCore::writeCheckpoint(CheckpointWriter& w) const {
+void MetainferenceCore::writeCheckpoint(CheckpointWriter& w) {
   if(!active_) {
     return;
   }
+  restoreCommitted();
   w.write("narg",narg);
   w.write("nsel",nsel_);
   w.write("nrep",nrep_);
@@ -2139,6 +2242,11 @@ void MetainferenceCore::readCheckpoint(CheckpointReader& r) {
       }
     }
   }
+  // the next evaluation starts from the state just read
+  working_=Working::committed;
+  committedSaved_=false;
+  baseStep_=-1;
+  historyPending_=false;
 }
 
 }

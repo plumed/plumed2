@@ -1041,10 +1041,14 @@ void LogMFD::calculate() {
     ene += 0.5*kappa[i]*diff*diff;
 
     // accumulate force, later it will be averaged.
-    ffict[i] += -f;
+    if(!isCalculationOnly()) {
+      ffict[i] += -f;
+    }
 
     // accumulate varience of collective variable, later it will be averaged.
-    fict_ave[i] += diff;
+    if(!isCalculationOnly()) {
+      fict_ave[i] += diff;
+    }
   }
 
   setBias(ene);
