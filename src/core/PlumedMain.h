@@ -23,6 +23,7 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
+#include "ModuleLoader.h"
 #include "tools/ForwardDecl.h"
 #include <cstdio>
 #include <string>
@@ -84,9 +85,12 @@ It does not contain any static data.
 */
 class PlumedMain:
   public WithCmd {
+/// Destroyed after all members, including actions and their per-object handles.
+/// In particular this also covers exceptions thrown during construction.
+  ModuleLoader::Lifetime moduleLifetime;
 /// Pointers to files opened in actions associated to this object.
-/// Notice that with the current implementation this should be at the top of this
-/// structure. Indeed, this should be destroyed *after* all the actions allocated
+/// Notice that with the current implementation this should precede actions in
+/// this structure. Indeed, this should be destroyed *after* all the actions allocated
 /// in this PlumedMain object have been destroyed.
   std::set<FileBase*> files;
 /// Forward declaration.

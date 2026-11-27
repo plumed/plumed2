@@ -35,6 +35,16 @@ struct ModuleLoaderContextData;
 /// its own handles, so explicit activation does not leak to other objects.
 class ModuleLoader {
 public:
+  /// Retain automatic modules while a kernel client is alive. Declare this
+  /// before its actions and DLLoader so it releases the shared handles last.
+  /// Construction failures then release the lifetime just like normal teardown.
+  class Lifetime {
+  public:
+    Lifetime();
+    ~Lifetime();
+    Lifetime(const Lifetime&)=delete;
+    Lifetime& operator=(const Lifetime&)=delete;
+  };
   class Context {
     std::unique_ptr<ModuleLoaderContextData> data;
     const ModuleLoaderContextData* previous;
@@ -45,6 +55,7 @@ public:
     Context& operator=(const Context&)=delete;
   };
   static void inheritContext(DLLoader& loader);
+  /// The caller must hold a Lifetime until its loader and dependent objects die.
   static void autoload(DLLoader& loader);
   static void load(const std::string& name, DLLoader& loader);
   static bool available(const std::string& name, const DLLoader& loader);

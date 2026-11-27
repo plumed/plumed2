@@ -79,9 +79,12 @@ std::string moduleSymbol(const std::string& name) {
 
 struct State {
   std::recursive_mutex mutex;
-  std::once_flag discovery, automatic;
+  std::once_flag discovery;
   std::map<std::string,Module> catalog;
-  DLLoader retained;
+  // No native handles may survive the last client: an extension can itself
+  // retain the kernel, making static destruction too late to close it safely.
+  std::size_t clients=0;
+  std::unique_ptr<DLLoader> retained;
   std::string activating;
 
   struct Activation {
@@ -245,7 +248,9 @@ struct State {
       auto& module=catalog.at(dep);
       auto visible=loader.getHandles();
       visible.insert(visible.end(),staged.getHandles().begin(),staged.getHandles().end());
-      visible.insert(visible.end(),retained.getHandles().begin(),retained.getHandles().end());
+      if(retained) {
+        visible.insert(visible.end(),retained->getHandles().begin(),retained->getHandles().end());
+      }
       if(contextData) {
         visible.insert(visible.end(),contextData->images.begin(),contextData->images.end());
       }
@@ -303,6 +308,23 @@ State& state() {
 }
 }
 
+ModuleLoader::Lifetime::Lifetime() {
+  auto& shared=state();
+  std::lock_guard<std::recursive_mutex> lock(shared.mutex);
+  ++shared.clients;
+}
+
+ModuleLoader::Lifetime::~Lifetime() {
+  auto& shared=state();
+  std::lock_guard<std::recursive_mutex> lock(shared.mutex);
+  if(--shared.clients==0) {
+    // Withdraw the borrowed registry images before closing their owning handles.
+    // The caller still retains the kernel until after this destructor returns.
+    Register::setAutomaticImages({});
+    shared.retained.reset();
+  }
+}
+
 ModuleLoader::Context::Context(const DLLoader& loader):
   data(std::make_unique<ModuleLoaderContextData>(loader)), previous(contextData) {
   contextData=data.get();
@@ -325,20 +347,23 @@ void ModuleLoader::inheritContext(DLLoader& loader) {
 void ModuleLoader::autoload(DLLoader& loader) {
   auto& shared=state();
   std::lock_guard<std::recursive_mutex> lock(shared.mutex);
+  plumed_assert(shared.clients>0)<<"Module autoload requires a client lifetime";
   const char* enabled=std::getenv("PLUMED_AUTOLOAD");
   if(enabled && std::string(enabled)=="0") {
     return;
   }
   plumed_assert(shared.activating.empty())<<"Recursive module autoload while loading "<<shared.activating;
   shared.discover();
-  std::call_once(shared.automatic,[&shared] {
+  if(!shared.retained) {
+    auto retained=std::make_unique<DLLoader>();
     for(const auto& entry:shared.catalog) {
       plumed_assert(!shared.builtin(entry.first))
           <<"Module "<<entry.first<<" is already built into the kernel";
-      shared.activate(entry.first,shared.retained);
+      shared.activate(entry.first,*retained);
     }
-    Register::setAutomaticImages(shared.retained.getHandles());
-  });
+    Register::setAutomaticImages(retained->getHandles());
+    shared.retained=std::move(retained);
+  }
   for(const auto& entry:shared.catalog) {
     shared.activate(entry.first,loader);
   }

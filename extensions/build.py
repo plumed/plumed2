@@ -404,6 +404,13 @@ for name in order:
             "-Wl,-rpath," + str(base / "lib"),
             "-Wl,-z,defs",
         ]
+    # PyTorch keeps metatomic/tensor custom-class methods in a static registry.
+    # Their native libraries must survive until that registry is destroyed,
+    # even after the last PLUMED object releases its extension handles.
+    # Keep this workaround local to the enabled metatomic extension on ELF;
+    # its native dependency closure also keeps the linked kernel mapped.
+    if name == "metatomic" and enabled_features.get("LIBMETATOMIC") and soext == "so":
+        search.append("-Wl,-z,nodelete")
     numeric_flags, imported_numeric = numeric_link_flags(objects)
     native_report[name] = {
         "module": name,

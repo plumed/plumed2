@@ -311,6 +311,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
 #endif
   }
 
+  // Direct CLToolMain clients need the same lifetime as PlumedMain clients.
+  ModuleLoader::Lifetime moduleLifetime;
   DLLoader dlloader;
   ModuleLoader::autoload(dlloader);
 
