@@ -51,6 +51,7 @@ class PythonCVInterface : public Colvar, public ActionWithPython {
 public:
   ::pybind11::dict dataContainer;
   explicit PythonCVInterface(const ActionOptions&);
+  ~PythonCVInterface() override;
   static void registerKeywords( Keywords& keys );
 // active methods:
   void calculate() override;

@@ -17,8 +17,8 @@ along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef __PLUMED_pycv_ActionWithPython_h //{
 #define __PLUMED_pycv_ActionWithPython_h
 
-#include <mutex>
 #include <string>
+#include <vector>
 
 #include "core/Action.h"
 
@@ -33,22 +33,43 @@ static constexpr auto PYTHONCV_CITATION = "Giorgino, (2019). PYCV: a PLUMED 2 Mo
 static constexpr auto BIASING_DISABLED = "PYCV: Gradient was expected as a second return value but is missing. Biasing won't work\n";
 static constexpr std::string_view PYCV_COMPONENTPREFIX="py";
 
-///This class act both as a guard for the interpreter and a a case container for the python module and functions
+/// Keeps the Python interpreter available while it exists (a lease).
+/// The interpreter is shared by all the actions of all the Plumed objects of
+/// the process, also from different threads: it is the one of the Python
+/// program that runs PLUMED, or one started by pycv for the first lease and
+/// finalized with the last one. Out of the calls to Python (with
+/// pybind11::gil_scoped_acquire) the threads do not hold the GIL.
 class PlumedScopedPythonInterpreter final {
 public:
-  PlumedScopedPythonInterpreter(::PLMD::Log&);
+  explicit PlumedScopedPythonInterpreter(::PLMD::Log&);
   ~PlumedScopedPythonInterpreter();
+  PlumedScopedPythonInterpreter(const PlumedScopedPythonInterpreter&)=delete;
+  PlumedScopedPythonInterpreter& operator=(const PlumedScopedPythonInterpreter&)=delete;
 private:
   ::PLMD::Log& log;
-  static unsigned use_count;
-  static std::unique_ptr<::pybind11::scoped_interpreter> interpreterGuard;
-  static std::mutex interpreterMutex;
 };
 
 class ActionWithPython: public virtual ::PLMD::Action {
   //the guard MUST be set up before the python objects
   // (so that it can be destroyed after them)
   PlumedScopedPythonInterpreter guard;
+protected:
+  /// Releases Python objects with the GIL, which the thread that destroys
+  /// them may not hold: call it in the destructor of the derived class for
+  /// all its Python objects
+  static void releasePythonObjects(const std::vector<::pybind11::object*>&) noexcept;
+  /// Releases the Python objects (as releasePythonObjects) if the constructor
+  /// of the derived class fails, when its members are destroyed without the
+  /// GIL: declare it at the beginning of the body of the constructor
+  class ReleaseOnFailure {
+    std::vector<::pybind11::object*> objects;
+    int exceptions;
+  public:
+    explicit ReleaseOnFailure(std::vector<::pybind11::object*> objects);
+    ~ReleaseOnFailure();
+    ReleaseOnFailure(const ReleaseOnFailure&)=delete;
+    ReleaseOnFailure& operator=(const ReleaseOnFailure&)=delete;
+  };
 public:
   explicit ActionWithPython (const ActionOptions&);
   ///redefinition of parse to avoid confict between plumed.dat and python options

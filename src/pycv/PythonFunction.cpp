@@ -118,6 +118,7 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
   Action(ao),
   Function(ao),
   ActionWithPython(ao) {
+  ReleaseOnFailure release({&pyModule,&pyCalculate});
   try {
     py::gil_scoped_acquire gil;
     //Loading the python module
@@ -199,6 +200,10 @@ PythonFunction::PythonFunction(const ActionOptions&ao):
     error(e.what());
     //vdbg(e.what());
   }
+}
+
+PythonFunction::~PythonFunction() {
+  releasePythonObjects({&pyModule,&pyCalculate});
 }
 
 

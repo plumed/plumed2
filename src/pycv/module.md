@@ -36,7 +36,8 @@ The PYCV module defines the following actions:
  * `PYCVINTERFACE`, to implement single- and multi-component CVs in Python;
  * `PYFUNCTION`, to implement arbitrary functions.
 
-Plumed will start an embedded Python interpreter.
+Plumed will start an embedded Python interpreter (or use the one of the
+Python program, when PLUMED runs within Python).
 Then Plumed will import a python module with the `IMPORT=` keyword. This module
 must contain at least two objects: a *calculate* function that will be called at
 the `calculate()` step, and an *init* function or dictionary that will be used at
@@ -406,11 +407,19 @@ For getting the atomic data you can call the following functions:
 
 ## Limitations
 
-- When pycv starts the Python interpreter (PLUMED is not running within Python),
-  only the thread that started it can use it: a pycv action created in another
-  thread, e.g. by another thread-MPI rank (as in GROMACS without real MPI) or by
-  a Plumed object created in another thread, stops with an error. With MPI
-  processes every process has its own interpreter (tested with the regression tests).
+- There is one Python interpreter per process, shared by all the pycv actions
+  of all the Plumed objects, in all the threads: e.g. the thread-MPI ranks (as in
+  GROMACS without real MPI, or `plumed --tmpi-threads`), or Plumed objects used by
+  different threads. A module is imported once, and its global variables are
+  shared by all the actions that import it, also of different replicas: keep the
+  state of an action in its `data` dictionary (PYCVINTERFACE). The calls to Python
+  hold the GIL, so the Python code of different threads does not run at the same
+  time. With MPI processes every process has its own interpreter.
+- When pycv starts the interpreter (PLUMED is not running within Python), it does
+  so in a thread of its own, without the Python signal handlers (e.g. ctrl-c stops
+  the program as without pycv), and finalizes it when the last pycv action is
+  destroyed (or at exit): `threading.main_thread()` is that thread, so Python code
+  that must run in the main thread (e.g. `signal.signal`) cannot be used.
 - pycv is compiled for one Python version, and it stops with an error if the
   Python interpreter is another version (e.g. when PLUMED runs within Python).
 - Once a pycv action has been created, the library of pycv (and so the PLUMED

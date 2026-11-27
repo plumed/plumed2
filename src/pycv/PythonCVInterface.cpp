@@ -413,6 +413,7 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao) :
 }())  {
   // the try is inside the body: in the handler of a function-try-block the members and the bases
   // (and with them the Python interpreter) are already destroyed
+  ReleaseOnFailure release({&pyModule,&pyCalculate,&pyPrepare,&pyUpdate,&dataContainer});
   try {
     py::gil_scoped_acquire gil;
     //Loading the python module
@@ -589,6 +590,10 @@ PythonCVInterface::PythonCVInterface(const ActionOptions&ao) :
     error(e.what());
     //vdbg(e.what());
   }
+}
+
+PythonCVInterface::~PythonCVInterface() {
+  releasePythonObjects({&pyModule,&pyCalculate,&pyPrepare,&pyUpdate,&dataContainer});
 }
 
 

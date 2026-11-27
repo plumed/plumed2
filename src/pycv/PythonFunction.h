@@ -35,6 +35,7 @@ class PythonFunction :
   void readReturn(const pybind11::object &, Value* );
 public:
   explicit PythonFunction(const ActionOptions&);
+  ~PythonFunction() override;
 // active methods:
   virtual void calculate();
   static void registerKeywords( Keywords& keys );
