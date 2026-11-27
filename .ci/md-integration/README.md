@@ -352,8 +352,14 @@ and hybrid OpenMP. Thread-MPI replica exchange remains unsupported by GROMACS.
 Simultaneous expanded ensemble and replica exchange remains unsupported.
 Replica exchange with models that evolve internal parameters in `calculate()`
 (e.g. METAINFERENCE, EMMI and RESCALE) remains outside this focused validation.
-The patch retains legacy auxiliary-evaluation semantics for advanced histories
-and samplers; the broader kernel redesign is not part of this revision.
+Explicit local auxiliary modes freeze action histories with API14 kernels.
+Native MPI controls verify that independent and update-only WALKERS_MPI models
+can run multi-simulation lambda candidates and unequal shell-force counts, while
+ENSEMBLE calculations attempting inter-replica communication stop with the named
+action and mode. Ordinary coupled ensemble MD remains supported. Kernels below
+API14 retain legacy shell semantics with a warning and reject lambda MCMC at
+startup. The kernel regressions cover advanced histories separately; these MD
+controls do not validate every adaptive model or raw-MPI callback.
 
 The actual-provider fixture checks retained box bindings and simultaneous
 provider/collection isolation with 200,000 concurrent lookups. Every numerical
