@@ -74,7 +74,7 @@ class PlumedHandle :
 /// Pointer to PlumedMain.
 /// Used when using the current kernel in order to avoid unneeded indirections.
   std::unique_ptr<PlumedMain> local;
-/// Pointer to loaded Plumed object;
+/// Pointer to loaded Plumed object.
   void* loaded=nullptr;
 /// Cached command API for the lifetime of a loaded guest (-1 means unknown).
   int loadedApiVersion_=-1;
