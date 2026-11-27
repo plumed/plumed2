@@ -1440,7 +1440,7 @@ Optional Features:
                           enable dependency tracking, default: yes
   --enable-no-gnu-unique  enable a flag to avoid gnu unique symbols, default:
                           yes
-  --enable-rpath          enable store rpath, default: no
+  --enable-rpath          enable store rpath (Linux), default: yes
   --enable-absolute-soname
                           enable store absolute soname (Linux only - this is
                           the default behavior on OSX). Only enable for
@@ -2864,7 +2864,7 @@ if test "${enable_rpath+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-rpath" "$LINENO" 5 ;;
   esac
 else
-  case "no" in
+  case "yes" in
              (yes) rpath=true ;;
              (no)  rpath=false ;;
   esac
@@ -9162,20 +9162,6 @@ test "$kenref" = true && kenref_required=yes
 
 # "KEnRef wanted" iff EITHER switch is set (the library flag OR the module flag).
 if test "$kenref" = true || test "$kenref_module_on" = yes ; then
-  # (0) rpath ON by default for KEnRef builds. A KEnRef build links libkenref_core from a non-system prefix
-  #     (and, IF you choose such a toolchain, may also link a non-system C++ runtime such as libc++). If ANY
-  #     linked library lives outside the system loader path, the plumed executable AND libplumedKernel.so must
-  #     record those dirs (RPATH) to run without LD_LIBRARY_PATH -- otherwise `sudo make install` (which
-  #     re-runs the build's json step with the environment stripped) can fail with e.g. "libc++.so.1: cannot
-  #     open shared object file", and the installed binary only runs when a matching module is loaded.
-  #     --enable-rpath records $LIBRARY_PATH into the RUNPATH of both; it is harmless for a pure
-  #     system-library build. Default it ON here (PLUMED's global default is off) UNLESS the user EXPLICITLY
-  #     passed --disable-rpath. $enable_rpath is set by AC_ARG_ENABLE: "no" iff --disable-rpath.
-  if test "$enable_rpath" != "no" && test "$rpath" != true ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&5
-$as_echo "$as_me: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&6;}
-    rpath=true
-  fi
   # (a) make sure the module gets compiled — covers `--enable-kenref` given without +kenref (idempotent).
   if test "$kenref_module_on" = no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: --enable-kenref implies the 'kenref' module -> enabling it" >&5
@@ -10650,6 +10636,8 @@ $as_echo "$as_me: WARNING: dynamic library will be disabled" >&2;}
     SOEXT=
   fi
   if test -n "$SOEXT" && test "$rpath" = true ; then
+    # Empty path components would make the loader search the working directory.
+    runtime_path=`printf '%s\n' "$libdir:$LIBRARY_PATH" | sed 's/::*/:/g; s/^://; s/:$//'`
     rm -f conftest.$SOEXT
     readelf=""
     # Extract the first word of "readelf", so it can be a program name with args.
@@ -10700,12 +10688,12 @@ fi
         test_LDSHARED="$LDSHARED -Wl,--enable-new-dtags -Wl,-R -Wl,/some/random/dir/"
         $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
         if test -f conftest.$SOEXT && readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RUNPATH (with --enable-new-dtags)" >&5
 $as_echo "$as_me: Enabling RUNPATH (with --enable-new-dtags)" >&6;}
         else
-          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RPATH" >&5
 $as_echo "$as_me: Enabling RPATH" >&6;}
@@ -10713,7 +10701,7 @@ $as_echo "$as_me: Enabling RPATH" >&6;}
 $as_echo "$as_me: WARNING: with RPATH the executables of the build tree load the kernel installed in $libdir, if there is one, also after sourcing sourceme.sh" >&2;}
         fi
       elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
         LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
         { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling RUNPATH" >&5
 $as_echo "$as_me: Enabling RUNPATH" >&6;}

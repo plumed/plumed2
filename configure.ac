@@ -431,7 +431,7 @@ PLUMED_CONFIG_ENABLE([debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([dependency-tracking],[dependency tracking],[yes])
 PLUMED_CONFIG_ENABLE([no-gnu-unique],[a flag to avoid gnu unique symbols],[yes])
-PLUMED_CONFIG_ENABLE([rpath],[store rpath],[no])
+PLUMED_CONFIG_ENABLE([rpath],[store rpath (Linux)],[yes])
 PLUMED_CONFIG_ENABLE([absolute-soname],[store absolute soname (Linux only - this is the default behavior on OSX). Only enable for testing!],[no])
 PLUMED_CONFIG_ENABLE([absolute-install-name],[store absolute relative (OSX only - disable to have a behavior similar to Linux). Only disable for testing!],[yes])
 PLUMED_CONFIG_ENABLE([loader-path],[use @loader_path to find libplumedKernel.dylib (OSX only)],[yes])
@@ -1186,19 +1186,6 @@ test "$kenref" = true && kenref_required=yes
 
 # "KEnRef wanted" iff EITHER switch is set (the library flag OR the module flag).
 if test "$kenref" = true || test "$kenref_module_on" = yes ; then
-  # (0) rpath ON by default for KEnRef builds. A KEnRef build links libkenref_core from a non-system prefix
-  #     (and, IF you choose such a toolchain, may also link a non-system C++ runtime such as libc++). If ANY
-  #     linked library lives outside the system loader path, the plumed executable AND libplumedKernel.so must
-  #     record those dirs (RPATH) to run without LD_LIBRARY_PATH -- otherwise `sudo make install` (which
-  #     re-runs the build's json step with the environment stripped) can fail with e.g. "libc++.so.1: cannot
-  #     open shared object file", and the installed binary only runs when a matching module is loaded.
-  #     --enable-rpath records $LIBRARY_PATH into the RUNPATH of both; it is harmless for a pure
-  #     system-library build. Default it ON here (PLUMED's global default is off) UNLESS the user EXPLICITLY
-  #     passed --disable-rpath. $enable_rpath is set by AC_ARG_ENABLE: "no" iff --disable-rpath.
-  if test "$enable_rpath" != "no" && test "$rpath" != true ; then
-    AC_MSG_NOTICE([KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)])
-    rpath=true
-  fi
   # (a) make sure the module gets compiled — covers `--enable-kenref` given without +kenref (idempotent).
   if test "$kenref_module_on" = no ; then
     AC_MSG_NOTICE([KEnRef: --enable-kenref implies the 'kenref' module -> enabling it])
@@ -1693,6 +1680,8 @@ then
     SOEXT=
   fi
   if test -n "$SOEXT" && test "$rpath" = true ; then
+    # Empty path components would make the loader search the working directory.
+    runtime_path=`printf '%s\n' "$libdir:$LIBRARY_PATH" | sed 's/::*/:/g; s/^://; s/:$//'`
     rm -f conftest.$SOEXT
     readelf=""
     AC_CHECK_PROG([readelf],[readelf],[found])
@@ -1707,17 +1696,17 @@ then
         test_LDSHARED="$LDSHARED -Wl,--enable-new-dtags -Wl,-R -Wl,/some/random/dir/"
         $test_LDSHARED $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
         if test -f conftest.$SOEXT && readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,--enable-new-dtags -Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           AC_MSG_NOTICE([Enabling RUNPATH (with --enable-new-dtags)])
         else
-          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+          LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
           LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
           AC_MSG_NOTICE([Enabling RPATH])
           AC_MSG_WARN([with RPATH the executables of the build tree load the kernel installed in $libdir, if there is one, also after sourcing sourceme.sh])
         fi
       elif readelf -d conftest.$SOEXT | grep RUNPATH | grep -q /some/random/dir ; then
-        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$libdir:$LIBRARY_PATH\""
+        LD_MAIN_RUNPATH="-Wl,-R -Wl,\"$runtime_path\""
         LDSHARED="$LDSHARED $LD_MAIN_RUNPATH"
         AC_MSG_NOTICE([Enabling RUNPATH])
       else
