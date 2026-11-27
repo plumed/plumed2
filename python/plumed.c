@@ -3128,7 +3128,7 @@ typedef struct {
   PyObject *__pyx_slice[1];
   PyObject *__pyx_tuple[5];
   PyObject *__pyx_codeobj_tab[6];
-  PyObject *__pyx_string_tab[205];
+  PyObject *__pyx_string_tab[206];
   PyObject *__pyx_number_tab[7];
 /* #### Code section: module_state_contents ### */
 /* CommonTypesMetaclass.module_state_decls */
@@ -3327,54 +3327,55 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #define __pyx_n_u_plumed__plumed __pyx_string_tab[154]
 #define __pyx_n_u_pop __pyx_string_tab[155]
 #define __pyx_n_u_py_bytes __pyx_string_tab[156]
-#define __pyx_n_u_pyx_checksum __pyx_string_tab[157]
-#define __pyx_n_u_pyx_state __pyx_string_tab[158]
-#define __pyx_n_u_pyx_type __pyx_string_tab[159]
-#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[160]
-#define __pyx_n_u_pyx_vtable __pyx_string_tab[161]
-#define __pyx_n_u_qualname __pyx_string_tab[162]
-#define __pyx_n_u_ravel __pyx_string_tab[163]
-#define __pyx_n_u_re __pyx_string_tab[164]
-#define __pyx_n_u_reduce __pyx_string_tab[165]
-#define __pyx_n_u_reduce_cython __pyx_string_tab[166]
-#define __pyx_n_u_reduce_ex __pyx_string_tab[167]
-#define __pyx_n_u_register __pyx_string_tab[168]
-#define __pyx_n_u_replace __pyx_string_tab[169]
-#define __pyx_n_u_self __pyx_string_tab[170]
-#define __pyx_n_u_setNestedExceptions __pyx_string_tab[171]
-#define __pyx_n_u_setRealPrecision __pyx_string_tab[172]
-#define __pyx_n_u_set_name __pyx_string_tab[173]
-#define __pyx_n_u_setdefault __pyx_string_tab[174]
-#define __pyx_n_u_setstate __pyx_string_tab[175]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[176]
-#define __pyx_n_u_shape __pyx_string_tab[177]
-#define __pyx_n_u_size __pyx_string_tab[178]
-#define __pyx_n_u_start __pyx_string_tab[179]
-#define __pyx_n_u_step __pyx_string_tab[180]
-#define __pyx_n_u_stop __pyx_string_tab[181]
-#define __pyx_n_u_struct __pyx_string_tab[182]
-#define __pyx_n_u_sys __pyx_string_tab[183]
-#define __pyx_n_u_test __pyx_string_tab[184]
-#define __pyx_n_u_traceback __pyx_string_tab[185]
-#define __pyx_n_u_type __pyx_string_tab[186]
-#define __pyx_n_u_typecode __pyx_string_tab[187]
-#define __pyx_n_u_types __pyx_string_tab[188]
-#define __pyx_n_u_unpack __pyx_string_tab[189]
-#define __pyx_n_u_update __pyx_string_tab[190]
-#define __pyx_n_u_val __pyx_string_tab[191]
-#define __pyx_n_u_value __pyx_string_tab[192]
-#define __pyx_n_u_values __pyx_string_tab[193]
-#define __pyx_n_u_version_info __pyx_string_tab[194]
-#define __pyx_n_u_warnings __pyx_string_tab[195]
-#define __pyx_n_u_win32 __pyx_string_tab[196]
-#define __pyx_n_u_x __pyx_string_tab[197]
-#define __pyx_kp_b__6 __pyx_string_tab[198]
-#define __pyx_kp_b_iso88591_Q __pyx_string_tab[199]
-#define __pyx_kp_b_iso88591_Q_2 __pyx_string_tab[200]
-#define __pyx_kp_b_iso88591_Q_IQ __pyx_string_tab[201]
-#define __pyx_kp_b_iso88591_Q_Q_4A __pyx_string_tab[202]
-#define __pyx_kp_b_iso88591_Q_s_Ba_1_D_1_auE_5_JauA_q_JauA __pyx_string_tab[203]
-#define __pyx_n_b_O __pyx_string_tab[204]
+#define __pyx_n_u_py_val __pyx_string_tab[157]
+#define __pyx_n_u_pyx_checksum __pyx_string_tab[158]
+#define __pyx_n_u_pyx_state __pyx_string_tab[159]
+#define __pyx_n_u_pyx_type __pyx_string_tab[160]
+#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[161]
+#define __pyx_n_u_pyx_vtable __pyx_string_tab[162]
+#define __pyx_n_u_qualname __pyx_string_tab[163]
+#define __pyx_n_u_ravel __pyx_string_tab[164]
+#define __pyx_n_u_re __pyx_string_tab[165]
+#define __pyx_n_u_reduce __pyx_string_tab[166]
+#define __pyx_n_u_reduce_cython __pyx_string_tab[167]
+#define __pyx_n_u_reduce_ex __pyx_string_tab[168]
+#define __pyx_n_u_register __pyx_string_tab[169]
+#define __pyx_n_u_replace __pyx_string_tab[170]
+#define __pyx_n_u_self __pyx_string_tab[171]
+#define __pyx_n_u_setNestedExceptions __pyx_string_tab[172]
+#define __pyx_n_u_setRealPrecision __pyx_string_tab[173]
+#define __pyx_n_u_set_name __pyx_string_tab[174]
+#define __pyx_n_u_setdefault __pyx_string_tab[175]
+#define __pyx_n_u_setstate __pyx_string_tab[176]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[177]
+#define __pyx_n_u_shape __pyx_string_tab[178]
+#define __pyx_n_u_size __pyx_string_tab[179]
+#define __pyx_n_u_start __pyx_string_tab[180]
+#define __pyx_n_u_step __pyx_string_tab[181]
+#define __pyx_n_u_stop __pyx_string_tab[182]
+#define __pyx_n_u_struct __pyx_string_tab[183]
+#define __pyx_n_u_sys __pyx_string_tab[184]
+#define __pyx_n_u_test __pyx_string_tab[185]
+#define __pyx_n_u_traceback __pyx_string_tab[186]
+#define __pyx_n_u_type __pyx_string_tab[187]
+#define __pyx_n_u_typecode __pyx_string_tab[188]
+#define __pyx_n_u_types __pyx_string_tab[189]
+#define __pyx_n_u_unpack __pyx_string_tab[190]
+#define __pyx_n_u_update __pyx_string_tab[191]
+#define __pyx_n_u_val __pyx_string_tab[192]
+#define __pyx_n_u_value __pyx_string_tab[193]
+#define __pyx_n_u_values __pyx_string_tab[194]
+#define __pyx_n_u_version_info __pyx_string_tab[195]
+#define __pyx_n_u_warnings __pyx_string_tab[196]
+#define __pyx_n_u_win32 __pyx_string_tab[197]
+#define __pyx_n_u_x __pyx_string_tab[198]
+#define __pyx_kp_b__6 __pyx_string_tab[199]
+#define __pyx_kp_b_iso88591_Q __pyx_string_tab[200]
+#define __pyx_kp_b_iso88591_Q_2 __pyx_string_tab[201]
+#define __pyx_kp_b_iso88591_Q_IQ __pyx_string_tab[202]
+#define __pyx_kp_b_iso88591_Q_Q_4A __pyx_string_tab[203]
+#define __pyx_kp_b_iso88591_Q_s_Ba_1_D_1_auE_5_JauA_q_JauA __pyx_string_tab[204]
+#define __pyx_n_b_O __pyx_string_tab[205]
 #define __pyx_int_0 __pyx_number_tab[0]
 #define __pyx_int_neg_1 __pyx_number_tab[1]
 #define __pyx_int_1 __pyx_number_tab[2]
@@ -3409,7 +3410,7 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_slice[i]); }
   for (int i=0; i<5; ++i) { Py_CLEAR(clear_module_state->__pyx_tuple[i]); }
   for (int i=0; i<6; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<205; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<206; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<7; ++i) { Py_CLEAR(clear_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
@@ -3446,7 +3447,7 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_slice[i]); }
   for (int i=0; i<5; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_tuple[i]); }
   for (int i=0; i<6; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<205; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<206; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<7; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
@@ -20356,6 +20357,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   PyObject *__pyx_v_py_bytes = 0;
   char *__pyx_v_ckey;
   char *__pyx_v_cval;
+  PyObject *__pyx_v_py_val = 0;
   PyObject *__pyx_v_MPI = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -20407,7 +20409,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
  *          cdef bytes py_bytes = key.encode() + b'\x00'  # Explicitly add null terminator
  *          cdef char* ckey = py_bytes             # <<<<<<<<<<<<<<
  *          cdef char* cval
- *          if val is None :
+ *          cdef bytes py_val
 */
   if (unlikely(__pyx_v_py_bytes == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
@@ -20416,9 +20418,9 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_t_4 = __Pyx_PyBytes_AsWritableString(__pyx_v_py_bytes); if (unlikely((!__pyx_t_4) && PyErr_Occurred())) __PYX_ERR(0, 265, __pyx_L1_error)
   __pyx_v_ckey = __pyx_t_4;
 
-  /* "plumed.pyx":267
- *          cdef char* ckey = py_bytes
+  /* "plumed.pyx":268
  *          cdef char* cval
+ *          cdef bytes py_val
  *          if val is None :             # <<<<<<<<<<<<<<
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
  *             return
@@ -20426,18 +20428,18 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_t_5 = (__pyx_v_val == Py_None);
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":268
- *          cdef char* cval
+    /* "plumed.pyx":269
+ *          cdef bytes py_val
  *          if val is None :
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)             # <<<<<<<<<<<<<<
  *             return
  *          if isinstance(val, int ):
 */
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, NULL, 0, NULL, 0x20000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 268, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, NULL, 0, NULL, 0x20000); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 269, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "plumed.pyx":269
+    /* "plumed.pyx":270
  *          if val is None :
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
  *             return             # <<<<<<<<<<<<<<
@@ -20448,16 +20450,16 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":267
- *          cdef char* ckey = py_bytes
+    /* "plumed.pyx":268
  *          cdef char* cval
+ *          cdef bytes py_val
  *          if val is None :             # <<<<<<<<<<<<<<
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
  *             return
 */
   }
 
-  /* "plumed.pyx":270
+  /* "plumed.pyx":271
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
  *             return
  *          if isinstance(val, int ):             # <<<<<<<<<<<<<<
@@ -20467,22 +20469,22 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_t_5 = PyLong_Check(__pyx_v_val); 
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":271
+    /* "plumed.pyx":272
  *             return
  *          if isinstance(val, int ):
  *             self.cmd_int(ckey, val)             # <<<<<<<<<<<<<<
  *             return
  *          if isinstance(val, float ) :
 */
-    __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 271, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 272, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_6 = __Pyx_PyLong_As_int(__pyx_v_val); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 271, __pyx_L1_error)
-    __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_int(__pyx_v_self, __pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 271, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyLong_As_int(__pyx_v_val); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 272, __pyx_L1_error)
+    __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_int(__pyx_v_self, __pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "plumed.pyx":272
+    /* "plumed.pyx":273
  *          if isinstance(val, int ):
  *             self.cmd_int(ckey, val)
  *             return             # <<<<<<<<<<<<<<
@@ -20493,7 +20495,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":270
+    /* "plumed.pyx":271
  *             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
  *             return
  *          if isinstance(val, int ):             # <<<<<<<<<<<<<<
@@ -20502,7 +20504,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
   }
 
-  /* "plumed.pyx":273
+  /* "plumed.pyx":274
  *             self.cmd_int(ckey, val)
  *             return
  *          if isinstance(val, float ) :             # <<<<<<<<<<<<<<
@@ -20512,22 +20514,22 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_t_5 = PyFloat_Check(__pyx_v_val); 
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":274
+    /* "plumed.pyx":275
  *             return
  *          if isinstance(val, float ) :
  *             self.cmd_float(ckey, val)             # <<<<<<<<<<<<<<
  *             return
  *          if HAS_NUMPY and isinstance(val, np.ndarray) :
 */
-    __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 274, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 275, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_7 = __Pyx_PyFloat_AsDouble(__pyx_v_val); if (unlikely((__pyx_t_7 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 274, __pyx_L1_error)
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_float(__pyx_v_self, __pyx_t_1, __pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 274, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyFloat_AsDouble(__pyx_v_val); if (unlikely((__pyx_t_7 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 275, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_float(__pyx_v_self, __pyx_t_1, __pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 275, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "plumed.pyx":275
+    /* "plumed.pyx":276
  *          if isinstance(val, float ) :
  *             self.cmd_float(ckey, val)
  *             return             # <<<<<<<<<<<<<<
@@ -20538,7 +20540,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":273
+    /* "plumed.pyx":274
  *             self.cmd_int(ckey, val)
  *             return
  *          if isinstance(val, float ) :             # <<<<<<<<<<<<<<
@@ -20547,69 +20549,69 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
   }
 
-  /* "plumed.pyx":276
+  /* "plumed.pyx":277
  *             self.cmd_float(ckey, val)
  *             return
  *          if HAS_NUMPY and isinstance(val, np.ndarray) :             # <<<<<<<<<<<<<<
  *             # See https://numpy.org/doc/stable/user/basics.types.html
  *             if( val.dtype==np.double):
 */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_HAS_NUMPY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_HAS_NUMPY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__pyx_t_8) {
   } else {
     __pyx_t_5 = __pyx_t_8;
     goto __pyx_L7_bool_binop_done;
   }
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_ndarray); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_ndarray); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_8 = PyObject_IsInstance(__pyx_v_val, __pyx_t_1); if (unlikely(__pyx_t_8 == ((int)-1))) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_8 = PyObject_IsInstance(__pyx_v_val, __pyx_t_1); if (unlikely(__pyx_t_8 == ((int)-1))) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_5 = __pyx_t_8;
   __pyx_L7_bool_binop_done:;
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":278
+    /* "plumed.pyx":279
  *          if HAS_NUMPY and isinstance(val, np.ndarray) :
  *             # See https://numpy.org/doc/stable/user/basics.types.html
  *             if( val.dtype==np.double):             # <<<<<<<<<<<<<<
  *                self.cmd_ndarray_double(ckey, val)
  *             elif( val.dtype==np.intc ) :
 */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 278, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 279, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 278, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 279, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_double); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 278, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_double); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 279, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_9, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 278, __pyx_L1_error)
+    __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_9, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 279, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 278, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 279, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (__pyx_t_5) {
 
-      /* "plumed.pyx":279
+      /* "plumed.pyx":280
  *             # See https://numpy.org/doc/stable/user/basics.types.html
  *             if( val.dtype==np.double):
  *                self.cmd_ndarray_double(ckey, val)             # <<<<<<<<<<<<<<
  *             elif( val.dtype==np.intc ) :
  *                self.cmd_ndarray_int(ckey, val)
 */
-      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 279, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 280, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 279, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 280, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "plumed.pyx":278
+      /* "plumed.pyx":279
  *          if HAS_NUMPY and isinstance(val, np.ndarray) :
  *             # See https://numpy.org/doc/stable/user/basics.types.html
  *             if( val.dtype==np.double):             # <<<<<<<<<<<<<<
@@ -20619,42 +20621,42 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L9;
     }
 
-    /* "plumed.pyx":280
+    /* "plumed.pyx":281
  *             if( val.dtype==np.double):
  *                self.cmd_ndarray_double(ckey, val)
  *             elif( val.dtype==np.intc ) :             # <<<<<<<<<<<<<<
  *                self.cmd_ndarray_int(ckey, val)
  *             elif( val.dtype==np.int_ ) :
 */
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 281, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 281, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_intc); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_intc); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 281, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = PyObject_RichCompare(__pyx_t_9, __pyx_t_1, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 280, __pyx_L1_error)
+    __pyx_t_2 = PyObject_RichCompare(__pyx_t_9, __pyx_t_1, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 281, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 280, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 281, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (__pyx_t_5) {
 
-      /* "plumed.pyx":281
+      /* "plumed.pyx":282
  *                self.cmd_ndarray_double(ckey, val)
  *             elif( val.dtype==np.intc ) :
  *                self.cmd_ndarray_int(ckey, val)             # <<<<<<<<<<<<<<
  *             elif( val.dtype==np.int_ ) :
  *                # np.int_ is 64 bit (if not np.intc), also on Windows with numpy>=2,
 */
-      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 281, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 282, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_int(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 281, __pyx_L1_error)
+      __pyx_t_1 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_int(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 282, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-      /* "plumed.pyx":280
+      /* "plumed.pyx":281
  *             if( val.dtype==np.double):
  *                self.cmd_ndarray_double(ckey, val)
  *             elif( val.dtype==np.intc ) :             # <<<<<<<<<<<<<<
@@ -20664,42 +20666,42 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L9;
     }
 
-    /* "plumed.pyx":282
+    /* "plumed.pyx":283
  *             elif( val.dtype==np.intc ) :
  *                self.cmd_ndarray_int(ckey, val)
  *             elif( val.dtype==np.int_ ) :             # <<<<<<<<<<<<<<
  *                # np.int_ is 64 bit (if not np.intc), also on Windows with numpy>=2,
  *                # where long is 32 bit: pass it as long long
 */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 282, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_dtype); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 283, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 282, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 283, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_int); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 282, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_int); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 283, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_9, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 282, __pyx_L1_error)
+    __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, __pyx_t_9, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 283, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 282, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 283, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (likely(__pyx_t_5)) {
 
-      /* "plumed.pyx":285
+      /* "plumed.pyx":286
  *                # np.int_ is 64 bit (if not np.intc), also on Windows with numpy>=2,
  *                # where long is 32 bit: pass it as long long
  *                self.cmd_ndarray_longlong(ckey, val)             # <<<<<<<<<<<<<<
  *             else :
  *                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
 */
-      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 285, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 286, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_longlong(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 285, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_ndarray_longlong(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 286, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "plumed.pyx":282
+      /* "plumed.pyx":283
  *             elif( val.dtype==np.intc ) :
  *                self.cmd_ndarray_int(ckey, val)
  *             elif( val.dtype==np.int_ ) :             # <<<<<<<<<<<<<<
@@ -20709,7 +20711,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L9;
     }
 
-    /* "plumed.pyx":287
+    /* "plumed.pyx":288
  *                self.cmd_ndarray_longlong(ckey, val)
  *             else :
  *                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")             # <<<<<<<<<<<<<<
@@ -20723,16 +20725,16 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
         PyObject *__pyx_callargs[2] = {__pyx_t_2, __pyx_mstate_global->__pyx_kp_u_ndarrays_should_be_type_np_doubl};
         __pyx_t_9 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_3, (2-__pyx_t_3) | (__pyx_t_3*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
         __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 287, __pyx_L1_error)
+        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 288, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
       }
       __Pyx_Raise(__pyx_t_9, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(0, 287, __pyx_L1_error)
+      __PYX_ERR(0, 288, __pyx_L1_error)
     }
     __pyx_L9:;
 
-    /* "plumed.pyx":288
+    /* "plumed.pyx":289
  *             else :
  *                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
  *             return             # <<<<<<<<<<<<<<
@@ -20743,7 +20745,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":276
+    /* "plumed.pyx":277
  *             self.cmd_float(ckey, val)
  *             return
  *          if HAS_NUMPY and isinstance(val, np.ndarray) :             # <<<<<<<<<<<<<<
@@ -20752,40 +20754,40 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
   }
 
-  /* "plumed.pyx":289
+  /* "plumed.pyx":290
  *                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
  *             return
  *          if isinstance(val, array.array) :             # <<<<<<<<<<<<<<
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
  *                self.cmd_array_double(ckey, val)
 */
-  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_array); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 289, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_array); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 290, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_array); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 289, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_array); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  __pyx_t_5 = PyObject_IsInstance(__pyx_v_val, __pyx_t_2); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 289, __pyx_L1_error)
+  __pyx_t_5 = PyObject_IsInstance(__pyx_v_val, __pyx_t_2); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 290, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":290
+    /* "plumed.pyx":291
  *             return
  *          if isinstance(val, array.array) :
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):             # <<<<<<<<<<<<<<
  *                self.cmd_array_double(ckey, val)
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :
 */
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_d, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_d, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (!__pyx_t_8) {
     } else {
       goto __pyx_L13_next_and;
     }
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_f, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_f, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (__pyx_t_8) {
     } else {
@@ -20793,29 +20795,29 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L12_bool_binop_done;
     }
     __pyx_L13_next_and:;
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_itemsize); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = (__Pyx_PyLong_BoolEqObjC(__pyx_t_2, __pyx_mstate_global->__pyx_int_8, 8, 0)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 290, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyLong_BoolEqObjC(__pyx_t_2, __pyx_mstate_global->__pyx_int_8, 8, 0)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 291, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = __pyx_t_8;
     __pyx_L12_bool_binop_done:;
     if (__pyx_t_5) {
 
-      /* "plumed.pyx":291
+      /* "plumed.pyx":292
  *          if isinstance(val, array.array) :
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
  *                self.cmd_array_double(ckey, val)             # <<<<<<<<<<<<<<
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :
  *                self.cmd_array_int(ckey, val)
 */
-      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 291, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 292, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 291, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_double(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 292, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "plumed.pyx":290
+      /* "plumed.pyx":291
  *             return
  *          if isinstance(val, array.array) :
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):             # <<<<<<<<<<<<<<
@@ -20825,45 +20827,45 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L11;
     }
 
-    /* "plumed.pyx":292
+    /* "plumed.pyx":293
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
  *                self.cmd_array_double(ckey, val)
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :             # <<<<<<<<<<<<<<
  *                self.cmd_array_int(ckey, val)
  *             elif( (val.typecode=="l" or val.typecode=="L") ) :
 */
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 292, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 293, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_i, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 292, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_i, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 293, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     if (!__pyx_t_8) {
     } else {
       __pyx_t_5 = __pyx_t_8;
       goto __pyx_L15_bool_binop_done;
     }
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 292, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 293, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_I, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 292, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_9, __pyx_mstate_global->__pyx_n_u_I, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 293, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __pyx_t_5 = __pyx_t_8;
     __pyx_L15_bool_binop_done:;
     if (__pyx_t_5) {
 
-      /* "plumed.pyx":293
+      /* "plumed.pyx":294
  *                self.cmd_array_double(ckey, val)
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :
  *                self.cmd_array_int(ckey, val)             # <<<<<<<<<<<<<<
  *             elif( (val.typecode=="l" or val.typecode=="L") ) :
  *                self.cmd_array_long(ckey, val)
 */
-      __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 293, __pyx_L1_error)
+      __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 294, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_int(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 293, __pyx_L1_error)
+      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_int(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 294, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "plumed.pyx":292
+      /* "plumed.pyx":293
  *             if( (val.typecode=="d" or val.typecode=="f") and val.itemsize==8):
  *                self.cmd_array_double(ckey, val)
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :             # <<<<<<<<<<<<<<
@@ -20873,45 +20875,45 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L11;
     }
 
-    /* "plumed.pyx":294
+    /* "plumed.pyx":295
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :
  *                self.cmd_array_int(ckey, val)
  *             elif( (val.typecode=="l" or val.typecode=="L") ) :             # <<<<<<<<<<<<<<
  *                self.cmd_array_long(ckey, val)
  *             else :
 */
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 294, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 295, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_l, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 294, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_l, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 295, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     if (!__pyx_t_8) {
     } else {
       __pyx_t_5 = __pyx_t_8;
       goto __pyx_L17_bool_binop_done;
     }
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 294, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_val, __pyx_mstate_global->__pyx_n_u_typecode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 295, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_L, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 294, __pyx_L1_error)
+    __pyx_t_8 = (__Pyx_PyUnicode_Equals(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_L, Py_EQ)); if (unlikely((__pyx_t_8 < 0))) __PYX_ERR(0, 295, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_5 = __pyx_t_8;
     __pyx_L17_bool_binop_done:;
     if (likely(__pyx_t_5)) {
 
-      /* "plumed.pyx":295
+      /* "plumed.pyx":296
  *                self.cmd_array_int(ckey, val)
  *             elif( (val.typecode=="l" or val.typecode=="L") ) :
  *                self.cmd_array_long(ckey, val)             # <<<<<<<<<<<<<<
  *             else :
  *                raise ValueError("arrays should be type double (size=8), int, or long")
 */
-      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 295, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 296, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 295, __pyx_L1_error)
+      __pyx_t_9 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_array_long(__pyx_v_self, __pyx_t_2, __pyx_v_val); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 296, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "plumed.pyx":294
+      /* "plumed.pyx":295
  *             elif( (val.typecode=="i" or val.typecode=="I") ) :
  *                self.cmd_array_int(ckey, val)
  *             elif( (val.typecode=="l" or val.typecode=="L") ) :             # <<<<<<<<<<<<<<
@@ -20921,7 +20923,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       goto __pyx_L11;
     }
 
-    /* "plumed.pyx":297
+    /* "plumed.pyx":298
  *                self.cmd_array_long(ckey, val)
  *             else :
  *                raise ValueError("arrays should be type double (size=8), int, or long")             # <<<<<<<<<<<<<<
@@ -20935,27 +20937,27 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
         PyObject *__pyx_callargs[2] = {__pyx_t_2, __pyx_mstate_global->__pyx_kp_u_arrays_should_be_type_double_siz};
         __pyx_t_9 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_3, (2-__pyx_t_3) | (__pyx_t_3*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
         __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 297, __pyx_L1_error)
+        if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 298, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
       }
       __Pyx_Raise(__pyx_t_9, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(0, 297, __pyx_L1_error)
+      __PYX_ERR(0, 298, __pyx_L1_error)
     }
     __pyx_L11:;
 
-    /* "plumed.pyx":298
+    /* "plumed.pyx":299
  *             else :
  *                raise ValueError("arrays should be type double (size=8), int, or long")
  *             return             # <<<<<<<<<<<<<<
  *          if isinstance(val, str ) :
- *             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
+ *             # not in py_bytes, which keeps ckey alive
 */
     __Pyx_XDECREF(__pyx_r);
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":289
+    /* "plumed.pyx":290
  *                raise ValueError("ndarrays should be type np.double, np.intc, or np.int_")
  *             return
  *          if isinstance(val, array.array) :             # <<<<<<<<<<<<<<
@@ -20964,21 +20966,21 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
   }
 
-  /* "plumed.pyx":299
+  /* "plumed.pyx":300
  *                raise ValueError("arrays should be type double (size=8), int, or long")
  *             return
  *          if isinstance(val, str ) :             # <<<<<<<<<<<<<<
- *             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
- *             cval = py_bytes
+ *             # not in py_bytes, which keeps ckey alive
+ *             py_val = val.encode() + b'\x00'  # Explicitly add null terminator
 */
   __pyx_t_5 = PyUnicode_Check(__pyx_v_val); 
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":300
- *             return
+    /* "plumed.pyx":302
  *          if isinstance(val, str ) :
- *             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator             # <<<<<<<<<<<<<<
- *             cval = py_bytes
+ *             # not in py_bytes, which keeps ckey alive
+ *             py_val = val.encode() + b'\x00'  # Explicitly add null terminator             # <<<<<<<<<<<<<<
+ *             cval = py_val
  *             # assume sizeof(char)=1
 */
     __pyx_t_2 = __pyx_v_val;
@@ -20988,49 +20990,49 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       PyObject *__pyx_callargs[2] = {__pyx_t_2, NULL};
       __pyx_t_9 = __Pyx_PyObject_FastCallMethod((PyObject*)__pyx_mstate_global->__pyx_n_u_encode, __pyx_callargs+__pyx_t_3, (1-__pyx_t_3) | (1*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
       __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-      if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 300, __pyx_L1_error)
+      if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 302, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
     }
-    __pyx_t_2 = PyNumber_Add(__pyx_t_9, __pyx_mstate_global->__pyx_kp_b__6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 300, __pyx_L1_error)
+    __pyx_t_2 = PyNumber_Add(__pyx_t_9, __pyx_mstate_global->__pyx_kp_b__6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 302, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    if (!(likely(PyBytes_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None) || __Pyx_RaiseUnexpectedTypeError("bytes", __pyx_t_2))) __PYX_ERR(0, 300, __pyx_L1_error)
-    __Pyx_DECREF_SET(__pyx_v_py_bytes, ((PyObject*)__pyx_t_2));
+    if (!(likely(PyBytes_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None) || __Pyx_RaiseUnexpectedTypeError("bytes", __pyx_t_2))) __PYX_ERR(0, 302, __pyx_L1_error)
+    __pyx_v_py_val = ((PyObject*)__pyx_t_2);
     __pyx_t_2 = 0;
 
-    /* "plumed.pyx":301
- *          if isinstance(val, str ) :
- *             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
- *             cval = py_bytes             # <<<<<<<<<<<<<<
+    /* "plumed.pyx":303
+ *             # not in py_bytes, which keeps ckey alive
+ *             py_val = val.encode() + b'\x00'  # Explicitly add null terminator
+ *             cval = py_val             # <<<<<<<<<<<<<<
  *             # assume sizeof(char)=1
- *             self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
+ *             self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
 */
-    if (unlikely(__pyx_v_py_bytes == Py_None)) {
+    if (unlikely(__pyx_v_py_val == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-      __PYX_ERR(0, 301, __pyx_L1_error)
+      __PYX_ERR(0, 303, __pyx_L1_error)
     }
-    __pyx_t_4 = __Pyx_PyBytes_AsWritableString(__pyx_v_py_bytes); if (unlikely((!__pyx_t_4) && PyErr_Occurred())) __PYX_ERR(0, 301, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyBytes_AsWritableString(__pyx_v_py_val); if (unlikely((!__pyx_t_4) && PyErr_Occurred())) __PYX_ERR(0, 303, __pyx_L1_error)
     __pyx_v_cval = __pyx_t_4;
 
-    /* "plumed.pyx":303
- *             cval = py_bytes
+    /* "plumed.pyx":305
+ *             cval = py_val
  *             # assume sizeof(char)=1
- *             self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)             # <<<<<<<<<<<<<<
+ *             self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)             # <<<<<<<<<<<<<<
  *             return
  *          if 'mpi4py' in sys.modules:
 */
-    if (unlikely(__pyx_v_py_bytes == Py_None)) {
+    if (unlikely(__pyx_v_py_val == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "object of type 'NoneType' has no len()");
-      __PYX_ERR(0, 303, __pyx_L1_error)
+      __PYX_ERR(0, 305, __pyx_L1_error)
     }
-    __pyx_t_10 = __Pyx_PyBytes_GET_SIZE(__pyx_v_py_bytes); if (unlikely(__pyx_t_10 == ((Py_ssize_t)-1))) __PYX_ERR(0, 303, __pyx_L1_error)
-    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, __pyx_v_cval, __pyx_t_10, NULL, 0x36030001); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 303, __pyx_L1_error)
+    __pyx_t_10 = __Pyx_PyBytes_GET_SIZE(__pyx_v_py_val); if (unlikely(__pyx_t_10 == ((Py_ssize_t)-1))) __PYX_ERR(0, 305, __pyx_L1_error)
+    __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_low_level(__pyx_v_self, __pyx_v_ckey, __pyx_v_cval, __pyx_t_10, NULL, 0x36030001); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 305, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "plumed.pyx":304
+    /* "plumed.pyx":306
  *             # assume sizeof(char)=1
- *             self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
+ *             self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
  *             return             # <<<<<<<<<<<<<<
  *          if 'mpi4py' in sys.modules:
  *             import mpi4py.MPI as MPI
@@ -21039,76 +21041,76 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "plumed.pyx":299
+    /* "plumed.pyx":300
  *                raise ValueError("arrays should be type double (size=8), int, or long")
  *             return
  *          if isinstance(val, str ) :             # <<<<<<<<<<<<<<
- *             py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
- *             cval = py_bytes
+ *             # not in py_bytes, which keeps ckey alive
+ *             py_val = val.encode() + b'\x00'  # Explicitly add null terminator
 */
   }
 
-  /* "plumed.pyx":305
- *             self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
+  /* "plumed.pyx":307
+ *             self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
  *             return
  *          if 'mpi4py' in sys.modules:             # <<<<<<<<<<<<<<
  *             import mpi4py.MPI as MPI
  *             if isinstance(val, MPI.Comm):
 */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_sys); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 305, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_sys); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_modules); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 305, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_mstate_global->__pyx_n_u_modules); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_mstate_global->__pyx_n_u_mpi4py, __pyx_t_9, Py_EQ)); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 305, __pyx_L1_error)
+  __pyx_t_5 = (__Pyx_PySequence_ContainsTF(__pyx_mstate_global->__pyx_n_u_mpi4py, __pyx_t_9, Py_EQ)); if (unlikely((__pyx_t_5 < 0))) __PYX_ERR(0, 307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   if (__pyx_t_5) {
 
-    /* "plumed.pyx":306
+    /* "plumed.pyx":308
  *             return
  *          if 'mpi4py' in sys.modules:
  *             import mpi4py.MPI as MPI             # <<<<<<<<<<<<<<
  *             if isinstance(val, MPI.Comm):
  *               self.cmd_mpi(ckey, val)
 */
-    __pyx_t_11 = __Pyx_Import(__pyx_mstate_global->__pyx_n_u_mpi4py_MPI, 0, 0, NULL, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 306, __pyx_L1_error)
+    __pyx_t_11 = __Pyx_Import(__pyx_mstate_global->__pyx_n_u_mpi4py_MPI, 0, 0, NULL, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 308, __pyx_L1_error)
     __pyx_t_12 = __Pyx_ImportFrom(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_MPI);
     Py_DECREF(__pyx_t_11);
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 306, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 308, __pyx_L1_error)
     __pyx_t_11 = __pyx_t_12;
     __pyx_t_9 = __pyx_t_11;
     __Pyx_GOTREF(__pyx_t_9);
     __pyx_v_MPI = __pyx_t_9;
     __pyx_t_9 = 0;
 
-    /* "plumed.pyx":307
+    /* "plumed.pyx":309
  *          if 'mpi4py' in sys.modules:
  *             import mpi4py.MPI as MPI
  *             if isinstance(val, MPI.Comm):             # <<<<<<<<<<<<<<
  *               self.cmd_mpi(ckey, val)
  *               return
 */
-    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_MPI, __pyx_mstate_global->__pyx_n_u_Comm); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 307, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_MPI, __pyx_mstate_global->__pyx_n_u_Comm); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 309, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_5 = PyObject_IsInstance(__pyx_v_val, __pyx_t_9); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 307, __pyx_L1_error)
+    __pyx_t_5 = PyObject_IsInstance(__pyx_v_val, __pyx_t_9); if (unlikely(__pyx_t_5 == ((int)-1))) __PYX_ERR(0, 309, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     if (__pyx_t_5) {
 
-      /* "plumed.pyx":308
+      /* "plumed.pyx":310
  *             import mpi4py.MPI as MPI
  *             if isinstance(val, MPI.Comm):
  *               self.cmd_mpi(ckey, val)             # <<<<<<<<<<<<<<
  *               return
  *          raise ValueError("Unknown value type ({})".format(str(type(val))))
 */
-      __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 308, __pyx_L1_error)
+      __pyx_t_9 = __Pyx_PyBytes_FromString(__pyx_v_ckey); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 310, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_mpi(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 308, __pyx_L1_error)
+      __pyx_t_2 = ((struct __pyx_vtabstruct_6plumed_7_plumed_Plumed *)__pyx_v_self->__pyx_vtab)->cmd_mpi(__pyx_v_self, __pyx_t_9, __pyx_v_val); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 310, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-      /* "plumed.pyx":309
+      /* "plumed.pyx":311
  *             if isinstance(val, MPI.Comm):
  *               self.cmd_mpi(ckey, val)
  *               return             # <<<<<<<<<<<<<<
@@ -21118,7 +21120,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
       __pyx_r = Py_None; __Pyx_INCREF(Py_None);
       goto __pyx_L0;
 
-      /* "plumed.pyx":307
+      /* "plumed.pyx":309
  *          if 'mpi4py' in sys.modules:
  *             import mpi4py.MPI as MPI
  *             if isinstance(val, MPI.Comm):             # <<<<<<<<<<<<<<
@@ -21127,8 +21129,8 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
     }
 
-    /* "plumed.pyx":305
- *             self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
+    /* "plumed.pyx":307
+ *             self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
  *             return
  *          if 'mpi4py' in sys.modules:             # <<<<<<<<<<<<<<
  *             import mpi4py.MPI as MPI
@@ -21136,7 +21138,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
 */
   }
 
-  /* "plumed.pyx":310
+  /* "plumed.pyx":312
  *               self.cmd_mpi(ckey, val)
  *               return
  *          raise ValueError("Unknown value type ({})".format(str(type(val))))             # <<<<<<<<<<<<<<
@@ -21144,7 +21146,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_t_9 = NULL;
   __pyx_t_13 = __pyx_mstate_global->__pyx_kp_u_Unknown_value_type;
   __Pyx_INCREF(__pyx_t_13);
-  __pyx_t_14 = __Pyx_PyObject_Unicode(((PyObject *)Py_TYPE(__pyx_v_val))); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 310, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_Unicode(((PyObject *)Py_TYPE(__pyx_v_val))); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 312, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __pyx_t_3 = 0;
   {
@@ -21152,7 +21154,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_t_1 = __Pyx_PyObject_FastCallMethod((PyObject*)__pyx_mstate_global->__pyx_n_u_format, __pyx_callargs+__pyx_t_3, (2-__pyx_t_3) | (1*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
     __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 310, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 312, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   }
   __pyx_t_3 = 1;
@@ -21161,12 +21163,12 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
     __pyx_t_2 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_3, (2-__pyx_t_3) | (__pyx_t_3*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 310, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 312, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
   __Pyx_Raise(__pyx_t_2, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __PYX_ERR(0, 310, __pyx_L1_error)
+  __PYX_ERR(0, 312, __pyx_L1_error)
 
   /* "plumed.pyx":263
  *          cdef size_t comm_addr = MPI._addressof(val)
@@ -21187,6 +21189,7 @@ static PyObject *__pyx_pf_6plumed_7_plumed_6Plumed_12cmd(struct __pyx_obj_6plume
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_py_bytes);
+  __Pyx_XDECREF(__pyx_v_py_val);
   __Pyx_XDECREF(__pyx_v_MPI);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -24058,31 +24061,31 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 9; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{26},{34},{36},{36},{29},{33},{45},{22},{15},{179},{37},{35},{67},{30},{32},{23},{1},{1},{1},{1},{1},{8},{5},{51},{6},{15},{23},{25},{7},{6},{12},{2},{6},{35},{9},{30},{48},{54},{50},{8},{10},{9},{20},{32},{22},{14},{30},{37},{9},{5},{5},{4},{8},{9},{1},{1},{11},{3},{13},{6},{11},{16},{15},{24},{26},{10},{15},{20},{8},{15},{3},{10},{15},{5},{18},{4},{20},{1},{4},{9},{17},{18},{3},{5},{4},{1},{6},{8},{6},{5},{15},{6},{9},{9},{7},{5},{6},{11},{8},{1},{8},{5},{6},{7},{8},{6},{8},{3},{13},{12},{4},{1},{2},{10},{13},{14},{9},{5},{4},{4},{13},{5},{8},{6},{3},{1},{8},{4},{7},{4},{10},{7},{6},{10},{4},{8},{7},{4},{7},{2},{5},{3},{2},{4},{11},{8},{14},{3},{8},{14},{11},{10},{19},{14},{12},{5},{2},{10},{17},{13},{8},{7},{4},{19},{16},{12},{10},{12},{19},{5},{4},{5},{4},{4},{6},{3},{8},{9},{4},{8},{5},{6},{6},{3},{5},{6},{12},{8},{5},{1},{1},{7},{9},{9},{24},{452},{1}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1914 bytes) */
-const char* const cstring = "BZh91AY&SY\0021U\241\000\000\361\377\377\357w\377\273\377\377\177\367\277\177\3738\277\377\377\372@@@@@@@@@@@@@\000@\000`\007\016\254\260\371\220!\330d\201 \223\2044DS\311\221O\320\323\025<\325==$\364i\264\223G\250\036\241\221\243i\000d\017HyM\251\352\003\03224\364!\212\021OI\265\014\200\233Tf\240\320\000\000\0004\000\000\0002\031\000i\240\000h\007\000\000\000\000\000\000\000d4\000\000\000\000\000\000\000\000\224\321\002&\022djz\233T\362 \311\243\3224\006\206\232\000\000\000\000\000\000\000\006\207\000\000\000\000\000\000\000d4\000\000\000\000\000\000\000\000\224\324\t\220$\364\247\352=\023!\245?Jl\220\006\324d\r\001\240\000\000\000\000\000\320\320\n\317\370\220\273\203\232,1bHJ\241T\014\2313!\\\310\"\031e\250\222%\014\214\311\307\014\022\346\360\322(&(D\271{\357\014:\307$\233+\025\224u\244\332\002\273\214.\251\014\355\326\237B\200T GZ1\260\324\364@\233\342!\2767\342N\003\341Tm\341]*\330\334V\364o:\023\307\031{\303\027\375)\201+\307\316\210K\321\201\351o\216\350\275\023\026\202?\007\363\264a\375\327!\342R\302\347l[Xth\277{\003\314$\266\031\";\200c*\007\001\202yq4r[\341\242\030A\230\303\364\244\023\240B\312\\\205\243\276\3602\016\357\322\035\000\254\024\234$:\223\374\276\343\306\201\200A\227=)\001\022\010W\2241j\332r\262h\"\266\323\2056\377/\316<.\217Ev}5\337r\036hY\351\267\263\3707\352\025\242\001v\327\265\226\t\301|\315\205,!\366\236\274ts\331\022\350Zf\001\004\205\2003\201e\302z\360\240\301\350\2534Y\177\315\326\327\235\240i\356}\322M1\033r\226\204\216q\362\221\337\336j@f\0315\231\326`_\2244\265\006y\217\321\242M03\214&M\023}\336\025\226lu\033\230H\201D(0@\326\210\324\342\217t\0255\2737\301r\025^B\361L\327e\210\\\016\272\034\316CR\257ak8\316{\010lO2\r\023\201\203\\\025x\201l>\215\256\35452W~q\261\372\304w\250\275\366\3140/\353\276\245\234\366\264-\363k\257l\0106\007\211\315J\034\367\215\267Uq\347\355(\250C[\215\314\031\245\327nj\340\036\022\032/\320\273Q\360c\221\304-\271s\342\274\307\271\355.\257J\372\361\317\216R\013\371<\210\276N%\222\303M\242\371Ec\t\231\327KR""@\354'\2640\350 \265\255\031M\244!!;\321d\254\206\022b\212\211\316E\204\343{\242\325,\236\352U\201/\014\354\212\363\364\277\3051\253\374\335\3157\265\345\307\037\235\330\210D4\367\231\346\300\234\034\356\200KzYEiz\321\226]\000\216\245`\212\263\352\025\031\310\260\204\367k\031G\022\225~#\223\242\206\330\034\306\336]\256\3477\016?$\340.c\204\330\303\340\302@\224\003\215#\315\341\307V\304\3524\365c+\030\201m\374\214\375y\263\023\221\026\215Oy\037r\361\334\\\222\242,\347-*\253c\3113\026\210H/\317\002\240\312,Y\260L~\024N\034\240\363\001\300\334**\331\025\361\312\252,\202\255\372\332w\305\340{\303):b\306\020C&GV\"\r\352KD\307f\235\203\233\237\016o\377g\265BRP\373\321\266p\271\363nU\025I\251f\252\270/\335\t'w\255\004\242g\034\257\216%\027Y\322U\327Z\2354LF\223A8\003\375I\325\241\313\246\334{1\002\3651Z\023\334\3671\203\323\013\314\325'G\223\266S}Vk\316\364L\354\264\345ms\233-\020\030J%\335\030\313_]Z\234@@Q\021\251\200\024P\246\212\202\246\020\21284\324\007\220d\223w\362\336\257Z\004$\207\331\\g\306\315j\"hd#\"\305\234\334\016\255\r/F\353\026\205\225\354\204k7)\312\263AnJ\217f\253mPh\3313\270\224\3104\252\002`\203!\0148\305\262\321s?\247\224`V\346$o\244\204\243:5'v2\215\216b\346\303\006\217w8\342D\326\202\312\210\321\267\013\227C\241=\271\023\206q\253BI\270-\264c\022\340\275\253q8\273\213\n\230\317\rv\277Y*A\210\216q\250,\261\r\272:Zi;\226i\266JI\350\366\340\331P}\245p\204\007\032\221~\270h<}\006\275W\222\321t\024\351\363:\260\014I2\223\3540su\003\004$'b\322U\273\221U3{B\2631\032\302L\304\030\345\200\326B\310\357\320,f\323\215\325\206z\344\324\025mt\234\220\234\375o\266\021hL$\311T\352T\221\316\313\201Ry\253\230%\266\266j;\205Yb\263\014\036\312\344B\032K\010bLN\233\310HHC\356\206\270\212\r\210\325w\271\211\271\014\357\274\266bN\014s\014P]\244\304\305i\206\331\260HA\272a\262Z;\333\315\264O\213\230\246\201\"\232)\270Q&k\203U\247\304*\t\22391\346\304\013&dtwb\t\t\r\320\325\251\264\234\303\tk\345\266y\231\350\330\232\233\036\214DV\307\nI&\353\320\350\326sn\331-\027]^\332+""\252M\261,q\261\273<p\204\026\362.O\317\271\216\234\272\201\337\252[\007\000\231\010\340a5Y3G\2131\244\315\321\300bmx\245Kq\323x\327\243\242\242< \265XLh\221f\217 !\350\362\223\200\204\355{6\263\306\274\307\205\312\360\016;\275\373\225\037\210\245fI\n\220\3619g7%\247\003\225\234\247C]_Ho\366\030\321\244\211\303ad\355\312\334v\353\013+_\2367O&\035>\261\032\214\320\353<\260\351\262d\356v\224qc}\2716\232\344i\340F\2417\020\202S\336%\004\215\013Q!\241#\257sP\225\257\276\260U\356\247F\203_6\245!\t3];Af%\177sH\270~\035\226\310F\010\275$kd\205@,\031\324\225\374\rs\336\250\004-\264\211\007\201\333'\331T\301\356\224\320O\\\223\335\2241\3601\377n\034\324b\325\204Q\322;(\221\020\316O\n\231\204t\271\270\251B\254\316\273\205\260\341\221\0266\013\313\321\301\00746\032\271z\215\265\337O\305Li\0228\233)\032\372\2270eu\210\207\364 \270I\204t=w1\0046N\205\276\347(\346rN\nJ\007|a\360,\r\004\270m\3358\t\202\214\241\220p\203\006\376\320\2077\367&\251\360o\000-\213\233\006B\315\316\013Fe\217dq\001\220\205\341~\000.\353z\305\307fueQ\360K\345\231\356\021\017(\034\325I\3561\224=`R\033\270S8G\332\025\346\326;\017\325\026g>x\253G\350\347\205\361\376\306_A\321\267\373{MJ\201\327\203\317x\3776\364\351\324\0231\236\353m\322\351\351v\336P\302\301\274\260>\273\363hO\304\344\274n\023\032\\\271\241\202\272\340\217d\344\235EuL0\314\201\246-\017\277\005gq',\252\253B\237\370\273\222)\302\204\200\021\212\255\010";
-    PyObject *data = __Pyx_DecompressString(cstring, 1914, 2);
+    const struct { const unsigned int length: 9; } index[] = {{2},{68},{35},{54},{37},{60},{24},{52},{26},{34},{36},{36},{29},{33},{45},{22},{15},{179},{37},{35},{67},{30},{32},{23},{1},{1},{1},{1},{1},{8},{5},{51},{6},{15},{23},{25},{7},{6},{12},{2},{6},{35},{9},{30},{48},{54},{50},{8},{10},{9},{20},{32},{22},{14},{30},{37},{9},{5},{5},{4},{8},{9},{1},{1},{11},{3},{13},{6},{11},{16},{15},{24},{26},{10},{15},{20},{8},{15},{3},{10},{15},{5},{18},{4},{20},{1},{4},{9},{17},{18},{3},{5},{4},{1},{6},{8},{6},{5},{15},{6},{9},{9},{7},{5},{6},{11},{8},{1},{8},{5},{6},{7},{8},{6},{8},{3},{13},{12},{4},{1},{2},{10},{13},{14},{9},{5},{4},{4},{13},{5},{8},{6},{3},{1},{8},{4},{7},{4},{10},{7},{6},{10},{4},{8},{7},{4},{7},{2},{5},{3},{2},{4},{11},{8},{14},{3},{8},{6},{14},{11},{10},{19},{14},{12},{5},{2},{10},{17},{13},{8},{7},{4},{19},{16},{12},{10},{12},{19},{5},{4},{5},{4},{4},{6},{3},{8},{9},{4},{8},{5},{6},{6},{3},{5},{6},{12},{8},{5},{1},{1},{7},{9},{9},{24},{454},{1}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1923 bytes) */
+const char* const cstring = "BZh91AY&SY}\345\254g\000\000\362\377\377\357\367\377;\377\377\177\367\277\177\3730\277\377\377\372@@@@@@@@@@@@@\000@\000`\007\016\2551\276q\020\024\000\024\000\341\r\024\321O\t\241\246\214\250\366T\333E3FDhz\203\324h=L\322\032\r\006\324\321\264\001\036\247\224\364jy\242\236\246\364\325\010\232R~\220\3056\232i\244\014\002\000\032\032\006F\000\214\206\200h\3104h0\032\214\0021\300\000\000\000\000\000\031\000\000\000\000\000\000\000\001\220\000Jh\200\200\2014\320\230\222m0\243\324\332\231\033D\323M\000\003@\000\000\000\365\r\006\232d\307\000\000\000\000\000\000d\000\000\000\000\000\000\000\006@\001)\250\232\215\2425O\024\3656M\2451\352\236\241\265\000\037\252\032\000\r\000\000\000\000\000\006\200\n\014\377\221\013\330qC\216\034\210\010P(\220\212(\302hP\310\204R\246&\231\024fF`\334t\026\034\357\310j\025\023\025\"]8<0\353-RmlVQ\377\344\331\005{\206T\035\227(\350RV\220\316\010\014\254\030\227A*(\351\020\213\202\344(\302wT\037\014k!K[\212t/\264\222/\257o1\233\373t\310\226\003\353D%\355@\364\267\352\274`\211\213\022<\317\365\261\313\335\256\203\304\244\213\022\240(\020y0%\270\315\221\307\232r\363\033!\020)Tf\210\034fK\204\255\214K\254\014-\001zc}K\3172j\270e\272\322\327B\246\177\203\204\256o\362\341#\237<%\356k\226\217\262\205\336%\3152s\274\324J\030\265m9Y4\021[l\312\234\275\307\357\036\317\217\306\274\036\253\277\255\360\317\252\026y\362\360~~\025\001C\005\336V\336h\036\014\3074'i'\345\365\272OB\204\200\335\033r \020IT\0038\025X#\263U#\007\242\244\361\276\376\307c\312\365$%[\201\"\226\302\373\232T\244\345\037I>\036\035v\245\006u&We\201\202`\247\252(\030\3464\232\250\006q\204K\3207\335\274\252\255\211M\315\010BP$\230\305\004\275\021\253}\237\330*\212\353`\002,M\245\211\005\257\022\007\3525\005[\002\247\025$\354\335H\341\027\007\225@p$\004\210\250\036,\000\222.\003qivGj4p+\1778N\374b7H\241\366\245\013\245\032o\262\257\035\274+\021\221\3245\322F\272p\362\304\211]\003d\246hW\256\212\211&;\217.\263X\323l\263H\034\0244\037\205l\007\311\216\363\220\271i\337\212\366\275\336\322""\366<\230W\262}\222\220a\361>\204NN%\242\313e\242\362\214\343)\232\327cR@\354'\2640\350 \265\255\032M\244!!;\321d\254\206\022b\352\351\335`\261/M\036\215e\317\017\205v\224\371G\375\026\247\267\257\262p\257\275\315\254\257\n\013e\\\355H\004\0037szV\004\340\255\322\005\214\313\030 \261=a\301\203V\020\304\247\021f\365\"\2139\023\222K\254\230e\013\344l\374G'A\r\236\031L\2329+.\025rMim\214\343A\207\310\302@\224\201RG7:\375:\t\321ii\277bv$-Q\336h\356k\251j\023i\326 \237\342\320~\336\365.\214~9\221Z\367`\2431\220\204\203M\322*\035\023c\036\350\230\363]8\352Pm\034\033\261MeC\017:\225\272\347\n\364\340\326\322o\003\340\032I\323\0262\202\0312=\210\2106\322X\314vi\330;\272\364\352\376\376\274\224%%\017\2669N\027~m\317ERjZ\252\256l:\241$\356\365\240\224L\354\226\021\326\242\366t\225w\326\247\225\023\021\260\304\234\001\357$\352\320\345\346\335\234s\003\0051Z\023\335\356\306OL\2605T\235\036N\332M\367Y\260=A3\262\331\245\267\316l\334\207S\345\031\255\255\351\372>)!\n\374\237\2407\317v\037\373y\334\334r\342Wds\314\371\235=v3&\306\201\t!\363\315\tjf\264\210\030Y\010\300N\257\027\003J'D#\231\214\203\034;\262\236\006\313\370\026\262[)xf\257\237Y4\361\261\343\245\2115*\005\201\0078\206\034\340\334\374\263h\364\371\347#\007b\207JHJv\273^\331\360\244\361v3m\273Z~KO\2013\270\203\032\223\273l3[\367\333\317\347--\303`\204\223u\345\220\307\002\341\203V\344\342\375yT\316yo\266\033\311R\014\304z\006\340\262\3149c\344\331I\335j\233\214\244\236\211\355\315\306\240\374\212e\010\016\305#\r\360\320|\354M\373\260%\215\340\247\227\267\325\220p(\312\221\211\265\333\312\033P\220\237\203Q`\375\345[\034y,u'\200Q\230\223\036\t\r\214\261\237M\303\026n\216\031\340\033\260\243\\X6tt\204\361\334\214\2456\204\302L\225O^\244\217CNeI\352\256\301.U\263Q\334*\3135\250d\366WD!\244\262\206$\304\351\265\t\t\010~\250k\221A\263\032\256\367bnC;\355\\s'\006z\206h/\260\314\315l\206\343\304HA\3250\343,}L\016TO\233\231\246\201\"\230\323\250Q&k\206\353O\254T\023&rc\315\210\026\214\310\361\365f\t\t\r\341\335\271\266\035\246R""\337\320\332\352k\217\024\324\342\364b\"\266:RI7\234\207F\363\273~2\306\367\257\305\212\356\223qK<\354u}\035\232g$\021\345M3\237\243C\035\r\344\273\362(\322S\352\240\340\023!\031\354&\216k4*\272Rc\341\3361f\320T\276\\z\264\033DxT\310\t.\274K\r2l\323\357\202!2\002+\2143n,c\311\312o\034w{\365*?YJ\314\222\025!\347\031\311\311\351\211\315\244\247Cm_P\335\360\263\243I\023\206\312\311\333\233\244\364VVV\303\\\3573F\035>\361\033\215P\353]2\362\262d\356x\250\342\317\013qg4\340\215\202n\221\004\270l%\004\214\026\322CBGu\315\242V\303\n\301W\275<t\033\t\265)\010I\232\363\264\026bXzT\213\217\321\315m\004d\214\022F\346HT\002\301\255Ia\301\256\372+\201,\262&J\000\361(\306\266\010zY\005\272\250\241\370\313\207\255\303\337\314v\273\031-\263G\204\367QBa\270\266\332\263\010\360\367\373/r\272\276}m\267\256\204\330\355\027\323\307\232\017H8\233\263\350\334r\267\004\375u\322\221#\255\265\221\207\257v\r/b!\375\250.$\302;\377y\314\301\r\243\241ps\234\355\361N\nH\201\3378|\213\000H\t\274\265g\0010K\246d\034 \301\277dU\216\346n\331\363\333\343\"\342\034\226\014\205\276K\274\006e\227dt\020\314C\000\200\013\332\343ll;;\256\325v\260\267\356\030\305\200!\356\223\227\304a\315\321LZ\305\2217\204\235\241f}s{\2707\374\001\363\376\370\244u\177\262>.\345-\341\325\370sI\025D\347\007\023\276~n=:\232\202\264\343\336owN(\235\341\2140\250\233\034\017\254\374\3729\371\\n\303\204\305<7\366\340\262\260#\3316\217Zi\027\303#Xu\276\305gbNZ\256\253HT\370\005\334\221N\024$\037yk\031\300";
+    PyObject *data = __Pyx_DecompressString(cstring, 1923, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1761 bytes) */
-const char* const cstring = "x\332}V\317o\034\267\025\266\340\244\210\002\371\207\264\216\213\246hJ\271uVn\244Ad\271\252[\330\n\326\366\006\331\326Vd\0132\320\366@pg\336\256X\315\220#\222\263\332UQ G\037\3478\3079\316QG\035}\314Q\307=\372O\310\237\320Grv\265\212\324\002Z\016\371\370\310\367\336\367\276\367\250\277\220V\034\223\210' 4\227B\223TA\010\021\027\375s!\271\037\221$\323\206t\201p\021\301\020\"\302DD\2044D\307\034\325\237e\275\036(2\340pD\"\t\332m\3010\225\032\2106\212G\240\2373A\244\210G$T\300\014\020F\272\376\220\331g\206pMB)\014\357g2\323h\204$\220H5\n\360\224\275\212i\315\373\202\030I\360p\264\346\356\361\032\326d\255T_|\244\270a\335\030j\005\357TO\311\344\377\235ua\221#n\366\211\031\245@\232\265\334(&\264\013\343\374\210W\303\023\034\24123\330\275\230\005\214{\020\274R;I\315\210\350}\206W\233,E\347zR\221pd\366\245\010\230Rl\324V\n%\261d\016\372\235\227{\257\332/\350\337\332o\266\333/\t\342\22324y\225\0169\000% \236\352t\\ 23D\366HWf\"\322d\205\r\321\233\373\321\203\316e\237}\022\2634\225\312@\324\021\003\026s\314\266\214`\325&\020\2251\331\315\260I\320r\023\235\266\2004WI\037OM\224}X\2303g\346\311+\007\324[\013\024\272\260-1%.\305\317]\264\026\227\010b\336\005\205\311\302TXz\240\021\307\003Av\332;k\217\036?r\364R\360/4\257\321\273n\030#\003\220V6\246\214\307\006\215\3314\351\200tzd$3\"\000\335Dz\244\2507{\300\354\203 \032\214\235\220\246\313)3\0307\305\343\010b\263\316\017\037\200=\375-\2135\004\337_\000\017]\256\211\312\302\020\364\004\315\032\375\255\247\017\203M\317\353\032D\334\362\201n\324*\216\277\003\306cK\312U\022\356Cx`}V?\3132\210\001WR`b\014\0310\305\255\372\256\201\224$l\344.\301\352;\006%\317\323\271'\034\317\321q\254\235\001(\244\261\201\304\256e\327B\267'\016\204<\022x[\234\201\347\365\312\277\377\363 \330j>\370\206E\021\02567\026i\307@\304m_fqd\3558\335Hf\366\372\025\315\217\341\351\343\007\253\230b\263J\034\003\221~\230\321\257\207\241\214c\013\037\022)`\335\360\311L\r\333{=\270[?\027OJg+\342\332F\000.\216\200\3020\204\324]\326\017\311\212\245X\337U\220E\3372\036""\206\006\301q\355\341\2747q\355\217G6v\353*y\362\224|}\251\276\3522\231\2641\346\253\305\222\017/F]\273\\\213\371\001\324\330\211\350jPD\032x\\V\355\024\021\t\035$~\216\210\"\271{,\213\r\241TA\224\205@)\2112\227$!\305\032\332\033p\026\343n\310\0057\270\351\315m\245q\226@\024\244\243a@U\206p%\360\304w\316\350\002\224\227e\326\374\024\321\013\373\027\245\242\257\221t!leS\332\2608\226\241k\3066V\0221\303\202+v}\201\333\033\353^\036d\246\267\266\276\271\026\203\235<n\355>\357t\236\313$i\3071O5\327\337\265v\351\366\336\253\235\277w^\276\304\214J\341:\327\253\235\316\005\306\357\270\220\375\350\024\3744\240\024\263\014\212\322\363\365\320B5]\326\300\372\364\316\310\261\3165\226\367\245\2350\251\255\004=.\260e\035cRvFC\374\275\300\326C\267\221Wo\240\267\013\207\031\210\020l\347\n\316\233\030\322\232b\261(,}\331\233@B}Kp\2601=\022!\227A(\025\266].@w\231\266\032\"BVRO<j\371\025\206\0070\302\314\333\336D\351d\322\007c\251k\227x\230r\354M\212\205\320e\341\001:\036b\0272!Vp\024A\210]\231\322\310\372L=\t#\313I7P\256\251\247\022\306\340\364j\020A`\344\266\327\326\375\005,\322n\3203\0057\301\2707A\250\027\263\276\306\"J\230\251\273~O{\017z\332\306\202\252\231\010\251\365\036\377Z)\177\013\312\326\243\223\370,\320\3761O9\217(\345\211\355\214\323/\276.Y\014\027W~\201\357\202{\211m-\331\332\262QMq\365\005^W\271\207\025\361\214)M\030\202\206\243\331\307G\332\276\320\211\003\2406S\177u\222\362G\351\310\217\001rQ\260\0047\353\321W;\326\013\346A\300\021\016)\342\226\216\020R\211\361\206\007\224\332\221\365Q9\215\035&I]\262\324\177S\231\246#\332\035\031@0\261\214\251k\364:K\374\252\206\304N]\272\334,\023)\017\017\320\307\266\230\350\r\334\377.\226\035\207\031\213\275w\212\r Vp\336Q.\225\300T\000C;\355s\215\271W\200\236\342\223\005q\017+c\033P\026\265\247\031G\321\033`\361\0166\010\356\023\207\222\032\016\234\325ml\246\250\350\025\005\346:\203M\007\212\361\351\303\327J\033\211?\225\341\303=B \020\r\274cJh\033\272\375Y\036\271\007\034\021@q\226b\353\001$\271{\251\334\240\0075\237\270\350""\311#\246\204\355_G\\l<\034^\373\341\365x\376v>\367\303\334\370\243O\337}\225\277\306\365'\013\357:v\362\323\275k\213\313\345\\y\247D\235\033g7\2768\373\342\321I\353\354\343\337\024\270\376m\241\313f\325\250\236Ul<\377\353b\375\303\374\302\273\027\371\365|}\274p;\277Y\260\"+\333\325R\365\307\223\271\361\302\2151n\3765gyV\264\354\366'\305\\q\2678\274\274\361i\261\\l\226\213\323\215\250\370C\331*\367\252{U\353\003n_\3177\213\245\342!\232\277\3258k|Y\262rP\275\036/}\226\277E\341\033\274\320\212\177W\256\227\337V\3133\342\237~q\355\366\235\263\306J5W\335\255\016?\334\372,\377GqX^\364\253m\255.\346\215\274\203'L\271Q\206\325\257N\356\235\264O\357\234\356\276\237\377q\351\307uw\371\357\321\235\267\325\372\270q7\347\205Bdv\253\353\325\237O\236\2350\334\316\267\312\305\362\313j\356\177\354~S.\227\233\325\342\325\3661\374_\346\272h\226\215\362Y\311\306\013\215|\375\303\014\220\215\252U\375\363\354\261:S\272>\326\311w\213\353\005zrg\274p\353\335q\261X\334\307\214,\217o.\345+5\2127o\215\347\335\326\331\347\033'\177:]>\3358e\247\346\375\372\373\326\367\377\005\316\243\331~";
-    PyObject *data = __Pyx_DecompressString(cstring, 1761, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1763 bytes) */
+const char* const cstring = "x\332}V\317o\034\267\025\266\340\244\215\014\371\207$\333@[4\245\334:+\267\322\"\262\034\325-l\005k{\203lk+\262\005\031H/\004w\206\273b4C\216\206\234\325\256\212\0029\352\270\3079\316q\216:\352\350c\216:\356\321\177B\376\204~$gW\253H-\240\345\220\217\217|\357}\357{\217\372;iD\021\tE\314\245\026Jj\222\244<\340\241\220\335s!y\030\2228\323\206\2649\0212\344}\036\022&C\"\225!:\022P\177\221u:<%=\301\017I\250\270v[\274\237(\315\2116\251\010\271~\311$Q2\032\220 \345\314p\302H\333\0372{\314\020\241I\240\244\021\335Le\032FH\314c\225\016\3528e\257bZ\213\256$F\021\034\016W\335=^\303\232\254\224\252\213\017SaX;\342\225\202w\252\223\252\370\377\235ua\221Ca\366\210\031$\234\324*\271I\231\324.\214\363#^\r'\004\2402S\330\275\232\006Lx\020\274R3N\314\200\350=\206\253M\226\300\271\216JI00{J\326Y\232\262A3M!\211\024s\320o\277\336}\323|E\377\331|\267\325|M\200O\302`\362*\035\262\317S\311\243\211N\313\005\2422CT\207\264U&CM\226Y\037\336<\014\037\265.\373\354\223\230%\211J\r\017[\262\307\"\201l\253\220\257\330\004B\031\311\256\0055\002\31358m\001\251\255\220.N\215\225}X\310\2313\363\354\215\003\352\275\005\n.l)\244\304\245\370\245\213\326\342\022\362H\264y\212d!\025\226\0360\342x \311vs{\365\311\323'\216^)\377\001\3465\274k\007\021\030\000Z\331\2302\021\031\030\263i\322u\322\352\220\201\312\210\344p\023\364H\2407}\300\354qI47vBj.\247\314 n\212\343\000\261V\345G\364\270=\375\r\2134\257\177w\001<\270\\\021\225\005\001\327c4+\3647\237?\256ox^W b\313\007\272^\2518\376\366\230\210,)WH\260\307\203}\353s\372\213,s\331\023\251\222H\214!=\226\n\253\276cxBb6p\227\240\372\216x\252\316\323\271+\035\317\3418j\247\307S\320\330\360\330\256U\333B\267+\367\245:\224\270-\312\270\347\365\362\277\377\363\250\276Y{\3645\013C*mn,\322\216\201\300mOeQh\3558\335Pe\366\372e-\216\370\363\247\217V\220b\263B\034\003A?d\364\313~\240\242\310\302\007\"\325Y;x6U\303\366^\017\356\346/\305\343\322\331\014\205\266\021p\027G\235\362~\300\023wY7 \313\226b]WA\026}\313x\3367\000\307\265\207\363\336$\264?\036\332\330\255\253""\344\331s\362\345\245\372\252\312d\334\306\230\257\026K>\\\014]\273\\\215\304>\257\260\223\341\325\240\310\244\356qY\261S \0228H\374\034\210\202\334\035\226E\206P\232\3620\0138\245$\314\\\222\244\222\253\260\327\023,\302n \2440\330\364\3466\223(\213yXO\006\375:M3\300\025\363g\276s\206\027\240\274,\263\346'\210^\330\277(\225]\r\322\005|3\233\320\206E\221\n\\3\266\261\222\220\031V\277b\327\027\270\275\261\352\345\365\314tV\3276V#n'O\033;/[\255\227*\216\233Q$\022-\364\267\215\035\272\265\373f\373\373\326\353\327\310\250\222\256s\275\331n]`\374\266\013\331\217N\301O\353\224\"\313<\245\364|\335\267PM\226\025\260>\275Sr\324\271Fy_\332\t\342\312J\275#$Z\326\021\222\262=\350\343\367\n\255\207n\201W\357xg\207\037d\\\006\334v\256\372y\023\003\255)\212%E\351\253\316\030\022\352[\202\203\215\351\201\014\204\252\007*E\333\025\222\3536\323VC\206`%\365\304\243\226_A\260\317\007\310\274\355M\224\216']n,u\355\022\207\251@oJY\300\333,\330\207\343\001\272\220\tP\301a\310\003teJC\3533\365$\014-'\335@\205\246\236J\210\301\351U r\211\310m\257\255\372\013\267H\273AO\025\334\030\343\316\030\241N\304\272\032E\0243Su\375\216\366\036t\264\215\005\252\231\014\250\365\036\177\215D\274\347\251\255G'\361Y\240\335#\221\010\021R*b\333\031'_\274.Y\304/\256\374\002\357\202{\211m-\331\332\262QMp\365\005^U\271\207\025xF\224\306\014\240a4{x\244\355\013\035;\000*3\325W\307\211x\222\014\374X\007\027%\213\261Y\215\276\332Q/\310\203\344\207\030\022\340\226\014\000\251B\274\301>\245vd]('\221\303$\256J\226\372o\242\222d@\333\003\3035\276H\030\024\3011\327\356u\026\373U\005\214\235\272\244\271Y&\023\021\354\303\323\246\034\353\365\334\1770\226#\007\031\213\274\217)\353\361(\345\347}\345R!L\004\274o\247]\241\301\200\224\303_<\\<\352\240>\2668das\222w\210\336q\026m\243M\010\237>H*P0\253\232\331Ti\321+\312\314\365\007\233\024\210\361\000\342\315\322F\341\227fx\276\007\340\0260\301\035\023Z\333\320\355\317\262\311=\343@\000\342,A\003\342@\316\275Wn\320\275\212UBv\324!K\245\355b\207B\256?\356_\373\361\355h\366\316p""\346\307\231\321'7\216\3772|\213\365gs\307-;\371\371\301\265\371\245b\246\270[@\347\346\331\315\317\317>\177r\3228\373\364\3679\326\177\310uQ+\027\313\027%\033\315\376._\373\371W\327n\334<~5\274>\\\033\315\335\031\336\312Y\236\025\315r\241\374\352df4ws4;w\374\217!\033fy\303n\177\226\317\344\367\363\203\313\0337\362\245|\243\230\237l\204\371\237\213F\261[>(\033\037\261}}\270\221/\344\217\341\300\355\305\263\305/\nV\364\312\267\243\205{\303\367\020\276\303\205V\374\307b\255\370\246\\\232\022\303\271;w\317\026\227\313\231\362~y\360\361\366\275\341\277\362\203\342\242_Mku~\2708l\341\204)\326\213\240\374\315\311\203\223\346\351\335\323\235\017\263?-\374\264\346.\377\023\334y_\256\215\026\357\017E\236\002\233\235\362z\371\267\223\027'\014\333\303\315b\276\370\242\234\371\037\273_\027K\305F9\177\265}\304wo\270\223\377\032\270>(\200\305\342p\355\343\024\220\213e\243\374\376l#9K\306\250\265\240}=\207'wGs\267\217\217\362\371\374!\316.\215n-\014\227+\024o\335\036\315\272\255\263\337\256\237\374\365t\351t\375\224\235\232\017k\037\032\337\375\027\350\343\333\365";
+    PyObject *data = __Pyx_DecompressString(cstring, 1763, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (3242 bytes) */
-const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayError loading PLUMED_KERNEL at path Error loading PLUMED kernel at path Index out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis PLUMED >=2.6 only supports Python 3PLUMED not available, check your PLUMED_KERNEL environment variableStep may not be zero (axis %d)Unable to convert item to objectUnknown value type ({}).>')?add_note and arrays should be type double (size=8), int, or long at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenable._exceptionsgc (got got differing extents in dimension isenableditemsize <= 0 for cython.arraykernel must be a path string or path-like objectndarrays should be type np.double, np.intc, or np.int_no default __reduce__ due to non-trivial __cinit__ object>plumed.pyx._runtime<strided and direct><strided and direct or indirect><strided and indirect><stringsource>unable to allocate array data.unable to allocate shape and strides.utf-16-leutf-8ASCIICommEllipsisHAS_NUMPYILLeptonErrorMPIPLUMED_KERNELPlumedPlumedErrorPlumed.__enter__Plumed.__exit__Plumed.__reduce_cython__Plumed.__setstate_cython__Plumed.cmdPlumed.finalize__Pyx_PyDict_NextRefSequenceView.MemoryViewabc_addressofallocate_bufferarrayasyncio.coroutinesbase_bundled_kernel_pathcckey__class____class_getitem__cline_in_tracebackcmdcountcvalddecode__dict__doubledtypedtype_is_obje""ctencode__enter__enumerateenvironerrorerrors_exceptions__exit__ffinalizeflagsformatfortranfsdecodefspath__func__getgetApiVersion__getstate__gzipiid__import__import_module_import_moduleimportlibindexint_intc_is_coroutineitemsitemsizekernelkeyl__main__mathmemviewmode__module__modulesmpi4pympi4py.MPIname__name__ndarrayndim__new__npnumpyobjospack__package__platformplumed._plumedpoppy_bytes__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable____qualname__ravelre__reduce____reduce_cython____reduce_ex__registerreplaceselfsetNestedExceptionssetRealPrecision__set_name__setdefault__setstate____setstate_cython__shapesizestartstepstopstructsys__test__tracebacktypetypecodetypesunpackupdatevalvaluevaluesversion_infowarningswin32x\000\200Q\330\t\020\220\001\200\001\330\004\n\210+\220Q\200Q\330\010\014\210I\220Q\200Q\360\"\000\021!\240\001\240\024\240Q\330\t\r\320\r\036\320\0364\260A\320\005\035\230Q\330\t\037\230s\240'\250\023\250B\250a\330\t\033\2301\340\t\014\210D\220\003\2201\330\014\020\220\016\230a\230u\240E\250\022\2505\260\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\010\230\001\230\026\230q\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\n\230!\2306\240\021\330\014\r\330\t\014\210J\220d\230*\240A\240U\250\"\250A\340\014\020\220\003\2206\230\022\2302\230Q\330\017\023\320\023&\240a\240v\250Q\330\022\025\220V\2302\230R\230q\330\017\023\320\023#\2401\240F\250!\330\022\025\220V\2302\230R\230q\360\006\000\020\024\320\023(\250\001\250\026\250q\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230E\240\021\330\014\021\220\023\220I\230R\230t\2403\240c\250\031\260\"\260E\270\024\270S\300\t\310\022\3101\330\017\023\320\023$\240A\240V\2501\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220>\240\021\240&\250\001\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220?\240!\2406\250\021\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\027\220s\230'\240\023\240B\240a""\330\014\023\2201\340\014\020\220\016\230a\230u\240E\250\023\250A\250[\3208r\320rs\330\014\r\330\t\014\210I\220S\230\003\2301\330\023\024\330\014\017\210z\230\021\230%\230s\240!\330\016\022\220(\230!\2306\240\021\330\016\017\330\t\017\210z\230\021\320\0323\2607\270!\2703\270a\270t\3001\300AO";
+    #else /* compression: none (3250 bytes) */
+const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedBuffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayError loading PLUMED_KERNEL at path Error loading PLUMED kernel at path Index out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis PLUMED >=2.6 only supports Python 3PLUMED not available, check your PLUMED_KERNEL environment variableStep may not be zero (axis %d)Unable to convert item to objectUnknown value type ({}).>')?add_note and arrays should be type double (size=8), int, or long at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenable._exceptionsgc (got got differing extents in dimension isenableditemsize <= 0 for cython.arraykernel must be a path string or path-like objectndarrays should be type np.double, np.intc, or np.int_no default __reduce__ due to non-trivial __cinit__ object>plumed.pyx._runtime<strided and direct><strided and direct or indirect><strided and indirect><stringsource>unable to allocate array data.unable to allocate shape and strides.utf-16-leutf-8ASCIICommEllipsisHAS_NUMPYILLeptonErrorMPIPLUMED_KERNELPlumedPlumedErrorPlumed.__enter__Plumed.__exit__Plumed.__reduce_cython__Plumed.__setstate_cython__Plumed.cmdPlumed.finalize__Pyx_PyDict_NextRefSequenceView.MemoryViewabc_addressofallocate_bufferarrayasyncio.coroutinesbase_bundled_kernel_pathcckey__class____class_getitem__cline_in_tracebackcmdcountcvalddecode__dict__doubledtypedtype_is_obje""ctencode__enter__enumerateenvironerrorerrors_exceptions__exit__ffinalizeflagsformatfortranfsdecodefspath__func__getgetApiVersion__getstate__gzipiid__import__import_module_import_moduleimportlibindexint_intc_is_coroutineitemsitemsizekernelkeyl__main__mathmemviewmode__module__modulesmpi4pympi4py.MPIname__name__ndarrayndim__new__npnumpyobjospack__package__platformplumed._plumedpoppy_bytespy_val__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable____qualname__ravelre__reduce____reduce_cython____reduce_ex__registerreplaceselfsetNestedExceptionssetRealPrecision__set_name__setdefault__setstate____setstate_cython__shapesizestartstepstopstructsys__test__tracebacktypetypecodetypesunpackupdatevalvaluevaluesversion_infowarningswin32x\000\200Q\330\t\020\220\001\200\001\330\004\n\210+\220Q\200Q\330\010\014\210I\220Q\200Q\360\"\000\021!\240\001\240\024\240Q\330\t\r\320\r\036\320\0364\260A\320\005\035\230Q\330\t\037\230s\240'\250\023\250B\250a\330\t\033\2301\360\006\000\n\r\210D\220\003\2201\330\014\020\220\016\230a\230u\240E\250\022\2505\260\001\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\010\230\001\230\026\230q\330\014\r\330\t\014\210J\220a\220u\230A\330\014\020\220\n\230!\2306\240\021\330\014\r\330\t\014\210J\220d\230*\240A\240U\250\"\250A\340\014\020\220\003\2206\230\022\2302\230Q\330\017\023\320\023&\240a\240v\250Q\330\022\025\220V\2302\230R\230q\330\017\023\320\023#\2401\240F\250!\330\022\025\220V\2302\230R\230q\360\006\000\020\024\320\023(\250\001\250\026\250q\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230E\240\021\330\014\021\220\023\220I\230R\230t\2403\240c\250\031\260\"\260E\270\024\270S\300\t\310\022\3101\330\017\023\320\023$\240A\240V\2501\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220>\240\021\240&\250\001\330\023\026\220i\230r\240\024\240S\250\003\2509\260B\260a\330\017\023\220?\240!\2406\250\021\340\017\025\220Z\230q\240\001\330\014\r\330\t\014\210J\220a\220u\230A\340\014\025\220S\230\007""\230s\240\"\240A\330\014\023\2201\340\014\020\220\016\230a\230u\240E\250\023\250A\250Y\3206p\320pq\330\014\r\330\t\014\210I\220S\230\003\2301\330\023\024\330\014\017\210z\230\021\230%\230s\240!\330\016\022\220(\230!\2306\240\021\330\016\017\330\t\017\210z\230\021\320\0323\2607\270!\2703\270a\270t\3001\300AO";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 198; i++) {
+    for (int i = 0; i < 199; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
       if (likely(string) && i >= 58) PyUnicode_InternInPlace(&string);
@@ -24093,7 +24096,7 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 198; i < 205; i++) {
+    for (int i = 199; i < 206; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -24104,14 +24107,14 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 205; i++) {
+    for (Py_ssize_t i = 0; i < 206; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 198;
+      PyObject **table = stringtab + 199;
       for (Py_ssize_t i=0; i<7; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         #if PY_VERSION_HEX < 0x030E0000
@@ -24166,7 +24169,7 @@ typedef struct {
     unsigned int argcount : 3;
     unsigned int num_posonly_args : 1;
     unsigned int num_kwonly_args : 1;
-    unsigned int nlocals : 3;
+    unsigned int nlocals : 4;
     unsigned int flags : 10;
     unsigned int first_line : 9;
 } __Pyx_PyCode_New_function_description;
@@ -24200,8 +24203,8 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
     __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_plumed_pyx, __pyx_mstate->__pyx_n_u_exit, __pyx_mstate->__pyx_kp_b_iso88591_Q_IQ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 7, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 263};
-    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_key, __pyx_mstate->__pyx_n_u_val, __pyx_mstate->__pyx_n_u_py_bytes, __pyx_mstate->__pyx_n_u_ckey, __pyx_mstate->__pyx_n_u_cval, __pyx_mstate->__pyx_n_u_MPI};
+    const __Pyx_PyCode_New_function_description descr = {3, 0, 0, 8, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 263};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_self, __pyx_mstate->__pyx_n_u_key, __pyx_mstate->__pyx_n_u_val, __pyx_mstate->__pyx_n_u_py_bytes, __pyx_mstate->__pyx_n_u_ckey, __pyx_mstate->__pyx_n_u_cval, __pyx_mstate->__pyx_n_u_py_val, __pyx_mstate->__pyx_n_u_MPI};
     __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_plumed_pyx, __pyx_mstate->__pyx_n_u_cmd, __pyx_mstate->__pyx_kp_b_iso88591_Q_s_Ba_1_D_1_auE_5_JauA_q_JauA, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
   }
   {
