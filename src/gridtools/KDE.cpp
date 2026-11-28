@@ -63,19 +63,18 @@ as it is easier to understand what you are doing in more complicated cases.
 ## Controlling the grid
 
 In the examples above only GRID_SPACING is given and PLUMED sets the range of the grid. For an argument with a periodic domain, e.g. [TORSION](TORSION.md),
-the grid covers the domain (from $-\pi$ to $\pi$ for a torsion). For the x, y and z components of a vector (e.g. [DISTANCE](DISTANCE.md) with COMPONENTS)
-the grid covers the box of the first step. For all the other arguments the grid is placed around the kernels, as the grid of [METAD](METAD.md):
-it contains all the points where the density of a kernel is not zero, plus one point on each side, and its points are on the lattice
-with spacing GRID_SPACING that has a point at zero. Until there are kernels with a non-zero weight the grid has a single bin.
+the grid covers the domain (from $-\pi$ to $\pi$ for a torsion). For the x, y and z components of the [DISTANCE](DISTANCE.md) with COMPONENTS command
+the grid covers the box of the first step. For all the other arguments the grid is placed around the kernels in the same way the grid is constructed in [METAD](METAD.md).
+This means that the grid is large enough to contains all the points where the density of a kernel is not zero, plus one point on each side. The spacing between points on the grid
+is equal to the input value for the GRID_SPACING and the lattice is setup in a way that guarantees that there is a grid point at the origin. If there are no kernels with a non-zero weight
+then the grid has a single bin.
 
-The grid is then extended, along the arguments that are not periodic, whenever the kernels do not fit in it: the spacing does not change, the new points
-are on the same lattice and each extension adds at least a quarter of the points, so that the grid is not extended at every step.
-Each extension is written in the log. [ACCUMULATE](ACCUMULATE.md) and the actions that take the grid as input follow the extensions.
-GRID_SIZE_LIMIT sets the maximum number of points of the grid: the calculation stops with an error if the kernels require a larger grid
-(e.g. with a distance that grows without limit).
+The grid is extended, along the arguments that are not periodic, whenever the kernels do not fit within its bounds. Critically, the grid spacing never changes. New points are instead 
+added at the edges of the grid's extent and information about the fact that the grid has been expanded is written in the log. Whenever the grid does expand it typically will add more 
+grid points than are needed to encompass the full density so as to prevent expansion from being required on every step.  
+The GRID_SIZE_LIMIT sets the maximum number of points of the grid. If the kernels require a larger number of grid points than this hard limit the calculation stops with an error. 
 
-If you give GRID_MIN and GRID_MAX, they set the initial range of the grid, which is extended as above. This ensures that a normalised histogram integrates
-to one: a histogram of a distance with GRID_MIN=0 also contains the density of the kernels at negative values.
+If you use an input like the one below that contains GRID_MIN and GRID_MAX, they set the initial range of the grid. 
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -83,8 +82,11 @@ kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
-With NO_EXTEND the grid is not extended and the density outside GRID_MIN and GRID_MAX is not computed, as in PLUMED 2.10. This is needed,
-for example, when the KDE is combined with a grid that does not change, such as the one of [REFERENCE_GRID](REFERENCE_GRID.md):
+This initial range may still be expanded if the kernel density does not fit within it. This way PLUMED
+is able to ensure that a normalised histogram integrates to one. Note also that histogram for a distance may have density at negative values because short distances can contribute kernels 
+that extend to negative values.
+
+If you want to turn off the automated extending of the grid you use the NO_EXTEND flag as illustrated below. 
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -92,8 +94,12 @@ kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 NO_EXTEND
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
-With GRID_BIN and no GRID_MIN and GRID_MAX, the range of the kernels of the first step with a non-zero weight is divided in GRID_BIN bins (plus one on each side),
-and the grid is then extended with this spacing.
+For the above input the grid is not extended and the density outside GRID_MIN and GRID_MAX is not computed, as in PLUMED 2.10. This is needed
+if the KDE is combined with a grid that does not change, such as the one of [REFERENCE_GRID](REFERENCE_GRID.md), using [CUSTOM](CUSTOM.md).
+
+When you use the GRID_BIN keyword without GRID_MIN and GRID_MAX the range for the kernels that have a non-zero weight during the first step is divided into 
+GRID_BIN bins (plus one on each side). During subsequent steps the grid is then extended when necessary. Critically, however, the same spacing retained 
+throughout the whole calculation.
 
 ## Constructing the density
 
