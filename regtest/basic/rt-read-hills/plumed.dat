@@ -1,0 +1,10 @@
+hh: RESTART_METAD_GRID FILE=HILLS GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 
+DUMPGRID ARG=hh FILE=fes.dat FMT=%8.4f
+
+hh2: SUM_HILLS FILE=HILLS GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 
+DUMPGRID ARG=hh2 FILE=fes_nostartup.dat FMT=%8.4f
+
+# Stride option compared against
+# plumed sum_hills --hills ../HILLS --min -pi,pi --max pi,pi --bin 20,20 --stride 30 --fmt %8.4f
+hh3: SUM_HILLS FILE=HILLS GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=20,20 STRIDE=30
+DUMPGRID ARG=hh3 FILE=fes_stride.dat STRIDE=30 FMT=%8.4f DO_AFTER_FINAL_STEP
