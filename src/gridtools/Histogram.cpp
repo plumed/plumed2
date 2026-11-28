@@ -246,6 +246,8 @@ void Histogram::registerKeywords( Keywords& keys ) {
   keys.linkActionInDocs("KERNEL","LESS_THAN");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.add("compulsory","GRID_SIZE_LIMIT","100000000","the maximum number of points of the grid, which is extended when the kernels do not fit in it");
+  keys.addFlag("NO_EXTEND",false,"do not extend the grid: the density of the kernels outside GRID_MIN and GRID_MAX is not computed (as in PLUMED 2.10)");
   keys.add("optional","LOGWEIGHTS","the logarithm of the quantity to use as the weights when calculating averages");
   keys.add("compulsory","STRIDE","1","the frequency with which to store data for averaging");
   keys.add("compulsory","CLEAR","0","the frequency with which to clear the data that is being averaged");

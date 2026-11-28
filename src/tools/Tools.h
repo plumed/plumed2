@@ -97,6 +97,10 @@ class Tools {
 public:
 /// Quote one literal argument for a POSIX shell, including embedded single quotes.
   static std::string quoteForShell(const std::string&);
+/// A bound of a grid that is computed (e.g. when the grid is extended) as a string: 12 significant digits,
+/// so that the files do not depend on the last digits of the bounds, which can differ between platforms
+/// (e.g. with fused multiply-add); a grid read from a file is compared with a tolerance
+  static std::string boundString(double x);
 
   static constexpr std::string_view replicaToken="@replicas:";
 /// Split the line in words using separators.

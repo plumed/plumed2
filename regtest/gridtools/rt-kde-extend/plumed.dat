@@ -1,0 +1,17 @@
+d: DISTANCE ATOMS=2,3
+t: TORSION ATOMS=1,2,3,4
+tt: TIME
+# no weight in the first frames: the grid has a first range of one bin until there are kernels
+w: CUSTOM ARG=tt FUNC=step(x-4.5) PERIODIC=NO
+k: KDE ARG=t,d HEIGHTS=w BANDWIDTH=0.3,0.1 GRID_SPACING=0.2,0.05
+h: ACCUMULATE ARG=k STRIDE=1
+# actions that set up their output from the grid of their input
+m: MARGINAL ARG=h DIR=2
+i: INTERPOLATE_GRID ARG=h GRID_BIN=10,10
+DUMPGRID ARG=h FILE=hist.grid STRIDE=10 FMT=%8.4f
+DUMPGRID ARG=m FILE=marginal.grid STRIDE=10 FMT=%8.4f
+DUMPGRID ARG=i FILE=interpolated.grid STRIDE=10 FMT=%8.4f
+# a KDE with NO_EXTEND keeps the grid of GRID_MIN and GRID_MAX
+kf: KDE ARG=d BANDWIDTH=0.1 GRID_MIN=1 GRID_MAX=2 GRID_BIN=20 NO_EXTEND
+hf: ACCUMULATE ARG=kf STRIDE=1
+DUMPGRID ARG=hf FILE=fixed.grid STRIDE=10 FMT=%8.4f

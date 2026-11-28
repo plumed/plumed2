@@ -1,0 +1,11 @@
+type=driver
+plumed_needs="fourier:fftw"
+plumed_modules="fourier"
+# KDE without GRID_MIN and GRID_MAX along a distance that grows, together with a periodic torsion:
+# FOURIER_TRANSFORM of a KDE whose grid is extended along the distance
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+function plumed_regtest_before() {
+  # 40 frames of 4 atoms: the distance 2-3 grows, the torsion 1-2-3-4 turns
+  awk 'BEGIN{for(f=0;f<40;f++){print 4; print "20 20 20"; a=0.15*f; printf "X 0 1 0\nX 0 0 0\nX %f 0 0\nX %f %f %f\n", 1+0.05*f, 1+0.05*f, cos(a), sin(a)}}' > traj.xyz
+}

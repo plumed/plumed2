@@ -1,0 +1,4 @@
+# KDE without GRID_MIN and GRID_MAX: the grid is placed around the kernels (GRID_SPACING or GRID_BIN)
+# and extended when they do not fit in it; ACCUMULATE follows the extensions
+type=driver
+arg="--noatoms --initial-step 1"

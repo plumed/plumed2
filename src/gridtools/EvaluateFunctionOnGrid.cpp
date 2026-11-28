@@ -24,7 +24,7 @@
 #include "function/FunctionOfScalar.h"
 #include "function/FunctionOfVector.h"
 #include "EvaluateGridFunction.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS EVALUATE_FUNCTION_FROM_GRID
 /*

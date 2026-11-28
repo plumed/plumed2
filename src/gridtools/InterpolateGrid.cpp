@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ParallelTaskManager.h"
 #include "EvaluateGridFunction.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS INTERPOLATE_GRID
 /*
@@ -85,6 +85,8 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
 /// The parallel task manager
   PTM taskmanager;
   std::vector<std::size_t> nbin;
@@ -203,25 +205,29 @@ const GridCoordinatesObject& InterpolateGrid::getGridCoordinatesObject() const {
 }
 
 std::vector<std::string> InterpolateGrid::getGridCoordinateNames() const {
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
 
 void InterpolateGrid::calculate() {
-  if( firststep ) {
-    ActionWithGrid* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
+    const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
     plumed_assert( ag );
     const GridCoordinatesObject& mygrid = ag->getGridCoordinatesObject();
+    // the bounds of the input grid, as it is now (it may be extended later)
+    std::vector<std::string> smin( gmin ), smax( gmax );
     for(unsigned i=0; i<gmin.size(); ++i) {
       if( gmin[i]=="auto" ) {
-        gmin[i] = mygrid.getMin()[i];
+        smin[i] = mygrid.getMin()[i];
       }
       if( gmax[i]=="auto" ) {
-        gmax[i] = mygrid.getMax()[i];
+        smax[i] = mygrid.getMax()[i];
       }
     }
-    output_grid.setBounds( gmin, gmax, nbin, gspacing );
+    std::vector<double> spacing( gspacing );
+    output_grid.setBounds( smin, smax, nbin, spacing );
     getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
     if( taskmanager.getActionInput().interpolation_type==EvaluateGridFunction::linear ) {
       taskmanager.setupParallelTaskManager( 1+getPntrToComponent(0)->getRank(), getPntrToArgument(0)->getNumberOfStoredValues() );

@@ -20,11 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "GridCoordinatesObject.h"
-#include "tools/Random.h"
-#include "tools/Matrix.h"
+#include "Random.h"
+#include "Matrix.h"
 
 namespace PLMD {
-namespace gridtools {
 
 void GridCoordinatesObject::setup( const std::string& geom, const std::vector<bool>& ipbc,
                                    const unsigned& np, const double& fib_cutoff ) {
@@ -532,6 +531,5 @@ void GridCoordinatesObject::getNeighbors( const std::vector<unsigned>& indices, 
   }
 }
 
-}
 }
 

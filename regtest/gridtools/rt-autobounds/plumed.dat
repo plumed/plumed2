@@ -1,0 +1,39 @@
+sigma_1: READ FILE=HILLS VALUES=sigma_1 IGNORE_TIME
+lifetime: READ FILE=HILLS VALUES=lifetime IGNORE_TIME
+sigma_sigma_1: READ FILE=HILLS VALUES=sigma_sigma_1 IGNORE_TIME
+sigma_lifetime: READ FILE=HILLS VALUES=sigma_lifetime IGNORE_TIME
+height: READ FILE=HILLS VALUES=height IGNORE_TIME
+
+sigma_1_c: COLLECT ARG=sigma_1
+lifetime_c: COLLECT ARG=lifetime
+sigma_sigma_1_c: COLLECT ARG=sigma_sigma_1
+sigma_lifetime_c: COLLECT ARG=sigma_lifetime
+height_c: COLLECT ARG=height
+
+kde: KDE ARG=sigma_1_c,lifetime_c BANDWIDTH=sigma_sigma_1_c,sigma_lifetime_c HEIGHTS=height_c GRID_BIN=30,30
+fes: CUSTOM ARG=kde FUNC=-x PERIODIC=NO
+fes_basic: DUMPGRID ARG=fes FILE=fes.dat FMT=%8.4f
+
+sigma_1_c2: COLLECT ARG=sigma_1 CLEAR=20
+lifetime_c2: COLLECT ARG=lifetime CLEAR=20
+sigma_sigma_1_c2: COLLECT ARG=sigma_sigma_1 CLEAR=20
+sigma_lifetime_c2: COLLECT ARG=sigma_lifetime CLEAR=20
+height_c2: COLLECT ARG=height CLEAR=20
+
+kde2: KDE ...
+  ARG=sigma_1_c2,lifetime_c2 
+  BANDWIDTH=sigma_sigma_1_c2,sigma_lifetime_c2 
+  HEIGHTS=height_c2 GRID_SPACING=0.2,0.2
+...
+
+fes2: CUSTOM ARG=kde2 FUNC=-x PERIODIC=NO
+fes_blocks: DUMPGRID ARG=fes2 FILE=fes_blocks.dat FMT=%8.3f STRIDE=20
+
+kde3: ACCUMULATE ARG=kde2 STRIDE=20
+fes3: CUSTOM ARG=kde3 FUNC=-x PERIODIC=NO
+fes_accum: DUMPGRID ARG=fes3 FILE=fes_accum.dat FMT=%8.3f STRIDE=20
+
+one: ONES SIZE=1
+hh_c: COLLECT ARG=one
+kde4: KDE ARG=sigma_1_c,lifetime_c KERNEL=DISCRETE GRID_SPACING=0.1,0.1 HEIGHTS=hh_c
+DUMPGRID ARG=kde4 FILE=kde_discrete.dat FMT=%8.4f 

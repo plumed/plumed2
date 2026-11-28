@@ -22,9 +22,11 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionPilot.h"
+#include "core/ActionWithGrid.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/GridCoordinatesObject.h"
 #include "tools/Checkpoint.h"
 
 //+PLUMEDOC GRIDCALC ACCUMULATE
@@ -94,7 +96,7 @@ distribution of distances between atoms 1 and 2 that are sampled over the course
 c: CONSTANT VALUE=1
 d: DISTANCE ATOMS=1,2
 # Construct the instantaneous histogram from the instantaneous value of the distance
-kde: KDE ARG=d BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=5 GRID_BIN=250
+kde: KDE ARG=d BANDWIDTH=0.05 GRID_SPACING=0.01
 # Now add together all the instantaneous histograms
 hist: ACCUMULATE ARG=kde STRIDE=1
 # And normalise the histogram
@@ -113,7 +115,7 @@ the syntaxes that are used for spatial and temporal averaging.  To see what I me
 c: CONSTANT VALUE=5
 d: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
 # Construct the instantaneous histogram from the instantaneous value of the distance
-kde: KDE ARG=d BANDWIDTH=0.05 GRID_MIN=0 GRID_MAX=5 GRID_BIN=250
+kde: KDE ARG=d BANDWIDTH=0.05 GRID_SPACING=0.01
 # Now add together all the instantaneous histograms
 hist: ACCUMULATE ARG=kde STRIDE=1
 # And normalise the histogram
@@ -140,11 +142,25 @@ namespace generic {
 class Accumulate :
   public ActionWithValue,
   public ActionWithArguments,
-  public ActionPilot {
+  public ActionPilot,
+  public GridOutput {
 private:
   bool clearnextstep;
   unsigned clearstride;
+/// The grid of the accumulated data. It is the grid of the argument when the data are accumulated; when the grid of
+/// the argument is extended (see KDE) the data are placed in the new grid at the next accumulation.
+  GridCoordinatesObject gridcoords;
+  bool gridset=false;
+/// the grid of the accumulated data becomes the one of the argument
+  void copyGrid();
+  void extendGrid();
 public:
+  std::vector<std::string> getGridCoordinateNames() const override {
+    return ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() )->getGridCoordinateNames();
+  }
+  const GridCoordinatesObject& getGridCoordinatesObject() const override {
+    return gridcoords;
+  }
   static void registerKeywords( Keywords& keys );
   bool hasCheckpointState() const override {
     return true;
@@ -208,6 +224,13 @@ Accumulate::Accumulate( const ActionOptions& ao ):
   std::vector<std::size_t> shape( getPntrToArgument(0)->getShape() );
   addValueWithDerivatives( shape );
   setNotPeriodic();
+  if( shape.size()>0 ) {
+    if( !dynamic_cast<const GridOutput*>( getPntrToArgument(0)->getPntrToAction() ) ) {
+      error("the input grid should be calculated by an action that outputs a grid (e.g. KDE)");
+    }
+    // the type, dimension and periodicity of the grid (the bounds are set at the first accumulation)
+    gridcoords=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() )->getGridCoordinatesObject();
+  }
   if( getPntrToArgument(0)->isPeriodic() ) {
     error("you cannot accumulate a periodic quantity");
   }
@@ -227,6 +250,19 @@ void Accumulate::writeCheckpoint(CheckpointWriter& w) {
   w.write("clearnextstep",(long long) clearnextstep);
   if( clearnextstep ) {
     return;
+  }
+  // the grid of the accumulated data, which can differ from the one of the argument at the restart (see extendGrid)
+  if( gridset && gridcoords.getGridType()=="flat" ) {
+    std::vector<long long> bins;
+    for(const auto n : gridcoords.getNbin(false)) {
+      bins.push_back(n);
+    }
+    w.write("grid_bins",bins);
+    w.write("grid_spacing",gridcoords.getGridSpacing());
+    for(unsigned i=0; i<bins.size(); ++i) {
+      w.write("grid_min"+std::to_string(i),gridcoords.getMin()[i]);
+      w.write("grid_max"+std::to_string(i),gridcoords.getMax()[i]);
+    }
   }
   const Value* myout = getPntrToComponent(0);
   std::vector<long long> shape;
@@ -258,6 +294,20 @@ void Accumulate::readCheckpoint(CheckpointReader& r) {
   clearnextstep = cl!=0;
   if( clearnextstep ) {
     return;
+  }
+  if( r.has("grid_bins") ) {
+    std::vector<long long> bins;
+    std::vector<double> spacing;
+    r.read("grid_bins",bins);
+    r.read("grid_spacing",spacing);
+    std::vector<std::string> gmin( bins.size() ), gmax( bins.size() );
+    for(unsigned i=0; i<bins.size(); ++i) {
+      r.read("grid_min"+std::to_string(i),gmin[i]);
+      r.read("grid_max"+std::to_string(i),gmax[i]);
+    }
+    std::vector<std::size_t> nb( bins.begin(), bins.end() );
+    gridcoords.setBounds( gmin, gmax, nb, spacing );
+    gridset=true;
   }
   Value* myout = getPntrToComponent(0);
   std::vector<long long> shape;
@@ -295,31 +345,123 @@ void Accumulate::readCheckpoint(CheckpointReader& r) {
   }
 }
 
+// The grid of the argument has been extended (e.g. KDE, when the kernels do not fit in it): the accumulated data
+// are placed in the new grid, which has the same spacing and contains the old one.
+void Accumulate::extendGrid() {
+  Value* myarg=getPntrToArgument(0);
+  Value* myout=getPntrToComponent(0);
+  const std::size_t nold=myout->getNumberOfValues();
+  const unsigned nder=myout->getNumberOfGridDerivatives();
+  std::vector<double> old( nold*(1+nder) );
+  bool zero=true;
+  for(std::size_t i=0; i<nold; ++i) {
+    old[i*(1+nder)]=myout->get(i);
+    for(unsigned j=0; j<nder; ++j) {
+      old[i*(1+nder)+1+j]=myout->getGridDerivative(i,j);
+    }
+  }
+  for(const auto v : old) {
+    if( v!=0.0 ) {
+      zero=false;
+      break;
+    }
+  }
+  const std::vector<std::size_t> oldshape( myout->getShape() );
+  myout->setShape( myarg->getShape() );
+  myout->clearDerivatives(true);
+  const GridCoordinatesObject oldgrid( gridcoords );
+  copyGrid();
+  if( zero ) {
+    return;
+  }
+  const GridCoordinatesObject& gc=gridcoords;
+  const std::size_t ndim=myout->getRank();
+  if( gc.getGridType()!="flat" || oldgrid.getNumberOfPoints()!=nold ) {
+    error("the grid of the argument has changed: the accumulated data cannot be placed in it");
+  }
+  std::vector<long> offset( ndim );
+  for(unsigned i=0; i<ndim; ++i) {
+    const double dx=gc.getGridSpacing()[i];
+    double newmin, oldmin;
+    Tools::convert( gc.getMin()[i], newmin );
+    Tools::convert( oldgrid.getMin()[i], oldmin );
+    const double o=(oldmin-newmin)/dx;
+    offset[i]=std::lround(o);
+    if( std::fabs(dx-oldgrid.getGridSpacing()[i])>1e-9*dx || std::fabs(o-offset[i])>1e-6 ) {
+      error("the grid of the argument has changed spacing or lattice: the accumulated data cannot be placed in it");
+    }
+  }
+  const std::vector<unsigned> oldnbin( oldshape.begin(), oldshape.end() );
+  const std::vector<std::size_t>& newshape=myout->getShape();
+  std::vector<unsigned> oldind( ndim ), newind( ndim );
+  for(std::size_t i=0; i<nold; ++i) {
+    gc.convertIndexToIndices( i, oldnbin, oldind );
+    bool inside=true;
+    for(unsigned j=0; j<ndim; ++j) {
+      const long k=static_cast<long>(oldind[j])+offset[j];
+      if( k<0 || k>=static_cast<long>(newshape[j]) ) {
+        inside=false;
+        break;
+      }
+      newind[j]=k;
+    }
+    const double* const point=old.data()+i*(1+nder);
+    if( !inside ) {
+      for(unsigned j=0; j<=nder; ++j) {
+        if( point[j]!=0.0 ) {
+          error("the grid of the argument does not contain the accumulated data");
+        }
+      }
+      continue;
+    }
+    const unsigned ind=gc.getIndex( newind );
+    myout->set( ind, point[0] );
+    for(unsigned j=0; j<nder; ++j) {
+      myout->setGridDerivatives( ind, j, point[1+j] );
+    }
+  }
+}
+
+void Accumulate::copyGrid() {
+  gridcoords=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() )->getGridCoordinatesObject();
+  gridset=true;
+}
+
 void Accumulate::update() {
+  Value* myarg=getPntrToArgument(0);
+  Value* myout = getPntrToComponent(0);
   if( clearnextstep ) {
-    if( getPntrToComponent(0)->getNumberOfValues()!=getPntrToArgument(0)->getNumberOfValues() ) {
-      getPntrToComponent(0)->setShape( getPntrToArgument(0)->getShape() );
+    if( myout->getNumberOfValues()!=myarg->getNumberOfValues() ) {
+      myout->setShape( myarg->getShape() );
     }
     clearnextstep=false;
-    getPntrToComponent(0)->set(0,0.0);
-    getPntrToComponent(0)->clearDerivatives(true);
+    myout->set(0,0.0);
+    myout->clearDerivatives(true);
+    if( myarg->getRank()>0 ) {
+      copyGrid();
+    }
   }
   if( getStep()==0 ) {
     return;
   }
 
-  Value* myarg=getPntrToArgument(0);
-  Value* myout = getPntrToComponent(0);
-  if( getPntrToArgument(0)->getRank()>0 ) {
-    unsigned nvals = myarg->getNumberOfValues(), nder = myarg->getNumberOfGridDerivatives();
-    for(unsigned i=0; i<nvals; ++i) {
+  if( myarg->getRank()>0 ) {
+    if( myarg->getNumberOfValues()!=myout->getNumberOfValues() ) {
+      extendGrid();
+    }
+    const std::size_t nvals = myarg->getNumberOfValues();
+    const unsigned nder = myarg->getNumberOfGridDerivatives();
+    for(std::size_t i=0; i<nvals; ++i) {
       myout->set( i, myout->get(i) + myarg->get(i) );
       for(unsigned j=0; j<nder; ++j) {
         myout->addGridDerivatives( i, j, myarg->getGridDerivative( i, j ) );
       }
     }
+    if( !gridset ) {
+      copyGrid();
+    }
   } else {
-    getPntrToComponent(0)->add( getPntrToArgument(0)->get() );
+    myout->add( myarg->get() );
   }
 
   // Clear if required

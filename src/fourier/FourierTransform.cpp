@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <iostream>
 #include <complex>
-#include "gridtools/ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "core/ActionRegister.h"
 #ifdef __PLUMED_HAS_FFTW
 #include <fftw3.h> // FFTW interface
@@ -76,18 +76,20 @@ $$
 //+ENDPLUMEDOC
 
 
-class FourierTransform : public gridtools::ActionWithGrid {
+class FourierTransform : public ActionWithGrid {
 private:
   bool firsttime;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
   std::string output_type;
   bool real_output, store_norm;
   std::vector<int> fourier_params;
-  gridtools::GridCoordinatesObject gridcoords;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FourierTransform(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() override ;
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
+  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
   void calculate() override ;
 };
@@ -163,11 +165,11 @@ FourierTransform::FourierTransform(const ActionOptions&ao):
   }
 
   unsigned dimension = getPntrToArgument(0)->getRank();
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   if( !ag ) {
     error("input action should be a grid");
   }
-  const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
+  const GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
   if( gcoords.getGridType()=="fibonacci" ) {
     error("cannot fourier transform fibonacci grids");
   }
@@ -186,23 +188,24 @@ unsigned FourierTransform::getNumberOfDerivatives() {
   return 2;
 }
 
-const gridtools::GridCoordinatesObject& FourierTransform::getGridCoordinatesObject() const {
+const GridCoordinatesObject& FourierTransform::getGridCoordinatesObject() const {
   return gridcoords;
 }
 
 std::vector<std::string> FourierTransform::getGridCoordinateNames() const {
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   // already checked in the constructor
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
 
 void FourierTransform::calculate() {
-  if( firsttime ) {
-    gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  if( firsttime || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
+    ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
     // already checked in the constructor
     plumed_assert( ag );
-    const gridtools::GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
+    const GridCoordinatesObject & gcoords( ag->getGridCoordinatesObject() );
     std::vector<double> fspacing;
     std::vector<std::size_t> snbins( getGridCoordinatesObject().getDimension() );
     std::vector<std::string> smin( gcoords.getDimension() ), smax( gcoords.getDimension() );
@@ -251,8 +254,8 @@ void FourierTransform::calculate() {
     // Get point indices
     gridcoords.getIndices(i, ind);
     // Fill input data in row-major order
-    input_data[ind[0]*N_input_data[0]+ind[1]].real( arg->get( i ) );
-    input_data[ind[0]*N_input_data[0]+ind[1]].imag( 0.0 );
+    input_data[ind[0]*N_input_data[1]+ind[1]].real( arg->get( i ) );
+    input_data[ind[0]*N_input_data[1]+ind[1]].imag( 0.0 );
   }
 
   // *** HERE is the only clear limitation: I'm computing explicitly a 2D FT. It should not happen to deal with other than two-dimensional grid ...
@@ -276,16 +279,16 @@ void FourierTransform::calculate() {
       double ft_value;
       // Compute abs/norm and fix normalization
       if (!store_norm) {
-        ft_value=std::abs( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+        ft_value=std::abs( fft_data[out_ind[0]*N_out_data[1]+out_ind[1]] / norm );
       } else {
-        ft_value=std::norm( fft_data[out_ind[0]*N_out_data[0]+out_ind[1]] / norm );
+        ft_value=std::norm( fft_data[out_ind[0]*N_out_data[1]+out_ind[1]] / norm );
       }
       // Set the value
       getPntrToComponent(0)->set( i, ft_value);
     } else {
       double ft_value_real, ft_value_imag;
-      ft_value_real=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].real() / norm;
-      ft_value_imag=fft_data[out_ind[0]*N_out_data[0]+out_ind[1]].imag() / norm;
+      ft_value_real=fft_data[out_ind[0]*N_out_data[1]+out_ind[1]].real() / norm;
+      ft_value_imag=fft_data[out_ind[0]*N_out_data[1]+out_ind[1]].imag() / norm;
       // Set values
       getPntrToComponent(0)->set( i, ft_value_real );
       getPntrToComponent(1)->set( i, ft_value_imag );

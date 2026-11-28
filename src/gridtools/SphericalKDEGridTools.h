@@ -33,7 +33,16 @@ public:
   static void registerKeywords( Keywords& keys );
   static void readBandwidthAndHeight( const UniversalVonMisses& params, ActionWithArguments* action );
   static void readGridParameters( SphericalKDEGridTools& g, ActionWithArguments* action, GridCoordinatesObject& gridobject, std::vector<std::size_t>& shape );
-  static void setupGridBounds( SphericalKDEGridTools& g, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval ) {}
+  static void setupGridBounds( SphericalKDEGridTools& g, UniversalVonMisses& p, const Tensor& box, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action ) {}
+/// the fibonacci grid covers the whole sphere
+  static bool extendGridBounds( SphericalKDEGridTools& g, UniversalVonMisses& p, GridCoordinatesObject& gridobject, const std::vector<Value*>& args, Value* myval, Action& action ) {
+    return false;
+  }
+  static bool hasCheckpointState( const SphericalKDEGridTools& g ) {
+    return false;
+  }
+  static void writeCheckpoint( const SphericalKDEGridTools& g, const GridCoordinatesObject& gridobject, CheckpointWriter& w ) {}
+  static void readCheckpoint( SphericalKDEGridTools& g, GridCoordinatesObject& gridobject, Value* myval, CheckpointReader& r ) {}
   static void getDiscreteSupport( const SphericalKDEGridTools& g, const UniversalVonMisses& p, const View<const double>& shape, std::vector<unsigned>& nneigh, GridCoordinatesObject& gridobject );
   static void getNeighbors( const UniversalVonMisses& p, View<double> at, const GridCoordinatesObject& gridobject, const std::vector<unsigned>& nneigh, unsigned& num_neighbors, std::vector<unsigned>& neighbors );
 };

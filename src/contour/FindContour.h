@@ -39,6 +39,8 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
 /// The parallel task manager
   PTM taskmanager;
   unsigned gbuffer;
@@ -47,7 +49,7 @@ public:
   static void registerKeywords( Keywords& keys );
   explicit FindContour(const ActionOptions&ao);
   std::string getOutputComponentDescription( const std::string& cname, const Keywords& keys ) const override ;
-  const gridtools::GridCoordinatesObject& getInputGridObject() const ;
+  const GridCoordinatesObject& getInputGridObject() const ;
   unsigned getNumberOfDerivatives() override ;
   void getNumberOfTasks( unsigned& ntasks ) override ;
   int checkTaskIsActive( const unsigned& taskno ) const override;
@@ -60,7 +62,7 @@ public:
 };
 
 inline
-const gridtools::GridCoordinatesObject& FindContour::getInputGridObject() const {
+const GridCoordinatesObject& FindContour::getInputGridObject() const {
   return taskmanager.getActionInput().function.getGridObject();
 }
 

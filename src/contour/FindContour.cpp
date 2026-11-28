@@ -136,7 +136,7 @@ FindContour::FindContour(const ActionOptions&ao):
     log.printf("  after first step a subset of only %u grid points around where the countour was found will be checked\n",gbuffer);
   }
 
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   if( !ag ) {
     error("input action should be a grid");
   }
@@ -158,7 +158,8 @@ std::string FindContour::getOutputComponentDescription( const std::string& cname
 }
 
 void FindContour::calculate() {
-  if( firststep ) {
+  if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
     std::vector<std::size_t> shape(1);
     shape[0] = getPntrToArgument(0)->getRank()*getPntrToArgument(0)->getNumberOfValues();
     for(unsigned i=0; i<getNumberOfComponents(); ++i) {

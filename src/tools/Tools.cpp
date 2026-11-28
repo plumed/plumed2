@@ -272,6 +272,12 @@ bool Tools::convertNoexcept(const std::string & str,long double & t) {
   return convertToReal(str,t);
 }
 
+std::string Tools::boundString(double x) {
+  char buffer[64];
+  std::snprintf(buffer,sizeof(buffer),"%.12g",x);
+  return buffer;
+}
+
 std::string Tools::quoteForShell(const std::string& value) {
   std::string result="'";
   for(const char c : value) {

@@ -32,13 +32,14 @@ Create a histogram from the input scalar/vector/matrix using KDE
 
 This action can be used to construct instantaneous distributions for quantities by using [kernel density esstimation](https://en.wikipedia.org/wiki/Kernel_density_estimation).
 The input arguments must all have the same rank and size but you can use a scalar, vector or matrix in input.  The distribution
-of this quantity on a grid is then computed using kernel density estimation.
+of this quantity on a grid is then computed using kernel density estimation. You thus need to provide a bandwidth for the kernels that are being used when constructing the density
+and a spacing for the grid points.  **If you are using Gaussian kernels we recommend a grid spacing of 1/5 of the bandwidth.**
 
 The following example demonstrates how this action can be used with a scalar as input:
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+kde: KDE ARG=d1 BANDWIDTH=0.2 GRID_SPACING=0.04
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
@@ -51,16 +52,29 @@ of two collective variables:
 ```plumed
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1,d2 GRID_MIN=0.0,0.0 GRID_MAX=1.0,1.0 GRID_BIN=100,100 BANDWIDTH=0.2,0.2
+kde: KDE ARG=d1,d2 BANDWIDTH=0.2,0.2 GRID_SPACING=0.04,0.04
 histo: ACCUMULATE ARG=kde STRIDE=1
 DUMPGRID ARG=histo FILE=histo.grid STRIDE=10000
 ```
 
-Notice, that you can also achieve something similar by using the [HISTOGRAM](HISTOGRAM.md) shortcut.
+Notice, that you can also achieve something similar by using the [HISTOGRAM](HISTOGRAM.md) shortcut. We recommend using the syntax above, however,
+as it is easier to understand what you are doing in more complicated cases.
 
-## Controlloing the grid
+## Controlling the grid
 
-If you prefer to specify the grid spacing rather than the number of bins you can do so using the GRID_SPACING keyword as shown below:
+In the examples above only GRID_SPACING is given and PLUMED sets the range of the grid. For an argument with a periodic domain, e.g. [TORSION](TORSION.md),
+the grid covers the domain (from $-\pi$ to $\pi$ for a torsion). For the x, y and z components of the [DISTANCE](DISTANCE.md) with COMPONENTS command
+the grid covers the box of the first step. For all the other arguments the grid is placed around the kernels in the same way the grid is constructed in [METAD](METAD.md).
+This means that the grid is large enough to contains all the points where the density of a kernel is not zero, plus one point on each side. The spacing between points on the grid
+is equal to the input value for the GRID_SPACING and the lattice is setup in a way that guarantees that there is a grid point at the origin. If there are no kernels with a non-zero weight
+then the grid has a single bin.
+
+The grid is extended, along the arguments that are not periodic, whenever the kernels do not fit within its bounds. Critically, the grid spacing never changes. New points are instead
+added at the edges of the grid's extent and information about the fact that the grid has been expanded is written in the log. Whenever the grid does expand it typically will add more
+grid points than are needed to encompass the full density so as to prevent expansion from being required on every step.
+The GRID_SIZE_LIMIT sets the maximum number of points of the grid. If the kernels require a larger number of grid points than this hard limit the calculation stops with an error.
+
+If you use an input like the one below that contains GRID_MIN and GRID_MAX, they set the initial range of the grid.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -68,8 +82,24 @@ kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_SPACING=0.01 BANDWIDTH=0.2
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
-If $x$ is one of the input arguments to the KDE action and $x<g_{min}$ or $x>g_{max}$, where $g_{min}$ and $g_{max}$ are the minimum
-and maximum values on the grid for that argument that were specified using GRID_MIN and GRID_MAX, then by PLUMED will crash.
+This initial range may still be expanded if the kernel density does not fit within it. This way PLUMED
+is able to ensure that a normalised histogram integrates to one. Note also that histogram for a distance may have density at negative values because short distances can contribute kernels
+that extend to negative values.
+
+If you want to turn off the automated extending of the grid you use the NO_EXTEND flag as illustrated below.
+
+```plumed
+d1: DISTANCE ATOMS=1,2
+kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 NO_EXTEND
+DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
+```
+
+For the above input the grid is not extended and the density outside GRID_MIN and GRID_MAX is not computed, as in PLUMED 2.10. This is needed
+if the KDE is combined with a grid that does not change, such as the one of [REFERENCE_GRID](REFERENCE_GRID.md), using [CUSTOM](CUSTOM.md).
+
+When you use the GRID_BIN keyword without GRID_MIN and GRID_MAX the range for the kernels that have a non-zero weight during the first step is divided into
+GRID_BIN bins (plus one on each side). During subsequent steps the grid is then extended when necessary. Critically, however, the same spacing retained
+throughout the whole calculation.
 
 ## Constructing the density
 
@@ -78,7 +108,7 @@ If you are performing a simulation in the NVT ensemble and wish to look at the d
 ```plumed
 a: FIXEDATOM AT=0,0,0
 dens: DISTANCES ATOMS=1-100 ORIGIN=a COMPONENTS
-kde: KDE ARG=dens.x,dens.y,dens.z GRID_BIN=100,100,100 BANDWIDTH=0.05,0.05,0.05
+kde: KDE ARG=dens.x,dens.y,dens.z BANDWIDTH=0.05,0.05,0.05 GRID_SPACING=0.01,0.01,0.01
 DUMPGRID ARG=kde STRIDE=1 FILE=density
 ```
 
@@ -93,8 +123,7 @@ If for any reason you want to use a bandwidth that is not diagonal when doing ke
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,2
 kde: KDE ...
-  ARG=d1,d2 GRID_MIN=0.0,0.0
-  GRID_MAX=1.0,1.0 GRID_BIN=100,100
+  ARG=d1,d2 GRID_SPACING=0.04,0.04
   BANDWIDTH=0.2,0.1,0.1,0.2 HEIGHTS=1
 ...
 histo: ACCUMULATE ARG=kde STRIDE=1
@@ -110,8 +139,7 @@ m: CONSTANT VALUES=0.2,0.1,0.1,0.2 NROWS=2 NCOLS=2
 d1: DISTANCE ATOMS=1,2
 d2: DISTANCE ATOMS=1,2
 kde: KDE ...
-  ARG=d1,d2 GRID_MIN=0.0,0.0
-  GRID_MAX=1.0,1.0 GRID_BIN=100,100
+  ARG=d1,d2 GRID_SPACING=0.04,0.04
   BANDWIDTH=m HEIGHTS=1
 ...
 histo: ACCUMULATE ARG=kde STRIDE=1
@@ -127,7 +155,7 @@ you are using vectors as in the example below, this division can be helpful.
 
 ```plumed
 d1: DISTANCE ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6 ATOMS4=7,8 ATOMS5=9,10
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2
+kde: KDE ARG=d1 GRID_SPACING=0.04 BANDWIDTH=0.2
 ```
 
 In the papea cited in the bibliography below, the [KL_ENTROPY](KL_ENTROPY.md) between the instantaneous distribution of CVs and a reference distribution was introduced
@@ -140,7 +168,7 @@ atoms:
 ```plumed
 d1: DISTANCE_MATRIX GROUPA=1,2 GROUPB=3-10 COMPONENTS
 phi: CUSTOM ARG=d1.z,d1.w FUNC=acos(x/y) PERIODIC=NO
-kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi GRID_BIN=200 BANDWIDTH=0.1
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi GRID_SPACING=0.02 BANDWIDTH=0.1
 ```
 
 ## Using different weights
@@ -152,7 +180,7 @@ Gaussians to have a particular height you can use the HEIGHT keyword as illustra
 d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
 mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
 phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
-kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi HEIGHTS=d1.w GRID_BIN=200 BANDWIDTH=0.1
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi HEIGHTS=d1.w GRID_SPACING=0.02 BANDWIDTH=0.1
 ```
 
 As indicated above, the HEIGHTS keyword should be passed a Value that has the same rank and size as the arguments that are passed using the ARG keyword. Each of the Gaussian kernels
@@ -164,7 +192,7 @@ Notice that you can also use the VOLUMES keyword in a similar way as shown below
 d1: CONTACT_MATRIX GROUPA=1,2 GROUPB=3-10 SWITCH={RATIONAL R_0=0.1} COMPONENTS
 mag: CUSTOM ARG=d1.x,d1.y,d1.z FUNC=x*x+y*y+z*z PERIODIC=NO
 phi: CUSTOM ARG=d1.z,mag FUNC=acos(x/sqrt(y)) PERIODIC=NO
-kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi VOLUMES=d1.w GRID_BIN=200 BANDWIDTH=0.1
+kde: KDE ARG=phi GRID_MIN=0 GRID_MAX=pi VOLUMES=d1.w GRID_SPACING=0.02 BANDWIDTH=0.1
 ```
 
 Now, however, the integral of the Gaussians over all space are equal to the elements of d1.w.
@@ -190,7 +218,7 @@ By default PLUMED uses a Gaussian kernel function as illustrated in the input be
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL={GAUSSIAN D_MAX=3.5355}
+kde: KDE ARG=d1 GRID_SPACING=0.04 BANDWIDTH=0.2 KERNEL={GAUSSIAN D_MAX=3.5355}
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
@@ -201,7 +229,7 @@ normalising them.  You can partially avoid this problem by using the NOSTRETCH o
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL={GAUSSIAN NOSTRETCH D_MAX=3.5355}
+kde: KDE ARG=d1 GRID_SPACING=0.04 BANDWIDTH=0.2 KERNEL={GAUSSIAN NOSTRETCH D_MAX=3.5355}
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
@@ -239,7 +267,7 @@ For example, in the following input $K$ is is a Gaussian:
 
 ```
 d1: DISTANCE ATOMS=1,2
-kde: KDE ARG=d1 GRID_MIN=0.0 GRID_MAX=1.0 GRID_BIN=100 BANDWIDTH=0.2 KERNEL=gaussian-bin
+kde: KDE ARG=d1 GRID_SPACING=0.04 BANDWIDTH=0.2 KERNEL=gaussian-bin
 DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 

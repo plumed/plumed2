@@ -24,7 +24,7 @@
 
 #include "core/Value.h"
 #include "tools/MinimiseBase.h"
-#include "GridCoordinatesObject.h"
+#include "tools/GridCoordinatesObject.h"
 #include "Interpolator.h"
 #include <iostream>
 #include <memory>

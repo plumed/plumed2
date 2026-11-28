@@ -19,26 +19,34 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_gridtools_ActionWithGrid_h
-#define __PLUMED_gridtools_ActionWithGrid_h
+#ifndef __PLUMED_core_ActionWithGrid_h
+#define __PLUMED_core_ActionWithGrid_h
 
-#include "core/ActionWithVector.h"
-#include "GridCoordinatesObject.h"
+#include "ActionWithVector.h"
+#include "tools/GridCoordinatesObject.h"
 
 namespace PLMD {
-namespace gridtools {
 
-class ActionWithGrid : public ActionWithVector {
+/// An action whose output is a function on a grid: an ActionWithGrid, or ACCUMULATE of a grid
+class GridOutput {
 public:
-  static void registerKeywords( Keywords& keys );
-  static ActionWithGrid* getInputActionWithGrid( Action* action );
-  explicit ActionWithGrid(const ActionOptions&ao);
-  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
-  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) override ;
+  virtual ~GridOutput() = default;
+/// The names of the coordinates of the grid
   virtual std::vector<std::string> getGridCoordinateNames() const = 0;
+/// The grid of the output (for ACCUMULATE, the grid of the accumulated data, which can differ from the one of its
+/// argument between the steps on which the data are accumulated)
   virtual const GridCoordinatesObject& getGridCoordinatesObject() const = 0;
 };
 
-}
+class ActionWithGrid : public ActionWithVector, public GridOutput {
+public:
+  static void registerKeywords( Keywords& keys );
+/// The grid of the output of action, which must be a GridOutput
+  static const GridOutput* getInputActionWithGrid( Action* action );
+  explicit ActionWithGrid(const ActionOptions&ao);
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<double>& stash ) override ;
+  void transferStashToValues( const std::vector<unsigned>& partialTaskList, const std::vector<float>& stash ) override ;
+};
+
 }
 #endif

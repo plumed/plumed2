@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionRegister.h"
 #include "ContourFindingObject.h"
-#include "gridtools/ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 #include "gridtools/EvaluateGridFunction.h"
 #include "core/ParallelTaskManager.h"
 #include "tools/Random.h"
@@ -144,7 +144,7 @@ public:
   }
 };
 
-class FindSphericalContour : public gridtools::ActionWithGrid {
+class FindSphericalContour : public ActionWithGrid {
 public:
   using input_type = FindSphericalContourObject;
   using PTM = ParallelTaskManager<FindSphericalContour>;
@@ -155,13 +155,13 @@ private:
   PTM taskmanager;
   unsigned npoints;
   double min, max;
-  gridtools::GridCoordinatesObject gridcoords;
+  GridCoordinatesObject gridcoords;
 public:
   static void registerKeywords( Keywords& keys );
   explicit FindSphericalContour(const ActionOptions&ao);
   unsigned getNumberOfDerivatives() override ;
   std::vector<std::string> getGridCoordinateNames() const override ;
-  const gridtools::GridCoordinatesObject& getGridCoordinatesObject() const override ;
+  const GridCoordinatesObject& getGridCoordinatesObject() const override ;
   void calculate() override ;
   void getArgumentInputData( std::vector<double>& inputdata ) const override;
   static void performTask( std::size_t task_index,
@@ -218,12 +218,12 @@ unsigned FindSphericalContour::getNumberOfDerivatives() {
 }
 
 std::vector<std::string> FindSphericalContour::getGridCoordinateNames() const {
-  gridtools::ActionWithGrid* ag=dynamic_cast<gridtools::ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
+  ActionWithGrid* ag=dynamic_cast<ActionWithGrid*>( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   return ag->getGridCoordinateNames();
 }
 
-const gridtools::GridCoordinatesObject& FindSphericalContour::getGridCoordinatesObject() const {
+const GridCoordinatesObject& FindSphericalContour::getGridCoordinatesObject() const {
   return gridcoords;
 }
 

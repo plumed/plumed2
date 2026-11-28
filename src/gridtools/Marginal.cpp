@@ -22,7 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ParallelTaskManager.h"
-#include "ActionWithGrid.h"
+#include "core/ActionWithGrid.h"
 
 //+PLUMEDOC GRIDANALYSIS MARGINAL
 /*
@@ -66,7 +66,7 @@ public:
 /// This is the function whose marginal we are calculating
   Value* function=NULL;
 /// This is the action that calculates the function we need
-  ActionWithGrid* gridact=NULL;
+  const GridOutput* gridact=NULL;
   static void registerKeywords( Keywords& keys );
   static void read( MarginalInput& func, ActionWithArguments* action );
   // the assignment is customized (see below): copy construction is the default one
@@ -149,6 +149,8 @@ public:
   typedef typename PTM::ParallelActionsOutput ParallelActionsOutput;
 private:
   bool firststep;
+  /// the number of points of the input grid when the output was set up (KDE extends its grid)
+  std::size_t ninput=0;
 /// The parallel task manager
   PTM taskmanager;
   GridCoordinatesObject output_grid;
@@ -227,7 +229,7 @@ const GridCoordinatesObject& Marginal::getGridCoordinatesObject() const {
 }
 
 std::vector<std::string> Marginal::getGridCoordinateNames() const {
-  ActionWithGrid* ag = ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
+  const GridOutput* ag=ActionWithGrid::getInputActionWithGrid( getPntrToArgument(0)->getPntrToAction() );
   plumed_assert( ag );
   std::vector<std::string> gnames(1);
   gnames[0] = ag->getGridCoordinateNames()[taskmanager.getActionInput().dir];
@@ -235,7 +237,8 @@ std::vector<std::string> Marginal::getGridCoordinateNames() const {
 }
 
 void Marginal::calculate() {
-  if( firststep ) {
+  if( firststep || getPntrToArgument(0)->getNumberOfValues()!=ninput ) {
+    ninput=getPntrToArgument(0)->getNumberOfValues();
     std::vector<double> gspacing;
     output_grid.setBounds( taskmanager.getActionInput().getMin(), taskmanager.getActionInput().getMax(), taskmanager.getActionInput().getNbin(), gspacing );
     getPntrToComponent(0)->setShape( output_grid.getNbin(true) );
