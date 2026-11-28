@@ -69,12 +69,12 @@ This means that the grid is large enough to contains all the points where the de
 is equal to the input value for the GRID_SPACING and the lattice is setup in a way that guarantees that there is a grid point at the origin. If there are no kernels with a non-zero weight
 then the grid has a single bin.
 
-The grid is extended, along the arguments that are not periodic, whenever the kernels do not fit within its bounds. Critically, the grid spacing never changes. New points are instead 
-added at the edges of the grid's extent and information about the fact that the grid has been expanded is written in the log. Whenever the grid does expand it typically will add more 
-grid points than are needed to encompass the full density so as to prevent expansion from being required on every step.  
-The GRID_SIZE_LIMIT sets the maximum number of points of the grid. If the kernels require a larger number of grid points than this hard limit the calculation stops with an error. 
+The grid is extended, along the arguments that are not periodic, whenever the kernels do not fit within its bounds. Critically, the grid spacing never changes. New points are instead
+added at the edges of the grid's extent and information about the fact that the grid has been expanded is written in the log. Whenever the grid does expand it typically will add more
+grid points than are needed to encompass the full density so as to prevent expansion from being required on every step.
+The GRID_SIZE_LIMIT sets the maximum number of points of the grid. If the kernels require a larger number of grid points than this hard limit the calculation stops with an error.
 
-If you use an input like the one below that contains GRID_MIN and GRID_MAX, they set the initial range of the grid. 
+If you use an input like the one below that contains GRID_MIN and GRID_MAX, they set the initial range of the grid.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -83,10 +83,10 @@ DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 ```
 
 This initial range may still be expanded if the kernel density does not fit within it. This way PLUMED
-is able to ensure that a normalised histogram integrates to one. Note also that histogram for a distance may have density at negative values because short distances can contribute kernels 
+is able to ensure that a normalised histogram integrates to one. Note also that histogram for a distance may have density at negative values because short distances can contribute kernels
 that extend to negative values.
 
-If you want to turn off the automated extending of the grid you use the NO_EXTEND flag as illustrated below. 
+If you want to turn off the automated extending of the grid you use the NO_EXTEND flag as illustrated below.
 
 ```plumed
 d1: DISTANCE ATOMS=1,2
@@ -97,8 +97,8 @@ DUMPGRID ARG=kde STRIDE=1 FILE=kde.grid
 For the above input the grid is not extended and the density outside GRID_MIN and GRID_MAX is not computed, as in PLUMED 2.10. This is needed
 if the KDE is combined with a grid that does not change, such as the one of [REFERENCE_GRID](REFERENCE_GRID.md), using [CUSTOM](CUSTOM.md).
 
-When you use the GRID_BIN keyword without GRID_MIN and GRID_MAX the range for the kernels that have a non-zero weight during the first step is divided into 
-GRID_BIN bins (plus one on each side). During subsequent steps the grid is then extended when necessary. Critically, however, the same spacing retained 
+When you use the GRID_BIN keyword without GRID_MIN and GRID_MAX the range for the kernels that have a non-zero weight during the first step is divided into
+GRID_BIN bins (plus one on each side). During subsequent steps the grid is then extended when necessary. Critically, however, the same spacing retained
 throughout the whole calculation.
 
 ## Constructing the density
