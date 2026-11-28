@@ -222,6 +222,12 @@ $i,j$ of the contact matrix is only non-zero if two atoms are within a cutoff, $
 distance between these atoms by using divide and conquer strategies such as linked lists and neighbour lists.  __To turn on these features you need to set the `D_MAX` parameter in the
 switching functions.__ The value you pass to the `D_MAX` keyword is used as the cutoff in the link cell algorithm.
 
+The link cells pay off when both groups are large. With one atom (or a few) in GROUPA and many in GROUPB, such as an ion
+against the oxygens of all the water molecules, sorting all the atoms of GROUPB into cells costs more than computing one
+distance per pair. For the coordination numbers of a few atoms use [COORDINATIONNUMBER](COORDINATIONNUMBER.md) with
+SPECIESA and SPECIESB, which does not build the cells in this case, or [COORDINATION](COORDINATION.md) with NLIST
+for their sum.
+
 In theory we could further optimize the implementation of the CONTACT_MATRIX action by exploiting neighbor lists. If we were to do this we would likely add two further keywords as shown
 below (this input is not accepted at the moment, as NL_STRIDE must be 1):
 

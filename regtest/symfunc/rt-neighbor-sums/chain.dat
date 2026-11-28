@@ -1,0 +1,26 @@
+# rt-neighbor-sums with the contact matrix written out: the references were computed with it (same output)
+q3_mat: CONTACT_MATRIX GROUP=1-300 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6} COMPONENTS
+q3_sh: SPHERICAL_HARMONIC ARG=q3_mat.x,q3_mat.y,q3_mat.z,q3_mat.w L=3
+q3_ones: ONES SIZE=300
+q3_den: MATRIX_VECTOR_PRODUCT ARG=q3_mat.w,q3_ones
+q3_sp: MATRIX_VECTOR_PRODUCT ARG=q3_sh.*,q3_ones
+q3_n2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2,2,2,2,2,2,2,2,2 ARG=q3_sp.rm-n3,q3_sp.rm-n2,q3_sp.rm-n1,q3_sp.rm-0,q3_sp.rm-p1,q3_sp.rm-p2,q3_sp.rm-p3,q3_sp.im-n3,q3_sp.im-n2,q3_sp.im-n1,q3_sp.im-0,q3_sp.im-p1,q3_sp.im-p2,q3_sp.im-p3
+q3_nrm: CUSTOM ARG=q3_n2 FUNC=sqrt(x) PERIODIC=NO
+q3: CUSTOM ARG=q3_nrm,q3_den FUNC=x/y PERIODIC=NO
+q3_mean: MEAN ARG=q3 PERIODIC=NO
+q6_mat: CONTACT_MATRIX GROUPA=1-100 GROUPB=51-300 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6} COMPONENTS
+q6_sh: SPHERICAL_HARMONIC ARG=q6_mat.x,q6_mat.y,q6_mat.z,q6_mat.w L=6
+q6_ones: ONES SIZE=250
+q6_den: MATRIX_VECTOR_PRODUCT ARG=q6_mat.w,q6_ones
+q6_sp: MATRIX_VECTOR_PRODUCT ARG=q6_sh.*,q6_ones
+q6_n2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 ARG=q6_sp.rm-n6,q6_sp.rm-n5,q6_sp.rm-n4,q6_sp.rm-n3,q6_sp.rm-n2,q6_sp.rm-n1,q6_sp.rm-0,q6_sp.rm-p1,q6_sp.rm-p2,q6_sp.rm-p3,q6_sp.rm-p4,q6_sp.rm-p5,q6_sp.rm-p6,q6_sp.im-n6,q6_sp.im-n5,q6_sp.im-n4,q6_sp.im-n3,q6_sp.im-n2,q6_sp.im-n1,q6_sp.im-0,q6_sp.im-p1,q6_sp.im-p2,q6_sp.im-p3,q6_sp.im-p4,q6_sp.im-p5,q6_sp.im-p6
+q6_nrm: CUSTOM ARG=q6_n2 FUNC=sqrt(x) PERIODIC=NO
+q6: CUSTOM ARG=q6_nrm,q6_den FUNC=x/y PERIODIC=NO
+q6_mean: MEAN ARG=q6 PERIODIC=NO
+cn_mat: CONTACT_MATRIX GROUPA=1-150 GROUPB=100-300 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6}
+cn_ones: ONES SIZE=201
+cn: MATRIX_VECTOR_PRODUCT ARG=cn_mat,cn_ones
+cn_mean: MEAN ARG=cn PERIODIC=NO
+cns: SUM ARG=cn PERIODIC=NO
+RESTRAINT ARG=q3_mean,q6_mean,cn_mean,cns AT=0.1,0.2,4,600 KAPPA=10,10,1,0.001
+PRINT ARG=q3_mean,q6_mean,cn_mean FILE=colvar FMT=%10.6f

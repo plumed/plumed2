@@ -55,25 +55,25 @@
 "action" : "ONES", 
 "q1_denom_ones" : { "type": "vector", "desciption": "" }
 }, 
-"q1_denom" : { 
-"action" : "MATRIX_VECTOR_PRODUCT", 
-"q1_denom" : { "type": "vector", "desciption": "" }
-}, 
 "q1_sp" : { 
-"action" : "MATRIX_VECTOR_PRODUCT", 
-"q1_sp.rm-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-n1 and the vector q1_denom_ones" }, 
-"q1_sp.rm-0" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-0 and the vector q1_denom_ones" }, 
-"q1_sp.rm-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.rm-p1 and the vector q1_denom_ones" }, 
-"q1_sp.im-n1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-n1 and the vector q1_denom_ones" }, 
-"q1_sp.im-0" : { "type": "vector", "description": "the product of the matrix q1_sh.im-0 and the vector q1_denom_ones" }, 
-"q1_sp.im-p1" : { "type": "vector", "description": "the product of the matrix q1_sh.im-p1 and the vector q1_denom_ones" } 
+"action" : "Q1", 
+"q1_sp.rm-n1" : { "type": "vector", "description": "the sums over the neighbours of the real parts of the spherical harmonics, weighted by the switching function, with the m value given This is the n1th of these quantities" }, 
+"q1_sp.rm-0" : { "type": "vector", "description": "the sums over the neighbours of the real parts of the spherical harmonics, weighted by the switching function, with the m value given This is the 0th of these quantities" }, 
+"q1_sp.rm-p1" : { "type": "vector", "description": "the sums over the neighbours of the real parts of the spherical harmonics, weighted by the switching function, with the m value given This is the p1th of these quantities" }, 
+"q1_sp.im-n1" : { "type": "vector", "description": "the sums over the neighbours of the imaginary parts of the spherical harmonics, weighted by the switching function, with the m value given This is the n1th of these quantities" }, 
+"q1_sp.im-0" : { "type": "vector", "description": "the sums over the neighbours of the imaginary parts of the spherical harmonics, weighted by the switching function, with the m value given This is the 0th of these quantities" }, 
+"q1_sp.im-p1" : { "type": "vector", "description": "the sums over the neighbours of the imaginary parts of the spherical harmonics, weighted by the switching function, with the m value given This is the p1th of these quantities" } 
+}, 
+"q1_denom" : { 
+"action" : "Q1", 
+"q1_denom" : { "type": "vector", "desciption": "" }
 }, 
 "q1_norm2" : { 
 "action" : "COMBINE", 
 "q1_norm2" : { "type": "vector", "desciption": "" }
 }, 
 "q1_norm" : { 
-"action" : "CUSTOM", 
+"action" : "Q1", 
 "q1_norm" : { "type": "vector", "desciption": "" }
 }, 
 "q1" : { 

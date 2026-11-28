@@ -1,0 +1,5 @@
+type=driver
+mpiprocs=3
+arg="--plumed plumed.dat --ixyz triclinic.xyz --box 3.0,0.0,0.0,0.0,3.0,0.0,1.5,1.5,2.1213203 --dump-forces forces --dump-forces-fmt=%10.6f --dump-full-virial"
+extra_files="../rt-GPU-DISTANCES-triclinic/triclinic.xyz"
+plumed_tolerance=(forces.0:1e-5 forces.1:1e-5 forces.2:1e-5 colvar:1e-5)

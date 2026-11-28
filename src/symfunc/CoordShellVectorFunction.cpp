@@ -510,6 +510,8 @@ void CoordShellVectorFunction::registerKeywords( Keywords& keys ) {
   keys.needsAction("ONES");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.addFlag("USEGPU",false,"run part of this calculation on the GPU");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
   keys.addDOI("10.1103/PhysRevB.81.125416");
   keys.addDOI("10.1103/PhysRevB.92.180102");
   keys.addDOI("10.1063/1.4997180");
@@ -527,7 +529,11 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   }
   bool usegpu;
   parseFlag("USEGPU",usegpu);
-  const std::string doUSEGPU = usegpu?" USEGPU":"";
+  bool serial, multigpu;
+  parseFlag("SERIAL",serial);
+  parseFlag("MULTIGPU",multigpu);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"") + (multigpu?" MULTIGPU":"");
   std::string sp_str;
   parse("SPECIES",sp_str);
   std::string specA;
@@ -536,7 +542,7 @@ CoordShellVectorFunction::CoordShellVectorFunction(const ActionOptions& ao):
   parse("SPECIESB",specB);
   createLabel(mat);
   if( sp_str.length()>0 || specA.length()>0 ) {
-    CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this );
+    CoordinationNumbers::expandMatrix( true, getShortcutLabel(),  sp_str, specA, specB, this, doUSEGPU );
   } else {
     error("found no input atoms use SPECIES/SPECIESA");
   }

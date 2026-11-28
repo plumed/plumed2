@@ -1,0 +1,25 @@
+# rt-neighbor-sums-small with the contact matrix written out: the references were computed with it (same output)
+q4_mat: CONTACT_MATRIX GROUP=1-50 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6} COMPONENTS
+q4_sh: SPHERICAL_HARMONIC ARG=q4_mat.x,q4_mat.y,q4_mat.z,q4_mat.w L=4
+q4_ones: ONES SIZE=50
+q4_den: MATRIX_VECTOR_PRODUCT ARG=q4_mat.w,q4_ones
+q4_sp: MATRIX_VECTOR_PRODUCT ARG=q4_sh.*,q4_ones
+q4_n2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2 ARG=q4_sp.rm-n4,q4_sp.rm-n3,q4_sp.rm-n2,q4_sp.rm-n1,q4_sp.rm-0,q4_sp.rm-p1,q4_sp.rm-p2,q4_sp.rm-p3,q4_sp.rm-p4,q4_sp.im-n4,q4_sp.im-n3,q4_sp.im-n2,q4_sp.im-n1,q4_sp.im-0,q4_sp.im-p1,q4_sp.im-p2,q4_sp.im-p3,q4_sp.im-p4
+q4_nrm: CUSTOM ARG=q4_n2 FUNC=sqrt(x) PERIODIC=NO
+q4: CUSTOM ARG=q4_nrm,q4_den FUNC=x/y PERIODIC=NO
+q4_mean: MEAN ARG=q4 PERIODIC=NO
+q1_mat: CONTACT_MATRIX GROUPA=1-20 GROUPB=10-50 SWITCH={RATIONAL R_0=0.3} COMPONENTS
+q1_sh: SPHERICAL_HARMONIC ARG=q1_mat.x,q1_mat.y,q1_mat.z,q1_mat.w L=1
+q1_ones: ONES SIZE=41
+q1_den: MATRIX_VECTOR_PRODUCT ARG=q1_mat.w,q1_ones
+q1_sp: MATRIX_VECTOR_PRODUCT ARG=q1_sh.*,q1_ones
+q1_n2: COMBINE PERIODIC=NO POWERS=2,2,2,2,2,2 ARG=q1_sp.rm-n1,q1_sp.rm-0,q1_sp.rm-p1,q1_sp.im-n1,q1_sp.im-0,q1_sp.im-p1
+q1_nrm: CUSTOM ARG=q1_n2 FUNC=sqrt(x) PERIODIC=NO
+q1: CUSTOM ARG=q1_nrm,q1_den FUNC=x/y PERIODIC=NO
+q1_mean: MEAN ARG=q1 PERIODIC=NO
+cn_mat: CONTACT_MATRIX GROUP=1-50 R_0=0.3
+cn_ones: ONES SIZE=50
+cn: MATRIX_VECTOR_PRODUCT ARG=cn_mat,cn_ones
+cn_mean: MEAN ARG=cn PERIODIC=NO
+RESTRAINT ARG=q4_mean,q1_mean,cn_mean AT=0.2,0.3,4 KAPPA=10,10,1
+PRINT ARG=q4_mean,q1_mean,cn_mean FILE=colvar FMT=%10.6f

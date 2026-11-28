@@ -27,8 +27,8 @@ namespace PLMD {
 
 void ActionWithMatrix::registerKeywords( Keywords& keys ) {
   ActionWithVector::registerKeywords( keys );
-  keys.addFlag("AVOID_THREAD_GATHER",false,"avoid race conditions in shared memory by doing more calculations rather than using more memory");
-  keys.addFlag("DO_THREAD_GATHER",false,"do fewer calculations and use more memory");
+  keys.addFlag("AVOID_THREAD_GATHER",false,"avoid race conditions in shared memory by doing more calculations rather than using more memory (on the GPU it makes the backward pass about two times slower)");
+  keys.addFlag("DO_THREAD_GATHER",false,"do fewer calculations and use more memory (this is the default, the flag is kept for compatibility)");
 }
 
 ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
@@ -44,29 +44,17 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
       log.printf("  setting diagonal elements equal to zero\n");
     }
   }
-  if( getName().find("ACC")!=std::string::npos ) {
-    bool ignore;
-    parseFlag("AVOID_THREAD_GATHER",ignore);
-    if( ignore ) {
-      warning("AVOID_THREAD_GATHER flag is always activated when the calculation is run on the GPU as the calculation is much faster with this option activated");
-    }
-    bool dothreads;
-    parseFlag("DO_THREAD_GATHER",dothreads);
-    if( !dothreads ) {
-      no_thread_gather=true;
-    } else {
-      no_thread_gather=false;
-    }
-  } else {
-    parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
-    if( OpenMP::getNumThreads()==1 ) {
-      no_thread_gather = false;
-    }
-    bool ignore;
-    parseFlag("DO_THREAD_GATHER",ignore);
-    if( ignore ) {
-      warning("NO_THREAD_GATHER flag is always activated when the calculation is run on the CPU as the calculation is faster with this option activated");
-    }
+  // the forces on the matrix elements are gathered in one pass (the forces that several tasks can
+  // touch go to per-thread buffers on the CPU, and are added with atomics on the GPU) unless
+  // AVOID_THREAD_GATHER asks for the low memory version, which computes the matrix again,
+  // column by column. On the GPU one pass is faster (about 2x for the backward pass of a
+  // 20000 atom contact matrix on an A100). DO_THREAD_GATHER is the default, kept for compatibility
+  parseFlag("AVOID_THREAD_GATHER",no_thread_gather);
+  bool ignore;
+  parseFlag("DO_THREAD_GATHER",ignore);
+  // on the CPU there is nothing to avoid with one thread
+  if( getName().find("ACC")==std::string::npos && OpenMP::getNumThreads()==1 ) {
+    no_thread_gather = false;
   }
   if( no_thread_gather ) {
     log.printf("  turning on low memory implementation for force gathering\n");
@@ -74,10 +62,8 @@ ActionWithMatrix::ActionWithMatrix(const ActionOptions&ao):
 }
 
 void ActionWithMatrix::checkThreadGatherWithMPI( const bool serial ) {
-  if( no_thread_gather && comm.Get_size()>1 && !serial ) {
-    if( getName().find("ACC")!=std::string::npos ) {
-      error("with more than one MPI process the GPU version needs DO_THREAD_GATHER (the low memory gathering of the forces, used by default, is not parallelised with MPI) or SERIAL");
-    }
+  // the GPU versions (openaccPTM plugin) parallelise the low memory gathering with MPI
+  if( no_thread_gather && comm.Get_size()>1 && !serial && getName().find("ACC")==std::string::npos ) {
     error("AVOID_THREAD_GATHER cannot be used with more than one MPI process unless SERIAL is also used (the low memory gathering of the forces is not parallelised with MPI)");
   }
 }

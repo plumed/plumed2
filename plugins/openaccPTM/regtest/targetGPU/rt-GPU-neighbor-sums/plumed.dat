@@ -1,0 +1,12 @@
+LOAD FILE=../../../../plumedOpenACC.so
+# With USEGPU, COORDINATIONNUMBER and Q1-Q6 compute the sums over the neighbours on the GPU without
+# the contact matrix (actions *_SUMSACC). The box is a rhombic dodecahedron: with D_MAX=0.9 there are
+# two cells in a direction and three in the others; without D_MAX all the pairs are computed.
+# 3 MPI processes: cn and q4 share the atoms (MULTIGPU), q6 and lq are computed by the first one.
+# The references are the results of the CPU versions.
+cn: COORDINATIONNUMBER SPECIESA=1-15 SPECIESB=10-40 SWITCH={RATIONAL R_0=0.3 D_MAX=0.9} MEAN USEGPU MULTIGPU
+q4: Q4 SPECIES=1-40 SWITCH={RATIONAL R_0=0.3 D_MAX=0.9} MEAN VMEAN USEGPU MULTIGPU
+q6: Q6 SPECIES=1-40 SWITCH={RATIONAL R_0=0.3} MEAN USEGPU
+lq: LOCAL_Q4 SPECIES=q4 SWITCH={RATIONAL R_0=0.3 D_MAX=0.9} MEAN USEGPU
+r: RESTRAINT ARG=cn.mean,q4.mean,q4_vmean,q6.mean,lq.mean AT=0,0,0,0,0 KAPPA=1,10,10,10,10
+PRINT ARG=cn.mean,q4.mean,q4_vmean,q6.mean,lq.mean FILE=colvar FMT=%10.6f

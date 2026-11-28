@@ -74,6 +74,11 @@ DUMPATOMS ATOMS=c ARG=c FILE=coords.xyz
 Setting the `D_MAX` can substantially improve PLUMED performance as it turns on the linked list algorithm that is discussed in the optimisation details part
 of the documentation for [CONTACT_MATRIX](CONTACT_MATRIX.md).
 
+When SPECIESA has only a few atoms and SPECIESB many (one site against the solvent), the linked lists are not used:
+the atoms of SPECIESB are shared between the threads and one distance is computed per pair, which costs less than sorting
+all of them into cells. If you only need the sum of these coordination numbers, [COORDINATION](COORDINATION.md) with a
+neighbor list (NLIST) is faster still, as between the updates of the list only the atoms in the list are used.
+
 The vectors that are output by the COORDINATIONNUMBER shortcut can be used in the input for many other functions that are within
 PLUMED. In addition, in order to ensure compatibility with older versions of PLUMED you can add additional keywords on the input
 line for COORDINATIONNUMBER in order to calculate various functions of the input.  For example, the following input tells plumed
@@ -265,13 +270,14 @@ void CoordinationNumbers::shortcutKeywords( Keywords& keys ) {
   keys.addDOI("10.1021/ct500320c");
 }
 
-void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
-                                        const std::string& spa_str, const std::string& spb_str, ActionShortcut* action ) {
+std::string CoordinationNumbers::contactMatrixInput( const std::string& lab, const std::string& sp_str,
+    const std::string& spa_str, const std::string& spb_str,
+    ActionShortcut* action, std::string& mask ) {
   if( sp_str.length()==0 && spa_str.length()==0 ) {
     action->error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
   }
 
-  std::string matinp = lab  + "_mat: CONTACT_MATRIX";
+  std::string matinp;
   if( sp_str.length()>0 ) {
     matinp += " GROUP=" + sp_str;
     action->readInputLine( lab + "_grp: GROUP ATOMS=" + sp_str );
@@ -298,15 +304,33 @@ void CoordinationNumbers::expandMatrix( const bool& components, const std::strin
     action->parse("MM",mm);
     matinp += " R_0=" + r0 + " D_0=" + d0 + " NN=" + nn + " MM=" + mm;
   }
+  action->parse("MASK",mask);
+  return matinp;
+}
+
+std::string CoordinationNumbers::fusedAction( const bool usegpu, const std::string& mask, const std::string& base, ActionShortcut* action ) {
+  if( mask.length()>0 ) {
+    return "";
+  }
+  if( usegpu ) {
+    const std::string acc = base + "_SUMSACC";
+    return action->plumed.checkAction( acc ) ? acc : "";
+  }
+  return base + "_SUMS";
+}
+
+void CoordinationNumbers::expandMatrix( const bool& components, const std::string& lab, const std::string& sp_str,
+                                        const std::string& spa_str, const std::string& spb_str, ActionShortcut* action,
+                                        const std::string& flags ) {
+  std::string maskstr;
+  std::string matinp = lab  + "_mat: CONTACT_MATRIX" + contactMatrixInput( lab, sp_str, spa_str, spb_str, action, maskstr );
   if( components ) {
     matinp += " COMPONENTS";
   }
-  std::string maskstr;
-  action->parse("MASK",maskstr);
   if( maskstr.length()>0 ) {
     matinp += " MASK=" + maskstr;
   }
-  action->readInputLine( matinp );
+  action->readInputLine( matinp + flags );
 }
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ) {
@@ -318,10 +342,17 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ) {
   keys.add("optional","MOMENTS","the list of moments that you would like to calculate");
   keys.addOutputComponent("moment","MOMENTS","scalar","the moments of the distribution");
   keys.reset_style("MOMENTS","deprecated");
+  keys.addFlag("USEGPU",false,"compute the contact matrix and the coordination numbers on the GPU");
+  keys.addLinkInDocForFlag("USEGPU","plugin_openaccPTM.md");
+  keys.addFlag("SERIAL",false,"do the calculation in serial: with MPI only the first process computes (with USEGPU, on its GPU), and the results are shared");
+  keys.addFlag("MULTIGPU",false,"with USEGPU and MPI, share the calculation between the processes, each using its own GPU (by default only the first process uses its GPU)");
   keys.needsAction("MATRIX_VECTOR_PRODUCT");
   keys.needsAction("ONES");
   keys.needsAction("MOMENTS");
   keys.setValueDescription("vector","the coordination numbers of the specified atoms");
+  // without MASK, computed without the contact matrix (on the GPU by the openaccPTM plugin)
+  keys.addActionNameSuffix("_SUMS");
+  keys.addActionNameSuffix("_SUMSACC");
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
@@ -332,22 +363,29 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   if( lowmem ) {
     warning("LOWMEM flag is deprecated and is no longer required for this action");
   }
+  bool usegpu, serial, multigpu;
+  parseFlag("USEGPU",usegpu);
+  parseFlag("SERIAL",serial);
+  parseFlag("MULTIGPU",multigpu);
+  // passed to the actions that can run on the GPU
+  const std::string doUSEGPU = std::string(usegpu?" USEGPU":"") + (serial?" SERIAL":"") + (multigpu?" MULTIGPU":"");
   // Setup the contract matrix if that is what is needed
-  std::string matlab, sp_str, specA, specB;
+  std::string sp_str, specA, specB;
   parse("SPECIES",sp_str);
   parse("SPECIESA",specA);
   parse("SPECIESB",specB);
-  if( sp_str.length()>0 || specA.length()>0 ) {
-    matlab = getShortcutLabel() + "_mat";
-    bool comp=false;
-    if( getName()=="COORDINATION_MOMENTS" ) {
-      comp=true;
-      matlab = getShortcutLabel() + "_mat";
-    }
-    expandMatrix( comp, getShortcutLabel(), sp_str, specA, specB, this );
-  } else {
+  if( sp_str.length()==0 && specA.length()==0 ) {
     error("missing atoms input use SPECIES or SPECIESA/SPECIESB");
   }
+  const bool comp = getName()=="COORDINATION_MOMENTS";
+  std::string mask;
+  const std::string matinp = contactMatrixInput( getShortcutLabel(), sp_str, specA, specB, this, mask );
+  // the coordination numbers without the contact matrix, if possible
+  const std::string fused = comp ? "" : fusedAction( usegpu, mask, "COORDINATIONNUMBER", this );
+  // The contact matrix and the vector of ones are created also with the fused action, as inputs
+  // can use their labels: they are computed only if something uses them
+  std::string matlab = getShortcutLabel() + "_mat";
+  readInputLine( matlab + ": CONTACT_MATRIX" + matinp + (comp ? " COMPONENTS" : "") + (mask.length()>0 ? " MASK=" + mask : "") + doUSEGPU );
   ActionWithValue* mb=plumed.getActionSet().selectWithLabel<ActionWithValue*>( matlab );
   if( !mb ) {
     error("could not find action with name " + matlab );
@@ -360,16 +398,21 @@ CoordinationNumbers::CoordinationNumbers(const ActionOptions& ao):
   std::string nones;
   Tools::convert( arg->getShape()[1], nones );
   readInputLine( getShortcutLabel() + "_ones: ONES SIZE=" + nones );
-  if( getName()=="COORDINATION_MOMENTS" ) {
-    // Calculate the lengths of the vectors
-    std::string r_power;
-    parse("R_POWER",r_power);
-    readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w "
-                   + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
-    matlab = getShortcutLabel() + "_pow";
+  if( fused.length()>0 ) {
+    // on the CPU only SERIAL applies
+    readInputLine( getShortcutLabel() + ": " + fused + matinp + (usegpu ? doUSEGPU : std::string(serial ? " SERIAL" : "")) );
+  } else {
+    if( comp ) {
+      // Calculate the lengths of the vectors
+      std::string r_power;
+      parse("R_POWER",r_power);
+      readInputLine( getShortcutLabel() + "_pow: CUSTOM ARG=" + matlab + ".x," + matlab + ".y," + matlab + ".z," + matlab + ".w VAR=x,y,z,w "
+                     + "PERIODIC=NO FUNC=w*(sqrt(x*x+y*y+z*z)^" + r_power +")");
+      matlab = getShortcutLabel() + "_pow";
+    }
+    // Calcualte coordination numbers as matrix vector times vector of ones
+    readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones" + doUSEGPU );
   }
-  // Calcualte coordination numbers as matrix vector times vector of ones
-  readInputLine( getShortcutLabel() + ": MATRIX_VECTOR_PRODUCT  ARG=" + matlab + "," + getShortcutLabel() + "_ones");
   std::vector<std::string> moments;
   parseVector("MOMENTS",moments);
   Tools::interpretRanges( moments );

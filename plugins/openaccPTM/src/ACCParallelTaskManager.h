@@ -149,6 +149,7 @@ class AccParallelTaskManager : public ParallelTaskManager<T> {
   using ParallelTaskManager<T>::input_buffer;
   using ParallelTaskManager<T>::useacc;
   using ParallelTaskManager<T>::getValueStashSize;
+  using ParallelTaskManager<T>::serial;
 public:
   typedef typename ParallelTaskManager<T>::ParallelActionsInput ParallelActionsInput;
   typedef typename ParallelTaskManager<T>::ParallelActionsOutput ParallelActionsOutput;
@@ -160,23 +161,81 @@ private:
   ACC::Device device;
 /// Device buffers kept between steps, freed on their GPU
   std::unique_ptr<AccDeviceWorkspace<precision>> devws;
+/// The active tasks of this process, when they are shared between the processes
+  std::vector<unsigned> my_tasks;
+/// MULTIGPU: with MPI the tasks are shared between the processes, each using its GPU
+  bool multigpu=false;
+/// A copy of actiondata that stays on the device between the calls (see residentActionData)
+  std::unique_ptr<typename T::input_type> resident_actiondata;
+/// The generation of actiondata (see ParallelTaskManager::getActionInputGeneration) of resident_actiondata
+  unsigned long resident_generation=0;
+/// Returns a copy of actiondata that is present on the device (of the current device scope).
+/// It is copied and uploaded only when actiondata may have changed since the last upload:
+/// before, actiondata was copied on the host (it was passed by value) and moved with enter/exit
+/// data at every call, twice per step. For large action data (e.g. the 370k segments of the
+/// secondary structure variables of 144 peptides: 45 MB) this was most of the time of the action
+  const typename T::input_type* residentActionData() {
+    const unsigned long generation=this->getActionInputGeneration();
+    if( !resident_actiondata || generation!=resident_generation ) {
+      if( resident_actiondata ) {
+        resident_actiondata->removeFromACCDevice();
+      }
+      resident_actiondata=std::make_unique<typename T::input_type>( actiondata );
+      resident_actiondata->toACCDevice();
+      resident_generation=generation;
+    }
+    return resident_actiondata.get();
+  }
 /// The GPU of this action (chosen at the first call), -1 without GPUs
   int getDevice() {
     return device.resolve(*action);
   }
+/// True if the tasks are shared between the MPI processes, each using its GPU
+/// (MULTIGPU, without SERIAL). Otherwise the first process computes all of them
+/// and sends the results to the others: by default, because each call has costs
+/// on the CPU (copies of the input, of the results and of the forces) that do
+/// not decrease with the number of processes, while the sums over the processes
+/// add more (see the README of the plugin)
+  bool splitTasks() const {
+    return multigpu && !serial && comm.Get_size()>1;
+  }
+/// The active tasks computed by this process, a contiguous block of the list:
+/// [first,first+count). Contiguous blocks keep the part of the value stash
+/// written by a process contiguous, so that only that part is transferred
+  void getMyTasks(const unsigned ntasks, unsigned& first, unsigned& count) const {
+    if(!splitTasks()) {
+      first=0;
+      count=(comm.Get_rank()==0) ? ntasks : 0;
+      return;
+    }
+    const unsigned long long size=comm.Get_size(), rank=comm.Get_rank();
+    first=static_cast<unsigned>((ntasks*rank)/size);
+    count=static_cast<unsigned>((ntasks*(rank+1))/size)-first;
+  }
 public:
   static void registerKeywords( Keywords& keys ) {
     ParallelTaskManager<T>::registerKeywords(keys);
+    keys.addFlag("MULTIGPU",false,"with MPI, share the tasks between the processes, each using its own GPU, and sum the results "
+                 "(by default only the first process computes, on its GPU, and sends the results to the others)");
   }
   AccParallelTaskManager(ActionWithVector* av):
     PLMD::ParallelTaskManager<T>(av),
     devws(std::make_unique<AccDeviceWorkspace<precision>>()) {
     useacc=true;
     action->log.printf("  using GPU to calculate this action\n");
+    action->parseFlag("MULTIGPU",multigpu);
+    if( multigpu && !serial ) {
+      action->log.printf("  with MPI the tasks are shared between the processes, each using its GPU\n");
+    } else if( multigpu ) {
+      action->log.printf("  MULTIGPU is ignored with SERIAL\n");
+    }
   }
   ~AccParallelTaskManager() {
     // members are destroyed after the scope ends: the buffers are freed here
     ACC::DeviceScope scope(device.id());
+    if( resident_actiondata ) {
+      resident_actiondata->removeFromACCDevice();
+    }
     devws.reset();
   }
   AccParallelTaskManager(const AccParallelTaskManager&)=delete;
@@ -260,36 +319,42 @@ ParActionsInput<precision> toDeviceInput(const ParActionsInput<precision>& in,
 //use the __PLUMED_USE_OPENACC_TASKSMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_TASKSMINE
+/// Runs the tasks tasks[0..nactive_tasks) (nactive_tasks>0) on the device.
+/// Task t writes the entries [t*nscalars,(t+1)*nscalars) of the value stash:
+/// the part of the stash between the first and the last task is cleared on
+/// the device (tasks may leave some entries untouched) and copied back, the
+/// rest of the host stash is set to zero (it belongs to the tasks of the
+/// other processes, or to inactive tasks)
 template <class T, typename precision>
-void runAllTasksACC(typename T::input_type actiondata,
+void runAllTasksACC(const typename T::input_type* ad,
                     ParActionsInput<precision> myinput,
                     std::vector<precision>& value_stash,
-                    const std::vector<unsigned> & partialTaskList,
+                    const unsigned* tasks,
                     const unsigned nactive_tasks,
                     const std::size_t nderivatives_per_task,
                     const std::size_t workspace_size,
                     AccDeviceWorkspace<precision>& ws
                    ) {
+  const auto [tmin,tmax] = std::minmax_element(tasks,tasks+nactive_tasks);
+  const std::size_t stash_lo = std::min(std::size_t(*tmin)*myinput.nscalars, value_stash.size());
+  const std::size_t stash_hi = std::min((std::size_t(*tmax)+1)*myinput.nscalars, value_stash.size());
   // from here on the pointers in myinput are device addresses
   myinput = toDeviceInput(myinput, ws, true);
-  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
-  // the device buffers are reused between steps: resize() reallocates only if they grow.
-  // The stash is cleared on the device (tasks may leave some entries untouched)
-  // and then copied back as a whole, so the host copy does not need to be cleared
+  // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
   auto value_stash_data = ws.value_stash.devicePtr();
-  accZeroAsync(value_stash_data, value_stash.size());
+  accZeroAsync(value_stash_data+stash_lo, stash_hi-stash_lo);
 
-  auto partialTaskList_data = ws.taskList.update(partialTaskList.data(), partialTaskList.size());
+  auto partialTaskList_data = ws.taskList.update(tasks, nactive_tasks);
 
   ws.buffer.resize(workspace_size*nactive_tasks);
   auto buffer = ws.buffer.devicePtr();
   auto derivatives = ws.getDerivatives(nderivatives_per_task*nactive_tasks);
   // myinput and the scalars are passed by value as kernel arguments.
   // One task per thread, as in the force kernel
-  if(nactive_tasks>0) {
-#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
+  {
+#pragma acc parallel loop gang vector async(accQueue) present(ad[0:1]) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   nderivatives_per_task, \
@@ -311,19 +376,24 @@ void runAllTasksACC(typename T::input_type actiondata,
                    buffer+workspace_size*i
                    :nullptr  );
       // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, myinput, myout );
+      T::performTask( task_index, *ad, myinput, myout );
     }
   }
-  ws.value_stash.copyFromDeviceAsync(value_stash.data(), accQueue);
+  if(stash_hi>stash_lo) {
+    acc_memcpy_from_device_async(value_stash.data()+stash_lo, value_stash_data+stash_lo,
+                                 (stash_hi-stash_lo)*sizeof(precision), accQueue);
+  }
+  std::fill(value_stash.begin(), value_stash.begin()+stash_lo, precision(0));
+  std::fill(value_stash.begin()+stash_hi, value_stash.end(), precision(0));
   // the only synchronization of the call
   acc_wait(accQueue);
 }
 #else
 template <class T, typename precision>
-void runAllTasksACC(typename T::input_type actiondata,
+void runAllTasksACC(const typename T::input_type* ad,
                     ParActionsInput<precision> myinput,
                     std::vector<precision>& value_stash,
-                    const std::vector<unsigned> & partialTaskList,
+                    const unsigned* tasks,
                     const unsigned nactive_tasks,
                     const std::size_t nderivatives_per_task,
                     const std::size_t workspace_size,
@@ -335,16 +405,19 @@ template <class T>
 void AccParallelTaskManager<T>::runAllTasks() {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList( action->getListOfActiveTasks() );
-  unsigned nactive_tasks=partialTaskList.size();
+  const unsigned nactive_tasks=partialTaskList.size();
   // Reset the values at the start of the task loop
   std::size_t totalvals=getValueStashSize();
   if( value_stash.size()!=totalvals ) {
     value_stash.resize(totalvals);
   }
-  // Only rank 0 uses the GPU (no multigpu shenanigans until this works): it
-  // computes all the tasks and overwrites the whole stash, which is then sent
-  // to the other ranks
-  if (comm.Get_rank()== 0) {
+  // With MULTIGPU each process computes a block of the tasks on its GPU and
+  // the stashes are summed; otherwise the first process computes all the
+  // tasks, and the stash is sent to the others
+  const bool split = splitTasks();
+  unsigned first, count;
+  getMyTasks( nactive_tasks, first, count );
+  if( split || comm.Get_rank()==0 ) {
     // The derivatives are only ever needed during the force calculation
     // Please stop adding a check on whether any of the methods need the derivatives
     // they do not need the derivatives during the forward loop.
@@ -356,21 +429,32 @@ void AccParallelTaskManager<T>::runAllTasks() {
     // Transfer all the bookeeping information about the arguments
     // (argumentsMap was filled by getInputData)
     myinput.setupArguments( argumentsMap );
-    ACC::DeviceScope scope(getDevice());
-    runAllTasksACC<T>(
-      actiondata,
-      myinput,
-      value_stash,
-      partialTaskList,
-      nactive_tasks,
-      nderivatives_per_task,
-      workspace_size,
-      *devws
-    );
+    if( count>0 ) {
+      ACC::DeviceScope scope(getDevice());
+      runAllTasksACC<T>(
+        residentActionData(),
+        myinput,
+        value_stash,
+        partialTaskList.data()+first,
+        count,
+        nderivatives_per_task,
+        workspace_size,
+        *devws
+      );
+    } else {
+      std::fill( value_stash.begin(), value_stash.end(), precision(0) );
+      // the input data was not uploaded: applyForces must upload it if it has tasks
+      // (it can have some, when it works on the columns of a matrix)
+      devws->inputdata_src=nullptr;
+    }
   }
-  // Rank 0 holds the complete result: it must be broadcast, not summed
-  // (summing would multiply the values by the number of ranks)
-  comm.Bcast( value_stash.data(), value_stash.size(), 0);
+  if( split ) {
+    comm.Sum( value_stash );
+  } else if( comm.Get_size()>1 ) {
+    // the first process holds the complete result: it must be broadcast, not summed
+    // (summing would multiply the values by the number of processes)
+    comm.Bcast( value_stash.data(), value_stash.size(), 0);
+  }
 
 // And transfer the value to the output values
   action->transferStashToValues( partialTaskList,  value_stash );
@@ -379,30 +463,39 @@ void AccParallelTaskManager<T>::runAllTasks() {
 //use the __PLUMED_USE_OPENACC_FORCESMINE macro to debug the ptm ins a single file
 //so that compiling witha a small modification will be faster (the ptm is included nearly everywhere)
 #ifndef __PLUMED_USE_OPENACC_FORCESMINE
+/// Adds to forcesForApply the forces of the tasks tasks[0..nactive_tasks)
+/// (nactive_tasks>0). Task t reads the entries [t*nforcescalars,(t+1)*nforcescalars)
+/// of the stash of the forces on the values: only the part of the stash between
+/// the first and the last task is copied to the device
 template <class T, typename precision>
 void applyForcesWithACC(PLMD::View<precision> forcesForApply,
-                        typename T::input_type actiondata,
+                        const typename T::input_type* ad,
                         ParActionsInput<precision> myinput,
                         const std::vector<precision>& value_stash,
-                        const std::vector<unsigned> & partialTaskList,
+                        const unsigned* tasks,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size,
                         AccDeviceWorkspace<precision>& ws,
                         const bool reset_forces
                        ) {
+  const auto [tmin,tmax] = std::minmax_element(tasks,tasks+nactive_tasks);
+  const std::size_t stash_lo = std::min(std::size_t(*tmin)*myinput.nforcescalars, value_stash.size());
+  const std::size_t stash_hi = std::min((std::size_t(*tmax)+1)*myinput.nforcescalars, value_stash.size());
   // from here on the pointers in myinput are device addresses.
   // The input data is the one of the last runAllTasks, so nothing is copied
   // here unless something changed in between
   myinput = toDeviceInput(myinput, ws, false);
-  auto actiondata_acc = OpenACC::fromToDataHelper(actiondata);
 
   // the device buffers are reused between steps: resize() reallocates only if they grow
   ws.value_stash.resize(value_stash.size());
-  ws.value_stash.copyToDeviceAsync(value_stash.data(), accQueue);
   auto value_stash_data = ws.value_stash.devicePtr();
+  if(stash_hi>stash_lo) {
+    acc_memcpy_to_device_async(value_stash_data+stash_lo, const_cast<precision*>(value_stash.data())+stash_lo,
+                               (stash_hi-stash_lo)*sizeof(precision), accQueue);
+  }
 
-  auto partialTaskList_data = ws.taskList.update(partialTaskList.data(), partialTaskList.size());
+  auto partialTaskList_data = ws.taskList.update(tasks, nactive_tasks);
 
   // the forces are accumulated on the device and copied back as a whole.
   // They start from zero, or from the forces already in forcesForApply when
@@ -458,12 +551,12 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #define stashDrift(taskID,scalarID) taskID*myinput.nforcescalars \
                            + scalarID*myinput.ncomponents
 
-  if(nactive_tasks>0) {
+  {
     // myinput and the scalars are passed by value as kernel arguments.
     // One task per thread (gang vector), and every inner loop is sequential:
     // without this, nvc++ makes the task loop gang-only and vectorizes the
     // short inner loops, i.e. one block of 128 threads per task, mostly idle
-#pragma acc parallel loop gang vector async(accQueue) present(actiondata) \
+#pragma acc parallel loop gang vector async(accQueue) present(ad[0:1]) \
                      firstprivate(myinput, \
                                   nactive_tasks, \
                                   forcesForApply_size, \
@@ -488,7 +581,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
                    workspace_size,
                    (workspace_size>0)?buffer+workspace_size*t:nullptr);
       // Calculate the stuff in the loop for this action
-      T::performTask( task_index, actiondata, myinput, myout );
+      T::performTask( task_index, *ad, myinput, myout );
 
       // this task's column of the buffer of the shared entries
 #pragma acc loop seq
@@ -510,7 +603,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
       }
 
       // If this is a matrix this returns a number that isn't one as we have to loop over the columns
-      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, actiondata );
+      const std::size_t nvpt = T::getNumberOfValuesPerTask( task_index, *ad );
 #pragma acc loop seq
       for(unsigned vID=0; vID<nvpt; ++vID) {
         auto force_indices = ForceIndexHolder::create(myinput, indices + t*ind_stride_task);
@@ -518,7 +611,7 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
         T::getForceIndices( task_index,
                             vID,
                             forcesForApply_size,
-                            actiondata,
+                            *ad,
                             myinput,
                             force_indices );
 
@@ -603,10 +696,10 @@ void applyForcesWithACC(PLMD::View<precision> forcesForApply,
 #else
 template <class T, typename precision>
 void applyForcesWithACC(PLMD::View<precision> forcesForApply,
-                        typename T::input_type actiondata,
+                        const typename T::input_type* ad,
                         ParActionsInput<precision> myinput,
                         const std::vector<precision>& value_stash,
-                        const std::vector<unsigned> & partialTaskList,
+                        const unsigned* tasks,
                         const unsigned nactive_tasks,
                         const std::size_t nderivatives_per_task,
                         const std::size_t workspace_size,
@@ -619,33 +712,53 @@ template <class T>
 void AccParallelTaskManager<T>::applyForces( std::vector<double>& forcesForApply, bool reset_forces ) {
   // Get the list of active tasks
   std::vector<unsigned> & partialTaskList= action->getListOfActiveTasks();
-  unsigned nactive_tasks=partialTaskList.size();
-  // Only rank 0 uses the GPU: it computes all the forces, overwriting the
-  // whole array, which is then sent to the other ranks
-  if (comm.Get_rank() == 0) {
+  const unsigned nactive_tasks=partialTaskList.size();
+  // As in runAllTasks: with MULTIGPU each process computes the forces of a block
+  // of the tasks on its GPU and the forces are summed; otherwise the first
+  // process computes all of them and sends them to the others
+  const bool split = splitTasks();
+  unsigned first, count;
+  getMyTasks( nactive_tasks, first, count );
+  // With reset_forces=false the forces already in forcesForApply are kept: the
+  // caller is accumulating over several calls (the forces on the columns of a
+  // matrix are gathered separately). They are the same on all the processes,
+  // so only the first one keeps them, and the sum counts them once
+  const bool from_zero = reset_forces || (split && comm.Get_rank()!=0);
+  if( count>0 ) {
     ACC::DeviceScope scope(getDevice());
-    // the force buffer is cleared (or not, if reset_forces is false) on the device
+    // the force buffer is cleared (or not) on the device
     forceData<precision> forces(forcesForApply);
     myinput.noderiv = false;
-    // Retrieve the forces from the values
-    action->transferForcesToStash( partialTaskList, value_stash );
+    // Retrieve the forces from the values (only those of the tasks of this process are used)
+    if( split ) {
+      my_tasks.assign( partialTaskList.begin()+first, partialTaskList.begin()+first+count );
+      action->transferForcesToStash( my_tasks, value_stash );
+    } else {
+      action->transferForcesToStash( partialTaskList, value_stash );
+    }
     applyForcesWithACC<T>(
       PLMD::View<precision> { forces.ffa.data(), forces.ffa.size() },
-      actiondata,
+      residentActionData(),
       myinput,
       value_stash,
-      partialTaskList,
-      nactive_tasks,
+      partialTaskList.data()+first,
+      count,
       nderivatives_per_task,
       workspace_size,
       *devws,
-      reset_forces
+      from_zero
     );
     forces.update();
+  } else if( (split || comm.Get_rank()==0) && from_zero ) {
+    std::fill( forcesForApply.begin(), forcesForApply.end(), 0.0 );
   }
-  // Every rank needs the complete forces, also with SERIAL (where the CPU
-  // version computes them on every rank): broadcast them from rank 0
-  comm.Bcast( forcesForApply, 0 );
+  // Every process needs the complete forces, also with SERIAL (where the CPU
+  // version computes them on every process)
+  if( split ) {
+    comm.Sum( forcesForApply );
+  } else if( comm.Get_size()>1 ) {
+    comm.Bcast( forcesForApply, 0 );
+  }
 }
 
 } // namespace PLMD

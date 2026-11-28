@@ -1,0 +1,10 @@
+# forces only on the coordination numbers of Q3 (computed in the same pass as the spherical harmonics), on the norms
+# of Q6 and on one component of its sums. The references were computed with the contact matrix written out
+# (chain.dat, not run by the test)
+q3: Q3 SPECIES=1-300 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6} MEAN
+q6: Q6 SPECIESA=1-100 SPECIESB=51-300 SWITCH={RATIONAL R_0=0.3 D_MAX=0.6} MEAN
+d3: SUM ARG=q3_denom PERIODIC=NO
+n6: SUM ARG=q6_norm PERIODIC=NO
+r6: SUM ARG=q6_sp.rm-p2 PERIODIC=NO
+RESTRAINT ARG=d3,n6,r6 AT=0,0,0 KAPPA=0.01,0.1,1
+PRINT ARG=d3,n6,r6 FILE=colvar FMT=%10.6f

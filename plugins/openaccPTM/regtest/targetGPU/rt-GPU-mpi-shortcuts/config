@@ -1,0 +1,6 @@
+type=driver
+mpiprocs=3
+arg="--plumed plumed.dat --ixyz 64.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+extra_files="../../trajectories/64.xyz"
+# some contributions are computed in single precision on the GPU: the last printed digit may differ from the CPU
+plumed_tolerance=(forces.0:2e-4 forces.1:2e-4 forces.2:2e-4 colvar:2e-4)
