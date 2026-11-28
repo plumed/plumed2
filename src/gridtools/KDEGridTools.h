@@ -23,6 +23,7 @@
 #define __PLUMED_gridtools_KDEGridTools_h
 
 #include "KDE.h"
+#include "tools/GridExtension.h"
 
 namespace PLMD {
 namespace gridtools {
@@ -48,9 +49,9 @@ inline int getBoxComponent( const Value* arg ) {
 
 /// The grid of KDE. As in METAD, the grid is extended along the arguments that are not periodic whenever the kernels
 /// do not fit in it, so that it contains all the points where the density is not zero (plus one point on each side).
-/// The spacing does not change and the new points are on the same lattice (the bounds are written with Tools::boundString,
-/// and read back from these strings: ACCUMULATE places its data in the extended grid with a tolerance). With GRID_SPACING and no GRID_MIN and GRID_MAX
-/// the grid is placed around the kernels of the first step that has some, on the lattice with a point at zero.
+/// The spacing does not change and the new points are on the same lattice (GridExtension plans the extension as for METAD,
+/// GridCoordinatesObject::extend applies it). With GRID_SPACING and no GRID_MIN and GRID_MAX the grid is placed around the
+/// kernels of the first step that has some, on the lattice with a point at zero.
 template <class K, class P>
 class KDEGridTools {
 public:
@@ -63,8 +64,10 @@ public:
   std::vector<bool> automatic;
 /// the grid is extended along this argument (not periodic, not a box component, no NO_EXTEND)
   std::vector<bool> extendable;
-/// maximum number of points of the grid (GRID_SIZE_LIMIT)
+/// maximum number of points of the grid (GRID_SIZE_LIMIT, as given in input)
   double sizelimit{1e8};
+/// the extensions of the grid (the limit can be raised by a large initial grid)
+  GridExtension extension;
 /// the range from the kernels has not been set yet (no kernels with a non-zero height so far)
   bool pristine{false};
 /// the grid was restored from a checkpoint
@@ -240,9 +243,11 @@ void KDEGridTools<K,P>::readGridParameters( KDEGridTools<K,P>& g, ActionWithArgu
       action->error("GRID_SPACING should be positive");
     }
   }
-  if( !(g.sizelimit>=1.0) ) {
-    action->error("GRID_SIZE_LIMIT should be at least 1");
+  const std::string limiterror=GridExtension::checkSizeLimit( g.sizelimit );
+  if( !limiterror.empty() ) {
+    action->error( limiterror );
   }
+  g.extension.setSizeLimit( g.sizelimit, {} );
   g.automatic.assign( ndim, false );
   g.extendable.assign( ndim, false );
   std::vector<bool> ipbc( ndim );
@@ -314,13 +319,8 @@ void KDEGridTools<K,P>::setupGridBounds( KDEGridTools<K,P>& g, P& p, const Tenso
   gridobject.setBounds( smin, smax, g.nbin, spacing );
   myval->setShape( gridobject.getNbin(true) );
   // as in METAD, an initial grid that is larger than GRID_SIZE_LIMIT raises the limit to twice its size
-  double size=1.0;
-  for(const auto n : gridobject.getNbin(true)) {
-    size*=n;
-  }
-  if( size>g.sizelimit && std::find(g.extendable.begin(),g.extendable.end(),true)!=g.extendable.end() ) {
-    g.sizelimit=std::min(2.0*size,static_cast<double>(std::numeric_limits<unsigned>::max()));
-    action.log.printf("  The initial grid has more points than GRID_SIZE_LIMIT: the limit is set to %s points\n", Tools::boundString(g.sizelimit).c_str());
+  if( std::find(g.extendable.begin(),g.extendable.end(),true)!=g.extendable.end() && g.extension.setSizeLimit( g.sizelimit, gridobject.getNbin(true) ) ) {
+    action.log.printf("  The initial grid has more points than GRID_SIZE_LIMIT: the limit is set to %s points\n", Tools::boundString(g.extension.getSizeLimit()).c_str());
   }
 }
 
@@ -391,104 +391,77 @@ bool KDEGridTools<K,P>::extendGridBounds( KDEGridTools<K,P>& g, P& p, GridCoordi
     // no kernels with a non-zero height: nothing to fit in the grid
     return false;
   }
-  // the current grid: lower bound, spacing and number of bins along each argument
-  std::vector<double> gmin( ndim ), dx( gridobject.getGridSpacing() );
-  std::vector<std::size_t> nb( gridobject.getNbin(false) );
   for(unsigned i=0; i<ndim; ++i) {
-    Tools::convert( gridobject.getMin()[i], gmin[i] );
-  }
-  std::vector<bool> changed( ndim, false );
-  for(unsigned i=0; i<ndim; ++i) {
-    if( (g.pristine && !g.automatic[i]) || (!g.pristine && !g.extendable[i]) ) {
-      continue;
-    }
-    if( !std::isfinite(lower[i]) || !std::isfinite(upper[i]) ) {
+    if( ((g.pristine && g.automatic[i]) || g.extendable[i]) && (!std::isfinite(lower[i]) || !std::isfinite(upper[i])) ) {
       action.error("cannot extend the grid along argument "+args[i]->getName()+" to contain the kernels: non finite value");
-    }
-    if( g.pristine ) {
-      if( g.gspacing.size()==ndim ) {
-        // on the lattice with a point at zero, plus one point on each side (as in METAD)
-        dx[i]=g.gspacing[i];
-        const double first=std::floor(lower[i]/dx[i])-1.0, last=std::ceil(upper[i]/dx[i])+1.0;
-        gmin[i]=first*dx[i];
-        nb[i]=static_cast<std::size_t>( last-first );
-      } else {
-        // GRID_BIN only: the range of the kernels of the first step is divided in GRID_BIN bins, plus one on each side
-        if( !(upper[i]>lower[i]) ) {
-          action.error("the kernels of the first step have no extent along argument "+args[i]->getName()+": use GRID_SPACING to set the grid");
-        }
-        dx[i]=(upper[i]-lower[i])/g.nbin[i];
-        gmin[i]=lower[i]-dx[i];
-        nb[i]=g.nbin[i]+2;
-      }
-      changed[i]=true;
     }
   }
   const bool placed=g.pristine;
   g.pristine=false;
-  // the points to add at the lower and upper end along each argument: all the points where the density is not
-  // zero plus one on each side; as in METAD at least a quarter of the current number of points, so that the grid
-  // is not extended at every step (unless this would exceed GRID_SIZE_LIMIT)
-  std::vector<std::size_t> addlow( ndim, 0 ), addup( ndim, 0 ), growlow( ndim, 0 ), growup( ndim, 0 );
-  bool extend=false;
+  if( placed ) {
+    // the grid along the arguments with no GRID_MIN and GRID_MAX is placed around the kernels (a new lattice)
+    std::vector<double> gmin( gridobject.getMinValues() ), dx( gridobject.getGridSpacing() );
+    std::vector<std::size_t> nb( gridobject.getNbin(false) );
+    std::vector<std::string> smin( gridobject.getMin() ), smax( gridobject.getMax() );
+    double size=1.0;
+    for(unsigned i=0; i<ndim; ++i) {
+      if( g.automatic[i] ) {
+        if( g.gspacing.size()==ndim ) {
+          // on the lattice with a point at zero, plus one point on each side (as in METAD)
+          dx[i]=g.gspacing[i];
+          const double first=std::floor(lower[i]/dx[i])-1.0, last=std::ceil(upper[i]/dx[i])+1.0;
+          if( std::fabs(first)>1e15 || std::fabs(last)>1e15 ) {
+            action.error("cannot place the grid along argument "+args[i]->getName()+" around the kernels");
+          }
+          gmin[i]=first*dx[i];
+          nb[i]=static_cast<std::size_t>( last-first );
+        } else {
+          // GRID_BIN only: the range of the kernels of the first step is divided in GRID_BIN bins, plus one on each side
+          if( !(upper[i]>lower[i]) ) {
+            action.error("the kernels of the first step have no extent along argument "+args[i]->getName()+": use GRID_SPACING to set the grid");
+          }
+          dx[i]=(upper[i]-lower[i])/g.nbin[i];
+          gmin[i]=lower[i]-dx[i];
+          nb[i]=g.nbin[i]+2;
+        }
+        smin[i]=Tools::boundString( gmin[i] );
+        smax[i]=Tools::boundString( gmin[i]+nb[i]*dx[i] );
+      }
+      size*=static_cast<double>(nb[i]) + (gridobject.isPeriodic(i) ? 0.0 : 1.0);
+    }
+    if( size>g.extension.getSizeLimit() ) {
+      action.error("the kernels require a grid with "+Tools::boundString(size)+" points, more than GRID_SIZE_LIMIT="
+                   +Tools::boundString(g.extension.getSizeLimit())+": increase GRID_SIZE_LIMIT, or check the arguments and the bandwidth");
+    }
+    gridobject.setLattice( gmin, dx, nb, smin, smax );
+  }
+  // along the other arguments that can be extended: all the points where the density is not zero, plus one on each
+  // side, with the growth of METAD (see GridExtension)
+  std::vector<GridExtension::Mode> mode( ndim, GridExtension::Mode::fixed );
+  std::vector<double> firstpoint( ndim, 0.0 ), lastpoint( ndim, 0.0 );
   for(unsigned i=0; i<ndim; ++i) {
-    // the grid that has just been placed contains the kernels
-    if( !g.extendable[i] || changed[i] ) {
+    if( !g.extendable[i] || (placed && g.automatic[i]) ) {
       continue;
     }
-    const double first=std::floor((lower[i]-gmin[i])/dx[i])-1.0, last=std::ceil((upper[i]-gmin[i])/dx[i])+1.0;
-    if( !std::isfinite(first) || !std::isfinite(last) || std::fabs(first)>1e15 || std::fabs(last)>1e15 ) {
-      action.error("cannot extend the grid along argument "+args[i]->getName()+" to contain the kernels");
-    }
-    const std::size_t grow=static_cast<std::size_t>( std::ceil(0.25*nb[i]) );
-    if( first<0 ) {
-      addlow[i]=static_cast<std::size_t>(-first);
-      growlow[i]=std::max(addlow[i],grow);
-      extend=true;
-    }
-    if( last>static_cast<double>(nb[i]) ) {
-      addup[i]=static_cast<std::size_t>(last-nb[i]);
-      growup[i]=std::max(addup[i],grow);
-      extend=true;
-    }
+    mode[i]=GridExtension::Mode::extend;
+    firstpoint[i]=std::floor(gridobject.getLatticeCoordinate(i,lower[i]))-1.0;
+    lastpoint[i]=std::ceil(gridobject.getLatticeCoordinate(i,upper[i]))+1.0;
   }
-  if( extend ) {
-    auto size=[&](const std::vector<std::size_t>& lo, const std::vector<std::size_t>& up) {
-      double n=1.0;
-      for(unsigned i=0; i<ndim; ++i) {
-        n*=static_cast<double>(nb[i]+lo[i]+up[i]) + (gridobject.isPeriodic(i) ? 0.0 : 1.0);
-      }
-      return n;
-    };
-    if( size(growlow,growup)>g.sizelimit ) {
-      growlow=addlow;
-      growup=addup;
-      if( size(addlow,addup)>g.sizelimit ) {
-        action.error("the kernels require a grid with "+Tools::boundString(size(addlow,addup))+" points, more than GRID_SIZE_LIMIT="
-                     +Tools::boundString(g.sizelimit)+": increase GRID_SIZE_LIMIT, or check the arguments (e.g. a distance that grows without limit) "
-                     "and the bandwidth, or use NO_EXTEND");
-      }
-    }
-    for(unsigned i=0; i<ndim; ++i) {
-      if( growlow[i]>0 || growup[i]>0 ) {
-        gmin[i]-=growlow[i]*dx[i];
-        nb[i]+=growlow[i]+growup[i];
-        changed[i]=true;
-      }
-    }
+  const GridExtension::Plan plan=g.extension.plan( gridobject.getNbin(true), mode, firstpoint, lastpoint );
+  if( plan.nonfinite!=std::string::npos ) {
+    action.error("cannot extend the grid along argument "+args[plan.nonfinite]->getName()+" to contain the kernels");
   }
-  if( !placed && !extend ) {
+  if( plan.toolarge ) {
+    action.error("the kernels require a grid with "+Tools::boundString(plan.npoints)+" points, more than GRID_SIZE_LIMIT="
+                 +Tools::boundString(g.extension.getSizeLimit())+": increase GRID_SIZE_LIMIT, or check the arguments (e.g. a distance that grows without limit) "
+                 "and the bandwidth, or use NO_EXTEND");
+  }
+  if( !placed && !plan.changed ) {
     return false;
   }
-  // the new bounds: those that do not change are kept as they are (e.g. -pi and pi)
-  std::vector<std::string> smin( gridobject.getMin() ), smax( gridobject.getMax() );
-  for(unsigned i=0; i<ndim; ++i) {
-    if( changed[i] ) {
-      smin[i]=Tools::boundString( gmin[i] );
-      smax[i]=Tools::boundString( gmin[i]+nb[i]*dx[i] );
-    }
+  if( plan.changed ) {
+    gridobject.extend( plan.lower, plan.upper );
   }
-  gridobject.setBounds( smin, smax, nb, dx );
   myval->setShape( gridobject.getNbin(true) );
   action.log.printf("  %s grid: min", placed ? "Placing the" : "Extending the");
   for(unsigned i=0; i<ndim; ++i) {
@@ -526,17 +499,7 @@ void KDEGridTools<K,P>::writeCheckpoint( const KDEGridTools<K,P>& g, const GridC
     return;
   }
   w.write("pristine",(long long) g.pristine);
-  std::vector<double> gmin( gridobject.getDimension() );
-  for(unsigned i=0; i<gmin.size(); ++i) {
-    Tools::convert( gridobject.getMin()[i], gmin[i] );
-  }
-  w.write("grid_min",gmin);
-  w.write("grid_spacing",gridobject.getGridSpacing());
-  std::vector<long long> nb;
-  for(const auto n : gridobject.getNbin(false)) {
-    nb.push_back(n);
-  }
-  w.write("grid_bins",nb);
+  gridobject.writeCheckpoint( w, "grid_" );
 }
 
 template <class K, class P>
@@ -549,30 +512,7 @@ void KDEGridTools<K,P>::readCheckpoint( KDEGridTools<K,P>& g, GridCoordinatesObj
   long long pristine;
   r.read("pristine",pristine);
   g.pristine=(pristine!=0);
-  std::vector<double> gmin, dx;
-  std::vector<long long> nb;
-  r.read("grid_min",gmin);
-  r.read("grid_spacing",dx);
-  r.read("grid_bins",nb);
-  const std::size_t ndim=gridobject.getDimension();
-  plumed_massert( gmin.size()==ndim && dx.size()==ndim && nb.size()==ndim, "the checkpoint was written with a different number of arguments" );
-  std::vector<std::string> smin( g.gmin ), smax( g.gmax );
-  std::vector<std::size_t> bins( ndim );
-  for(unsigned i=0; i<ndim; ++i) {
-    bins[i]=nb[i];
-    // the bounds given in input (or the periodic domain) are kept as they are, if they have not been changed
-    double a=0.0, b=0.0;
-    if( smin[i]!="auto" ) {
-      Tools::convert( smin[i], a );
-      Tools::convert( smax[i], b );
-    }
-    const double tol=1e-9*dx[i];
-    if( smin[i]=="auto" || std::fabs(a-gmin[i])>tol || std::fabs(b-(gmin[i]+nb[i]*dx[i]))>tol ) {
-      smin[i]=Tools::boundString( gmin[i] );
-      smax[i]=Tools::boundString( gmin[i]+nb[i]*dx[i] );
-    }
-  }
-  gridobject.setBounds( smin, smax, bins, dx );
+  gridobject.readCheckpoint( r, "grid_" );
   myval->setShape( gridobject.getNbin(true) );
   g.restored=true;
 }

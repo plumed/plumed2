@@ -24,6 +24,7 @@
 
 #include "MetaDKernel.h"
 #include "tools/Grid.h"
+#include "tools/GridExtension.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,8 +52,8 @@ class MetaDBiasGrid {
   Action& action_;
   std::unique_ptr<GridBase> grid_;
   bool sparse_=false;
-  /// maximum number of points (GRID_SIZE_LIMIT)
-  double sizelimit_=1.0e8;
+  /// the extensions of the grid (GRID_SIZE_LIMIT)
+  GridExtension extension_;
   /// no range was given and there are no hills yet: the grid is placed around the first one
   bool pristine_=false;
   /// a line of the log is not complete (an extension starts a new line)

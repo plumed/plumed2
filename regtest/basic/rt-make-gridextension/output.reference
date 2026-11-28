@@ -1,0 +1,21 @@
+checkSizeLimit(0.5): GRID_SIZE_LIMIT should be at least 1
+checkSizeLimit(1e10): GRID_SIZE_LIMIT cannot be larger than 4294967295
+checkSizeLimit(1e8): ''
+raised 0 limit 1000
+inside: changed 0 lower 0 upper 0 npoints 101 toolarge 0 nonfinite none
+below: changed 1 lower 26 upper 0 npoints 127 toolarge 0 nonfinite none
+above: changed 1 lower 0 upper 40 npoints 141 toolarge 0 nonfinite none
+fixed: changed 1 lower 0 3 upper 0 0 npoints 280 toolarge 0 nonfinite none
+fallback: changed 1 lower 1 0 upper 0 0 npoints 930 toolarge 0 nonfinite none
+toolarge: changed 1 lower 10 0 upper 0 0 npoints 1200 toolarge 1 nonfinite none
+place: changed 1 lower -3 upper 8 npoints 7 toolarge 0 nonfinite none
+place-shift: changed 1 lower 7 upper -4 npoints 5 toolarge 0 nonfinite none
+nonfinite: changed 0 lower 0 0 upper 0 0 npoints 0 toolarge 0 nonfinite 1
+far: changed 0 lower 0 upper 0 npoints 0 toolarge 0 nonfinite 0
+lattice: min -1 -pi max 1 pi points 21 20 total 420
+lattice coordinate of 0.25: 12.5
+extended: min -1.5 -pi max 0.8 pi points 24 20 total 480
+same lattice 1 shift 5 0 back -5 0
+same lattice 1 shift 2 0
+a new lattice with the same numbers: same lattice 1
+a shifted lattice: same lattice 0

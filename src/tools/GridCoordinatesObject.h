@@ -31,6 +31,9 @@
 
 namespace PLMD {
 
+class CheckpointReader;
+class CheckpointWriter;
+
 class GridCoordinatesObject {
 private:
 /// Have the bounds been setup on the grid
@@ -58,6 +61,12 @@ private:
   std::vector<double> dx;
 /// The dimensionality of the grid
   unsigned dimension;
+/// The minimum when the lattice was set (setBounds, setLattice): extend does not change it
+  std::vector<double> lattice_start;
+/// Index on the lattice of the first point of the grid (zero when the lattice is set, changed by extend)
+  std::vector<long long> lattice_origin;
+/// Set the strides and the number of points from nbin
+  void setStrides();
 /// Get the index of the closest point on the fibonacci sphere
   unsigned getFibonacciIndex( View<const double> p ) const ;
 /// Get the flat grid coordinates
@@ -69,6 +78,25 @@ public:
   void setup( const std::string& geom, const std::vector<bool>& ipbc, const unsigned& np, const double& fib_cutoff );
 /// Set the minimum and maximum of the grid
   void setBounds( const std::vector<std::string>& smin, const std::vector<std::string>& smax, const std::vector<std::size_t>& nbins, std::vector<double>& spacing );
+/// Set a flat grid from the minimum, the spacing and the number of bins along each direction, as doubles (no
+/// parsing). The bounds (getMin, getMax) are smin and smax if given (e.g. -pi and pi of a periodic argument),
+/// otherwise they are written with Tools::boundString; as in setBounds, the maximum of a direction that is not
+/// periodic is the last point.
+  void setLattice( const std::vector<double>& gmin, const std::vector<double>& spacing, const std::vector<std::size_t>& nbins,
+                   const std::vector<std::string>& smin= {}, const std::vector<std::string>& smax= {} );
+/// Change the range along the directions that are not periodic: lower[i] (upper[i]) points are added at the lower
+/// (upper) end of direction i if positive, removed if negative. The spacing does not change and the points stay on
+/// the same lattice. Same arithmetic and bounds as GridBase::resize.
+  void extend( const std::vector<long long>& lower, const std::vector<long long>& upper );
+/// Are this grid and other on the same lattice (same spacing and periodicity, and the same lattice set by
+/// setBounds or setLattice, then possibly extended)?
+  bool onSameLattice( const GridCoordinatesObject& other ) const ;
+/// For two grids on the same lattice: point k of other along direction i is point k+shift[i] of this grid
+  std::vector<long long> getShiftFrom( const GridCoordinatesObject& other ) const ;
+/// Store the flat grid in a checkpoint (names starting with prefix)
+  void writeCheckpoint( CheckpointWriter& w, const std::string& prefix ) const ;
+/// Restore a flat grid stored by writeCheckpoint (the grid has been set up with the same periodicity)
+  void readCheckpoint( const CheckpointReader& r, const std::string& prefix );
 /// Convert an index into indices
   void convertIndexToIndices( const unsigned& index, const std::vector<unsigned>& nnbin, std::vector<unsigned>& indices ) const ;
 /// Check if a point is within the grid boundaries
@@ -99,6 +127,10 @@ public:
   std::vector<std::size_t> getNbin( const bool& shape ) const ;
 /// Get the vector containing the minimum value of the grid in each dimension
   std::vector<std::string> getMin() const ;
+/// The minimum of the grid in each dimension as a double
+  const std::vector<double>& getMinValues() const ;
+/// The coordinate of x on the lattice of direction i, in units of the spacing from the first point
+  double getLatticeCoordinate( const unsigned& i, const double& x ) const ;
 /// Get the vector containing the maximum value of the grid in each dimension
   std::vector<std::string> getMax() const ;
 /// Return the volume of one of the grid cells
@@ -133,6 +165,18 @@ const std::vector<double>& GridCoordinatesObject::getGridSpacing() const {
   }
   plumed_merror("dont understand what spacing means for spherical grids");
   return dx;
+}
+
+inline
+const std::vector<double>& GridCoordinatesObject::getMinValues() const {
+  plumed_dbg_assert( gtype==flat );
+  return min;
+}
+
+inline
+double GridCoordinatesObject::getLatticeCoordinate( const unsigned& i, const double& x ) const {
+  plumed_dbg_assert( gtype==flat );
+  return (x-min[i])/dx[i];
 }
 
 inline
