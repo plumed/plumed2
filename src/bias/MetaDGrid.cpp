@@ -29,7 +29,6 @@
 #include "tools/Tools.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 namespace PLMD {
 namespace bias {
@@ -141,12 +140,9 @@ void MetaDBiasGrid::checkSpacing(Action& action, const std::vector<std::string>&
 }
 
 void MetaDBiasGrid::checkSizeLimit(Action& action, double limit) {
-  if(!(limit>=1.0)) {
-    action.error("GRID_SIZE_LIMIT should be at least 1");
-  }
-  // grid points are indexed with unsigned integers (see GridBase)
-  if(limit>static_cast<double>(std::numeric_limits<unsigned>::max())) {
-    action.error("GRID_SIZE_LIMIT cannot be larger than "+exactString(std::numeric_limits<unsigned>::max()));
+  const std::string msg=GridExtension::checkSizeLimit(limit);
+  if(!msg.empty()) {
+    action.error(msg);
   }
 }
 
@@ -224,15 +220,10 @@ void MetaDBiasGrid::read(IFile& file, const std::string& filename, const std::st
 }
 
 void MetaDBiasGrid::setSizeLimit(double limit) {
-  sizelimit_=limit;
   // an initial grid larger than GRID_SIZE_LIMIT (e.g. given with GRID_MIN, GRID_MAX, GRID_BIN) can still be extended
-  double size=1.0;
-  for(const auto n : grid_->getNbin()) {
-    size*=n;
-  }
-  if(size>sizelimit_) {
-    sizelimit_=std::min(2.0*size,static_cast<double>(std::numeric_limits<unsigned>::max()));
-    action_.log.printf("  The initial grid has more points than GRID_SIZE_LIMIT: the limit is set to %s points\n",exactString(sizelimit_).c_str());
+  const std::vector<unsigned> nbin=grid_->getNbin();
+  if(extension_.setSizeLimit(limit,std::vector<std::size_t>(nbin.begin(),nbin.end()))) {
+    action_.log.printf("  The initial grid has more points than GRID_SIZE_LIMIT: the limit is set to %s points\n",exactString(extension_.getSizeLimit()).c_str());
   }
 }
 
@@ -251,76 +242,48 @@ void MetaDBiasGrid::extend(const std::vector<double>& x, const std::vector<doubl
   const unsigned ncv=grid_->getDimension();
   const std::vector<bool> pbc=grid_->getIsPeriodic();
   const std::vector<unsigned> nbin=grid_->getNbin();
-  // points to add at the lower and upper end along each CV (for a pristine grid: the change of the range, also negative)
-  std::vector<long long> lower(ncv,0), upper(ncv,0);
-  // as above, with some more points so that the grid is not extended at every hill
-  std::vector<long long> lowergrow(ncv,0), uppergrow(ncv,0);
-  bool extend=false;
+  // the first and last points needed along each CV: the points within halfwidth on each side (as in
+  // MetaDKernel::getSupport, which adds the hill to the points from the one below x minus this number to the one
+  // below x plus this number), plus one more on each side, so that the bias and its derivatives are zero at the
+  // boundary of the grid; a pristine grid is placed exactly on these points
+  std::vector<GridExtension::Mode> mode(ncv,GridExtension::Mode::fixed);
+  std::vector<double> firstpoint(ncv,0.0), lastpoint(ncv,0.0);
   for(unsigned i=0; i<ncv; i++) {
     if(pbc[i]) {
       continue;
     }
-    // points within halfwidth on each side (as in MetaDKernel::getSupport, which adds the hill to the points from
-    // the one below x minus this number to the one below x plus this number), plus one more on each side,
-    // so that the bias and its derivatives are zero at the boundary of the grid
+    mode[i]=pristine_ ? GridExtension::Mode::place : GridExtension::Mode::extend;
     double n=std::ceil(halfwidth[i]/grid_->getDx(i));
     if(!std::isfinite(n) || n<0.0) {
       // support not finite (degenerate hill): the hill is added to the whole grid, x only must be in it
       n=0.0;
     }
     const double k=std::floor(grid_->getLatticeCoordinate(i,x[i]));
-    const double lo=k-n-1.0;
-    const double hi=k+n+1.0;
-    if(!std::isfinite(lo) || !std::isfinite(hi) || std::fabs(lo)>1e15 || std::fabs(hi)>1e15) {
-      std::string is;
-      Tools::convert(i,is);
-      action_.error("cannot extend the grid along variable "+is+" to contain the point "+exactString(x[i]));
-    }
-    const double last=static_cast<double>(nbin[i])-1.0;
-    if(pristine_) {
-      lower[i]=lowergrow[i]=static_cast<long long>(-lo);
-      upper[i]=uppergrow[i]=static_cast<long long>(hi-last);
-      extend=true;
-    } else {
-      // geometric growth: at least a quarter of the current number of points
-      const long long grow=static_cast<long long>(std::ceil(0.25*nbin[i]));
-      if(lo<0.0) {
-        lower[i]=static_cast<long long>(-lo);
-        lowergrow[i]=std::max(lower[i],grow);
-        extend=true;
-      }
-      if(hi>last) {
-        upper[i]=static_cast<long long>(hi-last);
-        uppergrow[i]=std::max(upper[i],grow);
-        extend=true;
-      }
-    }
+    firstpoint[i]=k-n-1.0;
+    lastpoint[i]=k+n+1.0;
+  }
+  const GridExtension::Plan plan=extension_.plan(std::vector<std::size_t>(nbin.begin(),nbin.end()),mode,firstpoint,lastpoint);
+  if(plan.nonfinite!=std::string::npos) {
+    std::string is;
+    Tools::convert(plan.nonfinite,is);
+    action_.error("cannot extend the grid along variable "+is+" to contain the point "+exactString(x[plan.nonfinite]));
   }
   const bool pristine=pristine_;
   pristine_=false;
-  if(!extend) {
+  if(!plan.changed) {
     return;
   }
-  auto size=[&](const std::vector<long long>& lo,const std::vector<long long>& up) {
-    double n=1.0;
+  if(plan.toolarge) {
+    std::string point;
     for(unsigned i=0; i<ncv; i++) {
-      n*=static_cast<double>(nbin[i])+lo[i]+up[i];
+      point+=(i>0?",":"")+exactString(x[i]);
     }
-    return n;
-  };
-  if(size(lowergrow,uppergrow)>sizelimit_) {
-    lowergrow=lower;
-    uppergrow=upper;
-    if(size(lower,upper)>sizelimit_) {
-      std::string point;
-      for(unsigned i=0; i<ncv; i++) {
-        point+=(i>0?",":"")+exactString(x[i]);
-      }
-      action_.error("a Gaussian at "+point+" requires a grid with "+exactString(size(lower,upper))+" points, more than GRID_SIZE_LIMIT="
-                    +exactString(sizelimit_)+": increase GRID_SIZE_LIMIT, or check the variables (e.g. a distance that grows without limit) "
-                    "and the width of the Gaussians (e.g. SIGMA_MAX with ADAPTIVE)");
-    }
+    action_.error("a Gaussian at "+point+" requires a grid with "+exactString(plan.npoints)+" points, more than GRID_SIZE_LIMIT="
+                  +exactString(extension_.getSizeLimit())+": increase GRID_SIZE_LIMIT, or check the variables (e.g. a distance that grows without limit) "
+                  "and the width of the Gaussians (e.g. SIGMA_MAX with ADAPTIVE)");
   }
+  const std::vector<long long>& lowergrow=plan.lower;
+  const std::vector<long long>& uppergrow=plan.upper;
   grid_->resize(lowergrow,uppergrow);
   if(interval_ && !pristine) {
     // With INTERVAL, all the points beyond a limit have the same value (the hills are computed at the limit there) and

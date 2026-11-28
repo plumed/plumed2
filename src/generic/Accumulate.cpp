@@ -253,16 +253,8 @@ void Accumulate::writeCheckpoint(CheckpointWriter& w) {
   }
   // the grid of the accumulated data, which can differ from the one of the argument at the restart (see extendGrid)
   if( gridset && gridcoords.getGridType()=="flat" ) {
-    std::vector<long long> bins;
-    for(const auto n : gridcoords.getNbin(false)) {
-      bins.push_back(n);
-    }
-    w.write("grid_bins",bins);
-    w.write("grid_spacing",gridcoords.getGridSpacing());
-    for(unsigned i=0; i<bins.size(); ++i) {
-      w.write("grid_min"+std::to_string(i),gridcoords.getMin()[i]);
-      w.write("grid_max"+std::to_string(i),gridcoords.getMax()[i]);
-    }
+    w.write("grid_set",1LL);
+    gridcoords.writeCheckpoint( w, "grid_" );
   }
   const Value* myout = getPntrToComponent(0);
   std::vector<long long> shape;
@@ -295,18 +287,8 @@ void Accumulate::readCheckpoint(CheckpointReader& r) {
   if( clearnextstep ) {
     return;
   }
-  if( r.has("grid_bins") ) {
-    std::vector<long long> bins;
-    std::vector<double> spacing;
-    r.read("grid_bins",bins);
-    r.read("grid_spacing",spacing);
-    std::vector<std::string> gmin( bins.size() ), gmax( bins.size() );
-    for(unsigned i=0; i<bins.size(); ++i) {
-      r.read("grid_min"+std::to_string(i),gmin[i]);
-      r.read("grid_max"+std::to_string(i),gmax[i]);
-    }
-    std::vector<std::size_t> nb( bins.begin(), bins.end() );
-    gridcoords.setBounds( gmin, gmax, nb, spacing );
+  if( r.has("grid_set") ) {
+    gridcoords.readCheckpoint( r, "grid_" );
     gridset=true;
   }
   Value* myout = getPntrToComponent(0);
@@ -379,18 +361,11 @@ void Accumulate::extendGrid() {
   if( gc.getGridType()!="flat" || oldgrid.getNumberOfPoints()!=nold ) {
     error("the grid of the argument has changed: the accumulated data cannot be placed in it");
   }
-  std::vector<long> offset( ndim );
-  for(unsigned i=0; i<ndim; ++i) {
-    const double dx=gc.getGridSpacing()[i];
-    double newmin, oldmin;
-    Tools::convert( gc.getMin()[i], newmin );
-    Tools::convert( oldgrid.getMin()[i], oldmin );
-    const double o=(oldmin-newmin)/dx;
-    offset[i]=std::lround(o);
-    if( std::fabs(dx-oldgrid.getGridSpacing()[i])>1e-9*dx || std::fabs(o-offset[i])>1e-6 ) {
-      error("the grid of the argument has changed spacing or lattice: the accumulated data cannot be placed in it");
-    }
+  // the grid of the argument has been extended on the same lattice: the shift of the old points is exact
+  if( !gc.onSameLattice( oldgrid ) ) {
+    error("the grid of the argument has changed spacing or lattice: the accumulated data cannot be placed in it");
   }
+  const std::vector<long long> offset( gc.getShiftFrom( oldgrid ) );
   const std::vector<unsigned> oldnbin( oldshape.begin(), oldshape.end() );
   const std::vector<std::size_t>& newshape=myout->getShape();
   std::vector<unsigned> oldind( ndim ), newind( ndim );
@@ -398,8 +373,8 @@ void Accumulate::extendGrid() {
     gc.convertIndexToIndices( i, oldnbin, oldind );
     bool inside=true;
     for(unsigned j=0; j<ndim; ++j) {
-      const long k=static_cast<long>(oldind[j])+offset[j];
-      if( k<0 || k>=static_cast<long>(newshape[j]) ) {
+      const long long k=static_cast<long long>(oldind[j])+offset[j];
+      if( k<0 || k>=static_cast<long long>(newshape[j]) ) {
         inside=false;
         break;
       }

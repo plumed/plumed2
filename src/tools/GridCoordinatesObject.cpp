@@ -22,6 +22,8 @@
 #include "GridCoordinatesObject.h"
 #include "Random.h"
 #include "Matrix.h"
+#include "Checkpoint.h"
+#include <limits>
 
 namespace PLMD {
 
@@ -187,6 +189,130 @@ void GridCoordinatesObject::setBounds( const std::vector<std::string>& smin, con
       spacing[i]=dx[i];
     }
   }
+  lattice_start=min;
+  lattice_origin.assign( dimension, 0 );
+}
+
+void GridCoordinatesObject::setStrides() {
+  stride.resize( dimension );
+  double size=1.0;
+  for(unsigned i=0; i<dimension; ++i) {
+    size*=nbin[i];
+  }
+  plumed_massert( size<=static_cast<double>(std::numeric_limits<unsigned>::max()), "too many grid points" );
+  npoints=1;
+  for(unsigned i=0; i<dimension; ++i) {
+    stride[i]=npoints;
+    npoints*=nbin[i];
+  }
+}
+
+void GridCoordinatesObject::setLattice( const std::vector<double>& gmin, const std::vector<double>& spacing, const std::vector<std::size_t>& nbins,
+                                        const std::vector<std::string>& smin, const std::vector<std::string>& smax ) {
+  plumed_assert( gtype==flat && gmin.size()==dimension && spacing.size()==dimension && nbins.size()==dimension );
+  plumed_assert( (smin.empty() || smin.size()==dimension) && (smax.empty() || smax.size()==dimension) );
+  bounds_set=true;
+  min=gmin;
+  dx=spacing;
+  max.resize( dimension );
+  nbin.resize( dimension );
+  str_min.resize( dimension );
+  str_max.resize( dimension );
+  for(unsigned i=0; i<dimension; ++i) {
+    plumed_massert( nbins[i]>0 && nbins[i]<std::numeric_limits<unsigned>::max(), "invalid number of grid bins" );
+    plumed_massert( dx[i]>0, "the spacing of a grid should be positive" );
+    max[i]=min[i]+static_cast<double>(nbins[i])*dx[i];
+    str_min[i]=smin.empty() ? Tools::boundString( min[i] ) : smin[i];
+    str_max[i]=smax.empty() ? Tools::boundString( max[i] ) : smax[i];
+    nbin[i]=nbins[i];
+    if( !pbc[i] ) {
+      max[i]+=dx[i];
+      nbin[i]+=1;
+    }
+  }
+  setStrides();
+  lattice_start=min;
+  lattice_origin.assign( dimension, 0 );
+}
+
+void GridCoordinatesObject::extend( const std::vector<long long>& lower, const std::vector<long long>& upper ) {
+  plumed_assert( gtype==flat && bounds_set && lower.size()==dimension && upper.size()==dimension );
+  for(unsigned i=0; i<dimension; ++i) {
+    if( lower[i]==0 && upper[i]==0 ) {
+      continue;
+    }
+    plumed_massert( !pbc[i], "periodic directions of a grid cannot be extended" );
+    const long long n=static_cast<long long>(nbin[i])+lower[i]+upper[i];
+    plumed_massert( n>=2 && n<=static_cast<long long>(std::numeric_limits<unsigned>::max()), "invalid number of grid points after extending" );
+    min[i]-=static_cast<double>(lower[i])*dx[i];
+    max[i]+=static_cast<double>(upper[i])*dx[i];
+    nbin[i]=static_cast<unsigned>(n);
+    lattice_origin[i]-=lower[i];
+    // as in the input of a direction that is not periodic, the maximum is the last point
+    str_min[i]=Tools::boundString( min[i] );
+    str_max[i]=Tools::boundString( max[i]-dx[i] );
+  }
+  setStrides();
+}
+
+bool GridCoordinatesObject::onSameLattice( const GridCoordinatesObject& other ) const {
+  if( gtype!=flat || other.gtype!=flat || dimension!=other.dimension || !bounds_set || !other.bounds_set ) {
+    return false;
+  }
+  for(unsigned i=0; i<dimension; ++i) {
+    // (bitwise: grids on the same lattice have been copied from one another)
+    if( pbc[i]!=other.pbc[i] || dx[i]!=other.dx[i] || lattice_start[i]!=other.lattice_start[i] ) {
+      return false;
+    }
+    if( pbc[i] && nbin[i]!=other.nbin[i] ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<long long> GridCoordinatesObject::getShiftFrom( const GridCoordinatesObject& other ) const {
+  plumed_assert( onSameLattice( other ) );
+  std::vector<long long> shift( dimension );
+  for(unsigned i=0; i<dimension; ++i) {
+    shift[i]=other.lattice_origin[i]-lattice_origin[i];
+  }
+  return shift;
+}
+
+void GridCoordinatesObject::writeCheckpoint( CheckpointWriter& w, const std::string& prefix ) const {
+  plumed_assert( gtype==flat && bounds_set );
+  w.write( prefix+"nbin", nbin );
+  w.write( prefix+"min", min );
+  w.write( prefix+"max", max );
+  w.write( prefix+"dx", dx );
+  w.write( prefix+"lattice_start", lattice_start );
+  w.write( prefix+"lattice_origin", lattice_origin );
+  for(unsigned i=0; i<dimension; ++i) {
+    w.write( prefix+"strmin"+std::to_string(i), str_min[i] );
+    w.write( prefix+"strmax"+std::to_string(i), str_max[i] );
+  }
+}
+
+void GridCoordinatesObject::readCheckpoint( const CheckpointReader& r, const std::string& prefix ) {
+  plumed_assert( gtype==flat );
+  r.read( prefix+"nbin", nbin );
+  r.read( prefix+"min", min );
+  r.read( prefix+"max", max );
+  r.read( prefix+"dx", dx );
+  r.read( prefix+"lattice_start", lattice_start );
+  r.read( prefix+"lattice_origin", lattice_origin );
+  plumed_massert( nbin.size()==dimension && min.size()==dimension && max.size()==dimension && dx.size()==dimension
+                  && lattice_start.size()==dimension && lattice_origin.size()==dimension,
+                  "checkpoint: the grid was stored with a different number of dimensions" );
+  str_min.resize( dimension );
+  str_max.resize( dimension );
+  for(unsigned i=0; i<dimension; ++i) {
+    r.read( prefix+"strmin"+std::to_string(i), str_min[i] );
+    r.read( prefix+"strmax"+std::to_string(i), str_max[i] );
+  }
+  bounds_set=true;
+  setStrides();
 }
 
 unsigned GridCoordinatesObject::getIndex( const std::vector<unsigned>& indices ) const {

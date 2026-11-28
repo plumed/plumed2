@@ -1,8 +1,9 @@
 #! FIELDS c1 h dh_c1
-#! SET min_c1 -2.5
+#! SET min_c1 -2.55
 #! SET max_c1 10
-#! SET nbins_c1  250
+#! SET nbins_c1  251
 #! SET periodic_c1 false
+  -2.5500   0.0000   0.0000
   -2.5000   0.0000   0.0000
   -2.4500   0.0000   0.0000
   -2.4000   0.0000   0.0000
