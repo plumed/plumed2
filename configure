@@ -9328,6 +9328,21 @@ if test "$kenref_skipped" != yes && test "$HAVE_KENREF" = yes ; then
 $as_echo "#define __PLUMED_HAS_KENREF 1" >>confdefs.h
 
 
+  # rpath ON by default when KEnRef is linked (not when the module is skipped). A KEnRef build links libkenref_core from a non-system prefix
+  #     (and, IF you choose such a toolchain, may also link a non-system C++ runtime such as libc++). If ANY
+  #     linked library lives outside the system loader path, the plumed executable AND libplumedKernel.so must
+  #     record those dirs (RPATH) to run without LD_LIBRARY_PATH -- otherwise `sudo make install` (which
+  #     re-runs the build's json step with the environment stripped) can fail with e.g. "libc++.so.1: cannot
+  #     open shared object file", and the installed binary only runs when a matching module is loaded.
+  #     --enable-rpath records $LIBRARY_PATH into the RUNPATH of both; it is harmless for a pure
+  #     system-library build. Default it ON here (PLUMED's global default is off) UNLESS the user EXPLICITLY
+  #     passed --disable-rpath. $enable_rpath is set by AC_ARG_ENABLE: "no" iff --disable-rpath.
+  if test "$enable_rpath" != "no" && test "$rpath" != true ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&5
+$as_echo "$as_me: KEnRef: enabling rpath by default so the binaries are self-contained (override: --disable-rpath)" >&6;}
+    rpath=true
+  fi
+
   # Resolve the module's COMPILE includes ONCE, here, while PKG_CONFIG_PATH is set, and bake them into
   # Makefile.conf (KENREF_PLUMED_INCLUDE -> src/kenref/Makefile's KENREF_PLUMED_CPPFLAGS). This mirrors how the
   # LINK flags already flow (configure -> LIBS -> DYNAMIC_LIBS): the module never calls pkg-config at make
