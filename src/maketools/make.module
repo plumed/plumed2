@@ -24,6 +24,13 @@ endif
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 
+# modules with toolchain python in module.yml: the headers of Python and pybind11
+ifneq ($(wildcard module.yml),)
+ifeq ($(shell ../maketools/module-header toolchain module.yml),python)
+CPPFLAGS += $(PYTHON_EMBED_CPPFLAGS)
+endif
+endif
+
 # source for plumed kernel
 SRC=$(wildcard *.cpp)
 

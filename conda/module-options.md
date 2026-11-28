@@ -42,12 +42,19 @@ placement: any
 or `cuda`: the `.cu` files are compiled by nvcc, or by hipcc for AMD GPUs when
 PLUMED is configured with `--enable-hip`, and the `.cpp` files by the C++
 compiler. Either way the library is linked by the C++ compiler, so such a module
-can go into the kernel. `placement` is `any` (the default: into the kernel with
+can go into the kernel. `toolchain: python` declares C++ sources that embed a
+Python interpreter (pybind11): they are compiled with the headers of one Python
+and the library is linked to its `libpython`, so there is one build for each
+Python version, registered with the variant `python<version>` (for instance
+`python3.12`). It goes into the kernel only when enabled by name, with the Python
+of `PYTHON_BIN` (`--enable-modules=+pycv PYTHON_BIN=python3.12`: the kernel then
+links libpython); the packages and wheels never do, so they do not depend on Python.
+`placement` is `any` (the default: into the kernel with
 `--enable-modules`, or as an extension against an installed base) or `extension`
 (only as an extension). `--enable-modules=all` enables neither modules with a
 toolchain other than `cxx` nor `placement: extension` modules; a CUDA module is
 enabled only by name (`--enable-modules=+gpu_cuda_hip`), and only then does
-configure look for nvcc or hipcc. The CMake build never compiles them.
+configure look for nvcc or hipcc (or check the Python, for toolchain python). The CMake build never compiles them.
 
 A module that uses only the headers of another module lists it in `include`:
 
@@ -152,7 +159,6 @@ All the following `conda` fields default to empty lists of strings:
 | `configure_flags` | Extra kernel configure arguments. |
 | `cppflags`, `cxxflags`, `ldflags` | Extra compiler/preprocessor/linker arguments. |
 | `make_args` | Kernel or Make-based plugin arguments. |
-| `cmake_args` | pycv/scikit-build arguments. |
 | `required_features` | Missing feature fails the build. |
 | `optional_features` | Explicit additional optional probes. |
 | `disabled_features` | Deliberately disable and report features absent. |
@@ -167,7 +173,7 @@ Flags are argument lists. Build-environment variables expand once; `$$` means a
 literal dollar. Missing variables are errors. Values are never shell-evaluated.
 Kernel settings combine globally. Native extensions apply flags per module,
 retain kernel ABI flags and use a Python compiler driver, so configure/Make/CMake
-arguments are rejected for that backend. pycv accepts `cmake_args`; CUDA/OpenACC
+arguments are rejected for that backend. CUDA/OpenACC
 accept `make_args`. Kernel configure arguments cannot override installation
 layout, module selection or MPI policy.
 

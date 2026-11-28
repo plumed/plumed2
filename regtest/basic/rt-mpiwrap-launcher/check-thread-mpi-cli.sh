@@ -80,4 +80,35 @@ fi
 grep -q "CHDIR is not supported while a thread-MPI runtime is active" "$tmp/chdir.err"
 test ! -e "$tmp/thread-mpi-directory"
 
-echo "thread-MPI CLI launch, benchmark distribution, rank handoff, and CHDIR guard passed"
+# An error on one rank stops all of them: replica 0 would otherwise wait
+# forever in ENSEMBLE for replica 1, whose input is wrong
+mkdir "$tmp/failure"
+cat > "$tmp/failure/traj.xyz" <<'EOF'
+2
+10 10 10
+X 0 0 0
+X 1 0 0
+2
+10 10 10
+X 0 0 0
+X 1.5 0 0
+EOF
+cat > "$tmp/failure/failure.0.dat" <<'EOF'
+d: DISTANCE ATOMS=1,2
+e: ENSEMBLE ARG=d
+PRINT ARG=e.d FILE=colvar
+EOF
+cat > "$tmp/failure/failure.1.dat" <<'EOF'
+d: DISTANCE ATOMS=1,2
+WRONG_ACTION
+EOF
+status=0
+(cd "$tmp/failure" && timeout 120 "$plumed" --tmpi-threads 2 driver \
+    --plumed failure.dat --ixyz traj.xyz --multi 2 >failure.out 2>failure.err) || status=$?
+if ((status==0 || status==124)); then
+  echo "thread-MPI did not stop after an error on one rank (exit status $status)" >&2
+  exit 1
+fi
+grep -q "PLUMED thread-MPI rank 1 failed: stopping all the ranks" "$tmp/failure/failure.err"
+
+echo "thread-MPI CLI launch, benchmark distribution, rank handoff, CHDIR guard and rank failure passed"

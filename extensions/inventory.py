@@ -140,8 +140,8 @@ def generate_catalog(write=True):
         validate_backend(
             modules[directory.name]["conda"],
             (
-                "cuda"
-                if modules[directory.name]["toolchain"] == "cuda"
+                modules[directory.name]["toolchain"]
+                if modules[directory.name]["toolchain"] in ("cuda", "python")
                 else (
                     "native"
                     if modules[directory.name]["type"] == "default-off"
@@ -153,7 +153,6 @@ def generate_catalog(write=True):
     plugins = {}
     for name, path in {
         "openacc_ptm": "plugins/openaccPTM",
-        "pycv": "plugins/pycv",
     }.items():
         directory = ROOT / path
         plugins[name] = {

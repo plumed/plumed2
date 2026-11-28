@@ -1,0 +1,11 @@
+type=driver
+plumed_modules=pycv
+# skipped on the CI where pycv is not built (it is built as an extension, for one
+# Python version: the pycv jobs check that these tests run, .ci/check-module-regtests)
+PLUMED_ALLOW_SKIP_ON_CI=yes
+arg="--plumed plumed.dat --ixyz traj.xyz"
+
+#this will showcase that you can import a complex module!!!
+plumed_regtest_before(){
+    cp -r ../pycvPersistentData .
+}

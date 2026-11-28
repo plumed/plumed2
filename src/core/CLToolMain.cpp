@@ -38,11 +38,66 @@
 #include <cerrno>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace PLMD {
 
 namespace {
+
+// True in the thread of a rank started by --tmpi-threads (runThreadMPICommand)
+thread_local bool threadMPIRank=false;
+
+// How long a rank whose command line tool failed waits for the other ranks
+constexpr auto threadMPIRankFailureTimeout=std::chrono::seconds(10);
+
+// The ranks of the internal thread-MPI launcher that have finished their
+// command line tool, with or without errors
+class ThreadMPIRanksCompletion {
+  std::mutex mutex;
+  std::condition_variable condition;
+  int finished=0;
+  // changes when all the ranks of a launch have finished
+  unsigned long launch=0;
+public:
+  // Returns false if the other ranks did not finish within the timeout
+  bool finish(int size,bool wait) {
+    std::unique_lock<std::mutex> lk(mutex);
+    if(++finished==size) {
+      finished=0;
+      ++launch;
+      condition.notify_all();
+      return true;
+    }
+    if(!wait) {
+      return true;
+    }
+    const auto current=launch;
+    return condition.wait_for(lk,threadMPIRankFailureTimeout,[&] {return launch!=current;});
+  }
+};
+
+ThreadMPIRanksCompletion threadMPIRanksCompletion;
+
+// A rank of the internal launcher has finished its command line tool. When it
+// failed, the other ranks could wait for it forever in a collective operation
+// (e.g. the replicas of driver --multi when one of them has a wrong input): if
+// they do not finish too (e.g. with the same error, which they then print), all
+// the ranks are stopped, as the launcher does when an exception reaches it and
+// as mpirun does when a process fails
+void finishThreadMPIRank(Communicator& pc,bool failed) {
+  if(!threadMPIRank || pc.Get_size()<=1) {
+    return;
+  }
+  if(!threadMPIRanksCompletion.finish(pc.Get_size(),failed)) {
+    std::fprintf(stderr,"PLUMED thread-MPI rank %d failed: stopping all the ranks\n",pc.Get_rank());
+    std::fflush(stderr);
+    std::fflush(stdout);
+    std::_Exit(EXIT_FAILURE);
+  }
+}
 
 #if defined(__PLUMED_MPIWRAP) && defined(__PLUMED_HAS_THREAD_MPI) && !defined(__PLUMED_HAS_MPI)
 struct ThreadMPICommand {
@@ -81,7 +136,9 @@ int runThreadMPICommand(int, const void *native_world, std::size_t native_size,
   }
   command.cmd("setArgv",argv.data());
   int result=0;
+  threadMPIRank=true;
   command.cmd("run",&result);
+  threadMPIRank=false;
   return result;
 }
 #endif
@@ -570,24 +627,27 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc) {
     plumed_assert(cl);
     cl->setDLHandles(dlloader.getHandles());
     int ret=0;
+    bool failed=false;
     // NOTE: catch PLUMED exceptions from CLTool readInput() and main() so that user-input
     // errors terminate cleanly with a message and nonzero exit status
     // instead of an uncaught-exception abort (0xc0000409 on Windows).
     try {
       // Read the command line options (returns false if we are just printing help)
-      if( !cl->readInput( argc-i,&argv[i],in,out ) ) {
-        return 0;
+      if( cl->readInput( argc-i,&argv[i],in,out ) ) {
+        ret=cl->main(in,out,pc);
       }
-      ret=cl->main(in,out,pc);
     } catch(const PLMD::Exception& e) {
       std::fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",command.c_str(),e.what());
       std::fflush(stderr);
-      return 1;
+      ret=1;
+      failed=true;
     } catch(const std::exception& e) {
       std::fprintf(stderr,"ERROR : in command line tool %s : %s\n",command.c_str(),e.what());
       std::fflush(stderr);
-      return 1;
+      ret=1;
+      failed=true;
     }
+    finishThreadMPIRank(pc,failed);
     return ret;
   }
 

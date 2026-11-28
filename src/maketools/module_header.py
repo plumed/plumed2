@@ -28,7 +28,7 @@ def read_header(path, text=None):
             value = line[6:]
         elif re.fullmatch(r"use: \[([a-z][a-z0-9_-]*(, [a-z][a-z0-9_-]*)*)?\]", line):
             value = line[6:-1].split(", ") if line[6:-1] else []
-        elif re.fullmatch(r"toolchain: (cxx|cuda)", line):
+        elif re.fullmatch(r"toolchain: (cxx|cuda|python)", line):
             value = line[11:]
         elif re.fullmatch(r"placement: (any|extension)", line):
             value = line[11:]

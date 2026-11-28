@@ -1,0 +1,3 @@
+cvdist: PYFUNCTION IMPORT=pyhelp
+
+#PRINT FILE=colvar.out ARG=*

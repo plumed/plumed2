@@ -1,0 +1,3 @@
+# the Python inputs of the pycv regtests are checked too
+extend = "../../ruff.toml"
+exclude = []

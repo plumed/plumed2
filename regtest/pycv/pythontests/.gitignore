@@ -1,0 +1,5 @@
+bck*
+*.out
+logfile
+*.log
+.pytest_cache

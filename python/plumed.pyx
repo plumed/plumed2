@@ -264,6 +264,7 @@ cdef class Plumed:
          cdef bytes py_bytes = key.encode() + b'\x00'  # Explicitly add null terminator
          cdef char* ckey = py_bytes
          cdef char* cval
+         cdef bytes py_val
          if val is None :
             self.cmd_low_level(ckey,NULL,0,NULL,type_nullptr)
             return
@@ -297,10 +298,11 @@ cdef class Plumed:
                raise ValueError("arrays should be type double (size=8), int, or long")
             return
          if isinstance(val, str ) :
-            py_bytes = val.encode() + b'\x00'  # Explicitly add null terminator
-            cval = py_bytes
+            # not in py_bytes, which keeps ckey alive
+            py_val = val.encode() + b'\x00'  # Explicitly add null terminator
+            cval = py_val
             # assume sizeof(char)=1
-            self.cmd_low_level(ckey,cval,len(py_bytes), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
+            self.cmd_low_level(ckey,cval,len(py_val), NULL,1 + type_integral + type_const_pointer + type_nocopy + type_not_mpi_comm)
             return
          if 'mpi4py' in sys.modules:
             import mpi4py.MPI as MPI

@@ -1,0 +1,3 @@
+cv1: PYCVINTERFACE ATOMS=@mdatoms IMPORT=pycvPerFrame CALCULATE=pydist PREPARE=changeAtom
+
+PRINT FILE=colvar.out ARG=*

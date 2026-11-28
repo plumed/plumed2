@@ -23,6 +23,7 @@
 !/gemmi
 !/gpu_cuda_hip
 !/gpu_voronoi
+!/pycv
 !/function
 !/generic
 !/gridtools

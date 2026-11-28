@@ -49,6 +49,12 @@ These keywords are still read, as the keyword that replaces them, with a warning
 - A negative number where a positive integer is expected (e.g. `STRIDE=-1`) is an error; it was read as a very large number.
 - Many inputs that crashed or gave `nan` now stop with an error that names the keyword to change: see the file CHANGES/v2.11.md.
 
+\section Migration211Plugins Plugins that are now modules
+
+- pycv (PYCVINTERFACE and PYFUNCTION) is the module pycv, built as an extension for one Python version (or installed with
+  the conda package plumed-ext-pycv) and loaded automatically: remove `LOAD FILE=...` (the path given by `python -m pycv`,
+  which is not available any more) from the inputs. See the page of the module pycv.
+
 \section Migration211Older Inputs written for PLUMED 2.9 or older
 
 These inputs stop with an error since PLUMED 2.10:

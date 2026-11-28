@@ -954,7 +954,6 @@ symbol-table entry or public object type.
 | `src/wrapper/Plumed.h` | Add the opt-in generated host/native adapter and its one implementation accessor. Extend C11/C++ pointer metadata with provider type code 6 and the communicator exclusion bit; preserve C99, object lifecycle, symbol-table layout and exception translation. |
 | `scripts/mkmpi.sh` | Build a standalone provider from the public header or recompile the installed standard main into a shared/runtime MPI executable, with atomic output publication. |
 | `src/main/main.cpp`, `src/lib/Makefile` | Request injection on MPI-enabled entry before CLTool setup, retaining older-kernel behavior. Install this exact source for `mkmpi --executable`; no second CLI host implementation. |
-| `plugins/pycv/FindPlumed.cmake` | Link external MPI only for a native-MPI build; embedded tMPI does not require external MPI headers or libraries. |
 | `regtest/scripts/run`, `mpi-test.h` | Select direct MPI, an injecting CLI host or internal ranks while keeping old `mpiprocs` values and old-kernel behavior. External MPI lifecycle remains owned by the executable. |
 | Converted existing MPI regtests | Mechanical lifecycle/communicator changes only; original calculations, rank counts and reference files are retained. Four cases with process-global environment or independent serial processes remain native-only. |
 | New API/launcher/provider regtests | Check the mapped API, unavailable calls, transport, lifecycle, nested kernels without compiling GROMACS. |

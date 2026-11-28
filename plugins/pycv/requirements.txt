@@ -1,2 +1,0 @@
-pybind11>=3.0
-numpy

@@ -12,6 +12,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import python_embed
 from conda_config import build_environment, supported
 from features import FeatureProbes, dependency_identity, feature_identity
 from inventory import generate_catalog
@@ -298,6 +299,111 @@ def cuda_settings():
     return cuda_toolchain
 
 
+python_toolchain = {}
+
+
+def python_settings():
+    """Compiler flags, link flags and registration variant of the python toolchain."""
+    if python_toolchain:
+        return python_toolchain
+    python = config.get("EXTENSION_PYTHON_EMBED")
+    if not python:
+        raise SystemExit(
+            "configure again: no Python for the modules with toolchain python"
+        )
+    try:
+        python_toolchain.update(python_embed.settings(python, soext))
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
+    # GCC: no STB_GNU_UNIQUE symbols, which would prevent the library from being
+    # unloaded (and the interpreter from being started again by a new library).
+    probe = work / "probes" / "no-gnu-unique.cpp"
+    probe.parent.mkdir(parents=True, exist_ok=True)
+    probe.write_text("int main(){}\n")
+    python_toolchain["cxxflags"] = (
+        ["-fno-gnu-unique"]
+        if subprocess.run(
+            [
+                *compiler,
+                "-Werror",
+                "-fno-gnu-unique",
+                "-c",
+                probe,
+                "-o",
+                probe.with_suffix(".o"),
+            ],
+            check=False,
+            capture_output=True,
+        ).returncode
+        == 0
+        else []
+    )
+    python_toolchain["variant"] = os.environ.get(
+        "PLUMED_EXTENSION_VARIANT", python_toolchain["variant"]
+    )
+    return python_toolchain
+
+
+def python_runtime(name, module_cppflags, module_cxxflags, search):
+    """macOS: the private library that links libpython for the module.
+
+    The module itself is linked with -undefined dynamic_lookup, so that when PLUMED
+    runs inside a Python process the Python symbols are those of that process. When
+    it is not, this library (a dependency of the module) loads libpython and makes
+    its symbols global (extensions/python_runtime.cpp)."""
+    settings = python_settings()
+    directory = work / name
+    obj = directory / "python_runtime.o"
+    compile_source(
+        (
+            [
+                *compiler,
+                *module_cppflags,
+                *module_cxxflags,
+                *settings["flags"],
+                "-I" + str(base / "include/plumed"),
+                "-I" + str(root / "src"),
+                "-c",
+                root / "extensions/python_runtime.cpp",
+                "-o",
+                obj,
+            ],
+            root / "extensions/python_runtime.cpp",
+            obj,
+        )
+    )
+    library = work / f"libplumed-ext-{name}-python.{soext}"
+    run(
+        [
+            *linker,
+            *flags("LDFLAGS"),
+            "-Wl,-install_name,@rpath/" + library.name,
+            *search[1:],
+            "-L" + str(base / "lib"),
+            "-o",
+            library,
+            obj,
+            base_kernel,
+            *settings["link"],
+        ]
+    )
+    kernel_id = (
+        subprocess.check_output(["otool", "-D", str(base_kernel)], text=True)
+        .splitlines()[1]
+        .strip()
+    )
+    run(
+        [
+            "install_name_tool",
+            "-change",
+            kernel_id,
+            "@rpath/" + base_kernel.name,
+            library,
+        ]
+    )
+    return library
+
+
 for name in order:
     directory = work / name
     directory.mkdir(exist_ok=True)
@@ -315,6 +421,9 @@ for name in order:
     if toolchain == "cuda":
         module_cppflags.append(cuda_settings()["macro"])
     module_cxxflags = cxxflags + shlex.split(module_env.get("CXXFLAGS", ""))
+    if toolchain == "python":
+        module_cppflags += [python_settings()["macro"], *python_settings()["flags"]]
+        module_cxxflags += python_settings()["cxxflags"]
     module_ldflags = flags("LDFLAGS") + shlex.split(module_env.get("LDFLAGS", ""))
     module_probes = probes
     if any(policy.get(key) for key in ("cppflags", "cxxflags", "ldflags")):
@@ -411,6 +520,18 @@ for name in order:
     # its native dependency closure also keeps the linked kernel mapped.
     if name == "metatomic" and enabled_features.get("LIBMETATOMIC") and soext == "so":
         search.append("-Wl,-z,nodelete")
+    toolchain_link = []
+    runtime_library = None
+    if toolchain == "cuda":
+        toolchain_link = cuda_settings()["link"]
+    elif toolchain == "python" and soext == "dylib":
+        runtime_library = python_runtime(name, module_cppflags, module_cxxflags, search)
+        toolchain_link = [
+            "-Wl,-undefined,dynamic_lookup",
+            "-Wl,-needed_library," + str(runtime_library),
+        ]
+    elif toolchain == "python":
+        toolchain_link = python_settings()["link"]
     numeric_flags, imported_numeric = numeric_link_flags(objects)
     native_report[name] = {
         "module": name,
@@ -460,7 +581,7 @@ for name in order:
             ],
             *native_flags,
             *numeric_flags,
-            *(cuda_settings()["link"] if toolchain == "cuda" else []),
+            *toolchain_link,
         ]
     )
     if soext == "dylib":
@@ -479,7 +600,10 @@ for name in order:
             ]
         )
     registration = work / f"{name}.plumed"
-    variant = f"variant {cuda_settings()['variant']}\n" if toolchain == "cuda" else ""
+    variant = {
+        "cuda": lambda: f"variant {cuda_settings()['variant']}\n",
+        "python": lambda: f"variant {python_settings()['variant']}\n",
+    }.get(toolchain, lambda: "")()
     registration.write_text(
         f"module {name}\nbuild {build_id}\n{variant}library ../../{library.name}\n"
         + "requires "
@@ -530,6 +654,8 @@ for name in order:
             destination.write_text(text)
         shutil.copy2(metadata, prefix / "lib/plumed/plugins" / metadata.name)
         shutil.copy2(library, prefix / "lib" / library.name)
+        if runtime_library:
+            shutil.copy2(runtime_library, prefix / "lib" / runtime_library.name)
         shutil.copy2(registration, prefix / "lib/plumed/plugins" / registration.name)
 (work / "modules.json").write_text(json.dumps(order, indent=2) + "\n")
 

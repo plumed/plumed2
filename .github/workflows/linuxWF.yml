@@ -197,6 +197,15 @@ jobs:
       if: contains( matrix.variant, '-debug-' )
       run: |
         echo "PLUMED_CONFIG=$PLUMED_CONFIG --enable-debug --enable-debug-glibcxx" >> $GITHUB_ENV
+    # pycv (toolchain python) compiled into the kernel, for the Python of this job (the -pycv-
+    # job and the python workflow build it as an extension); serial build, so that its
+    # multi-replica test runs on thread-MPI ranks
+    - name: Setup pycv in the kernel
+      if: matrix.variant == '-debug-'
+      run: |
+        python -m pip install --user "pybind11>=3.0" numpy pytest
+        echo "PLUMED_MODULES=all:+pycv" >> $GITHUB_ENV
+        echo "PLUMED_CONFIG=$PLUMED_CONFIG PYTHON_BIN=python" >> $GITHUB_ENV
     - name: Setup nvhpc flags
       if: contains( matrix.variant, '-nvhpc-' )
       # The openacc plugin is compiled with -acc=multicore and uses NVIDIA's OpenMP runtime. Loaded together with
@@ -260,7 +269,7 @@ jobs:
       run: |
         ccache -s -M "$PLUMED_CCACHE_SIZE"
         #removed LDFLAGS=-Wl,-rpath,$LD_LIBRARY_PATH
-        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules=all $PLUMED_CONFIG  --prefix="$HOME/opt"
+        ./configure CXX="ccache $CXX" --enable-boost_serialization --disable-dependency-tracking --enable-modules="${PLUMED_MODULES:-all}" $PLUMED_CONFIG  --prefix="$HOME/opt"
         ccache -s -M "$PLUMED_CCACHE_SIZE"
     - name: Config Log
       if: failure() && steps.config.outcome == 'failure'
@@ -353,6 +362,13 @@ jobs:
          make --no-print-directory -j "$PLUMED_REGTEST_JOBS" -C regtest testclean
          # these can fail for numerical reasons
          make -C regtest checkfail
+    - name: Check pycv in the kernel
+      if: matrix.variant == '-debug-'
+      run: |
+        plumed modules -q --has pycv
+        plumed modules --has-feature python_embed -q
+        .ci/check-module-regtests regtest/pycv
+        (cd regtest/pycv/pythontests && PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so" python -m pytest -v)
     - name: Run python tests
       run: |
          if [[ "${{ matrix.variant }}" == *-nvhpc-* ]] ; then
@@ -437,13 +453,29 @@ jobs:
       working-directory: ./new-manual
       run: |
          python check_examples.py
-    - name: Compile and test pycv
+    # pycv (toolchain python) is built as an extension against the installed base, for the Python
+    # of this job (see the python workflow for the other versions), with MPI
+    - name: Build pycv as an extension and run its tests
       if: contains( matrix.variant, '-pycv-' )
-      working-directory: ./plugins/pycv/
       run: |
-            source ../../sourceme.sh
-            ln -s $(realpath ../../regtest/scripts) ./regtest/scripts
-            make check
+        python -m pip install -r extensions/requirements.txt "pybind11>=3.0" numpy pytest
+        git worktree add "$HOME/ext-src" HEAD
+        (
+          cd "$HOME/ext-src"
+          ./configure --with-extension-base="$HOME/opt" --enable-extension-modules=pycv \
+            --prefix="$HOME/pycv" PYTHON_BIN=python
+          make
+          make install
+        )
+        grep -qx "variant python$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')" \
+          "$HOME/pycv/lib/plumed/plugins/pycv.plumed"
+        export PLUMED_PLUGIN_PATH="$HOME/pycv/lib/plumed/plugins"
+        plumed modules -q --has pycv
+        plumed modules --module pycv --has-feature python_embed -q
+        make -C regtest/pycv
+        .ci/check-module-regtests regtest/pycv
+        # the python package is the one installed with the base (PYTHONPATH from linux-setup)
+        (cd regtest/pycv/pythontests && PLUMED_KERNEL="$HOME/opt/lib/libplumedKernel.so" python -m pytest -v)
 
   # A serial PLUMED build can use real MPI supplied by its host at runtime. Keep
   # this separate from the matrix so the full suite runs once through injection.

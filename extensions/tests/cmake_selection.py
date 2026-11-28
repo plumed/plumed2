@@ -261,7 +261,7 @@ try:
             ("DRR", "drr"),
             ("EMMIVOX", "isdb-pytorch"),
             ("CUDACOORDINATION", "gpu_cuda_hip"),
-            ("PYCVINTERFACE", "plugins/pycv"),
+            ("PYCVINTERFACE", "pycv"),
             ("DISTANCE_VECTORACC", "plugins/openaccPTM"),
         ):
             assert '"' + action + '", "' + module + '"' in text, (action, module)

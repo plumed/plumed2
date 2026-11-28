@@ -1033,6 +1033,9 @@ AC_SUBST(PYTHON_BIN)
 # set if PYTHON_BIN has build in its environment
 AC_SUBST(PYTHON_BUILD_FOUND)
 
+# the Python requested for the modules with toolchain python (it can be cleared below)
+python_embed_bin="$PYTHON_BIN"
+
 # if PYTHON_BIN is defined, it is expected to be the full path to python
 # Otherwise, search from a list of names (only when the python interface is
 # enabled, so that --disable-python does not look for python at all):
@@ -1490,6 +1493,7 @@ CUDA_COMPILER=
 CUDA_FLAGS=
 KERNEL_LDFLAGS=
 cuda_modules=
+python_modules=
 toolchain_modules=$(src/maketools/module-selection src --overrides "$PLUMED_MODULE_ENABLED" "$PLUMED_MODULE_DISABLED") ||
   AC_MSG_ERROR([invalid module selection for compiler checks])
 for modules_name in $toolchain_modules; do
@@ -1499,6 +1503,9 @@ for modules_name in $toolchain_modules; do
   fi
   if test "$(src/maketools/module-header toolchain "$modules_file")" = cuda ; then
     cuda_modules="$cuda_modules $modules_name"
+  fi
+  if test "$(src/maketools/module-header toolchain "$modules_file")" = python ; then
+    python_modules="$python_modules $modules_name"
   fi
 done
 
@@ -1622,6 +1629,59 @@ fi
 AC_SUBST(CUDA_COMPILER)
 AC_SUBST(CUDA_FLAGS)
 AC_SUBST(KERNEL_LDFLAGS)
+
+#### Modules with "toolchain: python" in module.yml ####
+# Only when such a module is requested by name (e.g. --enable-modules=+pycv): they are
+# compiled with the headers of the Python given by PYTHON_BIN (default: python3) and of
+# its pybind11 (>=3.0), and the kernel links its shared libpython: the kernel then
+# works with that Python version only (as an extension, one build per Python version).
+PYTHON_EMBED_CPPFLAGS=
+if test -n "$python_modules" ; then
+  test -n "$python_embed_bin" || python_embed_bin=python3
+  case "$(uname)" in
+  (Darwin) python_embed_soext=dylib ;;
+  (*) python_embed_soext=so ;;
+  esac
+  AC_MSG_CHECKING([the Python embedded by the modules$python_modules])
+  if ! command -v "$python_embed_bin" >/dev/null 2>&1 ; then
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([PYTHON_BIN=$python_embed_bin not found: it is needed by the modules$python_modules (set PYTHON_BIN, or disable them)])
+  fi
+  if ! python_embed_settings=$("$python_embed_bin" "$srcdir/extensions/python_embed.py" "$python_embed_bin" "$python_embed_soext" 2>conftest_python.err) ; then
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([$(cat conftest_python.err): it is needed by the modules$python_modules (set PYTHON_BIN, or disable them)])
+  fi
+  rm -f conftest_python.err
+  python_embed_version=$(echo "$python_embed_settings" | sed -n 1p)
+  PYTHON_EMBED_CPPFLAGS=$(echo "$python_embed_settings" | sed -n 2p)
+  python_embed_libs=$(echo "$python_embed_settings" | sed -n 3p)
+  AC_MSG_RESULT([Python $python_embed_version ($python_embed_bin)])
+  AC_MSG_CHECKING([whether a program embedding Python $python_embed_version compiles and links])
+  cat > conftest_python.cpp <<_PLUMED_PYTHON_EOF
+#include <pybind11/embed.h>
+int main() {
+  pybind11::scoped_interpreter interpreter;
+  return 0;
+}
+_PLUMED_PYTHON_EOF
+  python_embed_ok=no
+  if eval "$CXX $CXXFLAGS $CPPFLAGS $PYTHON_EMBED_CPPFLAGS conftest_python.cpp -o conftest_python$EXEEXT $LDFLAGS $python_embed_libs $LIBS" >conftest_python.log 2>&1 ; then
+    python_embed_ok=yes
+  fi
+  AC_MSG_RESULT([$python_embed_ok])
+  if test "$python_embed_ok" = no ; then
+    cat conftest_python.log >&AS_MESSAGE_LOG_FD
+    cat conftest_python.log
+    rm -f conftest_python*
+    AC_MSG_ERROR([cannot compile or link a program embedding Python $python_embed_version (see above), needed by the modules$python_modules])
+  fi
+  rm -f conftest_python*
+  LIBS="$LIBS $python_embed_libs"
+  # the feature python_embed of the kernel (plumed modules --has-feature python_embed)
+  AC_DEFINE([__PLUMED_HAS_PYTHON_EMBED])
+  AC_MSG_NOTICE([The modules$python_modules embed Python $python_embed_version: the kernel works only with this Python version])
+fi
+AC_SUBST(PYTHON_EMBED_CPPFLAGS)
 
 #### Options for dynamic library to work properly ####
 AC_SUBST(SOEXT)

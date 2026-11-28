@@ -1,8 +1,0 @@
-/Makefile.conf
-pycv_here
-*.o
-*.so
-/env*/
-/build*/
-/dist*/
-*.whl

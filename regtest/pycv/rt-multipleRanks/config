@@ -1,0 +1,9 @@
+type=driver
+plumed_modules=pycv
+# two replicas: with a thread-MPI build of PLUMED, two threads of the same
+# process, which share the Python interpreter
+mpiprocs=2
+# skipped on the CI where pycv is not built (it is built as an extension, for one
+# Python version: the pycv jobs check that these tests run, .ci/check-module-regtests)
+PLUMED_ALLOW_SKIP_ON_CI=yes
+arg="--plumed plumed.dat --ixyz traj.xyz --multi 2"

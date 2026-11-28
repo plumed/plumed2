@@ -1,0 +1,9 @@
+cvPY: ...
+PYCVINTERFACE
+IMPORT=unitTest
+...
+
+PRINT FILE=colvar.out ARG=*
+
+
+

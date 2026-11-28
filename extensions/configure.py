@@ -3,11 +3,13 @@
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
 from pathlib import Path
 
+import python_embed
 from inventory import generate_catalog
 
 root = Path(__file__).resolve().parent.parent
@@ -20,7 +22,28 @@ parser.add_argument("--prefix", type=Path)
 # conda packages (one package per CUDA version on the same base).
 parser.add_argument("--enable-hip", action="store_true")
 parser.add_argument("--with-cudart", choices=("shared", "static"), default="shared")
-args = parser.parse_args()
+# Variables read by this script can also be given as arguments, as for the native
+# configure (e.g. PYTHON_BIN=python3.12 for the modules with toolchain python).
+VARIABLES = (
+    "PYTHON_BIN",
+    "NVCC",
+    "HIPCC",
+    "CUDACXX",
+    "NVCCFLAGS",
+    "HIP_ARCHITECTURES",
+    "CUDA_LIBDIR",
+)
+args, assignments = parser.parse_known_args()
+for assignment in assignments:
+    match = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_]*)=(.*)", assignment, re.DOTALL)
+    if not match:
+        parser.error(f"unrecognized argument: {assignment}")
+    if match[1] not in VARIABLES:
+        parser.error(
+            f"{match[1]} is not used when configuring extensions"
+            " (compiler settings come from the base; overrides go to make, see extensions/README.md)"
+        )
+    os.environ[match[1]] = match[2]
 base = args.with_extension_base.resolve()
 prefix = (args.prefix or base).resolve()
 environment = dict(os.environ, PLUMED_AUTOLOAD="0")
@@ -92,6 +115,19 @@ if any(catalog["modules"][name]["toolchain"] == "cuda" for name in selection):
         f"EXTENSION_HIP_ARCHITECTURES={os.environ.get('HIP_ARCHITECTURES', '')}",
         f"EXTENSION_CUDA_LIBDIR={os.environ.get('CUDA_LIBDIR', '')}",
     ]
+# Modules with "toolchain: python": built for the Python given by PYTHON_BIN, or
+# else for the Python running this script (one build for each Python version).
+python = []
+if any(catalog["modules"][name]["toolchain"] == "python" for name in selection):
+    try:
+        embed = python_embed.settings(
+            os.environ.get("PYTHON_BIN") or os.sys.executable,
+            re.search(r"^SOEXT=(.*)$", config, re.MULTILINE)[1],
+        )
+    except ValueError as error:
+        parser.error(f"{error} (needed by the modules with toolchain python)")
+    print(f"Modules with toolchain python: built for {embed['executable']}")
+    python = [f"EXTENSION_PYTHON_EMBED={embed['executable']}"]
 # GNU Make paths are intentionally constrained; shell commands quote all paths.
 for path in (base, prefix, root):
     if any(c in str(path) for c in " \t\n#$"):
@@ -107,6 +143,7 @@ for path in (base, prefix, root):
             f"EXTENSION_BUILD_ID={build_id}",
             f"EXTENSION_PYTHON={os.sys.executable}",
             *cuda,
+            *python,
         ]
     )
     + "\n"

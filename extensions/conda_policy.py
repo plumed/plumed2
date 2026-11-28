@@ -14,7 +14,6 @@ LISTS = (
     "cxxflags",
     "ldflags",
     "make_args",
-    "cmake_args",
     "required_features",
     "optional_features",
     "disabled_features",
@@ -34,11 +33,11 @@ def validate_backend(policy, backend, directory):
     supported = {
         "kernel": {"configure_flags", "make_args"},
         "native": set(),
-        "pycv": {"cmake_args"},
         "cuda": set(),
+        "python": set(),
         "openacc_ptm": {"make_args"},
     }[backend]
-    for key in {"configure_flags", "make_args", "cmake_args"} - supported:
+    for key in {"configure_flags", "make_args"} - supported:
         if policy[key]:
             raise ValueError(
                 f"{directory}: conda.{key} is not supported by the {backend} backend"

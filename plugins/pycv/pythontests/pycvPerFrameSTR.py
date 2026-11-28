@@ -1,1 +1,0 @@
-../regtest/pycvcomm/rt-newFrameNewAtomSTR/pycvPerFrame.py
